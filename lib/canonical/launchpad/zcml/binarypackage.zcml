@@ -6,22 +6,56 @@
     i18n_domain="launchpad">
     
 
-    <!-- BinaryPackage -->
-    <content class="canonical.launchpad.database.BinaryPackage">
-        <allow interface="canonical.launchpad.interfaces.IBinaryPackage" />
-        <implements interface="zope.app.container.interfaces.IItemContainer"/>
-    </content>
+<securedutility
+   class="canonical.launchpad.database.BinaryPackageUtility"
+   provides="canonical.launchpad.interfaces.IBinaryPackageUtility">
+   <allow interface="canonical.launchpad.interfaces.IBinaryPackageUtility" />
+</securedutility>
 
-    <!-- BinaryPackagename -->
-    <content class="canonical.launchpad.database.BinaryPackageName">
-        <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />
-    </content>
+<!-- BinaryPackage -->
+<content class="canonical.launchpad.database.BinaryPackage">
+   <allow interface="canonical.launchpad.interfaces.IBinaryPackage" />
+</content>
 
-    <securedutility
-        class="canonical.launchpad.database.BinaryPackageSet"
-        provides="canonical.launchpad.interfaces.IBinaryPackageSet"
-        >
-        <allow interface="canonical.launchpad.interfaces.IBinaryPackageSet" />
-    </securedutility>
+<browser:page
+   for="canonical.launchpad.database.BinaryPackage" 
+   permission="zope.Public"
+   name="index.html"
+   template="../templates/binarypackage-index.pt"
+   lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/$Bin/index.html"/>
+
+
+<!-- BinaryPackageSet -->
+<content class="canonical.launchpad.database.BinaryPackageSet">
+   <allow interface="canonical.launchpad.interfaces.IBinaryPackageSet" />
+   <implements interface="zope.app.container.interfaces.IItemContainer"/>
+</content>
+
+<browser:traverse
+   for="canonical.launchpad.database.BinaryPackageSet" 
+   getter="__getitem__" />
+
+<browser:page
+   for="canonical.launchpad.database.BinaryPackageSet" 
+   permission="zope.Public"
+   name="index.html"
+   class="canonical.launchpad.browser.DistroReleaseBinariesView"
+   template="../templates/binarypackage-list.pt"
+   lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/index.html"/>
+
+<browser:page
+   for="canonical.launchpad.database.BinaryPackageSet" 
+   permission="zope.Public"
+   class="canonical.launchpad.browser.DistrosReleaseBinariesSearchView"
+   template="../templates/binarypackage-search.pt"
+   lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/+search"
+   name="+search"/>
+
+
+<!-- BinaryPackagename -->
+<content class="canonical.launchpad.database.BinaryPackageName">
+   <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />
+</content>
+
 
 </configure>

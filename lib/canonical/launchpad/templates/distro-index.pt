@@ -5,8 +5,8 @@
 
 <head>
     <title metal:fill-slot="title">
-      Distribution: <span
-      tal:replace="context/distribution/title">distribution title</span>
+      Soyuz Distribution Manager: <span
+      tal:replace="context/title">distribution title</span>
       </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -17,48 +17,12 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-
-<tal:block tal:define="distro context/distribution">
- <div class="portlet">
-  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
-
-   <div class="portletBody">
-
-     <div class="portletContent even">
-
-     - <a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
-      Releases</a><br />
-
-     - <a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
-      Packages</a><br />
-
-     - <a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
-      Binaries</a><br />
-
-     </div>
-     
-   </div>  
-
- </div>
-
- <div class="portlet">
-  <h4>Local Links</h4>
-   <div class="portletBody">
-     <div class="portletContent even">
-     <ul>
-     <li><a href="releases/+new">Create Distribution Release</a></li>
-     <li><a href="+edit">Edit Distribution Information</a></li>
-     </ul>
-     </div>
-   </div>  
- </div>
-</tal:block>
-
+    <div tal:replace="structure view/detailsPortlet" />
 </metal:leftportlets>
 
 
 <metal:rightportlets fill-slot="portlets_two">
-<div tal:replace="structure view/rolesPortlet" />
+    <div tal:replace="structure view/actionsPortlet" />
 </metal:rightportlets>
 
 
@@ -67,17 +31,20 @@
  <div id="content" class="documentEditable">
   <div class="documentContent" id="region-content">
  
-   <h1><span tal:content="context/distribution/title">TITLE</span>:
+   <h1><span tal:replace="context/title">TITLE</span>:
     Distribution Overview</h1>
-    <p />
 
-    <div> 
-        <span tal:content="context/distribution/description">DESCRIPTION</span>
-    </div>
+    <p class="documentDescription" tal:content="context/summary">
+        Distribution Summary
+    </p>
+
+    <p tal:content="context/description">
+        Distribution description
+    </p>
 
     <h2>Releases:</h2>
 
-    <p><span tal:replace="context/distribution/title" /> has the following
+    <p><span tal:replace="context/title" /> has the following
     releases under development, or released:</p>
 
     <table width="100%" class="listing rowNavigation">
@@ -90,13 +57,15 @@
         <tr tal:condition="not: context/releases">
             <td></td>
             <td>No Releases Yet... please create one below.</td>
+            <td></td>
+            <td></td>
         </tr>
         <tr tal:repeat="release context/releases"
             tal:attributes="onclick
-                string:window.location='releases/${release/name}'">
+                string:window.location='${release/name}'">
             <td tal:content="release/displayname">displayname</td>
             <td><a tal:content="release/title"
-	               tal:attributes="href string:releases/${release/name}">
+	               tal:attributes="href string:${release/name}">
 	               distribution name</a>
             </td>
             <td tal:content="release/version">VERSION</td>

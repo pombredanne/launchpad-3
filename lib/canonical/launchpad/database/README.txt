@@ -89,5 +89,3 @@ that you can reference a class that hasn't been declared yet).  We also need to
 specify the `joinColumn` (SQLObject guesses the wrong name for it, like
 everything else).
 
-
-.. arch-tag: 465e24f1-99dd-4813-af4e-62f679adde02

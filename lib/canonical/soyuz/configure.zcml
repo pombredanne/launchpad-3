@@ -9,38 +9,52 @@
         <allow interface="canonical.launchpad.interfaces.ISoyuzApplication" />
     </content>
 
+    <!-- make SoyuzApplication visible at the top level -->
     <browser:suburl
         for="canonical.publication.RootObject"
         class="canonical.soyuz.SoyuzApplication"
         permission="zope.Public"
+        newlayer="canonical.launchpad.layers.SoyuzLayer"
         name="soyuz"
-        />
-
-    <browser:suburl
-        for="canonical.soyuz.SoyuzApplication"
-        class="canonical.soyuz.distroapp.DistrosApp"
-        permission="zope.Public"
-        name="distros"
-        />
-
-    <browser:suburl
-        for="canonical.soyuz.SoyuzApplication"
-        class="canonical.launchpad.database.DistributionSet"
-        permission="zope.Public"
-        name="realdistros"
         />
 
     <browser:defaultView
         for="canonical.soyuz.SoyuzApplication"
         name="+index" />
 
+    <browser:suburl
+        for="canonical.soyuz.SoyuzApplication"
+        class="canonical.launchpad.database.DistributionSet"
+        permission="zope.Public"
+        name="distros"
+        />
+
+    <!-- allow embedding of doap projects in soyuz. -->
+    <browser:suburl
+        for="canonical.soyuz.SoyuzApplication"
+        utility="canonical.launchpad.interfaces.IProjectSet"
+        permission="zope.Public"
+        name="projects"
+        />
+
+    <!-- allow embedding of doap products in soyuz. -->
+    <browser:suburl
+        for="canonical.soyuz.SoyuzApplication"
+        utility="canonical.launchpad.interfaces.IProductSet"
+        permission="zope.Public"
+        name="products"
+        />
+
     <browser:pages for="canonical.soyuz.SoyuzApplication"
         permission="zope.Public">
-        <browser:page name="+index"
+        
+        <browser:page
+            name="+index"
             template="../launchpad/templates/soyuz-index.pt"
-            lp:url="Soyuz/index.html"
+            lp:url="Soyuz/+index"
             />
-        <browser:page name="+about"
+        <browser:page
+            name="+about"
             template="../launchpad/templates/soyuz-about.pt"
             lp:url="Soyuz/+about"
             />
@@ -77,20 +91,9 @@
       name="source"
       />
 
-
-  <!-- These are views on the soyuz projects list. -->
-  <browser:suburl
-      for="canonical.soyuz.SoyuzApplication"
-      utility="canonical.launchpad.interfaces.IProjectSet"
-      permission="zope.Public"
-      name="projects"
-      />
-
   <include file="pages.zcml" />
-  <include file="resources.zcml" />
   <include file="sourcepackageapp.zcml" />
   <include file="binarypackageapp.zcml" />
-  <include file="distroapp.zcml" />
   <include file="importd.zcml" />
   <include file="generalapp.zcml" />
 

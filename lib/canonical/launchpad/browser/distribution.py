@@ -26,6 +26,20 @@ from zope.app.form import CustomWidgetFactory
 import zope.security.interfaces
 
 
+class DistributionView:
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-distro-actions.pt')
+
+    detailsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-distro-details.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    
+
 class DistributionSetView:
 
     def __init__(self, context, request):
@@ -87,3 +101,18 @@ class DistributionSetAddView(AddView):
         self.results = res
         return res
 
+class DistributionSetSearchView:
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form  = request.form
+
+    def results(self):
+        return []
+
+    def search_action(self):
+        return True
+
+    def count(self):
+        return 3

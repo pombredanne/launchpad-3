@@ -26,6 +26,7 @@ ALL_FTI = [
     ('product', ['name', 'displayname', 'title', 'shortdesc', 'description']),
     ('project', ['name', 'displayname', 'title', 'shortdesc', 'description']),
     ('sourcepackage', ['shortdesc', 'description']),
+    ('binarypackage', ['shortdesc', 'description']),
     ]
 
 def quote_identifier(identifier):
@@ -166,8 +167,9 @@ def main():
     else:
         con = psycopg.connect('dbname=%s' % (dbname,))
     setup(con)
-    for row in ALL_FTI:
-        fti(con, *row)
+    if not options.setup:
+        for row in ALL_FTI:
+            fti(con, *row)
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -176,5 +178,11 @@ if __name__ == '__main__':
             action="count", default=0,
             help="Verbose",
             )
+    parser.add_option(
+            "-s", "--setup-only", dest="setup",
+            action="store_true", default=False,
+            help="Only install tsearch2 - don't build the indexes",
+            )
     (options, args) = parser.parse_args()
     main()
+

@@ -32,6 +32,7 @@ from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.archuser import *
 from canonical.launchpad.interfaces.binarypackage import *
+from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distrorelease import *

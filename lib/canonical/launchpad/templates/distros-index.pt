@@ -35,10 +35,11 @@
         </tr>
         <tr tal:repeat="distribution context"
             tal:attributes="onclick
-                string:window.location='${distribution/name}'">
+                string:window.location='/soyuz/distros/${distribution/name}'">
             <td>
                 <a tal:content="distribution/name" 
-	               tal:attributes="href distribution/name">
+	               tal:attributes="href
+                       string:'/soyuz/distros/distribution/name'">
 	               distribution name
 	            </a>
             </td>

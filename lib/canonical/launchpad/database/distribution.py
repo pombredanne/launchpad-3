@@ -14,6 +14,7 @@ from sqlobject.sqlbuilder import func
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database.bugassignment import SourcePackageBugAssignment
+from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.lp import dbschema
 
 # interfaces and database 
@@ -21,6 +22,7 @@ from canonical.launchpad.interfaces import IDistribution
 from canonical.launchpad.interfaces import IDistributionSet
 
 __all__ = ['Distribution', 'DistributionSet']
+
 
 class Distribution(SQLBase):
 
@@ -43,12 +45,20 @@ class Distribution(SQLBase):
                             joinColumn='distribution') 
     role_users = MultipleJoin('DistributionRole', 
                               joinColumn='distribution')
+
+    def traverse(self, name):
+        if name == '+packages':
+            return PublishedPackageSet()
+        return self.__getitem__(name)
    
-    def getRelease(self, name):
+    def __getitem__(self, name):
         for release in self.releases:
             if release.name == name:
                 return release
-        raise IndexError, ('No distribution release called', name)
+        raise IndexError, 'No distribution release called %s' % name
+
+    def __iter__(self):
+        return iter(self.releases)
 
     def bugCounter(self):
         counts = []

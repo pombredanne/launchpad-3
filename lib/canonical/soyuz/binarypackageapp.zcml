@@ -4,11 +4,6 @@
     xmlns:rdb="http://namespaces.zope.org/rdb"
     >
 
- <content class="canonical.soyuz.binarypackageapp.DistroBinariesApp">
-    <allow interface="canonical.launchpad.interfaces.IDistroBinariesApp"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
  <content class="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp">
     <allow interface="canonical.launchpad.interfaces.IDistroReleaseBinariesApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>

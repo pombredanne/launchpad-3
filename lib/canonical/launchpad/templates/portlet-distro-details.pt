@@ -1,0 +1,29 @@
+<div class="portlet">
+
+    <h4>Distribution Details:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+            <b>Distribution:</b><br />
+            <a tal:attributes="href string:/soyuz/distros/${context/name}/">
+            <span tal:replace="context/displayname" /></a><br />
+
+            <b>Admin:</b><br />
+            <img src="/++resource++user.gif">
+            <a tal:attributes="href string:/foaf/people/${context/owner/name}"
+               tal:content="context/owner/displayname">owner name</a><br /> 
+
+            <span tal:condition="context/releases" tal:omit-tag>
+                <b>Releases:</b><br />
+                <span tal:repeat="release context/releases" tal:omit-tag>
+                    <img src="/++resource++document_icon.gif" />
+                    <a tal:content="release/displayname"
+                       tal:attributes="href
+                       string:/soyuz/distros/${context/name}/${release/name}" />
+                <br /></span>
+            </span>
+           
+        </div>
+    </div>
+</div>

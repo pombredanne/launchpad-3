@@ -1,7 +1,8 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    i18n_domain="canonical.launchpad">
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
 
     <!-- Hack to allow 'count' method of sqlobject's SelectResults -->
     <class class="sqlobject.main.SelectResults">
@@ -144,5 +145,7 @@
     </browser:pages>
 
     <include package="canonical.lp" />
+
+    <i18n:registerTranslations directory="launchpad/locale" />
 
 </configure>

@@ -14,6 +14,7 @@ from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 from canonical.authserver.database import DatabaseUserDetailsStorage
 from canonical.authserver.database import IUserDetailsStorage
+from canonical.lp import dbschema
 
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 
@@ -79,7 +80,6 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         userDict = storage._authUserInteraction(self.cursor, 'noone@fake.email',
                                                 ssha)
         self.assertEqual({}, userDict)
-
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
@@ -196,6 +196,25 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
                                                       'fred@bedrock', ssha,
                                                       newSsha)
         self.assertEqual({}, userDict)
+
+    def test_getSSHKeys(self):
+        # FIXME: there should probably be some SSH keys in the sample data,
+        #        so that this test wouldn't need to add some.
+
+        # Add test SSH keys
+        self.cursor.execute(
+            "INSERT INTO SSHKey (person, keytype, keytext, comment) "
+            "VALUES ("
+            "  (SELECT id FROM Person WHERE displayname = 'Fred Flintstone'), "
+            "  %d,"
+            "  'garbage123',"
+            "  'fred@bedrock')"
+            % (dbschema.SSHKeyType.DSA,)
+        )
+        
+        storage = DatabaseUserDetailsStorage(None)
+        keys = storage._getSSHKeysInteraction(self.cursor, 'fred@bedrock')
+        self.assertEqual([(dbschema.SSHKeyType.DSA, 'garbage123')], keys)
 
 
 def test_suite():

@@ -1,0 +1,47 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:zope="http://namespaces.zope.org/zope"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+    
+    <!-- PublishedPackage -->
+    <content class="canonical.launchpad.database.PublishedPackage">
+        <allow interface="canonical.launchpad.interfaces.IPublishedPackage" />
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IPublishedPackage"
+        />
+    </content>
+
+    <!-- PublishedPackageSet -->
+    <content class="canonical.launchpad.database.PublishedPackageSet">
+        <allow interface="canonical.launchpad.interfaces.IPublishedPackageSet" />
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IPublishedPackageSet"
+        />
+    </content>
+
+    <securedutility
+        provides="canonical.launchpad.interfaces.IPublishedPackageSet"
+        class="canonical.launchpad.database.PublishedPackageSet" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IPublishedPackageSet"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IPublishedPackageSet"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.PublishedPackageSetView">
+
+        <browser:page
+            name="+index"
+            template="../templates/package-search.pt"
+            lp:url="soyuz/distros/ubuntu/+packages/+index" />
+
+    </browser:pages>
+
+</configure>

@@ -1,0 +1,70 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <title metal:fill-slot="title">Package Search</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Package search</h1>
+
+    <form method="POST" action=".">
+    <input type="text" name="text">
+    <input type="submit">
+    </form>
+
+    <div tal:condition="view/searchrequested"
+         tal:define="binpkgs view/searchresults"
+         tal:omit-tag>
+
+        <span tal:repeat="package binpkgs" tal:omit-tag>
+            
+            <h2 tal:content="package/name" />
+
+            <div style="margin-left: 100px;"> 
+            <p tal:content="package/summary"
+               class="documentDescription" />
+
+            <p tal:content="package/description" />
+            <table>
+               <tr tal:repeat="release package/distroreleases">
+                   <td tal:content="release/distroreleasename" />
+                   <td>
+                   <table>
+                       <tr tal:repeat="version release/versions">
+                           <td tal:content="version/version" /> 
+                           <td>
+                               <span tal:repeat="build version/builds"
+                               tal:omit-tag>
+                                   <a
+                                   tal:content="build/processorfamilyname"
+                                   tal:attributes="href
+                                   string:/soyuz/packages/${build/id}"
+                                   />,
+                                </span>
+                           </td>
+                        </tr>
+                    </table>
+                    </td>
+                </tr>
+            </table>
+
+            </div>
+
+
+        </span>
+
+    </div>
+
+</div>
+</body>
+</html>

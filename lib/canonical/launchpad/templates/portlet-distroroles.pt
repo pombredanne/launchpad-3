@@ -9,7 +9,7 @@
   <div class="portletBody">
     <div class="portletContent even">
 
-      <div tal:condition="not:view/get_role_users">
+      <div tal:condition="not: view/get_role_users">
         <p>No users are currently assigned to roles
       </div>
 

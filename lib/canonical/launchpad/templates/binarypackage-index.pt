@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
- <h1><span tal:content="context/binarypackage/name">TITLE</span></h1>
+ <h1><span tal:content="context/name">TITLE</span></h1>
 
    <table width="100%">
      <tr>
@@ -24,17 +24,17 @@
 	     Binary Package Information
 	   </legend>
 	   <p><h4>Description:  </h4> 
-	   <tal:block tal:replace="context/binarypackage/description"/>
+	   <tal:block tal:replace="context/description"/>
 	   <br>
 	   <br>
 	   <p><b>Package name: </b> 
-	   <tal:block tal:replace="context/binarypackage/name"/>
+	   <tal:block tal:replace="context/name"/>
 	 </fieldset>
 	 <fieldset>
 	   <legend>
 	     Available Versions
 	   </legend>
-
+<!--
 	   <p> <h4>Current:</h4> 
 	   <tal:dummy tal:condition="context/currentversions">
 	   <tal:block tal:repeat="current context/currentversions">
@@ -101,9 +101,8 @@
 	     </div>
 	  </fieldset>    
 
-         <tal:dummy tal:condition=" context/lastversions">    
-	   <fieldset>
-	     <legend>
+	   <fieldset tal:condition="context/lastversions"> 
+   	     <legend>
 	       Last Packages
            </legend>
 	   <ul>
@@ -113,8 +112,7 @@
 	     </li>
 	   </ul>
 	   </fieldset>
-	 </tal:dummy>
-
+-->
      </td>
    <tr>
  </table>

@@ -117,9 +117,6 @@ class PersonApp(object):
             
         # Retrieve an email by person id
         
-        # FIXME: (multi_emails) Daniel Debonzi 2004-10-13
-        # limited to one, solve the EDIT multi emails problem
-        # Is it realy be editable ?
         self.email = EmailAddress.selectBy(personID=self.id)
 
         try:

@@ -1,6 +1,7 @@
 # Zope schema imports
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
+from canonical.launchpad.fields import Title, Summary, Description
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -13,12 +14,12 @@ class IDistribution(Interface):
         name."""), required=True)
     displayname = TextLine(title=_("Display Name"), required=True,
         description=_("The displayable name of the distribution."))
-    title = TextLine(title=_("Title"), required=True,
+    title = Title(title=_("Title"), required=True,
         description=_("The distro's title."))
-    summary = Text(title=_("Summary"), required=True,
+    summary = Summary(title=_("Summary"), required=True,
         description=_("The distribution summary. A short paragraph"
                       "describing the goals and highlights of the distro."))
-    description = Text(title=_("Description"), required=True,
+    description = Description(title=_("Description"), required=True,
         description=_("The distro's description."))
     domainname = TextLine(title=_("Domain name"), required=True,
         description=_("The distro's domain name."))
@@ -30,24 +31,16 @@ class IDistribution(Interface):
     
     bugCounter = Attribute("The distro bug counter")
 
-    def getRelease(name):
-        """Returns an Release that matchs name"""
+    def traverse(name):
+        """Traverse the distribution. Check for special names, and return
+        appropriately, otherwise use __getitem__"""
 
-class IDistributions(Interface):
-    """Root object for collection of Distributions"""
-    entries = Attribute('number of distributions')
-    
     def __getitem__(name):
-        """retrieve distribution by name"""
+        """Returns a DistroRelease that matches name, or raises and
+        exception if none exists."""
 
-    def distributions():
-        """retrieve all Distribution"""
-
-    def new(name, title, description, url):
-        """Creates a new distribution with the given name.
-
-        Returns that project.
-        """
+    def __iter__():
+        """Iterate over the distribution releases for this distribution."""
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""

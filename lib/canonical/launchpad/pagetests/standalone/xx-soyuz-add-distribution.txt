@@ -7,7 +7,7 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <h1>New Distribution on Soyuz</h1>
+            <h1>Create a New Distribution in Soyuz</h1>
   ...
 
 
@@ -18,9 +18,5 @@
   ... name=testtest&displayname=TestTest&title=canonical&summary=summary&description=description&domain=domain""")
   HTTP/1.1 200 Ok
   ...
-      <h1>New Distribution on Soyuz</h1>
-  ...
-      <div>
-      <h4><a href="testtest">
-      <span>canonical</span></a> 
+              <h1>Create a New Distribution in Soyuz</h1>
   ...

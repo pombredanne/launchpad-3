@@ -15,12 +15,5 @@ class SoyuzApplication(object):
 
     def distributions(self):
         """See ISoyuzApplication."""
-        dists = Distribution.select()
-        distlist = []
-        # only show distros that are actively managed through soyuz as
-        # opposed to back-end monitored
-        for dist in dists:
-            if dist.name not in ['debian', 'redhat', 'fedora', 'gentoo']:
-                distlist.append(dist)
-        return distlist
+        return Distribution.select()
 

@@ -15,6 +15,7 @@
     <include file="productseries.zcml" />
     <include file="productrelease.zcml" />
     <include file="binarypackage.zcml" />
+    <include file="publishedpackage.zcml" />
     <include file="sourcesource.zcml" />
     <include file="productrelease.zcml" />
     <include file="bugpackageinfestation.zcml" />
@@ -33,6 +34,7 @@
     <include file="bounty.zcml" />
     <include file="build.zcml" />
     <include file="distribution.zcml" />
+    <include file="distrorelease.zcml" />
     <include file="person.zcml" />
     <include file="processor.zcml" />
     <include file="language.zcml" />
@@ -51,6 +53,7 @@
     <!-- Event configuration -->
     <include file="bug-events.zcml" />
     <include file="bugactivity-subscriptions.zcml" />
+    <include file="product-events.zcml" />
 
     <!-- Special Utilities -->
     <include file="geoip.zcml" />

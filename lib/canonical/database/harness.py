@@ -16,7 +16,7 @@ sys.path.append('..')
 # setup connection to the db
 #
 from canonical.lp import initZopeless
-initZopeless()
+transactionmgr = initZopeless()
 
 #
 # get the database access classes ready

@@ -1,11 +1,11 @@
 
 
   >>> print http(r"""
-  ... GET /soyuz/distros/ubuntu/src/warty/evolution HTTP/1.1
+  ... GET /soyuz/distros/ubuntu/warty/evolution HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: gallery_sessionadd_photos_mode=url; CP=null*; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <h1><span>Evolution-Dummy</span></h1>
+      <h1>...</h1>
   ...

@@ -19,25 +19,12 @@ from canonical.soyuz.generalapp import CurrentVersion, builddepsSet
 # Launchpad imports
 
 from canonical.launchpad.interfaces import IBuildSet, \
-                                           IDistroSourcesApp, \
                                            ISourcePackageSet, \
                                            IDistroReleaseSourcesApp, \
                                            IDistroReleaseSourceApp, \
                                            IDistroReleaseSourceReleaseApp
 
 
-# Source app component Section (src) 
-class DistroSourcesApp(object):
-    implements(IDistroSourcesApp)
-
-    def __init__(self, distribution):
-        self.distribution = distribution
-
-    def __getitem__(self, name):
-        return DistroReleaseSourcesApp(self.distribution.getRelease(name))
-
-    def __iter__(self):
-        return iter(self.distribution.releases)
 
 class DistroReleaseSourcesApp(object):
     """Container of SourcePackage objects.
@@ -48,14 +35,15 @@ class DistroReleaseSourcesApp(object):
 
     def __init__(self, release):
         self.release = release
-        self.srcset = getUtility(ISourcePackageSet)
         
     def findPackagesByName(self, pattern):
-        return self.srcset.findByName(self.release.id, pattern)
+        srcset = getUtility(ISourcePackageSet)
+        return srcset.findByName(self.release.id, pattern)
 
     def __getitem__(self, name):
         try:
-            package = self.srcset.getByName(self.release.id, name)
+            srcset = getUtility(ISourcePackageSet)
+            package = srcset.getByName(self.release.id, name)
         except IndexError:
             # Convert IndexErrors into KeyErrors so that Zope will give a
             # NotFound page.
@@ -64,7 +52,8 @@ class DistroReleaseSourcesApp(object):
             return DistroReleaseSourceApp(self.release, package)
 
     def __iter__(self):
-        ret = self.srcset.getSourcePackages(self.release.id)
+        srcset = getUtility(ISourcePackageSet)
+        ret = srcset.getSourcePackages(self.release.id)
         return iter(ret)
 
 class DistroReleaseSourceApp(object):
