@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.translationeffort import *
 from canonical.launchpad.interfaces.infestation import *
+from canonical.launchpad.interfaces.language import *
 
 # these will go...
 from canonical.launchpad.iandrew import *

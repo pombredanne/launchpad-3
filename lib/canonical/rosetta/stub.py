@@ -7,7 +7,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from zope.interface import implements
 from canonical.launchpad.interfaces import IProjectSet, IProject, IProduct
-from canonical.launchpad.interfaces import IPOTemplate, IPOFile, ILanguages
+from canonical.launchpad.interfaces import IPOTemplate, IPOFile, ILanguageSet
 from canonical.launchpad.interfaces import ILanguage
 from canonical.launchpad.interfaces import IPOTranslation, IPerson
 
@@ -157,7 +157,7 @@ class POTemplate:
 
     def languages(self):
         """See IPOTemplate."""
-        languages = getUtility(ILanguages)
+        languages = getUtility(ILanguageSet)
         for code in languages.keys():
             yield languages[code]
 
@@ -166,7 +166,7 @@ class POTemplate:
             yield self.poFile(language.code)
 
     def poFile(self, language):
-        languages = getUtility(ILanguages)
+        languages = getUtility(ILanguageSet)
         return POFile(self, languages[language])
 
     def sighting(self, id):
@@ -226,10 +226,10 @@ class Language:
         self.nativeName = nativeName
 
 
-class Languages:
+class LanguageSet:
     """Stub collection of languages."""
 
-    implements(ILanguages)
+    implements(ILanguageSet)
 
     languages = {
         'cy'    : Language('cy', 'Welsh', 'Cymraeg'),
@@ -280,7 +280,7 @@ class Translation:
 
 class Person:
     def languages(self):
-        languages = getUtility(ILanguages)
+        languages = getUtility(ILanguageSet)
         for code in ('cy', 'no', 'es'):
             yield languages[code]
 

@@ -8,7 +8,7 @@ _ = MessageIDFactory('launchpad')
 
 
 
-class ISchemas(Interface):
+class ISchemaSet(Interface):
     """The collection of schemas."""
 
     def __getitem__(name):

@@ -13,7 +13,7 @@ from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 
 from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
-from canonical.launchpad.interfaces import ILanguages, IPerson
+from canonical.launchpad.interfaces import ILanguageSet, IPerson
 from canonical.launchpad.interfaces import IProjectSet
 from canonical.launchpad.database import Language, Person
 
@@ -44,7 +44,7 @@ def codes_to_languages(codes):
     '''Convert a list of ISO language codes to language objects.'''
 
     languages = []
-    all_languages = getUtility(ILanguages)
+    all_languages = getUtility(ILanguageSet)
 
     for code in codes:
         try:
@@ -397,7 +397,7 @@ class ViewPreferences:
         self.person = IPerson(self.request.principal, None)
 
     def languages(self):
-        return getUtility(ILanguages)
+        return getUtility(ILanguageSet)
 
     def selectedLanguages(self):
         return list(self.person.languages())
@@ -593,7 +593,7 @@ class TranslatePOTemplate:
         self.pluralForms = {}
         self.pluralFormsError = False
 
-        all_languages = getUtility(ILanguages)
+        all_languages = getUtility(ILanguageSet)
 
         for language in self.languages:
             try:

@@ -7,7 +7,7 @@ __metaclass__ = type
 import unittest
 from zope.testing.doctestunit import DocTestSuite
 
-from canonical.launchpad.interfaces import ILanguages, IPerson
+from canonical.launchpad.interfaces import ILanguageSet, IPerson
 from zope.interface import implements
 from zope.app.security.interfaces import IPrincipal
 from zope.publisher.interfaces.browser import IBrowserRequest
@@ -18,8 +18,8 @@ class DummyLanguage:
         self.pluralForms = pluralForms
 
 
-class DummyLanguages:
-    implements(ILanguages)
+class DummyLanguageSet:
+    implements(ILanguageSet)
 
     _languages = {
         'ja' : DummyLanguage('ja', 1),
@@ -43,7 +43,7 @@ class DummyPerson:
         self.codes = codes
 
     def languages(self):
-        languages = DummyLanguages()
+        languages = DummyLanguageSet()
         return [ languages[code] for code in self.codes ]
 
 
@@ -162,7 +162,7 @@ def test_codes_to_languages():
     >>> from zope.app.tests import ztapi
 
     >>> setUp()
-    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
 
     >>> from canonical.rosetta.browser import codes_to_languages
     >>> languages = codes_to_languages(('es', '!!!'))
@@ -185,7 +185,7 @@ def test_request_languages():
     Frist, test with a preson who has a single preferred language.
 
     >>> setUp()
-    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
     >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
     >>> #ztapi.provideAdapter(IUserPreferredLanguages)
 
@@ -200,7 +200,7 @@ def test_request_languages():
     Then test with a person who has no preferred language.
 
     >>> setUp()
-    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
     >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToNoLanguagePerson)
     >>> ztapi.provideAdapter(IBrowserRequest, IUserPreferredLanguages, adaptRequestToLanguages)
 
@@ -239,7 +239,7 @@ def test_TranslatePOTemplate_init():
     >>> from canonical.rosetta.browser import TranslatePOTemplate
 
     >>> setUp()
-    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
     >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
 
     First, test the initialisation.
@@ -334,7 +334,7 @@ def test_TranslatePOTemplate_init():
     {'cy': None}
     >>> len(t.badLanguages)
     1
-    >>> t.badLanguages[0] is DummyLanguages()['cy']
+    >>> t.badLanguages[0] is DummyLanguageSet()['cy']
     True
     >>> t.error
     True
@@ -363,7 +363,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
     >>> from canonical.rosetta.browser import TranslatePOTemplate
 
     >>> setUp()
-    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
     >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
 
     >>> context = DummyPOTemplate()
@@ -405,7 +405,7 @@ def test_TranslatePOTemplate_URLs():
     >>> from canonical.rosetta.browser import TranslatePOTemplate
 
     >>> setUp()
-    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
     >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
 
     Test with no parameters.
@@ -466,7 +466,7 @@ def test_TranslatePOTemplate_messageSets():
     >>> from canonical.rosetta.browser import TranslatePOTemplate
 
     >>> setUp()
-    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
     >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
 
     >>> context = DummyPOTemplate()
@@ -505,7 +505,7 @@ def test_TranslatePOemplate_mungeMessageID():
     >>> from canonical.rosetta.browser import TranslatePOTemplate
 
     >>> setUp()
-    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
     >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
 
     >>> context = DummyPOTemplate()

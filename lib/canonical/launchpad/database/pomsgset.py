@@ -159,7 +159,7 @@ class POMessageSet(SQLBase):
 
         # XXX: Not sure if falling back to the languages table is the right
         # thing to do.
-        languages = getUtility(interfaces.ILanguages)
+        languages = getUtility(interfaces.ILanguageSet)
 
         try:
             pofile = self.poTemplate.poFile(language)

@@ -17,6 +17,8 @@ from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.package import *
 from canonical.launchpad.database.distro import *
 from canonical.launchpad.database.person import *
+from canonical.launchpad.database.schema import *
+from canonical.launchpad.database.language import *
 
 
 #

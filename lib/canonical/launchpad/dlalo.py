@@ -16,7 +16,7 @@ from zope.interface import implements, directlyProvides
 from zope.component import getUtility
 from canonical.lp.dbschema import RosettaTranslationOrigin
 
-from canonical.launchpad.database import Person
+from canonical.launchpad.database import Person, Label
 
 
 # XXX: in the four strings below, we should fill in owner information
@@ -400,48 +400,6 @@ class POTranslation(SQLBase):
     ]
 
 
-class Languages(object):
-    implements(interfaces.ILanguages)
-
-    def __iter__(self):
-        return iter(Language.select(orderBy='englishName'))
-
-    def __getitem__(self, code):
-        try:
-            return Language.byCode(code)
-        except SQLObjectNotFound:
-            raise KeyError, code
-
-    def keys(self):
-        return [language.code for language in Language.select()]
-
-
-class Language(SQLBase):
-    implements(interfaces.ILanguage)
-
-    _table = 'Language'
-
-    _columns = [
-        StringCol(name='code', dbName='code', notNull=True, unique=True,
-            alternateID=True),
-        StringCol(name='nativeName', dbName='nativename'),
-        StringCol(name='englishName', dbName='englishname'),
-        IntCol(name='pluralForms', dbName='pluralforms'),
-        StringCol(name='pluralExpression', dbName='pluralexpression'),
-    ]
-
-    def translateLabel(self):
-        try:
-            schema = Schema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-        return Label.selectBy(schemaID=schema.id, name=self.code)
-
-    def translators(self):
-        return self.translateLabel().persons()
-
-
 def personFromPrincipal(principal):
     from zope.app.security.interfaces import IUnauthenticatedPrincipal
     from canonical.lp.placelessauth.launchpadsourceutility import \
@@ -454,76 +412,6 @@ def personFromPrincipal(principal):
         return None
 
     return Person.get(principal.id)
-
-
-class Schemas(object):
-    implements(interfaces.ISchemas)
-
-    def __getitem__(self, name):
-        try:
-            schema = Schema.byName(name)
-        except SQLObjectNotFound:
-            raise KeyError, name
-        else:
-            return schema
-
-    def keys(self):
-        return [schema.name for schema in Schema.select()]
-
-
-class Schema(SQLBase):
-    implements(interfaces.ISchema)
-
-    _table = 'Schema'
-
-    _columns = [
-        ForeignKey(name='owner', foreignKey='Person',
-            dbName='owner', notNull=True),
-        StringCol(name='name', dbName='name', notNull=True, alternateID=True),
-        StringCol(name='title', dbName='title', notNull=True),
-        StringCol(name='description', dbName='description', notNull=True),
-#        BoolCol(name='extensible', dbName='extensible', notNull=True),
-    ]
-
-    _labelsJoin = MultipleJoin('Label', joinColumn='schema')
-
-    def labels(self):
-        return iter(self._labelsJoin)
-
-    def label(self, name):
-        '''SELECT * FROM Label WHERE
-            Label.schema = id AND
-            Label.name = name;'''
-        results = Label.select('''
-            Label.schema = %d AND
-            Label.name = %s''' %
-            (self.id, quote(name)))
-
-        if results.count() == 0:
-            raise KeyError, name
-        else:
-            return results[0]
-
-
-class Label(SQLBase):
-    implements(interfaces.ILabel)
-
-    _table = 'Label'
-
-    _columns = [
-        ForeignKey(name='schema', foreignKey='Schema', dbName='schema',
-            notNull=True),
-        StringCol(name='name', dbName='name', notNull=True),
-        StringCol(name='title', dbName='title', notNull=True),
-        StringCol(name='description', dbName='description', notNull=True),
-    ]
-
-    _personsJoin = RelatedJoin('Person', joinColumn='label',
-        otherColumn='person', intermediateTable='PersonLabel')
-
-    def persons(self):
-        for person in self._personsJoin:
-            yield person[0]
 
 
 class Category(Label):

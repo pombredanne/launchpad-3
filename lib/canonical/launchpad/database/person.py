@@ -13,6 +13,8 @@ from canonical.database.sqlbase import SQLBase, quote
 # canonical imports
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet,  \
                                                   IEmailAddress
+from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.database.schema import Schema, Label
 from canonical.lp import dbschema
 
 
@@ -86,7 +88,7 @@ class Person(SQLBase):
         otherColumn='label', intermediateTable='PersonLabel')
 
     def languages(self):
-        languages = getUtility(ILanguages)
+        languages = getUtility(ILanguageSet)
         try:
             schema = Schema.byName('translation-languages')
         except SQLObjectNotFound:

@@ -14,8 +14,8 @@ tests = [
     ('IBranch', 'Branch'),
     ('IPerson', 'Person'),
     ('ILanguage', 'Language'),
-    ('ILanguages', 'Languages'),
-    ('ISchemas', 'Schemas'),
+    ('ILanguageSet', 'LanguageSet'),
+    ('ISchemaSet', 'SchemaSet'),
     ('ISchema', 'Schema'),
     ('ILabel', 'Label'),
 # XXX: Commented until we restart their use
