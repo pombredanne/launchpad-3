@@ -36,11 +36,11 @@
                 <th>Distribution</th>
             </tr>
             <tr tal:repeat="result view/results" tal:attributes="onclick 
-                string:window.location='sourcepackages/${result/name}'">
+                string:window.location='sourcepackage/${result/name}'">
                 <td>
                     <a href="#" tal:content="result/name"
                         tal:attributes="href 
-                        string:sourcepackages/${result/name}">
+                        string:sourcepackage/${result/name}">
                         $SourcepackageName.name
                     </a>
                 </td>
@@ -53,7 +53,7 @@
     </div>
   
     <ul>
-        <li><a href="sourcepackages">See all source package bugs</a></li>
+        <li><a href="sourcepackage">See all source package bugs</a></li>
         <li><a href="bugs">See the bug list</a></li>
         <li><a href="projects">Search projects</a></li>
     </ul>

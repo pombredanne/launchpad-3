@@ -17,6 +17,10 @@
       class="canonical.malone.MaloneApplication"
       name="malone" />
 
+  <browser:defaultView
+      for="canonical.malone.interfaces.IMaloneApplication"
+      name="index" />
+
   <browser:suburl
       for="canonical.malone.IMaloneApplication"
       utility="canonical.malone.interfaces.IBugContainer"
@@ -33,10 +37,10 @@
       for="canonical.malone.IMaloneApplication"
       utility="canonical.malone.interfaces.ISourcepackageContainer"
       permission="zope.Public"
-      name="sourcepackages" />
+      name="sourcepackage" />
 
   <browser:defaultView
-      for="canonical.malone.interfaces.IMaloneApplication"
+      for="canonical.malone.interfaces.ISourcepackageContainer"
       name="index" />
 
   <browser:defaultView
@@ -46,6 +50,10 @@
   <browser:defaultView
       for=".interfaces.IMaloneBug"
       name="index" />
+
+  <browser:traverse
+      for="canonical.malone.interfaces.IMaloneBug"
+      function="canonical.malone.browser.traverseBug" />
 
   <browser:defaultView
       for="canonical.malone.interfaces.IBugAttachmentContainer"
@@ -58,10 +66,6 @@
   <browser:defaultView
       for="canonical.malone.interfaces.IProjectContainer"
       name="+search" />
-
-  <browser:defaultView
-      for="canonical.malone.interfaces.ISourcepackageContainer"
-      name="index" />
 
   <browser:defaultView
       for="canonical.database.doap.IProject"
@@ -94,10 +98,6 @@
   <browser:defaultView
       for="canonical.malone.interfaces.IBugSubscriptionContainer"
       name="index" />
-
-  <browser:traverse
-      for="canonical.malone.interfaces.IMaloneBug"
-      function="canonical.malone.browser.traverseBug" />
 
   <browser:traverse
       for=".interfaces.IMaloneBugAttachment"

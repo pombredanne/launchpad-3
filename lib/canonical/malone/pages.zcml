@@ -90,7 +90,8 @@
 
   <pages for="canonical.malone.interfaces.ISourcepackageContainer"
       permission="zope.Public">
-      <page name="index" template="templates/sourcepackages-index.pt"
+      <page name="index"
+          template="templates/sourcepackages-index.pt"
           lp:url="malone/sourcepackages/index" />
   </pages>
 
@@ -101,7 +102,8 @@
       for="canonical.database.soyuz.ISourcepackage" 
       permission="zope.Public"
       class=".browser.SourcepackageView">
-      <page name="index" template="templates/sourcepackage-index.pt"
+      <page name="index"
+          template="templates/sourcepackage-index.pt"
           lp:url="malone/sourcepackage/$Sourcepackage.name/index" />
   </pages>
 

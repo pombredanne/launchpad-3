@@ -16,8 +16,8 @@ base: check
 	ls -1 patch*.sql | sort | xargs -n 1 psql -d ${DBNAME} -f
 #	@ echo "* Loading default data"
 #	psql -d ${DBNAME} -f ../default.sql
-#	@ echo "* Loading language data"
-#	psql -d ${DBNAME} -f ../languages.sql | cat
+	@ echo "* Loading language data"
+	psql -d ${DBNAME} -f ../languages.sql | cat
 
 # Confirm that launchpad-2-00-0.sql hasn't been messed with - this file
 # is our baseline telling us what was installed into production
@@ -65,7 +65,7 @@ newsample-soyuz:
 	pg_dump -d ${DBNAME} -a -D -O --table=potemplate | grep -v "\(SET \| TOC \)" > ../sampledata/new-rosetta.sql
 
 newsampledata:
-	pg_dump -d ${DBNAME} -a -D -O | grep -v "\(SET \| TOC \)" > ../sampledata/new-sampledata.sql
+	pg_dump -d ${DBNAME} -a -D -O | grep -v "\(SET \| TOC \|INSERT INTO \"language\" \|INSERT INTO spokenin \| INSERT INTO country \)" > ../sampledata/new-sampledata.sql
 
 .PHONY: default base all
 

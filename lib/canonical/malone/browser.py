@@ -455,6 +455,7 @@ class SourcepackageContainer(object):
         # TODO: Ordering
         return self._bugassignments.select(orderBy=orderby)
 
+
 class BugExternalRefsView(object):
     implements(IBugExternalRefsView)
     def __init__(self, context, request):
@@ -489,3 +490,5 @@ class SourcepackageView(object):
         print '====== %r ===== ' % (rv,)
         rv.sort(lambda a,b: cmp(a.id, b.id))
         return rv
+
+

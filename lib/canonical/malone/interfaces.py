@@ -104,7 +104,7 @@ class ISourcepackageContainer(Interface):
         """Get an ISourcepackage by name"""
 
     def __iter__():
-        """Iterate through Sourcepacages."""
+        """Iterate through Sourcepackages."""
 
     def bugassignments(self, orderby='-id'):
         """Sequence of SourcepackageBugAssignment, in order"""
