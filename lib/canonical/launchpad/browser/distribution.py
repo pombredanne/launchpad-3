@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 from zope.interface import implements
+from zope.component import getUtility
 from zope.schema import TextLine, Int, Choice
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
@@ -18,8 +19,10 @@ from canonical.launchpad.database import Distribution, DistributionSet, \
     BugFactory
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.interfaces import IDistribution, \
-        IDistributionSet, IPerson
+        IDistributionSet, IPerson, IBugTaskSet
+from canonical.launchpad.searchbuilder import any
 
 class DistributionView:
 
@@ -35,8 +38,11 @@ class DistributionView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        bugtasks_to_show = getUtility(IBugTaskSet).search(
+            status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
+            distribution = self.context, orderby = "-id")
         self.batch = Batch(
-            list(self.context.bugtasks), int(request.get('batch_start', 0)))
+            list(bugtasks_to_show), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
 
     def task_columns(self):
@@ -50,12 +56,6 @@ class DistributionView:
 class DistributionFileBugView(AddView):
 
     __used_for__ = IDistribution
-
-    #XXX cprov 20050107
-    # Can we use the IBug instead of the content class ?
-##     ow = CustomWidgetFactory(ObjectWidget, Bug)
-##     sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-##     options_widget = sw
 
     def __init__(self, context, request):
         self.request = request

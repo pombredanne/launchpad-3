@@ -178,8 +178,8 @@ class BugTaskSet:
         return bugtask
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
-               severity=None, product=None, milestone=None, assignee=None,
-               submitter=None, orderby=None):
+               severity=None, product=None, distribution=None, milestone=None,
+               assignee=None, submitter=None, orderby=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         query = ""
 
@@ -187,7 +187,8 @@ class BugTaskSet:
             query += "Bug.fti @@ ftq(%s)" % quote(searchtext)
 
         # build the part of the query for FK columns
-        for arg in ('bug', 'product', 'milestone', 'assignee', 'submitter'):
+        for arg in ('bug', 'product', 'distribution',
+                    'milestone','assignee', 'submitter'):
             query_arg = eval(arg)
             if query_arg is not None:
                 if query:
@@ -231,7 +232,7 @@ class BugTaskSet:
         if user:
             query += "("
         query += "(BugTask.bug = Bug.id AND Bug.private = FALSE)"
-        
+
         # XXX: Brad Bollenbach, 2005-02-03: The subselect here is due to what
         # appears to be a bug in sqlobject not taking distinct into
         # consideration when doing counts.
@@ -346,7 +347,7 @@ class BugTasksReport(object):
             "BugTask.severity >= %s AND "
             "BugTask.priority >= %s") % (
             self.user.id, self.minseverity, self.minpriority)
-        
+
         clauseTables = ('Product',)
 
         if not self.showclosed:

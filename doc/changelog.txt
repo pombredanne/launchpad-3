@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 17:55:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1421
+
+    Summary:
+      fix the distribution bugs listing so that it shows new/accepted bugs by default, respects privacy and orders the tasks in a sane way
+    Revision:
+      launchpad--devel--0--patch-1421
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-403
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-404
+       small wording change in the distribution bugs listing
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-405
+       fix the distribution bugs listing so that it shows new/accepted bugs by default, respects privacy and orders the tasks in a sane way
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distribution.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/templates/distribution-bugs.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-403
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-404
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-405
+
+
 2005-03-11 15:06:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1420
 
     Summary:

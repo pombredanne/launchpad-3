@@ -102,8 +102,8 @@ class IBugTaskSet(Interface):
         """
 
     def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, product=None, milestone=None, assignee=None,
-               submitter=None, orderby=None):
+               severity=None, product=None, distribution=None, milestone=None,
+               assignee=None, submitter=None, orderby=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         Keyword arguments should always be used. The argument passing

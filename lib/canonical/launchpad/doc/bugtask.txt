@@ -111,6 +111,8 @@ zope.exceptions.NotFoundError:
 To retrieve a set of bug tasks matching a set of search criteria, use
 BugTaskSet.search. Here's how you'd grab all the NEW and ACCEPTED tasks:
 
+For upstream:
+
     >>> from canonical.launchpad.searchbuilder import any
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> from canonical.launchpad.database import Product
@@ -124,6 +126,19 @@ BugTaskSet.search. Here's how you'd grab all the NEW and ACCEPTED tasks:
     >>> bugtask_ids = [bt.id for bt in bugtasks]
     >>> print bugtask_ids
     [2, 13, 14, 15]
+
+For a distribution:
+
+    >>> debian = distroset.get(3)
+    >>> sample_person = personset.get(12)
+    >>> bugtasks = bugtaskset.search(
+    ...     status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
+    ...     distribution = debian, orderby = "id",
+    ...     assignee = sample_person)
+    >>> print bugtasks.count()
+    1
+    >>> bugtasks[0].id
+    5
 
 To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
 
@@ -143,9 +158,9 @@ There's also support for searching tasks based on a string of text, e.g.:
     >>> print [bugtask.bug.id for bugtask in bugtasks]
     [5]
 
-Editing Bug Tasks 
+Editing Bug Tasks
 -----------------
-    
+
 Upstream Bug Tasks
 ^^^^^^^^^^^^^^^^^^
 
@@ -160,13 +175,13 @@ bug tasks.
 
 As you can see an anonymous user was not able to edit the task. Also the
 task is not editable by an authenticated user who is not the maintainer.
-    
+
     >>> login('foo.bar@canonical.com')
     >>> upstream_task.status = STATUS_FIXED
     Traceback (most recent call last):
       ...
     Unauthorized: ('status', 'launchpad.Edit')
-    
+
 Now let's login as a maintainer and try again.
 
     >>> login('test@canonical.com')
@@ -186,7 +201,7 @@ associate the same bug with this product:
     ...     subscriptionpolicy = policy, name = 'foo',
     ...     teamownerID = foobar.id)
     >>> foo_product = productset.createProduct(
-    ...     owner = foo_team.id, name = 'foo-product', 
+    ...     owner = foo_team.id, name = 'foo-product',
     ...     displayname = 'foo product', title = 'Foo',
     ...     shortdesc = 'a great product', description = 'no long desc')
     >>> upstream_task = bugtaskset.createTask(
@@ -204,7 +219,6 @@ Note that Sample Person is not a member of the Foo team:
 
     >>> from canonical.launchpad.database import TeamParticipationSet
     >>> teampart = TeamParticipationSet()
-    >>> sample_person = personset.get(12)
     >>> sample_person not in teampart.getAllMembers(foo_team)
     True
 
