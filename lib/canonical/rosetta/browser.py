@@ -277,7 +277,6 @@ class TranslatorDashboard:
             # template working. The code duplication is just to be easier to
             # remove this hack when is not needed anymore.
             self.person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
-        print "Inicializo el TranslatorDashBoard"
         self.interest = list(self.person.languages())
 
     def projects(self):
