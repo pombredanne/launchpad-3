@@ -4,7 +4,10 @@
       i18n:domain="malone">
 <body>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="column_one">
+</div>
+
+<div metal:fill-slot="main" class="visualPadding">
     <h1>Upstream Bugs for:
         <span tal:replace="context/displayname">$Product.displayname</span>
     </h1>

@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-04 23:29:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1147
+
+    Summary:
+      integrate milestone assignment into malone (currently only works for
+ products)
+    Revision:
+      launchpad--devel--0--patch-1147
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-260
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-261
+       integrate milestone assignment into malone (currently only works for products)
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/security.zcml
+     lib/canonical/launchpad/templates/bugassignment-search-listing.pt
+     lib/canonical/launchpad/templates/product-bugs.pt
+     lib/canonical/launchpad/vocabularies/configure.zcml
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/zcml/bugassignment.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-260
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-261
+
+
 2005-01-04 21:17:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1146
 
     Summary:

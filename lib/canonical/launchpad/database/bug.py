@@ -179,6 +179,9 @@ class BugTask(SQLBase):
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
+    milestone = ForeignKey(
+        dbName='milestone', foreignKey='Milestone',
+        notNull=False, default=None)
     status = IntCol(
         dbName='status', notNull=True,
         default=int(dbschema.BugAssignmentStatus.NEW))

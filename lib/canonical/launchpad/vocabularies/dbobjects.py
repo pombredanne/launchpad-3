@@ -15,6 +15,7 @@ from canonical.launchpad.database.sourcepackage import SourcePackage, \
     SourcePackageRelease, SourcePackageName
 from canonical.launchpad.database.binarypackage import BinaryPackage, \
     BinaryPackageName
+from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.project import Project
 from canonical.launchpad.database.productrelease import ProductRelease
@@ -340,6 +341,18 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     def _toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, obj.product.name + " " + obj.version)
+
+class MilestoneVocabulary(NamedSQLObjectVocabulary):
+    _table = Milestone
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name)
+
+    def __iter__(self):
+        if self.context.product:
+            for ms in self.context.product.milestones:
+                yield SimpleTerm(ms, ms.name, ms.name)
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     _table = SourcePackageRelease

@@ -139,6 +139,8 @@ class IBugTask(Interface):
         title=_("Source Package Name"), required=False, vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    milestone = Choice(
+        title=_('Target'), vocabulary='Milestone')
     status = Choice(
         title=_('Bug Status'), vocabulary='BugStatus',
         default=int(dbschema.BugAssignmentStatus.NEW))

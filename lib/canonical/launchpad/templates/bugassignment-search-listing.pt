@@ -9,6 +9,7 @@
       <th tal:condition="python:'product' in listing_columns">Product</th>
       <th tal:condition="python:'package' in listing_columns">Package</th>
       <th tal:condition="python:'title' in listing_columns">Title</th>
+      <th tal:condition="python:'milestone' in listing_columns">Target</th>
       <th tal:condition="python:'status' in listing_columns">Status</th>
       <th tal:condition="python:'priority' in listing_columns">Priority</th>
       <th tal:condition="python:'severity' in listing_columns">Severity</th>
@@ -49,6 +50,11 @@
               tal:condition="python:'title' in listing_columns"
               tal:content="assignment/bug/title">
               title
+          </td>
+          <td tal:attributes="onclick string:window.location='${ass_link}';"
+              tal:condition="python:'milestone' in listing_columns"
+              tal:content="assignment/milestone/name|string:-">
+              milestone
           </td>
           <td tal:content="status"
               tal:condition="python:'status' in listing_columns"
