@@ -2,6 +2,52 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-08 22:38:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1391
+
+    Summary:
+      Respond to HEAD requests properly (i.e. without content) when errors (e.g. 404s and 500s) occur.
+    Revision:
+      launchpad--devel--0--patch-1391
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--head-404-fix--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1381
+    
+     * andrew.bennetts@canonical.com/launchpad--head-404-fix--0--patch-1
+       Respect HEAD requests (don't return bodies) even in the presence of 404s and other errors.
+    
+     * andrew.bennetts@canonical.com/launchpad--head-404-fix--0--patch-2
+       Add page test for correct HEAD + 404 behaviour
+    
+     * andrew.bennetts@canonical.com/launchpad--head-404-fix--0--patch-3
+       More precise test of HEAD + 404 behaviour.
+    
+     * andrew.bennetts@canonical.com/launchpad--head-404-fix--0--patch-4
+       Change XXX comment to a more appropriate UPSTREAM comment
+    
+     * andrew.bennetts@canonical.com/launchpad--head-404-fix--0--patch-5
+       Also test 500 errors.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-notfound-head.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-notfound-head.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/functional.py
+     lib/canonical/launchpad/pagetests/standalone/xx-apidoc-basics.txt
+     lib/canonical/publication.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--head-404-fix--0--base-0
+     andrew.bennetts@canonical.com/launchpad--head-404-fix--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--head-404-fix--0--patch-2
+     andrew.bennetts@canonical.com/launchpad--head-404-fix--0--patch-3
+     andrew.bennetts@canonical.com/launchpad--head-404-fix--0--patch-4
+     andrew.bennetts@canonical.com/launchpad--head-404-fix--0--patch-5
+
+
 2005-03-08 20:32:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1390
 
     Summary:

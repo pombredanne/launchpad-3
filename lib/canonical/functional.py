@@ -453,7 +453,6 @@ def http(request_string, port=9000, handle_errors=True):
 
     This is used for HTTP doc tests.
     """
-    handle_errors = False  ## XXX REMOVE ME
     # Commit work done by previous python code.
     commit()
 

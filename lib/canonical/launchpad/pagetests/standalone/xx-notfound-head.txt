@@ -1,0 +1,37 @@
+
+HEAD requests should never have a body in their response, even if there are
+errors (such as 404s).
+
+  >>> response = http(r"""
+  ... HEAD /badurl HTTP/1.1
+  ... """)
+  >>> print str(response).split('\n')[0]
+  HTTP/1.1 404 Not Found
+  >>> print response.getHeader('Content-Length')
+  0
+  >>> print response.getBody()
+  <BLANKLINE>
+
+Register a test page that generates HTTP 500 errors.
+
+  >>> from zope.app.tests import ztapi
+  >>> class ErrorView(object):
+  ...     """A view with no methods, so it can't possibly render successfully.
+  ...     
+  ...     :)
+  ...     """
+  >>> ztapi.browserView(None, "error-test", ErrorView)
+
+Do a HEAD request on the error test page, and check that its response also has
+no body.
+
+  >>> response = http(r"""
+  ... HEAD /error-test HTTP/1.1
+  ... """)
+  >>> print str(response).split('\n')[0]
+  HTTP/1.1 500 Internal Server Error
+  >>> print response.getHeader('Content-Length')
+  0
+  >>> print response.getBody()
+  <BLANKLINE>
+

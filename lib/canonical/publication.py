@@ -12,6 +12,7 @@ import canonical.launchpad.webapp.zodb
 
 from zope.app import zapi
 from zope.publisher.interfaces.browser import IDefaultSkin
+from zope.publisher.interfaces import NotFound
 
 from zope.event import notify
 from zope.interface import implements, Interface
@@ -230,6 +231,18 @@ class BrowserPublication(BrowserPub):
         favor of dealing with auth in events; if it is called for any
         reason, raise an error """
         raise NotImplementedError
+
+    def handleException(self, object, request, exc_info, retry_allowed=True):
+        BrowserPub.handleException(self, object, request, exc_info,
+                                   retry_allowed)
+        # If it's a HEAD request, we don't care about the body, regardless of
+        # exception.
+        # UPSTREAM: Should this be part of zope, or is it only required because
+        #           of our customisations?
+        #        - Andrew Bennetts, 2005-03-08
+        if request.method == 'HEAD':
+            request.response.setBody('')
+
 
 _browser_methods = 'GET', 'POST', 'HEAD'
 
