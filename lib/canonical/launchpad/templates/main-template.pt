@@ -188,52 +188,11 @@
 
       <div class="visualClear">&nbsp;</div>
 
-      <metal:block>
-        <div id="portal-footer">
-            Copyright 2004 Canonical Ltd.<br />
-            <a href="sitemap">Site map</a> &mdash;
-            <a href="legal">Legal</a>
-        </div>
-
-        <p class="discreet">
-        The below is an explanation for the developers and testers
-        that emulates some of the features not present yet with color coding.
-        </p>
-
-        <table class="listing" style="margin: auto;">
-            <thead>
-                <tr>
-                    <th>Legend</th>
-                    <th>CSS class</th>
-                    <th>Used for</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                <tr>
-                    <td><span class="discreet">Comment</span></td>
-                    <td><code>discreet</code></td>
-                    <td>Comments that are used to explain the interface for the developers - not visible to the public in the final version.</td>
-                </tr>
-                <tr class="even">
-                    <td><span class="portalMessage">Status message</span></td>
-                    <td><code>portalMessage</code></td>
-                    <td>Status messages</td>
-                </tr>
-                <tr>
-                    <td><span class="authenticated">Only for logged in</span></td>
-                    <td><code>authenticated</code></td>
-                    <td>Elements that are only visible to logged in users</td>
-                </tr>
-                <tr>
-                    <td><span class="anonymous">Only for anonymous</span></td>
-                    <td><code>anonymous</code></td>
-                    <td>Elements that are <em>explicitly</em> only visible to anonymous in users</td>
-                </tr>
-            </tbody>
-        </table>
-
-      </metal:block>
+      <div id="portal-footer">
+          Copyright 2004 Canonical Ltd.<br />
+          <a href="sitemap">Site map</a> &mdash;
+          <a href="legal">Legal</a>
+      </div>
   </body>
 </html>
 </metal:page>

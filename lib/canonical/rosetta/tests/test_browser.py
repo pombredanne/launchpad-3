@@ -541,10 +541,8 @@ def test_TranslatePOemplate_mungeMessageID():
 
 
 def test_suite():
-    suite = DocTestSuite()
-    return suite
+    return DocTestSuite()
 
 if __name__ == '__main__':
-    r = unittest.TextTestRunner()
-    r.run(DocTestSuite())
+    unittest.TextTestRunner().run(test_suite())
 

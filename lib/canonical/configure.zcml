@@ -4,6 +4,7 @@
     i18n_domain="canonical.launchpad">
 
   <include file="meta.zcml" />
+  <includeOverrides file="defaultview-meta.zcml" />
 
   <browser:skin name="launchpad"
                 interface="canonical.launchpad.skins.launchpad"/>

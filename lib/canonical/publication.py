@@ -41,6 +41,7 @@ from zope.app.applicationcontrol.applicationcontrol \
 from zope.app.location import Location
 from zope.app.traversing.interfaces import IContainmentRoot
 from zope.security.checker import ProxyFactory, NamesChecker
+from zope.security.proxy import removeSecurityProxy
 
 from zope.app.server.servertype import ServerType
 from zope.server.http.commonaccesslogger import CommonAccessLogger
@@ -53,6 +54,7 @@ from sqlos.interfaces import IConnectionName
 
 import sys, thread
 import traceback
+from new import instancemethod
 
 
 class IHasSuburls(Interface):
@@ -141,6 +143,27 @@ class BrowserPublication(BrowserPub):
 
     def __init__(self, db):
         self.db = db
+
+    def annotateTransaction(self, txn, request, ob):
+        """Set some useful meta-information on the transaction. This
+        information is used by the undo framework, for example.
+
+        This method is not part of the `IPublication` interface, since
+        it's specific to this particular implementation.
+        """
+
+        # It is possible that request.principal is None if the principal has
+        # not been set yet.
+
+        if request.principal is not None:
+            txn.setUser(request.principal.id)
+
+        # Work around methods that are usually used for views
+        bare = removeSecurityProxy(ob)
+        if isinstance(bare, instancemethod):
+            ob = bare.im_self
+
+        return txn
 
     def getApplication(self, request):
         # If the first name is '++etc++process', then we should
