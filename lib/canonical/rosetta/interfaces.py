@@ -745,3 +745,4 @@ class ITranslationEffortPOTemplate(Interface):
     priority = Attribute("The priority for this poTemplate")
 
     translationEffort = Attribute("The category's translation effort.")
+

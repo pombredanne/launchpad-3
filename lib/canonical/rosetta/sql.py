@@ -2,8 +2,8 @@
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.rosetta.interfaces import *
-from sqlobject import ForeignKey, MultipleJoin, IntCol, BoolCol, StringCol, \
-    DateTimeCol
+from sqlobject import ForeignKey, MultipleJoin, RelatedJoin, IntCol, \
+    BoolCol, StringCol, DateTimeCol
 from zope.interface import implements, directlyProvides
 from zope.component import getUtility
 from canonical.rosetta import pofile
@@ -962,6 +962,12 @@ class RosettaLanguage(SQLBase):
         StringCol(name='pluralExpression', dbName='pluralexpression'),
     ]
 
+    def translators(self):
+        schema = RosettaSchema.selectBy(name='translation-languages')
+        translatableLanguage = RosettaTranslatesLanguage.selectBy(schema=schema,
+                                                                  name=self.code)
+        return translatableLanguage.persons()
+
 
 class RosettaPerson(SQLBase):
     implements(IPerson)
@@ -995,12 +1001,16 @@ class RosettaPerson(SQLBase):
             ORDER BY ???
             '''
 
-    # XXX: not fully implemented
+    _labelsJoin = RelatedJoin('RosettaLabel', joinColumn='person',
+        otherColumn='label', intermediateTable='PersonLabel')
+
     def languages(self):
         languages = getUtility(ILanguages)
-
-        for code in ('ja', 'es'):
-            yield languages[code]
+        schema = RosettaSchema.selectBy(name='translation-languages')[0]
+        
+        for label in self._labelsJoin:
+            if label.schema == schema:
+                yield languages[label.name]
 
 
 class RosettaBranch(SQLBase):
@@ -1016,7 +1026,7 @@ class RosettaBranch(SQLBase):
 
 # XXX: This is cheating.
 def personFromPrincipal(principal):
-    ret = RosettaPerson.select()
+    ret = RosettaPerson.selectBy(displayName='Dafydd Harries')
 
     if ret.count() == 0:
         raise KeyError, principal
@@ -1069,6 +1079,13 @@ class RosettaLabel(SQLBase):
         StringCol(name='description', dbName='description', notNull=True),
     ]
 
+    _personsJoin = RelatedJoin('RosettaPerson', joinColumn='label',
+        otherColumn='person', intermediateTable='PersonLabel')
+
+    def persons(self):
+        for person in self._personsJoin:
+            yield person[0]
+
 
 class RosettaCategory(RosettaLabel):
     implements(ICategory)
@@ -1079,7 +1096,7 @@ class RosettaCategory(RosettaLabel):
     def poTemplates(self):
         # XXX: We assume that template will have always a row because the
         # database's referencial integrity
-        for effortPOTemplate in _effortPOTemplatesJoin:
+        for effortPOTemplate in self._effortPOTemplatesJoin:
             template = RosettaPOTemplate.selectBy(id=effortPOTemplate.poTemplate)
             yield template[0]
 
@@ -1217,4 +1234,3 @@ class RosettaTranslationEffortPOTemplate(SQLBase):
             dbName='category', notNull=False),
         IntCol(name='priority', dbName='priority', notNull=True),
     ]
-
