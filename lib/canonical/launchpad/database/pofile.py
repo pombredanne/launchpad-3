@@ -333,8 +333,22 @@ class POTemplateSet:
 
     def getTemplatesPendingImport(self):
         """See IPOTemplateSet."""
-        return list(POTemplate.selectBy(
-            rawimportstatus=RosettaImportStatus.PENDING))
+        results = POTemplate.selectBy(
+            rawimportstatus=RosettaImportStatus.PENDING)
+
+        # XXX: Carlos Perello Marin 2005-03-24
+        # Really ugly hack needed to do the initial import of the whole hoary
+        # archive. It will disappear as soon as the whole
+        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
+        # rawfile is not used anymore and we start using Librarian.
+        # The problem comes with the memory requirements to get more than 7500
+        # rows into memory with about 200KB - 300KB of data each one.
+        total = results.count()
+        done = 0
+        while done < total:
+            for potemplate in results[done:done+100]:
+                yield potemplate
+            done = done + 100
 
 
 class LanguageNotFound(ValueError):
@@ -1014,8 +1028,22 @@ class POFileSet:
 
     def getPOFilesPendingImport(self):
         """See IPOFileSet."""
-        return list(POFile.selectBy(
-            rawimportstatus=RosettaImportStatus.PENDING))
+        results = POFile.selectBy(
+            rawimportstatus=RosettaImportStatus.PENDING)
+
+        # XXX: Carlos Perello Marin 2005-03-24
+        # Really ugly hack needed to do the initial import of the whole hoary
+        # archive. It will disappear as soon as the whole
+        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
+        # rawfile is not used anymore and we start using Librarian.
+        # The problem comes with the memory requirements to get more than 7500
+        # rows into memory with about 200KB - 300KB of data each one.
+        total = results.count()
+        done = 0
+        while done < total:
+            for potemplate in results[done:done+100]:
+                yield potemplate
+            done = done + 100
 
 
 class POFile(SQLBase, RosettaStats):
@@ -1351,8 +1379,16 @@ class POFile(SQLBase, RosettaStats):
         old_header.finish()
 
         # Get the old and new PO-Revision-Date entries as datetime objects.
-        (old_date_string, old_date) = getPORevisionDate(old_header)
-        (new_date_string, new_date) = getPORevisionDate(parser.header)
+        try:
+            (old_date_string, old_date) = getPORevisionDate(old_header)
+        except TypeError:
+            old_date_string = 'unknown'
+            old_date = None
+        try:
+            (new_date_string, new_date) = getPORevisionDate(parser.header)
+        except TypeError:
+            new_date_string= 'unknown'
+            old_date = None
 
         # Check if the import should or not be ignored.
         if old_date is None or new_date is None:

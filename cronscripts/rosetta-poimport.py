@@ -29,12 +29,12 @@ class ImportProcess:
         '''
 
         for template in self.po_templates.getTemplatesPendingImport():
-            logger.info('Importing the template: %s' % template.description)
+            logger.info('Importing the template: %s' % template.title)
             yield template
 
         for pofile in self.po_files.getPOFilesPendingImport():
             logger.info('Importing the %s translation of %s' % (
-                pofile.language.englishname, pofile.potemplate.description))
+                pofile.language.englishname, pofile.potemplate.title))
             yield pofile
 
     def run(self):

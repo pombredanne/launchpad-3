@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 23:27:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1500
+
+    Summary:
+      Merged LaunchpadPoImport implementation fix to handle a high number (7500) of potfiles to be imported
+    Revision:
+      launchpad--devel--0--patch-1500
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-2
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-3
+       Fix to handle lots of rows for pofile and potfile imports. It's not a final solution, Librarian is *the* solution
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-4
+       Fixed the test
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-5
+       Made more robust
+    
+
+    modified files:
+     cronscripts/rosetta-poimport.py doc/changelog.txt
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/doc/pofile.txt
+     lib/canonical/launchpad/doc/potemplateset.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-2
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-3
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-4
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-5
+
+
 2005-03-24 21:15:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1499
 
     Summary:
