@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-08 02:07:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1381
+
+    Summary:
+      CoC partially reviewed.
+    Revision:
+      launchpad--devel--0--patch-1381
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-529
+       Merge from RF, mainly changes on current.sql
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-530
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-531
+       Code review from SteveA.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/codeofconduct.py
+     lib/canonical/launchpad/zcml/codeofconduct.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-529
+     celso.providelo@canonical.com/launchpad--devel--0--patch-530
+     celso.providelo@canonical.com/launchpad--devel--0--patch-531
+
+
 2005-03-08 01:26:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1380
 
     Summary:
