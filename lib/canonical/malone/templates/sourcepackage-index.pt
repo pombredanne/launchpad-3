@@ -5,10 +5,15 @@
 <body>
 
 <div metal:fill-slot="main">
-    <h1 tal:content="context/title">$Sourcepackage.title</h1>
+    <h1>Source package: 
+        <span tal:content="context/title">$Sourcepackage.title</span>
+    </h1>
     <div class="documentDescription"
         tal:content="context/description">$Sourcepackage.description
     </div>
+
+    <h2>Bugs assigned to this package</h2>
+    
     <table class="listing rowNavigation">
         <tr>
             <th>Bug</th>
@@ -45,6 +50,34 @@
             </td>
         </tr>
     </table>
+
+    <h2>Affected packages</h2>
+    
+    <table class="listing" xtal:repeat="prod context/products">
+        <tr>
+            <th rowspan="2">Package</th>
+            <th colspan="5">Severity</th>
+        </tr>
+        <tr>
+            <th>Critical</th>
+            <th>Major</th>
+            <th>Normal</th>
+            <th>Minor</th>
+            <th>Wishlist</th>
+        </tr>  
+        <tr xtal:repeat="bug prod/bugs">
+            <td>
+                <a xtal:attributes="href "
+                   xtal:content="bug/bug/title">Binary Package name</a>
+            </td>
+            <td xtal:content="">1</td>
+            <td xtal:content="">5</td>
+            <td xtal:content="">7</td>
+            <td xtal:content="">1</td>
+            <td xtal:content="">7</td>
+        </tr>
+    </table>
+
 </div>
 
 </body>
