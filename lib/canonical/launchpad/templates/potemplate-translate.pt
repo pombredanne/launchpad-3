@@ -40,7 +40,7 @@
             Before this template can be translated into these languages,
             Rosetta needs to have this information. Please send that
             information to the <a
-            href="mailto:rosetta-users@lists.ubuntu.com"> Rosetta users
+            href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
             mailing list</a>. If you don't know about this kind of
             information, please ask on the mailing list and we will try to
             work it out from your knowledge of that language.
@@ -173,12 +173,15 @@
                         tal:attributes="
                             name string:set_${set/id}_translation_${language/code};
                             value python:set['translations'][language][0];
+                            tabindex view/makeTabIndex;
                             " />
                     <textarea
                         tal:condition="set/messageID/isMultiline"
                         tal:attributes="
                             name string:set_${set/id}_translation_${language/code};
-                            rows set/messageID/lines"
+                            rows set/messageID/lines;
+                            tabindex view/makeTabIndex;
+                            "
                         tal:content="python:set['translations'][language][0]
                         "></textarea>
                 </div>
@@ -210,14 +213,17 @@
                             tal:attributes="
                                 name string:set_${set/id}_translation_${language/code}_${i};
                                 value python:set['translations'][language][i];
+                                tabindex view/makeTabIndex;
                                 " />
                         <textarea
                             tal:condition="set/messageID/isMultiline"
                             tal:attributes="
                                 name string:set_${set/id}_translation_${language/code}_${i};
-                                rows set/messageID/lines"
-                            tal:content="python:set['translations'][language][i]
-                            "></textarea>
+                                rows set/messageID/lines;
+                                tabindex view/makeTabIndex;
+                                "
+                            tal:content="python:set['translations'][language][i]"
+                            ></textarea>
                         <!--
                         <img src="++resource++info.gif" title="Example: 1 dead horse." />
                         -->

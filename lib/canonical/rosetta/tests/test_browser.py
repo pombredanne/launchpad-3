@@ -613,6 +613,15 @@ def test_TranslatePOemplate_mungeMessageID():
     >>> tearDown()
     '''
 
+def test_TabIndexGenerator():
+    '''
+    >>> from canonical.rosetta.browser import TabIndexGenerator
+    >>> tig = TabIndexGenerator()
+    >>> tig.generate()
+    1
+    >>> tig.generate()
+    2
+    '''
 
 def test_suite():
     return DocTestSuite()

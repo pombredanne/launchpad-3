@@ -115,6 +115,16 @@ def parse_cformat_string(s):
     raise ValueError(s)
 
 
+class TabIndexGenerator:
+    def __init__(self):
+        self.index = 1
+
+    def generate(self):
+        index = self.index
+        self.index += 1
+        return index
+
+
 class ViewProjects:
     def newProjectSubmit(self):
         if "SUBMIT" in self.request.form:
@@ -656,6 +666,13 @@ class TranslatePOTemplate:
 
         if not self.show in ('translated', 'untranslated', 'all'):
             self.show = 'all'
+
+        # Get a TabIndexGenerator.
+
+        self.tig = TabIndexGenerator()
+
+    def makeTabIndex(self):
+        return self.tig.generate()
 
     def atBeginning(self):
         return self.offset == 0
