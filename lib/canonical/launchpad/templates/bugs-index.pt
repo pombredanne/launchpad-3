@@ -18,6 +18,11 @@
         document.getElementById(status_cell_id).firstChild.nodeValue = "Rejected";
         return false; 
      }
+     function fixed(url, status_cell_id) {
+        document.getElementById("blackhole").src = url;
+        document.getElementById(status_cell_id).firstChild.nodeValue = "Fixed";
+        return false; 
+     }
      function accept(url, status_cell_id, assignee_cell_id, assignee) { 
         document.getElementById("blackhole").src = url;
         document.getElementById(status_cell_id).firstChild.nodeValue = "Accepted";
@@ -52,7 +57,7 @@
                         ass_owner assignment/owner/name|nothing;
                         potential_assignee request/lp:person/displayname|nothing;
                         status assignment/bugstatus/lp:BugAssignmentStatus;
-                        assignee assignment/assignee/name|nothing;
+                        assignee assignment/assignee/name|python:'';
                         priority assignment/priority/lp:BugPriority;
                         severity assignment/severity/lp:BugSeverity;
                         statusid string:status${repeat/assignment/number};
@@ -102,6 +107,15 @@
             <a href=""
                tal:condition="package_name"
                tal:attributes="onClick string:return reject('${bugid}/packageassignments/${assignment/id}/+edit?field.bugstatus=Rejected&field.priority=$priority&field.severity=$severity&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
+            </a>
+            &nbsp;
+            <a href=""
+               tal:condition="product_name"
+               tal:attributes="onClick string:return fixed('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Fixed&field.priority=$priority&field.severity=$severity&field.product=$project_name $product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
+            </a>
+            <a href=""
+               tal:condition="package_name"
+               tal:attributes="onClick string:return fixed('${bugid}/packageassignments/${assignment/id}/+edit?field.bugstatus=Fixed&field.priority=$priority&field.severity=$severity&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
             </a>
           </td>
       </span>
