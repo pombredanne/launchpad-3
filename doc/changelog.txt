@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-25 12:35:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1247
+
+    Summary:
+      DB patch to POTemplate for Carlos - need a place to store headers
+    Revision:
+      launchpad--devel--0--patch-1247
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-101
+       star-merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-102
+       DB patch to POTemplate for Carlos - need a place to store headers
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-30-0.sql.id
+     database/schema/patch-6-30-0.sql
+
+    modified files:
+     database/schema/comments.sql database/schema/launchpad.html
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-101
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-102
+
+
 2005-01-25 01:54:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1246
 
     Summary:
