@@ -23,9 +23,9 @@ from canonical.launchpad.interfaces import ICalendarSubscriptionSet
 from canonical.launchpad.database import CalendarSubscription
 
 from schoolbell.mixins import CalendarMixin, EditableCalendarMixin
+from schoolbell.icalendar import convert_calendar_to_ical
 
 __metaclass__ = type
-
 
 class MergedCalendarTraverser:
     """View for finding the calendar of the authenticated user."""
@@ -141,3 +141,26 @@ class MergedCalendar(CalendarMixin, EditableCalendarMixin):
         raise NotImplementedError
     def removeEvent(self, event):
         raise NotImplementedError
+
+
+############# iCalendar export ###################
+
+def ical_datetime(dt):
+    return dt.astimezone(_utc_tz).strftime('%Y%m%dT%H%M%SZ')
+    
+class ViewICalendar(object):
+    """Publish an object implementing the ICalendar interface in
+    the iCalendar format.  This allows desktop calendar clients to
+    display the events."""
+    __used_for__ = ICalendar
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+    def __call__(self):
+        result = convert_calendar_to_ical(self.context)
+        result = '\r\n'.join(result)
+
+        self.request.response.setHeader('Content-Type', 'text/calendar')
+        self.request.response.setHeader('Content-Length', len(result))
+
+        return result

@@ -46,6 +46,13 @@
         name="+index" />
   </browser:pages>
 
+  <browser:page name="+icalendar"
+      for="schoolbell.interfaces.ICalendar"
+      permission="zope.Public"
+      class="canonical.launchpad.components.cal.ViewICalendar"
+      attribute="__call__"
+      lp:url="$obj/calendar/+icalendar" />
+
   <browser:traverse
       for="schoolbell.interfaces.ICalendar"
       function="canonical.launchpad.browser.traverseCalendar" />
