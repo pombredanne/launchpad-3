@@ -24,13 +24,6 @@
 
     <!-- UTILITY DECLARATION-->
 
-    <!-- VOCABULARIES -->
-    <vocabulary
-        name="Product"
-        factory="canonical.launchpad.vocabulary.ProductVocabulary" />
-
-
-
     <!--TRAVERSALS-->
     <browser:traverse
         for="canonical.launchpad.interfaces.IProduct"

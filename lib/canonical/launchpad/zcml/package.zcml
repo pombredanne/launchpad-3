@@ -28,10 +28,6 @@
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
-    <vocabulary
-        name="Sourcepackage"
-        factory="canonical.launchpad.vocabulary.SourcepackageVocabulary" />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourcepackage"
         name="+index" />
@@ -57,22 +53,16 @@
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
-    <vocabulary
-        name="Binarypackage"
-        factory="canonical.launchpad.vocabulary.BinarypackageVocabulary" />
-
     <!-- Binarypackagename -->
     <content class="canonical.launchpad.database.BinarypackageName">
         <allow interface="canonical.launchpad.interfaces.IBinarypackageName" />
     </content>
 
-    <vocabulary
-        name="BinarypackageName"
-        factory="canonical.launchpad.vocabulary.BinarypackageNameVocabulary" />
-
     <!-- SourcepackageContainer -->
     <content class="canonical.malone.browser.SourcepackageContainer">
-        <allow interface="canonical.launchpad.interfaces.ISourcepackageContainer" />
+        <allow
+            interface="canonical.launchpad.interfaces.ISourcepackageContainer"
+            />
     </content>
 
     <utility

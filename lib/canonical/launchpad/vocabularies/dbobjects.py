@@ -11,8 +11,6 @@ from canonical.launchpad.database.bug import BugTracker
 
 __metaclass__ = type
 
-# TODO: These vocabularies should limit their choices based on context (?)
-
 class SQLObjectVocabularyBase(object):
     """A base class for widgets that are rendered to collect values
     for attributes that are SQLObjects, e.g. ForeignKey.
@@ -48,7 +46,7 @@ class SQLObjectVocabularyBase(object):
 
     def __contains__(self, key):
         try:
-            objs = list(self._table.select(self._table.q.id == int(key.id)))
+            objs = list(self._table.select(self._table.q.id == int(key)))
             if len(objs) > 0:
                 return True
         except ValueError:

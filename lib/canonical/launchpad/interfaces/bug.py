@@ -9,8 +9,6 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.lp import dbschema
 
-from canonical.launchpad.vocabularies.dbschema import *
-
 class IBug(Interface):
     """The core bug entry."""
 
@@ -230,7 +228,7 @@ class IBugExternalRef(Interface):
             )
     bugreftype = Choice(
             title=_('Bug Ref Type'), required=True, readonly=False,
-            vocabulary=BugRefVocabulary
+            vocabulary='BugRef',
             )
     data = TextLine(
             title=_('Data'), required=True, readonly=False,
@@ -291,7 +289,7 @@ class IBugSubscription(Interface):
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
     subscription = Choice(
             title=_('Subscription'), required=True, readonly=False,
-            vocabulary=SubscriptionVocabulary
+            vocabulary='Subscription',
             )
 class IBugTrackerType(Interface):
     """A type of supported remote bug system, eg Bugzilla."""

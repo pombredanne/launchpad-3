@@ -7,7 +7,6 @@ from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.lp import dbschema
-from canonical.launchpad.vocabularies.dbschema import *
 
 class IProductBugAssignmentContainer(Interface):
     """A container for IProductBugAssignment objects."""
@@ -37,16 +36,10 @@ class IProductBugAssignment(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    product = Choice(
-            title=_('Product'), required=True,
-            vocabulary='Product'
-            )
-    bugstatus = Choice(title=_('Bug Status'),
-                       vocabulary=BugStatusVocabulary)
-    priority = Choice(title=_('Priority'),
-                      vocabulary=BugPriorityVocabulary)
-    severity = Choice(title=_('Severity'),
-                      vocabulary=BugSeverityVocabulary)
+    product = Choice(title=_('Product'), required=True, vocabulary='Product')
+    bugstatus = Choice(title=_('Bug Status'), vocabulary='BugStatus')
+    priority = Choice(title=_('Priority'), vocabulary='BugPriority')
+    severity = Choice(title=_('Severity'), vocabulary='BugSeverity')
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
 
 
@@ -60,15 +53,15 @@ class ISourcepackageBugAssignment(Interface):
             vocabulary='Sourcepackage'
             )
     bugstatus = Choice(
-            title=_('Bug Status'), vocabulary=BugStatusVocabulary,
+            title=_('Bug Status'), vocabulary='BugStatus',
             required=True, default=int(dbschema.BugAssignmentStatus.NEW),
             )
     priority = Choice(
-            title=_('Priority'), vocabulary=BugPriorityVocabulary,
+            title=_('Priority'), vocabulary='BugPriority',
             required=True, default=int(dbschema.BugPriority.MEDIUM),
             )
     severity = Choice(
-            title=_('Severity'), vocabulary=BugSeverityVocabulary,
+            title=_('Severity'), vocabulary='BugSeverity',
             required=True, default=int(dbschema.BugSeverity.NORMAL),
             )
     binarypackagename = Choice(

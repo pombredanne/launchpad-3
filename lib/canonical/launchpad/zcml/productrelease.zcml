@@ -19,12 +19,6 @@
 
     <!-- UTILITY DECLARATION-->
 
-    <!-- VOCABULARIES -->
-    <vocabulary
-        name="ProductRelease"
-        factory="canonical.launchpad.vocabulary.ProductReleaseVocabulary" />
-
-
     <!--TRAVERSALS-->
 
     

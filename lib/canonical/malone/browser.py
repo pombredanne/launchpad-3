@@ -316,7 +316,7 @@ class BugContainer(BugContainerBase):
                 binarypkg = None
             sba = SourcepackageBugAssignment(
                     bug=bug, sourcepackage=sourcepkg,
-                    binarypackage=binarypkg,
+                    binarypackagename=binarypkg,
                     )
 
         return ob # Return this rather than the bug we created from it,
