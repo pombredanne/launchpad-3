@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-31 23:00:34 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1536
+
+    Summary:
+      filter upstream bug listing to show only New and Accepted bugs by default
+    Revision:
+      launchpad--devel--0--patch-1536
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-476
+       filter upstream bug listing to show only New and Accepted bugs by default
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-476
+
+
 2005-03-31 22:13:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1535
 
     Summary:

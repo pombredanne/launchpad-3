@@ -191,13 +191,22 @@ class ProductBugsView:
         if searchtext:
             params["searchtext"] = searchtext
 
-        for param_name in ("status", "severity"):
-            param_value = self.request.form.get(param_name)
-            if param_value and param_value != 'all':
-                if isinstance(param_value, (list, tuple)):
-                    params[param_name] = any(*param_value)
-                else:
-                    params[param_name] = param_value
+        status = self.request.form.get("status")
+        if status and status != 'all':
+            if isinstance(status, (list, tuple)):
+                params["status"] = any(*status)
+            else:
+                params["status"] = status
+        elif not status:
+            params["status"] = any(
+                dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
+
+        severity = self.request.form.get("severity")
+        if severity and severity != 'all':
+            if isinstance(severity, (list, tuple)):
+                params["severity"] = any(*severity)
+            else:
+                params["severity"] = severity
 
         assignee = self.request.form.get("assignee")
         milestone = self.request.form.get("target")
