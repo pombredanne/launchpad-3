@@ -10,3 +10,4 @@ from canonical.launchpad.dcelso import *
 #
 from canonical.launchpad.database.project import *
 from canonical.launchpad.database.bug import *
+from canonical.launchpad.database.sourcesource import *

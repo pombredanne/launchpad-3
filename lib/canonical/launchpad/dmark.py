@@ -16,63 +16,6 @@ from canonical.launchpad.database import *
 
 
 
-class SourceSource(SQLBase): 
-    #, importd.Job.Job):
-    #from canonical.soyuz.sql import SourcePackage, Branch
-    """SourceSource table!"""
-
-    _table = 'SourceSource'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        # Mark Shuttleworth 03/10/04 Robert Collins why is this default=1?
-        ForeignKey(name='product', foreignKey='Product', dbName='product',
-                   default=1),
-        StringCol('cvsroot', dbName='cvsroot', default=None),
-        StringCol('cvsmodule', dbName='cvsmodule', default=None),
-        ForeignKey(name='cvstarfile', foreignKey='LibraryFileAlias',
-                   dbName='cvstarfile', default=None),
-        StringCol('cvstarfileurl', dbName='cvstarfileurl', default=None),
-        StringCol('cvsbranch', dbName='cvsbranch', default=None),
-        StringCol('svnrepository', dbName='svnrepository', default=None),
-        StringCol('releaseroot', dbName='releaseroot', default=None),
-        StringCol('releaseverstyle', dbName='releaseverstyle', default=None),
-        StringCol('releasefileglob', dbName='releasefileglob', default=None),
-        ForeignKey(name='releaseparentbranch', foreignKey='Branch',
-                   dbName='releaseparentbranch', default=None),
-        ForeignKey(name='sourcepackage', foreignKey='SourcePackage',
-                   dbName='sourcepackage', default=None),
-        ForeignKey(name='branch', foreignKey='Branch',
-                   dbName='branch', default=None),
-        DateTimeCol('lastsynced', dbName='lastsynced', default=None),
-        DateTimeCol('frequency', dbName='syncinterval', default=None),
-        # WARNING: syncinterval column type is "interval", not "integer"
-        # WARNING: make sure the data is what buildbot expects
-        #IntCol('rcstype', dbName='rcstype', default=RCSTypeEnum.cvs,
-        #       notNull=True),
-        # FIXME: use 'RCSTypeEnum.cvs' rather than '1'
-        IntCol('rcstype', dbName='rcstype', default=1,
-               notNull=True),
-        StringCol('hosted', dbName='hosted', default=None),
-        StringCol('upstreamname', dbName='upstreamname', default=None),
-        DateTimeCol('processingapproved', dbName='processingapproved',
-                    notNull=False, default=None),
-        DateTimeCol('syncingapproved', dbName='syncingapproved', notNull=False,
-                    default=None),
-        # For when Rob approves it
-        StringCol('newarchive', dbName='newarchive'),
-        StringCol('newbranchcategory', dbName='newbranchcategory'),
-        StringCol('newbranchbranch', dbName='newbranchbranch'),
-        StringCol('newbranchversion', dbName='newbranchversion'),
-        # Temporary keybuk stuff
-        StringCol('package_distro', dbName='packagedistro', default=None),
-        StringCol('package_files_collapsed', dbName='packagefiles_collapsed',
-                default=None),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
-                   notNull=True),
-        StringCol('currentgpgkey', dbName='currentgpgkey', default=None),
-    ]
 
 class Person(SQLBase):
     """A Person."""
@@ -387,6 +330,52 @@ class Product(SQLBase):
 
     sourcesources = MultipleJoin('SourceSource', joinColumn='product')
 
+    #def sourcesources(self):
+    #   """iterate over this product's sourcesource entries"""
+    #   for source in SourceSource.select("sourcesource.product=%s" % quote(self._product.id)):
+    #       yield Sync(self, sync)
+
+    def newSourceSource(self, form, owner):
+        rcstype=RCSTypeEnum.cvs
+        if form['svnrepository']:
+            rcstype=RCSTypeEnum.svn
+        # XXX Robert Collins 05/10/04 need to handle arch too
+        ss = SourceSource(name=form['name'],
+            title=form['title'],
+            description=form['description'],
+            product=self.id,
+            owner=owner,
+            cvsroot=form['cvsroot'],
+            cvsmodule=form['module'],
+            cvstarfileurl=form['cvstarfile'],
+            cvsbranch=form['branchfrom'],
+            svnrepository=form['svnrepository'],
+            #StringCol('releaseroot', dbName='releaseroot', default=None),
+            #StringCol('releaseverstyle', dbName='releaseverstyle', default=None),
+            #StringCol('releasefileglob', dbName='releasefileglob', default=None),
+            #ForeignKey(name='releaseparentbranch', foreignKey='Branch',
+            #       dbName='releaseparentbranch', default=None),
+            #ForeignKey(name='sourcepackage', foreignKey='SourcePackage',
+            #       dbName='sourcepackage', default=None),
+            #ForeignKey(name='branch', foreignKey='Branch',
+            #       dbName='branch', default=None),
+            #DateTimeCol('lastsynced', dbName='lastsynced', default=None),
+            #IntCol('frequency', dbName='syncinterval', default=None),
+            # WARNING: syncinterval column type is "interval", not "integer"
+            # WARNING: make sure the data is what buildbot expects
+            rcstype=rcstype,
+            hosted=None,
+            upstreamname=None,
+            newarchive=None,
+            newbranchcategory=None,
+            newbranchbranch=None,
+            newbranchversion=None)
+
+    def getSourceSource(self,name):
+        """get a sync"""
+        return SourceSource(self, SourceSource.select("name=%s and sourcesource.product=%s" % (quote(name), self._product.id)  )[0])
+
+        
     def poTemplates(self):
         return iter(self._poTemplatesJoin)
 

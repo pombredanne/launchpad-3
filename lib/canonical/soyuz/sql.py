@@ -32,7 +32,7 @@ from canonical.launchpad.database import SoyuzBinaryPackage, SoyuzBuild, \
                                          ArchUserID, WikiName, JabberID, \
                                          IrcID, Membership, TeamParticipation,\
                                          DistributionRole, DistroReleaseRole, \
-                                         SourceSource as infoSourceSource, \
+                                         SourceSource, \
                                          RCSTypeEnum, Branch, Changeset
 
 #

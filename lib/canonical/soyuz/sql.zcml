@@ -289,8 +289,8 @@
     <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
   
-  <content class="canonical.soyuz.importd.Sync">
-    <allow interface="canonical.launchpad.interfaces.ISync"/>
+  <content class="canonical.launchpad.database.SourceSource">
+    <allow interface="canonical.launchpad.interfaces.ISourceSource"/>
   </content>
 
 

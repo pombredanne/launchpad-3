@@ -569,66 +569,8 @@ class View(object):
     def getField(self, name):
         return self.request.form[name]
 
-class ViewProjects(View):
-    def projects(self):
-        return iter(self.context)
-    def handle_submit(self):
-        if not self.request.form.get("Register", None)=="Register":
-            return
-        if not self.request.method == "POST":
-            return
-        name=self.getField('name')
-        url=self.getField('url')
-        description=self.getField('description')
-        title=self.getField('title')
-        shortDescription=self.getField('shortDescription')
-        displayname=self.getField('displayname')
 
-        project=self.context.new(name,title,description,url)
-        project.shortDescription(shortDescription)
-        project.displayname(displayname)
-        project=None
-        self.submittedok= True
-        self.request.response.redirect(name)
-
-
-class ViewProject(View):
-    def products(self):
-        return self.context.products()
-    def handle_submit(self):
-        if not self.request.form.get("Register", None)=="Register":
-            return
-        if not self.request.method == "POST":
-            return
-        name=self.getField('name')
-        url=self.getField('url')
-        description=self.getField('description')
-        title=self.getField('title')
-
-        self.request.response.redirect(name)
-        self.context.newProduct(name,title,description,url)
-        self.submittedok= True
-
-
-
-class ViewProduct(View):
-
-    def syncs(self):
-        return iter(self.context.syncs())
-
-    def handle_submit(self):
-        if not self.request.form.get("Register", None)=="Register":
-            return
-        if not self.request.method == "POST":
-            return
-        kwargs={}
-        for param in ["name", "title","description","cvsroot","module","cvstarfile","branchfrom","svnrepository","category","branchto","archversion","archsourcegpgkeyid","archsourcename","archsourceurl"]:
-            self.setArg(param, kwargs)
-        self.context.newSync(**kwargs)
-        self.submittedok=True
-        self.request.response.redirect(kwargs['name'])
-
-class ViewSync(View):
+class SourceSourceView(View):
     """har har"""
     def handle_submit(self):
         if not self.request.form.get("Update", None)=="Update":
@@ -655,6 +597,7 @@ class ViewSync(View):
         self.submittedok=True
         if newurl:
             self.request.response.redirect(newurl)
+
     def selectedProduct(self):
         return self.context.product.name + "/" + self.context.product.project.name
     def products(self):

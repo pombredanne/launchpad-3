@@ -6,7 +6,8 @@
 __metaclass__ = type
 
 from zope.interface import implements
-from canonical.launchpad.interfaces import IPackages, IBinaryPackage, IBinaryPackageSet, IProjectSet, IProject, IProduct, ISync
+from canonical.launchpad.interfaces import IPackages, IBinaryPackage,
+IBinaryPackageSet, IProjectSet, IProject, IProduct, ISourceSource
 
 class Packages:
     """Stub packages collection"""
@@ -163,7 +164,7 @@ class Product(object):
 
 class Sync(object):
     """oi, vey!"""
-    implements(ISync)
+    implements(ISourceSource)
     def __init__(self, **kwargs):
         for attribute,value in kwargs.items():
             setattr(self, attribute, value)

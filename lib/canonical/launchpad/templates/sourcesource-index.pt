@@ -124,8 +124,8 @@
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
-                <input type="text" name="branchfrom" size="30"
-                       tal:attributes="value context/branchfrom" />
+                <input type="text" name="cvsbranch" size="30"
+                       tal:attributes="value context/cvsbranch" />
         </div>
 
     </fieldset>
@@ -156,42 +156,42 @@
         
         <div class="field">
 
-            <label>Arch archive</label>
+            <label>New Arch Archive</label>
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
-            <input type="text" name="archarchive" size="30"
-                   tal:attributes="value context/archarchive" />
+            <input type="text" name="newarchive" size="30"
+                   tal:attributes="value context/newarchive" />
         </div>
         
         <div class="field">
 
-            <label>Arch category</label>
+            <label>New Arch Category</label>
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
             <input type="text" name="category" size="30"
-                   tal:attributes="value context/category" />
+                   tal:attributes="value context/newbranchcategory" />
         </div>
 
         <div class="field">
 
-            <label>Arch branch</label>
+            <label>New Arch Branch</label>
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
-            <input type="text" name="branchto" size="30"
-                   tal:attributes="value context/branchto" />
+            <input type="text" name="newbranchbranch" size="30"
+                   tal:attributes="value context/newbranchbranch" />
         </div>
 
         <div class="field">
 
-            <label>Arch version</label>
+            <label>New Arch Version</label>
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
-            <input type="text" name="archversion" size="30"
-                   tal:attributes="value context/archversion" />
+            <input type="text" name="newbranchversion" size="30"
+                   tal:attributes="value context/newbranchversion" />
         </div>
 
     </fieldset>
@@ -200,7 +200,7 @@
         <legend>Arch source</legend>
         
         <p class="discreet">
-        If you fill out this, the CVS/SVN/Arch stuff above isn't required.
+        If you include this, the CVS/SVN/Arch stuff above isn't required.
         This will be governed by JS in the later versions.
         </p>
         
@@ -214,6 +214,11 @@
                    value="" />
         </div>
 
+        <!--
+          XXX Mark Shuttleworth 06/10/04
+              These fields were commented out at the request of
+              XXX Robert Collins because they have not yet been implemented
+              in the database.
         <div class="field">
 
             <label>Arch Archive Name</label>
@@ -233,6 +238,8 @@
             <input type="text" name="archsourceurl" size="30"
                    value="" />
         </div>
+        -->
+
     </fieldset>
 
     <fieldset tal:condition="context/canChangeProduct">

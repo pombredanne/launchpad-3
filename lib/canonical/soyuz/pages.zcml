@@ -433,7 +433,6 @@
         />
 
   <pages for="canonical.launchpad.interfaces.IProjectSet"
-         class="canonical.soyuz.browser.ViewProjects"
          permission="zope.Public">
     <page name="index.html"
           template="../launchpad/templates/soyuz-projects-index.pt"
@@ -452,38 +451,11 @@
  <traverse for="canonical.launchpad.interfaces.IProjectSet" function="canonical.soyuz.browser.urlTraverseProjects" />
 
 
-    <pages for="canonical.launchpad.interfaces.IProject"
-         class="canonical.soyuz.browser.ViewProject"
-         permission="zope.Public">
-        <page name="index.html"
-            template="../launchpad/templates/soyuz-project-index.pt"
-            lp:url="Soyuz/projects/$Project.name/index.html" />
-        <page name="products+new"
-            template="../launchpad/templates/product-add.pt"
-            lp:url="Soyuz/projects/$Project.name/products+new" />
-    </pages>
-
-    <traverse for="canonical.launchpad.interfaces.IProject" 
-        function="canonical.soyuz.browser.urlTraverseProducts" />
-
-    <pages for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.soyuz.browser.ViewProduct"
-        permission="zope.Public">
-        <page name="index.html"
-            template="../launchpad/templates/soyuz-product-index.pt"
-            lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/index.html"
-            />
-        <page name="syncs+new"
-            template="../launchpad/templates/sourcesource-add.pt"
-            lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/syncs+new"
-            />
-    </pages>
-
 <!--
     XXX MARK-ENABLED BUSTAGE
   <traverse for="canonical.launchpad.interfaces.IProduct" function="canonical.soyuz.browser.urlTraverseSyncs" />
 
-  <pages for="canonical.launchpad.interfaces.ISync"
+  <pages for="canonical.launchpad.interfaces.ISourceSource"
          class="canonical.soyuz.browser.ViewSync"
          permission="zope.Public">
     <page name="index.html"

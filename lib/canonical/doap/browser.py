@@ -12,7 +12,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
 
 from canonical.launchpad.database import Project, Product, SourceSource, \
-        ProjectBugTracker
+        ProjectBugTracker, SourceSourceSet
 from canonical.database.constants import nowUTC
 
 from zope.i18nmessageid import MessageIDFactory
@@ -25,6 +25,21 @@ from canonical.launchpad.interfaces import *
 # we need malone.browser.newBugTracker
 #
 from canonical.malone.browser import newBugTracker
+
+#
+# Traversal functions that help us look up something
+# about a project or product
+#
+def traverseProduct(product, request, name):
+    if name == 'sourcesource':
+        return SourceSourceSet()
+    else:
+       raise KeyError, name
+
+
+def traverseProject(project, request, name):
+    return project.getProduct(name)
+
 
 class DOAPApplicationView(object):
     def __init__(self, context, request):
@@ -210,4 +225,18 @@ class ProductView(object):
         self.context.homepageurl = self.form['homepageurl']
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
+
+    def sourcesources(self):
+        return iter(self.context.sourcesources())
+
+    def newSourceSource(self):
+        if not self.form.get("Register", None)=="Register Revision Control System":
+            return
+        if not self.request.method=="POST":
+            return
+        owner = IPerson(self.request.principal)
+        ss = self.context.newSourceSource(self.form, owner)
+        self.request.response.redirect(self.form['name'])
+ 
+
 

@@ -30,4 +30,10 @@
         factory="canonical.launchpad.database.ProjectContainer"
         provides="canonical.launchpad.interfaces.IProjectContainer" />
 
+    <content class="canonical.launchpad.database.SourceSourceSet">
+        <allow interface="canonical.launchpad.interfaces.ISourceSourceSet" />
+        <require permission="zope.View"
+        set_schema="canonical.launchpad.interfaces.ISourceSourceSet" />
+    </content>
+
 </configure>

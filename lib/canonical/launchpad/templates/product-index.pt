@@ -43,14 +43,14 @@
         <h2>Revision Control System</h2>
 
         <dl tal:repeat="source context/sourcesources">
-            <dt><a tal:attributes="href source/name"
+            <dt><a tal:attributes="href python: string('sourcesource/') + source.name"
                     tal:content="source/title">Sync Title</a>&nbsp;<a
                     tal:condition="source/canChangeProduct"
                     tal:attributes="href source/name">Assign to product</a></dt>
             <dd tal:content="source/description"></dd>
         </dl>
 
-        [ <a href="+add-sourcesource">Add SourceSource</a> ]
+        [ <a href="+addsourcesource">Add SourceSource</a> ]
         
 </div>
 

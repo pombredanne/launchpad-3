@@ -47,7 +47,11 @@
           lp:url="Rosetta/projects/$Project.name/$Product.name/index" />
   </pages>
 
+  <!-- Mark Shuttleworth 05/10/04 removed this since DOAP should really be
+  specifying the behaviour of a Product object. If not needed please
+  remove altogether.
   <traverse for="canonical.launchpad.interfaces.IProduct" getter="poTemplate" />
+  -->
 
   <!-- pages for a POTemplate -->
   <pages for="canonical.launchpad.interfaces.IPOTemplate"

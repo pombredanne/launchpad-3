@@ -23,56 +23,6 @@ class IBugTrackerSet(Interface):
 
 
 
-class ISourceSource(Interface):
-    """A SourceSource job. This is a holdall for data about the upstream
-    revision control system of an open source product, and whether or not
-    we are able to syncronise our Arch repositories with that upstream
-    revision control system. It allows for access to objects that model
-    the SourceSource table."""
-    #
-    # XXX Mark Shuttleworth 03/10/04 Robert Collins please give a better
-    #     description of each field below.
-    #
-    name = Attribute("The sourcesource unix name, a one-word lowercase \
-        unique name for this sourcesource.")
-    title = Attribute("The Title of this SourceSource")
-    description = Attribute("A description of this SourceSource")
-    cvsroot = Attribute("The CVSRoot of this SourceSource")
-    cvsmodule = Attribute("The CVS Module of this SourceSource")
-    cvstarfile = Attribute("The TAR file name of the CVS repo tarball")
-    branchfrom = Attribute("Branch From...")
-    svnrepository = Attribute("Subversion repository, if this code is in\
-    subversion")
-    archarchive = Attribute("the target archive")
-    category = Attribute("the arch category to use")
-    branchto = Attribute("branchto.. don't know what that is")
-    archversion = Attribute("the arch version to use when importing this \
-    code to arch")
-    archsourcegpgkeyid = Attribute("arch gpgkeyid not sure what this is for")
-    archsourcename = Attribute("arch source name... not sure again")
-    archsourceurl = Attribute("arch source url, again not sure")
-    product=Attribute ("a product backlink for this sourcesource")
-    
-    def autosync():
-        """enable this sourcesource for automatic syncronisation"""
-    
-    def autosyncing():
-        """is the sourcesource enabled for automatic syncronisation?"""
-    
-    def canChangeProduct():
-        """is this sync allowed to have its product changed?"""
-    
-    def changeProduct(product):
-        """change the product this sync belongs to to be 'product'"""
-    
-    def enable():
-        """enable this sync"""
-    def enabled():
-        """is the sync enabled?"""
-    def update(**kwargs):
-        """update a Sync, possibly reparenting"""
-
-
 
 class IProject(Interface):
     """A Project."""
@@ -109,6 +59,9 @@ class IProject(Interface):
 
     def shortDescription(aDesc=None):
         """return the projects shortdesc, setting it if aDesc is provided"""
+
+    def newSourceSource():
+        """Add a SourceSource for upstream code syncing to Arch."""
 
 
 
@@ -996,6 +949,9 @@ class IProduct(Interface):
 
         Raises an KeyError if a PO template with that name already exists.
         """
+
+    def newSourceSource(form):
+        """Creates a new SourceSource entry for upstream code sync."""
 
     def messageCount():
         """Returns the number of Current IPOMessageSets in all templates

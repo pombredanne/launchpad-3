@@ -77,6 +77,9 @@
             lp:url="doap/projects/$Project.name/+newbugtracker" />
     </pages>
 
+    <traverse for="canonical.launchpad.interfaces.IProject"
+            getter="getProduct" />
+
     <pages for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
         class="canonical.doap.browser.ProductView" >
@@ -92,4 +95,34 @@
             template="../launchpad/templates/product-edit.pt"
             lp:url="doap/projects/$Project.name/$Product.name/+edit" />
     </pages>
+
+    <pages for="canonical.launchpad.interfaces.IProduct"
+        class="canonical.doap.browser.ProductView"
+        permission="zope.Public">
+        <page name="+soyuz-index"
+            template="../launchpad/templates/soyuz-product-index.pt"
+            lp:url="Soyuz/projects/$Project.name/$Product.name/+soyuz-index"
+            />
+        <page name="+addsourcesource"
+            template="../launchpad/templates/sourcesource-add.pt"
+            lp:url="Soyuz/projects/$Project.name/$Product.name/+addsourcesource"
+            />
+    </pages>
+
+    <pages for ="canonical.launchpad.interfaces.ISourceSourceSet"
+        permission="zope.Public">
+    </pages>
+
+    <traverse for="canonical.launchpad.interfaces.ISourceSourceSet"
+            getter="__getitem__" />
+
+    <pages for="canonical.launchpad.interfaces.ISourceSource"
+           permission="launchpad.AnyPerson"
+           class="canonical.soyuz.browser.SourceSourceView" >
+           <page name="+index"
+                 template="../launchpad/templates/sourcesource-index.pt"
+                 lp:url="Doap/project/$Project.name/$Product.name/sourcesource/$SourceSource.name"
+                 />
+    </pages>
+
 </configure>
