@@ -23,7 +23,7 @@
   <!-- This view registers 'distros' as a suburl of RootObject/soyuz/. -->
   <browser:suburl
       for="canonical.soyuz.SoyuzApplication"
-      class="canonical.soyuz.browser.DistrosApplication"
+      class="canonical.soyuz.sql.DistrosApp"
       permission="zope.Public"
       name="distros"
       />

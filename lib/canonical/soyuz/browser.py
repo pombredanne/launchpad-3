@@ -2,12 +2,6 @@ from canonical.soyuz.sql import SoyuzDistribution, Release
 from sqlobject import LIKE, OR, AND
 
 
-class DistrosApplication(object):
-    def __getitem__(self, name):
-        return SoyuzDistribution.selectBy(name=name.encode("ascii"))[0]
-
-    def __iter__(self):
-    	return iter(SoyuzDistribution.select())
 
 class DistrosSearchView(object):
 
@@ -59,8 +53,6 @@ class DistrosEditView(object):
         description = self.request.get("description", "").encode("ascii")
 
         if name or title or description:
-            #YAPS: the owner is hardcodes to Mark !!!!
-            #How will we handler Security/Authentication Issues ?!?!
             self.context.name = name
             self.context.title = title
             self.context.description = description

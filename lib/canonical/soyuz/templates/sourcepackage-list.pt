@@ -18,6 +18,10 @@
 <!-- <div tal:on-error="python: error.type, error.value.args"> -->
 
 
+<p> <span tal:content="context/sourcepackage">context</span>
+
+
+<!--
   <table class="listing">
     <tr>
       <th>Title</th>
@@ -26,7 +30,7 @@
       <th>Owner</th>
     </tr>
     <tr tal:repeat="release context">
-      <tal:dummy tal:define="package release/sourcepackage">
+      <tal:dummy tal:define="package release/release/sourcepackage">
       <td>
         <a tal:content="package/title"
            tal:attributes="href package/name">
@@ -47,10 +51,12 @@
 
   </table>    
 
+-->
+
 
 <!-- </div> -->
 </div>
 
 </body>
-<!-- arch-tag: 3a0cc754-ec3d-4658-ab9e-8a18fdfb6f08 -->
+
 </html>

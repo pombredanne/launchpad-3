@@ -13,15 +13,39 @@
 <body>
 
 <div metal:fill-slot="main">
-    <h1><tal:block tal:replace="context/sourcepackage/title">xyz</tal:block>
-	Version <tal:block tal:replace="context/version">0.1.2.3-4</tal:block>
-     </h1>
+    <h1>
+       <tal:block tal:replace="context/sourcepackage/title">TITLE</tal:block>
+    </h1>
+    <table width="80%">
+    <tr>
+    <td>
+    <p> <h4>Description:  </h4> <tal:block tal:replace="context/sourcepackage/description" />
+    <p> <h4>Package name: </h4> <tal:block tal:replace="context/sourcepackage/name" />  
+    <p> <h4>Maintainer:   </h4> <tal:block tal:replace="context/sourcepackage/maintainer/presentationname" />
 
-    <p> <h4>Title: </h4> <tal:block tal:replace="context/sourcepackage/title" />  
-    <p> <h4>Name: </h4> <tal:block tal:replace="context/sourcepackage/name" />  
-    <p> <h4>Description: </h4> <tal:block tal:replace="context/sourcepackage/description" />
-    <p> <h4>Maintainer: </h4> <tal:block tal:replace="context/sourcepackage/maintainer/presentationname" />
+    <p> <h4>Proposal:</h4> 
+    <a tal:content="context/version" tal:attributes="href
+    context/version">
+      VERSION
+    </a>
 
+    <p> <h4>Current:</h4> 
+    <p> <span>0.9.1-0 (i386, AMD64)</span> <!--Take from Database or stub..Needs Binpkg -->
+    <p> <span>0.9.0-2 (PPC)</span>         <!--Take from Database or stub..Needs Binpkg -->
+    </td>
+    <td>
+    <b>Bugs:</b> #1, #2, #3 <!--Take from Database..LATER -->
+    <br>
+    <br>
+    <b>Last Packages:</b>
+    <br>0.9.1-1 <!--Take from Database or stub..Needs Binpkg -->
+    <br>0.9.1-0 <!--Take from Database or stub..Needs Binpkg -->
+    <br>0.9.0-9 <!--Take from Database or stub..Needs Binpkg -->
+    <br>0.9.0-8 <!--Take from Database or stub..Needs Binpkg -->
+    <br>0.9.0-7 <!--Take from Database or stub..Needs Binpkg -->
+    </td>
+    <tr>
+    </table>
 </div>
 
     <li> <a href="packages">Packages</a></li>
