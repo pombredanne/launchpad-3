@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 12:06:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1181
+
+    Summary:
+      Changed 'person' to 'user' in the authorization code.
+    Revision:
+      launchpad--devel--0--patch-1181
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-01-12 11:56:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1180
 
     Summary:
