@@ -10,7 +10,8 @@ from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
 from canonical.launchpad.interfaces import IPackagePublishing, \
-                                           ISourcePackagePublishing
+                                           ISourcePackagePublishing, \
+                                           ISourcePackageFilesToPublish
 
 from canonical.launchpad.database import DistroRelease, DistroArchRelease
 
@@ -38,7 +39,7 @@ class SourcePackagePublishing(SQLBase):
 
     _columns = [
         ForeignKey(name='sourcepackagerelease', foreignKey='SourcePackageRelease', dbName='sourcepackagerelease'),
-        ForeignKey(name='distrorelease', foreignKey='DistroRelease', dbName='distroarchrelease'),
+        ForeignKey(name='distrorelease', foreignKey='DistroRelease', dbName='distrorelease'),
         ForeignKey(name='component', foreignKey='Component', dbName='component'),
         ForeignKey(name='section', foreignKey='Section', dbName='section'),
         IntCol('priority'),
@@ -47,3 +48,21 @@ class SourcePackagePublishing(SQLBase):
     ]
 
     
+class SourcePackageFilesToPublish(SQLBase):
+    """A source package file which needs publishing"""
+
+    implements(ISourcePackageFilesToPublish)
+
+    drd = IntCol(dbName='drd', unique=False, default=None, notNull=True)
+    sppdrel = IntCol(dbName='sppdrel', unique=False, default=None,
+                     notNull=True)
+    sppid = IntCol(dbName='sppid', unique=False, default=None, notNull=True)
+    sprfid = IntCol(dbName='sprfid', unique=False, default=None, notNull=True)
+    sprfalias = IntCol(dbName='sprfalias', unique=False, default=None,
+                       notNull=True)
+    sprftype = IntCol(dbName='sprftype', unique=False, default=None,
+                      notNull=True)
+
+    lfaname = StringCol(dbName='lfaname', unique=False, default=None,
+                        notNull=True)
+

@@ -75,3 +75,32 @@ class ISourcePackagePublishing(Interface):
             required=False, readonly=False,
             )
     
+class ISourcePackageFilesToPublish(Interface):
+    """Source package release files due for publishing"""
+
+    drd = Int(
+            title=_('Distribution'), required=True, readonly=True,
+            )
+    sprfid = Int(
+            title=_('Sourcepackage release file id'), required=True,
+            readonly=True,
+            )
+    sprfalias = Int(
+            title=_('Sourcepackage release file alias'), required=True,
+            readonly=True,
+            )
+    sprftype = Int(
+            title=_('Sourcepackage release file type'), required=True,
+            readonly=True,
+            )
+    sppdrel = Int(
+            title=_('Distribution release'), required=True, readonly=True,
+            )
+    sppid = Int(
+            title=_('Sourcepackage publishing record id'), required=True,
+            readonly=True,
+            )
+
+    lfaname = TextLine(
+            title=_('File name'), required=True, readonly=True,
+            )
