@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-15 14:47:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1316
+
+    Summary:
+      disable the noisy warning that we have to tell us that zope is not using CheckerPublic, with a flag for steve to use to turn it on again
+    Revision:
+      launchpad--devel--0--patch-1316
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-102
+       disable the noisy warning that we have to tell us that zope is not using CheckerPublic, with a flag for steve to use to turn it on again
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/webapp/authorization.py
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-102
+
+
 2005-02-15 12:52:48 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1315
 
     Summary:
