@@ -1,4 +1,4 @@
-SET client_min_messages TO fatal;
+SET client_min_messages = ERROR;
 
 SET client_encoding = 'UNICODE';
 SET check_function_bodies = false;
@@ -7,8 +7,6 @@ SET search_path = public, pg_catalog;
 
 
 /*
-Already installed earlier using createlang
-
 CREATE FUNCTION plpython_call_handler() RETURNS language_handler
     AS '$libdir/plpython', 'plpython_call_handler'
     LANGUAGE c;
@@ -17,6 +15,7 @@ CREATE FUNCTION plpython_call_handler() RETURNS language_handler
 
 CREATE PROCEDURAL LANGUAGE plpythonu HANDLER plpython_call_handler;
 */
+
 
 
 CREATE TABLE person (
@@ -30,6 +29,7 @@ CREATE TABLE person (
     karma integer DEFAULT 0 NOT NULL,
     karmatimestamp timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     name text NOT NULL,
+    "language" integer,
     CONSTRAINT no_loops CHECK ((id <> teamowner)),
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
@@ -239,7 +239,8 @@ CREATE TABLE productrelease (
     changelog text,
     "owner" integer NOT NULL,
     shortdesc text,
-    productseries integer
+    productseries integer,
+    CONSTRAINT valid_version CHECK (valid_version("version"))
 );
 
 
@@ -513,7 +514,8 @@ CREATE TABLE distrorelease (
     "owner" integer NOT NULL,
     lucilleconfig text,
     shortdesc text NOT NULL,
-    CONSTRAINT valid_name CHECK (valid_name(name))
+    CONSTRAINT valid_name CHECK (valid_name(name)),
+    CONSTRAINT valid_version CHECK (valid_version("version"))
 );
 
 
@@ -623,7 +625,8 @@ CREATE TABLE sourcepackagerelease (
     builddependsindep text,
     architecturehintlist text,
     dsc text,
-    section integer NOT NULL
+    section integer NOT NULL,
+    CONSTRAINT valid_version CHECK (valid_version("version"))
 );
 
 
@@ -696,7 +699,9 @@ CREATE TABLE binarypackage (
     essential boolean,
     installedsize integer,
     copyright text,
-    licence text
+    licence text,
+    architecturespecific boolean NOT NULL,
+    CONSTRAINT valid_version CHECK (valid_version("version"))
 );
 
 
@@ -995,7 +1000,9 @@ CREATE TABLE sourcepackagebugassignment (
     severity integer NOT NULL,
     binarypackagename integer,
     assignee integer,
-    dateassigned timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL
+    dateassigned timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    "owner" integer NOT NULL
 );
 
 
@@ -1008,7 +1015,9 @@ CREATE TABLE productbugassignment (
     priority integer NOT NULL,
     severity integer NOT NULL,
     assignee integer,
-    dateassigned timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL
+    dateassigned timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    "owner" integer NOT NULL
 );
 
 
@@ -1069,9 +1078,9 @@ CREATE TABLE bugwatch (
     bug integer NOT NULL,
     bugtracker integer NOT NULL,
     remotebug text NOT NULL,
-    remotestatus text NOT NULL,
-    lastchanged timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    lastchecked timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    remotestatus text,
+    lastchanged timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
+    lastchecked timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     "owner" integer NOT NULL
 );
@@ -1101,9 +1110,8 @@ CREATE TABLE bugrelationship (
 
 
 
-CREATE TABLE bugmessage (
+CREATE TABLE message (
     id serial NOT NULL,
-    bug integer NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     title text NOT NULL,
     contents text NOT NULL,
@@ -1160,7 +1168,8 @@ CREATE TABLE sourcesource (
     packagefiles_collapsed text,
     "owner" integer NOT NULL,
     currentgpgkey text,
-    fileidreference text
+    fileidreference text,
+    branchpoint text
 );
 
 
@@ -1207,7 +1216,7 @@ CREATE TABLE sectionselection (
 );
 
 
-
+/*
 CREATE FUNCTION valid_name(text) RETURNS boolean
     AS '
     import re
@@ -1231,6 +1240,7 @@ CREATE FUNCTION valid_bug_name(text) RETURNS boolean
     return False
 '
     LANGUAGE plpythonu;
+*/
 
 
 
@@ -1346,6 +1356,78 @@ CREATE TABLE launchpaddatabaserevision (
 
 
 
+/*
+CREATE FUNCTION valid_version(text) RETURNS boolean
+    AS '
+    import re
+    name = args[0]
+    pat = r"^[A-Za-z0-9\\+:\\.\\-]+$"
+    if name is None or re.match(pat, name):
+        return True
+    return False
+'
+    LANGUAGE plpythonu;
+*/
+
+
+
+CREATE VIEW vsourcepackageindistro AS
+    SELECT DISTINCT sourcepackage.id, sourcepackage.shortdesc, sourcepackage.description, sourcepackage.distro, sourcepackage.manifest, sourcepackage.maintainer, sourcepackagename.id AS sourcepackagename, sourcepackagename.name, distrorelease.id AS distrorelease FROM sourcepackagepublishing, sourcepackagerelease, sourcepackage, distrorelease, sourcepackagename WHERE ((((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackagepublishing.distrorelease = distrorelease.id)) AND (sourcepackage.sourcepackagename = sourcepackagename.id)) ORDER BY sourcepackage.id, sourcepackage.shortdesc, sourcepackage.description, sourcepackage.distro, sourcepackage.manifest, sourcepackage.maintainer, sourcepackagename.id, sourcepackagename.name, distrorelease.id;
+
+
+
+CREATE VIEW vsourcepackagereleasepublishing AS
+    SELECT sourcepackagerelease.id, sourcepackagename.name, sourcepackage.shortdesc, sourcepackage.maintainer, sourcepackage.description, sourcepackage.id AS sourcepackage, sourcepackagepublishing.status AS publishingstatus, sourcepackagepublishing.datepublished, sourcepackagerelease.architecturehintlist, sourcepackagerelease."version", sourcepackagerelease.creator, sourcepackagerelease.section, sourcepackagerelease.component, sourcepackagerelease.changelog, sourcepackagerelease.builddepends, sourcepackagerelease.builddependsindep, sourcepackagerelease.urgency, sourcepackagerelease.dateuploaded, sourcepackagerelease.dsc, sourcepackagerelease.dscsigningkey, distrorelease.id AS distrorelease, component.name AS componentname FROM sourcepackagepublishing, sourcepackagerelease, component, sourcepackage, distrorelease, sourcepackagename WHERE (((((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackagepublishing.distrorelease = distrorelease.id)) AND (sourcepackage.sourcepackagename = sourcepackagename.id)) AND (component.id = sourcepackagerelease.component));
+
+
+
+CREATE TABLE bounty (
+    id serial NOT NULL,
+    name text NOT NULL,
+    title text NOT NULL,
+    summary text NOT NULL,
+    description text NOT NULL,
+    usdvalue numeric(10,2) NOT NULL,
+    difficulty integer NOT NULL,
+    duration interval NOT NULL,
+    reviewer integer NOT NULL,
+    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
+    "owner" integer NOT NULL,
+    deadline timestamp without time zone,
+    claimant integer,
+    dateclaimed timestamp without time zone
+);
+
+
+
+CREATE TABLE bugmessage (
+    id serial NOT NULL,
+    bug integer NOT NULL,
+    message integer NOT NULL
+);
+
+
+
+CREATE VIEW sourcepackagefilepublishing AS
+    SELECT (((libraryfilealias.id)::text || '.'::text) || (sourcepackagepublishing.id)::text) AS id, distrorelease.distribution, sourcepackagepublishing.id AS sourcepackagepublishing, sourcepackagereleasefile.libraryfile AS libraryfilealias, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, component.name AS componentname, distrorelease.name AS distroreleasename, sourcepackagepublishing.status AS publishingstatus FROM sourcepackagepublishing, sourcepackagerelease, sourcepackagereleasefile, libraryfilealias, distrorelease, sourcepackage, sourcepackagename, component WHERE (((((((sourcepackagepublishing.distrorelease = distrorelease.id) AND (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)) AND (sourcepackagereleasefile.sourcepackagerelease = sourcepackagerelease.id)) AND (libraryfilealias.id = sourcepackagereleasefile.libraryfile)) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackagename.id = sourcepackage.sourcepackagename)) AND (component.id = sourcepackagepublishing.component));
+
+
+
+CREATE VIEW binarypackagefilepublishing AS
+    SELECT (((libraryfilealias.id)::text || '.'::text) || (packagepublishing.id)::text) AS id, distrorelease.distribution, packagepublishing.id AS packagepublishing, component.name AS componentname, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, binarypackagefile.libraryfile AS libraryfilealias, distrorelease.name AS distroreleasename, distroarchrelease.architecturetag, packagepublishing.status AS publishingstatus FROM packagepublishing, sourcepackage, sourcepackagerelease, sourcepackagename, build, binarypackage, binarypackagefile, libraryfilealias, distroarchrelease, distrorelease, component WHERE ((((((((((distrorelease.id = distroarchrelease.distrorelease) AND (packagepublishing.distroarchrelease = distroarchrelease.id)) AND (packagepublishing.binarypackage = binarypackage.id)) AND (binarypackagefile.binarypackage = binarypackage.id)) AND (binarypackagefile.libraryfile = libraryfilealias.id)) AND (binarypackage.build = build.id)) AND (build.sourcepackagerelease = sourcepackagerelease.id)) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (component.id = packagepublishing.component)) AND (sourcepackagename.id = sourcepackage.sourcepackagename));
+
+
+
+CREATE VIEW sourcepackagepublishingview AS
+    SELECT sourcepackagepublishing.id, distrorelease.name AS distroreleasename, sourcepackagename.name AS sourcepackagename, component.name AS componentname, section.name AS sectionname, distrorelease.distribution, sourcepackagepublishing.status AS publishingstatus FROM sourcepackagepublishing, distrorelease, sourcepackagerelease, sourcepackage, sourcepackagename, component, section WHERE ((((((sourcepackagepublishing.distrorelease = distrorelease.id) AND (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackage.sourcepackagename = sourcepackagename.id)) AND (sourcepackagepublishing.component = component.id)) AND (sourcepackagepublishing.section = section.id));
+
+
+
+CREATE VIEW binarypackagepublishingview AS
+    SELECT packagepublishing.id, distrorelease.name AS distroreleasename, binarypackagename.name AS binarypackagename, component.name AS componentname, section.name AS sectionname, packagepublishing.priority, distrorelease.distribution, packagepublishing.status AS publishingstatus FROM packagepublishing, distrorelease, distroarchrelease, binarypackage, binarypackagename, component, section WHERE ((((((packagepublishing.distroarchrelease = distroarchrelease.id) AND (distroarchrelease.distrorelease = distrorelease.id)) AND (packagepublishing.binarypackage = binarypackage.id)) AND (binarypackage.binarypackagename = binarypackagename.id)) AND (packagepublishing.component = component.id)) AND (packagepublishing.section = section.id));
+
+
+
 CREATE INDEX idx_libraryfilecontent_sha1 ON libraryfilecontent USING btree (sha1);
 
 
@@ -1411,6 +1493,22 @@ CREATE INDEX distroreleasequeue_distrorelease_key ON distroreleasequeue USING bt
 
 
 CREATE INDEX sourcepackage_maintainer_key ON sourcepackage USING btree (maintainer);
+
+
+
+CREATE INDEX sourcepackagepublishing_distrorelease_key ON sourcepackagepublishing USING btree (distrorelease);
+
+
+
+CREATE INDEX sourcepackagepublishing_status_key ON sourcepackagepublishing USING btree (status);
+
+
+
+CREATE INDEX productbugassignment_owner_idx ON productbugassignment USING btree ("owner");
+
+
+
+CREATE INDEX sourcepackagebugassignment_owner_idx ON sourcepackagebugassignment USING btree ("owner");
 
 
 
@@ -2004,8 +2102,8 @@ ALTER TABLE ONLY buglabel
 
 
 
-ALTER TABLE ONLY bugmessage
-    ADD CONSTRAINT bugmessage_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY message
+    ADD CONSTRAINT message_pkey PRIMARY KEY (id);
 
 
 
@@ -2034,7 +2132,7 @@ ALTER TABLE ONLY projectbugtracker
 
 
 
-ALTER TABLE ONLY bugmessage
+ALTER TABLE ONLY message
     ADD CONSTRAINT bugmessage_rfc822msgid_key UNIQUE (rfc822msgid);
 
 
@@ -2159,8 +2257,23 @@ ALTER TABLE ONLY pomsgset
 
 
 
-ALTER TABLE ONLY pomsgidsighting
-    ADD CONSTRAINT pomsgidsighting_potmsgset_key UNIQUE (potmsgset, pomsgid);
+ALTER TABLE ONLY bounty
+    ADD CONSTRAINT bounty_pkey PRIMARY KEY (id);
+
+
+
+ALTER TABLE ONLY bounty
+    ADD CONSTRAINT bounty_name_key UNIQUE (name);
+
+
+
+ALTER TABLE ONLY bugmessage
+    ADD CONSTRAINT bugmessage_pkey PRIMARY KEY (id);
+
+
+
+ALTER TABLE ONLY bugmessage
+    ADD CONSTRAINT bugmessage_bug_key UNIQUE (bug, message);
 
 
 
@@ -3074,28 +3187,23 @@ ALTER TABLE ONLY bugrelationship
 
 
 
-ALTER TABLE ONLY bugmessage
-    ADD CONSTRAINT "$1" FOREIGN KEY (bug) REFERENCES bug(id);
-
-
-
-ALTER TABLE ONLY bugmessage
+ALTER TABLE ONLY message
     ADD CONSTRAINT "$2" FOREIGN KEY ("owner") REFERENCES person(id);
 
 
 
-ALTER TABLE ONLY bugmessage
-    ADD CONSTRAINT "$3" FOREIGN KEY (parent) REFERENCES bugmessage(id);
+ALTER TABLE ONLY message
+    ADD CONSTRAINT "$3" FOREIGN KEY (parent) REFERENCES message(id);
 
 
 
-ALTER TABLE ONLY bugmessage
+ALTER TABLE ONLY message
     ADD CONSTRAINT "$4" FOREIGN KEY (distribution) REFERENCES distribution(id);
 
 
 
 ALTER TABLE ONLY bugattachment
-    ADD CONSTRAINT "$1" FOREIGN KEY (bugmessage) REFERENCES bugmessage(id);
+    ADD CONSTRAINT "$1" FOREIGN KEY (bugmessage) REFERENCES message(id);
 
 
 
@@ -3314,10 +3422,50 @@ ALTER TABLE ONLY sourcepackagerelease
 
 
 
+ALTER TABLE ONLY bounty
+    ADD CONSTRAINT "$1" FOREIGN KEY (reviewer) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY bounty
+    ADD CONSTRAINT "$2" FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY bounty
+    ADD CONSTRAINT "$3" FOREIGN KEY (claimant) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY person
+    ADD CONSTRAINT person_language_fk FOREIGN KEY ("language") REFERENCES "language"(id);
+
+
+
+ALTER TABLE ONLY productbugassignment
+    ADD CONSTRAINT productbugassignment_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY sourcepackagebugassignment
+    ADD CONSTRAINT sourcepackagebugassignment_owner_fk FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY bugmessage
+    ADD CONSTRAINT "$1" FOREIGN KEY (bug) REFERENCES bug(id);
+
+
+
+ALTER TABLE ONLY bugmessage
+    ADD CONSTRAINT "$2" FOREIGN KEY (message) REFERENCES message(id);
+
+
+
 COMMENT ON SCHEMA public IS 'Standard public schema';
 
 
-
+/*
 COMMENT ON FUNCTION valid_name(text) IS 'validate a name.
 
     Names must contain only lowercase letters, numbers, ., & -. They
@@ -3336,3 +3484,16 @@ COMMENT ON FUNCTION valid_bug_name(text) IS 'validate a bug name
     names that look like floats).';
 
 
+
+COMMENT ON FUNCTION valid_version(text) IS 'validate a version number
+
+    Note that this is more flexible that the Debian naming policy,
+    as it states ''SHOULD'' rather than ''MUST'', and we have already
+    imported packages that don''t match it. Note that versions
+    may contain both uppercase and lowercase letters so we can''t use them
+    in URLs. Also note that both a product name and a version may contain
+    hypens, so we cannot join the product name and the version with a hypen
+    to form a unique string (we need to use a space or some other character
+    disallowed in the product name spec instead';
+
+*/
