@@ -1,3 +1,7 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Database classes for a distribution release."""
+
 __metaclass__ = type
 
 from sets import Set
@@ -54,6 +58,7 @@ class DistroRelease(SQLBase):
             joinColumn='distrorelease')
 
     def parent(self):
+        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         if self.parentrelease:
             return self.parentrelease.title
         return ''
@@ -64,6 +69,7 @@ class DistroRelease(SQLBase):
     state = property(state)
 
     def sourcecount(self):
+        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         # Import inside method to avoid circular import
         # See the top of the file
         from canonical.launchpad.database import SourcePackagePublishing
@@ -75,6 +81,7 @@ class DistroRelease(SQLBase):
     sourcecount = property(sourcecount)
 
     def binarycount(self):
+        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         clauseTables = ('DistroArchRelease',)
         query = ('PackagePublishing.status = %s '
                  'AND PackagePublishing.distroarchrelease = '
@@ -86,37 +93,12 @@ class DistroRelease(SQLBase):
             query, clauseTables=clauseTables).count()
     binarycount = property(binarycount)
 
-    def bugCounter(self):
-        counts = []
-
-        clauseTables = ("VSourcePackageInDistro",
-                        "SourcePackage")
-        severities = [
-            dbschema.BugTaskStatus.NEW,
-            dbschema.BugTaskStatus.ACCEPTED,
-            dbschema.BugTaskStatus.FIXED,
-            dbschema.BugTaskStatus.REJECTED
-        ]
-
-        _query = ("bugtask.distrorelease = %i AND "
-                  "bugtask.bugstatus = %i"
-                 )
-
-        for severity in severities:
-            query = _query %(self.id, int(severity))
-            count = BugTask.select(query, clauseTables=clauseTables).count()
-            counts.append(count)
-
-        counts.insert(0, sum(counts))
-        return counts
-    bugCounter = property(bugCounter)
-
     def architecturecount(self):
+        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         return len(list(self.architectures))
 
     def getBugSourcePackages(self):
-        """Get SourcePackages in a DistroRelease with BugTask"""
-
+        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         clauseTables=["BugTask",]
         query = ("VSourcePackageInDistro.distrorelease = %i AND "
                  "VSourcePackageInDistro.distro = BugTask.distribution AND "
@@ -130,10 +112,12 @@ class DistroRelease(SQLBase):
             query, clauseTables=clauseTables, distinct=True)
 
     def findSourcesByName(self, pattern):
+        """Get SourcePackages in a DistroRelease with BugTask"""
         srcset = getUtility(ISourcePackageSet)
         return srcset.findByNameInDistroRelease(self.id, pattern)
 
     def traverse(self, name):
+        """Get SourcePackages in a DistroRelease with BugTask"""
         if name == '+sources':
             return SourcePackageInDistroSet(self)
         elif name  == '+packages':
@@ -145,6 +129,7 @@ class DistroRelease(SQLBase):
             return self.__getitem__(name)
 
     def __getitem__(self, arch):
+        """Get SourcePackages in a DistroRelease with BugTask"""
         try:
             return DistroArchRelease.selectBy(distroreleaseID=self.id,
                                               architecturetag=arch)[0]

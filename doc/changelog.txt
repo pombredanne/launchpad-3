@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 21:15:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1499
+
+    Summary:
+      nuke IDistroRelease.bugCounter since it's old, broken, and seemingly unused. Add docstrings to DistroRelease class.
+    Revision:
+      launchpad--devel--0--patch-1499
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-452
+       nuke IDistroRelease.bugCounter since it's old, broken, and seemingly unused. Add docstrings to DistroRelease class.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-453
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/interfaces/distrorelease.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-452
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-453
+
+
 2005-03-24 20:55:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1498
 
     Summary:

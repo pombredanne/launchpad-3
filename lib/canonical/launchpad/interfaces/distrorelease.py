@@ -42,7 +42,6 @@ class IDistroRelease(IHasOwner):
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
-    bugCounter = Attribute("The distro bug counter")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
     architectures = Attribute("The Architecture-specific Releases")
@@ -52,10 +51,6 @@ class IDistroRelease(IHasOwner):
 
     def getBugSourcePackages():
         """Get SourcePackages in a DistroRelease with BugTask"""
-
-#    def getSourceByName(name):
-#        """Return the latest source package of this name uploaded to this
-#        distro release."""
 
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for
