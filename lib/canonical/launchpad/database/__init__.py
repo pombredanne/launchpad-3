@@ -6,6 +6,7 @@ if getattr(sqlobject.main.SelectResults, '__len__', None) is None:
 #
 # first the real ones
 #
+from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.product import *
 from canonical.launchpad.database.productseries import *

@@ -2,30 +2,24 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
-from zope.schema import TextLine, Int, Choice
-
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-
-from canonical.launchpad.database import Project, Product, SourceSource, \
-        SourceSourceSet, ProductSeries, ProductSeriesSet, Bug, \
-        BugFactory
-
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet
-
-from canonical.launchpad.browser.productrelease import newProductRelease
-
-from zope.app.form.browser.add import AddView
-from zope.app.form.browser import SequenceWidget, ObjectWidget
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
-
+from zope.app.form.browser import SequenceWidget, ObjectWidget
+from zope.app.form.browser.add import AddView
+from zope.interface import implements
+from zope.schema import TextLine, Int, Choice
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 import zope.security.interfaces
+
+from canonical.launchpad.database import Project, Product, SourceSource, \
+        SourceSourceSet, ProductSeries, ProductSeriesSet, Bug, \
+        BugFactory, ProductMilestoneSet
+from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet
+from canonical.launchpad.browser.productrelease import newProductRelease
 
 #
 # Traversal functions that help us look up something
@@ -35,7 +29,9 @@ def traverseProduct(product, request, name):
     if name == '+sources':
         return SourceSourceSet()
     elif name == '+series':
-        return ProductSeriesSet(product=product)
+        return ProductSeriesSet(product = product)
+    elif name == 'milestones':
+        return ProductMilestoneSet(product = product)
     else:
         return product.getRelease(name)
 
@@ -61,6 +57,9 @@ class ProductView:
 
     projectPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-project.pt')
+
+    milestonePortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-milestones.pt')
 
     def __init__(self, context, request):
         self.context = context

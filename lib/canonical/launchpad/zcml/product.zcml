@@ -127,7 +127,6 @@
         lp:url="doap/projects/$Project.name/$Product.name/+review">
     </browser:editform>
 
-    <!-- bug filing on products hidden at this new URL till its ready -->
     <browser:addform
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
@@ -146,8 +145,6 @@
            class="zope.app.form.browser.TextWidget"
            displayWidth="55" />
     </browser:addform>
-
-
 
     <!-- ProductSet-->
     <content class="canonical.launchpad.database.ProductSet">

@@ -19,6 +19,7 @@
     <div tal:replace="structure view/latestBugPortlet" />
     <div tal:replace="structure view/branchesPortlet" />
     <div tal:replace="structure view/translationsPortlet" />
+    <div tal:replace="structure view/milestonePortlet" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">

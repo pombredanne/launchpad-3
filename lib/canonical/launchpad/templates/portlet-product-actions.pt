@@ -15,7 +15,9 @@
         <img src="/++resource++edit.gif">
         <a href="+addseries">Add Series</a><br />
         <img src="/++resource++edit.gif">
-        <a href="+addrelease">Add Release</a>
+        <a href="+addrelease">Add Release</a><br />
+        <img src="/++resource++edit.gif">
+        <a href="+milestone">Add Milestone</a>
 
         </div>
     </div>

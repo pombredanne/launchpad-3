@@ -98,6 +98,8 @@ class Product(SQLBase):
     releases = MultipleJoin('ProductRelease', joinColumn='product',
                              orderBy='-datereleased')
 
+    milestones = MultipleJoin('Milestone', joinColumn = 'product')
+
     def newseries(self, form):
         # Extract the details from the form
         name = form['name']

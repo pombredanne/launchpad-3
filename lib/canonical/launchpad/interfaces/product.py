@@ -100,6 +100,11 @@ class IProduct(IHasOwner):
     branches = Attribute(_("""An iterator over the Bazaar branches that are
     related to this product."""))
 
+    milestones = Attribute(_(
+        """The release milestones associated with this product, useful in
+        particular to the maintainer, for organizing which bugs will be fixed
+        when."""))
+
     def poTemplatesToImport():
         """Returns all PO templates from this product that have a rawfile 
         pending of import into Rosetta."""

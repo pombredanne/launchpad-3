@@ -2,6 +2,52 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-04 17:38:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1145
+
+    Summary:
+      Initial support for adding milestones to products. TODO: property
+ security config so that only product maintainer can add milestones,
+ integration with malone, and page testing when UI stabilizes.
+    Revision:
+      launchpad--devel--0--patch-1145
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-257
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-258
+       Initial support for adding milestones to products. TODO: property security config so that only product maintainer can add milestones, integration with malone, and page testing when UI stabilizes.
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/milestone.py.id
+     lib/canonical/launchpad/browser/milestone.py
+     lib/canonical/launchpad/database/.arch-ids/milestone.py.id
+     lib/canonical/launchpad/database/milestone.py
+     lib/canonical/launchpad/interfaces/.arch-ids/milestone.py.id
+     lib/canonical/launchpad/interfaces/milestone.py
+     lib/canonical/launchpad/templates/.arch-ids/portlet-product-milestones.pt.id
+     lib/canonical/launchpad/templates/portlet-product-milestones.pt
+     lib/canonical/launchpad/zcml/.arch-ids/milestone.zcml.id
+     lib/canonical/launchpad/zcml/milestone.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/templates/portlet-product-actions.pt
+     lib/canonical/launchpad/templates/product-index.pt
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-257
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-258
+
+
 2005-01-03 13:22:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1144
 
     Summary:
