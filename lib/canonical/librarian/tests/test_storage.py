@@ -14,14 +14,14 @@ import tempfile
 from canonical.librarian.storage import FatSamStorage, DigestMismatchError
 from canonical.librarian.storage import sameFile
 from canonical.librarian import db
+from canonical.lp import initZopeless
 
 class FatSamStorageTests(unittest.TestCase):
     def setUp(self):
         import sys; sys.stdout.flush()
         import sys; sys.stderr.flush()
         from canonical.database.sqlbase import SQLBase
-        from sqlobject import connectionForURI
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+        initZopeless()
         self.directory = tempfile.mkdtemp()
         self.storage = FatSamStorage(self.directory, db.Library())
         db.LibraryFileAlias.clearTable()

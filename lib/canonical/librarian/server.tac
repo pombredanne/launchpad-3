@@ -3,6 +3,7 @@
 
 from canonical.database.sqlbase import SQLBase
 from sqlobject import connectionForURI
+from canonical.lp import initZopeless
 
 from twisted.application import service, internet
 
@@ -12,7 +13,7 @@ from canonical.librarian import web as fatweb
 from twisted.web import server
 
 # Connect to database
-SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+initZopeless()
 application = service.Application('Librarian')
 librarianService = service.IServiceCollection(application)
 

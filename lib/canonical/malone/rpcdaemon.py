@@ -11,6 +11,7 @@ import sqlobject, optparse
 from canonical.database.sqlbase import SQLBase, quote
 
 from canonical.launchpad.database import Bug
+from canonical.lp import initZopeless
 
 class OptionHelpException(optparse.OptParseError):
     """
@@ -72,8 +73,7 @@ class RPCDaemon(xmlrpc.XMLRPC):
     
     def __init__(self):
         xmlrpc.XMLRPC.__init__(self)
-        uri = 'postgres:///launchpad_test'
-        SQLBase.initZopeless(sqlobject.connectionForURI(uri))
+        initZopeless()
         self.debug=1
 
     def xmlrpc_runcommand(self, cmd, locale, packedargs):

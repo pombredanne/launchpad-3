@@ -6,21 +6,23 @@
 #    it makes)
 
 import unittest
-import os
-import time
+import os, sys, time, popen2
 import xmlrpclib
 
 from twisted.python.util import sibpath
+from canonical.launchpad.ftests.harness import LaunchpadTestCase
 
 
-class XMLRPCTestCase(unittest.TestCase):
+class XMLRPCTestCase(LaunchpadTestCase):
     # This test requires write access to the current working dir (it writes a
     # twistd.log and twistd.pid (and deletes them), and also the launchpad_test
     # DB created by running make in launchpad's database/schema directory.
     def setUp(self):
-        # Start a twistd process using the test.tac in the ftests directory
-        ret = os.system('twistd -oy ' + sibpath(__file__, 'test.tac'))
-        self.failUnlessEqual(0, ret)
+        super(XMLRPCTestCase, self).setUp()
+        os.system('kill `cat twistd.pid 2> /dev/null` > /dev/null 2>&1')
+        cmd = 'twistd -oy %s' % (sibpath(__file__, 'test.tac'),)
+        rv = os.system(cmd)
+        self.failUnlessEqual(rv, 0)
         self.server = xmlrpclib.Server('http://localhost:9666/')
 
         # XXX: Wait for twistd to have a chance to start and connect to db.
@@ -51,7 +53,6 @@ class XMLRPCTestCase(unittest.TestCase):
         self.assertEqual({}, emptyDict)
 
     def tearDown(self):
-        # Kill the twistd process
         pid = int(open('twistd.pid').read())
         ret = os.system('kill `cat twistd.pid`')
         # Wait for it to actually die
@@ -62,6 +63,7 @@ class XMLRPCTestCase(unittest.TestCase):
                 break
             time.sleep(0.1)
         os.remove('twistd.log')
+        super(XMLRPCTestCase, self).setUp()
         self.failIf(ret)
 
 

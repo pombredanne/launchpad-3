@@ -15,10 +15,18 @@ from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 from canonical.authserver.database import DatabaseUserDetailsStorage
 from canonical.authserver.database import IUserDetailsStorage
 
-class TestDatabaseSetup(unittest.TestCase):
+from canonical.launchpad.ftests.harness import LaunchpadTestCase
+
+class TestDatabaseSetup(LaunchpadTestCase):
     def setUp(self):
-        self.connection = psycopg.connect('dbname=launchpad_test')
+        super(TestDatabaseSetup, self).setUp()
+        self.connection = self.connect()
         self.cursor = self.connection.cursor()
+
+    def tearDown(self):
+        self.cursor.close()
+        self.connection.close()
+        super(TestDatabaseSetup, self).tearDown()
 
 class DatabaseStorageTestCase(TestDatabaseSetup):
     def test_verifyInterface(self):
@@ -189,10 +197,6 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
                                                       'fred@bedrock', ssha,
                                                       newSsha)
         self.assertEqual({}, userDict)
-
-    def tearDown(self):
-        # Remove dummy data added to DB.
-        self.connection.rollback()
 
 
 def test_suite():

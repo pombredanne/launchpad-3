@@ -15,10 +15,8 @@ sys.path.append('..')
 #
 # setup connection to the db
 #
-from sqlobject import connectionForURI
-__connection__ = connectionForURI('postgres:///launchpad_test')
-from canonical.database.sqlbase import *
-SQLBase.initZopeless(__connection__)
+from canonical.lp import initZopeless
+SQLBase.initZopeless()
 
 #
 # get the database access classes ready

@@ -10,7 +10,7 @@ from zope.interface import classImplements
 from sqlobject import connectionForURI
 from canonical.database.sqlbase import SQLBase
 
-dbname = "launchpad_test"
+dbname = "launchpad_ftest"
 dbhost = ""
 
 def initZopeless():

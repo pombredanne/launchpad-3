@@ -4,6 +4,7 @@
 import unittest
 
 from canonical.librarian import db
+from canonical.lp import initZopeless
 
 def sorted(l):
     l = list(l)
@@ -13,9 +14,7 @@ def sorted(l):
 class DBTestCase(unittest.TestCase):
 
     def setUp(self):
-        from canonical.database.sqlbase import SQLBase
-        from sqlobject import connectionForURI
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+        initZopeless()
         # Purge the tables; it's not like the launchpad_test db is important :)
         db.LibraryFileAlias.clearTable()
         db.LibraryFileContent.clearTable()

@@ -38,6 +38,8 @@ def main():
         print tabnanny_results
         print '---- end tabnanny bitching ----'
         return 1
+
+    print 'Running tests.'
     stdin, out, err = os.popen3('cd %s; python test.py %s < /dev/null' %
         (here, ' '.join(sys.argv[1:])))
     errlines = err.readlines()
