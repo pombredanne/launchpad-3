@@ -17,7 +17,6 @@
     <h1><span
     tal:content="context/release/displayname">displayname</span> 
     Overview</h1> 
-
    <table width="100%" border="0">
    <tr><td>
       <table width="100%">
@@ -91,16 +90,16 @@
       <a href="+edit">Edit Release Information</a>
    </th></tr>
    <tr><td>
-     <div class="dummy">
+     <div>
       <table width="100%">
-      <legend><h4>Release Bugs (XXX)</h4></legend>
+      <legend><h4>Release Bugs</h4></legend>
       <tr><td>
         <fieldset>
         <div>
 	<table>
-	<tr><th>120</th><th>Openned Bugs</th></tr>
-	<tr><th>20</th><th>Resolved Bugs</th></tr>
-	<tr><th>12</th><th>Security Bugs</th></tr>
+	<tr><th tal:content="python:context.release.bugCounter[0]">NEW</th><th>New Bugs</th></tr>
+	<tr><th tal:content="python:context.release.bugCounter[1]">OPEN</th><th>Opened Bugs</th></tr>
+	<tr><th tal:content="python:context.release.bugCounter[2]">CLOSED</th><th>Closed Bugs</th></tr>
 	</table>
 	</div>
       </td></tr>
