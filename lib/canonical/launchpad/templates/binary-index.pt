@@ -31,6 +31,7 @@
       Releases</a></li>
      <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
       Source Packages</a></li>
+     <li>Binary Packages</li>
      </ul>
 
      </div>

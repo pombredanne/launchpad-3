@@ -2,6 +2,13 @@
       lang="en"
       metal:use-macro="context/@@launchpad_template/master"
       i18n:domain="doap">
+
+<head>
+    <title metal:fill-slot="title">
+      Project: <span tal:replace="context/title">Project Title</span>
+      </title>
+</head>
+
 <body>
 
 

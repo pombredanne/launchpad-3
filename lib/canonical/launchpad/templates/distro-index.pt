@@ -25,6 +25,7 @@
 
      <div class="portletContent even">
      <ul>
+     <li>Homepage</li>
      <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
       Releases</a></li>
 

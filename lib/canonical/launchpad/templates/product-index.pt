@@ -4,6 +4,9 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">
+      Product: <span tal:replace="context/title">Product Title</span>
+      </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -24,7 +27,7 @@
         <div tal:replace="structure view/actionsPortlet" />
 </metal:rightportlets>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main" class="documentContent">
 
     <h1><span tal:replace="context/title">$Product.title</span></h1>
 

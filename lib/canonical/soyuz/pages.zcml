@@ -152,7 +152,7 @@
 	  permission="zope.Public">
 
 	<page name="index.html"
-          template="../launchpad/templates/distroreleases-index.pt"
+          template="../launchpad/templates/distro-sources.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/index.html"
 	/>
    </pages>
@@ -165,7 +165,7 @@
 	  permission="zope.Public">
 
 	<page  name="index.html"
-          template="../launchpad/templates/sourcepackage-list.pt"
+          template="../launchpad/templates/release-sources.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/index.html"
 	/>
    </pages>
@@ -177,7 +177,7 @@
 	  class="canonical.launchpad.browser.DistroReleaseSourceView"
 	  permission="launchpad.AnyPerson">
      <page  name="index.html"
-            template="../launchpad/templates/soyuz-sourcepackage-index.pt"
+            template="../launchpad/templates/sourcepackage-index.pt"
 	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/index.html"
 	/>
     

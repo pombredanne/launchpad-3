@@ -48,6 +48,7 @@
    <div class="portletBody">
      <div class="portletContent even">
      <ul>
+     <li><a href="+bugs">Packages with Open Bugs</a></li>
      <li><a href="+deliver">Deliver this Release</a></li>
      <li><a href="+edit">Edit Release Information</a></li>
      </ul>

@@ -21,7 +21,6 @@ from canonical.launchpad.interfaces import IDistroTools
 # really crap constant definition for BatchPages 
 BATCH_SIZE = 40
 
-
 #
 # Distributions
 #

@@ -24,8 +24,7 @@
      <div class="portletContent even">
      <ul>
      <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
-      Home Page</a></li>
-
+      Homepage</a></li>
      <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
       Releases</a></li>
 
@@ -45,7 +44,7 @@
    <div class="portletBody">
      <div class="portletContent even">
      <ul>
-     <li><a href="../"><span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
+     <li>Source Package: <a href="../"><span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
      </a></li>
      </ul>
      </div>
@@ -69,40 +68,38 @@
 
    <h4>Source Package Release Information</h4>
 
-   <p><b>Package name:</b> 
+   <ul>
+   <li><b>Package name:</b> 
       <a tal:content="context/sourcepackagerelease/sourcepackage/name"
       tal:attributes="href
       string:../../${context/sourcepackagerelease/sourcepackage/name}" />
 
-    <p><b>Package Creator:</b> 
-       <a
-       tal:content="context/sourcepackagerelease/creator/displayname" 
-       tal:attributes="href 
-       string:/foaf/people/${context/sourcepackagerelease/creator/name}"
-       />
+   <li><b>Package Creator:</b> 
+      <a
+      tal:content="context/sourcepackagerelease/creator/displayname" 
+      tal:attributes="href 
+      string:/foaf/people/${context/sourcepackagerelease/creator/name}"
+      />
 
-    <p><b>Upload Date (UTC):</b> 
-       <span tal:content="context/sourcepackagerelease/dateuploaded">
-       UPLOADDATE</span>
+   <li><b>Upload Date (UTC):</b> 
+      <span tal:content="context/sourcepackagerelease/dateuploaded">
+      UPLOADDATE</span>
 
-    <p><b>Urgency Level:</b>
-       <span tal:content="context/sourcepackagerelease/pkgurgency">
-       URGENCY</span>
+   <li><b>Urgency Level:</b>
+      <span tal:content="context/sourcepackagerelease/pkgurgency">
+      URGENCY</span>
 
-    <p><b>Component:</b>
-       <span tal:content="context/sourcepackagerelease/component/name">
-       Component</span>
+   <li><b>Component:</b>
+      <span tal:content="context/sourcepackagerelease/component/name">
+      Component</span>
 
-    <p><b>Binary Packages:</b> 
-      <i>
-        <a tal:condition="context/sourcepackagerelease/changelog"
-	   href="+changelog">
-	   View Changelog
+   <li><b>Binary Packages</b> 
+        (<a tal:condition="context/sourcepackagerelease/changelog"
+	   href="+changelog">View Changelog)
 	</a>
       <tal:dummy tal:condition="not:context/sourcepackagerelease/changelog">
       	  No Changelog for this Source Release
       </tal:dummy>
-      </i> 
 
        <ul>
          <li tal:repeat="binary context/sourcepackagerelease/binaries" >
@@ -117,29 +114,25 @@
          </li>
        </ul>
 
-  <p><b>Builds:</b> 
+  <li><b>Builds</b> 
 
    <tal:dummy tal:condition="not:context/archs">
      <i> No Builds Available</i>
-   </tal:dummy>
-      <i>
-        <a tal:condition="context/archs" href="+buildlog">
-	   View BuildLogs</a>
+   </tal:dummy>(<a tal:condition="context/archs" href="+buildlog">View BuildLogs</a>)
 
       <tal:dummy tal:condition="not:context/archs">
       	  <i>No Build for this Source Release</i>
       </tal:dummy>
-      </i> 
    <br>
    <tal:block tal:repeat="arch context/archs">
      [
        <a tal:content="arch" tal:attributes="href arch">ARCH</a>
      ]    
    </tal:block>
-
+</ul>
 
  <div condition="context/builddepends">
-  <h4>Build Dependences</h4>
+  <h4>Build Dependencies</h4>
   <table width="100%">
     <tr>
       <td valign="top">
@@ -188,7 +181,7 @@
     </tr>
     <tr>
       <td>
-        <h4> Plataform Independent </h4>
+        <h5>Plataform Independent</h5>
       </td>
     </tr>
     <tr>

@@ -4,6 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Source Package: <span tal:replace="context/sourcepackage/shortdesc" /></title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
   <!-- Soyuz style sheet -->
@@ -14,7 +15,7 @@
 
 <metal:leftportlets fill-slot="portlets_one">
 
-<tal:block tal:define="distro context/release">
+<tal:block tal:define="distro context/release/distribution">
  <div class="portlet">
   <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
 
@@ -23,8 +24,7 @@
      <div class="portletContent even">
      <ul>
      <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
-      Home Page</a></li>
-
+      Homepage</a></li>
      <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
       Releases</a></li>
 
@@ -53,16 +53,11 @@
 
 </metal:leftportlets>
 
-
-
-
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure view/bugPortlet" />
   <div tal:replace="structure view/translationPortlet" />
   <div tal:replace="structure view/watchPortlet" />
 </metal:rightportlets>
-
-
 
 <div metal:fill-slot="main">
 
@@ -71,71 +66,63 @@
 
     <h1><span tal:content="context/sourcepackage/shortdesc"/></h1>
     
-	   <fieldset>
-	      <legend>Source Package Information</legend>
-	      <p><h4>Description:</h4> 
+      <h4>Description:</h4> 
 
-	      <tal:block tal:replace="context/sourcepackage/description" />
-	      <br>
-	      <br>
-	      <p><b>Package name: </b> 
-	      <tal:block tal:replace="context/sourcepackage/name" />
-    
-              <p><b>Maintainer:   </b> 
-	      <a
-	      tal:content="context/sourcepackage/maintainer/displayname" 
-	      tal:attributes="href 
-	      string:/foaf/people/${context/sourcepackage/maintainer/name}"
-	      />
+      <tal:block tal:replace="context/sourcepackage/description" />
 
-	      <p><b>Originating Distribution:   </b> 
-	      <a tal:condition="context/sourcepackage/distro"
-	      tal:content="context/sourcepackage/distro/title" 
-	      tal:attributes="href string:../../../../${context/sourcepackage/distro/name}"/>
-	      <i tal:condition="not:context/sourcepackage/distro">
-	        Not available.
-	      </i>
-	            
+      <ul>
+        <li><b>Package name: </b> 
+          <tal:block tal:replace="context/sourcepackage/name" />
 
-	      <p><b>Project:   </b> 
-                <tal:dummy tal:define="product context/sourcepackage/product">
+        <li><b>Maintainer:   </b><a
+          tal:content="context/sourcepackage/maintainer/displayname" 
+          tal:attributes="href 
+          string:/foaf/people/${context/sourcepackage/maintainer/name}"
+          />
 
-	        <tal:dummy tal:condition="product">
-	         <tal:dummy tal:condition="product/project">
-	           <a tal:attributes="href string:/doap/projects/${product/project/name}" 
-	                tal:content="product/project/title" />
-	         </tal:dummy>
-		</tal:dummy>
+        <li><b>Originating Distribution:   </b> <a tal:condition="context/sourcepackage/distro"
+      tal:content="context/sourcepackage/distro/title" 
+      tal:attributes="href string:../../../../${context/sourcepackage/distro/name}"/>
+          <i tal:condition="not:context/sourcepackage/distro">
+            Not available.
+          </i>
 
-		<tal:dummy tal:condition="not:product">
-	         No Project for this Package Available
-	        </tal:dummy>
-	        </tal:dummy>
+      <li><b>Project:   </b> 
+          <tal:dummy tal:define="product context/sourcepackage/product">
 
-	      <p><b>Product:</b> 
-                <tal:dummy tal:define="product context/sourcepackage/product">
+        <tal:dummy tal:condition="python: product and path('product/project')">
+           <a tal:attributes="href string:/doap/projects/${product/project/name}" 
+                tal:content="product/project/title" />
+    </tal:dummy>
 
-	        <tal:dummy tal:condition="product">
-	         <a tal:attributes="href string:/doap/projects/${product/project/name}/${product/name}" 
-	            tal:content="product/title" />
-	        </tal:dummy>
+    <tal:dummy tal:condition="not:product">
+         No Project for this Package Available
+        </tal:dummy>
+        </tal:dummy>
 
-  	        <tal:dummy tal:condition="not:product">
-	         No Product for this Package Available
-	        </tal:dummy>
+      <li><b>Product:</b> 
+            <tal:dummy tal:define="product context/sourcepackage/product">
 
-	        </tal:dummy>
-	   </fieldset>
+        <tal:dummy tal:condition="product">
+         <a tal:attributes="href string:/doap/projects/${product/project/name}/${product/name}" 
+            tal:content="product/title" />
+        </tal:dummy>
+
+        <tal:dummy tal:condition="not:product">
+         No Product for this Package Available
+        </tal:dummy>
+
+        </tal:dummy>
 
 	   <fieldset>
 	      <legend>
 	         Available Versions
 	      </legend>
 	      
-	      <p><b>Proposed:</b>
+	      <b>Proposed:</b>
 	      <i class="dummy">Not in dbschema anymore. Why?</i>
 
-	      <p><b>Current:</b><br>
+	      <b>Current:</b><br>
 	      <tal:dummy tal:condition="context/currentversions">
 	      <tal:block tal:repeat="current context/currentversions">
 	         <a tal:content="current/currentversion" 
