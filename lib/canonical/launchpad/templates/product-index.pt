@@ -12,6 +12,13 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/latestBugPortlet" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
     <h1><span tal:replace="context/title">$Product.title</span></h1>

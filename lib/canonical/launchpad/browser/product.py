@@ -8,14 +8,26 @@
 from zope.interface import implements
 from zope.schema import TextLine, Int, Choice
 
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+
 from canonical.launchpad.database import Project, Product, SourceSource, \
-        SourceSourceSet, ProductSeries, ProductSeriesSet
+        SourceSourceSet, ProductSeries, ProductSeriesSet, Bug, \
+        ProductBugAssignment
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from canonical.launchpad.interfaces import *
 from canonical.launchpad.browser.productrelease import newProductRelease
+
+from zope.app.form.browser.add import AddView
+from zope.app.form.browser import SequenceWidget, ObjectWidget
+from zope.app.form import CustomWidgetFactory
+
+import zope.security.interfaces
 
 
 #
@@ -34,6 +46,10 @@ def traverseProduct(product, request, name):
 # A View Class for Product
 #
 class ProductView(object):
+
+    latestBugPortlet = ViewPageTemplateFile(
+        '../templates/portlet-latest-bugs.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.product = context
@@ -94,5 +110,53 @@ class ProductView(object):
         # now redirect to view the page
         self.request.response.redirect('+series/'+series.name)
 
+    def latestBugs(self, quantity=5):
+        """Return <quantity> latest bugs reported against this product."""
+        buglist = self.context.bugs
+        bugsdated = []
+        for bugass in buglist:
+            bugsdated.append( (bugass.datecreated, bugass) )
+        bugsdated.sort(); bugsdated.reverse()
+        buglist = []
+        for bug in bugsdated[:quantity]:
+            buglist.append(bug[1])
+        buglist.reverse()
+        return buglist
+
+
+class ProductFileBugView(AddView):
+
+    __used_for__ = IProduct
+
+    ow = CustomWidgetFactory(ObjectWidget, Bug)
+    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
+    options_widget = sw
+    
+    def __init__(self, context, request):
+        self.request = request
+        self.context = context
+        self._nextURL = '.'
+        AddView.__init__(self, context, request)
+
+    def createAndAdd(self, data):
+        # add the owner information for the bug
+        owner = IPerson(self.request.principal, None)
+        if not owner:
+            raise zope.security.interfaces.Unauthorized, "Need an authenticated bug owner"
+        kw = {}
+        for item in data.items():
+            kw[str(item[0])] = item[1]
+        kw['ownerID'] = owner.id
+        # create the bug
+        bug = Bug(**kw)
+        notify(ObjectCreatedEvent(bug))
+        # create productbugassignment
+        bpa = ProductBugAssignment(productID=self.context.id,
+                                   bugID=bug.id)
+        return bug
+
+    def nextURL(self):
+        return self._nextURL
+ 
 
 

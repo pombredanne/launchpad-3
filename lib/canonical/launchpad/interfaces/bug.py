@@ -2,26 +2,14 @@
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
-from zope.interface import Interface, Attribute, classImplements
+from zope.interface import Interface, Attribute
 
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.schema.interfaces import IText, ITextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.validators.name import valid_name
-
-# FIELDS
-
-class ISummary(IText):
-    """A Field that implements a Bug Summary"""
-
-classImplements(Summary, ISummary)
-
-class ITitle(ITextLine):
-    """A Field that implements a launchpad Title"""
-
-classImplements(Title, ITitle)
+from canonical.launchpad.fields import Title, Summary
 
 
 # CONTENT

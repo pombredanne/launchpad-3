@@ -17,18 +17,18 @@
       <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
-    <!-- SourcePackage -->
-    <content class="canonical.launchpad.database.SourcePackage">
-        <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
-        <implements interface="zope.app.container.interfaces.IItemContainer"/>
-    </content>
-    
     <!-- SourcePackageInDistro -->
     <content class="canonical.launchpad.database.SourcePackageInDistro">
         <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
+    <!-- SourcePackage -->
+    <content class="canonical.launchpad.database.SourcePackage">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+    
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourcePackage"
         name="+index" />
@@ -72,7 +72,7 @@
         <browser:page 
             name="+index"
             template="../templates/sourcepackages-index.pt"
-            lp:url="malone/sourcepackages/+index" />
+            lp:url="malone/package/+index" />
     </browser:pages>
 
 </configure>

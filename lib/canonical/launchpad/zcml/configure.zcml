@@ -30,6 +30,7 @@
     <include file="processor.zcml" />
 
     <include file="widgets.zcml" />
+    <include file="fields.zcml" />
     <include file="resources.zcml" />
 
     <!-- Event configuration -->

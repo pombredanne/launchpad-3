@@ -21,6 +21,8 @@ class IProductBugAssignment(Interface):
     priority = Choice(title=_('Priority'), vocabulary='BugPriority')
     severity = Choice(title=_('Severity'), vocabulary='BugSeverity')
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
+    datecreated = Datetime(title=_('Date Created'), required=True,
+                           readonly=True)
 
 
 class IProductBugAssignmentContainer(Interface):
@@ -64,6 +66,8 @@ class ISourcePackageBugAssignment(Interface):
             vocabulary='BinaryPackageName'
             )
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
+    datecreated = Datetime(title=_('Date Created'), required=True,
+                           readonly=True)
 
 
 class ISourcePackageBugAssignmentContainer(Interface):

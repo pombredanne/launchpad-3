@@ -5,56 +5,6 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- Widgets -->
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.interfaces.ISummary"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.SummaryWidget"
-        permission="zope.Public"
-        />
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.interfaces.ITitle"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.TitleWidget"
-        permission="zope.Public"
-        />
-
-    <!-- Launchpad Add and Edit Form METAL
-        These templates can be used by any of the add or edit forms
-        in Launchpad -->
-    <browser:page
-        for="*"
-        name="launchpad_addform"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/launchpad-addform.pt"
-        />
-
-    <browser:page
-        for="*"
-        name="launchpad_editform"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/launchpad-editform.pt"
-        />
-
-    <!-- Widget Macros
-         NB this file overrides the addform / editform widget
-         display layout used in Launchpad. It should be somewhere
-         more central than bug.zcml-->
-
-    <browser:page
-        for="*"
-        name="launchpad_widget_macros"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/launchpad-widget-macros.pt"
-        />
-
     <!-- MaloneBug (this must disappear!) -->
     <content class="canonical.launchpad.database.MaloneBug">
         <allow interface="canonical.launchpad.interfaces.IMaloneBug" />

@@ -65,19 +65,11 @@
   HTTP/1.1 200 Ok
   ...
     <h1>Bugs</h1>
-    <table class="listing rowNavigation">
-      <tr>
-        <th>Bug #</th>
-        <th>Title</th>
-        <th>Date Submitted</th>
-        <th>Submitted By</th>
-      </tr>
+  ...
       <tr onclick="window.location='4'">
         <td>4</td>
         <td><a href="4">testing something</a></td>
         <td>...</td>
         <td>Foo Bar</td>
       </tr>
-      ...
-    </table>
   ...

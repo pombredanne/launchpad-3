@@ -1,0 +1,31 @@
+<div class="portlet">
+    <h4>Latest Bugs:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <table class="rowNavigation" border="0">
+            <tr tal:repeat="bugassignment view/latestBugs"
+                tal:attributes="onclick string:window.location='/malone/bugs/${bugassignment/bug/id}';">
+                <td tal:content="bugassignment/bug/title">bug title</td>
+            </tr>
+        </table>
+
+        <a tal:attributes="href string:/malone/product/${context/project/name}/${context/name}"
+            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+            title="See all bugs for this product">
+            <img src="++resource++add.gif" alt="+" />
+            More...
+        </a><br />
+
+        <a href="+filebug"
+            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+            title="File a bug on this product">
+            <img src="++resource++add.gif" alt="+" />
+            File A Bug
+        </a><br />
+
+        </div>
+                
+    </div>
+</div>

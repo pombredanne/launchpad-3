@@ -1,0 +1,59 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="malone">
+<body>
+
+<div metal:fill-slot="main">
+    <h1>Upstream Bugs for:
+        <span tal:replace="context/displayname">$Product.displayname</span>
+    </h1>
+
+    <div class="documentDescription"
+        tal:content="context/shortdesc">$Product.shortdesc
+    </div>
+
+    <table class="listing rowNavigation" tal:condition="context/bugs">
+        <tr>
+            <th>#</th>
+            <th>Bug</th>
+            <th>Status</th>
+            <th>Severity</th>
+            <th>Priority</th>
+            <th>Assignee</th>
+        </tr> 
+        <tr tal:repeat="bugass context/bugs"
+            tal:attributes="onclick
+                string:window.location='/malone/bugs/${bugass/bug/id}';">
+            <td tal:content="bugass/bug/id">#</td>
+            <td>
+                <a href="#" 
+                    tal:attributes="href string:/malone/bugs/${bugass/bug/id}"
+                    tal:content="bugass/bug/title">
+                    $Bug.title</a>
+            </td>
+            <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
+                $ProductBugAssignment.bugstatus
+            </td>
+            <td tal:content="bugass/severity/lp:BugSeverity">
+                $ProductBugAssignment.severity
+            </td>
+            <td tal:content="bugass/priority/lp:BugPriority">
+                $ProductBugAssignment.priority
+            </td>
+            <td tal:content="bugass/assignee/browsername | default">
+            </td>
+        </tr>
+    </table>
+
+    <p tal:condition="not: context/bugs">No bugs filed against
+        <span tal:replace="context/displayname">$Product.displayname</span>
+    </p>
+
+    <p style="float: right;"><a href="+filebug"><img src="++resource++add.gif" alt="+">File a
+    new bug</a></p>
+    
+</div>
+
+</body>
+</html>

@@ -8,7 +8,7 @@ from zope.schema import Choice, Datetime, Int, Text, TextLine, Float
 from zope.schema.interfaces import IText, ITextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.launchpad.fields import Summary, Title
+from canonical.launchpad.fields import Summary, Title, TimeInterval
 from canonical.launchpad.validators.name import valid_name
 
 
@@ -52,6 +52,19 @@ class IBounty(Interface):
             USD. Note that in some cases the bounty may have been offered in
             a variety of currencies, so this USD value is an estimate based
             on recent currency rates.""")
+            )
+    difficulty = Int(
+            title=_('Difficulty'),
+            required=True, description=_("""The difficulty of this bounty,
+            rated from 1 to 100 where 100 is most difficult. An example of
+            an extremely difficult bounty would be something that requires
+            extensive and rare knowledge, such as a kernel memory management
+            subsystem.""")
+            )
+    duration = TimeInterval(
+            title=_('Duration'),
+            required=True, description=_("""The expected time required to
+            complete this bounty work, given the necessary skills.""")
             )
     reviewer = Attribute('The reviewer.')
     reviewerID = Int(title=_('Reviewer'), required=True)

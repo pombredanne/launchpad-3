@@ -34,19 +34,19 @@
 
     <table class="listing rowNavigation">
         <tr>
-            <th>Bounty</th>
-            <th>Details</th>
             <th>Date Created</th>
-            <th>Owner</th>
+            <th>Title</th>
             <th>USD Value<sup>*</sup></th>
+            <th>Difficulty</th>
+            <th>Duration</th>
         </tr>
         <tr tal:repeat="bounty context" tal:attributes="onclick
                         string:window.location='${bounty/name}';">
-            <td tal:content="bounty/name">$Bug.name</td>
-            <td><b><span tal:replace="bounty/title">title</span></b></td>
             <td tal:content="python:bounty.datecreated.strftime('%d %b %y')">date</td>
-            <td tal:content="bounty/owner/displayname">name</td>
+            <td><b><span tal:replace="bounty/title">title</span></b></td>
             <td tal:content="bounty/usdvalue">usdvalue</td>
+            <td tal:content="bounty/difficulty">difficulty</td>
+            <td tal:content="bounty/duration">duration</td>
         </tr>
     </table>
 
@@ -57,3 +57,4 @@
 
 </body>
 </html>
+

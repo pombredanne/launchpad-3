@@ -37,18 +37,6 @@
             getter="product" />
 
   <!-- pages for a product -->
-  <pages for="canonical.launchpad.interfaces.IProduct"
-         permission="zope.Public"
-         class="canonical.rosetta.browser.ViewProduct"
-         lp:url="Rosetta/projects/$Project.name/$Product.name">
-    <page name="+rosetta-index"
-          template="../launchpad/templates/rosetta-product-index.pt"
-          lp:url="Rosetta/projects/$Project.name/$Product.name/index" />
-  </pages>
-
-  <traverse for="canonical.launchpad.interfaces.IProduct" getter="poTemplate"
-            layer="canonical.launchpad.layers.RosettaLayer" />
-
   <!-- pages for a POTemplate -->
   <pages for="canonical.launchpad.interfaces.IPOTemplate"
          permission="zope.Public"

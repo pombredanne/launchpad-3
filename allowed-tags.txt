@@ -90,8 +90,6 @@ lib/canonical/soyuz/browser.py 985007b4-9c10-4601-b3ce-bdb03576569f
 lib/canonical/soyuz/configure.zcml 49ae2d27-b8d1-40f1-a5f3-358c696b767f_-->
 lib/canonical/soyuz/pages.zcml d60390fd-285e-4aa1-844e-24e11159e74c_-->
 lib/canonical/soyuz/resources.zcml 844b6d1e-43ec-46dd-baa0-e4b03661c6cf_-->
-lib/canonical/soyuz/sql.py 8dbe3bd2-94d8-4008-a03e-f5c848d6cfa7
-lib/canonical/soyuz/sql.zcml 306ffdcc-7595-447f-bc43-9c6499f6f4ed_-->
 lib/canonical/widgets/owner.py 7ab5b92b-af62-4e4e-aff9-bd9f4279d915
 lib/canonical/zodb.py 490df5ca-e28a-4e73-8c3b-8a00fd195f45
 runlaunchpad.py 65bbad4c-38de-4a86-9aa5-d4d2fd38c97d

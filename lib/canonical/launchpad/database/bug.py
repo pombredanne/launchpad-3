@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces.bug import IBug, IBugContainer
 from canonical.launchpad.interfaces import *
 
 from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import nowUTC
+from canonical.database.constants import nowUTC, DEFAULT
 
 from canonical.launchpad.database.bugcontainer import BugContainerBase
 from canonical.launchpad.database.bugassignment \
@@ -42,13 +42,17 @@ class Bug(SQLBase):
     description = StringCol(dbName='description', notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     duplicateof = ForeignKey(dbName='duplicateof', foreignKey='Bug', default=None)
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
+                              default=nowUTC)
     communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
-    communitytimestamp = DateTimeCol(dbName='communitytimestamp', notNull=True)
+    communitytimestamp = DateTimeCol(dbName='communitytimestamp',
+                                     notNull=True, default=DEFAULT)
     hits = IntCol(dbName='hits', notNull=True, default=0)
-    hitstimestamp = DateTimeCol(dbName='hitstimestamp', notNull=True)
+    hitstimestamp = DateTimeCol(dbName='hitstimestamp', notNull=True,
+                                default=DEFAULT)
     activityscore = IntCol(dbName='activityscore', notNull=True, default=0)
-    activitytimestamp = DateTimeCol(dbName='activitytimestamp', notNull = True)
+    activitytimestamp = DateTimeCol(dbName='activitytimestamp', notNull=True,
+                                    default=DEFAULT)
     
     # useful Joins
     activity = MultipleJoin('BugActivity', joinColumn='bug')

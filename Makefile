@@ -19,6 +19,11 @@ check:
 	# database.
 	./test_on_merge.py canonical
 
+pagetests:
+	$(MAKE) -C sourcecode build
+	python test.py test_pages
+	
+
 XXXcheck: build
 	$(MAKE) -C sourcecode check
 	PYTHONPATH=$(HERE)/lib ./test.py

@@ -3,6 +3,8 @@
 from zope.interface import implements
 # SQL imports
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import nowUTC, DEFAULT
+
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
@@ -29,6 +31,8 @@ class ProductBugAssignment(SQLBase):
                       default=int(dbschema.BugSeverity.NORMAL))
     assignee = ForeignKey(dbName='assignee', foreignKey='Person',
                           default=None)
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
+                              default=nowUTC)
 
 
 class ProductBugAssignmentContainer(BugContainerBase):
@@ -62,6 +66,8 @@ class SourcePackageBugAssignment(SQLBase):
                                    foreignKey='BinaryPackageName', default=None)
     assignee = ForeignKey(dbName='assignee', foreignKey='Person',
                           default=None)
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
+                              default=nowUTC)
 
 
 class SourcePackageBugAssignmentContainer(BugContainerBase):
