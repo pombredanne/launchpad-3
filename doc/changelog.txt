@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-17 11:25:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1325
+
+    Summary:
+      add check_merge target for pqm to use when merging - runs hct and related tests
+    Revision:
+      launchpad--devel--0--patch-1325
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-105
+       merge from rf
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-106
+       add check_merge target for pqm to use when merging - runs hct and related tests
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-107
+       bwah, the default dir in the test config is not overridden - do so
+    
+
+    modified files:
+     Makefile doc/changelog.txt
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-105
+     robert.collins@canonical.com/launchpad--devel--0--patch-106
+     robert.collins@canonical.com/launchpad--devel--0--patch-107
+
+
 2005-02-16 19:06:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1324
 
     Summary:

@@ -14,10 +14,19 @@ HERE:=$(shell pwd)
 # DO NOT ALTER : this should just build by default
 default: inplace
 
+check_merge: build
+	# Work around the current idiom of 'make check' getting too long
+	# because of hct and related tests. note that this is a short
+	# term solution, the long term solution will need to be 
+	# finer grained testing anyway.
+	# Run all tests. test_on_merge.py takes care of setting up the
+	# database.
+	${PYTHON} -t ./test_on_merge.py --dir hct --dir sourcerer --dir banzai
+
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	${PYTHON} -t ./test_on_merge.py canonical
+	${PYTHON} -t ./test_on_merge.py 
 
 pagetests:
 	$(MAKE) -C sourcecode build
