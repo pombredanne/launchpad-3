@@ -342,9 +342,13 @@ class RosettaPOTemplate(SQLBase):
         else:
             assert messageIDs.count() == 1
             messageID = messageIDs[0]
+            if pofile is None:
+                pofileID = None
+            else:
+                pofileID = pofile.id
             existing = RosettaPOMessageSet.selectBy(
                 poTemplateID=self.id,
-                poFileID=(pofile and pofile.id),
+                poFileID=pofileID,
                 primeMessageID_ID=messageID.id)
             if existing.count():
                 assert existing.count() == 1
@@ -556,12 +560,16 @@ class RosettaPOMessageSet(SQLBase):
             POMsgIDSighting.pomsgid = POMsgID.id
             ''' % self.id, clauseTables=('POMsgIDSighting',))
 
-    def getMessageIDSighting(self, plural_form):
+    def getMessageIDSighting(self, plural_form, allowOld=False):
         """Return the message ID sighting that is current and has the
         plural form provided."""
-        ret = RosettaPOMessageIDSighting.selectBy(poMessageSetID=self.id,
-                                                  pluralForm=plural_form,
-                                                  inLastRevision=True)
+        if allowOld:
+            ret = RosettaPOMessageIDSighting.selectBy(poMessageSetID=self.id,
+                                                      pluralForm=plural_form)
+        else:
+            ret = RosettaPOMessageIDSighting.selectBy(poMessageSetID=self.id,
+                                                      pluralForm=plural_form,
+                                                      inLastRevision=True)
         if ret.count() == 0:
             raise KeyError, plural_form
         else:
@@ -629,15 +637,20 @@ class RosettaPOMessageSet(SQLBase):
 
         return translations
 
-    def getTranslationSighting(self, plural_form):
+    def getTranslationSighting(self, plural_form, allowOld=False):
         """Return the translation sighting that is committed and has the
         plural form provided."""
         if self.poFile == None:
             raise ValueError
-        translations = RosettaPOTranslationSighting.selectBy(
-            poMessageSetID=self.id,
-            inLastRevision=True,
-            pluralForm=plural_form)
+        if allowOld:
+            translations = RosettaPOTranslationSighting.selectBy(
+                poMessageSetID=self.id,
+                pluralForm=plural_form)
+        else:
+            translations = RosettaPOTranslationSighting.selectBy(
+                poMessageSetID=self.id,
+                inLastRevision=True,
+                pluralForm=plural_form)
         if translations.count() == 0:
             raise IndexError, plural_form
         else:

@@ -361,9 +361,9 @@ class IPOMessageSet(Interface):
     def messageIDs():
         """Return an iterator over this set's message IDs."""
 
-    def getMessageIDSighting(plural_form):
+    def getMessageIDSighting(plural_form, allowOld=False):
         """Return the message ID sighting that is current and has the
-        plural form provided."""
+        plural form provided.  If allowOld is True, include non-current."""
 
     # The primary message ID is the same as the message ID with plural
     # form 0 -- i.e. it's redundant. However, it acts as a cached value.
@@ -380,9 +380,9 @@ class IPOMessageSet(Interface):
         XXX: This is quite UI-oriented. Refactor?
         """
 
-    def getTranslationSighting(plural_form):
+    def getTranslationSighting(plural_form, allowOld=False):
         """Return the translation sighting that is current and has the
-        plural form provided."""
+        plural form provided.  If allowOld is True, include non-current."""
 
     def translationSightings():
         """Return an iterator over current translation sightings."""

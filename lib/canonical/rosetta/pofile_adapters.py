@@ -80,6 +80,8 @@ class TranslationsList(object):
                 self._nplurals = 2
             else:
                 self._nplurals = self._msgset.poFile.pluralForms
+        else:
+            self._nplurals = 1
 
     # FIXME: this list implementation is incomplete.  Dude, if you want to do
     # del foo.msgstrs[2]
@@ -88,18 +90,18 @@ class TranslationsList(object):
     # then you're probably on crack anyway.
 
     def __setitem__(self, index, value):
-        if index > self._nplurals:
-            raise IndexError, index
         if not value:
             if self._msgset.poFile is None:
                 # template
                 return
             try:
-                sighting = self._msgset.getTranslationSighting(index)
+                sighting = self._msgset.getTranslationSighting(index, allowOld=True)
             except IndexError:
                 # nothing passed, nothing in the DB, then it's ok
                 return
             sighting.inLatestRevision = False
+        if index > self._nplurals:
+            raise IndexError, index
         if self._msgset.poFile is None:
             # template
             raise pofile.POSyntaxError(msg="PO Template has translations!")
@@ -108,7 +110,7 @@ class TranslationsList(object):
 
     def __getitem__(self, index):
         try:
-            return self._msgset.getTranslationSighting(index).poTranslation.translation
+            return self._msgset.getTranslationSighting(index, allowOld=True).poTranslation.translation
         except KeyError:
             if index < self._nplurals:
                 return ''
@@ -129,6 +131,7 @@ class MessageProxy(POMessage):
 
     def __init__(self, msgset):
         self._msgset = msgset
+        self._translations = TranslationsList(msgset)
 
     def _get_msgid(self):
         return self._msgset.primeMessageID_.msgid
@@ -158,7 +161,7 @@ class MessageProxy(POMessage):
             return translations[0].translation
     def _set_msgstr(self, value):
         # let's avoid duplication of code
-        self.msgstrPlurals[0] = value
+        self._translations[0] = value
     msgstr = property(_get_msgstr, _set_msgstr)
 
     def _get_msgstrPlurals(self):
@@ -166,16 +169,10 @@ class MessageProxy(POMessage):
         if len(translations) > 1:
             # test is necessary because the interface says when
             # there are no plurals, msgstrPlurals is None
-            return TranslationsList(self._msgset)
+            return self._translations
     def _set_msgstrPlurals(self, value):
-        current = self.msgstrPlurals
-        # XXX: broken if we didn't have all plural forms and now we do
-        if current is not None and len(value) != len(current):
-            raise ValueError("New list of message strings has different size as current one")
-        if current is None:
-            current = TranslationsList(self._msgset)
         for index, item in enumerate(value):
-            current[index] = item
+            self._translations[index] = item
     msgstrPlurals = property(_get_msgstrPlurals, _set_msgstrPlurals)
 
     def _get_commentText(self):
@@ -237,7 +234,7 @@ class TemplateImporter(object):
             msgset = self.potemplate.makeMessageSet(msgid, update=True)
         else:
             try:
-                msgset.getMessageIDSighting(0).touch()
+                msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
             except KeyError:
                 # If we don't have any MessageIDSighting, we shouldn't fail.
                 pass
@@ -274,7 +271,7 @@ class POFileImporter(object):
         # what policy here? small bites? lines? how much memory do we want to eat?
         self.parser.write(filelike.read())
         self.parser.finish()
-        if not parser.header:
+        if not self.parser.header:
             raise POInvalidInputError('PO file has no header', 0)
         self.pofile.set(
             topComment=self.parser.header.commentText.encode('utf-8'),
@@ -284,11 +281,12 @@ class POFileImporter(object):
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
-        msgset = self.pofile[msgid]
-        if msgset is None:
+        try:
+            msgset = self.pofile[msgid]
+        except KeyError:
             msgset = self.pofile.poTemplate.makeMessageSet(msgid, self.pofile, update=True)
         else:
-            msgset.getMessageIDSighting(0).touch()
+            msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
         self.len += 1
         msgset.sequence = self.len
         proxy = MessageProxy(msgset)
