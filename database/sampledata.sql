@@ -308,8 +308,8 @@ VALUES (1, 1, 1, FALSE, FALSE, FALSE,
 	'a11y/addressbook/ea-addressbook-view.c:94\n'
 	'a11y/addressbook/ea-addressbook-view.c:103\n'
 	'a11y/addressbook/ea-minicard-view.c:119');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (1, 1, now(), now(), TRUE, 0);
 --  2
 INSERT INTO POMsgID (msgid) VALUES ('current addressbook folder');
@@ -317,8 +317,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 		      fuzzy, filereferences)
 VALUES (2, 2, 1, FALSE, FALSE, FALSE,
 	'a11y/addressbook/ea-minicard-view.c:101');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (2, 2, now(), now(), TRUE, 0);
 --  3
 INSERT INTO POMsgID (msgid) VALUES ('have ');
@@ -326,8 +326,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 		      fuzzy, filereferences)
 VALUES (3, 3, 1, FALSE, FALSE, FALSE,
 	'a11y/addressbook/ea-minicard-view.c:102');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (3, 3, now(), now(), TRUE, 0);
 --  4
 INSERT INTO POMsgID (msgid) VALUES ('has ');
@@ -335,8 +335,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 		      fuzzy, filereferences)
 VALUES (4, 4, 1, FALSE, FALSE, FALSE,
 	'a11y/addressbook/ea-minicard-view.c:102');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (4, 4, now(), now(), TRUE, 0);
 --  5
 INSERT INTO POMsgID (msgid) VALUES (' cards');
@@ -344,8 +344,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 		      fuzzy, filereferences)
 VALUES (5, 5, 1, FALSE, FALSE, FALSE,
 	'a11y/addressbook/ea-minicard-view.c:104');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (5, 5, now(), now(), TRUE, 0);
 --  6
 INSERT INTO POMsgID (msgid) VALUES (' card');
@@ -353,8 +353,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 		      fuzzy, filereferences)
 VALUES (6, 6, 1, FALSE, FALSE, FALSE,
 	'a11y/addressbook/ea-minicard-view.c:104');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (6, 6, now(), now(), TRUE, 0);
 --  7
 INSERT INTO POMsgID (msgid) VALUES ('contact\'s header: ');
@@ -362,8 +362,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 		      fuzzy, filereferences)
 VALUES (7, 7, 1, FALSE, FALSE, FALSE,
 	'a11y/addressbook/ea-minicard-view.c:105');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (7, 7, now(), now(), TRUE, 0);
 --  8
 INSERT INTO POMsgID (msgid) VALUES ('evolution minicard');
@@ -371,8 +371,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 		      fuzzy, filereferences)
 VALUES (8, 8, 1, FALSE, FALSE, FALSE,
 	'a11y/addressbook/ea-minicard.c:166');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (8, 8, now(), now(), TRUE, 0);
 --  9
 INSERT INTO POMsgID (msgid) VALUES ('This addressbook could not be opened.');
@@ -381,8 +381,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 VALUES (9, 9, 1, FALSE, FALSE, FALSE,
 	'addressbook/addressbook-errors.xml.h:2',
 	'addressbook:ldap-init primary');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (9, 9, now(), now(), TRUE, 0);
 -- 10
 INSERT INTO POMsgID (msgid) VALUES ('This addressbook server might unreachable or the server name may be misspelled or your network connection could be down.');
@@ -391,8 +391,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 VALUES (10, 10, 1, FALSE, FALSE, FALSE,
 	'addressbook/addressbook-errors.xml.h:4',
 	'addressbook:ldap-init secondary');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (10, 10, now(), now(), TRUE, 0);
 -- 11
 INSERT INTO POMsgID (msgid) VALUES ('Failed to authenticate with LDAP server.');
@@ -401,8 +401,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 VALUES (11, 11, 1, FALSE, FALSE, FALSE,
 	'addressbook/addressbook-errors.xml.h:6',
 	'addressbook:ldap-auth primary');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (11, 11, now(), now(), TRUE, 0);
 -- 12
 INSERT INTO POMsgID (msgid) VALUES ('Check to make sure your password is spelled correctly and that you are using a supported login method. Remember that many passwords are case sensitive; your caps lock might be on.');
@@ -411,8 +411,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 VALUES (12, 12, 1, FALSE, FALSE, FALSE,
 	'addressbook/addressbook-errors.xml.h:8',
 	'addressbook:ldap-auth secondary');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (12, 12, now(), now(), TRUE, 0);
 -- 13
 INSERT INTO POMsgID (msgid) VALUES ('This addressbook server does not have any suggested search bases.');
@@ -520,8 +520,8 @@ VALUES (62, 13, 1, FALSE, FALSE, FALSE,
 	'addressbook/gui/component/addressbook-migrate.c:124\n'
 	'calendar/gui/migration.c:188 mail/em-migrate.c:1201',
 	'c-format');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (13, 62, now(), now(), TRUE, 0);
 -- 63
 INSERT INTO POMsgID (msgid) VALUES ('On This Computer');
@@ -539,8 +539,8 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 		      fuzzy, filereferences)
 VALUES (68, 14, 1, FALSE, FALSE, FALSE,
 	'addressbook/gui/component/addressbook-migrate.c:1123');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (14, 68, now(), now(), TRUE, 0);
 -- 69
 INSERT INTO POMsgID (msgid) VALUES ('The format of mailing list contacts has changed.\n\nPlease be patient while Evolution migrates your folders...');
@@ -598,13 +598,13 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 VALUES (93, 15, 1, FALSE, FALSE, FALSE,
 	'addressbook/gui/widgets/e-addressbook-model.c:151',
 	'c-format');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (15, 93, now(), now(), TRUE, 0);
 -- 94
 INSERT INTO POMsgID (msgid) VALUES ('%d contacts');
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			     lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
 VALUES (15, 94, now(), now(), TRUE, 0);
 -- 95
 INSERT INTO POMsgID (msgid) VALUES ('_Add Group');
@@ -651,12 +651,12 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete,
 		      obsolete, fuzzy) 
 VALUES (1, 1, 1, 1, TRUE, FALSE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (16, 1, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (16, 1, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
@@ -668,12 +668,12 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obso
 		      fuzzy) 
 VALUES (2, 2, 1, 1, TRUE, FALSE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (17, 2, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (17, 2, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
@@ -685,12 +685,12 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obso
 		      fuzzy) 
 VALUES (3, 3, 1, 1, FALSE, FALSE, TRUE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (18, 3, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (18, 3, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
@@ -706,22 +706,22 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obso
 		      fuzzy) 
 VALUES (93, 4, 1, 1, TRUE, FALSE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (19, 93, now(), now(), TRUE, 0);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (19, 94, now(), now(), TRUE, 1);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (19, 4, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (19, 5, 1, now(), now(), TRUE, 1,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
@@ -733,12 +733,12 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obso
 		      fuzzy) 
 VALUES (95, 5, 1, 1, TRUE, TRUE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (20, 95, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (20, 6, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
