@@ -112,6 +112,11 @@ class IDistroReleaseApp(Interface):
     def getPackageContainer(name):
         """ Returns the associated IPackageSet """
 
+    def findSourcesByName(name):
+        """Returns The Release SourcePackages by name"""
+
+    def findBinariesByName(name):
+        """Returns The Release BianriesPackages by name"""
 
 class IDistroBinariesApp(Interface):
     """A Binaries Source Tag """

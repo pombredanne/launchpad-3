@@ -33,7 +33,7 @@
 	    <div class="formHelp">
 	    Enter the person Name .
             </div>
-	    <input type="text" name="name"/>
+	    <input type="text" name="name" tal:attributes="value request/name|nothing"/>
 	 </div>
 	 <div class="formControls">
 	    <input type="submit" value="Search"/>
@@ -56,7 +56,7 @@
   </div>
 
 
-  <tla:block tal:condition="view/enable_results">
+  <tal:block tal:condition="view/enable_results">
   <div>
   <h3>Results</h3>
   <h4><span tal:content="view/entries"/> entries found</h4>
@@ -67,7 +67,7 @@
   </a></li>
   </ul>
   </div>
-  </tla:block>
+  </tal:block>
 
 
 

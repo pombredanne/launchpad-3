@@ -104,13 +104,43 @@ class DistroReleaseApp(object):
         else:
             raise KeyError, name
 
+    def _sourcequery(self):
+        return (
+            'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
+            'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+            'AND SourcePackageUpload.distrorelease = %d '
+            'AND SourcePackage.sourcepackagename = SourcePackageName.id'
+            % (self.release.id))
+        
+    def findSourcesByName(self, pattern):
+        query = self._sourcequery()
+        pattern = pattern.replace('%', '%%')
+        query += ' AND SourcePackageName.name LIKE %s' % quote('%%' + pattern + '%%')
+        from sets import Set
+        return Set(SoyuzSourcePackage.select(query))
+
+    where = (
+        'PackagePublishing.binarypackage = BinaryPackage.id AND '
+        'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
+        'DistroArchRelease.distrorelease = %d '
+        )
+
+    def findBinariesByName(self, pattern):
+        query = self.where % self.release.id
+        pattern = pattern.replace('%', '%%')
+        query += 'AND  BinaryPackage.binarypackagename = BinarypackageName.id '
+        query += 'AND  BinarypackageName.name LIKE %s' % quote('%%' + pattern + '%%')
+        from sets import Set
+        return Set(SoyuzBinaryPackage.select(query))
+
+
 class DistroReleasesApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
 
     def __getitem__(self, name):
         return DistroReleaseApp(Release.selectBy(distributionID=
-                                                    self.distribution.id,
+                                                 self.distribution.id,
                                                  name=name)[0])
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))

@@ -74,7 +74,7 @@
    tal:content="context/distribution/title"/></h4></legend>
     <tr>
       <th>Name</th>
-      <th>Title</th>
+
       <th>Description</th>
       <th>Version</th>
       <th>Packages</th>
@@ -84,11 +84,10 @@
       <th>Owner</th>
     </tr>
     <tr tal:repeat="release context/releases">
-      <td><a tal:content="release/name"
+      <td><a tal:content="release/title"
 	   tal:attributes="href string:releases/${release/name}">
 	   distribution name</a>
       </td>
-      <td tal:content="release/title">TITLES</td>
       <td tal:content="release/description">DESCRIPTION</td>
       <td tal:content="release/version">VERSION</td>
       <td>
