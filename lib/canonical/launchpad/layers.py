@@ -4,8 +4,13 @@ to do with manipulating layers.
 """
 
 __metaclass__ = type
+try:
+    from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+except ImportError:
+    # This code can go once we've upgraded Zope.
+    from zope.publisher.interfaces.browser import IBrowserRequest
+    IDefaultBrowserLayer = IBrowserRequest
 
-from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.interface import directlyProvides, directlyProvidedBy
 
 def setAdditionalLayer(request, layer):
@@ -14,7 +19,7 @@ def setAdditionalLayer(request, layer):
 def setFirstLayer(request, layer):
     directlyProvides(request, layer, directlyProvidedBy(request))
 
-class LaunchpadLayer(IBrowserRequest):
+class LaunchpadLayer(IDefaultBrowserLayer):
     """The `LaunchpadLayer` layer."""
 
 class RosettaLayer(LaunchpadLayer):
@@ -26,8 +31,8 @@ class MaloneLayer(LaunchpadLayer):
 class ButtressLayer(LaunchpadLayer):
     """The `ButtressLayer` layer."""
 
-class UbuntuLinuxLayer(IBrowserRequest):
+class UbuntuLinuxLayer(IDefaultBrowserLayer):
     """The `UbuntuLinuxLayer` layer."""
 
-class DebugLayer(IBrowserRequest):
+class DebugLayer(IDefaultBrowserLayer):
     """The `DebugLayer` layer."""

@@ -12,7 +12,6 @@ from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine
 from zope.configuration.fields import GlobalObject, PythonIdentifier, Path
 from zope.security.checker import CheckerPublic
-from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
 from zope.app import zapi
@@ -28,6 +27,12 @@ import zope.app.publisher.browser.metadirectives
 from canonical.publication import ISubURLDispatch, SubURLTraverser
 from canonical.launchpad.layers import setAdditionalLayer
 
+try:
+    from zope.publisher.interfaces.browser import IDefaultBrowserLayer
+except ImportError:
+    # This code can go once we've upgraded Zope.
+    from zope.publisher.interfaces.browser import IBrowserRequest
+    IDefaultBrowserLayer = IBrowserRequest
 
 class IDefaultViewDirective(
     zope.app.publisher.browser.metadirectives.IDefaultViewDirective):
@@ -149,7 +154,8 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
     if utility is None and class_ is None:
         raise TypeError("Cannot specify both utility and class.")
 
-    type = IBrowserRequest  # So we can use "type" below, for documentation.
+    # So we can use "type" below, for documentation.
+    type = IDefaultBrowserLayer
 
     global suburl_traversers
     if for_ not in suburl_traversers:
@@ -257,7 +263,7 @@ class URLTraverseByFunction:
 
 
 def traverse(_context, for_, getter=None, function=None, permission=None,
-             adaptwith=None, layer=IBrowserRequest):
+             adaptwith=None, layer=IDefaultBrowserLayer):
     if getter is not None and function is not None:
         raise TypeError("Cannot specify both getter and function")
     if getter is None and function is None:
@@ -310,7 +316,7 @@ def favicon(_context, for_, file):
 # module, but with the `layer` as an argument rather than hard-coded.
 # When zope has the same change, we can remove this code, and the related
 # override-include.
-def defaultView(_context, name, for_=None, layer=IBrowserRequest):
+def defaultView(_context, name, for_=None, layer=IDefaultBrowserLayer):
 
     _context.action(
         discriminator = ('defaultViewName', for_, layer, name),
