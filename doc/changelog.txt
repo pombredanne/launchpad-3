@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-11 23:17:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1309
+
+    Summary:
+      allow overriding of sampledata.sql and newsampledata.sql
+    Revision:
+      launchpad--devel--0--patch-1309
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-56
+       allow overriding of sampledata.sql and newsampledata.sql
+    
+
+    modified files:
+     database/schema/Makefile doc/changelog.txt
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-56
+
+
 2005-02-11 22:07:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1308
 
     Summary:
