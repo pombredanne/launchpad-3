@@ -33,6 +33,7 @@
     </tr>
   </table>    
 
+  <p> <a href="+search"> Search</a> in <spam tal:content="context/release/title">RELEASE</spam>
 <!-- </div> -->
 </div>
 

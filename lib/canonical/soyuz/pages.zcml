@@ -147,6 +147,14 @@
 	/>
    </pages>
 
+  <page for="canonical.soyuz.sql.DistroReleaseSourcesApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.DistrosReleaseSourcesSearchView"
+	 template="templates/sourcepackage-search.pt"
+         lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/+search"
+	 name="+search"
+       />
+
 <traverse for="canonical.soyuz.sql.DistroReleaseSourceApp" 
                                           getter="__getitem__" />
    <pages for="canonical.soyuz.sql.DistroReleaseSourceApp"

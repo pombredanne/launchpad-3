@@ -1,4 +1,5 @@
 from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
+from canonical.soyuz.database import SoyuzSourcePackage
 from sqlobject import LIKE, OR, AND
 
 
@@ -109,6 +110,23 @@ class ReleasesEditView(object):
             self.context.release.title = title
             self.context.release.description = description
             self.context.release.version = version
+
+class DistrosReleaseSourcesSearchView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+
+        name = self.request.get("name", "").encode("ascii")
+        release = self.request.get("release", "").encode("ascii")
+
+        if name:
+            name_like = LIKE(SoyuzSourcePackage.q.name, "%%"+name+"%%")
+            ##FIXME: self.results must get only sourcepackage
+            ##of one distrorelease (distrorelease name in release attr)
+            self.results = SoyuzSourcePackage.select(AND(name_like))
+
 
 ################################################################
 

@@ -14,19 +14,41 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:content="context/distribution/title" />  Releases Overview</h1>
+  <h1><span tal:content="context/distribution/title" /> Source Packages</h1>
 
-  <table class="listing">
-    <tr>
-    <th tal:repeat="release context">
-        <a tal:content="release/name"
-	   tal:attributes="href release/name">
-	  distribution name
-	</a>
-      </th>
-    </tr>
+  <h3>Current Releases</h3>
 
-  </table>    
+  <ul>
+  <span:block tal:repeat="release context">
+  <p> 
+   <li>
+    <a tal:content="release/title" tal:attributes="href release/name"> RELEASENAME </a>
+    <!--  FIXME How to get the package status -->
+    <!--     <spam tal:content="release/releasestate"> STATUS </spam> -->
+    (XXX: STATUS)
+  </li>
+  <p> <span tal:content="release/description"> DESCRIPTION </span>
+
+  <table cellspacing="2">
+   <tr>
+    <td align="right">
+    <!-- FIXME How to get the sourcepackages counter for this release here?? -->
+     XXXX Packages
+    </td>
+   </tr>
+   <tr>
+    <td>
+    <form name="search" method="POST" tal:attributes="action string:${release/name}/+search">
+     Find Source Package: 
+     <input type="text" name="name" tal:attributes="value request/name|nothing" />
+    <input type="submit" value="Search"/>
+    </form>
+    </td>
+   </tr>
+  </table>
+  <hr />
+  </span:block>
+  </ul>
 
 
 </div>
