@@ -166,9 +166,10 @@ class MessageProxy(POMessage):
     fileReferences = property(_get_fileReferences, _set_fileReferences)
 
     def _get_flags(self):
+        flags = self._msgset.flagsComment or ''
         return WatchedSet(
             self._set_flags,
-            [flag.strip() for flag in self._msgset.flagsComment.split(',')]
+            [flag.strip() for flag in flags.split(',')]
             )
     def _set_flags(self, value):
         self._msgset.flagsComment = self.flagsText(value, withHash=False)
