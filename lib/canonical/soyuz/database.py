@@ -369,4 +369,82 @@ class SoyuzProject(SQLBase):
         StringCol('homepageurl', dbName='homepageurl'),
     ]
 
+# People Related sqlobject
+
+class SoyuzEmailAddress(SQLBase):
+    _table = 'EmailAddress'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('email', dbName='email', notNull=True),
+        IntCol('status', dbName='status', notNull=True)
+        ]
+    
+class GPGKey(SQLBase):
+    _table = 'GPGKey'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('keyid', dbName='keyid', notNull=True),
+        StringCol('fingerprint', dbName='fingerprint', notNull=True),
+        StringCol('pubkey', dbName='pubkey', notNull=True),
+        BoolCol('revoked', dbName='revoked', notNull=True)
+        ]
+    
+class ArchUserID(SQLBase):
+    _table = 'ArchUserID'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('archuserid', dbName='archuserid', notNull=True)
+        ]
+    
+class WikiName(SQLBase):
+    _table = 'WikiName'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('wiki', dbName='wiki', notNull=True),
+        StringCol('wikiname', dbName='wikiname', notNull=True)
+        ]
+
+class JabberID(SQLBase):
+    _table = 'JabberID'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('jabberid', dbName='jabberid', notNull=True)
+        ]
+
+class IrcID(SQLBase):
+    _table = 'IrcID'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('network', dbName='network', notNull=True),
+        StringCol('nickname', dbName='nickname', notNull=True)
+        ]
+
+class Membership(SQLBase):
+    _table = 'Membership'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        ForeignKey(name='team', foreignKey='SoyuzPerson', dbName='team',
+                   notNull=True),
+        IntCol('role', dbName='role', notNull=True),
+        IntCol('status', dbName='status', notNull=True)
+        ]
+
+class TeamParticipation(SQLBase):
+    _table = 'TeamParticipation'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        ForeignKey(name='team', foreignKey='SoyuzPerson', dbName='team',
+                   notNull=True)
+        ]
+
+
+
 # arch-tag: 6c76cb93-edf7-4019-9af4-53bfeb279194

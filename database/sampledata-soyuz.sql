@@ -9,21 +9,372 @@
  Sample data for Soyuz
 */
 -- Person
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Dave Miller', 'David', 'Miller' );                  -- 2
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Colin Watson', 'Colin', 'Watson' );                 -- 3
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Scott James Remnant', 'Scott James', 'Remnant' );   -- 4
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Jeff Waugh', 'Jeff', 'Waugh' );                     -- 6
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Andrew Bennetts', 'Andrew', 'Bennetts' );           -- 7
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'James Blackwell', 'James', 'Blackwell' );           -- 8
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Christian Reis', 'Christian', 'Reis' );             -- 9
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Alexander Limi', 'Alexander', 'Limi' );             -- 10
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );           -- 11
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
+	( 'Dave Miller', 'Dave', 'Miller' );                  -- 2
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
+	( 'Colin Watson', 'Colin', 'Watson' );                 -- 3
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
+	( 'Scott James Remnant', 'Scott James', 'Remnant' );   -- 4
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
+	( 'Jeff Waugh', 'Jeff', 'Waugh' );                     -- 6
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
+	( 'Andrew Bennetts', 'Andrew', 'Bennetts' );           -- 7
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
+	( 'James Blackwell', 'James', 'Blackwell' );           -- 8
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
+	( 'Christian Reis', 'Christian', 'Reis' );             -- 9
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
+	( 'Alexander Limi', 'Alexander', 'Limi' );             -- 10
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES 
+	( 'Steve Alexander', 'Steve', 'Alexander' );           -- 11
+
+-- Insert some Teams in Person following FOAF approach
+
+INSERT INTO Person (teamowner, teamdescription) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'Ubuntu Security Team');
+
+INSERT INTO Person (teamowner, teamdescription) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'Ubuntu Gnome Team');
 
 
---EmailAdress
+-- EmailAdress
+
+INSERT INTO EmailAddress (email, person, status) VALUES
+	('steve.alexander@ubuntulinux.com',
+	(SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
+	1 -- NEW (or 2 = VALIDATED and 3 = OLD) 
+	);
+INSERT INTO EmailAddress (email, person, status) VALUES
+	('colin.watson@ubuntulinux.com',
+	(SELECT id FROM Person WHERE displayname = 'Colin Watson'),
+	1 -- NEW (or 2 = VALIDATED and 3 = OLD) 
+	);
+INSERT INTO EmailAddress (email, person, status) VALUES
+	('scott.james.remnant@ubuntulinux.com',
+	(SELECT id FROM Person WHERE displayname = 'Scott James Remnant'),
+	1 -- NEW (or 2 = VALIDATED and 3 = OLD) 
+	);
+INSERT INTO EmailAddress (email, person, status) VALUES
+	('andrew.bennetts@ubuntulinux.com',
+	(SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
+	1 -- NEW (or 2 = VALIDATED and 3 = OLD) 
+	);
+INSERT INTO EmailAddress (email, person, status) VALUES
+	('james.blackwell@ubuntulinux.com',
+	(SELECT id FROM Person WHERE displayname = 'James Blackwell'),
+	1 -- NEW (or 2 = VALIDATED and 3 = OLD) 
+	);
+INSERT INTO EmailAddress (email, person, status) VALUES
+	('christian.reis@ubuntulinux.com',
+	(SELECT id FROM Person WHERE displayname = 'Christian Reis'),
+	1 -- NEW (or 2 = VALIDATED and 3 = OLD) 
+	);
+INSERT INTO EmailAddress (email, person, status) VALUES
+	('jeff.waugh@ubuntulinux.com',
+	(SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
+	1 -- NEW (or 2 = VALIDATED and 3 = OLD) 
+	);
+INSERT INTO EmailAddress (email, person, status) VALUES
+	('dave.miller@ubuntulinux.com',
+	(SELECT id FROM Person WHERE displayname = 'Dave Miller'),
+	1 -- NEW (or 2 = VALIDATED and 3 = OLD) 
+	);
 
 
+-- GPGKey
 
+INSERT INTO GPGKey (person, keyid, fingerprint, pubkey, revoked) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'1024D/09F89725',
+	'XVHJ OU77 IYTD 0982 FTG6 OQFC 0GF8 09PO QW45 MJ76',
+	'<-- sample pubkey ??? -->',
+	FALSE);
+INSERT INTO GPGKey (person, keyid, fingerprint, pubkey, revoked) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
+	'1024D/09F89890',
+	'XVHJ OU77 IYTD 0981 FTG6 OQFC 0GF8 09PO QW45 MJ76',
+	'<-- sample pubkey ??? -->',
+	FALSE);
+
+INSERT INTO GPGKey (person, keyid, fingerprint, pubkey, revoked) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
+	'1024D/09F89321',
+	'XVHJ OU77 IYTD 0983 FTG6 OQFC 0GF8 09PO QW45 MJ76',
+	'<-- sample pubkey ??? -->',
+	FALSE);
+INSERT INTO GPGKey (person, keyid, fingerprint, pubkey, revoked) VALUES
+	((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
+	'1024D/09F89098',
+	'XVHJ OU77 IYTD 0984 FTG6 OQFC 0GF8 09PO QW45 MJ76',
+	'<-- sample pubkey ??? -->',
+	FALSE);
+INSERT INTO GPGKey (person, keyid, fingerprint, pubkey, revoked) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
+	'1024D/09F89123',
+	'XVHJ OU77 IYTD 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76',
+	'<-- sample pubkey ??? -->',
+	FALSE);
+INSERT INTO GPGKey (person, keyid, fingerprint, pubkey, revoked) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
+	'1024D/09F89124',
+	'XVHJ OU77 IYTA 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76',
+	'<-- sample pubkey ??? -->',
+	FALSE);
+INSERT INTO GPGKey (person, keyid, fingerprint, pubkey, revoked) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Scott James Remnant'),
+	'1024D/09F89125',
+	'XVHJ OU77 IYTQ 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76',
+	'<-- sample pubkey ??? -->',
+	FALSE);
+INSERT INTO GPGKey (person, keyid, fingerprint, pubkey, revoked) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
+	'1024D/09F89126',
+	'XVHJ OU77 IYTX 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76',
+	'<-- sample pubkey ??? -->',
+	FALSE);
+INSERT INTO GPGKey (person, keyid, fingerprint, pubkey, revoked) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
+	'1024D/09F89127',
+	'XVHJ OU77 IYTZ 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76',
+	'<-- sample pubkey ??? -->',
+	FALSE);
+INSERT INTO GPGKey (person, keyid, fingerprint, pubkey, revoked) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
+	'1024D/09F89120',
+	'XVHJ OU77 IYTP 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76',
+	'<-- sample pubkey ??? -->',
+	FALSE);
+
+-- ArchUserID
+INSERT INTO ArchUserID (person, archuserid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'mark.shuttleworth');
+INSERT INTO ArchUserID (person, archuserid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
+	'steve.alexander');
+INSERT INTO ArchUserID (person, archuserid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
+	'alexander.limi');
+INSERT INTO ArchUserID (person, archuserid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
+	'james.blackwell');
+INSERT INTO ArchUserID (person, archuserid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
+	'christian.reis');
+INSERT INTO ArchUserID (person, archuserid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
+	'colin.watson');
+INSERT INTO ArchUserID (person, archuserid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Scott James Remnant'),
+	'scott.james.remnant');
+INSERT INTO ArchUserID (person, archuserid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
+	'andrew.bennetts');
+INSERT INTO ArchUserID (person, archuserid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
+	'dave.miller');
+INSERT INTO ArchUserID (person, archuserid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
+	'jeff.waugh');
+
+
+-- WikiName
+INSERT INTO WikiName (person, wiki, wikiname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'http://www.ubuntulinux.com/wiki/',
+	'MarkShuttleworth');
+INSERT INTO WikiName (person, wiki, wikiname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
+	'http://www.ubuntulinux.com/wiki/',
+	'SteveAlexander');
+INSERT INTO WikiName (person, wiki, wikiname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
+	'http://www.ubuntulinux.com/wiki/',
+	'AlexanderLimi');
+INSERT INTO WikiName (person, wiki, wikiname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
+	'http://www.ubuntulinux.com/wiki/',
+	'JamesBlackwell');
+INSERT INTO WikiName (person, wiki, wikiname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
+	'http://www.ubuntulinux.com/wiki/',
+	'ChristianReis');
+INSERT INTO WikiName (person, wiki, wikiname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
+	'http://www.ubuntulinux.com/wiki/',
+	'ColinWatson');
+INSERT INTO WikiName (person, wiki, wikiname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Scott James Remnant'),
+	'http://www.ubuntulinux.com/wiki/',
+	'ScottJamesRemnant');
+INSERT INTO WikiName (person, wiki, wikiname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
+	'http://www.ubuntulinux.com/wiki/',
+	'AndrewBennetts');
+INSERT INTO WikiName (person, wiki, wikiname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
+	'http://www.ubuntulinux.com/wiki/',
+	'DaveMiller');
+INSERT INTO WikiName (person, wiki, wikiname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
+	'http://www.ubuntulinux.com/wiki/',
+	'JeffWaugh');
+
+-- JabberID
+INSERT INTO JabberID (person, jabberid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'markshuttleworth@jabber.org');
+INSERT INTO JabberID (person, jabberid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
+	'stevea@jabber.org');
+INSERT INTO JabberID (person, jabberid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
+	'limi@jabber.org');
+INSERT INTO JabberID (person, jabberid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
+	'jblack@jabber.org');
+INSERT INTO JabberID (person, jabberid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
+	'kiko@jabber.org');
+INSERT INTO JabberID (person, jabberid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
+	'colin@jabber.org');
+INSERT INTO JabberID (person, jabberid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Scott James Remnant'),
+	'scott@jabber.org');
+INSERT INTO JabberID (person, jabberid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
+	'spiv@jabber.org');
+INSERT INTO JabberID (person, jabberid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
+	'justdave@jabber.org');
+INSERT INTO JabberID (person, jabberid) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
+	'jeff@jabber.org');
+
+-- IrcID
+INSERT INTO IrcID (person, network, nickname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'irc.freenode.net',
+	'mark');
+INSERT INTO IrcID (person, network, nickname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
+	'irc.freenode.net',
+	'SteveA');
+INSERT INTO IrcID (person, network, nickname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
+	'irc.freenode.net',
+	'limi');
+INSERT INTO IrcID (person, network, nickname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
+	'irc.freenode.net',
+	'jblack');
+INSERT INTO IrcID (person, network, nickname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
+	'irc.freenode.net',
+	'justdave');
+INSERT INTO IrcID (person, network, nickname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
+	'irc.freenode.net',
+	'kiko');
+INSERT INTO IrcID (person, network, nickname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
+	'irc.freenode.net',
+	'Kamion');
+INSERT INTO IrcID (person, network, nickname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Scott James Remnant'),
+	'irc.freenode.net',
+	'Keybuk');
+INSERT INTO IrcID (person, network, nickname) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
+	'irc.freenode.net',
+	'jeff');
+
+-- Membership
+INSERT INTO Membership(person, team, role, status) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	1, -- ADMIN (2 = MEMBER)
+	2); -- CURRENT (1 = PROPOSED)	
+
+INSERT INTO Membership(person, team, role, status) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	2, -- MEMBER
+	2); -- CURRENT
+
+INSERT INTO Membership(person, team, role, status) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	2, -- MEMBER
+	1); -- PROPOSED
+
+INSERT INTO Membership(person, team, role, status) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	2, -- MEMBER
+	1); -- PROPOSED
+
+INSERT INTO Membership(person, team, role, status) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	2, -- MEMBER
+	1); -- PROPOSED
+
+INSERT INTO Membership(person, team, role, status) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	2, -- MEMBER
+	1); -- PROPOSED
+
+INSERT INTO Membership(person, team, role, status) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team'),
+	1, -- ADMIN
+	2); -- CURRENT	
+
+INSERT INTO Membership(person, team, role, status) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team'),
+	2, -- MEMBER
+	2); -- CURRENT	
+	
+
+-- TeamParticipation	
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	);
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	);
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	);
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	);
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	);
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	);
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team')
+	);
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
+	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team')
+	);
 
 -- Component
 INSERT INTO Component (name) VALUES ('default_component');
@@ -33,10 +384,25 @@ INSERT INTO Component (name) VALUES ('default_component');
 INSERT INTO Section (name) VALUES ('default_section');
 
 -- Schema
-INSERT INTO schema (name, title, description, owner, extensible) VALUES('Mark schema', 'TITLE', 'description', (Select id from Person where displayname = 'Mark Shuttleworth'), true);
-INSERT INTO Schema (name, title, description, owner, extensible) values('schema', 'SCHEMA', 'description', (Select id from Person where displayname = 'Mark Shuttleworth'), true);
-INSERT INTO Schema (name, title, description, owner, extensible) values('trema', 'XCHEMA', 'description', (Select id from Person where displayname = 'Mark Shuttleworth'), true);
-INSERT INTO Schema (name, title, description, owner, extensible) values('enema', 'ENHEMA', 'description', (Select id from Person where displayname = 'Mark Shuttleworth'), true);
+INSERT INTO schema (name, title, description, owner, extensible) VALUES
+	('Mark schema', 'TITLE', 'description', 
+	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'), 
+	TRUE);
+
+INSERT INTO Schema (name, title, description, owner, extensible) VALUES 
+	('schema', 'SCHEMA', 'description', 
+	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'), 
+	TRUE);
+
+INSERT INTO Schema (name, title, description, owner, extensible) VALUES
+	('trema', 'XCHEMA', 'description', 
+	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'), 
+	TRUE);
+
+INSERT INTO Schema (name, title, description, owner, extensible) VALUES 
+	('enema', 'ENHEMA', 'description', 
+	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'), 
+	TRUE);
 
 -- Sourcepackage
 INSERT INTO Sourcepackage (maintainer, name, title, description)
@@ -216,31 +582,38 @@ VALUES (timestamp '2004-07-05 00:00',
 
 --CodeRelease
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-29 00:00'),
+VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+	dateuploaded = timestamp '2004-06-29 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-30 00:00'),
+VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+	dateuploaded = timestamp '2004-06-30 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-30 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-01 00:00'),
+VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+	dateuploaded = timestamp '2004-07-01 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-01 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-02 00:00'),
+VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+	dateuploaded = timestamp '2004-07-02 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-02 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-03 00:00'),
+VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+	dateuploaded = timestamp '2004-07-03 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-03 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-04 00:00'),
+VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+	dateuploaded = timestamp '2004-07-04 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-04 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-05 00:00'),
+VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+	dateuploaded = timestamp '2004-07-05 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
 
 
@@ -339,7 +712,8 @@ VALUES ('x86', 'Intel 386 compatible chips', 'Bring back the 8086!',
  -- Processor
 INSERT INTO Processor (family, name, title, description, owner)
 VALUES ((SELECT id FROM ProcessorFamily WHERE name = 'x86'),
-         '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family',
+         '386', 'Intel 386', 
+	'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family',
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'));
 
 -- Distribution

@@ -14,37 +14,44 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Personal Page for NONOONO</h1>
-
-   <p><span tal:content="context/id">context</span>
+  <h1>Personal Page for <span
+  tal:content="context/person/displayname">context</span> </h1>
 
  <table width="80%">
  <tr><td color="#00000">
   <h3>Personal Information</h3>
   </td><td>
-  <h3>NONO Roles</h3>
+  <h3><span tal:content="context/person/displayname">context</span> Roles</h3>
   </td></tr>
   <tr><td>
   <table>
-   <tr><td>Name</td><td>NONO NONO</td></tr>
-   <tr><td>Home</td><td>http://www.nononono.com</td></tr>
-   <tr><td>UIN</td><td>nono@jabber.org(<i>Jabber</i>), NONONOO(IRC)</td></tr>
-   <tr><td>Phone</td><td>+55 16 33612331</td></tr>
-   <tr><td></td><td><a href="">Edit Info</a></td></tr>
+   <tr><td>Name</td><td><span tal:content="context/person/displayname">context</span> </td></tr>
+   <tr><td>Email</td><td tal:content="context/email/email">EMAIL</td></tr>
+   <tr><td>Wiki</td><td> <span tal:content="context/wiki/wiki"/>
+   <span tal:content="context/wiki/wikiname"/></td></tr>
+   <tr><td>IRC</td><td><span tal:content="context/irc/nickname"/> at 
+   <span tal:content="context/irc/network"/></td></tr> 
+   <tr><td>Jabber</td><td tal:content="context/jabber/jabberid"></td></tr> 
+   <tr><td>GPG</td><td tal:content="context/gpg/keyid"></td></tr> 
+   <tr><td></td><td><a href="+edit">Edit Personal Information</a></td></tr>
    </table></td>
   <td> 
   <ul>
+  <li>ALL - DUMMY</li>
   <li>Release manager for <a href="">Warty</a></li>
   <li>Release manager for <a href="">Hoary</a></li>
   <li>Security Team for <a href="">Ubuntu</a></li>
   </ul></td>
   </tr>     
   <tr>
-  <td><h3>Bugs Board</h3></td>
-  <td><h3>Packages Maintained by NONO</h3></td>
+  <td><h3><span
+  tal:content="context/person/displayname">context</span> Bugs Board</h3></td>
+  <td><h3>Packages Maintained by <span
+  tal:content="context/person/displayname">context</span> </h3></td>
   </tr>
   <tr>
   <td><table>
+  <tr> ALL- DUMMY</tr>
   <tr><td><b>ASSIGNED</b></td><th>221</th></tr>
   <tr><td><b>OPEN</b></td><th>22</th></tr>
   <tr><td><b>RESOLVED</b></td><th>199</th></tr>
@@ -52,6 +59,7 @@
   <tr><td></td><td><a href="">More Bugs</a></td></tr>   
   </table></td>
   <td><ul>
+  <li> ALL DUMMY </li>
   <li><a href="">Apt</a></li>
   <li><a href="">Dselect</a></li>
   <li><a href="">Dpkg</a></li>

@@ -221,7 +221,61 @@ class IPersonApp(Interface):
     """A Person Tag """
     person = Attribute("Person entry")
     id = Attribute("Person entry")
+    email = Attribute("Email")
+    wiki = Attribute("Wiki")
+    jabber = Attribute("Jabber")
+    irc = Attribute("IRC")    
+    gpg = Attribute("GPG")
 
+# new people related table interfaces
+
+class ISoyuzEmailAddress(Interface):
+    """Email aka our unique name"""
+    person = Attribute("Owner")
+    email = Attribute("Email")
+    status = Attribute("Status")
+
+class IGPGKey(Interface):
+    """GPG support"""
+    person = Attribute("Owner")
+    keyid = Attribute("KeyID")
+    pubkey = Attribute("Pub Key itself")
+    fingerprint = Attribute("User Fingerprint")
+    revoked = Attribute("Revoked")
+
+class IArchUserID(Interface):
+    """ARCH specific user ID """
+    person = Attribute("Owner")
+    archuserid = Attribute("ARCH user ID")
+
+class IWikiName(Interface):
+    """Wiki for Users"""
+    person = Attribute("Owner")
+    wiki = Attribute("wiki host")
+    wikiname = Attribute("wikiname for user")
+
+class IJabberID(Interface):
+    """Jabber specific user ID """
+    person = Attribute("Owner")
+    jabberid = Attribute("Jabber user ID")
+
+class IIrcID(Interface):
+    """Wiki for Users"""
+    person = Attribute("Owner")
+    network = Attribute("IRC host")
+    nickname = Attribute("nickname for user")
+
+class IMembership(Interface):
+    """Membership for Users"""
+    person = Attribute("Owner")
+    team = Attribute("Team")
+    role= Attribute("Role on Team")
+    status= Attribute("Status of this Relation")
+
+class ITeamParticipation(Interface):
+    """Team Participation for Users"""
+    person = Attribute("Owner")
+    team = Attribute("Team")
 
 ###########################################        
 

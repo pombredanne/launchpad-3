@@ -72,6 +72,46 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.soyuz.database.SoyuzEmailAddress">
+    <allow interface="canonical.soyuz.interfaces.ISoyuzEmailAddress"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.GPGKey">
+    <allow interface="canonical.soyuz.interfaces.IGPGKey"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.ArchUserID">
+    <allow interface="canonical.soyuz.interfaces.IArchUserID"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.WikiName">
+    <allow interface="canonical.soyuz.interfaces.IWikiName"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.JabberID">
+    <allow interface="canonical.soyuz.interfaces.IJabberID"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.IrcID">
+    <allow interface="canonical.soyuz.interfaces.IIrcID"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.Membership">
+    <allow interface="canonical.soyuz.interfaces.IMembership"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.TeamParticipation">
+    <allow interface="canonical.soyuz.interfaces.ITeamParticipation"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
   <content class="canonical.soyuz.database.SoyuzBinaryPackage">
     <allow interface="canonical.soyuz.interfaces.IBinaryPackage"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>

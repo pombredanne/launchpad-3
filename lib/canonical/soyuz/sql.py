@@ -42,7 +42,11 @@ from canonical.soyuz.database import SoyuzSourcePackage, Manifest, \
 
 from canonical.soyuz.database import SoyuzProject as dbProject, SoyuzProduct \
      as dbProduct
+
 from canonical.arch.database import Branch, Changeset
+
+from canonical.soyuz.database import SoyuzEmailAddress, GPGKey, ArchUserID, \
+     WikiName, JabberID, IrcID, Membership, TeamParticipation
 
 
 
@@ -250,9 +254,11 @@ class DistroSourcesApp(object):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
 
 # end of distrosource app component
+
 ###########################################################
 
 # Team app component (team)
+#YAPS: I shouls be moved to database.py !! and work for instance 
 class DistributionRole(SQLBase):
 
     implements(IDistributionRole)
@@ -281,6 +287,7 @@ class DistroReleaseRole(SQLBase):
         IntCol('role', dbName='role')
         ]
 
+#YAPS: just usefull for STUBs
 class Team(object):
     def __init__(self, displayname, role):
         self.displayname = displayname
@@ -291,6 +298,8 @@ class DistroReleaseTeamApp(object):
     def __init__(self, release):
         self.release = release
 
+#YAPS: STUB sucks         
+#        self.team=DistroReleaseRole.select()
         self.team = [Team('Matt Zimmerman', 'Maintainer'),
                        Team('Robert Collins', 'Translator'),
                        Team('Lalo Martins', 'Contribuitors')
@@ -300,7 +309,7 @@ class DistroReleaseTeamApp(object):
 class DistroTeamApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
-        
+#YAPS: STUB sucks         
 #        self.team=DistributionRole.select()
 
         self.team = [Team('Mark Shuttleworth', 'Maintainer'),
@@ -320,6 +329,7 @@ class DistroTeamApp(object):
 # new People Branch
 class PeopleApp(object):
     def __init__(self):
+        # YAPS: get persons not teams !!
         self.entries = SoyuzPerson.select().count()
 
     def __getitem__(self, id):
@@ -331,9 +341,14 @@ class PeopleApp(object):
 class PersonApp(object):
     def __init__(self, id):
         self.id = id
-        #self.person = SoyuzPerson.selectBy(SoyuzPersonID=self.id)
-        
-
+        # YAPS: I know it seems totally nasty ...
+        # it should query By ID ... 
+        self.person = SoyuzPerson.get(self.id)
+        self.email = SoyuzEmailAddress.get(self.id)
+        self.wiki = WikiName.get(self.id)
+        self.jabber = JabberID.get(self.id)
+        self.irc = IrcID.get(self.id)
+        self.gpg = GPGKey.get(self.id)
 ################################################################
 
 # FIXME: deprecated, old DB layout (spiv: please help!!)

@@ -89,6 +89,7 @@ class IEmailAddress(Interface):
 class EmailAddress(SQLBase):
     implements(IEmailAddress)
 
+    _table = 'EmailAddress'
     _columns = [
         StringCol('email', notNull=True, unique=True),
         IntCol('status', notNull=True),
