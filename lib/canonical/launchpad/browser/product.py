@@ -45,6 +45,11 @@ def traverseProduct(product, request, name):
 #
 class ProductView:
 
+    __used_for__ = IProduct
+
+    summaryPortlet = ViewPageTemplateFile(
+        '../templates/portlet-object-summary.pt')
+
     translationsPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-translations.pt')
 
@@ -99,6 +104,14 @@ class ProductView:
         notify(ObjectModifiedEvent(self.context))
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
+
+    def projproducts(self):
+        """Return a list of other products from the same project as this
+        product, excluding this product"""
+        if self.context.project is None:
+            return []
+        return [p for p in self.context.project.products \
+                    if p.id <> self.context.id]
 
     def sourcesources(self):
         return iter(self.context.sourcesources())

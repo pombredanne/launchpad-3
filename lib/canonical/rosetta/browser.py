@@ -24,7 +24,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILanguageSet,  \
     IProjectSet, IProductSet, IPasswordEncryptor, IRequestLocalLanguages, \
     IRequestPreferredLanguages, IDistributionSet, ISourcePackageNameSet, \
-    ILaunchBag, IRawFileData
+    ILaunchBag, IRawFileData, ICountrySet, IGeoIP, \
+    IRequestPreferredLanguages
 
 from canonical.launchpad.database import Person, POTemplate, POFile
 
@@ -377,7 +378,40 @@ class TabIndexGenerator:
         self.index += 1
         return index
 
+class RosettaApplicationView(object):
+
+    prefLangPortlet = ViewPageTemplateFile(
+            '../launchpad/templates/portlet-pref-langs.pt')
+
+    countryPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-country-langs.pt')
+
+    browserLangPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-browser-langs.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.languages = request_languages(self.request)
+
+    def requestCountry(self):
+        ip = self.request.get('HTTP_X_FORWARDED_FOR', None)
+        if ip is None:
+            ip = self.request.get('REMOTE_ADDR', None)
+        if ip is None:
+            return None
+        gi = getUtility(IGeoIP)
+        return gi.country_by_addr(ip)
+
+    def browserLanguages(self):
+        return IRequestPreferredLanguages(self.request).getPreferredLanguages()
+
 class ProductView:
+    # XXX sabdfl 17/03/05 please merge this with the browser/product.py
+    # ProductView.
+    summaryPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-object-summary.pt')
+
     branchesPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-product-branches.pt')
 
@@ -389,6 +423,9 @@ class ProductView:
 
     projectPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-product-project.pt')
+
+    prefLangsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-pref-langs.pt')
 
     statusLegend = ViewPageTemplateFile(
         '../launchpad/templates/portlet-rosetta-status-legend.pt')
@@ -407,6 +444,14 @@ class ProductView:
 
         if len(list(self._templates)) > 1:
             self.multitemplates = True
+
+    def projproducts(self):
+        """Return a list of other products from the same project as this
+        product, excluding this product"""
+        if self.context.project is None:
+            return []
+        return [p for p in self.context.project.products \
+                    if p.id <> self.context.id]
 
     def newpotemplate(self):
         # Handle a request to create a new potemplate for this project. The

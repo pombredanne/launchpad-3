@@ -35,7 +35,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
         permission="zope.Public"
-        class="canonical.rosetta.RosettaApplicationView"
+        class="canonical.rosetta.browser.RosettaApplicationView"
         lp:url="Rosetta">
         <browser:page
             name="+index"

@@ -50,19 +50,11 @@ class Project(SQLBase):
                             otherColumn='bounty',
                             intermediateTable='ProjectBounty')
 
-    _products = MultipleJoin('Product', joinColumn='project')
+    products = MultipleJoin('Product', joinColumn='project')
 
-    _bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
+    bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
                                otherColumn='bugtracker',
                                intermediateTable='ProjectBugTracker')
-
-    def bugtrackers(self):
-        for bugtracker in self._bugtrackers:
-            yield bugtracker
-
-    def products(self):
-        for product in self._products:
-            yield product
 
     def getProduct(self, name):
         try:

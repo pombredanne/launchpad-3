@@ -198,11 +198,11 @@
         <browser:page
             name="+index"
             template="../templates/products-index.pt"
-            lp:url="doap/products/+index" />
+            lp:url="/products/+index" />
         <browser:page
             name="+search"
             template="../templates/products-search.pt"
-            lp:url="doap/products/+search" />
+            lp:url="/products/+search" />
     </browser:pages>
 
     <browser:pages

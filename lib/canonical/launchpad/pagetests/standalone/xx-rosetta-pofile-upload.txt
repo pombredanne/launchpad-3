@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /rosetta/products/evolution/hoary-2.0/es/+edit HTTP/1.1
+  ... GET /rosetta/products/evolution/evo-user/es/+edit HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
@@ -25,12 +25,12 @@
 
 
   >>> print http(r"""
-  ... POST /rosetta/products/evolution/hoary-2.0/es/+edit HTTP/1.1
+  ... POST /rosetta/products/evolution/evo-user/es/+edit HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 5496
   ... Content-Type: multipart/form-data; boundary=---------------------------18086726127029321191400089081
-  ... Referer: http://localhost:9000/rosetta/products/evolution/hoary-2.0/es/+edit
+  ... Referer: http://localhost:9000/rosetta/products/evolution/evo-user/es/+edit
   ... 
   ... -----------------------------18086726127029321191400089081
   ... Content-Disposition: form-data; name="file"; filename="es.po"
@@ -238,15 +238,15 @@
 
 
   >>> print http(r"""
-  ... GET /rosetta/products/evolution/hoary-2.0/es/ HTTP/1.1
+  ... GET /rosetta/products/evolution/evo-user/es/ HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/rosetta/products/evolution/hoary-2.0/es/+edit
+  ... Referer: http://localhost:9000/rosetta/products/evolution/evo-user/es/+edit
   ... """)
   HTTP/1.1 200 Ok
   ...
       <title>Rosetta:
-          Template for Evolution 2.0:
+          End-user Strings in Evolution:
           Spanish</title>
   ...
       <h4>Translation Details:</h4>
@@ -269,7 +269,7 @@
                   Carlos Perelló Marín<br />
               </div>
   ...
-      <h1>Translation of hoary-2.0
+      <h1>Translation of evo-user
           into Spanish</h1>
   <BLANKLINE>
       <h2>Contributors for this translation:</h2>

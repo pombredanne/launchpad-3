@@ -56,7 +56,7 @@
         keyword_arguments="sourcepackagename title comment private owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
-        lp:url="/malone/distros/$Distribution.name/+filebug">
+        lp:url="/distros/$Distribution.name/+filebug">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
         <browser:widget
            field="title"

@@ -17,10 +17,12 @@
 
 <metal:leftportlets fill-slot="portlets_one">
         <div tal:replace="structure view/detailsPortlet" />
+        <div tal:replace="structure view/summaryPortlet" />
         <div tal:replace="structure view/projectPortlet" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+        <div tal:replace="structure view/prefLangsPortlet" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -28,10 +30,6 @@
     <h1 i18n:translate="">Rosetta Translation overview for
         <span tal:replace="context/displayname" i18n:name="product_name">product
         displayname</span></h1>
-
-    <p class="documentDescription" tal:content="context/shortdesc">
-        The product summary.
-    </p>
 
     <!-- indicate if no templates are registered for this product that it is
     possible to upload a po template -->
@@ -81,11 +79,6 @@
                         tal:content="template/title">template</a></li>
             </ul>
         </div>
-
-        <p tal:condition="view/languages" i18n:translate="">We have determined
-        a short list of languages that you may be interested in translating,
-        and show the translation templates status in each of those languages
-        below:</p>
 
         <div tal:condition="view/languages" tal:repeat="template view/templates">
 

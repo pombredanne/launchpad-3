@@ -1,5 +1,5 @@
 <div class="portlet">
-    <h4>Subscriptions</h4>
+    <h4>Related People:</h4>
 
     <div class="portletBody"
          tal:define="bug_url string:/malone/bugs/${context/id}">
@@ -9,8 +9,10 @@
 
             <h5>submitter:</h5>
             <ul class="people">
-                <li><span
-                tal:replace="context/owner/browsername">owner</span></li>
+                <li><a href=""
+                    tal:content="context/owner/browsername"
+                    tal:attributes="
+                      href string:/people/${context/owner/name}">owner</a></li>
             </ul>
 
             <h5>maintainers:</h5>

@@ -19,8 +19,8 @@
                string:/people/${context/project/owner/name}"
                href="#">ownername</a><br />
 
-            <b>Other Products:</b><br />
-            <span tal:repeat="prod context/project/products" tal:omit-tag>
+            <b tal:condition="view/projproducts">Other Products:<br /></b>
+            <span tal:repeat="prod view/projproducts" tal:omit-tag>
                 <img src="/++resource++product_icon.gif">
                 <a tal:content="prod/displayname"
                    tal:attributes="href string:../${prod/name}">

@@ -2,6 +2,93 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-18 17:07:47 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1460
+
+    Summary:
+      merging mark's branch.
+    Revision:
+      launchpad--devel--0--patch-1460
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-827
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-828
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-829
+       zcml tweak for malone url
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-830
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-831
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-832
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-833
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-834
+       show only *other* products in the project details portlet for a product
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-835
+       cleanup bug people portlet
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-836
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-837
+       product translation template tweaks
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-838
+       fix page tests
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-839
+       merge rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/portlet-object-summary.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-pref-langs.pt.id
+     lib/canonical/launchpad/templates/portlet-object-summary.pt
+     lib/canonical/launchpad/templates/portlet-pref-langs.pt
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/pagetests/malone/91-bug-add-owner-auto-subscribed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-upload.txt
+     lib/canonical/launchpad/templates/portlet-bug-people.pt
+     lib/canonical/launchpad/templates/portlet-product-project.pt
+     lib/canonical/launchpad/templates/product-translations.pt
+     lib/canonical/launchpad/templates/rosetta-index.pt
+     lib/canonical/launchpad/zcml/distribution.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/rosetta/__init__.py
+     lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/configure.zcml
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-827
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-828
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-829
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-830
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-831
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-832
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-833
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-834
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-835
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-836
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-837
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-838
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-839
+
+
 2005-03-18 13:45:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1459
 
     Summary:
