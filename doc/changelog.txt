@@ -2,6 +2,52 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 17:32:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1233
+
+    Summary:
+      Bob the builder! (initial buildd slave implementation)
+    Revision:
+      launchpad--devel--0--patch-1233
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-9
+       Initial implementation of buildd slave
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-10
+       Add a few XXX and notes for future addressing
+    
+
+    new files:
+     lib/canonical/buildd/.arch-ids/debian.py.id
+     lib/canonical/buildd/.arch-ids/master.py.id
+     lib/canonical/buildd/.arch-ids/mount-chroot.id
+     lib/canonical/buildd/.arch-ids/remove-build.id
+     lib/canonical/buildd/.arch-ids/sbuild-package.id
+     lib/canonical/buildd/.arch-ids/scan-for-processes.id
+     lib/canonical/buildd/.arch-ids/umount-chroot.id
+     lib/canonical/buildd/.arch-ids/unpack-chroot.id
+     lib/canonical/buildd/.arch-ids/update-debian-chroot.id
+     lib/canonical/buildd/debian.py lib/canonical/buildd/master.py
+     lib/canonical/buildd/mount-chroot
+     lib/canonical/buildd/remove-build
+     lib/canonical/buildd/sbuild-package
+     lib/canonical/buildd/scan-for-processes
+     lib/canonical/buildd/umount-chroot
+     lib/canonical/buildd/unpack-chroot
+     lib/canonical/buildd/update-debian-chroot
+
+    modified files:
+     doc/changelog.txt lib/canonical/buildd/__init__.py
+     lib/canonical/buildd/example.conf
+     lib/canonical/buildd/notes.txt lib/canonical/buildd/slave.py
+     lib/canonical/buildd/slave.tac
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-9
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-10
+
+
 2005-01-21 15:46:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1232
 
     Summary:

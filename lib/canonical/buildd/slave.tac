@@ -2,9 +2,11 @@
 # Author: Daniel Silverstone <daniel.silverstone@canonical.com>
 
 # Buildd Slave implementation
+# XXX: dsilvers: 2005/01/21: Currently everything logged in the slave gets
+# passed through to the twistd log too. this could get dangerous/big
 
 from twisted.application import service, strports
-from canonical.buildd import XMLRPCBuildDSlave
+from canonical.buildd import XMLRPCBuildDSlave, DebianBuildManager
 
 from twisted.web import server
 from ConfigParser import ConfigParser
@@ -16,6 +18,8 @@ conffile = os.environ.get('BUILDD_SLAVE_CONFIG', 'example.conf')
 c = ConfigParser()
 c.read(conffile)
 slave = XMLRPCBuildDSlave(c)
+
+slave.registerBuilder(DebianBuildManager,"debian")
 
 application = service.Application('BuildDSlave')
 builddslaveService = service.IServiceCollection(application)

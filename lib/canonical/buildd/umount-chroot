@@ -1,0 +1,22 @@
+#!/bin/sh
+# Copyright Canonical Limited
+# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
+
+# Buildd Slave tool to mount a chroot
+
+# Expects build id as arg 1, makes build-id to contain the build
+
+# Needs SUDO to be set to a sudo instance for passwordless access
+
+SUDO=/usr/bin/sudo
+BUILDID="$1"
+
+set -e
+
+exec 2>&1
+
+set -x
+
+$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/proc"
+$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/dev/pts"
+$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/home/buildd/.ccache"

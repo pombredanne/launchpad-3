@@ -1,0 +1,26 @@
+#!/bin/sh
+# Copyright Canonical Limited
+# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
+
+# Buildd Slave tool to update a debian chroot
+
+# Expects build id as arg 1, makes build-id to contain the build
+# Expects rest of arguments to be to pass to sbuild
+
+# Needs SBUILD to be set to a sbuild instance with passwordless sudo ability
+# Needs chapt-get to be a chrooted apt-get thingy
+
+set -e
+
+exec 2>&1
+
+set -x
+
+SBUILD=/usr/bin/sbuild
+BUILDID=$1
+
+shift
+
+cd "$HOME/build-$BUILDID"
+
+$SBUILD "$@"
