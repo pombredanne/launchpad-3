@@ -18,8 +18,7 @@
 
     <div style="float: right; clear: both; margin-top: 0.25em;">
     Product home page:
-    <a href=""
-       tal:content="context/url|default"
+    <a tal:content="context/url|default"
        tal:attributes="href context/url|nothing">(None supplied)</a>
     </div>
 
@@ -35,7 +34,7 @@
         </form>
 
         <dl tal:repeat="sync view/syncs">
-            <dt><a tal:attributes="href sync/name" tal:content="sync/title"></a></dt>
+            <dt><a tal:attributes="href sync/name" tal:content="sync/title">Sync Title</a>&nbsp;<a tal:condition="sync/canChangeProduct" tal:attributes="href sync/name">Assign to product</a></dt>
             <dd tal:content="sync/description"></dd>
         </dl>
         

@@ -179,12 +179,29 @@ class ViewSync(View):
         for param in ["name", "title", "description", "cvsroot", "cvsmodule","cvstarfile",
             "branchfrom","svnrepository","archarchive","category","branchto","archversion","archsourcegpgkeyid","archsourcename","archsourceurl"]:
             self.setArg(param, kwargs)
-        newurl=kwargs.get('name', self.context.name) != self.context.name
-        print newurl
+        if kwargs.get('name', self.context.name) != self.context.name:
+            newurl='../' + kwargs['name']
         self.context.update(**kwargs)
+        if self.context.canChangeProduct() and self.request.form.has_key('product'):
+            self.context.changeProduct(self.request.form.get('product'))
+            newurl='../../../' + self.context.product.project.name + "/" + self.context.product.name #+ '/' + self.context.name
         self.submittedok=True
         if newurl:
-            self.request.response.redirect('../' + kwargs['name'])
+            self.request.response.redirect(newurl)
+    def selectedProduct(self):
+        return self.context.product.name + "/" + self.context.product.project.name
+    def products(self):
+        """all the products that context can switch between"""
+        """ugly"""
+        from canonical.soyuz.sql import ProjectMapper, ProductMapper
+        projMapper=ProjectMapper()
+        prodMapper=ProductMapper()
+        for project in projMapper.findByName("%%"):
+            if project.name != "do-not-use-info-imports":
+                for product in prodMapper.findByName("%%", project):
+                    name=project.name + "/" + product.name
+                    if name != "do-not-use-info-imports/unassigned":
+                        yield name
 
 
 #arch-tag: 985007b4-9c10-4601-b3ce-bdb03576569f

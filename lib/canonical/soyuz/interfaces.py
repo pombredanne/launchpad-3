@@ -211,6 +211,11 @@ class ISync(Interface):
     archsourcegpgkeyid = Attribute("duh")
     archsourcename = Attribute("duh")
     archsourceurl = Attribute("duh")
+    def canChangeProduct():
+        """is this sync allowed to have its product changed?"""
+    def changeProduct(product):
+        """change the product this sync belongs to to be 'product'"""
+    product=Attribute ("a product backlink for this sync")
 
     def update(**kwargs):
         """update a Sync, possibly reparenting"""

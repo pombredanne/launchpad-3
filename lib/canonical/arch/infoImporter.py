@@ -138,6 +138,7 @@ class SourceSource(SQLBase):
     
     def buildJob(self):
         # FIXME: The rest of this method can probably be deleted now.
+        # it so can't, inheritance doesn't work here.
         from importd.Job import CopyJob
         job = CopyJob()
         if self.lastsynced is None:
@@ -192,11 +193,11 @@ def importInfoFile(infofile):
     for job in info2job.iter_jobs(info, logging):
         print 'importInfoFile: job =', job
         jobname = info2job.jobfile_name(info, job)
+        lastsynced=None
         if SourceSource.select(SourceSource.q.name == jobname).count() != 0:
             continue
         if job.TYPE == 'sync':
-            # Skip sync jobs, so we don't have to guess the lastsynced time...
-            continue
+            lastsynced='NOW'
         if job.RCS in ('cvs', 'svn'):
             # Find the right database ID for archive in job.archivename.  If it
             # doesn't exist in the database yet, use NULL
@@ -226,11 +227,11 @@ def importInfoFile(infofile):
             summary = info.get('summary', '')
             kwargs = {
                 'name': jobname,
-                'title': summary,
+                'title': info.get('source',jobname),
                 'description': summary,
                 'sourcepackage': None, # FIXME!
                 'branch': branch,
-                'lastsynced': None,
+                'lastsynced': lastsynced,
                 'hosted': info.get('hosted') or None,
                 'upstreamname': info.get('upstreamname') or None,
                 'newarchive': job.archivename,

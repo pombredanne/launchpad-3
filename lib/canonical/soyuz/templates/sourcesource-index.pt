@@ -220,6 +220,17 @@
             <input type="text" name="archsourceurl" size="30"
                    value="" />
         </div>
+    </fieldset>
+
+    <fieldset tal:condition="context/canChangeProduct">
+        <legend>Change Product</legend>
+        <div class="field">
+            <label>Select a product</label>
+            <select name="product" size="15"
+                    tal:attributes="value view/selectedProduct">
+                    <option tal:repeat="product view/products" tal:attributes="value product" tal:content="product">a product</option>
+            </select>
+        </div>
 
     </fieldset>
 
