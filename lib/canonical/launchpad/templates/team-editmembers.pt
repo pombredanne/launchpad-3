@@ -16,19 +16,21 @@
 
 <div metal:fill-slot="main">
 
+  <tal:dummy tal:condition="view/formSubmitted" />
+
   <div id="content" class="documentEditable">
 
     <div class="documentContent" id="region-content">
 
       <h1 tal:content="context/displayname">Name</h1>
 
-      <form name="edit" action="" method="post">
+      <form name="edit_proposed" action="" method="POST">
       <fieldset tal:define="members context/proposedmembers" 
                 tal:condition="members">
         <legend>Members awaiting authorization</legend>
         <table>
           <tr tal:repeat="member members">
-            <td><input type="checkbox" tal:attributes="name member/id" /></td>
+            <td><input name="selected" type="checkbox" tal:attributes="value member/id" /></td>
             <td><span tal:content="member/browsername" /></td>
           </tr>
         </table>
@@ -42,18 +44,20 @@
             </select>
           </td>
           <td>
-            <input type="submit" value="Submit">
+            <input type="submit" name="PROPOSED_MEMBERS_CHANGES" value="Submit">
           </td></tr>
         </table>
         </div>
       </fieldset>
+      </form>
 
+      <form name="edit_admins" action="" method="POST">
       <fieldset tal:define="members context/administrators" 
                 tal:condition="members">
       <legend>Administrators of this team</legend>
         <table>
           <tr tal:repeat="member members">
-            <td><input type="checkbox" tal:attributes="name member/id" /></td>
+            <td><input name="selected" type="checkbox" tal:attributes="value member/id" /></td>
             <td><span tal:content="member/browsername" /></td>
           </tr>
         </table>
@@ -63,22 +67,24 @@
           <tr><td>
             <select name="action">
               <option value="revokeadmin">Revoke admin role</option>
-              <option value="remove">Remove from team</option>
+              <option value="removeadmin">Remove from team</option>
             </select>
           </td>
           <td>
-            <input type="submit" value="Submit">
+            <input type="submit" name="ADMIN_CHANGES" value="Submit">
           </td></tr>
         </table>
         </div>
       </fieldset>
+      </form>
 
+      <form name="edit_members" action="" method="POST">
       <fieldset tal:define="members context/members" 
                 tal:condition="members">
       <legend>Members of this team</legend>
         <table>
           <tr tal:repeat="member members">
-            <td><input type="checkbox" tal:attributes="name member/id" /></td>
+            <td><input name="selected" type="checkbox" tal:attributes="value member/id" /></td>
             <td><span tal:content="member/browsername" /></td>
           </tr>
         </table>
@@ -88,15 +94,16 @@
           <tr><td>
             <select name="action">
               <option value="giveadmin">Give admin role</option>
-              <option value="remove">Remove from team</option>
+              <option value="removemember">Remove from team</option>
             </select>
           </td>
           <td>
-            <input type="submit" value="Submit">
+            <input type="submit" name="MEMBERS_CHANGES" value="Submit">
           </td></tr>
         </table>
         </div>
       </fieldset>
+      </form>
 
     </div>
   </div>

@@ -2,6 +2,52 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-17 18:38:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1208
+
+    Summary:
+      First working version of team management. Now it's possible to accept new members, give/revoke admin role for members and kick members. Lots of work still pending, though.
+    Revision:
+      launchpad--devel--0--patch-1208
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-81
+       Lots of interface fixes, including a new one: IKarma.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-82
+       First working version of team management. Now it's possible to accept new members, give/revoke admin role for members and kick members.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-83
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-84
+       Make use of LaunchBag.user, as it's fixed now.
+    
+
+    new files:
+     lib/canonical/launchpad/interfaces/.arch-ids/karma.py.id
+     lib/canonical/launchpad/interfaces/karma.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/archuser.py
+     lib/canonical/launchpad/interfaces/gpg.py
+     lib/canonical/launchpad/interfaces/irc.py
+     lib/canonical/launchpad/interfaces/jabber.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/interfaces/ssh.py
+     lib/canonical/launchpad/interfaces/wikiname.py
+     lib/canonical/launchpad/templates/team-editmembers.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-81
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-82
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-83
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-84
+
+
 2005-01-17 12:16:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1207
 
     Summary:

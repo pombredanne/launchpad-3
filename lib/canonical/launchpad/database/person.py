@@ -19,13 +19,13 @@ from canonical.database.constants import UTC_NOW
 
 # canonical imports
 from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
-from canonical.launchpad.interfaces import IMembership
-from canonical.launchpad.interfaces import IEmailAddress
+from canonical.launchpad.interfaces import IMembership, ITeamParticipation
+from canonical.launchpad.interfaces import ITeamParticipationSet
+from canonical.launchpad.interfaces import IEmailAddress, IWikiName
 from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
-from canonical.launchpad.interfaces import ISSHKey, IGPGKey
+from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
 from canonical.launchpad.interfaces import IObjectAuthorization
 from canonical.launchpad.interfaces import IPasswordEncryptor
-from canonical.launchpad.interfaces import ITeamParticipationSet
 from canonical.launchpad.interfaces import ISourcePackageSet
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
@@ -316,6 +316,8 @@ class Person(SQLBase):
     activities = property(_activities)
 
     def _wiki(self):
+        # XXX: salgado, 2005-01-14: This method will probably be replaced
+        # by a MultipleJoin since we have a good UI to add multiple Wikis. 
         wiki = WikiName.selectBy(personID=self.id)
         count = wiki.count()
         if count:
@@ -324,6 +326,9 @@ class Person(SQLBase):
     wiki = property(_wiki)
 
     def _jabber(self):
+        # XXX: salgado, 2005-01-14: This method will probably be replaced
+        # by a MultipleJoin since we have a good UI to add multiple
+        # JabberIDs. 
         jabber = JabberID.selectBy(personID=self.id)
         if jabber.count() == 0:
             return None
@@ -331,6 +336,9 @@ class Person(SQLBase):
     jabber = property(_jabber)
 
     def _archuser(self):
+        # XXX: salgado, 2005-01-14: This method will probably be replaced
+        # by a MultipleJoin since we have a good UI to add multiple
+        # ArchUserIDs. 
         archuser = ArchUserID.selectBy(personID=self.id)
         if archuser.count() == 0:
             return None
@@ -338,6 +346,9 @@ class Person(SQLBase):
     archuser = property(_archuser)
 
     def _irc(self):
+        # XXX: salgado, 2005-01-14: This method will probably be replaced
+        # by a MultipleJoin since we have a good UI to add multiple
+        # IrcIDs. 
         irc = IrcID.selectBy(personID=self.id)
         if irc.count() == 0:
             return None
@@ -345,6 +356,9 @@ class Person(SQLBase):
     irc = property(_irc)
 
     def _gpg(self):
+        # XXX: salgado, 2005-01-14: This method will probably be replaced
+        # by a MultipleJoin since we have a good UI to add multiple
+        # GPGKeys. 
         gpg = GPGKey.selectBy(personID=self.id)
         if gpg.count() == 0:
             return None
@@ -471,6 +485,9 @@ def createPerson(displayname=None, givenname=None, familyname=None,
 def createTeam(displayname, teamowner, teamdescription, email=None):
     """Creates a new team"""
 
+    # XXX: salgado, 2005-01-17: I don't think we should require an email
+    # address for the creation of a team, and in this case, we need to
+    # generate the team name without using the email address.
     nick = nickname.generate_nick(email, registeredName)
     now = datetime.utcnow()
 
@@ -494,6 +511,8 @@ def createTeam(displayname, teamowner, teamdescription, email=None):
                  email=email,
                  status=int(EmailAddressStatus.NEW))
 
+    # XXX: salgado, 2005-01-14: The owner should be added to the list of
+    # members of that team?
     Membership(personID=teamowner,
                team=team.id,
                role=role,
@@ -541,6 +560,8 @@ class EmailAddress(SQLBase):
 
 
 class GPGKey(SQLBase):
+    implements(IGPGKey)
+
     _table = 'GPGKey'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -564,7 +585,10 @@ class GPGKey(SQLBase):
 
 
 class SSHKey(SQLBase):
+    implements(ISSHKey)
+
     _table = 'SSHKey'
+
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
     keytype = StringCol(dbName='keytype', notNull=True)
     keytext = StringCol(dbName='keytext', notNull=True)
@@ -572,6 +596,8 @@ class SSHKey(SQLBase):
 
 
 class ArchUserID(SQLBase):
+    implements(IArchUserID)
+
     _table = 'ArchUserID'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -579,6 +605,8 @@ class ArchUserID(SQLBase):
     
 
 class WikiName(SQLBase):
+    implements(IWikiName)
+
     _table = 'WikiName'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -587,6 +615,8 @@ class WikiName(SQLBase):
 
 
 class JabberID(SQLBase):
+    implements(IJabberID)
+
     _table = 'JabberID'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -594,6 +624,8 @@ class JabberID(SQLBase):
 
 
 class IrcID(SQLBase):
+    implements(IIrcID)
+
     _table = 'IrcID'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -602,8 +634,9 @@ class IrcID(SQLBase):
 
 
 class Membership(SQLBase):
-    _table = 'Membership'
     implements(IMembership)
+
+    _table = 'Membership'
 
     team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -640,6 +673,8 @@ class TeamParticipationSet(object):
 
 
 class TeamParticipation(SQLBase):
+    implements(ITeamParticipation)
+
     _table = 'TeamParticipation'
 
     team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
@@ -647,7 +682,8 @@ class TeamParticipation(SQLBase):
 
 
 class Karma(SQLBase):
-    # XXX: salgado, 2005-01-12: Define an IKarma interface.
+    implements(IKarma)
+
     _table = 'Karma'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)

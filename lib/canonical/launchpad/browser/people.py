@@ -1,13 +1,13 @@
 # Copyright 2004 Canonical Ltd
-from datetime import datetime
 
 # sqlobject/sqlos
 from sqlobject import LIKE, AND, SQLObjectNotFound
 from canonical.database.sqlbase import quote
 
 # lp imports
-from canonical.lp.dbschema import EmailAddressStatus, SSHKeyType, \
-                                  LoginTokenType
+from canonical.lp.dbschema import EmailAddressStatus, SSHKeyType
+from canonical.lp.dbschema import LoginTokenType, MembershipRole
+from canonical.lp.dbschema import MembershipStatus
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -254,11 +254,7 @@ class PersonEditView(object):
         self.context = context
         self.request = request
         self.errormessage = None
-        # XXX: salgado, 2005-01-13: If LaunchBag.user is not going to
-        # return None when no user is logged in, we'll not be able to
-        # use it here.
-        # self.user = getUtility(ILaunchBag).user
-        self.user = IPerson(self.request.principal, None)
+        self.user = getUtility(ILaunchBag).user
 
     def edit_action(self):
         if self.request.method != "POST":
@@ -336,11 +332,7 @@ class EmailAddressEditView(object):
         self.context = context
         self.request = request
         self.message = "Your changes have been saved."
-        # XXX: salgado, 2005-01-13: If LaunchBag.user is not going to
-        # return None when no user is logged in, we'll not be able to
-        # use it here.
-        # self.user = getUtility(ILaunchBag).user
-        self.user = IPerson(self.request.principal, None)
+        self.user = getUtility(ILaunchBag).user
 
     def formSubmitted(self):
         if "SUBMIT_CHANGES" in self.request.form:
@@ -521,11 +513,7 @@ class SSHKeyEditView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        # XXX: salgado, 2005-01-13: If LaunchBag.user is not going to
-        # return None when no user is logged in, we'll not be able to
-        # use it here.
-        # self.user = getUtility(ILaunchBag).user
-        self.user = IPerson(self.request.principal, None)
+        self.user = getUtility(ILaunchBag).user
 
     def form_action(self):
         if self.request.method != "POST":
@@ -582,9 +570,67 @@ class TeamMembersEditView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        # XXX: salgado, 2005-01-13: If LaunchBag.user is not going to
-        # return None when no user is logged in, we'll not be able to
-        # use it here.
-        # self.user = getUtility(ILaunchBag).user
-        self.user = IPerson(self.request.principal, None)
+        self.user = getUtility(ILaunchBag).user
+        self._actionMethods = {'authorize': self.authorizeProposed,
+                               'notauthorize': self.removeMember,
+                               'revokeadmin': self.revokeAdminiRole,
+                               'removeadmin': self.removeMember,
+                               'giveadmin': self.giveAdminRole,
+                               'removemember': self.removeMember}
+
+
+    def formSubmitted(self):
+        if self.request.method != "POST":
+            return False
+
+        if "PROPOSED_MEMBERS_CHANGES" in self.request.form or \
+           "ADMIN_CHANGES" in self.request.form or \
+           "MEMBERS_CHANGES" in self.request.form:
+            self.processChanges()
+            return True
+        else:
+            return False
+
+    def processChanges(self):
+        action = self.request.form.get('action')
+        people = self.request.form.get('selected')
+
+        if not people:
+            return 
+
+        if not isinstance(people, list):
+            people = [people]
+
+        method = self._actionMethods[action]
+        for personID in people:
+            method(int(personID), self.context)
+
+    def _getMembership(self, personID, teamID):
+        membership = Membership.selectBy(personID=personID, teamID=teamID)
+        assert membership.count() == 1
+        return membership[0]
+
+    def authorizeProposed(self, personID, team):
+        membership = self._getMembership(personID, team.id)
+        membership.status = int(MembershipStatus.CURRENT)
+        membership.role = int(MembershipRole.MEMBER)
+
+    def removeMember(self, personID, team):
+        if personID == team.teamowner.id:
+            return
+
+        membership = self._getMembership(personID, team.id)
+        membership.destroySelf()
+        teampart = TeamParticipation.selectBy(personID=personID,
+                                              teamID=team.id)
+        assert teampart.count() == 1
+        teampart[0].destroySelf()
+
+    def giveAdminRole(self, personID, team):
+        membership = self._getMembership(personID, team.id)
+        membership.role = int(MembershipRole.ADMIN)
+
+    def revokeAdminiRole(self, personID, team):
+        membership = self._getMembership(personID, team.id)
+        membership.role = int(MembershipRole.MEMBER)
 
