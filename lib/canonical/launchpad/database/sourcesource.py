@@ -81,7 +81,7 @@ class SourceSource(SQLBase):
     def certifyForSync(self):
         """enable the sync for processing"""
         self.processingapproved='NOW'
-        self.frequency=datetime.timedelta(1)
+        self.syncinterval=datetime.timedelta(1)
     
     def syncCertified(self):
         """is the sync enabled"""
@@ -122,7 +122,7 @@ class SourceSource(SQLBase):
     #FIXME: buildbot should updated this on mirror completion.
     def _get_TYPE(self):
  #       if self.lastsynced is None:
-        if self.frequency is None or int(self.frequency) == 0:
+        if self.syncinterval is None or int(self.syncinterval) == 0:
             return 'import'
         else:
             return 'sync'
@@ -160,7 +160,7 @@ class SourceSource(SQLBase):
         else:
             job.TYPE = 'sync'
 
-            job.frequency=int(self.frequency)
+            job.frequency=int(self.syncinterval)
 
         job.tagging_rules=[]
 
@@ -176,8 +176,8 @@ class SourceSource(SQLBase):
         job.branchto = str(self.newbranchbranch)
         job.archversion = str(self.newbranchversion)
 
-        job.package_distro = self.package_distro
-        job.package_files = self.package_files
+        job.package_distro = self.packagedistro
+        job.package_files = self.packagefiles_collapsed
         return job
 
 
