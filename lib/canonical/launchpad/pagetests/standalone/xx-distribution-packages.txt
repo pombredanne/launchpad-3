@@ -1,4 +1,5 @@
-
+Check if the Distribution Search Packages page is not broken.
+This page is used to search packages in a distribution context.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+packages HTTP/1.1
@@ -7,6 +8,9 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
+
+
+Search for a package and check if the result page is not broken
 
   >>> print http(r"""
   ... POST /distros/ubuntu/+packages/ HTTP/1.1

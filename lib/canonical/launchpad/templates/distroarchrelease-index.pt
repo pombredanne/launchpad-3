@@ -28,10 +28,6 @@
      tal:define="distrorelease context/distrorelease;
                  distro distrorelease/distribution">
 
-  <div id="content" class="documentEditable">
-
-    <div class="documentContent" id="region-content"/>    
-    
     <h1>
       <span tal:replace="context/title">
         title
@@ -43,8 +39,6 @@
       <span tal:replace="distrorelease/displayname" /> contains
       <span tal:replace="context/binarycount" /> software packages. 
       </p>
-
-  </div>
 
 </div>
 

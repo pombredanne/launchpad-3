@@ -8,12 +8,16 @@
 
         <img src="/++resource++edit.gif">
         <a href="+edit">Edit Details</a><br />
+        <img src="/++resource++add.gif">
+        <a href="+newteam">Create New Team</a><br />
         <img src="/++resource++info_icon.gif">
         <a href="+translations">Translations</a><br />
         <img src="/++resource++info_icon.gif">
         <a href="+bugs">Bugs Reported</a><br />
         <img src="/++resource++info_icon.gif">
         <a href="+packages">Packages</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+bounties">Bounties</a><br />
         <img src="/++resource++info_icon.gif">
         <a href="+emails">Email Addresses</a><br />
         <img src="/++resource++info_icon.gif">

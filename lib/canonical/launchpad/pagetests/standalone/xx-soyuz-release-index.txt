@@ -1,4 +1,4 @@
-
+Check if the DistroRelease page is not broken.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/warty HTTP/1.1

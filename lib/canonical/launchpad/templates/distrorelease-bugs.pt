@@ -21,13 +21,11 @@
 <div metal:fill-slot="column_one"></div>
 
 <div metal:fill-slot="main" tal:define="distro context/distribution">
-  <div id="content" class="documentEditable">
  
    <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
 
    <div metal:use-macro="context/@@bugtask_search_listing/buglisting" />
 
- </div>
 </div>
 
 </body>

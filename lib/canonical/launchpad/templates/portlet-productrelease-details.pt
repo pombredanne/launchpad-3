@@ -1,0 +1,19 @@
+<div class="portlet">
+    <h4 tal:content="context/title">product title</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+            <b>Product:</b><br />
+            <ul tal:define="product context/productseries/product">
+              <li><a tal:attributes="href string:/products/{product/name}/"
+                     tal:content="product/displayname"
+                     class="link">product displayname</a></li>
+            </ul>
+
+            <b>Version:</b><br />
+            <span tal:replace="context/version" /><br />
+
+        </div>
+    </div>
+</div>

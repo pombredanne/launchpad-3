@@ -3,13 +3,9 @@
 # zope imports
 from zope.component import getUtility
 
-# sqlobject/sqlos
-from canonical.database.sqlbase import flushUpdates
-
 # lp imports
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.lp.dbschema import LoginTokenType
-
 
 # interface import
 from canonical.launchpad.interfaces import IEmailAddressSet
@@ -17,7 +13,6 @@ from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
 
 from canonical.launchpad.mail.sendmail import simple_sendmail
-
 
 
 def sendEmailValidationRequest(token, appurl):

@@ -16,19 +16,6 @@
 
 <div metal:fill-slot="main">
 
-  <div id="content" class="documentEditable">
-    <ul class="contentViews">
-      <li id="contentview-profile" class="plain">
-        <a href="../">Team Information</a>
-      </li>
-
-      <li id="contentview-members" class="selected">
-        <a href=".">Members</a>
-      </li>
-    </ul>
-
-    <div class="documentContent" id="region-content">
-
     <tal:block tal:define="activeMembersCount view/activeMembersCount;
                            inactiveMembersCount view/inactiveMembersCount;
                            proposedMembersCount view/proposedMembersCount">
@@ -52,25 +39,44 @@
         to administrators, demoted to normal members, deactivated or can
         have their expiration date changed.</p>
 
-        <table width="100%" id="ass_listing" class="listing">
+        <table width="100%" class="listing lpListing rowNavigation"> 
           <tr>
             <th>Name</th>
-            <th>Joined</th>
+            <th>Member since</th>
             <th>Expires</th>
             <th>Status</th>
           </tr>
-          <tr tal:repeat="membership view/activeMemberships">
+          <tr tal:repeat="membership view/activeMemberships"
+              class="rowLinkified">
             <tal:block tal:define="member membership/person">
-            <td><a tal:attributes="href member/name"
-                   title="Edit this subscription">
-              <img src="/++resource++edit.gif"></a>&nbsp;&nbsp;
-              <a tal:attributes="href string:/people/${member/name}">
-              <span tal:replace="member/browsername" /></a></td>
-            <td tal:content="membership/datejoined/date"></td>
-            <td tal:condition="membership/dateexpires"
-                tal:content="membership/dateexpires/date"></td>
-            <td tal:condition="not: membership/dateexpires">Never</td>
-            <td tal:content="membership/statusname"></td>
+            <td>
+              <a tal:attributes="href member/name"
+                 tal:content="member/browsername"
+                 title="Edit this membership" />
+            </td>
+
+            <td>
+              <a tal:attributes="href member/name"
+                 tal:content="membership/datejoined/date"
+                 title="Edit this membership" />
+            </td>
+
+            <td tal:condition="membership/dateexpires">
+              <a tal:attributes="href member/name" 
+                 tal:content="membership/dateexpires/date"
+                 title="Edit this membership" />
+            </td>
+
+            <td tal:condition="not: membership/dateexpires">
+              <a tal:attributes="href member/name"
+                 title="Edit this membership">Never</a>
+            </td>
+
+            <td>
+              <a tal:attributes="href member/name" 
+                 tal:content="membership/statusname"
+                 title="Edit this membership" />
+            </td>
             </tal:block>
           </tr>
         </table>
@@ -86,19 +92,24 @@
         proposed subscriptions if they think a member should not join this
         team.</p>
 
-        <table width="100%" id="ass_listing" class="listing">
+        <table width="100%" class="listing lpListing rowNavigation"> 
           <tr>
             <th>Name</th>
             <th>Join requested in</th>
           </tr>
-          <tr tal:repeat="membership view/proposedMemberships">
+          <tr tal:repeat="membership view/proposedMemberships"
+              class="rowLinkified">
             <tal:block tal:define="member membership/person">
-            <td><a tal:attributes="href member/name"
-                   title="Approve/Decline this subscription">
-              <img src="/++resource++edit.gif"></a>&nbsp;&nbsp;
-              <a tal:attributes="href string:/people/${member/name}">
-              <span tal:replace="member/browsername" /></a></td>
-            <td tal:content="membership/datejoined/date"></td>
+            <td>
+              <a tal:attributes="href member/name"
+                 tal:content="member/browsername"
+                 title="Approve/Decline this membership" />
+            </td>
+            <td>
+              <a tal:attributes="href member/name"
+                 tal:content="membership/datejoined/date"
+                 title="Approve/Decline this membership" />
+            </td>
             </tal:block>
           </tr>
         </table>
@@ -112,32 +123,43 @@
         <legend>Inactive members</legend>
 
         <p>These are members who, at some point were active members for this
-        team but are not anylonger. Either their subscriptions have
+        team but are not any longer. Either their subscriptions have
         <em>expired</em> or were <em>deactivated</em> by themselves or any
         administrator of this team. Inactive members can become active members
         again only if a team administrator renew their subscriptions (in case 
         of <em>expired</em> ones) or reactivate it (for <em>deactivated</em>
         ones).</p>
 
-        <table width="100%" id="ass_listing" class="listing">
+        <table width="100%" class="listing lpListing rowNavigation"> 
           <tr>
             <th>Name</th>
             <th>Joined in</th>
             <th>Status</th>
           </tr>
-          <tr tal:repeat="membership view/inactiveMemberships">
+          <tr tal:repeat="membership view/inactiveMemberships"
+              class="rowLinkified">
             <tal:block tal:define="member membership/person">
-            <td><a tal:attributes="href member/name"
-                   title="Renew/Reactivate this subscription">
-              <img src="/++resource++edit.gif"></a>&nbsp;&nbsp;
-              <a tal:attributes="href string:/people/${member/name}">
-              <span tal:replace="member/browsername" /></a></td>
-            <td tal:content="membership/datejoined/date"></td>
-            <td tal:condition="membership/isExpired">Membership expired in
-              <span tal:replace="membership/dateexpires/date" />
+            <td>
+              <a tal:attributes="href member/name"
+                 tal:content="member/browsername"
+                 title="Renew/Reactivate this membership" />
             </td>
-            <td tal:condition="not: membership/isExpired"
-                tal:content="membership/statusname">
+            <td>
+              <a tal:attributes="href member/name"
+                 tal:content="membership/datejoined/date"
+                 title="Renew/Reactivate this membership" />
+            </td>
+
+            <td tal:condition="membership/isExpired">
+              <a tal:attributes="href member/name"
+                 title="Renew/Reactivate this membership">
+                Membership expired in <span tal:replace="membership/dateexpires/date" />
+              </a>
+            </td>
+            <td tal:condition="not: membership/isExpired">
+              <a tal:attributes="href member/name"
+                 tal:content="membership/statusname"
+                 title="Renew/Reactivate this membership" />
             </td>
             </tal:block>
           </tr>
@@ -146,8 +168,7 @@
       </fieldset>
 
     </tal:block>
-    </div>
-  </div>
+
 </div>
 
 </body>

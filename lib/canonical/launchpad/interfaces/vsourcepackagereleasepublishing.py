@@ -22,13 +22,12 @@ class ISourcePackageReleasePublishing(ISourcePackageRelease):
     id = Int(title=_("ID"), required=True)
     publishingstatus = Attribute("The status of this publishing record")
     datepublished = Attribute("The date on which this record was published")
+    publisheddistrorelease = Attribute("The distro release into which this sourcepackage is published.")
     name = Attribute("The SourcePackage name")
-    shortdesc = Attribute("The SourcePackage short description")
-    description = Attribute("The SourcePackage description")
     componentname = Attribute("The Component name")
-    distrorelease = Attribute("The distro in which this package was released")
     maintainer = Attribute("The maintainer of this package")
 
+    sourcepackage = Attribute("The source package this is a release for")
     title = Attribute("Title")
 
     def __getitem__(version):

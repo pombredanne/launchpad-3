@@ -1,4 +1,5 @@
-
+Check if the BinaryPackage page is not broken.
+This BinaryPackage page is in a DistroArchRelease context.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/warty/i386/mozilla-firefox-dummy HTTP/1.1

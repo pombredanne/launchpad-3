@@ -13,17 +13,16 @@ from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol
 
 from canonical.librarian.client import FileDownloadClient
 from canonical.database.sqlbase import SQLBase
-from canonical.lp.dbschema import EnumCol, SourcePackageUrgency
+from canonical.lp.dbschema import EnumCol, SourcePackageUrgency, \
+        SourcePackageFormat
 
 # interfaces and database 
-from canonical.launchpad.interfaces import ISourcePackageRelease
+from canonical.launchpad.interfaces import \
+        ISourcePackageRelease, ISourcePackageReleaseSet
 
 from canonical.launchpad.database.binarypackage import BinaryPackage, \
     DownloadURL
 
-#
-#
-#
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)
@@ -32,37 +31,37 @@ class SourcePackageRelease(SQLBase):
     section = ForeignKey(foreignKey='Section', dbName='section')
     creator = ForeignKey(foreignKey='Person', dbName='creator', notNull=True)
     component = ForeignKey(foreignKey='Component', dbName='component')
-    sourcepackage = ForeignKey(foreignKey='SourcePackage',
-                               dbName='sourcepackage', notNull=True)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
                                    dbName='sourcepackagename', notNull=True)
     maintainer = ForeignKey(foreignKey='Person', dbName='maintainer',
                             notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
-
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
                       notNull=True)
     dateuploaded = DateTimeCol(dbName='dateuploaded', notNull=True,
                                default='NOW')
-
     dsc = StringCol(dbName='dsc')
     version = StringCol(dbName='version', notNull=True)
     changelog = StringCol(dbName='changelog')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
-
+    format = EnumCol(dbName='format',
+                     schema=SourcePackageFormat,
+                     default=SourcePackageFormat.DPKG,
+                     notNull=True)
+    uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
+                                     dbName='uploaddistrorelease')
+    # Joins
     builds = MultipleJoin('Build', joinColumn='sourcepackagerelease')
-
     files = MultipleJoin('SourcePackageReleaseFile',
                          joinColumn='sourcepackagerelease')
-    #
+
     # Properties
-    #
-    def _name(self):
-        return self.sourcepackage.sourcepackagename.name
-    name = property(_name)
+    def name(self):
+        return self.sourcepackagename.name
+    name = property(name)
 
     def binaries(self):
         clauseTables = ('SourcePackageRelease', 'BinaryPackage', 'Build')
@@ -116,5 +115,19 @@ class SourcePackageRelease(SQLBase):
             'AND Build.sourcepackagerelease = %d'
             % (distroRelease.id, self.id), clauseTables=clauseTables))
         return archReleases
+
+
+class SourcePackageReleaseSet:
+
+    implements(ISourcePackageReleaseSet)
+
+    def getByCreatorID(self, personID):
+        querystr = """sourcepackagerelease.creator = %d AND
+                      sourcepackagerelease.sourcepackagename = 
+                        sourcepackagename.id""" % personID
+        return SourcePackageRelease.select(
+            querystr,
+            orderBy='SourcePackageName.name',
+            clauseTables=['SourcePackageRelease', 'SourcePackageName'])
 
 

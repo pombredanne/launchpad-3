@@ -188,6 +188,9 @@ class DummyPOTemplate:
     def attachRawFileData(self, contents, importer=None):
         pass
 
+    def canEditTranslations(self, person):
+        return True
+
 
 class DummyResponse:
     def redirect(self, url):

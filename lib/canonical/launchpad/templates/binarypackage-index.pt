@@ -7,8 +7,8 @@
   <title metal:fill-slot="title">Binary Package Details</title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
@@ -20,192 +20,158 @@
     <div tal:replace="structure view/lastversionsPortlet" />
   </metal:rightportlets>
 
-  <div metal:fill-slot="main" id="content" class="documentEditable">
-    <div class="documentContent" id="region-content">
-      <h1>
-        <span tal:content="context/shortdesc">
-          TITLE</span>
-      </h1>
+  <div metal:fill-slot="main">
 
-      <h4>Binary Package Information</h4>
-      <p tal:content="context/description" />
-      <ul>
+    <h1>Package Overview</h1>
+
+    <p class="documentDescription" tal:content="context/shortdesc">
+    Package Summary</p>
+
+    <p tal:content="context/description" />
+
+    <ul>
             
-	<li><b>Package Version:</b> <span tal:replace="context/version" />
+      <li><b>Package Version:</b> <span tal:replace="context/version" />
 
-	<li><b>Package Status:</b> <span tal:replace="context/status" />
+      <li><b>Package Status:</b> <span tal:replace="context/status" />
 
-        <li><b>Component:</b>
-           <span tal:content="context/component/name">
-           Component</span>
-	</li>
+      <li><b>Component:</b>
+        <span tal:content="context/component/name">
+        Component</span>
+      </li>
 
-        <li><b>Priority:</b>
-           <span tal:content="context/priority/title">
-           PRIORITY</span>
-	</li>
+      <li><b>Priority:</b>
+        <span tal:content="context/priority/title">
+        PRIORITY</span>
+      </li>
 
-        <li>
-           <b>Download Packages</b>
-             <div  tal:define="files context/files_url">
-               <ul tal:condition="files">
-                  <li tal:repeat="file files">
-                    <a 
-                      tal:content="file/filename"
-                      tal:attributes="href file/fileurl" /> 
-                  </li>
-               </ul>
-               <i tal:condition="not:files">
-                 No files available for download.
-               </i>
-             </div>
+      <li>
+        <b>Download:</b>
+        <div tal:define="files context/files_url" tal:omit-tag>
+          <ul tal:condition="files">
+            <li tal:repeat="file files">
+              <a tal:content="file/filename"
+                 tal:attributes="href file/fileurl" /> 
+            </li>
+          </ul>
+          <i tal:condition="not:files">
+            No files available for download.
+          </i>
+        </div>
 
-        <li><b>Source package:</b>
-           <a tal:define="spackage context/build/sourcepackagerelease/sourcepackage"
-	         tal:content="spackage/sourcepackagename/name"
-		 tal:attributes="href string:../../+sources/${spackage/sourcepackagename/name}">
+      <li><b>Source package:</b>
+        <a tal:define="spackage context/build/sourcepackagerelease"
+           tal:content="spackage/name"
+           tal:attributes="href string:../../+sources/${spackage/name}">
            SOURCEPACKAGE</a>
-	</li>
+      </li>
 
-      </ul>
+    </ul>
 
-      <table width="100%">
-        <tr>
-          <td width="50%" valign="top">
-            <div align="center">
-	      <h4>Package Dependences</h4>
-	    </div>
-	    <ul>
-	      <i tal:condition="not:view/depends"> 
-	        Not Available
-	      </i>
-	    <span tal:repeat="bindepends view/depends">
-	      <li>
-	        <a tal:content="bindepends/name"
-		tal:attributes="href string:../${bindepends/name}"/> 
-		<tal:dummy condition="bindepends/signal">
-		  ( <span tal:content="bindepends/signal" /> 
-		  <span tal:content="bindepends/version" />)
-		</tal:dummy> 
-	      </li> 
-	    </span> 
-	    </ul> 
-          </td>
+    <h4>Package Dependences</h4>
 
-          <td width="50%" valign="top">
-            <div align="center">
-              <h4>Package Recommends</h4>
-	    </div>
-	    <ul>
-	      <i tal:condition="not:view/recommends">
-	        Not Available
-	      </i>
-	    <span tal:repeat="binrecommends view/recommends">
-	      <li>
-	        <a tal:content="binrecommends/name"
-		tal:attributes="href string:../${binrecommends/name}"/>
-		<tal:dummy condition="binrecommends/signal">
-		  ( <span tal:content="binrecommends/signal" />
-		  <span tal:content="binrecommends/version" /> )
-		</tal:dummy>
-	      </li>
-	    </span>
-	    </ul>
-         </td>
-      </tr>
+    <ul>
+      <i tal:condition="not:view/depends"> 
+      Not Available</i>
 
-      <tr>
+      <span tal:repeat="bindepends view/depends" tal:omit-tag>
+        <li>
+          <a tal:content="bindepends/name"
+             tal:attributes="href string:../${bindepends/name}"/> 
+          <tal:dummy condition="bindepends/signal">
+            ( <span tal:content="bindepends/signal" /> 
+            <span tal:content="bindepends/version" />)
+          </tal:dummy> 
+        </li> 
+      </span> 
+    </ul> 
 
-        <td width="50%" valign="top">
-          <div align="center">
-            <h4>Package Conflicts</h4>
-	  </div>
-	  <ul>
-	    <i tal:condition="not:view/conflicts">
-	      Not Available
-	    </i>
-	    <span tal:repeat="binconflicts view/conflicts">
-	      <li>
-	        <a tal:content="binconflicts/name"
-		tal:attributes="href string:../${binconflicts/name}"/>
-		<tal:dummy condition="binconflicts/signal">
-		  ( <span tal:content="binconflicts/signal" />
-		  <span tal:content="binconflicts/version" /> )
-		</tal:dummy>
-	      </li>
-	    </span>
-	  </ul>
-        </td>
+    <h4>Package Recommends</h4>
 
-        <td width="50%" valign="top">
-          <div align="center">
-            <h4>Package Replaces</h4>
-	  </div>
-	    <ul>
-	      <i tal:condition="not:view/replaces">
-	        Not Available
-	      </i>
-	    <span tal:repeat="binreplaces view/replaces">
-	      <li>
-	        <a tal:content="binreplaces/name"
-		tal:attributes="href string:../${binreplaces/name}"/>
-		<tal:dummy condition="binreplaces/signal">
-		  ( <span tal:content="binreplaces/signal" />
-		  <span tal:content="binreplaces/version" /> )
-		</tal:dummy>
-	      </li>
-	    </span>
-	  </ul>
-        </td>
-      </tr>
+    <ul>
+      <i tal:condition="not:view/recommends">
+      Not Available</i>
+      <span tal:repeat="binrecommends view/recommends" tal:omit-tag>
+        <li>
+          <a tal:content="binrecommends/name"
+             tal:attributes="href string:../${binrecommends/name}"/>
+          <tal:dummy condition="binrecommends/signal" tal:omit-tag>
+            ( <span tal:content="binrecommends/signal" />
+            <span tal:content="binrecommends/version" /> )
+          </tal:dummy>
+        </li>
+      </span>
+    </ul>
 
-      <tr>
+    <h4>Package Conflicts</h4>
 
-        <td width="50%" valign="top">
-          <div align="center">
-            <h4>Package Suggests</h4>
-	  </div>
-	  <ul>
-	    <i tal:condition="not:view/suggests">
-	      Not Available
-	    </i>
-	    <span tal:repeat="binsuggests view/suggests">
-	      <li>
-	        <a tal:content="binsuggests/name"
-		tal:attributes="href string:../${binsuggests/name}"/>
-		<tal:dummy condition="binsuggests/signal">
-		  ( <span tal:content="binsuggests/signal" />
-		  <span tal:content="binsuggests/version" /> )
-		</tal:dummy>
-	      </li>
-	    </span>
-	  </ul>
-        </td>
+    <ul>
 
-        <td width="50%" valign="top">
-          <div align="center">
-	     <h4>Package Provides</h4>
-  	  </div>
-	  <ul>
-	    <i tal:condition="not:view/provides">
-	      Not Available
-	    </i>
-	    <span tal:repeat="binprovides view/provides">
-	     <li>
-	      <span tal:content="binprovides/name" />
-		<tal:dummy condition="binprovides/signal">
-		  ( <span tal:content="binprovides/signal" />
-		  <span tal:content="binprovides/version" /> )
-		</tal:dummy>
-	      </li>
-	    </span>
-	  </ul>
-        </td>
-    </tr>
+      <i tal:condition="not:view/conflicts">
+      Not Available</i>
+      <span tal:repeat="binconflicts view/conflicts" tal:omit-tag>
+        <li>
+          <a tal:content="binconflicts/name"
+             tal:attributes="href string:../${binconflicts/name}"/>
+          <tal:dummy condition="binconflicts/signal" tal:omit-tag>
+            ( <span tal:content="binconflicts/signal" />
+            <span tal:content="binconflicts/version" /> )
+          </tal:dummy>
+        </li>
+      </span>
+    </ul>
 
-   </table>
+    <h4>Package Replaces</h4>
 
-    </div>
+    <ul>
+      <i tal:condition="not:view/replaces">
+      Not Available</i>
+      <span tal:repeat="binreplaces view/replaces" tal:omit-tag>
+        <li>
+          <a tal:content="binreplaces/name"
+             tal:attributes="href string:../${binreplaces/name}"/>
+          <tal:dummy condition="binreplaces/signal" tal:omit-tag>
+            ( <span tal:content="binreplaces/signal" />
+            <span tal:content="binreplaces/version" /> )
+          </tal:dummy>
+        </li>
+      </span>
+    </ul>
+
+    <h4>Package Suggests</h4>
+
+    <ul>
+      <i tal:condition="not:view/suggests">
+      Not Available</i>
+
+      <span tal:repeat="binsuggests view/suggests" tal:omit-tag>
+        <li>
+          <a tal:content="binsuggests/name"
+             tal:attributes="href string:../${binsuggests/name}"/>
+          <tal:dummy condition="binsuggests/signal">
+            ( <span tal:content="binsuggests/signal" />
+            <span tal:content="binsuggests/version" /> )
+          </tal:dummy>
+        </li>
+      </span>
+    </ul>
+
+    <h4>Package Provides</h4>
+    
+    <ul>
+      <i tal:condition="not:view/provides">
+      Not Available</i>
+      <span tal:repeat="binprovides view/provides" tal:omit-tag>
+        <li>
+          <span tal:content="binprovides/name" />
+          <tal:dummy condition="binprovides/signal">
+            ( <span tal:content="binprovides/signal" />
+            <span tal:content="binprovides/version" /> )
+          </tal:dummy>
+        </li>
+      </span>
+    </ul>
+
   </div>
 
 </body>

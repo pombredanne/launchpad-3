@@ -18,8 +18,7 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.launchpad.interfaces import IDistribution, \
-        IDistributionSet, IPerson, IBugTaskSet, ILaunchBag, \
-        ITeamParticipationSet
+        IDistributionSet, IPerson, IBugTaskSet, ILaunchBag
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.helpers import is_maintainer
 

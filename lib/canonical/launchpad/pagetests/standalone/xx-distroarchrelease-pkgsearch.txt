@@ -1,4 +1,5 @@
-
+Check if the DistroArchRelease package search page is not broken.
+This page is used to search binarypackages in a distroarchrelease context
 
   >>> print http(r"""
   ... GET /distros/ubuntu/warty/i386/+pkgsearch HTTP/1.1
@@ -7,6 +8,8 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
+
+Make a search and check if the result page is not broken.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/warty/i386/+pkgsearch?name=firefox HTTP/1.1

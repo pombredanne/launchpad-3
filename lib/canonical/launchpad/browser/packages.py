@@ -156,7 +156,7 @@ class SourcePackageBugsView:
         self.batchnav = BatchNavigator(self.batch, request)
 
     def bugtask_search(self):
-        return self.context.bugs
+        return self.context.bugtasks
 
     def task_columns(self):
         return [

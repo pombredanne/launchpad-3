@@ -24,9 +24,11 @@ from canonical.launchpad.interfaces import IDistroRelease, IPOTemplateSet, \
      IDistroReleaseSet
 
 from canonical.launchpad.database import SourcePackageInDistro, \
-    SourcePackageInDistroSet, PublishedPackageSet, PackagePublishing
+    SourcePackageSet, PublishedPackageSet, PackagePublishing
 
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
+# sabdfl 30/03/05 grrr.... this should be in its own file, please fix it
+from canonical.launchpad.database.pofile import POTemplate
 
 class DistroRelease(SQLBase):
     """A particular release of a distribution."""
@@ -46,8 +48,8 @@ class DistroRelease(SQLBase):
         dbName='components', foreignKey='Schema', notNull=True)
     sections = ForeignKey(
         dbName='sections', foreignKey='Schema', notNull=True)
-    releasestate = EnumCol(notNull=True,
-                           schema=dbschema.DistributionReleaseState)
+    releasestatus = EnumCol(notNull=True,
+                            schema=dbschema.DistributionReleaseStatus)
     datereleased = DateTimeCol(notNull=True)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
@@ -64,9 +66,9 @@ class DistroRelease(SQLBase):
         return ''
     parent = property(parent)
 
-    def state(self):
-        return self.releasestate.title
-    state = property(state)
+    def status(self):
+        return self.releasestatus.title
+    status = property(status)
 
     def sourcecount(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
@@ -97,6 +99,14 @@ class DistroRelease(SQLBase):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         return len(list(self.architectures))
 
+    def potemplates(self):
+        return POTemplate.selectBy(distroreleaseID=self.id)
+    potemplates = property(potemplates)
+
+    def potemplatecount(self):
+        return self.potemplates.count()
+    potemplatecount = property(potemplatecount)
+
     def getBugSourcePackages(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         clauseTables=["BugTask",]
@@ -119,12 +129,9 @@ class DistroRelease(SQLBase):
     def traverse(self, name):
         """Get SourcePackages in a DistroRelease with BugTask"""
         if name == '+sources':
-            return SourcePackageInDistroSet(self)
+            return SourcePackageSet(distrorelease=self)
         elif name  == '+packages':
             return PublishedPackageSet()
-        elif name == '+rosetta':
-            potemplateset = getUtility(IPOTemplateSet)
-            return potemplateset.getSubset(distrorelease=self)
         else:
             return self.__getitem__(name)
 
@@ -144,5 +151,9 @@ class DistroReleaseSet:
     implements(IDistroReleaseSet)
 
     def get(self, distroreleaseid):
-        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
         return DistroRelease.get(distroreleaseid)
+
+    def translatables(self):
+        return DistroRelease.select(
+            "POTemplate.distrorelease=DistroRelease.id",
+            clauseTables=['POTemplate'], distinct=True)

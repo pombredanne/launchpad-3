@@ -7,21 +7,16 @@
     <title metal:fill-slot="title">Binary Packages</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
-    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
 
-
 <metal:leftportlets fill-slot="portlets_one">
 </metal:leftportlets>
 
-
 <div metal:fill-slot="main">
-
- <div id="content" class="documentEditable">
-  <div class="documentContent" id="region-content">
 
   <h1><span tal:replace="context/title" /> Binary Packages </h1>
 
@@ -53,8 +48,6 @@
 
   </span:block>
 
-  </div>
- </div>
 </div>
 
 </body>

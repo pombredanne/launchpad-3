@@ -97,6 +97,8 @@ class IPOTemplateSubset(Interface):
     productrelease = Attribute(
         "The productrelease associated with this subset of POTemplates.")
 
+    title = Attribute("Title - use for launchpad pages")
+
     def __iter__():
         """Returns an iterator over all POTemplate for this subset."""
 
@@ -132,6 +134,9 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     priority = Attribute("The PO template priority.")
 
     potemplatename = Attribute("The PO template name.")
+
+    name = Attribute("The POTemplateName.name, a short text name usually "
+                     "derived from the template translation domain.")
 
     title = Attribute("The PO template's title.")
 
@@ -243,6 +248,15 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     def hasPluralMessage():
         """Test whether this template has any message sets which are plural
         message sets."""
+
+    def canEditTranslations(person):
+        """Say if a person is able to edit existing translations.
+
+        Return True or False depending if the user is allowed to edit those
+        translations.
+
+        At this moment, only translations from a distro release are locked.
+        """
 
     # TODO provide a way to look through non-current message ids.
 

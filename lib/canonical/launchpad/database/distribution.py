@@ -10,9 +10,9 @@ from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound, \
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
-from canonical.lp import dbschema
+from canonical.lp.dbschema import BugTaskStatus, DistributionReleaseStatus
 from canonical.launchpad.interfaces import IDistribution, IDistributionSet, \
-    IDistroPackageFinder
+    IDistroPackageFinder, ITeamMembershipSubset, ITeam
 
 __all__ = ['Distribution', 'DistributionSet']
 
@@ -30,11 +30,26 @@ class Distribution(SQLBase):
     description = StringCol()
     domainname = StringCol()
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     releases = MultipleJoin('DistroRelease', joinColumn='distribution')
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
+
+    def currentrelease(self):
+        for rel in self.releases:
+            if rel.releasestatus in [
+                DistributionReleaseStatus.DEVELOPMENT,
+                DistributionReleaseStatus.FROZEN ]:
+                return rel
+        return None
+    currentrelease = property(currentrelease)
+
+    def memberslist(self):
+        if not ITeam.providedBy(self.members):
+            return
+        return ITeamMembershipSubset(self.members).getActiveMemberships()
 
     def traverse(self, name):
         if name == '+packages':
@@ -53,13 +68,12 @@ class Distribution(SQLBase):
     def bugCounter(self):
         counts = []
 
-        clauseTables = ("VSourcePackageInDistro",
-                        "SourcePackage")
+        clauseTables = ["VSourcePackageInDistro"]
         severities = [
-            dbschema.BugTaskStatus.NEW,
-            dbschema.BugTaskStatus.ACCEPTED,
-            dbschema.BugTaskStatus.REJECTED,
-            dbschema.BugTaskStatus.FIXED]
+            BugTaskStatus.NEW,
+            BugTaskStatus.ACCEPTED,
+            BugTaskStatus.REJECTED,
+            BugTaskStatus.FIXED]
 
         query = ("bugtask.distribution = %s AND "
                  "bugtask.bugstatus = %i")

@@ -3,24 +3,21 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-#
-#
-#
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
 
-    sourcepackage = Attribute("The source package this is a release for")
     creator = Attribute("Person that created this release")
     version = Attribute("A version string")
     dateuploaded = Attribute("Date of Upload")
     urgency = Attribute("Source Package Urgency")
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
+    format = Attribute("The Source Package Format")
     changelog = Attribute("Source Package Change Log")
     builddepends = Attribute(
-        "A comma-separated list of packages on which this package"
-        " depends to build")
+        "A comma-separated list of packages on which this package "
+        "depends to build")
     builddependsindep = Attribute(
         "Same as builddepends, but the list is of arch-independent packages")
     architecturehintlist = Attribute("XXX: Kinnison?")
@@ -33,9 +30,11 @@ class ISourcePackageRelease(Interface):
     files_url = Attribute(
         "Downloadable URL for this sourcepackagerelease files")
     sourcepackagename = Attribute("SourcePackageName table reference")
+    uploaddistrorelease = Attribute("The distrorelease in which this package was first uploaded in Launchpad")
 
     # read-only properties
     name = Attribute('The sourcepackagename for this release, as text')
+    title = Attribute('The title of this sourcepackage')
 
     def branches():
         """Return the list of branches in a source package release"""
@@ -45,4 +44,12 @@ class ISourcePackageRelease(Interface):
     #      in application code.
     #      -- Steve Alexander, Fri Dec 10 14:28:41 UTC 2004
     architecturesReleased = Attribute("XXX")
+
+
+class ISourcePackageReleaseSet(Interface):
+
+    def getByCreatorID(creatorID):
+        """Return an iterator over SourcePackageReleases created by this
+        person."""
+
 

@@ -138,11 +138,6 @@ manifests.';
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or sourcepackages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
 COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
-COMMENT ON TABLE ProductBugAssignment IS 'Links a given Bug to a particular product.';
-COMMENT ON COLUMN ProductBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
-COMMENT ON TABLE SourcepackageBugAssignment IS 'Links a given Bug to a particular sourcepackage.';
-COMMENT ON COLUMN SourcePackageBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
-
 COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.product IS 'The product in which this bug shows up.';
@@ -212,18 +207,10 @@ COMMENT ON COLUMN BugPackageInfestation.lastmodified IS 'The timestamp when this
 COMMENT ON COLUMN BugPackageInfestation.lastmodifiedby IS 'The person who touched this infestation report last, in any way.';
 
 
-/*
-  Soyuz
-*/
--- Are these soyuz or butress?
-COMMENT ON COLUMN SourcePackage.sourcepackagename IS 
-    'A lowercase name identifying the sourcepackage';
 COMMENT ON COLUMN SourcePackageName.name IS
     'A lowercase name identifying one or more sourcepackages';
 COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
-COMMENT ON COLUMN SourcePackage.srcpackageformat IS 
-    'The format of this source package, e.g. DPKG, RPM, EBUILD, etc.';
 COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
 
 
@@ -232,6 +219,7 @@ COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates wh
 COMMENT ON COLUMN Distribution.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
 generating archives for this distribution';
+COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit priviledges relating to this distribution. Other rights may be assigned to this role in the future.';
 
 /* DistroRelease */
 
@@ -362,9 +350,28 @@ COMMENT ON TABLE DistroBounty IS 'This table records a simple link between a bou
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
 -- SourceSource
+COMMENT ON TABLE SourceSource IS 'The SourceSource table identifies upstream
+revision control systems that can be imported and re-published as bazaar
+(baz) archives. So, for example, there is an entry in this table for each
+upstream CVS or SVN branch that we want to sync-and-publish as a baz branch.';
+
 COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.';
 COMMENT ON COLUMN SourceSource.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
 COMMENT ON COLUMN SourceSource.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
+
+
+-- Maintainership
+
+COMMENT ON TABLE Maintainership IS 'Stores the maintainer information for a
+sourcepackage in a particular distribution. Note that this does not store
+the information per-distrorelease, but for the overall "distribution", which
+generally refers to the current development release of the distro.';
+
+COMMENT ON COLUMN Maintainership.maintainer IS 'Refers to the person
+responsible for this sourcepackage inside this distribution. Note that the
+"maintainer" for a package varies over time, so the person who was
+responsible in a previous distrorelease may no longer be listed as
+a maintainer.';
 
 -- Messaging subsytem
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
@@ -380,36 +387,63 @@ COMMENT ON VIEW BinaryPackageFilePublishing IS 'This view is used mostly by Luci
 COMMENT ON VIEW SourcePackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying SourcePackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
 COMMENT ON VIEW BinaryPackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying PackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
 
-
-
-/*
- * Hauge amounts of comments from dsilvers
- */
-
--- SourcePackage
-
-COMMENT ON TABLE SourcePackage IS 'SourcePackage: A soyuz source package representation. This table represents the presence of a given source package in a distribution. It gives no indication of what distrorelease a package may be in.';
-COMMENT ON COLUMN SourcePackage.maintainer IS 'The maintainer of a sourcepackage in a given distribution.';
-COMMENT ON COLUMN SourcePackage.shortdesc IS 'The title or short name of a sourcepackage. E.g. "Mozilla Firefox Browser"';
-COMMENT ON COLUMN SourcePackage.description IS 'A description of the sourcepackage. Typically longer and more detailed than shortdesc.';
-COMMENT ON COLUMN SourcePackage.manifest IS 'The head HCT manifest for the sourcepackage';
-COMMENT ON COLUMN SourcePackage.distro IS 'The distribution in which this package "belongs", if any. It is possible for a package to have no home distribution, in the sense that it is just a package produced by an individual, and not yet published.'; 
-
 -- SourcePackageRelease
 
-COMMENT ON TABLE SourcePackageRelease IS 'SourcePackageRelease: A soyuz source package release. This table represents a given release of a source package. Source package releases may be published into a distrorelease if relevant.';
-COMMENT ON COLUMN SourcePackageRelease.sourcepackage IS 'The sourcepackage related to this release.';
-COMMENT ON COLUMN SourcePackageRelease.creator IS 'The creator of this sourcepackagerelease. I.E. the person who uploaded the release.';
-COMMENT ON COLUMN SourcePackageRelease.version IS 'The version string for this release. E.g. "1.0-2" or "1.4-5ubuntu9.1"';
-COMMENT ON COLUMN SourcePackageRelease.dateuploaded IS 'The date/time that this sourcepackagerelease was uploaded to soyuz';
-COMMENT ON COLUMN SourcePackageRelease.urgency IS 'The urgency of the upload. This is generally used to prioritise buildd activity but may also be used for "testing" systems or security work in the future';
-COMMENT ON COLUMN SourcePackageRelease.dscsigningkey IS 'The GPG key used to sign the DSC. This is not necessarily the maintainer\'s key, the creator\'s key if for example a sponsor uploaded the package.';
-COMMENT ON COLUMN SourcePackageRelease.component IS 'The component in which this sourcepackagerelease is meant to reside. E.g. main, universe, restricted';
-COMMENT ON COLUMN SourcePackageRelease.changelog IS 'The changelog entries relevant to this sourcepackagerelease';
-COMMENT ON COLUMN SourcePackageRelease.builddepends IS 'The build dependencies for this sourcepackagerelease';
-COMMENT ON COLUMN SourcePackageRelease.builddependsindep IS 'The architecture-independant build dependancies for the sourcepackagerelease';
-COMMENT ON COLUMN SourcePackageRelease.architecturehintlist IS 'The architectures which this sourcepackagerelease believes it should be built on. This is used as a hint to the buildds when looking for work to do.';
-COMMENT ON COLUMN SourcePackageRelease.dsc IS 'The "Debian source control" file for the sourcepackagerelease. (*OBSOLETE* ???)';
+COMMENT ON TABLE SourcePackageRelease IS 'SourcePackageRelease: A source
+package release. This table represents a specific release of a source
+package. Source package releases may be published into a distrorelease, or
+even multiple distroreleases.';
+COMMENT ON COLUMN SourcePackageRelease.creator IS 'The creator of this
+sourcepackagerelease. This is the person referred to in the top entry in the
+package changelog in debian terms. Note that a source package maintainer in
+Ubuntu might be person A, but a particular release of that source package
+might in fact have been created by a different person B. The maintainer
+would be recorded in the Maintainership table, while the creator of THIS
+release would be recorded in the SourcePackageRelease.creator field.';
+COMMENT ON COLUMN SourcePackageRelease.version IS 'The version string for
+this source package release. E.g. "1.0-2" or "1.4-5ubuntu9.1". Note that, in
+ubuntu-style and redhat-style distributions, the version+sourcepackagename
+is unique, even across distroreleases. In other words, you cannot have a
+foo-1.2-1 package in Hoary that is different from foo-1.2-1 in Warty.';
+COMMENT ON COLUMN SourcePackageRelease.dateuploaded IS 'The date/time that
+this sourcepackagerelease was first uploaded to the Launchpad.';
+COMMENT ON COLUMN SourcePackageRelease.urgency IS 'The urgency of the
+upload. This is generally used to prioritise buildd activity but may also be
+used for "testing" systems or security work in the future. The "urgency" is
+set by the uploader, in the DSC file.';
+COMMENT ON COLUMN SourcePackageRelease.dscsigningkey IS 'The GPG key used to
+sign the DSC. This is not necessarily the maintainer\'s key, or the
+creator\'s key. For example, it\'s possible to produce a package, then ask a
+sponsor to upload it.';
+COMMENT ON COLUMN SourcePackageRelease.component IS 'The component in which
+this sourcepackagerelease is intended (by the uploader) to reside. E.g.
+main, universe, restricted. Note that the distribution managers will often
+override this data and publish the package in an entirely different
+component.';
+COMMENT ON COLUMN SourcePackageRelease.changelog IS 'The changelog of this
+source package release.';
+COMMENT ON COLUMN SourcePackageRelease.builddepends IS 'The build
+dependencies for this source package release.';
+COMMENT ON COLUMN SourcePackageRelease.builddependsindep IS 'The
+architecture-independant build dependancies for this source package release.';
+COMMENT ON COLUMN SourcePackageRelease.architecturehintlist IS 'The
+architectures which this source package release believes it should be built.
+This is used as a hint to the build management system when deciding what
+builds are still needed.';
+COMMENT ON COLUMN SourcePackageRelease.format IS 'The format of this
+sourcepackage release, e.g. DPKG, RPM, EBUILD, etc. This is an enum, and the
+values are listed in dbschema.SourcePackageFormat';
+COMMENT ON COLUMN SourcePackageRelease.dsc IS 'The "Debian Source Control"
+file for the sourcepackagerelease, from its upload into Ubuntu for the
+first time.';
+COMMENT ON COLUMN SourcePackageRelease.uploaddistrorelease IS 'The
+distrorelease into which this source package release was uploaded into
+Launchpad / Ubuntu for the first time. In general, this will be the
+development Ubuntu release into which this package was uploaded. For a
+package which was unchanged between warty and hoary, this would show Warty.
+For a package which was uploaded into Hoary, this would show Hoary.';
+
+
 
 -- SourcePackageName
 
@@ -485,7 +519,7 @@ COMMENT ON COLUMN DistroRelease.description IS 'The long detailed description of
 COMMENT ON COLUMN DistroRelease.version IS 'The version of the release. E.g. warty would be "4.10" and hoary would be "5.4"';
 COMMENT ON COLUMN DistroRelease.components IS 'The components which are considered valid within this distrorelease.';
 COMMENT ON COLUMN DistroRelease.sections IS 'The sections which are considered valid within this distrorelease.';
-COMMENT ON COLUMN DistroRelease.releasestate IS 'The current state of this distrorelease. E.g. "pre-release freeze" or "released"';
+COMMENT ON COLUMN DistroRelease.releasestatus IS 'The current release status of this distrorelease. E.g. "pre-release freeze" or "released"';
 COMMENT ON COLUMN DistroRelease.datereleased IS 'The date on which this distrorelease was released. (obviously only valid for released distributions)';
 COMMENT ON COLUMN DistroRelease.parentrelease IS 'The parent release on which this distribution is based. This is related to the inheritance stuff.';
 COMMENT ON COLUMN DistroRelease.owner IS 'The ultimate owner of this distrorelease.';
@@ -548,14 +582,6 @@ COMMENT ON COLUMN SourcePackagePublishing.component IS 'The component in which t
 COMMENT ON COLUMN SourcePackagePublishing.section IS 'The section in which the sourcepackagerelease is published';
 COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'The datetime at which this publishing entry is scheduled to be removed from the distrorelease.';
 COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'THIS COLUMN IS PROBABLY UNUSED';
-
--- SourcePackageRelationship
-
-COMMENT ON TABLE SourcePackageRelationship IS 'SourcePackageRelationship: A soyuz relationship between sourcepackages. This table represents relationships between sourcepackages such as inheritance';
-COMMENT ON COLUMN SourcePackageRelationship.subject IS 'The sourcepackage which acts as the subject in the sentence ''Package A <verbs> Package B''';
-COMMENT ON COLUMN SourcePackageRelationship.label IS 'The verb in the sentence ''Package A <verbs> Package B'' E.g. ''derives from'' or ''effectively implements''';
-COMMENT ON COLUMN SourcePackageRelationship.object IS 'The sourcepackage which acts as the object in the sentence ''Package A <verbs> Package B''';
-
 
 -- SourcePackageReleaseFile
 

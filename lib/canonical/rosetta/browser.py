@@ -406,84 +406,30 @@ class RosettaApplicationView(object):
     def browserLanguages(self):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
 
-class ProductView:
-    # XXX sabdfl 17/03/05 please merge this with the browser/product.py
-    # ProductView.
-    summaryPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-object-summary.pt')
-
-    branchesPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-product-branches.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-product-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-product-actions.pt')
-
-    projectPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-product-project.pt')
-
-    prefLangsPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-pref-langs.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-rosetta-status-legend.pt')
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form = self.request.form
-        # List of languages the user is interested on based on their browser,
-        # IP address and launchpad preferences.
-        self.languages = request_languages(self.request)
-        # Cache value for the return value of self.templates
-        self._template_languages = None
-        # List of the templates we have in this subset.
-        self._templates = self.context.potemplates()
-        self.status_message = None
-        # Whether there is more than one PO template.
-        self.has_multiple_templates = len(self._templates) > 1
-
-    def projproducts(self):
-        """Return a list of other products from the same project as this
-        product, excluding this product"""
-        if self.context.project is None:
-            return []
-        return [p for p in self.context.project.products \
-                    if p.id <> self.context.id]
-
-    def templates(self):
-        if self._template_languages is None:
-            self._template_languages = [TemplateLanguages(template, self.languages)
-                               for template in self._templates]
-
-        return self._template_languages
-
-
 class TemplateLanguages:
     """Support class for ProductView."""
 
-    def __init__(self, template, languages, baseurl=''):
+    def __init__(self, template, languages, relativeurl=''):
         self.template = template
         self.name = template.potemplatename.name
         self.title = template.title
+        self.description = template.description
         self._languages = languages
-        self.baseurl = baseurl
+        self.relativeurl = relativeurl
 
     def languages(self):
         for language in self._languages:
-            yield TemplateLanguage(self.template, language, self.baseurl)
+            yield TemplateLanguage(self.template, language, self.relativeurl)
 
 
 class TemplateLanguage:
     """Support class for ProductView."""
 
-    def __init__(self, template, language, baseurl=''):
+    def __init__(self, template, language, relativeurl=''):
         self.name = language.englishname
         self.code = language.code
         self.translateURL = '+translate?languages=' + self.code
-        self.baseurl = baseurl
+        self.relativeurl = relativeurl
 
         poFile = template.queryPOFileByLang(language.code)
 
@@ -757,7 +703,6 @@ class ViewPreferences:
         self.request = request
 
         self.error_msg = None
-        self.submitted_personal = False
         self.person = getUtility(ILaunchBag).user
 
     def languages(self):
@@ -769,12 +714,9 @@ class ViewPreferences:
     def submit(self):
         '''Process a POST request to one of the Rosetta preferences forms.'''
 
-        if self.request.method == "POST":
-            if "SAVE-LANGS" in self.request.form:
-                self.submitLanguages()
-            elif "SAVE-PERSONAL" in self.request.form:
-                self.submitPersonal()
-                self.submitted_personal = True
+        if (self.request.method == "POST" and
+            "SAVE-LANGS" in self.request.form):
+            self.submitLanguages()
 
     def submitLanguages(self):
         '''Process a POST request to the language preference form.
@@ -813,44 +755,6 @@ class ViewPreferences:
         for language in old_languages:
             if language.englishname not in new_languages:
                 self.person.removeLanguage(language)
-
-    def submitPersonal(self):
-        '''Process a POST request to the personal information form.'''
-
-        # First thing to do, check the password. If it's wrong, we stop.
-        currentPassword = self.request.form['currentPassword']
-        encryptor = getUtility(IPasswordEncryptor)
-        isvalid = encryptor.validate(currentPassword, self.person.password)
-
-        if not (currentPassword and isvalid):
-            self.error_msg = "The password you entered is not valid."
-
-        password1 = self.request.form['newPassword1']
-        password2 = self.request.form['newPassword2']
-
-        if password1:
-            if password1 == password2:
-                try:
-                    self.person.password = encryptor.encrypt(password1)
-                except UnicodeEncodeError:
-                    self.error_msg = (
-                        "Your password must contatin ASCII characters only.")
-            else:
-                self.error_msg = (
-                    "The two passwords you entered did not match.")
-
-        given = self.request.form['given']
-        family = self.request.form['family']
-        display = self.request.form['display']
-
-        if given and self.person.givenname != given:
-            self.person.givenname = given
-
-        if family and self.person.familyname != family:
-            self.person.familyname = family
-
-        if display and self.person.displayname != display:
-            self.person.displayname = display
 
 
 class ViewPOExport:
@@ -937,9 +841,9 @@ class TranslatePOTemplate:
         self.context = context
         self.request = request
 
-        self.person = getUtility(ILaunchBag).user
+        self.user = getUtility(ILaunchBag).user
 
-        if self.person is None:
+        if self.user is None:
             return
 
         self.codes = request.form.get('languages')
@@ -1036,9 +940,17 @@ class TranslatePOTemplate:
         if not self.show in ('translated', 'untranslated', 'all'):
             self.show = 'all'
 
+        # Now, we check restrictions to implement HoaryTranslations spec.
+        if not context.canEditTranslations(self.user):
+            # We *only* show the ones without untranslated strings
+            self.show = 'untranslated'
+
         # Get a TabIndexGenerator.
 
         self.tig = TabIndexGenerator()
+
+    def canEditTranslations(self):
+        return self.context.canEditTranslations(self.user)
 
     def makeTabIndex(self):
         return self.tig.generate()
@@ -1063,6 +975,11 @@ class TranslatePOTemplate:
         for name in ('offset',):
             if name in kw:
                 parameters[name] = kw[name]
+
+        # Now, we check restrictions to implement HoaryTranslations spec.
+        if not self.canEditTranslations():
+            # We *only* show the ones without untranslated strings
+            parameters['show'] = 'untranslated'
 
         if parameters:
             keys = parameters.keys()
@@ -1192,7 +1109,7 @@ class TranslatePOTemplate:
 
         for language in self.languages:
             pofiles[language.code] = self.context.getOrCreatePOFile(
-                language.code, None, owner=self.person)
+                language.code, None, owner=self.user)
 
         # Put the translations in the database.
 
@@ -1236,7 +1153,7 @@ class TranslatePOTemplate:
                 fuzzy = code in set['fuzzy']
 
                 po_set.updateTranslation(
-                    person=self.person,
+                    person=self.user,
                     new_translations=new_translations,
                     fuzzy=fuzzy,
                     fromPOFile=False)

@@ -1,3 +1,4 @@
+Sample Person views a bug, which they're about to set private:
 
   >>> print http(r"""
   ... GET /malone/bugs/4/+edit HTTP/1.1
@@ -9,16 +10,6 @@
   ...
       <title>Malone: Edit Bug #4
       </title>
-  ...
-              <div class="user">
-                  Welcome,
-                  <a href="/people/name12">
-                  Sample Person</a>
-                  &ndash;
-                  Prefs
-                  &ndash;
-                  <a href="/+logout">Log Out</a>
-              </div>
   ...
       <h4>Related People:</h4>
   <BLANKLINE>
@@ -62,6 +53,9 @@
   <BLANKLINE>
       </div>
   ...
+
+Sample Person sets the bug private and is made an explicit subscriber
+in the process.
 
   >>> print http(r"""
   ... POST /malone/bugs/4/+edit HTTP/1.1

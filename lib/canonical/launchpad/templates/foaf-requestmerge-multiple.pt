@@ -16,9 +16,6 @@
 
 <div metal:fill-slot="main">
 
-  <div id="content" class="documentEditable">
-  <div class="documentContent" id="region-content">
-
     <tal:block tal:condition="not: view/formProcessed">
       <h1>Merge User Accounts</h1>
 
@@ -59,9 +56,6 @@
       follow the instructions on each of those messages to complete the
       merge.</p>
     </tal:block>
-
-  </div>
-  </div>
 
 </div> 
 

@@ -54,8 +54,6 @@ class SourceSource(SQLBase):
     releasefileglob = StringCol(dbName='releasefileglob', default=None)
     releaseparentbranch = ForeignKey(foreignKey='Branch',
                    dbName='releaseparentbranch', default=None)
-    sourcepackage = ForeignKey(foreignKey='SourcePackage',
-                   dbName='sourcepackage', default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
     lastsynced = DateTimeCol(dbName='lastsynced', default=None)
     syncinterval = DateTimeCol(dbName='syncinterval', default=None)

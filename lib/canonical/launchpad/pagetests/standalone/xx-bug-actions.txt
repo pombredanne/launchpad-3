@@ -5,22 +5,5 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <h4>Add to bug:</h4>
-  <BLANKLINE>
-      <div class="portletBody">
-          <div class="portletContent odd">
-              <img src="/++resource++add.gif" alt="Add">
-              <a href="/malone/bugs/3/people/+new">Subscriber</a><br />
-              <img src="/++resource++add.gif" alt="Add">
-              <a href="/malone/bugs/3/productinfestations/+new">Product Infestation</a><br />
-              <img src="/++resource++add.gif" alt="Add">
-              <a href="/malone/bugs/3/packageinfestations/+new">Package Infestation</a><br />
-              <img src="/++resource++add.gif" alt="Add">
-              <a href="/malone/bugs/3/cverefs/+new">CVE</a><br />
-              <img src="/++resource++add.gif" alt="Add">
-              <a href="/malone/bugs/3/references/+new">Web Link</a><br />
-              <img src="/++resource++add.gif" alt="Add">
-              <a href="/malone/bugs/3/watches/+new">Bug Tracker</a>
-          </div>
-      </div>
+      <h4>actions:</h4>
   ...

@@ -12,7 +12,34 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourcePackage"
+        name="+index" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        layer="canonical.launchpad.layers.MaloneLayer"
         name="+malone-index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        function="canonical.launchpad.browser.traverseSourcePackage" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.sourcepackage.SourcePackageView">
+        <browser:page
+            name="+index"
+            template="../templates/sourcepackage.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+index" />
+        <browser:page
+            name="+changelog"
+            template="../templates/sourcepackage-changelog.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+changelog" />
+        <browser:page
+            name="+translations"
+            template="../templates/object-pots.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+translations" />
+    </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackage"
@@ -23,7 +50,6 @@
             template="../templates/package-bugs.pt"
             lp:url="malone/sourcepackage/$SourcePackage.name/+malone-index" />
     </browser:pages>
-
 
     <!-- SourcePackageSet -->
     <content class="canonical.launchpad.database.SourcePackageSet">
@@ -44,17 +70,25 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourcePackageSet"
+        name="+index" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackageSet"
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+malone-index" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackageSet"
-        class="canonical.launchpad.browser.packages.SourcePackageBugsView"
+        class="canonical.launchpad.browser.sourcepackage.SourcePackageSetView"
         permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/sourcepackages.pt"
+            lp:url="/distros/$Distro.name/$DistroRelease.name/+sources/+index" />
         <browser:page
             name="+malone-index"
             template="../templates/packages-bugs.pt"
-            lp:url="malone/packages/+malone-index" />
+            lp:url="/distros/$Distro.name/$DistroRelease.name/+sources/+malone-index" />
     </browser:pages>
 
 </configure>

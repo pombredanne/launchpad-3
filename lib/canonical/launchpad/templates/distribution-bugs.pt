@@ -21,7 +21,6 @@
 <div metal:fill-slot="column_one"></div>
 
 <div metal:fill-slot="main">
-  <div id="content" class="documentEditable">
 
   <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
 
@@ -40,7 +39,6 @@
     <a href="+filebug" tal:content="string:File a bug on ${context/title}"></a><br />
     </p>
   <div>
-  </div>
  </div>
 </div>
 

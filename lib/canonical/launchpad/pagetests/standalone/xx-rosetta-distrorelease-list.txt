@@ -1,59 +1,13 @@
 
-This page shows a list of PO templates contained within source packages in a
-particular distibution release. In this case, we're asking for the translation
-overview for Hoary.
+This page shows a list of PO templates contained within all source packages
+in a particular distibution release. In this case, we're asking for the
+translation overview for Hoary.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+rosetta HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+translations HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...
-  <base href="http://localhost:9000/distros/ubuntu/hoary/+rosetta/+index" />
-  <BLANKLINE>
-      <title>Rosetta Translations:
-  <BLANKLINE>
-  <BLANKLINE>
-              hoary
-  <BLANKLINE>
-      </title>
-  ...
-  <BLANKLINE>
-      <h1>Rosetta Translation overview for
-  <BLANKLINE>
-  <BLANKLINE>
-                  hoary
-  <BLANKLINE>
-      </h1>
-  ...
-      <!-- Stuff which is for distro releases. -->
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
-              <table class="listing">
-                  <thead>
-                      <tr>
-                          <th>template</th>
-                          <th>description</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-  <BLANKLINE>
-                          <tr>
-                              <td><a
-      href="
-                                  ../+sources/evolution/+rosetta/evolution-2.2/+translate">Template for evolution in hoary</a></td>
-                              <td></td>
-                          </tr>
-  <BLANKLINE>
-  <BLANKLINE>
-                          <tr>
-                              <td><a
-      href="
-                                  ../+sources/pmount/+rosetta/pmount/+translate">pmount</a></td>
-                              <td>pmount shortdesc</td>
-                          </tr>
-  <BLANKLINE>
-                  </tbody>
-              </table>
+  ...<h2>The Hoary Hedgehog Release</h2>...
+  ...<h1>Translation Templates</h1>...
   ...
 

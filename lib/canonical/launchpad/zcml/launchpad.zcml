@@ -1,0 +1,53 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  i18n_domain="canonical.launchpad"
+>
+
+  <utility
+      factory="canonical.launchpad.utilities.LaunchpadCelebrities"
+      provides="canonical.launchpad.interfaces.ILaunchpadCelebrities">
+  </utility>
+
+  <!-- Login and logout pages. -->
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      class="canonical.launchpad.webapp.login.BasicLoginPage"
+      permission="launchpad.AnyPerson"
+      name="+basiclogin"
+      attribute="login"
+      />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      template="../templates/launchpad-login.pt"
+      class="canonical.launchpad.webapp.login.LoginOrRegister"
+      permission="zope.Public"
+      name="+login"
+      />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      template="../templates/launchpad-login.pt"
+      class="canonical.launchpad.webapp.login.LoginOrRegister"
+      permission="zope.Public"
+      name="+register"
+      />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      template="../templates/launchpad-forgottenpassword.pt"
+      class="canonical.launchpad.webapp.login.ForgottenPasswordPage"
+      permission="zope.Public"
+      name="+forgottenpassword"
+      />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      template="../templates/launchpad-logout.pt"
+      class="canonical.launchpad.webapp.login.CookieLogoutPage"
+      permission="zope.Public"
+      name="+logout"
+      />
+
+</configure>

@@ -1,4 +1,6 @@
-
+DistroRelease information edit.
+This tests makes a modification in warty distrorelease and check 
+if the page is not broken.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/warty/+edit HTTP/1.1

@@ -8,24 +8,26 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ITeamParticipationSet, \
-    ILaunchBag, IHasOwner
+from canonical.launchpad.interfaces import ILaunchBag, IHasOwner, IGeoIP, \
+    IRequestPreferredLanguages
 
 def is_maintainer(hasowner):
     """Return True if the logged in user is an owner of hasowner.
 
     Return False if he's not an owner.
 
-    The user is an owner if it either matches has.owner directly or is a
+    The user is an owner if it either matches hasowner.owner directly or is a
     member of the hasowner.owner team.
 
     Raise TypeError is hasowner does not provide IHasOwner.
     """
     if not IHasOwner.providedBy(hasowner):
         raise TypeError, "hasowner doesn't provide IHasOwner"
-    teampart = getUtility(ITeamParticipationSet)
     launchbag = getUtility(ILaunchBag)
-    return launchbag.user in teampart.getAllMembers(hasowner.owner)
+    if launchbag.user is not None:
+        return launchbag.user.inTeam(hasowner.owner)
+    else:
+        return False
 
 
 def tar_add_file(tf, name, contents):
@@ -220,3 +222,21 @@ def getValidNameFromString(invalid_name):
     name = name.replace(' ', '-')
 
     return name
+
+def requestCountry(request):
+    """Return the Country object from where the request was done.
+
+    If the ipaddress is unknown or the country is not in our database,
+    return None.
+    """
+    ipaddress = request.get('HTTP_X_FORWARDED_FOR')
+    if ipaddress is None:
+        ipaddress = request.get('REMOTE_ADDR')
+    if ipaddress is None:
+        return None
+    return getUtility(IGeoIP).country_by_addr(ipaddress)
+
+def browserLanguages(request):
+    """Return a list of Language objects based on the browser preferences."""
+    return IRequestPreferredLanguages(request).getPreferredLanguages()
+

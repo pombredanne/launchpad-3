@@ -3,7 +3,8 @@
     
     <!-- Configuration related to datetime classes in Launchpad. -->
     <adapter
-        for="canonical.launchpad.interfaces.idatetime.IHasDateCreated"
+        for="canonical.launchpad.interfaces.IHasDateCreated"
         provides="canonical.launchpad.interfaces.IAging"
         factory="canonical.launchpad.components.cdatetime.AgingAdapter" />
+
 </configure>

@@ -1,35 +1,27 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
-    xmlns:i18n="http://namespaces.zope.org/i18n"
-    i18n_domain="launchpad">
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:lp="http://launchpad.canonical.com"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
 
-    <!--  VSourcePackageReleasePublishing -->
-    <content class="canonical.launchpad.database.VSourcePackageReleasePublishing">
-        <allow interface="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"/>
-    </content>
+  <!--  VSourcePackageReleasePublishing -->
+  <content class="canonical.launchpad.database.VSourcePackageReleasePublishing">
+    <allow interface="canonical.launchpad.interfaces.ISourcePackageReleasePublishing" />
+  </content>
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
-        name="+index" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
+    name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
-        getter="traverse" />
-
-    <browser:pages
-         for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
-         permission="zope.Public"
-         class="canonical.launchpad.browser.SourcePackageReleasePublishingView">
-        <browser:page
-            name="+index"
-            template="../templates/sourcepackagerelease-index.pt"
-            lp:url="soyuz/distros/$distro.name/$distrorelease.name/sources/+index" />
-        <browser:page
-            name="+changelog"
-            template="../templates/sourcechangelog-index.pt"
-            lp:url="soyuz/distros/$distro.name/$distrorelease.name/sources/+index" />
-     </browser:pages>
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.SourcePackageReleasePublishingView">
+   <browser:page
+     name="+index"
+     template="../templates/sourcepackagerelease-index.pt"
+     lp:url="/distros/ubuntu/hoary/+sources/+index" />
+   </browser:pages>
 
 </configure>

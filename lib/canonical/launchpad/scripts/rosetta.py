@@ -213,7 +213,7 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
     # Prefix and suffix are used when we need to generate a name for a PO
     # template (the fallback case).
 
-    prefix = 'review-potemplate-%s-%s-' % (
+    prefix = 'review-%s-%s-' % (
         distrorelease_name, sourcepackage_name)
     suffix = 1
 
@@ -224,6 +224,7 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
 
     for pot_file in pot_files:
         pot_dirname, pot_filename = os.path.split(pot_file)
+        assert pot_dirname.startswith('source/')
         domain_name = None
 
         if pot_dirname in found_paths:
@@ -285,7 +286,8 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
         td = TranslationDomain(domain_name)
         td.pot_contents = tar.extractfile(pot_file).read()
         td.pot_filename = pot_filename
-        td.domain_paths.append(pot_dirname)
+        domain_path = pot_dirname[len('source/'):]
+        td.domain_paths.append(domain_path)
 
         if domain_name in domain_binarypackages:
             td.binary_packages = domain_binarypackages[domain_name]
@@ -410,7 +412,9 @@ class AttachTranslationCatalog:
         # XXX
         # This should be done with a celebrity.
         #  -- Dafydd Harries, 2005/03/16
-        admins = PersonSet().getByName('rosetta-admins')
+        personset = PersonSet()
+        admins = personset.getByName('rosetta-admins')
+        ubuntu_translators = personset.getByName('ubuntu-translators')
 
         for domain in domains:
             try:
@@ -430,11 +434,13 @@ class AttachTranslationCatalog:
                 self.logger.warning(
                     "Creating new PO template '%s' for %s/%s" % (
                     domain.domainname, release.name, sourcepackagename.name))
-                template = potemplatesubset.new(
-                    potemplatename=potemplatename,
-                    title='%s template for %s in %s' % (
+                # E.g. "gtk20 for gtk+ in hoary"
+                potemplate_title= '%s for %s in %s' % (
                         potemplatename.name, sourcepackagename.name,
                         release.displayname),
+                template = potemplatesubset.new(
+                    potemplatename=potemplatename,
+                    title=potemplate_title,
                     contents=domain.pot_contents,
                     owner=admins)
             else:
@@ -474,7 +480,8 @@ class AttachTranslationCatalog:
                     code, variant = language_code, None
 
                 try:
-                    pofile = template.getOrCreatePOFile(code, variant)
+                    pofile = template.getOrCreatePOFile(code, variant,
+                                                        ubuntu_translators)
                 except LanguageNotFound:
                     # The language code does not exist in our database.
                     # Usually, it's a translator error.
@@ -522,8 +529,14 @@ class AttachTranslationCatalog:
             sourcepackagename = self.get_sourcepackagename(source)
 
             if sourcepackagename is not None and release is not None:
-                self.import_sourcepackage_release(
-                    sourcepackagename, release, file, version)
+                try:
+                    self.import_sourcepackage_release(
+                        sourcepackagename, release, file, version)
+                except:
+                    # If an exception is raised, we log it before aborting the
+                    # attachment.
+                    self.logger.error('We got an unexpected exception', exc_info = 1)
+                    self.ztm.abort()
 
     def run(self):
         try:

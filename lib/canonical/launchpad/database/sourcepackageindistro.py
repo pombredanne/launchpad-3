@@ -8,40 +8,45 @@ from sqlobject import SQLObjectNotFound
 from sqlobject import StringCol, ForeignKey, MultipleJoin
 
 # launchpad imports
-from canonical.database.sqlbase import quote
-from canonical.lp import dbschema
+from canonical.database.sqlbase import SQLBase, quote
+from canonical.lp.dbschema import EnumCol, PackagePublishingStatus, \
+        SourcePackageFormat
 
 # launchpad interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageInDistro
-from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces import ISourcePackageInDistroSet, \
      ISourcePackageSet
 from canonical.launchpad.database.vsourcepackagereleasepublishing import \
      VSourcePackageReleasePublishing
 
-#
-#
-#
+class SourcePackageInDistro(SQLBase):
+    """
+    Represents source releases published in the specified distribution. This
+    view's contents are uniqued, for the following reason: a certain package
+    can have multiple releases in a certain distribution release.
+    """
 
-class SourcePackageInDistro(SourcePackage):
     implements(ISourcePackageInDistro)
-    """
-    Represents source packages that have releases published in the
-    specified distribution. This view's contents are uniqued, for the
-    following reason: a certain package can have multiple releases in a
-    certain distribution release.
-    """
+
     _table = 'VSourcePackageInDistro'
    
     #
     # Columns
     #
+    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
+
+    format = EnumCol(dbName='format',
+                     schema=SourcePackageFormat,
+                     default=SourcePackageFormat.DPKG,
+                     notNull=True)
+
+    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+                                   dbName='sourcepackagename', notNull=True)
+
     name = StringCol(dbName='name', notNull=True)
 
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease')
-
-    releases = MultipleJoin('SourcePackageRelease', joinColumn='sourcepackage')
 
 
 class SourcePackageInDistroSet(object):
@@ -52,26 +57,26 @@ class SourcePackageInDistroSet(object):
         self.distrorelease = distrorelease
         self.title = 'Source Packages in: ' + distrorelease.title
 
-    def findPackagesByName(self, pattern, fti=False):
+    def findPackagesByName(self, pattern):
         srcutil = getUtility(ISourcePackageSet)
         return srcutil.findByNameInDistroRelease(self.distrorelease.id,
-                                                 pattern, fti)
+                                                 pattern)
 
     def __iter__(self):
         query = ('distrorelease = %d'
                  % (self.distrorelease.id))
-        
         return iter(SourcePackageInDistro.select(query,
-                                                 orderBy='VSourcePackageInDistro.name',
-                                                 distinct=True))
+                        orderBy='VSourcePackageInDistro.name',
+                        distinct=True))
 
     def __getitem__(self, name):
-        plublishing_status = dbschema.PackagePublishingStatus.PUBLISHED.value
+        publishing_status = PackagePublishingStatus.PUBLISHED.value
 
         query = ('distrorelease = %d AND publishingstatus=%d AND name=%s'
-                 % (self.distrorelease.id, plublishing_status, quote(name)))
+                 % (self.distrorelease.id, publishing_status, quote(name)))
 
         try:
             return VSourcePackageReleasePublishing.select(query)[0]
         except IndexError:
             raise KeyError, name
+

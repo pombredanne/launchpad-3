@@ -1,0 +1,141 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">
+    <span tal:replace="context/title">apache2 in ubuntu warty</span>
+  </title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/translationsPortlet" /><br />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+  </metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Source Package Details</h1>
+
+  <ul tal:define="current context/currentrelease">
+
+    <li>
+       <b>Current Version:</b> 
+       <span tal:replace="current/version" />
+    </li>
+
+    <li><b>Upload Date:</b> 
+           <span tal:content="current/dateuploaded">
+           UPLOADDATE</span> UTC
+
+        <li><b>Urgency:</b>
+           <span tal:content="current/urgency/title">
+           URGENCY</span>
+
+        <li><b>Component:</b>
+           <span tal:content="current/component/name">
+           Component</span>
+
+        <li><b>Project:</b>
+           <tal:block tal:condition="context/product">
+             <tal:block tal:condition="context/product/project">
+               <a tal:define="project context/product/project"
+                tal:content="project/displayname"
+                tal:attributes="href string:/projects/${project/name}">
+                Project</a>
+             </tal:block>
+             <i tal:condition="not:context/product/project">
+                No project available for this sourcepackage
+             </i>
+           </tal:block>
+           <i tal:condition="not:context/product">
+             No project available for this sourcepackage
+          </i>
+
+        <li><b>Product:</b>
+           <a tal:condition="context/product"
+              tal:define="product context/product"
+              tal:content="product/displayname"
+              tal:attributes="href string:/products/${product/name}">
+           Product</a>
+           <i tal:condition="not:context/product">
+             No product available for this sourcepackage
+           </i>
+
+        <li>
+           <b>Download Packages</b>
+             <div  tal:define="files current/files_url">
+               <ul tal:condition="files">
+                  <li tal:repeat="file files">
+                    <a 
+                      tal:content="file/filename"
+                      tal:attributes="href file/fileurl" /> 
+                  </li>
+               </ul>
+               <i tal:condition="not:files">
+                 No files available for download.
+               </i>
+             </div>
+
+        <li><b>Binary Packages</b> 
+             (<a tal:condition="current/changelog"
+            href="+changelog">View Changelog)</a>
+           <tal:dummy tal:condition="not:current/changelog">
+               No Changelog for this Source Release )
+           </tal:dummy>
+        </ul>
+
+
+        <ul tal:define="binaries view/binaries">
+            <li tal:condition="not:binaries">
+              <i>No binaries generated for this
+              SourcePackageRelease</i>
+            </li>
+            <li tal:repeat="bin binaries" >
+              <span tal:replace="bin" /> 
+                <span tal:repeat="archtag python:binaries[bin]">
+                  (<a tal:content="archtag" tal:attributes="href 
+                      string:../../${archtag}/${bin}" />) 
+                </span>
+            </li>
+        </ul>
+
+
+       <h4>Build Dependencies</h4>
+       
+       <ul>
+        <li tal:condition="not:view/builddepends">
+          No Build Dependencies</li>
+        <li tal:repeat="dep view/builddepends">
+          <a tal:content="dep/name"
+             tal:attributes="href string:../../i386/${dep/name}" />
+          <span tal:condition="dep/signal"
+                 tal:content="string:(${dep/signal} ${dep/version})" />
+        </li>
+      </ul>
+
+      <h4>Platform-independent Dependencies</h4>
+    
+      <ul>
+        <li tal:condition="not:view/builddependsindep">
+          No Platform-independent Dependencies</li>
+        <li tal:repeat="dep view/builddependsindep">
+          <a tal:content="dep/name"
+             tal:attributes="href string:../../i386/${dep/name}" />
+          <span tal:condition="dep/signal"
+                tal:replace="string:(${dep/signal} ${dep/version})" />
+        </li>
+
+  </div>
+</body>
+</html>
+ 

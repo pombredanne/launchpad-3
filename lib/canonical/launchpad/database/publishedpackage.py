@@ -36,7 +36,6 @@ class PublishedPackage(SQLBase):
     datebuilt = DateTimeCol(immutable=True)
     sourcepackagerelease = IntCol(immutable=True)
     sourcepackagereleaseversion = StringCol(immutable=True)
-    sourcepackage = IntCol(immutable=True)
     sourcepackagename = StringCol(immutable=True)
 
 

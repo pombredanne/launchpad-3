@@ -218,7 +218,7 @@ def notify_bug_package_infestation_added(package_infestation, event):
 Source Package: %(package)s
 Infestation: %(infestation)s
 """ % {'package' :
-         package_infestation.sourcepackagerelease.sourcepackage.name + " " +
+         package_infestation.sourcepackagerelease.name + " " +
          package_infestation.sourcepackagerelease.version,
        'infestation' : package_infestation.infestationstatus.title}
 
@@ -234,7 +234,7 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
         after = event.object,
         fields = (
             ("sourcepackagerelease", lambda v: "%s %s" % (
-                v.sourcepackage.sourcepackagename.name, v.version)),
+                v.sourcepackagename.name, v.version)),
             ("infestationstatus", lambda v: v.title)))
 
     send_edit_notification(
@@ -244,7 +244,7 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
         subject = '"%s" package infestation edited' % modified_package_infestation.bug.title,
         edit_header_line = (
             "Edited infested package: %s" %
-            event.object_before_modification.sourcepackagerelease.sourcepackage.sourcepackagename.name + " " +
+            event.object_before_modification.sourcepackagerelease.sourcepackagename.name + " " +
             event.object_before_modification.sourcepackagerelease.version),
         changes = changes)
 

@@ -1,0 +1,10 @@
+Tests that the user foo.bar@canonical.com is not allowed to edit a POTemplate
+options from its edit form.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+edit HTTP/1.1
+  ... Accept-Language: en-gb,en;q=0.5
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 401 Unauthorized
+  ...

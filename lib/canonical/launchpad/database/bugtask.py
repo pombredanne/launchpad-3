@@ -20,7 +20,7 @@ from canonical.lp.dbschema import EnumCol
 from canonical.launchpad.interfaces import IBugTask
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import nowUTC
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.searchbuilder import any, NULL
 
 from canonical.launchpad.interfaces import IBugTasksReport, \
@@ -80,18 +80,21 @@ class BugTask(SQLBase):
         if self.product:
             return self.product.owner
         if self.distribution and self.sourcepackagename:
-            query = "distro = %d AND sourcepackagename = %d" % (
+            query = "distribution = %d AND sourcepackagename = %d" % (
                 self.distribution.id, self.sourcepackagename.id )
             try:
-                return SourcePackage.select(query)[0].maintainer
+                return Maintainership.select(query)[0].maintainer
             except IndexError:
                 return None
         return None
     maintainer = property(maintainer)
 
+    def maintainer_displayname(self):
+        return self.maintainer.displayname
+    maintainer_displayname = property(maintainer_displayname)
+
     def bugdescription(self):
-        if self.bug.messages:
-            return self.bug.messages[0].contents
+        return self.bug.description
     bugdescription = property(bugdescription)
 
     def _title(self):
@@ -280,78 +283,74 @@ class BugTasksReport:
 
     implements(IBugTasksReport)
 
-    def __init__(self):
-        # initialise the user to None, will raise an exception if the
-        # calling class does not set this to a person.id
-        self.user = None
-        self.minseverity = 0
-        self.minpriority = 0
-        self.showclosed = False
-
     # bugs assigned (i.e. tasks) to packages maintained by the user
-    def maintainedPackageBugs(self):
+    def maintainedPackageBugs(self, user, minseverity, minpriority, showclosed):
         querystr = (
-            "BugTask.sourcepackagename = SourcePackage.sourcepackagename AND "
-            "BugTask.distribution = SourcePackage.distro AND "
-            "SourcePackage.maintainer = %s AND "
+            "BugTask.sourcepackagename = Maintainership.sourcepackagename AND "
+            "BugTask.distribution = Maintainership.distribution AND "
+            "Maintainership.maintainer = %s AND "
             "BugTask.severity >= %s AND "
             "BugTask.priority >= %s") % (
-            self.user.id, self.minseverity, self.minpriority)
-        clauseTables = ('SourcePackage',)
+            user.id, minseverity, minpriority)
+        clauseTables = ('Maintainership',)
 
-        if not self.showclosed:
+        if not showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
         return list(BugTask.select(querystr, clauseTables=clauseTables))
 
     # bugs assigned (i.e. tasks) to products owned by the user
-    def maintainedProductBugs(self):
+    def maintainedProductBugs(self, user, minseverity, minpriority, showclosed):
         querystr = (
             "BugTask.product = Product.id AND "
             "Product.owner = %s AND "
             "BugTask.severity >= %s AND "
             "BugTask.priority >= %s") % (
-            self.user.id, self.minseverity, self.minpriority)
+            user.id, minseverity, minpriority)
 
         clauseTables = ('Product',)
 
-        if not self.showclosed:
+        if not showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
         return list(BugTask.select(querystr, clauseTables=clauseTables))
 
     # package bugs assigned specifically to the user
-    def packageAssigneeBugs(self):
+    def packageAssigneeBugs(self, user, minseverity, minpriority, showclosed):
         querystr = (
             "BugTask.sourcepackagename IS NOT NULL AND "
             "BugTask.assignee = %s AND "
             "BugTask.severity >= %s AND "
             "BugTask.priority >= %s") % (
-            self.user.id, self.minseverity, self.minpriority)
-        if not self.showclosed:
+            user.id, minseverity, minpriority)
+        if not showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
         return list(BugTask.select(querystr))
 
     # product bugs assigned specifically to the user
-    def productAssigneeBugs(self):
+    def productAssigneeBugs(self, user, minseverity, minpriority, showclosed):
         querystr = (
             "BugTask.product IS NOT NULL AND "
             "BugTask.assignee =%s AND "
             "BugTask.severity >=%s AND "
             "BugTask.priority >=%s") % (
-            self.user.id, self.minseverity, self.minpriority)
-        if not self.showclosed:
+            user.id, minseverity, minpriority)
+        if not showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
         return list(BugTask.select(querystr))
 
     # all bugs assigned to a user
-    def assignedBugs(self):
+    def assignedBugs(self, user, minseverity, minpriority, showclosed):
         bugs = Set()
-        for bugtask in self.maintainedPackageBugs():
+        for bugtask in self.maintainedPackageBugs(
+            user, minseverity, minpriority, showclosed):
             bugs.add(bugtask.bug)
-        for bugtask in self.maintainedProductBugs():
+        for bugtask in self.maintainedProductBugs(
+            user, minseverity, minpriority, showclosed):
             bugs.add(bugtask.bug)
-        for bugtask in self.packageAssigneeBugs():
+        for bugtask in self.packageAssigneeBugs(
+            user, minseverity, minpriority, showclosed):
             bugs.add(bugtask.bug)
-        for bugtask in self.productAssigneeBugs():
+        for bugtask in self.productAssigneeBugs(
+            user, minseverity, minpriority, showclosed):
             bugs.add(bugtask.bug)
 
         buglistwithdates = [(bug.datecreated, bug) for bug in bugs]

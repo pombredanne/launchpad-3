@@ -1,4 +1,5 @@
-
+Check if the distros root page is not broken.
+In this page we can see all the Distributions in Launchpad.
 
   >>> print http(r"""
   ... GET /distros HTTP/1.1
@@ -11,6 +12,7 @@
     <h1>...
   ...
 
+Check if the Distribution page is not broken.
 
   >>> print http(r"""
   ... GET /distros/ubuntu HTTP/1.1

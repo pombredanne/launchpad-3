@@ -15,5 +15,6 @@
           </td>
         </tr>
     </table>
-    [ <a href="#" tal:attributes="href string:$bug_url/productinfestations/+new">Document an Infested Product Version</a> ]
+    [ <a href="#" tal:attributes="href
+    string:$bug_url/productinfestations/+new">New Product Infestation</a> ]
 </div>

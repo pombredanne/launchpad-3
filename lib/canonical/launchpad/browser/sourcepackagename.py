@@ -48,7 +48,7 @@ class SourcePackageNameAddView(AddView):
     ow = CustomWidgetFactory(ObjectWidget, SourcePackageName)
     sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
     options_widget = sw
-    
+
 
     def __init__(self, context, request):
         self.context = context
@@ -60,6 +60,6 @@ class SourcePackageNameAddView(AddView):
         self.name = data['name']
         SourcePackageName.ensure(self.name)
         self._nextURL = '.?name=%s'%self.name
-        
+
     def nextURL(self):
         return self._nextURL

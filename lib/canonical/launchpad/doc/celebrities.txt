@@ -1,0 +1,37 @@
+=====================
+Launchpad Celebrities
+=====================
+
+See https://wiki.launchpad.canonical.com/LaunchpadCelebrities
+
+There are a number of special objects, some of which exist in the database,
+which we want to give easy access to in the code.
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login('launchpad.anonymous')
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> celebs = getUtility(ILaunchpadCelebrities)
+
+  >>> personset = getUtility(IPersonSet)
+  >>> buttsource = personset.getByName('buttsource')
+  >>> celebs.buttsource.__class__ == buttsource.__class__
+  True
+  >>> celebs.buttsource.id == buttsource.id
+  True
+
+The admins team will be renamed to the 'super' team in due course.  Meanwhile,
+we need to have the admins team in ILaunchpadCelebrities.
+
+  >>> admins = personset.getByName('admins')
+  >>> celebs.admin.__class__ == admins.__class__
+  True
+  >>> celebs.admin.id == admins.id
+  True
+
+  TODO: add interface verification test.
+        ask debonzi to add these in general.
+
+

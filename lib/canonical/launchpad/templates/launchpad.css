@@ -236,6 +236,27 @@ table.rowNavigation th:hover {
     cursor: default;
 }
 
+/* Display links as blocks, so we can make the whole row clickable */
+
+tr.rowLinkified a {
+    text-decoration: none;
+    display: block;
+}
+
+/* Overwride values from 'listing' class */
+.lpListing td {
+    padding: 0em 0em;
+}
+
+.lpListing td a {
+    padding: 0em 1em;
+}
+
+.lpListing a:hover {
+    text-decoration: none;
+}
+
+
 /* batch navigation links */
 
 .batchnav tr:hover {
@@ -347,7 +368,7 @@ table.rowNavigation th:hover {
 }
 
 /* used to mark dummy data with div entity */
-.dummy{
+.dummy {
    background-color: #cccccc;
 }
 
@@ -419,19 +440,34 @@ body {
   font-size: smaller;
 }
 
-ul {
-    line-height: 1em !important;
-}
-
 li {
     margin-bottom: 0 !important;
 }
+
+li.edit, ul.edit li {
+    list-style-image: url(/++resource++edit.gif);
+}
+
+.portlet li a {
+    text-decoration: none
+}
+
 /* === New design === */
 
 /* -- Stuff browsers should do, but don't -- */
 
 abbr, address {
 	font-style: inherit;
+}
+
+th {
+  text-align: right;
+}
+thead th {
+  text-align: center;
+}
+thead {
+  vertical-align: bottom;
 }
 
 /* Launchpad-wide */

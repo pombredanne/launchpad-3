@@ -42,7 +42,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
 
-<div class="portlet" tal:condition="context/productrelease">
+<div class="portlet">
 
     <h4>Actions:</h4>
 
@@ -52,10 +52,9 @@
             <p><img src="/++resource++edit.gif"><a href="+edit">Edit this
             template</a>. This will modify the template header information and
             will let you upload a new PO template version.<br />
-            This is an advanced operation, limited to Rosetta
-            administrators<span tal:condition="context/owner"> and 
+            This is an advanced operation, limited to 
             <span tal:replace="context/owner/browsername" />, the current owner of
-            this template in Rosetta</span>.</p>
+            this template in Rosetta.</p>
         </div>
     </div>
 </div>

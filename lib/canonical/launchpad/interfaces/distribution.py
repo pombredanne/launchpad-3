@@ -36,10 +36,25 @@ class IDistribution(IHasOwner):
     owner = Int(
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
+    members = Choice(
+        title=_("Members"),
+        description=_("The distro's members team."), required=True,
+        vocabulary='Person')
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugtasks = Attribute("The bug tasks filed in this distro.")
     bugCounter = Attribute("The distro bug counter")
+
+    # properties
+    currentrelease = Attribute(
+        "The current development release of this distribution. Note that "
+        "all maintainerships refer to the current release. When people ask "
+        "about the state of packages in the distribution, we should "
+        "interpret that query in the context of the currentrelease."
+        )
+
+    def memberslist():
+        """A list with members person objects"""
 
     def traverse(name):
         """Traverse the distribution. Check for special names, and return

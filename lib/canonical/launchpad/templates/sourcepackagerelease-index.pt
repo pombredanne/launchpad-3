@@ -4,13 +4,14 @@
       i18n:domain="launchpad">
 
 <head>
-  <title metal:fill-slot="title"
-    tal:content="context/sourcepackage/shortdesc">
+  <title metal:fill-slot="title">
+    Source Package <span tal:replace="context/title">apache2
+    version 2.0.53-2</span>
   </title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
@@ -23,15 +24,10 @@
     <div tal:replace="structure view/lastversionsPortlet" />
   </metal:rightportlets>
 
-  <div metal:fill-slot="main" id="content" class="documentEditable">
-    <div class="documentContent" id="region-content">
+  <div metal:fill-slot="main">
 
-      <h1>
-        <span tal:content="context/shortdesc">
-          TITLE</span>
-      </h1>
+      <h1>Source Package Release Details</h1>
 
-      <h4>Source Package Release Information</h4>
       <p>
 
       <ul>
@@ -159,7 +155,6 @@
       </table>
 
      </div>
-    </div>
   </div>
 </body>
 </html>

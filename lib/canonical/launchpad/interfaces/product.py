@@ -11,10 +11,10 @@ from canonical.launchpad.interfaces.launchpad import IHasOwner, IHasAssignee
 
 class IProduct(IHasOwner):
     """
-    A DOAP Product. DOAP describes the open source world as Projects
-    and Products. Each Project may be responsible for several Products.
-    For example, the Mozilla Project has Firefox, Thunderbird and The
-    Mozilla App Suite as Products, among others.
+    A Hatchery Product. TheHatchery describes the open source world as
+    Projects and Products. Each Project may be responsible for several
+    Products.  For example, the Mozilla Project has Firefox, Thunderbird and
+    The Mozilla App Suite as Products, among others.
     """
     
     # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
@@ -22,13 +22,13 @@ class IProduct(IHasOwner):
     # in SQLObject soon. 12/10/04
     id = Int(title=_('The Product ID'))
     
-    project = Choice(title=_('Project'), required=False, vocabulary='Project', 
-                     description=_("""Optional related Project. Used to group
-                     similar products in a coherent way."""))
+    project = Choice(title=_('Project'), required=False,
+    vocabulary='Project', description=_("""Optional related Project. Used to
+    group similar products in a coherent way."""))
     
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-                   description=_("""Product owner, it can either a valid
-                   Person or Team inside Launchpad context."""))
+    description=_("""Product owner, it can either a valid Person or Team
+    inside Launchpad context."""))
 
     name = TextLine(title=_('Name'), description=_("""The short name of this
         product, which must be unique among all the products. It should be
@@ -67,8 +67,9 @@ class IProduct(IHasOwner):
     freshmeatproject = TextLine(title=_('Freshmeat Project'),
         required=False)
 
-    autoupdate = Bool(title=_('Automatic update'), description=_("""Whether or not
-        this product's attributes are updated automatically."""))
+    autoupdate = Bool(title=_('Automatic update'),
+        description=_("""Whether or not this product's attributes are
+        updated automatically."""))
 
     manifest = Attribute(_('Manifest'))
 
@@ -110,6 +111,12 @@ class IProduct(IHasOwner):
         when."""))
 
     bounties = Attribute(_("The bounties that are related to this product."))
+
+    primary_translatable = Attribute(
+        """The SourcePackage or ProductRelease which is the main
+        translatable item for this product. Currently this should be the
+        latest productrelease for this product which includes
+        translations.""")
 
     def potemplates():
         """Returns an iterator over this product's PO templates."""
@@ -185,17 +192,6 @@ class IProduct(IHasOwner):
         """
 
 
-class IHasProduct(Interface):
-    """An object that has a product attribute that is an IProduct."""
-
-    product = Attribute("The object's product")
-
-
-class IHasProductAndAssignee(IHasProduct, IHasAssignee):
-    """An object that has a product attribute and an assigned attribute.
-    See IHasProduct and IHasAssignee."""
-
-
 class IProductSet(Interface):
     """The collection of products."""
 
@@ -237,4 +233,24 @@ class IProductSet(Interface):
         """Returns an iterator over products that have resources translatables
         for translationProject, if it's None it returs all available products
         with translatables resources."""
+
+    def count_all():
+        """Return a count of the total number of products registered in
+        Launchpad."""
+
+    def count_translatable():
+        """Return a count of the number of products that have
+        upstream-oriented translations configured in Rosetta."""
+
+    def count_bounties():
+        """Return a number of products that have bounties registered in the
+        Launchpad for them."""
+
+    def count_buggy():
+        """Return the number of products that have bugs associated with them
+        in malone."""
+
+    def count_reviewed(self):
+        """return a count of the number of products in the Launchpad that
+        are both active and reviewed."""
 

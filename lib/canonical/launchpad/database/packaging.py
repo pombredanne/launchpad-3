@@ -14,12 +14,10 @@ from canonical.launchpad.interfaces import IPackaging, IPackagingUtil
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import Packaging
 
-#
-#
-#
 
 class Packaging(SQLBase):
-    """A Packaging relating a Sourcepackage and a Product"""
+    """A Packaging relating a SourcePackageName in DistroRelease and
+    a Product"""
 
     implements(IPackaging)
 
@@ -31,11 +29,17 @@ class Packaging(SQLBase):
     product = ForeignKey(foreignKey="Product", dbName="product",
                          notNull=True)
 
-    sourcepackage = ForeignKey(foreignKey="Sourcepackage",
-                               dbName="sourcepackage",
+    sourcepackagename = ForeignKey(foreignKey="SourcePackageName",
+                                   dbName="sourcepackagename",
+                                   notNull=True)
+
+    distrorelease = ForeignKey(foreignKey='DistroRelease',
+                               dbName='distrorelease',
                                notNull=True)
 
-    packaging = EnumCol(dbName='packaging', notNull=True,schema=Packaging)
+    packaging = EnumCol(dbName='packaging', notNull=True,
+                        schema=Packaging)
+
 
 class PackagingUtil:
     """
@@ -48,6 +52,4 @@ class PackagingUtil:
         
         Packaging(product=product, sourcepackage=sourcepackage,
                   packaging=packaging)
-        
-        
-        
+

@@ -88,7 +88,9 @@ Executing a query now blocks until the database connection can be reestablished.
     >>> thread_result = []
     >>> def foo():
     ...     cur.execute('SELECT 1;')
+    ...     print "thread after execute"
     ...     thread_result.append(cur.fetchone()[0])
+    ...     print "thread end"
     >>> thread = threading.Thread(target=foo)
     >>> thread.start()
     >>> time.sleep(1)
@@ -97,7 +99,7 @@ Executing a query now blocks until the database connection can be reestablished.
     >>> thread.isAlive()
     True
 
-# TODO: test that the disconnection is logged
+# TODO: test that the disconnection is logged -- spiv
 
 And restart it.
 
@@ -105,20 +107,24 @@ And restart it.
     0
     >>> wait_until_proxy_is_ready()
 
-Now using our connection should still work.
+Now, our blocked thread should've finished successfully.
 
-    >>> cur.execute("SELECT 1;")
-    >>> cur.fetchone()[0]
-    1
-
-And our blocked thread should've finished successfully, too.
-
+    >>> time.sleep(1)
+    thread after execute
+    thread end
     >>> thread_result
     [1]
     >>> thread.isAlive()
     False
 
-XXX: Test that interrupting a transaction still fails
+Also, using our connection should still work.
+
+    >>> cur.execute("SELECT 1;")
+    >>> cur.fetchone()[0]
+    1
+
+
+XXX: Test that interrupting a transaction still fails -- spiv
 
 Clean up the proxy.
 

@@ -28,8 +28,6 @@
         [ <a href="+edit">Edit</a> ]
     </div>
 
-    <h1><span tal:replace="context/title">$Bounty.title</span></h1>
-
     <p class="documentDescription" tal:content="context/summary">
         $Bounty.summary goes here. This should be quite short,
         just a single paragraph of text really, giving a summary of

@@ -1,0 +1,64 @@
+Check if the Distribution Members page is not broken.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+members HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Cookie: CP=null*; gallery_sessionadd_photos_mode=url; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+     <h1>...
+  ...
+
+
+Try to change the Distribution Members team page with no authorization.
+Check if it gets an Unauthorized status.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+selectmemberteam HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Cookie: CP=null*; gallery_sessionadd_photos_mode=url; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
+  ... Referer: http://localhost:9000/distros/ubuntu/+members
+  ... """)
+  HTTP/1.1 401 Unauthorized
+  ...
+
+
+Try to change the Distribution Members team page with basic authorization.
+Check if the page is not broken.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+selectmemberteam HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Cookie: CP=null*; gallery_sessionadd_photos_mode=url; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
+  ... Referer: http://localhost:9000/distros/ubuntu/+members
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+
+Change the Distribuion Members team and check if the result page is
+not broken.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+selectmemberteam HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Content-Length: 311
+  ... Content-Type: multipart/form-data; boundary=---------------------------41635150317126208381179786821
+  ... Cookie: CP=null*; gallery_sessionadd_photos_mode=url; tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"
+  ... Referer: http://localhost:9000/distros/ubuntu/+selectmemberteam
+  ... 
+  ... -----------------------------41635150317126208381179786821
+  ... Content-Disposition: form-data; name="field.members"
+  ... 
+  ... debonzi
+  ... -----------------------------41635150317126208381179786821
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------41635150317126208381179786821--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

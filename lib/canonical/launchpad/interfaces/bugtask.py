@@ -64,6 +64,8 @@ class IBugTask(IHasDateCreated):
     owner = Int()
     maintainer = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
+    maintainer_displayname = TextLine(
+        title = _("Maintainer"), required = True, readonly = True)
     bugtitle = TextLine(
         title=_("Bug Title"), required=True, readonly=True)
     bugdescription = Text(

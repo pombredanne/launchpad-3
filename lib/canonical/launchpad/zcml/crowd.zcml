@@ -1,0 +1,13 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+  <adapter
+      for="canonical.launchpad.interfaces.IPerson"
+      provides="canonical.launchpad.interfaces.ICrowd"
+      factory="canonical.launchpad.components.crowd.CrowdOfOnePerson"
+      />
+  <adapter
+      for="canonical.launchpad.interfaces.ITeam"
+      provides="canonical.launchpad.interfaces.ICrowd"
+      factory="canonical.launchpad.components.crowd.CrowdOfOneTeam"
+      />
+</configure>
+

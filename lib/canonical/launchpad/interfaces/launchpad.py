@@ -14,7 +14,36 @@ __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IFOAFApplication', 'IPasswordEncryptor',
            'IReadZODBAnnotation', 'IWriteZODBAnnotation',
            'IZODBAnnotation', 'IAuthorization',
-           'IHasOwner', 'IOpenLaunchBag', 'ILaunchBag')
+           'IHasOwner', 'IHasAssignee', 'IHasProduct', 
+           'IHasProductAndAssignee', 'IOpenLaunchBag',
+           'IAging', 'IHasDateCreated',
+           'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities')
+
+
+class ILaunchpadCelebrities(Interface):
+
+    buttsource = Attribute("The 'buttsource' team.")
+    admin = Attribute("The 'admins' team.")
+
+
+class ICrowd(Interface):
+
+    def __contains__(person_or_team_or_anything):
+        """Return True if the given person_or_team_or_anything is in the crowd.
+
+        Note that a particular crowd can choose to answer "True" to this
+        question, if that is what it is supposed to do.  So, crowds that
+        contain other crowds will want to allow the other crowds the
+        opportunity to answer __contains__ before that crowd does.
+        """
+
+    def __add__(crowd):
+        """Return a new ICrowd that is this crowd added to the given crowd.
+
+        The returned crowd contains the person or teams in
+        both this crowd and the given crowd.
+        """
+
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -36,9 +65,13 @@ class IMaloneApplication(ILaunchpadApplication):
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
-    def translatables():
+    def translatable_products():
         """Return an iterator over the set of translatable Products which
         are part of Ubuntu's translation project."""
+
+    def translatable_distroreleases():
+        """Return an iterator over the set of distroreleases which contain
+        translatable apps in Rosetta."""
 
 
 class IDOAPApplication(ILaunchpadApplication):
@@ -111,7 +144,6 @@ class IAuthorization(Interface):
         The argument `user` is the person who is authenticated.
         """
 
-
 class IHasOwner(Interface):
     """An object that has an owner."""
 
@@ -123,6 +155,31 @@ class IHasAssignee(Interface):
 
     assignee = Attribute("The object's assignee, which is an IPerson.")
 
+
+class IHasProduct(Interface):
+    """An object that has a product attribute that is an IProduct."""
+
+    product = Attribute("The object's product")
+
+
+class IHasProductAndAssignee(IHasProduct, IHasAssignee):
+    """An object that has a product attribute and an assigned attribute.
+    See IHasProduct and IHasAssignee."""
+
+
+class IAging(Interface):
+    """Something that gets older as time passes."""
+
+    def currentApproximateAge():
+        """Return a human-readable string of how old this thing is.
+
+        Values returned are things like '2 minutes', '3 hours', '1 month', etc.
+        """
+
+class IHasDateCreated(Interface):
+    """Something created on a certain date."""
+
+    datecreated = Attribute("The date on which I was created.")
 
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')

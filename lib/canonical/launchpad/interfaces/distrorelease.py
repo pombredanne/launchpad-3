@@ -35,7 +35,9 @@ class IDistroRelease(IHasOwner):
     bugtasks = Attribute("The bug tasks filed specifically on this release.")
     componentes = Attribute("The release componentes.")
     sections = Attribute("The release section.")
-    releasestate = Attribute("The release's state.")
+    releasestatus = Attribute(
+        "The release's status, such as FROZEN or DEVELOPMENT, as "
+        "specified in the DistributionReleaseStatus enum.")
     datereleased = Attribute("The datereleased.")
     parentrelease = Attribute("Parent Release")
     owner =Attribute("Owner")
@@ -44,6 +46,8 @@ class IDistroRelease(IHasOwner):
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
+    potemplates = Attribute("The set of potemplates in the release")
+    potemplatecount = Attribute("The number of potemplates for this release")
     architectures = Attribute("The Architecture-specific Releases")
 
     def architecturecount():
@@ -73,3 +77,8 @@ class IDistroReleaseSet(Interface):
 
     def get(distroreleaseid):
         """Retrieve the distro release with the given distroreleaseid."""
+
+    def translatables():
+        """Return a set of distroreleases that can be translated in
+        rosetta."""
+

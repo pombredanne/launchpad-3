@@ -1,3 +1,4 @@
+  'foo' edit his team and makes it a MODERATED team.
 
 
   >>> print http(r"""

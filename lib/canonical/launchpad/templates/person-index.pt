@@ -44,6 +44,7 @@
             <td tal:content="context/teamdescription">DESCRIPTION</td>
           </tr>
                
+          <tal:dummy tal:condition="request/lp:person">
           <tal:dummy tal:condition="context/preferredemail"
                      tal:define="email context/preferredemail">
           <tr>
@@ -53,12 +54,24 @@
           </tr>
           </tal:dummy>
 
-          <tal:dummy tal:condition="not: context/validatedemails">
-          <tr>
-            <td>Email:</td>
-            <td>0 validated email addresses 
-              [ <a href="+emails">Add or validate emails</a> ]</td>
-          </tr>
+          <tal:dummy tal:condition="not: context/preferredemail">
+            <tal:dummy tal:condition="not: context/validatedemails">
+            <tr>
+              <td>Email:</td>
+              <td>0 validated email addresses 
+                [<a href="+emails">Add or validate emails</a>]</td>
+            </tr>
+            </tal:dummy>
+
+            <tal:dummy tal:condition="context/validatedemails">
+            <tr>
+              <td>Email:</td>
+              <td><span tal:content="python: len(context.validatedemails)" />
+                  validated email addresses. [<a href="+emails">Add emails or
+                    set one of yours as preferred</a>]
+              </td>
+            </tal:dummy>
+          </tal:dummy>
           </tal:dummy>
 
           <tr tal:condition="context/wiki">
@@ -119,8 +132,8 @@
         </table>
 
 
-        <!-- Teams and Roles-->
-        <div tal:condition="view/membershipOrRoles">
+        <!-- Teams which I'm a member of -->
+        <div tal:condition="context/memberships">
           <fieldset>
             <legend><span tal:replace="context/displayname"></span> is
             </legend>

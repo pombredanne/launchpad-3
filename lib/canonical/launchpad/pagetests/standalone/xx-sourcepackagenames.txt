@@ -1,4 +1,5 @@
-
+Check if SourcePackageName page is not broken.
+This is a batched page that displays all sourcepackagenames in Launchpad.
 
   >>> print http(r"""
   ... GET /sourcepackagenames HTTP/1.1
@@ -7,6 +8,10 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
+
+
+Check if the sourcepackagename search result page is not broken.
+
 
   >>> print http(r"""
   ... GET /sourcepackagenames?name=firefox HTTP/1.1
@@ -18,6 +23,8 @@
   ...
 
 
+Check if the add SourcePackageName is not broken.
+
   >>> print http(r"""
   ... GET /sourcepackagenames/+new HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
@@ -28,6 +35,8 @@
   HTTP/1.1 200 Ok
   ...
 
+
+Add a new SourcePackageName and check the redirect request.
 
   >>> print http(r"""
   ... POST /sourcepackagenames/+new HTTP/1.1
@@ -50,6 +59,9 @@
   ... """)
   HTTP/1.1 303 See Other
   ...
+
+
+Get the redirected page and check if it has not broken.
 
   >>> print http(r"""
   ... GET /sourcepackagenames/?name=ubuntu-libs HTTP/1.1

@@ -4,20 +4,21 @@
       i18n:domain="launchpad">
 
 <head>
-    <title metal:fill-slot="title">Source Packages </title>
+    <title metal:fill-slot="title">
+        <span tal:replace="context/distrorelease/title" /> Source
+        Packages</title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
 
+
 <div metal:fill-slot="main">
 
- <div id="content" class="documentEditable">
-  <div class="documentContent" id="region-content">
-  <h1><span tal:replace="view/bag/distrorelease/title" /> Source Packages </h1>
+  <h1>Source Package Search</h1>
 
 
 <form name="search" method="GET">
@@ -51,7 +52,7 @@ Find Source Package by Name:
     </tr>
     <tr tal:repeat="release currentBatch">      
       <tal:dummy tal:define="package release">
-      <td><a tal:content="string: ${package/name} : ${package/shortdesc}"
+      <td><a tal:content="package/name"
              tal:attributes="href package/name">PACKAGE</a>
       </td>
       </tal:dummy>
@@ -83,8 +84,6 @@ Find Source Package by Name:
   </table>
   </tal:block>
 
-  </div>
- </div>
 </div>
 </body>
 </html>

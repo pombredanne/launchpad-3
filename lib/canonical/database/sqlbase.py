@@ -373,7 +373,7 @@ def quote_like(x):
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
 
 
-def flushUpdates():
+def flush_database_updates():
     """Flushes all pending database updates for the current connection.
     
     When SQLObject's _lazyUpdate flag is set, then it's possible to have
@@ -392,7 +392,7 @@ def flushUpdates():
         assert Beer.select("name LIKE 'Vic%'").count() == 1  # This will pass
         beer = Beer.byName('Victoria Bitter')
         beer.name = 'VB'
-        flushUpdates()
+        flush_database_updates()
         assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
 
     """
@@ -423,6 +423,15 @@ def rollback():
 
 def commit():
     SQLBase._connection.commit()
+
+
+def cursor():
+    '''Return a cursor from the current database connection.
+
+    This is useful for code that needs to issue database queries
+    directly rather than using the SQLObject interface
+    '''
+    return SQLBase._connection._connection.cursor()
     
 
 class FakeZopelessConnectionDescriptor(_ZopelessConnectionDescriptor):

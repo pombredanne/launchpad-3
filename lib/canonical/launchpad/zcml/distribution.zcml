@@ -10,7 +10,7 @@
         <allow interface="canonical.launchpad.interfaces.IDistribution"/>
         <require
             permission="launchpad.Admin"
-            set_attributes="displayname title summary description"
+            set_attributes="displayname title summary description members"
             />
     </content>
 
@@ -43,6 +43,10 @@
             name="+bounties"
             template="../templates/related-bounties.pt"
             lp:url="/distros/$Distribution.name/+bounties/" />
+        <browser:page
+            name="+members"
+            template="../templates/distro-members.pt"
+            lp:url="/distros/$Distribution.name/+members/" />
     </browser:pages>
 
     <browser:addform
@@ -76,6 +80,16 @@
         fields="displayname title summary description"
         template="../templates/launchpad-editform.pt"
         lp:url="/distros/$Distribution.name/+edit" />
+
+    <browser:editform
+        for="canonical.launchpad.interfaces.IDistribution"
+        permission="launchpad.Edit"
+        name="+selectmemberteam"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        label="Select A New Distribution Members Team"
+        fields="members"
+        template="../templates/launchpad-editform.pt"
+        lp:url="/distros/$Distribution.name/+selectmemberteam" />
 
     <!-- DistributionSet -->
     <content class="canonical.launchpad.database.DistributionSet">

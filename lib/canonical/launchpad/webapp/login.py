@@ -33,34 +33,87 @@ class BasicLoginPage:
             self.request.response.redirect(self.request.getURL(1))
         return ''
 
+class LoginOrRegister:
+    """
+    Merges the former CookieLoginPage and JoinLaunchpadView classes
+    to allow the two forms to appear on a single page.
+    """
 
-class CookieLoginPage:
-
-    was_logged_in = False
-    errortext = None
+    login_error = None
+    registration_error = None
+    submitted = False
+    email = None
 
     def process_form(self):
+        """
+        Determines whether this is the login form or the register
+        form, and delegates to the appropriate function.
+        """
+        if self.request.method != "POST":
+            return 
+
+        self.submitted = True
+        if self.request.form.get('submit_login'):
+            self.process_login_form()
+        elif self.request.form.get('submit_registration'):
+            self.process_registration_form()
+
+    def process_login_form(self):
         """Process the form data.
 
         If there is an error, assign a string containing a description
-        of the error to self.errortext for presentation to the user.
+        of the error to self.login_error for presentation to the user.
         """
         email = self.request.form.get('email')
         password = self.request.form.get('password')
-        submitted = self.request.form.get('SUBMIT')
-        if not submitted:
-            return ''
         if not email or not password:
-            self.errortext = "Enter your email address and password."
-            return ''
+            self.login_error = "Enter your email address and password."
+            return
+
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
             logInPerson(self.request, principal, email)
-            self.was_logged_in = True
         else:
-            self.errortext = "The email address and password do not match."
-        return ''
+            self.login_error = "The email address and password do not match."
+
+    def process_registration_form(self):
+        """A user has asked to join launchpad.
+
+        Check if everything is ok with the email address and send an email
+        with a link to the user complete the registration process.
+        """
+        self.email = self.request.form.get("email").strip()
+        person = getUtility(IPersonSet).getByEmail(self.email)
+        if person is not None:
+            msg = ('The email address %s is already registered in our system. '
+                   'If you are sure this is your email address, please go to '
+                   'the <a href="+forgottenpassword">Forgotten Password</a> '
+                   'page and follow the instructions to retrieve your '
+                   'password.') % self.email
+            self.registration_error = msg
+            return
+
+        if not well_formed_email(self.email):
+            self.registration_error = ("The email address you provided isn't "
+                "valid. Please verify it and try again.")
+            return
+
+        logintokenset = getUtility(ILoginTokenSet)
+        # This is a new user, so requester and requesteremail (first two
+        # parameters of LoginTokenSet.new()) are None.
+        token = logintokenset.new(None, None, self.email,
+                                  LoginTokenType.NEWACCOUNT)
+        sendNewUserEmail(token, self.request.getApplicationURL())
+
+    def login_success(self):
+        return (self.submitted and self.request.form.get('submit_login') and 
+                not self.login_error)
+
+    def registration_success(self):
+        return (self.submitted and 
+                self.request.form.get('submit_registration') and 
+                not self.registration_error)
 
 
 def logInPerson(request, principal, email):
@@ -127,48 +180,6 @@ def sendPasswordResetEmail(token, appurl):
     subject = "Launchpad: Forgotten Password"
     simple_sendmail(fromaddress, token.email, subject, message)
 
-
-class JoinLaunchpadView:
-
-    errormessage = None
-    submitted = False
-    email = None
-
-    def process_form(self):
-        """A user has asked to join launchpad.
-
-        Check if everything is ok with the email address and send an email
-        with a link to the user complete the registration process.
-        """
-        if self.request.method != "POST":
-            return 
-
-        self.email = self.request.form.get("email").strip()
-        person = getUtility(IPersonSet).getByEmail(self.email)
-        if person is not None:
-            msg = ('The email address %s is already registered in our system. '
-                   'If you are sure this is your email address, please go to '
-                   'the <a href="+forgottenpassword">Forgotten Password</a> '
-                   'page and follow the instructions to retrieve your '
-                   'password.') % self.email
-            self.errormessage = msg
-            return
-
-        if not well_formed_email(self.email):
-            self.errormessage = ("The email address you provided isn't "
-                                 "valid. Please verify it and try again.")
-            return
-
-        logintokenset = getUtility(ILoginTokenSet)
-        # This is a new user, so requester and requesteremail (first two
-        # parameters of LoginTokenSet.new()) are None.
-        token = logintokenset.new(None, None, self.email,
-                                  LoginTokenType.NEWACCOUNT)
-        sendNewUserEmail(token, self.request.getApplicationURL())
-        self.submitted = True
-
-    def success(self):
-        return self.submitted and not self.errormessage
 
 
 def sendNewUserEmail(token, appurl):

@@ -6,11 +6,6 @@
         />
 
     <vocabulary
-        name="SourcePackage"
-        factory="canonical.launchpad.vocabularies.SourcePackageVocabulary"
-        />
-
-    <vocabulary
         name="SourcePackageName"
         factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
         />

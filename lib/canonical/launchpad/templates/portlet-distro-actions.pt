@@ -6,6 +6,8 @@
 
         <img src="/++resource++edit.gif">
         <a href="+edit">Edit Distro Details</a><br />
+        <img src="/++resource++edit.gif">
+        <a href="+selectmemberteam">Change members team.</a><br />
 <!-- 	XXX: Daniel Debonzi 20050107 -->
 <!-- 	Create DistroRelease is not working when at this time -->
 <!-- 	when Im changing write permissions to launchpad.Admin -->

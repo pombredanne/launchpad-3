@@ -1,4 +1,4 @@
-
+View the bugs on Mozilla Firefox as Sample Person:
 
   >>> print http(r"""
   ... GET /products/firefox HTTP/1.1
@@ -6,16 +6,6 @@
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...
-              <div class="user">
-                  Welcome,
-                  <a href="/people/name12">
-                  Sample Person</a>
-                  &ndash;
-                  Prefs
-                  &ndash;
-                  <a href="/+logout">Log Out</a>
-              </div>
   ...
       <h4>Latest Malone Bugs:</h4>
   <BLANKLINE>

@@ -16,14 +16,14 @@ from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote, flushUpdates
+from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
 
 # canonical imports
 from canonical.launchpad.interfaces import IPOTMsgSet, \
     IEditPOTemplate, IPOMsgID, IPOMsgIDSighting, IPOFileSet, \
     IEditPOFile, IPOTranslation, IEditPOMsgSet, IPOTemplateSet, \
     IPOTemplateSubset, IPOTranslationSighting, IPersonSet, IRosettaStats, \
-    IRawFileData
+    IRawFileData, ITeam
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
 from canonical.lp.dbschema import EnumCol
@@ -259,6 +259,19 @@ class POTemplateSubset:
         else:
             return res[0]
 
+    def title(self):
+        titlestr = ''
+        if self.distrorelease:
+            titlestr += ' ' + self.distrorelease.displayname
+        if self.sourcepackagename:
+            titlestr += ' ' + self.sourcepackagename.name
+        if self.productrelease:
+            titlestr += ' '
+            titlestr += self.productrelease.productseries.product.displayname
+            titlestr += ' ' + self.productrelease.version
+        return titlestr
+    title = property(title)
+
     def new(self, potemplatename, title, contents, owner):
         if self.sourcepackagename is not None:
             sourcepackagename_id = self.sourcepackagename.id
@@ -387,16 +400,8 @@ class POTemplate(SQLBase, RosettaStats):
     languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
     filename = StringCol(dbName='filename', notNull=False, default=None)
 
+    # joins
     poFiles = MultipleJoin('POFile', joinColumn='potemplate')
-
-
-    def currentMessageSets(self):
-        return POTMsgSet.select(
-            '''
-            POTMsgSet.potemplate = %d AND
-            POTMsgSet.sequence > 0
-            '''
-            % self.id, orderBy='sequence')
 
     def __len__(self):
         '''Return the number of CURRENT POTMsgSets in this POTemplate.'''
@@ -404,6 +409,14 @@ class POTemplate(SQLBase, RosettaStats):
 
     def __iter__(self):
             return iter(self.currentMessageSets())
+
+    def __getitem__(self, key):
+        return self.messageSet(key, onlyCurrent=True)
+
+    # properties
+    def name(self):
+        return self.potemplatename.name
+    name = property(name)
 
     def messageSet(self, key, onlyCurrent=False):
         query = '''potemplate = %d''' % self.id
@@ -436,8 +449,13 @@ class POTemplate(SQLBase, RosettaStats):
 
             return results[0]
 
-    def __getitem__(self, key):
-        return self.messageSet(key, onlyCurrent=True)
+    def currentMessageSets(self):
+        return POTMsgSet.select(
+            '''
+            POTMsgSet.potemplate = %d AND
+            POTMsgSet.sequence > 0
+            '''
+            % self.id, orderBy='sequence')
 
     def filterMessageSets(self, current, translated, languages, slice = None):
         '''
@@ -538,9 +556,9 @@ class POTemplate(SQLBase, RosettaStats):
         ignored, if we have three variants for en_GB we will simply
         return the one with variant=NULL.'''
 
-        return Language.select("POFile.language = Language.id AND"
-                               " POFile.potemplate = %d AND"
-                               " POFile.variant IS NULL" % self.id,
+        return Language.select("POFile.language = Language.id AND "
+                               "POFile.potemplate = %d AND "
+                               "POFile.variant IS NULL" % self.id,
                                clauseTables=('POFile', 'Language'),
                                distinct=True
                                )
@@ -616,6 +634,29 @@ class POTemplate(SQLBase, RosettaStats):
 
         return results.count() > 0
 
+    def canEditTranslations(self, person):
+        """See IPOTemplate."""
+        if self.distrorelease is None:
+            return True
+
+        owner = self.owner
+
+        if ITeam.providedBy(owner) and person.inTeam(owner):
+            return True
+        elif owner.id == person.id:
+            return True
+
+        # Now we check for the owners of the PO files.
+        for pofile in self.poFiles:
+            owner = pofile.owner
+            if ITeam.providedBy(owner) and person.inTeam(owner):
+                return True
+            elif owner.id == person.id:
+                return True
+
+        return False
+
+
     # Methods defined in IEditPOTemplate
 
     def expireAllMessages(self):
@@ -651,6 +692,17 @@ class POTemplate(SQLBase, RosettaStats):
             data['origin'] = self.productrelease.product.name
         else:
             data['origin'] = self.sourcepackagename.name
+
+        if owner is None:
+            # All POFiles should have an owner, by default, the Rosetta Admin
+            # team.
+            # The import is here to prevent circular dependencies
+            from canonical.launchpad.database.person import PersonSet
+
+            # XXX Carlos Perello Marin 2005-03-28
+            # This should be done with a celebrity.
+            personset = PersonSet()
+            owner = personset.getByName('rosetta-admins')
 
         return POFile(potemplate=self,
                       language=language,
@@ -756,7 +808,7 @@ class POTemplate(SQLBase, RosettaStats):
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
-            flushUpdates()
+            flush_database_updates()
 
             # We update the cached value that tells us the number of msgsets this
             # .pot file has
@@ -1092,8 +1144,7 @@ class POFile(SQLBase, RosettaStats):
                              default=None)
     owner = ForeignKey(foreignKey='Person',
                        dbName='owner',
-                       notNull=False,
-                       default=None)
+                       notNull=True)
     pluralforms = IntCol(dbName='pluralforms',
                          notNull=True)
     variant = StringCol(dbName='variant',
@@ -1488,7 +1539,7 @@ class POFile(SQLBase, RosettaStats):
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
-            flushUpdates()
+            flush_database_updates()
 
             # Now we update the statistics after this new import
             self.updateStatistics(newImport=True)
@@ -1500,7 +1551,7 @@ class POFile(SQLBase, RosettaStats):
             if logger:
                 logger.warning(
                     'We got an error importing %s language for %s template' % (
-                        self.language.code, self.potemplate.name),
+                        self.language.code, self.potemplate.title),
                         exc_info = 1)
 
 
@@ -1780,7 +1831,7 @@ class POMsgSet(SQLBase):
 
 
         # Ask for a sqlobject sync before reusing the data we just updated.
-        flushUpdates()
+        flush_database_updates()
 
         # Implicit set of iscomplete. If we have all translations, it's 
         # complete, if we lack a translation, it's not complete.

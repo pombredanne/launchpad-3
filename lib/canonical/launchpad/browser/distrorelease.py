@@ -10,10 +10,10 @@ from sqlobject import LIKE, AND
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
-from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag, \
-    ITeamParticipationSet
 from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.helpers import is_maintainer
+from canonical.launchpad import helpers
+from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag
+from canonical.rosetta.browser import request_languages, TemplateLanguages
 
 BATCH_SIZE = 20
 
@@ -28,6 +28,21 @@ class DistroReleaseView(object):
     linksPortlet = ViewPageTemplateFile(
         '../templates/portlet-distrorelease-links.pt')
 
+    translationsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-distrorelease-translations.pt')
+
+    statusLegend = ViewPageTemplateFile(
+        '../templates/portlet-rosetta-status-legend.pt')
+
+    prefLangPortlet = ViewPageTemplateFile(
+        '../templates/portlet-pref-langs.pt')
+
+    countryPortlet = ViewPageTemplateFile(
+        '../templates/portlet-country-langs.pt')
+
+    browserLangPortlet = ViewPageTemplateFile(
+        '../templates/portlet-browser-langs.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -37,7 +52,15 @@ class DistroReleaseView(object):
         self.batch = Batch(
             list(bugtasks_to_show), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
-        self.is_maintainer = is_maintainer(self.context)
+        self.is_maintainer = helpers.is_maintainer(self.context)
+        # List of languages the user is interested on based on their browser,
+        # IP address and launchpad preferences.
+        self.languages = request_languages(self.request)
+        # Cache value for the return value of self.templates
+        self._template_languages = None
+        # List of the templates we have in this subset.
+        self._templates = self.context.potemplates
+        self.status_message = None
 
     def task_columns(self):
         return [
@@ -45,6 +68,23 @@ class DistroReleaseView(object):
 
     def assign_to_milestones(self):
         return []
+
+    def potemplates(self):
+        if self._template_languages is None:
+            self._template_languages = [
+                TemplateLanguages(template,
+                                  self.languages,
+                                  relativeurl='+sources/'+template.sourcepackagename.name+'/+pots/'+template.name)
+                               for template in self._templates]
+
+        return self._template_languages
+
+    def requestCountry(self):
+        return helpers.requestCountry(self.request)
+
+    def browserLanguages(self):
+        return helpers.browserLanguages(self.request)
+
 
 class ReleasesAddView(object):
 

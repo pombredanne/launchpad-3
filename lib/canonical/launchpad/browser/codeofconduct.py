@@ -13,6 +13,7 @@ from zope.app.form.browser.add import AddView, EditView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 import zope.security.interfaces
 
 # lp imports
@@ -113,12 +114,17 @@ class SignedCodeOfConductAddView(AddView):
         kw = {}
         for key, value in data.items():
             kw[str(key)] = value
-        kw['person'] = owner.id
+        kw['user'] = owner
 
         # use utility to store it in the database
         sCoC_util = getUtility(ISignedCodeOfConductSet)
-        sCoC_util.verifyAndStore(**kw)
+        info = sCoC_util.verifyAndStore(**kw)
 
+        # xxx cprov 20050328
+        # raising wrong exception 
+        if info != None:
+            raise NotFoundError(info)
+        
     def nextURL(self):
         return self._nextURL
 
@@ -146,9 +152,14 @@ class SignedCodeOfConductAckView(AddView):
         
         for key, value in data.items():
             kw[str(key)] = value
-            
+
+        # XXX cprov 20050323
+        # rename unused key:value
+        kw['user'] = kw['person']
+        del kw['person']
+
         recipient = IPerson(self.request.principal, None)
-        kw['recipient'] = recipient.id
+        kw['recipient'] = recipient
         
         # use utility to store it in the database
         sCoC_util = getUtility(ISignedCodeOfConductSet)
@@ -253,9 +264,17 @@ class SignedCodeOfConductActiveView(EditView):
         if admincomment:
             # No verification is needed since this page is protected by
             # lp.Admin
-            owner = IPerson(self.request.principal, None)
-            self.context.recipient = owner.id
-            self.context.active = True
+            recipient = IPerson(self.request.principal, None)
+            kw = {}
+            kw['recipient'] = recipient
+            kw['admincomment'] = admincomment
+            kw['sign_id'] = self.context.id
+            kw['state'] = True
+            
+            # use utility to active it in the database
+            sCoC_util = getUtility(ISignedCodeOfConductSet)
+            sCoC_util.modifySignature(**kw)
+
             # now redirect to view the SignedCoC
             self.request.response.redirect(self.request.URL[-1])
 
@@ -288,9 +307,18 @@ class SignedCodeOfConductDeactiveView(EditView):
         if admincomment:
             # No verification is needed since this page is protected by
             # lp.Edit
-            owner = IPerson(self.request.principal, None)
-            self.context.recipient = owner.id
-            self.context.active = False
+            recipient = IPerson(self.request.principal, None)
+
+            kw = {}
+            kw['recipient'] = recipient
+            kw['admincomment'] = admincomment
+            kw['sign_id'] = self.context.id
+            kw['state'] = False
+
+            # use utility to active it in the database
+            sCoC_util = getUtility(ISignedCodeOfConductSet)
+            sCoC_util.modifySignature(**kw)
+
             # now redirect to view the SignedCoC
             self.request.response.redirect(self.request.URL[-1])
 

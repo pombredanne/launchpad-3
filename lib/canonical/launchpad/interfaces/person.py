@@ -79,11 +79,11 @@ class IPerson(Interface):
     irc = Attribute("IRC")
     bugs = Attribute("Bug")
     wiki = Attribute("Wiki")
-    teams = Attribute("List of teams this Person is a member of.")
     emails = Attribute("Email")
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
     packages = Attribute("A Selection of SourcePackageReleases")
+    maintainerships = Attribute("This person's Maintainerships")
     activities = Attribute("Karma")
     memberships = Attribute(("List of TeamMembership objects for Teams this "
                              "Person is a member of. Either as a PROPOSED "
@@ -101,11 +101,6 @@ class IPerson(Interface):
     inactivemembers = Attribute(("List of members with EXPIRED or "
                                  "DEACTIVATED status"))
     deactivatedmembers = Attribute("List of members with DEACTIVATED status")
-
-    subteams = Attribute(("List of subteams of this Team. That is, teams "
-                          "which are members of this Team."))
-    superteams = Attribute(("List of superteams of this Team. That is, teams "
-                            "which this Team is a member of."))
 
     teamowner = Int(title=_('Team Owner'), required=False, readonly=False)
     teamdescription = Text(title=_('Team Description'), required=False,
@@ -146,6 +141,14 @@ class IPerson(Interface):
                           'members can only be added by one of the '
                           'administrators of the team.'))
 
+    merged = Int(title=_('Merged Into'), required=False, readonly=True,
+            description=_(
+                'When a Person is merged into another Person, this attribute '
+                'is set on the Person referencing the destination Person. If '
+                'this is set to None, then this Person has not been merged '
+                'into another and is still valid')
+                )
+
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
@@ -166,7 +169,12 @@ class IPerson(Interface):
         """Removed the language from the list of know languages."""
 
     def inTeam(team):
-        """Return true if this person is in the given team."""
+        """Return true if this person is in the given team.
+        
+        This method is meant to be called by objects which implement either
+        IPerson or ITeam, and it will return True when you ask if a Person is
+        a member of himself (i.e. person1.inTeam(person1)).
+        """
 
     def hasMembershipEntryFor(team):
         """Tell if this person is a direct member of the given team."""
@@ -221,6 +229,38 @@ class IPerson(Interface):
         reviewercomment.
         """
 
+    def getSubTeams():
+        """Return all subteams of this team.
+        
+        A subteam is any team that is (either directly or indirectly) a 
+        member of this team. As an example, let's say we have this hierarchy
+        of teams:
+        
+        Rosetta Translators
+            Rosetta pt Translators
+                Rosetta pt_BR Translators
+        
+        In this case, both "Rosetta pt Translators" and "Rosetta pt_BR
+        Translators" are subteams of the "Rosetta Translators" team, and all
+        members of both subteams are considered members of "Rosetta
+        Translators".
+        """
+
+    def getSuperTeams():
+        """Return all superteams of this team.
+
+        A superteam is any team that this team is a member of. For example,
+        let's say we have this hierarchy of teams, and we are the
+        "Rosetta pt_BR Translators":
+
+        Rosetta Translators
+            Rosetta pt Translators
+                Rosetta pt_BR Translators
+        
+        In this case, we will return both "Rosetta pt Translators" and 
+        "Rosetta Translators", because we are member of both of them.
+        """
+
 
 class ITeam(IPerson):
     """ITeam extends IPerson.
@@ -245,15 +285,17 @@ class IPersonSet(Interface):
         <name> will be valid if valid_name(name) returns True.
         """
 
-    def newPerson(*args, **kwargs):
+    def newPerson(**kwargs):
         """Create a new Person with given keyword arguments.
+
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
         to see what keyword arguments are allowed."""
 
-    def newTeam(*args, **kwargs):
+    def newTeam(**kwargs):
         """Create a new Team with given keyword arguments.
+
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
@@ -276,6 +318,23 @@ class IPersonSet(Interface):
 
         Return the default value if there is no such person.
         """
+
+    def search(password=None):
+        # The search API is minimal for the moment, to solve an
+        # immediate problem. It will gradually be filled out with
+        # more parameters as necessary.
+        """Return a set of IPersons that satisfy the query arguments.
+
+        Keyword arguments should always be used. The argument passing
+        semantics are as follows:
+
+        * personset.search(arg = 'foo'): Match all IPersons where
+          IPerson.arg == 'foo'.
+
+        * personset.search(arg = NULL): Match all the IPersons where
+          IPerson.arg IS NULL.
+        """
+        pass
 
     def getAll():
         """Return all Persons and Teams."""
@@ -304,6 +363,14 @@ class IPersonSet(Interface):
 
     def getUbuntites():
         """Return a set of person with valid Ubuntite flag."""
+
+    # TODO: Currently not declared part of the interface - we need to
+    # sort out permissions as we need to ensure it can only be called
+    # in specific instances. -- StuartBishop 20050331
+    # XXX: salgado, 2005-03-31: can't we have this method declared in IPerson?
+    # I can't see why we need it here.
+    def merge(from_person, to_person):
+        """Merge a person into another."""
 
 
 class IEmailAddress(Interface):
@@ -434,23 +501,18 @@ class ITeamMembershipSubset(Interface):
 
 
 class ITeamParticipation(Interface):
-    """Team Participation for Users"""
+    """A TeamParticipation.
+    
+    A TeamParticipation object represents a person being a member of a team.
+    Please note that because a team is also a person in Launchpad, we can
+    have a TeamParticipation object representing a team that is a member of
+    another team. We can also have an object that represents a person being a
+    member of itself.
+    """
+
     id = Int(title=_('ID'), required=True, readonly=True)
-    team = Int(title=_("Team"), required=True, readonly=False)
-    person = Int(title=_("Owner"), required=True, readonly=False)
-
-
-class ITeamParticipationSet(Interface):
-    """A set for ITeamParticipation objects."""
-
-    def getSubTeams(teamID):
-        """Return all subteams for the specified team."""
-
-    def getSuperTeams(teamID):
-        """Return all superteams for the specified team."""
-
-    def getAllMembers(team):
-        """Return a list of (direct / indirect) members for the given team."""
+    team = Int(title=_("The team"), required=True, readonly=False)
+    person = Int(title=_("The member"), required=True, readonly=False)
 
 
 class IRequestPeopleMerge(Interface):

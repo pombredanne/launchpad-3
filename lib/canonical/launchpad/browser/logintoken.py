@@ -7,7 +7,7 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.interfaces import WidgetsError
 from zope.app.event.objectevent import ObjectCreatedEvent
 
-from canonical.database.sqlbase import flushUpdates
+from canonical.database.sqlbase import flush_database_updates
 
 from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
 
@@ -83,7 +83,7 @@ class ResetPasswordView(object):
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
-        flushUpdates()
+        flush_database_updates()
 
         person = emailaddress.person
 
@@ -244,7 +244,6 @@ class MergePeopleView(object):
         if self.validate():
             self.doMerge()
             self.context.destroySelf()
-            return
 
     def successfullyProcessed(self):
         return self.formProcessed and not self.errormessage
@@ -273,7 +272,7 @@ class MergePeopleView(object):
         # Need to flush all changes we made, so subsequent queries we make
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
-        flushUpdates()
+        flush_database_updates()
         
         # Now we must check if the dupe account still have registered email
         # addresses. If it haven't we can actually do the merge.
@@ -283,4 +282,5 @@ class MergePeopleView(object):
 
         # Call Stuart's magic function which will reassign all of the dupe
         # account's stuff to the user account.
+        pset = getUtility(IPersonSet).merge(self.dupe, self.context.requester)
         self.mergeCompleted = True

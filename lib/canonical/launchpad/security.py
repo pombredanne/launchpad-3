@@ -8,17 +8,16 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IAuthorization, IHasOwner
-from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
+from canonical.launchpad.interfaces import IPerson, ITeam
 from canonical.launchpad.interfaces import ITeamMembershipSubset
 from canonical.launchpad.interfaces import ITeamMembership
 from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin
 from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
 from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask
-from canonical.launchpad.interfaces import IHasProduct, IHasProductAndAssignee
 from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
-from canonical.launchpad.interfaces import IEditableUpstreamBugTask, IProduct
-from canonical.launchpad.interfaces import ITeamParticipationSet
-from canonical.lp.dbschema import BugSubscription
+from canonical.launchpad.interfaces import IProduct
+from canonical.launchpad.interfaces import IPOTemplate, IPOFile
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
 
 class AuthorizationBase:
@@ -45,7 +44,7 @@ class AdminByAdminsTeam(AuthorizationBase):
     usedfor = Interface
 
     def checkAuthenticated(self, user):
-        admins = getUtility(IPersonSet).getByName('admins')
+        admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
 
 
@@ -54,12 +53,8 @@ class EditByOwnersOrAdmins(AuthorizationBase):
     usedfor = IHasOwner
 
     def checkAuthenticated(self, user):
-        if user.id == self.obj.owner.id:
-            return True
-        elif user.inTeam(getUtility(IPersonSet).getByName('admins')):
-            return True
-        else:
-            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
 class EditByOwnerOfProduct(EditByOwnersOrAdmins):
@@ -71,7 +66,7 @@ class AdminSourceSourceByButtSource(AuthorizationBase):
     usedfor = ISourceSourceAdmin
 
     def checkAuthenticated(self, user):
-        buttsource = getUtility(IPersonSet).getByName('buttsource')
+        buttsource = getUtility(ILaunchpadCelebrities).buttsource
         return user.inTeam(buttsource)
 
 
@@ -80,7 +75,7 @@ class EditSourceSourceByButtSource(AuthorizationBase):
     usedfor = ISourceSource
 
     def checkAuthenticated(self, user):
-        buttsource = getUtility(IPersonSet).getByName('buttsource')
+        buttsource = getUtility(ILaunchpadCelebrities).buttsource
         if user.inTeam(buttsource):
             return True
         elif not self.obj.syncCertified():
@@ -95,7 +90,7 @@ class EditMilestoneByProductMaintainer(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Authorize the product maintainer."""
-        return self.obj.product.owner.id == user.id
+        return user.inTeam(self.obj.product.owner)
 
 
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
@@ -107,7 +102,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 
         The admin team also has launchpad.Edit on all teams.
         """
-        admins = getUtility(IPersonSet).getByName('admins')
+        admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(self.obj.teamowner) or user.inTeam(admins):
             return True
         else:
@@ -123,7 +118,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = ITeamMembership
 
     def checkAuthenticated(self, user):
-        admins = getUtility(IPersonSet).getByName('admins')
+        admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(self.obj.team.teamowner) or user.inTeam(admins):
             return True
         else:
@@ -149,7 +144,7 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
 
         The admin team can also edit any Person.
         """
-        admins = getUtility(IPersonSet).getByName('admins')
+        admins = getUtility(ILaunchpadCelebrities).admin
         return self.obj.id == user.id or user.inTeam(admins)
 
 
@@ -163,15 +158,12 @@ class EditUpstreamBugTask(AuthorizationBase):
         If the maintainer or assignee is a team, everyone belonging to the team
         is allowed to edit the task.
         """
-        teampart = getUtility(ITeamParticipationSet)
-        for allowed_person in (self.obj.maintainer, self.obj.assignee):
-            if ITeam.providedBy(allowed_person):
-                if user in teampart.getAllMembers(allowed_person):
-                    return True
-            elif IPerson.providedBy(allowed_person):
-                if user is allowed_person:
-                    return True
-        return False
+        if user.inTeam(self.obj.maintainer):
+            return True
+        elif self.obj.assignee is not None and user.inTeam(self.obj.assignee):
+            return True
+        else:
+            return False
 
 
 class EditDistroBugTask(AuthorizationBase):
@@ -186,13 +178,8 @@ class EditDistroBugTask(AuthorizationBase):
         else:
             # private bug
             for subscription in self.obj.bug.subscriptions:
-                subscriber = subscription.person
-                if ITeam.providedBy(subscriber):
-                    if user.inTeam(subscriber):
-                        return True
-                else:
-                    if subscriber.id == user.id:
-                        return True
+                if user.inTeam(subscription.person):
+                    return True
 
             return False
 
@@ -211,13 +198,8 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
         else:
             # private bug
             for subscription in self.obj.bug.subscriptions:
-                subscriber = subscription.person
-                if ITeam.providedBy(subscriber):
-                    if user.inTeam(subscriber):
-                        return True
-                else:
-                    if subscriber.id == user.id:
-                        return True
+                if user.inTeam(subscription.person):
+                    return True
 
             return False
 
@@ -231,7 +213,8 @@ class PublicToAllOrPrivateToExplicitSubscribersForROBugTask(
     usedfor = IReadOnlyUpstreamBugTask
 
 
-class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(AuthorizationBase):
+class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(
+    AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBug
 
@@ -245,13 +228,8 @@ class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(AuthorizationBase)
         else:
             # private bug
             for subscription in self.obj.subscriptions:
-                subscriber = subscription.person
-                if ITeam.providedBy(subscriber):
-                    if user.inTeam(subscriber):
-                        return True
-                else:
-                    if subscriber.id == user.id:
-                        return True
+                if user.inTeam(subscription.person):
+                    return True
 
         return False
 
@@ -274,13 +252,8 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
         else:
             # private bug
             for subscription in self.obj.subscriptions:
-                subscriber = subscription.person
-                if ITeam.providedBy(subscriber):
-                    if user.inTeam(subscriber):
-                        return True
-                else:
-                    if subscriber.id == user.id:
-                        return True
+                if user.inTeam(subscription.person):
+                    return True
 
         return False
 
@@ -295,4 +268,32 @@ class UseApiDoc(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return True
+
+
+class EditPOTemplateDetails(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPOTemplate
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of the POTemplate if it's not in a product release.
+        """
+        if self.obj.productrelease is not None:
+            # It's a PO file from a product, it has no restrictions.
+            return True
+        else:
+            return user.inTeam(self.obj.owner)
+
+
+class EditPOFileDetails(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPOFile
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of the POFile if it's not in a product release.
+        """
+        if self.obj.potemplate.productrelease is not None:
+            # It's a PO file from a product, it has no restrictions.
+            return True
+        else:
+            return user.inTeam(self.obj.owner)
 

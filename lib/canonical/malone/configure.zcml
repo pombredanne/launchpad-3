@@ -38,53 +38,9 @@
         for="canonical.launchpad.interfaces.IMaloneApplication"
         name="+index" />
 
-    <browser:suburl
+    <browser:traverse
         for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.IBugSet"
-        permission="zope.Public"
-        name="bugs" />
-
-    <browser:suburl
-        for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.IBugTaskSet"
-        permission="zope.Public"
-        name="tasks" />
-
-    <browser:suburl
-        for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.IBugTasksReport"
-        permission="zope.Public"
-        name="assigned" />
-
-    <browser:suburl
-        for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.IDistributionSet"
-        permission="zope.Public"
-        name="distros" />
-
-    <browser:suburl
-        for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.IProjectSet"
-        permission="zope.Public"
-        name="projects" />
-
-    <browser:suburl
-        for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.IProductSet"
-        permission="zope.Public"
-        name="products" />
-
-    <browser:suburl
-        for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.ISourcePackageSet"
-        permission="zope.Public"
-        name="packages" />
-
-    <browser:suburl
-        for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.IBugTrackerSet"
-        permission="zope.Public"
-        name="bugtrackers" />
+        function="canonical.launchpad.browser.traverse_malone_application" />
 
     <!-- pages for the malone application -->
     <browser:pages

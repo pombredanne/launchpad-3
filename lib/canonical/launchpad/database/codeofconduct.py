@@ -16,8 +16,9 @@ from zope.exceptions import NotFoundError
 from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.database.sqlbase import SQLBase, quote, flushUpdates
+from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
 from canonical.database.constants import DEFAULT
+from canonical.launchpad.mail.sendmail import simple_sendmail
 
 # LP Interfaces
 from canonical.launchpad.interfaces import ICodeOfConduct, ICodeOfConductSet,\
@@ -26,9 +27,14 @@ from canonical.launchpad.interfaces import ICodeOfConduct, ICodeOfConductSet,\
 from canonical.launchpad.interfaces import ISignedCodeOfConduct, \
                                            ISignedCodeOfConductSet
 
+from canonical.launchpad.interfaces import IPersonSet
+
+from canonical.launchpad.interfaces import IGpgHandler
+
 # Python
 import os
 from datetime import datetime
+from sha import sha
 
 class CodeOfConduct(object):
     """CoC class model.
@@ -147,7 +153,7 @@ class SignedCodeOfConduct(SQLBase):
 
     _table = 'SignedCodeOfConduct'
 
-    person = ForeignKey(foreignKey="Person", dbName="person",
+    owner = ForeignKey(foreignKey="Person", dbName="owner",
                         notNull=True)
     
     signedcode = StringCol(dbName='signedcode', notNull=False, default=None)
@@ -171,7 +177,7 @@ class SignedCodeOfConduct(SQLBase):
         """Build a Fancy Title for CoC."""
         # XXX: cprov 20040224
         # We need the proposed field 'version'
-        displayname = '%s' % self.person.displayname
+        displayname = '%s' % self.owner.displayname
 
 
         if self.signingkey:
@@ -210,23 +216,75 @@ class SignedCodeOfConductSet(object):
         """Iterate through the Signed CoC."""
         return iter(SignedCodeOfConduct.select())
 
-    def verifyAndStore(self, person, signingkey, signedcode):
+    def verifyAndStore(self, user, signedcode):
         """See ISignedCodeOfConductSet"""
         # XXX cprov 20050224
         # Are we missing the version field in SignedCoC table ?
         # how to figure out how CoC version is signed ?
 
-        # use a local method to perform the checks needed
-        if self.verifySignature(person, signingkey, signedcode):
-            return True
-
         # XXX: cprov 20050227
-        # Since we aren't performing the correct checks, store it with
-        # active field FALSE, i.e, INACTIVE
+        # To be implemented:
+        # * Valid Person (probably always true via permission lp.AnyPerson),
+        # * Valid GPGKey (valid and active),
+        # * Person and GPGkey matches (done on DB side too),
+        # * CoC is the current version available, or the previous
+        #   still-supported version in old.txt,
+        # * CoC was signed (correctly) by the GPGkey.
 
+        # use a utility to perform the GPG operations
+        gpghandler = getUtility(IGpgHandler)
+        fingerprint, plain = gpghandler.verifySignature(signedcode)
+
+        if not fingerprint:
+            return 'Failed to verify the signature'
+
+        # XXX cprov 20050328
+        # Do not support multiple keys
+        if fingerprint != user.gpg.fingerprint:
+            return ('User and Signature do not match.\n'
+                    'Sig %s != User %s' % (fingerprint,
+                                           user.gpg.fingerprint))
+        
+        if user.gpg.revoked:
+            return  'Signed with a revoked Key.'
+
+        # recover the current CoC release
+        coc = CodeOfConduct(getUtility(ICodeOfConductConf).current)
+        current = coc.content
+                
+        # XXX cprov 20050322
+        # Is this kind of comparition enough ?
+        # or should we try something like:
+        #from difflib import ndiff
+        #diff = ndiff(plain.splitlines(1),
+        #             current.splitlines(1))
+        #print 15 * '*', 'BEGIN DIFF', 15 * '*'
+        #print ''.join(diff)
+        #print 15 * '*', 'END DIFF', 15 * '*'
+        # INSTEAD of
+        #if plain != current:
+        #    return 'CoCs do not match'
+        plain_dig = sha(plain).hexdigest()
+        current_dig = sha(current).hexdigest()
+
+        if plain_dig != current_dig:
+            return ('CoCs digest do not match: %s vs. %s' % (plain_dig,
+                                                             current_dig))
+             
+        # XXX cprov 20050328
+        # do not support multiple keys
+        subject = 'Launchpad: Code of Conduct Signature Acknowledge'
+        content = ('Digitally Signed by %s\n\n'
+                   '----- Signed Code Of Conduct -----\n'
+                   '%s\n'
+                   '-------------- End ---------------\n'
+                   % (fingerprint, plain))
+        # Send Advertisement Email
+        sendAdvertisementEmail(user, subject, content)
+        
         # Store the signature 
-        SignedCodeOfConduct(person=person, signingkey=signingkey,
-                            signedcode=signedcode)
+        SignedCodeOfConduct(owner=user.id, signingkey=user.gpg.id,
+                            signedcode=signedcode, active=True)
 
     def searchByDisplayname(self, displayname, searchfor=None):
         """See ISignedCodeOfConductSet"""
@@ -238,7 +296,7 @@ class SignedCodeOfConductSet(object):
         # trivial ILIKE query. Oppinion required on Review.
 
         # glue Person and SignedCoC table
-        query = 'SignedCodeOfConduct.person = Person.id'
+        query = 'SignedCodeOfConduct.owner = Person.id'
 
         # XXX cprov 20050302
         # I'm not sure if the it is correct way to query ALL
@@ -261,31 +319,51 @@ class SignedCodeOfConductSet(object):
 
     def searchByUser(self, user_id):
         """See ISignedCodeOfConductSet"""        
-        return list(SignedCodeOfConduct.selectBy(personID=user_id))
+        return list(SignedCodeOfConduct.selectBy(ownerID=user_id))
 
-    def deactivateSignature(self, sign_id):
+    def modifySignature(self, sign_id, recipient, admincomment, state):
         """See ISignedCodeOfConductSet"""
         sign = SignedCodeOfConduct.get(sign_id)
-        sign.active = False
-        flushUpdates()
+        sign.active = state
+        sign.admincomment = admincomment
+        sign.recipient = recipient.id
+
+        subject = 'Launchpad: Code Of Conduct Signature Modified'
+        content = ('State: %s\n'
+                   'Comment: %s\n'
+                   'Modified by %s'
+                    % (state, admincomment, recipient.displayname))
         
-    def acknowledgeSignature(self, person, recipient):
+        # Send Advertisement Email if preferredemail is set                   
+        if sign.owner.preferredemail:
+            sendAdvertisementEmail(sign.owner, subject, content)
+
+        flush_database_updates()
+        
+    def acknowledgeSignature(self, user, recipient):
         """See ISignedCodeOfConductSet"""
         active = True
-        SignedCodeOfConduct(person=person, recipient=recipient,
-                            active=active)
 
-    def verifySignature(self, person, signingkey, signedcode):
-        """See ISignedCodeOfConductSet"""
-
-        # XXX: cprov 20050227
-        # To be implemented:
-        # * Valid Person (probably always true via permission lp.AnyPerson),
-        # * Person has valid email address (send a email acknoledging),
-        # * Valid GPGKey (valid and active),
-        # * Person and GPGkey matches (done on DB side too),
-        # * CoC is the current version available, or the previous
-        #   still-supported version in old.txt,
-        # * CoC was signed (correctly) by the GPGkey.
+        subject = 'Launchpad: Code Of Conduct Signature Acknowledge'
+        content = 'Paper Submitted acknowledge by %s' % recipient.displayname
         
-        return
+        # Send Advertisement Email if preferredemail is set                   
+        if user.preferredemail:
+            sendAdvertisementEmail(user, subject, content)
+
+        SignedCodeOfConduct(owner=user.id, recipient=recipient.id,
+                            active=active)
+        
+
+def sendAdvertisementEmail(user, subject, content):
+    template = open('lib/canonical/launchpad/templates/'
+                    'signedcoc-acknowledge.txt').read()
+    
+    fromaddress = "Launchpad Code Of Conduct System <noreply@ubuntu.com>"
+
+    replacements = {'user': user.displayname,
+                    'content': content}
+    
+    message = template % replacements
+
+    simple_sendmail(fromaddress, user.preferredemail.email, subject, message)

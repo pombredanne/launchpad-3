@@ -12,7 +12,7 @@ _ = MessageIDFactory('launchpad')
 class IGPGKey(Interface):
     """GPG support"""
     id = Int(title=_("Database id"), required=True, readonly=True)
-    person = Int(title=_("Owner"), required=True, readonly=True)
+    owner = Int(title=_("Owner"), required=True, readonly=True)
     keysize = Int(title=_("Keysize"), required=True)
     algorithm = Int(title=_("Algorithm"), required=True)
 
