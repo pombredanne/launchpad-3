@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-28 11:52:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1260
+
+    Summary:
+      Buildd master db patch and build status dbschema
+    Revision:
+      launchpad--devel--0--patch-1260
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-11
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-12
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-13
+       Buildd master db patch and build status dbschema
+    
+
+    new files:
+     database/schema/pending/.arch-ids/dsilvers-fiera-buildd.sql.id
+     database/schema/pending/dsilvers-fiera-buildd.sql
+
+    modified files:
+     doc/changelog.txt lib/canonical/lp/dbschema.py
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-11
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-12
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-13
+
+
 2005-01-27 15:48:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1259
 
     Summary:

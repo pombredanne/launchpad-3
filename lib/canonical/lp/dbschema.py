@@ -33,6 +33,7 @@ __all__ = (
 'BugRelationship',
 'BugSeverity',
 'BugSubscription',
+'BuildStatus',
 'CodereleaseRelationships',
 'DistributionReleaseState',
 'DistributionRole',
@@ -1868,3 +1869,53 @@ class LoginTokenType(DBSchema):
         need to be validated.
         """)
 
+class BuildStatus(DBSchema):
+    """Build status type
+
+    Builds exist in the database in a number of states such as 'complete',
+    'needs build' and 'dependency wait'. We need to track these states in
+    order to correctly manage the autobuilder queues in the BuildQueue table.
+    """
+
+    NEEDSBUILD = Item(0, """
+        Needs building
+
+        Build record is fresh and needs building. Nothing is yet known to
+        block this build and it is a candidate for building on any free
+        builder of the relevant architecture
+        """)
+
+    FULLYBUILT = Item(1, """
+        Fully built
+
+        Build record is an historic account of the build. The build is complete
+        and needs no further work to complete it. The build log etc are all
+        in place if available.
+        """)
+
+    FAILEDTOBUILD = Item(2, """
+        Failed to build
+
+        Build record is an historic account of the build. The build failed and
+        cannot be automatically retried. Either a new upload will be needed
+        or the build will have to be manually reset into 'NEEDSBUILD' when
+        the issue is corrected
+        """)
+
+    MANUALDEPWAIT = Item(3, """
+        Manual dependency wait
+
+        Build record represents a package whose build dependencies cannot
+        currently be satisfied within the relevant DistroArchRelease. This
+        build will have to be manually given back (put into 'NEEDSBUILD') when
+        the dependency issue is resolved.
+        """)
+
+    CHROOTWAIT = Item(4, """
+        Chroot wait
+
+        Build record represents a build which needs a chroot currently known
+        to be damaged or bad in some way. The buildd maintainer will have to
+        reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
+        has been fixed.
+        """)
