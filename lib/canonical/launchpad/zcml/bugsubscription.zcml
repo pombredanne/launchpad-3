@@ -39,6 +39,11 @@
         factory="canonical.launchpad.database.BugSubscriptionSet"
         provides="canonical.launchpad.interfaces.IBugSubscriptionSet" />
 
+    <adapter
+        for="canonical.launchpad.interfaces.IBug"
+        provides="canonical.launchpad.interfaces.IBugSubscriptionSet"
+        factory="canonical.launchpad.components.bugsubscription.IBugSubscriptionSetAdapter" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugSubscriptionSet"
         name="+index" />
