@@ -1,50 +1,50 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <content class="canonical.rosetta.domain.RosettaProject">
-    <allow interface="canonical.rosetta.interfaces.IRosettaProject"/>
+    <allow interface="canonical.launchpad.interfaces.IRosettaProject"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaProduct">
-    <allow interface="canonical.rosetta.interfaces.IProduct"/>
+    <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaPOTemplate">
-    <allow interface="canonical.rosetta.interfaces.IPOTemplate"/>
+    <allow interface="canonical.launchpad.interfaces.IPOTemplate"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaPOFile">
     <require permission="zope.Public"
-        interface="canonical.rosetta.interfaces.IEditPOFile"
+        interface="canonical.launchpad.interfaces.IEditPOFile"
         set_attributes="header pluralForms"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaPOMessageSet">
-    <allow interface="canonical.rosetta.interfaces.IEditPOTemplateOrPOFileMessageSet"/>
+    <allow interface="canonical.launchpad.interfaces.IEditPOTemplateOrPOFileMessageSet"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaPOTranslationSighting">
-    <allow interface="canonical.rosetta.interfaces.IPOTranslationSighting"/>
+    <allow interface="canonical.launchpad.interfaces.IPOTranslationSighting"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaPOMessageID">
-    <allow interface="canonical.rosetta.interfaces.IPOMessageID"/>
+    <allow interface="canonical.launchpad.interfaces.IPOMessageID"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaPOTranslation">
-    <allow interface="canonical.rosetta.interfaces.IPOTranslation"/>
+    <allow interface="canonical.launchpad.interfaces.IPOTranslation"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaLanguage">
-    <allow interface="canonical.rosetta.interfaces.ILanguage"/>
+    <allow interface="canonical.launchpad.interfaces.ILanguage"/>
   </content>
 
   <utility
       factory="canonical.rosetta.sql.RosettaLanguages"
-      provides="canonical.rosetta.interfaces.ILanguages"
+      provides="canonical.launchpad.interfaces.ILanguages"
       />
 
   <adapter for="zope.app.security.interfaces.IPrincipal"
-      provides="canonical.rosetta.interfaces.IPerson"
+      provides="canonical.launchpad.interfaces.IPerson"
       factory="canonical.rosetta.sql.personFromPrincipal" />
 </configure>
 

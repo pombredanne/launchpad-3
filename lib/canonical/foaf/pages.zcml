@@ -6,21 +6,21 @@
 
     <!-- pages for the foaf application -->
     <pages
-        for="canonical.interfaces.IFOAFApplication"
+        for="canonical.launchpad.interfaces.IFOAFApplication"
         permission="zope.Public"
         class="canonical.foaf.browser.FOAFApplicationView"
         lp:url="foaf">
         <page name="+index"
-            template="../lp/templates/foaf-index.pt"
+            template="../launchpad/templates/foaf-index.pt"
             lp:url="foaf/+index" />
         <page name="+about"
-            template="../lp/templates/foaf-about.pt"
+            template="../launchpad/templates/foaf-about.pt"
             lp:url="foaf/+about" />
         <page name="+dashboard"
-            template="../lp/templates/foaf-dashboard.pt"
+            template="../launchpad/templates/foaf-dashboard.pt"
             lp:url="foaf/+dashboard" />
         <page name="+to-do"
-            template="../lp/templates/foaf-to-do.pt"
+            template="../launchpad/templates/foaf-to-do.pt"
             lp:url="foaf/+to-do" />
     </pages>
 

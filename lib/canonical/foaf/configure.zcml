@@ -18,12 +18,12 @@
       name="foaf" />
 
   <browser:defaultView
-      for="canonical.interfaces.IFOAFApplication"
+      for="canonical.launchpad.interfaces.IFOAFApplication"
       name="+index" />
 
   <browser:suburl
-      for="canonical.interfaces.IFOAFApplication"
-      utility="canonical.interfaces.IProjectContainer"
+      for="canonical.launchpad.interfaces.IFOAFApplication"
+      utility="canonical.launchpad.interfaces.IProjectContainer"
       permission="zope.Public"
       name="projects" />
 

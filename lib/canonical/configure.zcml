@@ -54,7 +54,7 @@
   <browser:page
       for="canonical.publication.RootObject"
       name="index.html"
-      template="root-index.pt"
+      template="launchpad/templates/root-index.pt"
       permission="zope.Public"
       />
 

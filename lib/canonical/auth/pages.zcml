@@ -8,7 +8,7 @@
 	 class="canonical.auth.browser.sendPasswordToEmail">
 
   <page  name="index.html"
-	 template="templates/auth-index.pt"
+	 template="../launchpad/templates/auth-index.pt"
          lp:url="Auth/index.html"
 	 />
 
@@ -19,7 +19,7 @@
 	 class="canonical.auth.browser.changeEmailPassword">
 	 
     <page name="index.html"
-          template="templates/passwd-change.pt"
+          template="../launchpad/templates/passwd-change.pt"
           lp:url="Auth/$BigRandonString/index.html" 
           />
 

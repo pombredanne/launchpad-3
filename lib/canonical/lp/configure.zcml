@@ -8,19 +8,19 @@
         -->
       <browser:page
           name="main_template"
-          template="templates/main_template.pt"
+          template="../launchpad/templates/template.pt"
           />
       <browser:page
           name="no-url-yet"
-          template="templates/no-url-yet.pt"
+          template="../launchpad/templates/no-url-yet.pt"
           />
       <browser:page
           name="no-page-yet"
-          template="templates/no-page-yet.pt"
+          template="../launchpad/templates/no-page-yet.pt"
           />
       <browser:page
           name="no-app-component-yet"
-          template="templates/no-app-component-yet.pt"
+          template="../launchpad/templates/no-app-component-yet.pt"
           />
 
 

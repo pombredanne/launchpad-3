@@ -7,48 +7,48 @@
        traversal work properly.  We also need to make security declarations.
     -->
   <content class="canonical.rosetta.stub.Projects">
-    <allow interface="canonical.rosetta.interfaces.IProjects"/>
+    <allow interface="canonical.launchpad.interfaces.IProjects"/>
   </content>
 
   <content class="canonical.rosetta.stub.Project">
-    <allow interface="canonical.rosetta.interfaces.IProject"/>
+    <allow interface="canonical.launchpad.interfaces.IProject"/>
   </content>
 
   <content class="canonical.rosetta.stub.Product">
-    <allow interface="canonical.rosetta.interfaces.IProduct"/>
+    <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
 
   <content class="canonical.rosetta.stub.POTemplate">
-    <allow interface="canonical.rosetta.interfaces.IPOTemplate"/>
+    <allow interface="canonical.launchpad.interfaces.IPOTemplate"/>
   </content>
 
   <content class="canonical.rosetta.stub.POFile">
-    <allow interface="canonical.rosetta.interfaces.IPOFile"/>
+    <allow interface="canonical.launchpad.interfaces.IPOFile"/>
   </content>
 
   <content class="canonical.rosetta.stub.Languages">
-    <allow interface="canonical.rosetta.interfaces.ILanguages"/>
+    <allow interface="canonical.launchpad.interfaces.ILanguages"/>
   </content>
 
   <content class="canonical.rosetta.stub.Language">
-    <allow interface="canonical.rosetta.interfaces.ILanguage"/>
+    <allow interface="canonical.launchpad.interfaces.ILanguage"/>
   </content>
 
   <content class="canonical.rosetta.stub.Translation">
-    <allow interface="canonical.rosetta.interfaces.IPOTranslation" />
+    <allow interface="canonical.launchpad.interfaces.IPOTranslation" />
   </content>
 
   <utility
       factory="canonical.rosetta.stub.Projects"
-      provides="canonical.rosetta.interfaces.IProjects"
+      provides="canonical.launchpad.interfaces.IProjects"
       />
 
   <utility
       factory="canonical.rosetta.stub.Languages"
-      provides="canonical.rosetta.interfaces.ILanguages"
+      provides="canonical.launchpad.interfaces.ILanguages"
       />
 
   <adapter for="zope.app.security.interfaces.IPrincipal"
-      provides="canonical.rosetta.interfaces.IPerson"
+      provides="canonical.launchpad.interfaces.IPerson"
       factory="canonical.rosetta.stub.personFromPrincipal" />
 </configure>

@@ -18,17 +18,17 @@
       name="doap" />
 
   <browser:defaultView
-      for="canonical.interfaces.IDOAPApplication"
+      for="canonical.launchpad.interfaces.IDOAPApplication"
       name="+index" />
 
   <browser:suburl
-      for="canonical.interfaces.IDOAPApplication"
-      utility="canonical.interfaces.IProjectContainer"
+      for="canonical.launchpad.interfaces.IDOAPApplication"
+      utility="canonical.launchpad.interfaces.IProjectContainer"
       permission="zope.Public"
       name="projects" />
 
   <browser:defaultView
-      for="canonical.interfaces.IProjectContainer"
+      for="canonical.launchpad.interfaces.IProjectContainer"
       name="+search" />
 
   <browser:defaultView

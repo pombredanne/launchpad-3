@@ -7,13 +7,13 @@
       for="zope.exceptions.IUnauthorized"
       name="index.html"
       permission="zope.Public"
-      template="debug-unauthorized.pt"
+      template="launchpad/templates/debug-unauthorized.pt"
       class="zope.app.exception.browser.unauthorized.Unauthorized"
       layer="debug" />
 
   <page 
       name="index.html"
-      template="debug-error.pt"
+      template="launchpad/templates/debug-error.pt"
       for="zope.interface.common.interfaces.IException"
       class="canonical.publication.DebugView"
       permission="zope.Public"

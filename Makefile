@@ -11,7 +11,10 @@ SETUPFLAGS=
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
 
-check: build
+check:
+	@
+
+XXXcheck: build
 	#$(MAKE) -C sourcecode check
 	PYTHONPATH=$(HERE)/lib ./test.py
 

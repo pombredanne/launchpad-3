@@ -7,7 +7,7 @@
        traversal work properly.  We also need to make security declarations.
     -->
   <content class="canonical.rosetta.RosettaApplication">
-    <allow interface=".interfaces.IRosettaApplication" />
+    <allow interface="canonical.launchpad.interfaces.IRosettaApplication" />
     <implements interface="canonical.publication.IHasSuburls"/>
   </content>
 
@@ -27,7 +27,7 @@
        objects, just by changing configuration.
     -->
   <browser:suburl
-      for="canonical.rosetta.interfaces.IRosettaApplication"
+      for="canonical.launchpad.interfaces.IRosettaApplication"
       utility="canonical.database.doap.IProjects"
       name="projects"
       adaptwith="canonical.rosetta.domain.RosettaProjects"
@@ -42,7 +42,7 @@
        for project.
     -->
   <browser:defaultView
-      for="canonical.rosetta.interfaces.IRosettaApplication"
+      for="canonical.launchpad.interfaces.IRosettaApplication"
       name="index"
       />
   <browser:defaultView
@@ -54,22 +54,22 @@
       name="index"
       />
   <browser:defaultView
-      for="canonical.rosetta.interfaces.IProduct"
+      for="canonical.launchpad.interfaces.IProduct"
       name="index"
       />
   <browser:defaultView
-      for="canonical.rosetta.interfaces.IPOTemplate"
+      for="canonical.launchpad.interfaces.IPOTemplate"
       name="index"
       />
   <browser:defaultView
-      for="canonical.rosetta.interfaces.IPOFile"
+      for="canonical.launchpad.interfaces.IPOFile"
       name="index"
       />
 
 <!--
   <adapter
       for="canonical.rosetta.poexport.POExporter"
-      provides="canonical.rosetta.interfaces.IPOExport"
+      provides="canonical.launchpad.interfaces.IPOExport"
       />
 -->
 
