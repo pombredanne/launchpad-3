@@ -120,7 +120,7 @@
         label="Review Upstream Product Details:"
         fields="name displayname title shortdesc description homepageurl
                 screenshotsurl wikiurl programminglang downloadurl
-                sourceforgeproject freshmeatproject project active
+                sourceforgeproject freshmeatproject project owner active
                 autoupdate reviewed "
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-editform.pt"

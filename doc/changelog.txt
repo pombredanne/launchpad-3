@@ -2,6 +2,77 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-25 18:46:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1250
+
+    Summary:
+      Reassing Product/Project UI in Review page
+    Revision:
+      launchpad--devel--0--patch-1250
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-480
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-481
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-482
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-483
+       Product Donation Prototype
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-484
+       Project Donation Prototype using ValidOwnerVocabulary
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-485
+       Missed portlet from Project Actions
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-486
+       Adding Review Remarks from Salgado
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-487
+       Previous commit broken, adding the remaing patch
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-488
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-489
+       removing duplicated patch added by broken baz commit
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-490
+       removed missapplied Milestone stuff for Project for a while
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/portlet-project-actions.pt.id
+     lib/canonical/launchpad/templates/portlet-project-actions.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/project.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/project.py
+     lib/canonical/launchpad/templates/project-index.pt
+     lib/canonical/launchpad/vocabularies/configure.zcml
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/launchpad/zcml/project.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-480
+     celso.providelo@canonical.com/launchpad--devel--0--patch-481
+     celso.providelo@canonical.com/launchpad--devel--0--patch-482
+     celso.providelo@canonical.com/launchpad--devel--0--patch-483
+     celso.providelo@canonical.com/launchpad--devel--0--patch-484
+     celso.providelo@canonical.com/launchpad--devel--0--patch-485
+     celso.providelo@canonical.com/launchpad--devel--0--patch-486
+     celso.providelo@canonical.com/launchpad--devel--0--patch-487
+     celso.providelo@canonical.com/launchpad--devel--0--patch-488
+     celso.providelo@canonical.com/launchpad--devel--0--patch-489
+     celso.providelo@canonical.com/launchpad--devel--0--patch-490
+
+
 2005-01-25 14:58:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1249
 
     Summary:
