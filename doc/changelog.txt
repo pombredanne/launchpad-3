@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-02 19:33:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1360
+
+    Summary:
+      distro navigation fixes
+    Revision:
+      launchpad--devel--0--patch-1360
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-779
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-780
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-781
+       fix distribution navigation, and po template linkages
+    
+
+    modified files:
+     database/schema/pending/carlos-potemplate-linkages.sql
+     doc/changelog.txt
+     lib/canonical/launchpad/zcml/distribution.zcml
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-779
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-780
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-781
+
+
 2005-03-02 14:03:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1359
 
     Summary:

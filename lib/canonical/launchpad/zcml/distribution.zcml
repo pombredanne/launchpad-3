@@ -18,6 +18,11 @@
         for="canonical.launchpad.interfaces.IDistribution"
         name="+index" />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        name="+bugs" />
+
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistribution"
         getter="traverse" />
@@ -25,13 +30,17 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionView"
-        layer="canonical.launchpad.layers.SoyuzLayer"
         permission="zope.Public" >
 
         <browser:page
             name="+index"
             template="../templates/distro-index.pt"
             lp:url="Soyuz/distros/$Distribution.name/" />
+
+        <browser:page
+            name="+bugs"
+            template="../templates/malone-distro-index.pt"
+            lp:url="malone/distros/$Distribution.name/" />
 
         <!-- XXX sabdfl moved this here, need to reactivate search tools -->
         <!-- 
@@ -53,17 +62,6 @@
         -->
     </browser:pages>
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IDistribution"
-        class="canonical.launchpad.browser.DistributionView"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        permission="zope.Public">
-
-        <browser:page
-            name="+index"
-            template="../templates/malone-distro-index.pt"
-            lp:url="malone/distros/$Distribution.name/" />
-    </browser:pages>
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"
@@ -89,6 +87,11 @@
         for="canonical.launchpad.interfaces.IDistributionSet"
         name="+index" />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistributionSet"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        name="+bugs" />
+
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistributionSet"
         getter="__getitem__" />
@@ -96,26 +99,25 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.SoyuzLayer"
         class="canonical.launchpad.browser.DistributionSetView">
 
         <browser:page
             name="+index"
             template="../templates/distros-index.pt"
-            lp:url="Soyuz/distros/" />
+            lp:url="/distros/" />
+
+        <browser:page
+            name="+bugs"
+            template="../templates/malone-distros-index.pt"
+            lp:url="malone/distros/" />
 
     </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
-        layer="canonical.launchpad.layers.MaloneLayer"
         class="canonical.launchpad.browser.DistributionSetView">
 
-        <browser:page
-            name="+index"
-            template="../templates/malone-distros-index.pt"
-            lp:url="malone/distros/" />
     </browser:pages>
 
     <browser:page
