@@ -436,13 +436,13 @@ INSERT INTO Build (datecreated, processor, distroarchrelease, buildstate)
 	);	
 
 --Binarypackagename
-INSERT INTO Binarypackagename(name) VALUES ('mozilla-firefox-0.8');
-INSERT INTO Binarypackagename(name) VALUES ('mozilla-thunderbird-1.5');
-INSERT INTO Binarypackagename(name) VALUES ('python-twisted-1.3');
-INSERT INTO Binarypackagename(name) VALUES ('bugzilla-2.18');
-INSERT INTO Binarypackagename(name) VALUES ('arch-1.0');
-INSERT INTO Binarypackagename(name) VALUES ('kiwi-2.0');
-INSERT INTO Binarypackagename(name) VALUES ('plone-1.0');
+INSERT INTO Binarypackagename(name) VALUES ('mozilla-firefox');
+INSERT INTO Binarypackagename(name) VALUES ('mozilla-thunderbird');
+INSERT INTO Binarypackagename(name) VALUES ('python-twisted');
+INSERT INTO Binarypackagename(name) VALUES ('bugzilla');
+INSERT INTO Binarypackagename(name) VALUES ('arch');
+INSERT INTO Binarypackagename(name) VALUES ('kiwi');
+INSERT INTO Binarypackagename(name) VALUES ('plone');
 
 
 
@@ -454,7 +454,7 @@ section, priority)
 	VALUES (
 (SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where name = 'mozilla-firefox')),
-(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox-0.8'), 
+(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
 '0.8', 'Mozilla Firefox 0.8', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
@@ -468,7 +468,7 @@ section, priority)
 	VALUES (
 (SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where name = 'mozilla-thunderbird')),
-(SELECT id from Binarypackagename WHERE name = 'mozilla-thunderbird-1.5'), 
+(SELECT id from Binarypackagename WHERE name = 'mozilla-thunderbird'), 
 '1.5', 'Mozilla Thunderbird 1.5', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
@@ -482,7 +482,7 @@ section, priority)
 	VALUES (
 (SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where name = 'python-twisted')),
-(SELECT id from Binarypackagename WHERE name = 'python-twisted-1.3'), 
+(SELECT id from Binarypackagename WHERE name = 'python-twisted'), 
 '1.3', 'Python Twisted 1.3', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
@@ -496,7 +496,7 @@ section, priority)
 	VALUES (
 (SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where name = 'bugzilla')),
-(SELECT id from Binarypackagename WHERE name = 'bugzilla-2.18'), 
+(SELECT id from Binarypackagename WHERE name = 'bugzilla'), 
 '2.18', 'Bugzilla 2.18', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
@@ -510,7 +510,7 @@ section, priority)
 	VALUES (
 (SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where name = 'arch')),
-(SELECT id from Binarypackagename WHERE name = 'arch-1.0'), 
+(SELECT id from Binarypackagename WHERE name = 'arch'), 
 '1.0', 'ARCH 1.0', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
@@ -524,7 +524,7 @@ section, priority)
 	VALUES (
 (SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where name = 'kiwi2')),
-(SELECT id from Binarypackagename WHERE name = 'kiwi-2.0'), 
+(SELECT id from Binarypackagename WHERE name = 'kiwi'), 
 '2.0', 'Python Kiwi 2.0', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
@@ -538,7 +538,7 @@ section, priority)
 	VALUES (
 (SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where name = 'plone')),
-(SELECT id from Binarypackagename WHERE name = 'plone-1.0'), 
+(SELECT id from Binarypackagename WHERE name = 'plone'), 
 '1.0', 'Plone 1.0', 'some text', 
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
@@ -552,7 +552,7 @@ INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component,
 	section, priority) 
 	VALUES
 	((SELECT id FROM Binarypackage where binarypackagename = 
-	  (SELECT id FROM Binarypackagename where name = 'mozilla-firefox-0.8')
+	  (SELECT id FROM Binarypackagename where name = 'mozilla-firefox')
 	),
 	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
 	   'warty--x86--devel--0'),
@@ -565,7 +565,7 @@ INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component,
 	VALUES
 	((SELECT id FROM Binarypackage where binarypackagename = 
 	  (SELECT id FROM Binarypackagename where name = 
-	     'mozilla-thunderbird-1.5')
+	     'mozilla-thunderbird')
 	),
 	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
 	   'warty--x86--devel--0'),
@@ -577,7 +577,7 @@ INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component,
 	section, priority) 
 	VALUES
 	((SELECT id FROM Binarypackage where binarypackagename = 
-	  (SELECT id FROM Binarypackagename where name = 'python-twisted-1.3')
+	  (SELECT id FROM Binarypackagename where name = 'python-twisted')
 	),
 	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
 	   'warty--x86--devel--0'),
@@ -589,7 +589,7 @@ INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component,
 	section, priority) 
 	VALUES
 	((SELECT id FROM Binarypackage where binarypackagename = 
-	  (SELECT id FROM Binarypackagename where name = 'kiwi-2.0')
+	  (SELECT id FROM Binarypackagename where name = 'kiwi')
 	),
 	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
            'warty--x86--devel--0'),
@@ -1983,7 +1983,7 @@ VALUES (
     2, 4, 2,
     (SELECT id FROM BinaryPackage WHERE version='0.8' 
         AND binarypackagename = (
-            SELECT id FROM BinarypackageName WHERE name='mozilla-firefox-0.8'
+            SELECT id FROM BinarypackageName WHERE name='mozilla-firefox'
             )
     )
 );
