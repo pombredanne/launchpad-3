@@ -23,10 +23,13 @@ class ProductReleaseImporter:
         self.product = product
 
     def addURL(self, url):
-        # fetch it, plonk it in the librarian
-        # construct product release & product release file appropriately
-        # raise exception on failure
-        
+        """Fetch a URL of a product release, and put it in Launchpad.
+
+        If this release isn't already in the system, this will:
+            - put the file in the librarian;
+            - create a product release in the db, if necessary;
+            - and create a product file release.
+        """
         filename = urlparse.urlsplit(url)[2].split('/')[-1]
         existingFiles = ProductReleaseFile.select(
             'ProductReleaseFile.productrelease = ProductRelease.id '
@@ -45,7 +48,7 @@ class ProductReleaseImporter:
         # Download the file directly into the librarian
         # FIXME: cope with web/ftp servers that don't give the size of files by
         #        first saving to a temporary file.
-        file = urllib2.open(url)
+        file = urllib2.urlopen(url)
         info = file.info()
         size = int(info['content-length'])
         librarian = FileUploadClient()
@@ -56,7 +59,7 @@ class ProductReleaseImporter:
         # We need to construct a product release file.  Figure out if we need to
         # construct a product release as well.
         version = extractVersionFromFilename(filename)
-        existingReleases = ProductRelease.selectBy(productID=product,
+        existingReleases = ProductRelease.selectBy(productID=self.product,
                                                    version=version)
         if existingReleases.count() == 0:
             # Yep, we do need to create a product release.
