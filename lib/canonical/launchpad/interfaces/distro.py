@@ -12,7 +12,7 @@ class IDistribution(Interface):
     description = Attribute("The distro's description.")
     domainname = Attribute("The distro's domain name.")
     owner = Attribute("The distro's owner.")
-
+    bugCounter = Attribute("The distro bug counter")
 
 
 class IDistroReleaseRole(Interface):
@@ -51,6 +51,7 @@ class IDistroRelease(Interface):
     displayname = Attribute("Distrorelease Displayname")
     shortdesc = Attribute("Distrorelease Short Description")
     lucilleconfig = Attribute("Lucille Configuration Field")
+    bugCounter = Attribute("The distro bug counter")
 
 class IComponent(Interface):
     name = Attribute("The Component Name")
@@ -111,8 +112,8 @@ class IDistroReleaseApp(Interface):
     release = Attribute("Release")
     roles = Attribute("Release Roles")
 
-    def getPackageContainer(name):
-        """ Returns the associated IPackageSet """
+    def bugSourcePackages(distrorelease):
+        """Get SourcePackages in a DistroRelease with BugAssignement"""
 
     def findSourcesByName(name):
         """Returns The Release SourcePackages by name"""

@@ -60,7 +60,7 @@ def updateCDBS(path):
     oldPath = os.getcwd()
     os.chdir(path)
 
-    rules = popen2.Popen3('./debian/rules common-configure-indep > /dev/null', True)
+    rules = popen2.Popen3('./debian/rules apply-patches > /dev/null', True)
 
     # Now we wait until the command ends
     status = rules.wait()
@@ -76,6 +76,14 @@ def updateCDBS(path):
     else:
         raise RuntimeError("There was an unknown error executing debian/rules.")
 
+def getPODirs(path):
+    poDirs = []
+    for root, dirs, files in os.walk(path, topdown=True):
+        for file in files:
+            if file == 'POTFILES.in':
+                poDirs.append(root)
+    return poDirs
+    
 
     
 os.chdir(downloadDir)
@@ -128,4 +136,12 @@ while parser.Step() == 1:
         # At this point we have all needed files downloaded.
         print "Processing %s" % dscFile
         extractDeb(dscFile)
-        updateCDBS(dirName)
+        try:
+            updateCDBS(dirName)
+        except RuntimeError, e:
+            print "***********************************"
+            print e
+            print "***********************************"
+            pass
+        for poDir in getPODirs(dirName):
+            print poDir

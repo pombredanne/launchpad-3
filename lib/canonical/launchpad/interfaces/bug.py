@@ -1,22 +1,14 @@
-# arch-tag: 2C926820-E0AE-11D8-A7D9-000D9329A36C
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
-from zope.interface import Interface, Attribute, classImplements
+from zope.interface import Interface, Attribute
 
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
-from zope.schema.interfaces import IText
+from zope.schema.interfaces import IText, ITextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.launchpad.fields.bug import BugSummary
 from canonical.launchpad.validators.name import valid_name
-
-# FIELDS
-
-class IBugSummary(IText):
-    """A Field that implements a Bug Summary"""
-
-classImplements(BugSummary, IBugSummary)
+from canonical.launchpad.fields import Title, Summary
 
 
 # CONTENT
@@ -39,13 +31,13 @@ class IBug(Interface):
                 community, upstream and all distro's, will phear."""),
             constraint=valid_name,
             )
-    title = TextLine(
+    title = Title(
             title=_('Bug Title'), required=True,
             description=_("""The title of the bug should be no more than 70
             characters, and is displayed in every bug list or report. It
             should be as clear as possible in the space allotted."""),
             )
-    shortdesc = BugSummary(
+    shortdesc = Summary(
             title=_('Summary'), required=True,
             description=_("""The bug summary is a single paragraph
             description that should capture the essence of the bug, where it
@@ -91,10 +83,9 @@ class IBug(Interface):
             )
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
-    messages = Attribute('SQLObject.Multijoin of IBugMessages')
-    people = Attribute('SQLObject.Multijoin of IPerson')
-    productassignment = Attribute('SQLObject.Multijoin of IProductBugAssigment')
-    packageassignment = Attribute(
+    messages = Attribute('SQLObject.RelatedJoin of IMessages')
+    productassignments = Attribute('SQLObject.Multijoin of IProductBugAssigment')
+    packageassignments = Attribute(
             'SQLObject.Multijoin of ISourcePackageBugAssignment'
             )
     productinfestations = Attribute('List of product release infestations.')
@@ -103,17 +94,9 @@ class IBug(Interface):
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
 
-    url = Attribute('Generated URL based on data and reference type')
-
-# XXX Mark Shuttleworth comments: we can probably get rid of this and
-# consolidate around IBug
-class IMaloneBug(IBug, IAddFormCustomization):
-    pass
-
-
-class IMaloneBugAddForm(IMaloneBug):
-    ''' Information we need to create a bug '''
-    #email = TextLine(title=_("Your Email Address"))
+class IBugAddForm(IBug):
+    """Information we need to create a bug"""
+    id = Int(title=_("Bug #"), required=False)
     product = Choice(
             title=_("Product"), required=False,
             vocabulary="Product",
@@ -133,10 +116,9 @@ class IMaloneBugAddForm(IMaloneBug):
     owner = Int(title=_("Owner"), required=True)
 
 
-# Interfaces for containers
-
-class IBugContainer(IAddFormCustomization):
-    """A container for bugs."""
+# Interfaces for set
+class IBugSet(IAddFormCustomization):
+    """A set for bugs."""
 
     def __getitem__(key):
         """Get a Bug."""

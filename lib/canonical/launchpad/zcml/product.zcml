@@ -29,11 +29,21 @@
         for="canonical.launchpad.interfaces.IProduct"
         function="canonical.launchpad.browser.traverseProduct" />
 
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProduct"
+        layer="canonical.launchpad.layers.RosettaLayer"
+        getter="poTemplate" />
+
     
     <!--BROWSER DEFAULTVIEWS-->
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
         name="+index" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProduct"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        name="+malone-index" />
 
     <!--PAGE DECLARATIONS-->
     <browser:pages
@@ -43,6 +53,25 @@
         <browser:page name="+index"
             template="../templates/product-index.pt"
             lp:url="doap/projects/$Project.name/$Product.name/" />
+    </browser:pages>
+
+    <browser:pages for="canonical.launchpad.interfaces.IProduct"
+        permission="zope.Public"
+        class="canonical.rosetta.browser.ViewProduct"
+        lp:url="Rosetta/projects/$Project.name/$Product.name">
+        <browser:page name="+rosetta-index"
+            template="../templates/rosetta-product-index.pt"
+            lp:url="Rosetta/projects/$Project.name/$Product.name/index" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
+        class="canonical.launchpad.browser.ProductView"
+        permission="zope.Public" >
+        <browser:page
+            name="+malone-index"
+            template="../templates/product-bugs.pt"
+            lp:url="malone/projects/$Project.name/$Product.name/" />
     </browser:pages>
 
     <browser:pages
@@ -71,5 +100,27 @@
     </browser:pages>
 
     <!--FORMS-->
+
+    <browser:addform
+        name="+filebug"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IBugAddForm"
+        label="Report Bug on Upstream Product"
+        fields="title shortdesc description owner"
+        class="canonical.launchpad.browser.ProductFileBugView"
+        arguments=""
+        keyword_arguments="title shortdesc description owner"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-add.pt"
+        lp:url="malone/projects/$Project.name/$Product.name/+filebug">
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
+    </browser:addform>
+    <!--
+        content_factory="canonical.launchpad.database.BugFactory"
+    -->
 
 </configure>

@@ -17,14 +17,26 @@ class IProductBugAssignment(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
     product = Choice(title=_('Product'), required=True, vocabulary='Product')
-    bugstatus = Choice(title=_('Bug Status'), vocabulary='BugStatus')
-    priority = Choice(title=_('Priority'), vocabulary='BugPriority')
-    severity = Choice(title=_('Severity'), vocabulary='BugSeverity')
+    bugstatus = Choice(title=_('Bug Status'), vocabulary='BugStatus',
+            default=int(dbschema.BugAssignmentStatus.NEW))
+    priority = Choice(title=_('Priority'), vocabulary='BugPriority',
+            default=int(dbschema.BugPriority.MEDIUM))
+    severity = Choice(title=_('Severity'), vocabulary='BugSeverity',
+            default=int(dbschema.BugSeverity.NORMAL))
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
+    datecreated = Datetime(title=_('Date Created'), required=True,
+                           readonly=True)
+    ownerID = Int(
+            title=_('Owner'), required=True, readonly=True
+            )
+    # XXX: Need to define a proper schema type for owner to avoid this hack
+    # and remove the need for the widget subdirective in the addform .zcml
+    owner = Int(title=_('Owner'), required=True, readonly=True)
+    #owner = Attribute("The owner's IPerson")
 
 
-class IProductBugAssignmentContainer(Interface):
-    """A container for IProductBugAssignment objects."""
+class IProductBugAssignmentSet(Interface):
+    """A set for IProductBugAssignment objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 
@@ -64,10 +76,19 @@ class ISourcePackageBugAssignment(Interface):
             vocabulary='BinaryPackageName'
             )
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
+    datecreated = Datetime(title=_('Date Created'), required=True,
+                           readonly=True)
+    ownerID = Int(
+            title=_('Owner'), required=True, readonly=True
+            )
+    # XXX: Need to define a proper schema type for owner to avoid this hack
+    # and remove the need for the widget subdirective in the addform .zcml
+    owner = Int(title=_('Owner'), required=True, readonly=True)
+    #owner = Attribute("The owner's IPerson")
 
 
-class ISourcePackageBugAssignmentContainer(Interface):
-    """A container for ISourcePackageBugAssignment objects."""
+class ISourcePackageBugAssignmentSet(Interface):
+    """A set for ISourcePackageBugAssignment objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 
@@ -89,6 +110,28 @@ class IBugsAssignedReport(Interface):
 
     minseverity = Attribute(_("""The minimum severity of assignments to
         display in this report."""))
+
+    minpriority = Attribute(_("""The minimum priority of bug fixing
+        assignments to display in this report."""))
+
+    showclosed = Attribute(_("""Whether or not to show closed bugs on this
+        report."""))
+
+    def maintainedPackageBugs():
+        """Return an iterator over the assignments of bugs to distro
+        packages the user maintains."""
+
+    def maintainedProductBugs():
+        """Return an iterator over the assignments of bugs to upstream
+        products the user maintains."""
+
+    def productAssigneeBugs():
+        """Return an iterator over the bugassignments to upstream products
+        which are assigned directly to the user."""
+
+    def packageAssigneeBugs():
+        """Return an iterator over the bugassignments to distro packages
+        which are assigned directly to the user."""
 
     def assignedBugs():
         """An iterator over ALL the bugs directly or indirectly assigned

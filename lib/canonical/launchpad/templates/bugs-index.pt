@@ -5,29 +5,138 @@
 
 <body>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="column_one">
+</div>
 
+<div metal:fill-slot="main" class="visualPadding">
   <h1>Bugs</h1>
   <table class="listing rowNavigation">
     <tr>
-      <th>Bug</th>
-      <th>Nickname</th>
+      <th>Bug #</th>
+      <th>Product</th>
+      <th>Package</th>
       <th>Title</th>
-      <th>Date Created</th>
-      <th>Owner</th>
+      <th>Status</th>
+      <th>Priority</th>
+      <th>Severity</th>
+      <th>Submitted On</th>
+      <th>Submitted By</th>
+      <th>Assigned To</th>
     </tr>
-    <tr tal:repeat="bug context" tal:attributes="onclick
-        string:window.location='${bug/id}';">
-      <td tal:content="bug/id">$Bug.title</td>
-      <td tal:content="bug/name">$Bug.name</td>
-      <td><a tal:content="bug/title"
-             tal:attributes="href bug/id">title</a></td>
-      <td tal:content="python:bug.datecreated.strftime('%d %b %y')">date</td>
-      <td tal:content="bug/owner/displayname">name</td>
+    <tr tal:repeat="assignment view/batch"
+        tal:attributes="onclick string:window.location='${assignment/bug/id}';">
+      <td tal:content="assignment/bug/id">$Bug.title</td>
+      <td tal:content="assignment/product/name|nothing">product</td>
+      <td tal:content="assignment/sourcepackage/sourcepackagename/name|nothing">package</td>
+      <td><a tal:content="assignment/bug/title" tal:attributes="href assignment/bug/id">title</a></td>
+      <td tal:content="assignment/bugstatus/lp:BugAssignmentStatus">New</td>
+      <td tal:content="assignment/priority/lp:BugPriority">High</td>
+      <td tal:content="assignment/severity/lp:BugSeverity">Medium</td>
+      <td tal:content="python:assignment.datecreated.strftime('%d %b %y')">date</td>
+      <td tal:content="assignment/owner/displayname|string:-">name</td>
+      <td tal:content="assignment/assignee/displayname|string:-">somebody</td>
+    </tr>
+    <tr class="batchnav">
+      <td class="batchnav" colspan="10">
+          <span tal:omit-tag=""
+                tal:repeat="page_url view/batchnav/batchPageURLs">
+            <a href=""
+               tal:content="python:page_url.keys()[0]"
+               tal:attributes="href python:page_url.values()[0]">[1]</a>
+          </span>
+      </td>
     </tr>
   </table>
   <input type="submit" value="Add" onclick="window.open('+new','_top')" />
 
+  <form action="" method="GET">
+    <fieldset>
+        <legend>Filter Criteria</legend>
+
+        <div class="field">
+          <table>
+            <tr>
+              <th>Status</th>
+              <th>Assigned To</th>
+              <th>Product</th>
+              <th>Source Package</th>
+            </tr>
+            <tr>
+              <td>
+                <select name="status" size="5" multiple>
+                  <option value="all"
+                          tal:attributes="selected request/htmlform:status/selected/all">All</option>
+                  <span tal:omit-tag="" tal:repeat="status view/statuses">
+                    <option tal:condition="python:request.has_key('search')"
+                            tal:define="strvalue python:str(status.value)"
+                            tal:content="status/title"
+                            tal:attributes="value status/value;
+                                            selected request/htmlform:status/selected/?strvalue">New</option>
+                    <option tal:condition="python:not request.has_key('search')"
+                            tal:define="strvalue python:str(status.value)"
+                            tal:content="status/title"
+                            tal:attributes="value status/value;
+                                            selected python:status.title in ('New', 'Accepted')">New</option>
+                  </span>
+                </select>
+              </td>
+              <td>
+                <select name="assignee" size="5" multiple>
+                  <option value="all"
+                          tal:attributes="selected request/htmlform:assignee/selected/all">All</option>
+                  <option value="all"
+                          tal:condition="python:not request.has_key('search')"
+                          selected>All</option>
+                  <span tal:omit-tag="" tal:repeat="term view/people">
+                    <option tal:define="value term/token"
+                            tal:content="term/title"
+                            tal:attributes="value value;
+                                            selected request/htmlform:assignee/selected/?value">New</option>
+                  </span>
+                </select>
+              </td>
+              <td>
+                <select name="product" size="5" multiple>
+                  <option value="all"
+                          tal:condition="python:request.has_key('search')"
+                          tal:attributes="selected request/htmlform:product/selected/all">All</option>
+                  <option value="all"
+                          tal:condition="python:not request.has_key('search')"
+                          selected>All</option>
+                  <span tal:omit-tag="" tal:repeat="term view/products">
+                    <option tal:define="value term/token"
+                            tal:content="term/title"
+                            tal:attributes="value value;
+                                            selected request/htmlform:product/selected/?value">apache</option>
+                  </span>
+                </select>
+              </td>
+              <td>
+                <select name="sourcepackage" size="5" multiple>
+                  <option value="all"
+                          tal:condition="python:request.has_key('search')"
+                          tal:attributes="selected request/htmlform:sourcepackage/selected/all">All</option>
+                  <option value="all"
+                          tal:condition="python:not request.has_key('search')"
+                          selected>All</option>
+                  <span tal:omit-tag="" tal:repeat="term view/packages">
+                    <option tal:define="value term/token"
+                            tal:content="term/title"
+                            tal:attributes="value value;
+                                            selected request/htmlform:sourcepackage/selected/?value">apache</option>
+                  </span>
+                </select>
+                </td>
+              </tr>
+            </table>
+        </div>
+
+        <div class="formControls">
+            <input type="submit" name="search" value="Search" />
+        </div>
+
+    </fieldset>
+  </form>
 </div>
 
 </body>

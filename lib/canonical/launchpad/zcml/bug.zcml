@@ -5,67 +5,23 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- Widgets -->
-
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.interfaces.IBugSummary"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.BugSummaryWidget"
-        permission="zope.Public"
-        />
-
-    <!-- Launchpad Add and Edit Form METAL
-        These templates can be used by any of the add or edit forms
-        in Launchpad -->
-    <browser:page
-        for="*"
-        name="launchpad_addform"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/launchpad-addform.pt"
-        />
-
-    <browser:page
-        for="*"
-        name="launchpad_editform"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/launchpad-editform.pt"
-        />
-
-    <!-- Widget Macros
-         NB this file overrides the addform / editform widget
-         display layout used in Launchpad. It should be somewhere
-         more central than bug.zcml-->
-
-    <browser:page
-        for="*"
-        name="launchpad_widget_macros"
-        layer="canonical.launchpad.layers.LaunchpadLayer"
-        permission="zope.Public"
-        template="../templates/launchpad-widget-macros.pt"
-        />
-
-    <!-- MaloneBug (this must disappear!) -->
-    <content class="canonical.launchpad.database.MaloneBug">
-        <allow interface="canonical.launchpad.interfaces.IMaloneBug" />
-        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IMaloneBug" />
+    <content class="canonical.launchpad.database.Bug">
+        <allow interface="canonical.launchpad.interfaces.IBug" />
+        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IBug" />
     </content>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IMaloneBug"
+        for="canonical.launchpad.interfaces.IBug"
         name="+index" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IMaloneBug"
+        for="canonical.launchpad.interfaces.IBug"
         function="canonical.launchpad.browser.traverseBug" />
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IMaloneBug"
+        for="canonical.launchpad.interfaces.IBug"
         permission="zope.Public"
-        class="canonical.launchpad.browser.MaloneBugView"
-        lp:url="malone/bugs/$Bugs.id">
+        class="canonical.launchpad.browser.BugView">
         <browser:page
             name="+index"
             template="../templates/bug-index.pt"
@@ -80,57 +36,67 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
         label="Change Bug Information"
         permission="launchpad.AnyPerson"
         template="../templates/bug-edit.pt"
         fields="title shortdesc description name"
         lp:url="malone/bugs/$Bug.id/+edit">
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
     </browser:editform>
 
     <browser:view
         for="canonical.launchpad.interfaces.IBug"
         name="+messages"
-        class="canonical.launchpad.browser.BugMessagesView"
+        class="canonical.launchpad.browser.MessagesView"
+        provides="canonical.launchpad.interfaces.IMessagesView"
         permission="zope.Public"
-        provides="canonical.launchpad.interfaces.IBugMessagesView"
         lp:url="malone/projects/$Bug.id/+messages">
         <defaultPage name="+index" />
     </browser:view>
 
-    <!-- this is class BugContainer -->
-    <content class="canonical.launchpad.database.BugContainer">
-        <allow interface="canonical.launchpad.interfaces.IBugContainer" />
+    <!-- this is class BugSet -->
+    <content class="canonical.launchpad.database.BugSet">
+        <allow interface="canonical.launchpad.interfaces.IBugSet" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.BugContainer"
-        provides="canonical.launchpad.interfaces.IBugContainer" />
+        factory="canonical.launchpad.database.BugSet"
+        provides="canonical.launchpad.interfaces.IBugSet" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IBugContainer"
+        for="canonical.launchpad.interfaces.IBugSet"
         function="canonical.launchpad.browser.traverseBugs" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugContainer"
+        for="canonical.launchpad.interfaces.IBugSet"
         name="+index" />
 
     <browser:addform
         name="+new"
-        for="canonical.launchpad.interfaces.IBugContainer"
-        schema="canonical.launchpad.interfaces.IMaloneBugAddForm"
+        for="canonical.launchpad.interfaces.IBugSet"
+        schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Create A New Bug Record"
-        fields="title shortdesc description sourcepackage owner"
-        content_factory="canonical.launchpad.database.MaloneBugAddForm"
+        fields="title shortdesc description sourcepackage product owner"
+        content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
-        keyword_arguments="title shortdesc description sourcepackage owner"
+        keyword_arguments="title shortdesc description sourcepackage product owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/bugs/+new">
-        <widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
     </browser:addform>
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IBugContainer"
+        for="canonical.launchpad.interfaces.IBugSet"
+        class="canonical.launchpad.browser.BugAssignmentsView"
         permission="zope.Public"
         lp:url="malone/bugs/$Bug.id">
         <browser:page
@@ -140,7 +106,7 @@
     </browser:pages>
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IBugContainer"
+        for="canonical.launchpad.interfaces.IBugSet"
         class="canonical.launchpad.browser.BugsCreatedByView"
         permission="zope.Public"
         lp:url="malone/bugs/created/$Bug.owner">

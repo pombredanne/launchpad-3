@@ -33,12 +33,10 @@
        tal:attributes="href string:../../../../src/${context/sourcedistrorelease/name}/${sourcerelease/sourcepackage/name}/${sourcerelease/version}"/> 
 
     <p><b>Component:</b>
-    <a href=""
-       tal:content="context/binarypackagerelease/component/name"/> 
+    <span tal:content="context/binarypackagerelease/component/name"/> 
 
     <p><b>Section:</b>
-    <a href=""
-       tal:content="context/binarypackagerelease/section/name"/> 
+    <span tal:content="context/binarypackagerelease/section/name"/> 
 
     <p><b>Priority:</b>
     <span tal:content="context/binarypackagerelease/pkgpriority"/>
@@ -47,10 +45,12 @@
 
  </fieldset>
 
- <p><h4>Package Bugs:</h4>
- <div class="dummy">
-   <span>#1, #2, #3</span>
- </div>
+<!-- XXX: Daniel Debonzi 2004-10-28 -->
+<!-- Is the Bugs for a BinaryPackage"Release"? -->
+<!--  <p><h4>Package Bugs:</h4> -->
+<!--  <div class="dummy"> -->
+<!--    <span>#1, #2, #3</span> -->
+<!--  </div> -->
 
  <p><h4>Builds:</h4>
    <tal:dummy tal:condition="not:context/archs">

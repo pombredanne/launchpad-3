@@ -5,10 +5,10 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces.bugsubscription import IBugSubscription, \
-        IBugSubscriptionContainer
+from canonical.launchpad.interfaces import IBugSubscription, \
+        IBugSubscriptionSet
 
-from canonical.launchpad.database.bugcontainer import BugContainerBase
+from canonical.launchpad.database.bugset import BugSetBase
 
 from canonical.database.sqlbase import SQLBase
 
@@ -29,10 +29,10 @@ def BugSubscriptionFactory(context, **kw):
     return BugSubscription(bug=bug, **kw)
 
 
-class BugSubscriptionContainer(BugContainerBase):
-    """A container for BugSubscription objects."""
+class BugSubscriptionSet(BugSetBase):
+    """A set for BugSubscription objects."""
 
-    implements(IBugSubscriptionContainer)
+    implements(IBugSubscriptionSet)
     table = BugSubscription
 
     def delete(self, id):

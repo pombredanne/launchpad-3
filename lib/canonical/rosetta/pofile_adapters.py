@@ -135,7 +135,7 @@ class TranslationsList(object):
         # first check if it is in the database
         try:
             return self._msgset.getTranslationSighting(index, allowOld=False).potranslation.translation
-        except KeyError:
+        except IndexError:
             # it's not; but if it's a valid plural form, we should return
             # an empty string
             if index < self._nplurals:
@@ -167,7 +167,7 @@ class TranslationsList(object):
 class MessageProxy(POMessage):
     implements(IPOMessage)
 
-    def __init__(self, potmsgset, pomsgset=None, person=None):
+    def __init__(self, potmsgset, pomsgset=None, person=None, fuzzy=False):
         """Initialize a proxy.  We pretend to be a POMessage (and
         in fact shamelessly leech its methods), but our *data* is
         acquired from the database. The person object is used in case
@@ -175,6 +175,7 @@ class MessageProxy(POMessage):
         self._potmsgset = potmsgset
         self._pomsgset = pomsgset
         self._who = person
+        self._fuzzy = fuzzy
         # create and store the TranslationsList object; since it's
         # fully dynamic, we can have a single one troughout our
         # lifetime
@@ -299,6 +300,14 @@ class MessageProxy(POMessage):
             fl = []
         if self._pomsgset and self._pomsgset.fuzzy:
             fl.append('fuzzy')
+        elif self._fuzzy and self._pomsgset and \
+            len(self._translations) > 1:
+            # This fuzzy is added to let gettext handle better the incomplete
+            # translations. It makes sense only with plural forms.
+            for translation in self._translations:
+                if translation == '':
+                    fl.append('fuzzy')
+                    break
         return WatchedSet(self._set_flags, fl)
     def _set_flags(self, value):
         value = list(value)

@@ -6,8 +6,8 @@ from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 
-__all__ = ['IBugProductInfestationContainer',
-           'IBugPackageInfestationContainer',
+__all__ = ['IBugProductInfestationSet',
+           'IBugPackageInfestationSet',
            'IBugProductInfestation',
            'IBugPackageInfestation']
 
@@ -54,8 +54,8 @@ class IBugPackageInfestation(Interface):
     lastmodifiedby = Int(title=_('Last Modified By'))
 
 
-class IBugProductInfestationContainer(Interface):
-    """A container for IBugProductInfestations."""
+class IBugProductInfestationSet(Interface):
+    """A set for IBugProductInfestations."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 
@@ -65,8 +65,8 @@ class IBugProductInfestationContainer(Interface):
     def __iter__():
         """Iterate through BugProductInfestations for a given bug."""
 
-class IBugPackageInfestationContainer(Interface):
-    """A container for IBugPackageInfestations."""
+class IBugPackageInfestationSet(Interface):
+    """A set for IBugPackageInfestations."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 

@@ -14,6 +14,7 @@ from sqlobject.sqlbuilder import func
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database import Product, Project
+from canonical.launchpad.database import SourcePackageBugAssignment
 from canonical.lp import dbschema
 
 # interfaces and database 
@@ -87,7 +88,30 @@ class Distribution(SQLBase):
         ]
 
 
+    def bugCounter(self):
+        counts = []
 
+        clauseTables = ("VSourcePackageInDistro",
+                        "SourcePackage")
+        severities = [
+            dbschema.BugAssignmentStatus.NEW,
+            dbschema.BugAssignmentStatus.ACCEPTED,
+            dbschema.BugAssignmentStatus.REJECTED,
+            dbschema.BugAssignmentStatus.FIXED]
+
+        query = ("sourcepackagebugassignment.sourcepackage = sourcepackage.id AND "
+                 "sourcepackage.sourcepackagename = vsourcepackageindistro.sourcepackagename AND "
+                 "vsourcepackageindistro.distro = %s AND "
+                 "sourcepackagebugassignment.bugstatus = %i")
+
+        for severity in severities:
+            query = query %(quote(self.id), severity)
+            count = SourcePackageBugAssignment.select(query, clauseTables=clauseTables).count()
+            counts.append(count)
+
+        return counts
+
+    bugCounter = property(bugCounter)
 
 class DistroArchRelease(SQLBase):
     """A release of an architecture on a particular distro."""
@@ -148,6 +172,9 @@ class DistroRelease(SQLBase):
         StringCol('lucilleconfig', dbName='lucilleconfig', notNull=False)
     ]
 
+    architectures = MultipleJoin( 'DistroArchRelease',
+                                  joinColumn='distrorelease' )
+
     def displayname(self):
         return "%s %s (%s)" % (self.distribution.title, self.version,
                                self.title)
@@ -205,16 +232,45 @@ class DistroRelease(SQLBase):
                 
     binarycount = property(binarycount)
 
+    def bugCounter(self):
+        counts = []
+        
+        clauseTables = ("VSourcePackageInDistro",
+                        "SourcePackage")
+        severities = [
+            dbschema.BugAssignmentStatus.NEW,
+            dbschema.BugAssignmentStatus.ACCEPTED,
+            dbschema.BugAssignmentStatus.FIXED,
+            dbschema.BugAssignmentStatus.REJECTED
+        ]
+        
+        _query = ("sourcepackagebugassignment.sourcepackage = sourcepackage.id AND "
+                 "sourcepackage.sourcepackagename = vsourcepackageindistro.sourcepackagename AND "
+                 "vsourcepackageindistro.distrorelease = %i AND "
+                 "sourcepackagebugassignment.bugstatus = %i"
+                 )
+
+        for severity in severities:
+            query = _query %(self.id, int(severity))
+            count = SourcePackageBugAssignment.select(query, clauseTables=clauseTables).count()
+            counts.append(count)
+
+        counts.insert(0, sum(counts))
+        return counts
+
+    bugCounter = property(bugCounter)
+
     #
     # DistroRelease Class Methods
     #
 
     def getBySourcePackageRelease(klass, sourcepackagereleaseID):
+        clauseTables=('SourcePackagePublishing',)
         query = ('SourcePackagePublishing.distrorelease = DistroRelease.id '
                  'AND SourcePackagePublishing.sourcepackagerelease = %i '
                  %(sourcepackagereleaseID))
         
-        return klass.select(query)[0]
+        return klass.select(query, clauseTables=clauseTables)[0]
     getBySourcePackageRelease = \
                               classmethod(getBySourcePackageRelease)
 

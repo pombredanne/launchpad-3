@@ -11,13 +11,15 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
+from canonical.lp.dbschema import BugSeverity, BugAssignmentStatus
+
 from canonical.launchpad.interfaces import *
 
 from canonical.launchpad.database.sourcesource import SourceSource
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.pofile import POTemplate
-from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad.interfaces import IProduct
 
 class Product(SQLBase):
     """A Product."""
@@ -65,6 +67,8 @@ class Product(SQLBase):
     _poTemplatesJoin = MultipleJoin('POTemplate', joinColumn='product')
 
     bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
+
+    branches = MultipleJoin('Branch', joinColumn='product')
 
     sourcesources = MultipleJoin('SourceSource', joinColumn='product')
 
@@ -184,4 +188,49 @@ class Product(SQLBase):
     def getRelease(self, version):
         return ProductRelease.selectBy(productID=self.id, version=version)[0]
 
+    def packagedInDistros(self):
+        # XXX: This function-local import is so we avoid a circular import
+        #   --Andrew Bennetts, 2004/11/07
+
+        # FIXME: The database access here could be optimised a lot, probably
+        # with a view.  Whether it's worth the hassle remains to be seen...
+        #  -- Andrew Bennetts, 2004/11/07
+
+        # cprov 20041110
+        # Added 'Product' in clauseTables but got MANY entries for "Ubuntu".
+        # As it is written in template we expect a link to:
+        #    distribution/distrorelease/sourcepackagename
+        # But now it seems to be unrecheable
+        
+        from canonical.launchpad.database import Distribution, DistroRelease
+        distros = Distribution.select(
+            "Packaging.product = Product.id AND "
+            "Packaging.sourcepackage = SourcePackage.id AND "
+            "Distribution.id = SourcePackage.distro ",
+            clauseTables=['Packaging', 'SourcePackage', 'Product'],
+            orderBy='title',
+        )
+        return distros
+
+    def bugsummary(self):
+        """Return a matrix of the number of bugs for each status and
+        severity"""
+        bugmatrix = {}
+        for severity in BugSeverity.items:
+            bugmatrix[severity] = {}
+            for status in BugAssignmentStatus.items:
+                bugmatrix[severity][status] = 0
+        for bugass in self.bugs:
+            bugmatrix[bugass.severity][bugass.bugstatus] += 1
+        resultset = [ [ '', ] ]
+        for status in BugAssignmentStatus.items:
+            resultset[0].append(status.title)
+        severities = BugSeverity.items
+        for severity in severities:
+            statuses = BugAssignmentStatus.items
+            statusline = [ severity.title, ]
+            for status in statuses:
+                statusline.append(bugmatrix[severity][status])
+            resultset.append(statusline)
+        return resultset
 

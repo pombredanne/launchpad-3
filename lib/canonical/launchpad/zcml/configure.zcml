@@ -22,9 +22,17 @@
     <include file="bugextref.zcml" />
     <include file="bugtracker.zcml" />
     <include file="bugattachment.zcml" />
-    <include file="bugmessage.zcml" />
+    <include file="message.zcml" />
+    <include file="bounty.zcml" />
+    <include file="build.zcml" />
+    <include file="distro.zcml" />
+    <include file="person.zcml" />
+    <include file="processor.zcml" />
+    <include file="language.zcml" />
+    <include file="pofile.zcml" />
 
     <include file="widgets.zcml" />
+    <include file="fields.zcml" />
     <include file="resources.zcml" />
 
     <!-- Event configuration -->

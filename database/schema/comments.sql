@@ -95,8 +95,12 @@ COMMENT ON COLUMN POTMsgSet.flagscomment IS 'The flags associated with this set 
 /*
   Malone
 */
-COMMENT ON COLUMN Bug.name IS 
-    'A lowercase name uniquely identifying the bug';
+COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or sourcepackages to identify the location(s) that this bug is found.';
+COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
+COMMENT ON TABLE ProductBugAssignment IS 'Links a given Bug to a particular product.';
+COMMENT ON COLUMN ProductBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
+COMMENT ON TABLE SourcepackageBugAssignment IS 'Links a given Bug to a particular sourcepackage.';
+COMMENT ON COLUMN SourcePackageBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
 
 
 /*
@@ -111,6 +115,7 @@ COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
 COMMENT ON COLUMN SourcePackage.srcpackageformat IS 
     'The format of this source package, e.g. DPKG, RPM, EBUILD, etc.';
+COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
 
 
 /* Lucille's configuration */
@@ -213,3 +218,73 @@ COMMENT ON COLUMN PackagePublishing.status IS 'This column contains the status o
 COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
 COMMENT ON COLUMN PersonLanguage.person IS 'This field is a reference to a Person object that has this preference.';
 COMMENT ON COLUMN PersonLanguage.language IS 'This field is a reference to a Language object that says that the Person associated to this row knows how to translate/understand this language.';
+
+-- soyuz views
+COMMENT ON VIEW VSourcePackageInDistro IS 'This view allows us to answer the question: what source packages have releases in a certain distribution. This is an interesting case of where a view can actually solve a problem that SQLObject can''t -- there is no way of doing this query (that I see at least) in regular sqlos because there is no DISTINCT and no way to filter things without iterating in
+Python (which generates N queries and we don''t want to go down that route).';
+COMMENT ON VIEW VSourcePackageReleasePublishing IS 'This view simplifies a lot of queries relating to publishing and is for use as a replacement for SourcePackageRelease (I actually intend to move it to a subclass of SourcePackageRelease, because using a View in place of a real table is bizarre).';
+
+-- ProcessorFamily
+
+COMMENT ON TABLE ProcessorFamily IS 'An architecture, that might consist of several actual processors. Different distributions call these architectures different things, so we have an "architecturetag" in DistroArchRelease that might be different to the architecture\'s name.';
+COMMENT ON COLUMN ProcessorFamily.name IS 'The name of the architecture. This is a short unix-style name such as i386 or amd64';
+COMMENT ON COLUMN ProcessorFamily.title IS 'A title for the architecture. For example "Intel i386 Compatible".';
+COMMENT ON COLUMN ProcessorFamily.description IS 'A description for this processor family. It might include any gotchas such as the fact that i386 does not necessarily mean that code would run on a 386... Ubuntu for example requires a 486.';
+COMMENT ON COLUMN ProcessorFamily.owner IS 'The person responsible for this processor family entry.';
+
+-- Processor
+
+COMMENT ON TABLE Processor IS 'A single processor for which code might be compiled. For example, i386, P2, P3, P4, Itanium1, Itanium2... each processor belongs to a ProcessorFamily, and it might be that a package is compiled several times for a given Family, with different optimisation settings for each processor.';
+COMMENT ON COLUMN Processor.name IS 'The name of this processor, for example, i386, Pentium, P2, P3, P4, Itanium, Itanium2, K7, Athlon, Opteron... it should be short and unique.';
+COMMENT ON COLUMN Processor.family IS 'The ProcessorFamily for this Processor.';
+
+-- DistroArchRelease
+
+COMMENT ON COLUMN DistroArchRelease.processorfamily IS 'A link to the ProcessorFamily table, giving the architecture of this DistroArchRelease.';
+COMMENT ON COLUMN DistroArchRelease.architecturetag IS 'The name of this architecture in the context of this specific distro release. For example, some distributions might label amd64 as amd64, others might call is x86_64. This information is used, for example, in determining the names of the actual package files... such as the "amd64" part of "apache2_2.0.56-1_amd64.deb"';
+
+-- LauncpadDatabaseRevision
+COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table has a single row which specifies the most recently applied patch number.';
+COMMENT ON COLUMN LaunchpadDatabaseRevision.major IS 'Major number. This is incremented every update to production.';
+COMMENT ON COLUMN LaunchpadDatabaseRevision.minor IS 'Minor number. Patches made during development each increment the minor number.';
+COMMENT ON COLUMN LaunchpadDatabaseRevision.patch IS 'The patch number will hopefully always be ''0'', as it exists to support emergency patches made to the production server. eg. If production is running ''4.0.0'' and needs to have a patch applied ASAP, we would create a ''4.0.1'' patch and roll it out. We then may need to refactor all the existing ''4.x.0'' patches.';
+
+-- Person
+COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
+COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
+COMMENT ON COLUMN Person.givenname IS 'Component of a person''s full name used for secondary sorting. Generally the person''s given or christian name.';
+COMMENT ON COLUMN Person.familyname IS 'Component of a person''s full name used for sorting. Generally the person''s family name.';
+COMMENT ON COLUMN Person.password IS 'SSHA digest encrypted password.';
+COMMENT ON COLUMN Person.teamowner IS 'id of the team owner. Team owners will have authority to add or remove people from the team.';
+COMMENT ON COLUMN Person.teamdescription IS 'Informative description of the team. Format and restrictions are as yet undefined.';
+COMMENT ON COLUMN Person.karma IS 'Numeric score attempting to indicate how useful, helpful or generally cool a person is. It is currently unknown if teams have karma.';
+COMMENT ON COLUMN Person.karmatimestamp IS 'Last time this person''s karma scrore was calculated and updated.';
+COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
+COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
+
+
+-- Bounty
+COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
+COMMENT ON COLUMN Bounty.usdvalue IS 'This is the ESTIMATED value in US Dollars of the bounty. We say "estimated" because the bounty might one day be offered in one of several currencies, or people might contribute different amounts in different currencies to each bounty. This field will reflect an estimate based on recent currency exchange rates of the value of this bounty in USD.';
+COMMENT ON COLUMN Bounty.difficulty IS 'An estimate of the difficulty of the bounty, from 1 to 100, where 100 is extremely difficult and 1 is extremely easy.';
+COMMENT ON COLUMN Bounty.duration IS 'An estimate of the length of time it should take to complete this bounty, given the skills required.';
+COMMENT ON COLUMN Bounty.reviewer IS 'The person who will review this bounty regularly for progress. The reviewer is the person who is responsible for establishing when the bounty is complete.';
+COMMENT ON COLUMN Bounty.owner IS 'The person who created the bounty. The owner can update the specification of the bounty, and appoints the reviewer.';
+
+-- SourceSource
+COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.';
+
+-- Messaging subsytem
+COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
+COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
+COMMENT ON COLUMN Message.parent IS 'A "parent message". This allows for some level of threading in Messages.';
+COMMENT ON COLUMN Message.title IS 'The title text of the message, or the subject if it was an email.';
+COMMENT ON COLUMN Message.contents IS 'The complete message. If this was an email message then this would include all the headers.';
+COMMENT ON COLUMN Message.distribution IS 'The distribution in which this message originated, if we know it.';
+
+-- Comments on Lucille views
+COMMENT ON VIEW SourcePackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a sourcepackagerelease and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
+COMMENT ON VIEW BinaryPackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a binarypackage and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
+COMMENT ON VIEW SourcePackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying SourcePackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
+COMMENT ON VIEW BinaryPackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying PackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
+

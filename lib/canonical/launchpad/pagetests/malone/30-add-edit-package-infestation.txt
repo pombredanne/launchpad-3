@@ -1,0 +1,131 @@
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/packageinfestations/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugs/2
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <h1>Add Infested Package Release</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/packageinfestations/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 553
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://localhost:9000/malone/bugs/2/packageinfestations/+new
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.sourcepackagerelease"
+  ... 
+  ... 15
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.sourcepackagerelease-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.infestationstatus"
+  ... 
+  ... Affected
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.infestationstatus-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+          <h1>Add Infested Package Release</h1>
+  ...
+  <option selected="selected" value="15">evolution 1.0</option>
+  ...
+  <option selected="selected" value="Affected">Affected</option>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/packageinfestations/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugs/2/packageinfestations/+new
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  <BLANKLINE>
+  ..
+  <BLANKLINE>
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/ HTTP/1.1
+  ... Referer: http://localhost:9000/malone/bugs/2/packageinfestations/+new
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <tr onclick="window.location='packageinfestations/1/+edit'">
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/packageinfestations/1/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugs/2/
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <h3>Edit Infested Package Release</h3>
+  ...
+  <option selected="selected" value="15">evolution 1.0</option>
+  ...
+  <option selected="selected" value="Affected">Affected</option>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/packageinfestations/1/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 558
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://localhost:9000/malone/bugs/2/packageinfestations/1/+edit
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.sourcepackagerelease"
+  ... 
+  ... 15
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.sourcepackagerelease-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.infestationstatus"
+  ... 
+  ... Victimized
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.infestationstatus-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <h3>Edit Infested Package Release</h3>
+  ...
+  <select name="field.sourcepackagerelease" size="1" >
+  ...
+  <option selected="selected" value="15">...</option>
+  ...
+  <select name="field.infestationstatus" size="1" >
+  ...
+  <option selected="selected" value="Victimized">...</option>
+  ...
+
+

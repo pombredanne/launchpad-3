@@ -7,10 +7,12 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces.bugwatch import IBugWatch, \
-        IBugWatchContainer
-from canonical.launchpad.database.bug import BugContainerBase
+from canonical.launchpad.interfaces import IBugWatch, \
+        IBugWatchSet
+from canonical.launchpad.database.bug import BugSetBase
 from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import nowUTC, DEFAULT
+
 
 class BugWatch(SQLBase):
     implements(IBugWatch)
@@ -19,24 +21,22 @@ class BugWatch(SQLBase):
     bugtracker = ForeignKey(dbName='bugtracker',
                 foreignKey='BugTracker', notNull=True)
     remotebug = StringCol(notNull=True)
-    # TODO: Default should be NULL, but column is NOT NULL
-    remotestatus = StringCol(notNull=True, default='')
-    lastchanged = DateTimeCol(notNull=True)
-    lastchecked = DateTimeCol(notNull=True)
-    datecreated = DateTimeCol(notNull=True)
+    remotestatus = StringCol(notNull=False, default=None)
+    lastchanged = DateTimeCol(notNull=False, default=None)
+    lastchecked = DateTimeCol(notNull=False, default=None)
+    datecreated = DateTimeCol(notNull=True, default=nowUTC)
     owner = ForeignKey(dbName='owner', foreignKey='Person',
                 notNull=True)
 
-class BugWatchContainer(BugContainerBase):
-    """A container for BugWatch"""
+class BugWatchSet(BugSetBase):
+    """A set for BugWatch"""
 
-    implements(IBugWatchContainer)
+    implements(IBugWatchSet)
     table = BugWatch
 
 def BugWatchFactory(context, **kw):
     bug = context.context.bug
-    owner = 1 # XXX: Will be id of logged in user
     now = datetime.utcnow()
     return BugWatch(
-        bug=bug, owner=owner, datecreated=now, lastchanged=now,
-        lastchecked=now, **kw)
+        bug=bug, owner=context.request.principal.id, datecreated=now,
+        lastchanged=now, lastchecked=now, **kw)

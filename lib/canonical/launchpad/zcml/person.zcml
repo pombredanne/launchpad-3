@@ -1,0 +1,86 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <content class="canonical.launchpad.database.Person">
+    <allow interface="canonical.launchpad.interfaces.IPerson"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    <require
+     permission="zope.Public"
+     set_attributes="displayname givenname familyname teamowner
+     teamdescription password karma karmatimestamp"
+    />
+  </content>
+
+  <content class="canonical.launchpad.database.EmailAddress">
+    <allow interface="canonical.launchpad.interfaces.IEmailAddress"/>
+    <require
+     permission="zope.Public"
+     set_attributes="email status"
+     />	
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.GPGKey">
+    <allow interface="canonical.launchpad.interfaces.IGPGKey"/>
+    <require
+     permission="zope.Public"
+     set_attributes="keyid fingerprint pubkey revoked"
+     />
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.ArchUserID">
+    <allow interface="canonical.launchpad.interfaces.IArchUserID"/>
+    <require
+     permission="zope.Public"
+     set_attributes="archuserid"
+     />
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.WikiName">
+    <allow interface="canonical.launchpad.interfaces.IWikiName"/>
+    <require
+     permission="zope.Public"
+     set_attributes="wiki wikiname"
+     />
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.JabberID">
+    <allow interface="canonical.launchpad.interfaces.IJabberID"/>
+    <require
+     permission="zope.Public"
+     set_attributes="jabberid"
+     />
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.IrcID">
+    <allow interface="canonical.launchpad.interfaces.IIrcID"/>
+    <require
+     permission="zope.Public"
+     set_attributes="network nickname"
+     />
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.Membership">
+    <allow interface="canonical.launchpad.interfaces.IMembership"/>
+    <require
+     permission="zope.Public"
+     set_attributes="role status"
+     />
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.launchpad.database.TeamParticipation">
+    <allow interface="canonical.launchpad.interfaces.ITeamParticipation"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+</configure>

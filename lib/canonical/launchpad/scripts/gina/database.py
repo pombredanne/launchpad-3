@@ -1,6 +1,9 @@
 import re
 from pyPgSQL import PgSQL
 
+# Disable cursors for now (can cause issues sometimes it seems)
+PgSQL.noPostgresCursor = 1
+
 from nickname import generate_nick
 
 class SQLThing:
@@ -73,7 +76,13 @@ class SQLThing:
             raise
 
 class Katie(SQLThing):
-    def getSourcePackageRelease(self, name, version):  
+
+    def __init__(self, bar, suite):
+        SQLThing.__init__(self,bar)
+        self.suite = suite
+
+    def getSourcePackageRelease(self, name, version):
+        print "\t\t* Hunting for spr (%s,%s)" % (name,version)
         return self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id
@@ -92,6 +101,19 @@ class Katie(SQLThing):
     def getSections(self):
         return self._query("""SELECT section FROM section""")
 
+    def getSourceSection(self, sourcepackage):
+        return self._query_single("""
+        SELECT section.section
+          FROM section,
+               override,
+               suite
+
+         WHERE override.section = section.id
+           AND suite.id = override.suite
+           AND override.package = %s
+           AND suite.suite_name = %s
+        """, (sourcepackage, self.suite))[0]
+
 prioritymap = {
 "required": 50,
 "important": 40,
@@ -100,26 +122,36 @@ prioritymap = {
 "extra":10
 }
 
-def map_arch(fname):
-    return 1;
-    print "Attempting to map %s" % fname
-    fname = fname[fname.rfind("/"):]
-    if fname.find("_i386."):
-        print "i386"
-        return 1
-    if fname.find("_amd64."):
-        print "amd64"
-        return 2
-    if fname.find("_powerpc."):
-        print "powerpc"
-        return 3
-    raise ValueError, "Unknown architecture in %s" % fname
-
 class Launchpad(SQLThing):
-    def __init__(self, bar):
+    def __init__(self, bar, dr, proc):
         SQLThing.__init__(self,bar)
         self.compcache = {}
         self.sectcache = {}
+        try:
+            ddr = self._query_single("""
+            SELECT id,distribution FROM distrorelease WHERE name=%s;
+            """, (dr,))
+            self.distrorelease = ddr[0]
+            self.distro = ddr[1]
+        except:
+            raise ValueError, "Error finding distrorelease for %s" % dr
+        try:
+            dar = self._query_single("""
+            SELECT processorfamily, id FROM distroarchrelease WHERE
+            distrorelease = %s AND architecturetag = %s
+            """, (self.distrorelease,proc))
+            self.processor = dar[0]
+            self.distroarchrelease = dar[1]
+        except:
+            raise ValueError, "Error finding distroarchrelease for %s/%s" % (dr,proc)
+        try:
+            self.processor = self._query_single("""
+            SELECT id FROM processor WHERE family = %s
+            """, (self.processor))[0]
+        except:
+            raise ValueError, "Unable to find a processor from the processor family chosen from %s/%s" % (dr, proc)
+        print "INFO: Chosen D(%d) DR(%d), PROC(%d), DAR(%d) from SUITE(%s), ARCH(%s)" % (self.distro, self.distrorelease, self.processor, self.distroarchrelease, dr, proc)
+
     #
     # SourcePackageName
     #
@@ -151,9 +183,7 @@ class Launchpad(SQLThing):
         data = {
             "maintainer":           people,
             "shortdesc" :           short_desc,
-            ## XXX: (distro+hardcoded) cprov 20041025
-            ## Ubuntu hardcoded
-            "distro":               1, 
+            "distro":               self.distro,
             "description":          description,
             "sourcepackagename":    name[0],
             ## XXX: (srcpackageformat+hardcoded) cprov 20041025
@@ -228,11 +258,12 @@ class Launchpad(SQLThing):
         release = self.getSourcePackageRelease(src.package, src.version)[0]
 
         data = {
-            "distrorelease":           1, ## Warty Warthogs
+            "distrorelease":           self.distrorelease,
             "sourcepackagerelease":    release[0],
-            "status":                  2, ## Published !!!
+            # XXX dsilvers 2004-11-01: This *ought* to be pending
+            "status":                  2, ## Published
             "component":               component,
-            "section":                 1, ## default Section
+            "section":                 section, ## default Section
         }
         self._insert("sourcepackagepublishing", data)
 
@@ -245,6 +276,11 @@ class Launchpad(SQLThing):
         #FIXME: SELECT * is crap !!!
         return self._query("""SELECT * FROM build 
                               WHERE  id = %s;""", (build_id[0],))
+
+    def getBuildBySourcePackage(self, srcid):
+        return self._query("""SELECT id FROM build
+                              WHERE sourcepackagerelease = %s
+                                AND processor=%s""", (srcid,self.processor))[0]
 
     def createBuild(self, bin):
         srcpkg = self.getSourcePackageRelease(bin.source, bin.source_version)
@@ -265,10 +301,19 @@ class Launchpad(SQLThing):
                                  *bin.gpg_signing_key_owner)[0]
         else:
             key = None
+
+        try:
+            buildid = self.getBuildBySourcePackage(srcpkg[0][0])
+            return buildid
+        except:
+            # Nothing to do if we fail we insert...
+            print "\tUnable to retrieve build for %d; making new one..." % srcpkg[0][0]
+            pass
+        
     
         data = {
-            "processor":            1,
-            "distroarchrelease":    1,
+            "processor":            self.processor,
+            "distroarchrelease":    self.distroarchrelease,
             "buildstate":           1,
             "gpgsigningkey":        key,
             "sourcepackagerelease": srcpkg[0][0],
@@ -306,10 +351,12 @@ class Launchpad(SQLThing):
         bin_id = self.getBinaryPackageName(name)
         if not bin_id:
             return None
-        return self._query_single("""SELECT * from binarypackage
+        return self._query_single("""SELECT * from binarypackage, build
                                      WHERE  binarypackagename = %s AND 
-                                            version = %s;""", 
-                                  (bin_id[0][0], version))
+                                            version = %s AND
+                                            build.processor = %s AND
+                                            build.id = binarypackage.build""", 
+                                  (bin_id[0][0], version, self.processor))
 
     def createBinaryPackage(self, bin):
         if not self.getBinaryPackageName(bin.package):
@@ -340,8 +387,8 @@ class Launchpad(SQLThing):
             "description":          description,
             "build":                build[0],
             "binpackageformat":     1, # XXX
-            "section":              section, # XXX
-            "priority":             prioritymap[bin.priority], # XXX
+            "section":              section,
+            "priority":             prioritymap[bin.priority],
             "shlibdeps":            bin.shlibs,
             "depends":              bin.depends,
             "suggests":             bin.suggests,
@@ -363,14 +410,9 @@ class Launchpad(SQLThing):
            "component":         component, 
            "section":           section,
            "priority":          prioritymap[bin.priority],
-           # XXX: Always returns 1 for x86 until we import multi-arch
-           "distroarchrelease": map_arch(bin.filename), 
-           "status": 1,
-           "section":           section,
-           "priority":          prioritymap[bin.priority],
-           # XXX: Always returns 1 for x86 until we import multi-arch
-           "distroarchrelease": map_arch(bin.filename), 
-           "status": 1,
+           "distroarchrelease": self.distroarchrelease,
+            # XXX dsilvers 2004-11-01: This *ought* to be pending
+           "status": 2, ### Published !!!
         }
         self._insert("packagepublishing", data)
 
@@ -515,6 +557,7 @@ class Launchpad(SQLThing):
         try:
             self.getSectionByName(section)
         except:
+            print "No good, need to add it"
             self._insert( "section", { "name": section } )
 
 

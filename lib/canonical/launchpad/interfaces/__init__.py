@@ -7,14 +7,15 @@ from persistent import IPersistent
 # file, one of person, project, bug, etc.
 #
 
+from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.project import *
 from canonical.launchpad.interfaces.product import *
 from canonical.launchpad.interfaces.productseries import *
 from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.sourcepackage import *
-from canonical.launchpad.interfaces.malone import *
 from canonical.launchpad.interfaces.bug import *
+from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.bugmessage import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugsubscription import *
@@ -39,20 +40,34 @@ from canonical.launchpad.interfaces.manifest import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.team import *
 from canonical.launchpad.interfaces.wikiname import *
-from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.files import *
+from canonical.launchpad.interfaces.bounty import *
+from canonical.launchpad.interfaces.launchpad import *
 
 # these will go...
 from canonical.launchpad.iandrew import *
-from canonical.launchpad.imark import *
-
 
 
 class IAuthApplication(Interface):
     """ Interface for AuthApplication """
     def __getitem__(name):
         """ The __getitem__ method used to traversing """
+
+    def sendPasswordChangeEmail(longurlsegment, toaddress):
+        """Send an Password change special link for a user."""
+
+    def getPersonFromDatabase(emailaddr):
+        """Returns the Person in the database who has the given email address.
+
+        If there is no Person for that email address, returns None.
+        """
+
+    def newLongURL(person):
+        """Creates a new long url for the given person.
+
+        Returns the long url segment.
+        """
 
 class IPasswordResets(IPersistent):
     """Interface for PasswordResets"""

@@ -61,18 +61,20 @@ class SQLBase(SQLOS):
         finally:
             self._SO_writeLock.release()
 
-
 class _ZopelessConnectionDescriptor(object):
-    def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter):
+    def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter,
+                 debug=False):
         self.connectionURI = connectionURI
         self.sqlosAdapter = sqlosAdapter
         self.transactions = {}
+        self.debug = debug
 
     def __get__(self, inst, cls=None):
         tid = thread.get_ident()
         if tid not in self.transactions:
             conn = connectionForURI(self.connectionURI).makeConnection()
             adapted = self.sqlosAdapter(conn)
+            adapted.debug = self.debug
             self.transactions[tid] = adapted.transaction()
         return self.transactions[tid]
 
@@ -81,14 +83,14 @@ class _ZopelessConnectionDescriptor(object):
         import warnings
         warnings.warn("Something tried to set a _connection.  Ignored.")
 
-    def install(cls, connectionURI, sqlClass=SQLBase):
+    def install(cls, connectionURI, sqlClass=SQLBase, debug=False):
         if isinstance(sqlClass.__dict__.get('_connection'),
                 _ZopelessConnectionDescriptor):
             import warnings
             warnings.warn("Already installed a _connection descriptor!  Overriding!")
             #raise RuntimeError, "Already installed _connection descriptor."
         cls.sqlClass = sqlClass
-        sqlClass._connection = cls(connectionURI)
+        sqlClass._connection = cls(connectionURI, debug=debug)
     install = classmethod(install)
 
     def uninstall(cls):
@@ -105,34 +107,35 @@ class ZopelessTransactionManager(object):
     namespace pollution.
 
     Quick & dirty doctest:
+    XXX: DISABLED!  This should be turned into a functional test.
 
-    >>> from canonical.lp import dbname
-    >>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
-
-    The _connection attribute of SQLBase should now be a descriptor that returns
-    sqlobject.dbconnection.Transaction instances.
-
-    >>> from sqlobject.dbconnection import Transaction
-    >>> t1 = SQLBase._connection
-    >>> isinstance(t1, Transaction)
-    True
-
-    And it should give the same connection to the same thread over multiple
-    accesses.
-    
-    >>> t2 = SQLBase._connection
-    >>> t1 is t2
-    True
-
-    And different in different threads:
-
-    >>> from threading import Thread, Lock, Event
-    >>> l = []
-    >>> t = Thread(target=lambda: l.append(SQLBase._connection))
-    >>> t.start()
-    >>> t.join()
-    >>> l[0] is not t1
-    True
+    #>>> from canonical.lp import dbname
+    #>>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
+    #
+    #The _connection attribute of SQLBase should now be a descriptor that returns
+    #sqlobject.dbconnection.Transaction instances.
+    #
+    #>>> from sqlobject.dbconnection import Transaction
+    #>>> t1 = SQLBase._connection
+    #>>> isinstance(t1, Transaction)
+    #True
+    #
+    #And it should give the same connection to the same thread over multiple
+    #accesses.
+    #
+    #>>> t2 = SQLBase._connection
+    #>>> t1 is t2
+    #True
+    #
+    #And different in different threads:
+    #
+    #>>> from threading import Thread, Lock, Event
+    #>>> l = []
+    #>>> t = Thread(target=lambda: l.append(SQLBase._connection))
+    #>>> t.start()
+    #>>> t.join()
+    #>>> l[0] is not t1
+    #True
 
     XXX: This bit is overly dependent on the db...
     Show that concurrent transactions in different threads work correctly
@@ -177,17 +180,17 @@ class ZopelessTransactionManager(object):
     Cleanup -- make sure this doctest leaves things in the same state it found
     them.
 
-    >>> ztm.uninstall()
+    #>>> ztm.uninstall()
 
     """
 
-    def __init__(self, connectionURI, sqlClass=SQLBase):
+    def __init__(self, connectionURI, sqlClass=SQLBase, debug=False):
         # XXX: Importing a module-global and assigning it as an instance
         #      attribute smells funny.  Why not just use transaction.manager
         #      instead of self.manager?
         from transaction import manager
         self.manager = manager
-        _ZopelessConnectionDescriptor.install(connectionURI)
+        _ZopelessConnectionDescriptor.install(connectionURI, debug=debug)
         self.sqlClass = sqlClass
         #self.cls._connection = adapter(self.connection.makeConnection())
         #self.dm = self.cls._connection._dm
@@ -204,7 +207,6 @@ class ZopelessTransactionManager(object):
 
     def begin(self):
         self.manager.begin()
-        self.manager.get().join(self._dm())
 
     def commit(self, sub=False):
         self.manager.get().commit(sub)

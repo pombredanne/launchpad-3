@@ -35,10 +35,12 @@
 
     <div>
 	<ul tal:repeat="product context/products">
-		<li><a href="" tal:attributes="href product/name" 
-                tal:content="product/title">Product title</a>
+		<li><b><a href="" tal:attributes="href product/name" 
+                tal:content="product/title">Product title</a></b>
             <span tal:condition="exists:product/homepageurl"> [
-            <span tal:content="product/homepageurl">homepage</span>
+            <a href=""
+               tal:content="product/homepageurl"
+               tal:attributes="href product/homepageurl">homepage</a>
             ] </span>
             <br />
             <span tal:content="product/shortdesc">Product short
@@ -49,8 +51,9 @@
 	</ul>
     </div>
     <div>
-	<a href="+newproduct">Add a product</a>
+        <img src="/++resource++add.gif"><a href="+newproduct">Add a product</a>
 	</div>
+
     <h2>Bug Trackers</h2>
 
     <p>This project has the following bug trackers:</p>

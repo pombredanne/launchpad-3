@@ -1,0 +1,221 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/packageassignments/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... If-Modified-Since: Mon, 01 Nov 2004 22:34:29 GMT
+  ... Referer: http://localhost:9000/malone/bugs/2
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <h1>Add SourcePackage Bug Assignment</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/packageassignments/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1307
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://localhost:9000/malone/bugs/2/packageassignments/+new
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.sourcepackage"
+  ... 
+  ... 9
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.sourcepackage-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugstatus"
+  ... 
+  ... New
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugstatus-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... Medium
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Normal
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.binarypackagename"
+  ... 
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.binarypackagename-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.assignee-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+          <h1>Add SourcePackage Bug Assignment</h1>
+  ...
+  <input type="text" name="field.sourcepackage" value="9"
+         cssclass="" id="field.sourcepackage" size="20" />
+  ...
+  <select name="field.bugstatus" size="1" >
+  <option value="Accepted">Accepted</option>
+  <option value="Fixed">Fixed</option>
+  <option selected="selected" value="New">New</option>
+  <option value="Rejected">Rejected</option>
+  </select>
+  ...
+  <select name="field.priority" size="1" >
+  <option value="High">High</option>
+  <option value="Low">Low</option>
+  <option selected="selected" value="Medium">Medium</option>
+  <option value="Wontfix">Wontfix</option>
+  </select>
+  ...
+  <select name="field.severity" size="1" >
+  <option value="Critical">Critical</option>
+  <option value="Major">Major</option>
+  <option value="Minor">Minor</option>
+  <option selected="selected" value="Normal">Normal</option>
+  <option value="Wishlist">Wishlist</option>
+  </select>
+  ...
+  <select name="field.binarypackagename" size="1" >
+  ...
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/packageassignments/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugs/2/packageassignments/+new
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  <BLANKLINE>
+  ...
+  <BLANKLINE>
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/ HTTP/1.1
+  ... Referer: http://localhost:9000/malone/bugs/2/packageassignments/+new
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <h1>
+              Blackhole Trash folder
+          </h1>
+  ...
+          <!-- Distribution Package Assignments -->
+  ...
+          <tr onclick="window.location='packageassignments/4/+edit'">
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/packageassignments/4/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... If-Modified-Since: Mon, 01 Nov 2004 22:34:42 GMT
+  ... Referer: http://localhost:9000/malone/bugs/2/
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <h3>Edit SourcePackage Bug Assignment</h3>
+  ...
+  <option selected="selected" value="New">New</option>
+  ...
+  <option selected="selected" value="Medium">Medium</option>
+  ...
+  <option selected="selected" value="Normal">Normal</option>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/packageassignments/4/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1111
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://localhost:9000/malone/bugs/2/packageassignments/4/+edit
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugstatus"
+  ... 
+  ... New
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugstatus-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... Medium
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Normal
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.binarypackagename"
+  ... 
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.binarypackagename-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... 12
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.assignee-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <h3>Edit SourcePackage Bug Assignment</h3>
+  <BLANKLINE>
+            <p>Updated on ...</p>
+  ...
+  <option selected="selected" value="New">New</option>
+  ...
+  <option selected="selected" value="Medium">Medium</option>
+  ...
+  <option selected="selected" value="Normal">Normal</option>
+  ...
+  <option selected="selected" value="12">Sample Person</option>
+  ...
+

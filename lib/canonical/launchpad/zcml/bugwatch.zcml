@@ -9,7 +9,7 @@
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugWatch"
-        for="canonical.launchpad.interfaces.IBugWatchContainer"
+        for="canonical.launchpad.interfaces.IBugWatchSet"
         label="Add Watch"
         fields="bugtracker remotebug"
         content_factory="canonical.launchpad.database.BugWatchFactory"
@@ -29,26 +29,26 @@
         fields="bugtracker remotebug"
         lp:url="malone/bugs/$Bug.id/watches/$Watch.id/+edit" />
 
-    <!--BugWatchContainer -->
-    <content class="canonical.launchpad.database.BugWatchContainer">
-        <allow interface="canonical.launchpad.interfaces.IBugWatchContainer" />
+    <!--BugWatchSet -->
+    <content class="canonical.launchpad.database.BugWatchSet">
+        <allow interface="canonical.launchpad.interfaces.IBugWatchSet" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.BugWatchContainer"
-        provides="canonical.launchpad.interfaces.IBugWatchContainer" />
+        factory="canonical.launchpad.database.BugWatchSet"
+        provides="canonical.launchpad.interfaces.IBugWatchSet" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugWatchContainer"
+        for="canonical.launchpad.interfaces.IBugWatchSet"
         name="+index" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IBugWatchContainer"
+        for="canonical.launchpad.interfaces.IBugWatchSet"
         getter="__getitem__" />
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IBugWatchContainer"
+        for="canonical.launchpad.interfaces.IBugWatchSet"
         permission="zope.Public">
         <browser:page name="+index"
             template="../templates/watches-index.pt"

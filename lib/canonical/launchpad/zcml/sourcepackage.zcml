@@ -6,18 +6,20 @@
     i18n_domain="launchpad">
 
     <!-- This is class SourcePackageRelease -->
-    <content class="canonical.soyuz.sql.SourcePackageRelease">
+    <content class="canonical.launchpad.database.SourcePackageRelease">
       <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
       <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
-    <!-- XXX comments from Mark Shuttleworth: the Soyuz BinaryPackages and
-            SourcePackages objects should be merged into BinaryPackageSet
-            and SourcePackageSet by 16/10/04 unless their continued existence
-            is justified 
-            -->
-    <content class="canonical.soyuz.sql.SourcePackages">
-        <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
+    <!-- This is class VSourcePackageReleasePublishing -->
+    <content class="canonical.launchpad.database.VSourcePackageReleasePublishing">
+      <allow interface="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"/>
+      <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+    <!-- SourcePackageInDistro -->
+    <content class="canonical.launchpad.database.SourcePackageInDistro">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
@@ -26,18 +28,18 @@
         <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
-
+    
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourcePackage"
-        name="+index" />
+        name="+malone-index" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackage"
         permission="zope.Public"
         class="canonical.launchpad.browser.SourcePackageView">
         <browser:page
-            name="+index"
-            template="../templates/malone-sourcepackage-index.pt"
+            name="+malone-index"
+            template="../templates/package-bugs.pt"
             lp:url="malone/sourcepackage/$SourcePackage.name/+malone-index" />
     </browser:pages>
 
@@ -46,31 +48,32 @@
         <allow interface="canonical.launchpad.interfaces.ISourcePackageName" />
     </content>
 
-    <!-- SourcePackageContainer -->
-    <content class="canonical.launchpad.database.SourcePackageContainer">
+    <!-- SourcePackageSet -->
+    <content class="canonical.launchpad.database.SourcePackageSet">
         <allow
-            interface="canonical.launchpad.interfaces.ISourcePackageContainer"
+            interface="canonical.launchpad.interfaces.ISourcePackageSet"
             />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.SourcePackageContainer"
-        provides="canonical.launchpad.interfaces.ISourcePackageContainer" />
+        factory="canonical.launchpad.database.SourcePackageSet"
+        provides="canonical.launchpad.interfaces.ISourcePackageSet" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.ISourcePackageContainer"
+        for="canonical.launchpad.interfaces.ISourcePackageSet"
         getter="__getitem__" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackageContainer"
-        name="+index" />
+        for="canonical.launchpad.interfaces.ISourcePackageSet"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        name="+malone-index" />
 
-    <browser:pages for="canonical.launchpad.interfaces.ISourcePackageContainer"
+    <browser:pages for="canonical.launchpad.interfaces.ISourcePackageSet"
         permission="zope.Public">
         <browser:page 
-            name="+index"
-            template="../templates/sourcepackages-index.pt"
-            lp:url="malone/sourcepackages/+index" />
+            name="+malone-index"
+            template="../templates/packages-bugs.pt"
+            lp:url="malone/packages/+malone-index" />
     </browser:pages>
 
 </configure>

@@ -10,8 +10,8 @@
 
     <meta:directive
         name="defaultView"
-        schema="canonical.metazcml.IDefaultViewDirective"
-        handler="canonical.metazcml.defaultView"
+        schema="canonical.launchpad.webapp.metazcml.IDefaultViewDirective"
+        handler="canonical.launchpad.webapp.metazcml.defaultView"
         />
 
 </meta:directives>

@@ -2,19 +2,27 @@
 
 __metaclass__ = type
 
-import sys
+import sys, os
 from types import ClassType
 from zope.interface.advice import addClassAdvisor
 from zope.interface import classImplements
+from zope.i18n import MessageIDFactory
 
 from sqlobject import connectionForURI
 from canonical.database.sqlbase import ZopelessTransactionManager
 
-dbname = "launchpad_ftest"
-dbhost = ""
+# Single MessageIDFactory for everyone
+_ = MessageIDFactory('launchpad')
 
-def initZopeless():
-    return ZopelessTransactionManager('postgres://%s/%s' % (dbhost, dbname))
+
+# Allow override by environment variables. This is needed to allow
+# tests to propogate values to spawned processes.
+dbname = os.environ.get('LP_DBNAME', 'launchpad_ftest')
+dbhost = os.environ.get('LP_DBHOST', '')
+
+def initZopeless(debug=False):
+    return ZopelessTransactionManager('postgres://%s/%s' % (dbhost, dbname),
+                                      debug=debug)
 
 def decorates(interface, context='context'):
     """Make an adapter into a decorator.

@@ -40,7 +40,7 @@
             Before this template can be translated into these languages,
             Rosetta needs to have this information. Please send that
             information to the <a
-            href="mailto:rosetta-users@lists.ubuntu.com"> Rosetta users
+            href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
             mailing list</a>. If you don't know about this kind of
             information, please ask on the mailing list and we will try to
             work it out from your knowledge of that language.
@@ -55,6 +55,42 @@
     <div class="documentDescription">
     Hint: use the <code>Tab</code> key to move quickly between translation fields.
     </div>
+
+    <!-- Display settings. -->
+
+    <form method="post" tal:attributes="action request/URL">
+        <fieldset>
+        <legend>Display Settings</legend>
+            <div class="field">
+                <label>Show</label>
+                <br/>
+                <!--
+                Yes, I know, the logic for the 'checked' attributes is
+                somewhat evil.
+                 - Dafydd Harries, 21/10/2004
+                -->
+                <label><input name="show" type="radio" value="translated"
+                    tal:attributes="checked
+                        python:('', 'checked')[view.show == 'translated']" />
+                    translated messages</label>
+                <br/>
+                <label><input name="show" type="radio" value="untranslated"
+                    tal:attributes="checked
+                        python:('', 'checked')[view.show == 'untranslated']" />
+                    untranslated messages</label>
+                <br/>
+                <label><input name="show" type="radio" value="all"
+                    tal:attributes="checked
+                        python:('', 'checked')[view.show == 'all']" />
+                    all messages</label>
+            </div>
+
+            <input type="hidden" name="languages"
+                tal:condition="view/codes"
+                tal:attributes="value view/codes" />
+            <input type="submit" value="Change" />
+        </fieldset>
+    </form>
 
     <!-- Show which messages are displayed. -->
 
@@ -129,7 +165,10 @@
                 <div class="field" tal:repeat="language view/languages">
                     <label class="language-code"
                         tal:content="language/englishName">pt_BR</label>:
-
+                    <input type="checkbox" value="fuzzy"
+                        tal:attributes="checked python:set['fuzzy'][language];
+                        name string:set_${set/id}_fuzzy_${language/code};" />
+                    <label>Needs review</label>
                     <br/>
 
                     <input type="text"
@@ -137,12 +176,15 @@
                         tal:attributes="
                             name string:set_${set/id}_translation_${language/code};
                             value python:set['translations'][language][0];
+                            tabindex view/makeTabIndex;
                             " />
                     <textarea
                         tal:condition="set/messageID/isMultiline"
                         tal:attributes="
                             name string:set_${set/id}_translation_${language/code};
-                            rows set/messageID/lines"
+                            rows set/messageID/lines;
+                            tabindex view/makeTabIndex;
+                            "
                         tal:content="python:set['translations'][language][0]
                         "></textarea>
                 </div>
@@ -174,16 +216,19 @@
                             tal:attributes="
                                 name string:set_${set/id}_translation_${language/code}_${i};
                                 value python:set['translations'][language][i];
+                                tabindex view/makeTabIndex;
                                 " />
                         <textarea
                             tal:condition="set/messageID/isMultiline"
                             tal:attributes="
                                 name string:set_${set/id}_translation_${language/code}_${i};
-                                rows set/messageID/lines"
-                            tal:content="python:set['translations'][language][i]
-                            "></textarea>
+                                rows set/messageID/lines;
+                                tabindex view/makeTabIndex;
+                                "
+                            tal:content="python:set['translations'][language][i]"
+                            ></textarea>
                         <!--
-                        <img src="++resource++info.gif" title="Example: 1 dead horse." />
+                        <img src="/++resource++info.gif" title="Example: 1 dead horse." />
                         -->
                     </div>
 
@@ -192,7 +237,7 @@
 
             <div class="field" tal:condition="set/commentText">
                 <label>Comment</label>
-                <img src="++resource++arrowDown.gif" />
+                <img src="/++resource++arrowDown.gif" />
                 <div class="discreet" tal:content="set/commentText">This refers to the content type.</div>
             </div>
 
@@ -205,7 +250,7 @@
             <!--
             <div class="field">
                 <label>Code reference</label>
-                <img src="++resource++arrowRight.gif" />
+                <img src="/++resource++arrowRight.gif" />
             </div>
             -->
         </fieldset>

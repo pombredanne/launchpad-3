@@ -2,11 +2,6 @@
 #
 # arch-tag: FA3333EC-E6E6-11D8-B7FE-000D9329A36C
 
-# XXX: 2004-10-08 Brad Bollenbach: I've noticed several hardcodings of
-# owner ID being set to 1 in this module (and to do some quick
-# testing, I've just done the same once more myself.) This needs
-# immediate fixing.
-
 from datetime import datetime
 from email.Utils import make_msgid
 
@@ -19,9 +14,9 @@ from zope.event import notify
 from canonical.launchpad.database import \
         SourcePackage, SourcePackageName, BinaryPackage, \
         BugTracker, BugsAssignedReport, BugWatch, Product, Person, EmailAddress, \
-        Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
+        Bug, BugAttachment, BugExternalRef, BugSubscription, \
         ProductBugAssignment, SourcePackageBugAssignment, \
-        BugProductInfestation, BugPackageInfestation, BugContainerBase
+        BugProductInfestation, BugPackageInfestation, BugSetBase
 
 from canonical.database import sqlbase
 
@@ -33,13 +28,13 @@ from canonical.lp import dbschema
 
 # Interface imports
 from canonical.launchpad.interfaces import \
-        IMaloneBug, IMaloneBugAttachment, \
-        IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
-        IBugSubscriptionContainer, ISourcePackageContainer, \
-        IBugWatchContainer, IProductBugAssignmentContainer, \
-        ISourcePackageBugAssignmentContainer, IBugProductInfestationContainer, \
-        IBugPackageInfestationContainer, IPerson, \
-        IBugMessagesView, IBugExternalRefsView
+        IBug, IBugAttachment, \
+        IBugSet, IBugAttachmentSet, IBugExternalRefSet, \
+        IBugSubscriptionSet, ISourcePackageSet, \
+        IBugWatchSet, IProductBugAssignmentSet, \
+        ISourcePackageBugAssignmentSet, IBugProductInfestationSet, \
+        IBugPackageInfestationSet, IPerson, \
+        IBugExternalRefsView
 
 class MaloneApplicationView(object):
     def __init__(self, context, request):

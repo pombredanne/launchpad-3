@@ -23,32 +23,9 @@
           template="../launchpad/templates/no-app-component-yet.pt"
           />
 
-
   </browser:pages>
-
-  <adapter
-      for="zope.publisher.interfaces.IApplicationRequest"
-      provides="zope.app.traversing.interfaces.IPathAdapter"
-      factory="canonical.lp.tales.RequestAPI"
-      name="lp"
-      />
-
-  <!-- XXX The next directive should be registered for 'int' only.
-       However, there's a bug in adapter registration that stops
-       this working.  To be fixed in ZopeX3 RSN.
-    -->
-  <adapter
-      for="*"
-      provides="zope.app.traversing.interfaces.IPathAdapter"
-      factory="canonical.lp.tales.DBSchemaAPI"
-      name="lp"
-      />
-
-  <!-- enable the placeless authentication utility -->
-  <include package="canonical.lp.placelessauth" />
 
   <!-- A permission for anybody who has authenticated themselves. -->
   <permission id="launchpad.AnyPerson" title="Any Authenticates Person" />
 
 </configure>
-<!-- arch-tag: 9139ef7c-314a-4ffe-b905-fdb59c075d1c -->

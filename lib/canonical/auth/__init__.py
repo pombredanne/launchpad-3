@@ -1,6 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
-# arch-tag: fb47064d-e0cd-45d2-b552-f92e803aae71
 """Password reset application.
 
 """
@@ -15,6 +14,10 @@ from BTrees.OOBTree import OOBTree
 from canonical.launchpad.interfaces import IAuthApplication
 from canonical.launchpad.interfaces import IPasswordResets
 from canonical.launchpad.interfaces import IPersonSet
+
+from canonical.launchpad.database import EmailAddress
+
+from canonical.launchpad.webapp.zodb import zodbconnection
 
 from datetime import datetime, timedelta
 import random

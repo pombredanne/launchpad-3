@@ -1,0 +1,50 @@
+<tal:do-this-first tal:content="view/process_form"
+/><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+
+<div metal:fill-slot="main">
+
+  <div tal:condition="view/was_logged_in">
+    <h1>You are logged in</h1>
+
+  </div>
+
+  <div tal:condition="not: view/was_logged_in">
+    <h1>Log in</h1>
+
+    <form name="login" action="" method="POST">
+      <div class="error"
+           tal:condition="view/errortext"
+           tal:content="view/errortext"
+           />
+      <div class="field">
+        <label for="email">Email address</label>
+        <div class="formHelp">
+          Enter your email address to log in.
+        </div>
+        <input type="text"
+               name="email"
+               id="email"
+               tal:attributes="value request/email | nothing" />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <div class="formHelp">
+          Enter your password.
+        </div>
+        <input type="password" id="password" name="password" />
+      </div>
+      <div class="formControls">
+        <input type="submit" name="SUBMIT" value="Log in" />
+      </div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>

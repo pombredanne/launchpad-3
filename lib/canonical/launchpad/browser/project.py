@@ -23,7 +23,7 @@ def traverseProject(project, request, name):
 
 
 
-class ProjectContainerView(object):
+class ProjectSetView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -32,6 +32,7 @@ class ProjectContainerView(object):
         if 'searchtext' in self.form:
             self.searchrequested = True
         self.results = None
+        self.gotmatches = 0
 
     def searchresults(self):
         """Use searchtext to find the list of Projects that match
@@ -40,6 +41,7 @@ class ProjectContainerView(object):
         """
         if self.results is None:
             self.results = self.context.search(self.request.get('searchtext'))
+        self.gotmatches = len(list(self.results))
         return self.results
 
     def newproject(self):

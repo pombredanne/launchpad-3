@@ -16,12 +16,14 @@ sys.path.append('..')
 # setup connection to the db
 #
 from canonical.lp import initZopeless
-SQLBase.initZopeless()
+initZopeless()
 
 #
 # get the database access classes ready
 #
 from canonical.launchpad.database import *
 
-
+import readline
+import rlcompleter
+readline.parse_and_bind('tab: complete')
 

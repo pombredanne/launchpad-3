@@ -1,0 +1,41 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:rdb="http://namespaces.zope.org/rdb"
+    >
+
+  <content class="canonical.soyuz.distroapp.DistroReleasesApp">
+    <allow interface="canonical.launchpad.interfaces.IDistroReleasesApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.distroapp.DistroReleaseApp">
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    <require
+     permission="zope.Public"
+     set_attributes="name title shortdesc description version"
+     />
+  </content>
+  
+  <content class="canonical.soyuz.distroapp.DistrosApp">
+    <allow interface="canonical.launchpad.interfaces.IDistributions"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.distroapp.DistroApp">
+    <allow interface="canonical.launchpad.interfaces.IDistroApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.distroapp.DistroTeamApp">
+    <allow interface="canonical.launchpad.interfaces.IDistroTeamApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.distroapp.DistroReleaseTeamApp">
+    <allow interface="canonical.launchpad.interfaces.IDistroReleaseTeamApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+</configure>

@@ -39,8 +39,8 @@ class IBugExternalRef(Interface):
 
 
 
-class IBugExternalRefContainer(Interface):
-    """A container for IBugExternalRef objects."""
+class IBugExternalRefSet(Interface):
+    """A set for IBugExternalRef objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 

@@ -58,7 +58,7 @@ class DummyPerson:
     def __init__(self, codes):
         self.codes = codes
         all_languages = DummyLanguageSet()
-        
+
         self.languages = [ all_languages[code] for code in self.codes ]
 
 
@@ -77,6 +77,9 @@ class DummyPOFile:
     def translatedCount(self):
         return 3
 
+    def __getitem__(self, msgid_text):
+        raise KeyError, msgid_text
+
 
 class DummyMsgID:
     msgid = "foo"
@@ -89,6 +92,9 @@ class DummyPOTMsgSet:
     commenttext = 'commentText'
     sourcecomment = 'sourceComment'
 
+    def __init__(self):
+        self.potemplate = DummyPOTemplate()
+
     def flags(self):
         return []
 
@@ -98,7 +104,7 @@ class DummyPOTMsgSet:
     def translationsForLanguage(self, language):
         return ['bar']
 
-    
+
 class DummyPOTemplate:
     def poFile(self, language_code):
         self.language_code = language_code
@@ -108,7 +114,7 @@ class DummyPOTemplate:
         else:
             raise KeyError
 
-    def __getitem__(self, key):
+    def filterMessageSets(self, current, translated, languages, slice):
         return [DummyPOTMsgSet(), DummyPOTMsgSet()]
 
     def __len__(self):
@@ -325,6 +331,8 @@ def test_TranslatePOTemplate_init():
     5
     >>> t.error
     False
+    >>> t.show
+    'all'
 
     This is testing when the languages aren't specified in the form, so it
     falls back to using the principal's languages instead.
@@ -349,6 +357,8 @@ def test_TranslatePOTemplate_init():
     5
     >>> t.error
     False
+    >>> t.show
+    'all'
 
     This is testing when a language is specified which the context has no PO
     file for.
@@ -373,6 +383,8 @@ def test_TranslatePOTemplate_init():
     5
     >>> t.error
     False
+    >>> t.show
+    'all'
 
     This is for testing when a language is specified for which there is no PO
     file and for which there is no plural form information in the language
@@ -408,6 +420,15 @@ def test_TranslatePOTemplate_init():
     7
     >>> t.count
     8
+
+    Test an explicit choice of which messages to show.
+
+    >>> context = DummyPOTemplate()
+    >>> request = DummyRequest(show='translated')
+    >>> t = TranslatePOTemplate(context, request)
+
+    >>> t.show
+    'translated'
 
     >>> tearDown()
     '''
@@ -597,6 +618,15 @@ def test_TranslatePOemplate_mungeMessageID():
     >>> tearDown()
     '''
 
+def test_TabIndexGenerator():
+    '''
+    >>> from canonical.rosetta.browser import TabIndexGenerator
+    >>> tig = TabIndexGenerator()
+    >>> tig.generate()
+    1
+    >>> tig.generate()
+    2
+    '''
 
 def test_suite():
     return DocTestSuite()

@@ -1,0 +1,24 @@
+<configure xmlns="http://namespaces.zope.org/meta">
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
+      name="suburl"
+      schema="canonical.launchpad.webapp.metazcml.ISubURLDirective"
+      handler="canonical.launchpad.webapp.metazcml.suburl"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
+      name="traverse"
+      schema="canonical.launchpad.webapp.metazcml.ITraverseDirective"
+      handler="canonical.launchpad.webapp.metazcml.traverse"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
+      name="favicon"
+      schema="canonical.launchpad.webapp.metazcml.IFaviconDirective"
+      handler="canonical.launchpad.webapp.metazcml.favicon"
+      />
+
+</configure>

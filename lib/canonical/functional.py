@@ -41,10 +41,8 @@ from zope.publisher.publish import publish
 from zope.security.interfaces import Forbidden, Unauthorized
 import zope.server.interfaces
 from zope.testing import doctest
-
 from zope.app.debug import Debugger
 from zope.app.publication.http import HTTPPublication
-#from zope.app.publication.browser import BrowserPublication
 from canonical.publication import BrowserPublication
 import zope.app.tests.setup
 from zope.app.component.hooks import setSite, getSite
@@ -105,19 +103,19 @@ class FunctionalTestSetup(object):
             logging.root.addHandler(logging.StreamHandler(self.log))
             self.base_storage = DemoStorage("Memory Storage")
             self.db = DB(self.base_storage)
-            ##self.app = Debugger(self.db, config_file)
-            self.app = Debugger(None, config_file)
+            self.app = Debugger(self.db, config_file)
+            ##self.app = Debugger(None, config_file)
             self.connection = None
             self._config_file = config_file
             self._init = True
 
-            FunctionalTestSetup().connection = None
-            
+            #FunctionalTestSetup().connection = None
+
         elif config_file and config_file != self._config_file:
             # Running different tests with different configurations is not
             # supported at the moment
-            raise NotImplementedError('Already configured'
-                                      ' with a different config file')
+            raise NotImplementedError(
+                'Already configured with a different config file')
 
     def setUp(self):
         """Prepares for a functional test case."""
@@ -131,18 +129,12 @@ class FunctionalTestSetup(object):
     def tearDown(self):
         """Cleans up after a functional test case."""
         abort()
-        if self.connection:
-            self.connection.close()
-            self.connection = None
-        ##self.db.close()
+        self.db.removeVersionPool('')
+        self.db.close()
 
     def getRootFolder(self):
         """Returns the Zope root folder."""
         raise NotImplementedError
-        ##if not self.connection:
-        ##    self.connection = self.db.open()
-        ##root = self.connection.root()
-        ##return root[ZopePublication.root_name]
 
     def getApplication(self):
         """Returns the Zope application instance."""
@@ -398,7 +390,7 @@ class HTTPHeaderOutput:
         self.headersl = []
         self.protocol = protocol
         self.omit = omit
-    
+
     def setResponseStatus(self, status, reason):
         self.status, self.reason = status, reason
 
@@ -459,7 +451,7 @@ def http(request_string, port=9000, handle_errors=True):
     request_string = request_string[l+1:]
     method, path, protocol = command_line.split()
     path = urllib.unquote(path)
-    
+
 
     instream = StringIO(request_string)
     environment = {"HTTP_HOST": 'localhost:%s' % port,
@@ -553,7 +545,7 @@ def FunctionalDocFileSuite(*paths, **kw):
     kwsetUp = kw.get('setUp')
     def setUp(test):
         FunctionalTestSetup().setUp()
-        
+
         if kwsetUp is not None:
             kwsetUp(test)
     kw['setUp'] = setUp
@@ -565,7 +557,7 @@ def FunctionalDocFileSuite(*paths, **kw):
         FunctionalTestSetup().tearDown()
     kw['tearDown'] = tearDown
 
-    kw['optionflags'] = (doctest.ELLIPSIS | doctest.REPORT_UDIFF |
+    kw['optionflags'] = (doctest.ELLIPSIS | doctest.REPORT_NDIFF |
                          doctest.NORMALIZE_WHITESPACE)
 
     return doctest.DocFileSuite(*paths, **kw)

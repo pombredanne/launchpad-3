@@ -11,11 +11,11 @@ from datetime import datetime
 from sets import Set
 
 # canonical imports
-from canonical.launchpad.interfaces.pofile import IPOTemplate, IPOTMsgSet, \
+from canonical.launchpad.interfaces import IPOTemplate, IPOTMsgSet, \
     IEditPOTemplate, IEditPOTMsgSet, IPOMsgID, IPOMsgIDSighting, IPOFile, \
     IEditPOFile, IPOMsgSet, IEditPOMsgSet, IPOTranslation, \
     IPOTranslationSighting
-from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
 from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -70,30 +70,24 @@ class POTemplate(SQLBase):
 
     _table = 'POTemplate'
 
-    _columns = [
-        ForeignKey(name='product', foreignKey='Product', dbName='product',
-            notNull=True),
-        IntCol(name='priority', dbName='priority', notNull=True),
-        ForeignKey(name='branch', foreignKey='Branch', dbName='branch',
-            notNull=True),
-        ForeignKey(name='changeset', foreignKey='Changeset',
-            dbName='changeset', notNull=False, default=None),
-        StringCol(name='name', dbName='name', notNull=True),
-        StringCol(name='title', dbName='title', notNull=True),
-        StringCol(name='description', dbName='description', notNull=True),
-        StringCol(name='copyright', dbName='copyright', notNull=True),
-#        ForeignKey(name='license', foreignKey='License', dbName='license',
-#            notNull=True),
-        IntCol(name='license', dbName='license', notNull=True),
-        DateTimeCol(name='datecreated', dbName='datecreated', default=DEFAULT),
-        StringCol(name='path', dbName='path', notNull=True),
-        BoolCol(name='iscurrent', dbName='iscurrent', notNull=True),
-        IntCol(name='messagecount', dbName='messagecount', notNull=True),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
-            notNull=False, default=None),
-    ]
+    product = ForeignKey(foreignKey='Product', dbName='product', notNull=True)
+    priority = IntCol(dbName='priority', notNull=True)
+    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=True)
+    changeset = ForeignKey(foreignKey='Changeset', dbName='changeset',
+        notNull=False, default=None)
+    name = StringCol(dbName='name', notNull=True)
+    title = StringCol(dbName='title', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
+    copyright = StringCol(dbName='copyright', notNull=True)
+#   license = ForeignKey(foreignKey='License', dbName='license', notNull=True)
+    license = IntCol(dbName='license', notNull=True)
+    datecreated = DateTimeCol(dbName='datecreated', default=DEFAULT)
+    path = StringCol(dbName='path', notNull=True)
+    iscurrent = BoolCol(dbName='iscurrent', notNull=True)
+    messagecount = IntCol(dbName='messagecount', notNull=True)
+    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False,
+        default=None)
 
-    
     def currentMessageSets(self):
         return POTMsgSet.select(
             '''
@@ -145,6 +139,89 @@ class POTemplate(SQLBase):
     def __getitem__(self, key):
         return self.messageSet(key, onlyCurrent=True)
 
+    def filterMessageSets(self, current, translated, languages, slice = None):
+        '''
+        Return message sets from this PO template, filtered by various
+        properties.
+
+        current:
+            Whether the message sets need be complete or not.
+        translated:
+            Wether the messages sets need be translated in the specified
+            languages or not.
+        languages:
+            The languages used for testing translatedness.
+        slice:
+            The range of results to be selected, or None, for all results.
+        '''
+
+        for l in languages:
+            assert(isinstance(l, Language))
+
+        if current is not None:
+            if current:
+                current_condition = 'POTMsgSet.sequence > 0'
+            else:
+                current_condition = 'POTMsgSet.sequence = 0'
+        else:
+            current_condition = 'TRUE'
+
+        # Assuming that for each language being checked, each POT mesage set
+        # has a corresponding PO message set for that language:
+        #
+        # A POT set is translated if all its PO message sets have
+        #   iscomplete = TRUE.
+        #  -- in other words, none of its PO message sets have
+        #   iscomplete = FALSE.
+        # A POT set is untranslated if any of its PO message set has
+        #   iscomplete = FALSE.
+        #  -- in other words, not all of its PO message sets have
+        #   iscomplete = TRUE.
+        #
+        # The possible non-existance of corresponding PO message sets
+        # complicates matters a bit:
+        #
+        # - For translated == True, missing PO message sets must make the
+        #   condition evaluate to FALSE.
+        #
+        # - For translated == False, missing PO message sets must make the
+        #   condition evaluate to TRUE.
+        #
+        # So, we get around this problem by checking the number of PO message
+        # sets against the number of languages.
+
+        if translated is not None:
+            subquery1 = '''
+                SELECT 1 FROM POMsgSet poset, POFile pofile WHERE
+                    poset.potmsgset = POTMsgSet.id AND
+                    poset.pofile = pofile.id AND
+                    pofile.language IN (%s) AND
+                    iscomplete = FALSE
+                ''' % (', '.join([ str(l.id) for l in languages ]))
+
+            subquery2 = '''
+                SELECT COUNT(id) FROM POMsgSet WHERE
+                    POMsgSet.potmsgset = POTMsgSet.id
+                '''
+
+            if translated:
+                translated_condition = ('NOT EXISTS (%s) AND (%s) = %d' %
+                    (subquery1, subquery2, len(languages)))
+            else:
+                translated_condition = ('EXISTS (%s) OR (%s) < %d' %
+                    (subquery1, subquery2, len(languages)))
+        else:
+            translated_condition = 'TRUE'
+
+        results = POTMsgSet.select(
+            'POTMsgSet.potemplate = %d AND %s AND %s' %
+                (self.id, translated_condition, current_condition))
+
+        if slice is not None:
+            return results[slice]
+        else:
+            return results
+
     def languages(self):
         '''This returns the set of languages for which we have
         POFiles for this POTemplate. NOTE that variants are simply
@@ -167,8 +244,10 @@ class POTemplate(SQLBase):
     def poFile(self, language_code, variant=None):
         if variant is None:
             variantspec = 'IS NULL'
+        elif isinstance(variant, unicode):
+            variantspec = (u'= "%s"' % quote(variant))
         else:
-            variantspec = (u'= "%s"' % quote(variant)).encode('utf-8')
+            raise TypeError('Variant must be None or unicode.')
 
         ret = POFile.select("""
             POFile.potemplate = %d AND
@@ -189,21 +268,24 @@ class POTemplate(SQLBase):
     # should be updated with a way that let's us query the database instead
     # of use the cached value
 
+    def messageCount(self):
+        return self.messagecount
+
     def currentCount(self, language):
         try:
-            return self.poFile(language).currentcount
+            return self.poFile(language).currentCount()
         except KeyError:
             return 0
 
     def updatesCount(self, language):
         try:
-            return self.poFile(language).updatescount
+            return self.poFile(language).updatesCount()
         except KeyError:
             return 0
 
     def rosettaCount(self, language):
         try:
-            return self.poFile(language).rosettacount
+            return self.poFile(language).rosettaCount()
         except KeyError:
             return 0
 
@@ -311,8 +393,10 @@ class POTemplate(SQLBase):
         return messageSet
 
     def createMessageSetFromText(self, text):
-        if isinstance(text, unicode):
-            text = text.encode('utf-8')
+        # This method used to accept 'text' parameters being string objects,
+        # but this is depracated.
+        if not isinstance(text, unicode):
+            raise TypeError("Message ID text must be unicode.")
 
         try:
             messageID = POMsgID.byMsgid(text)
@@ -325,7 +409,7 @@ class POTemplate(SQLBase):
             # We do not need to check whether there is already a message set
             # with the given text in this template.
             messageID = POMsgID(msgid=text)
-        
+
         return self.createMessageSetFromMessageID(messageID)
 
 
@@ -334,17 +418,15 @@ class POTMsgSet(SQLBase):
 
     _table = 'POTMsgSet'
 
-    _columns = [
-        ForeignKey(name='primemsgid_', foreignKey='POMsgID',
-            dbName='primemsgid', notNull=True),
-        IntCol(name='sequence', dbName='sequence', notNull=True),
-        ForeignKey(name='potemplate', foreignKey='POTemplate',
-            dbName='potemplate', notNull=True),
-        StringCol(name='commenttext', dbName='commenttext', notNull=False),
-        StringCol(name='filereferences', dbName='filereferences', notNull=False),
-        StringCol(name='sourcecomment', dbName='sourcecomment', notNull=False),
-        StringCol(name='flagscomment', dbName='flagscomment', notNull=False),
-    ]
+    primemsgid_ = ForeignKey(foreignKey='POMsgID', dbName='primemsgid',
+        notNull=True)
+    sequence = IntCol(dbName='sequence', notNull=True)
+    potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate',
+        notNull=True)
+    commenttext = StringCol(dbName='commenttext', notNull=False)
+    filereferences = StringCol(dbName='filereferences', notNull=False)
+    sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
+    flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
     def flags(self):
         if self.flagscomment is None:
@@ -399,7 +481,8 @@ class POTMsgSet(SQLBase):
             pofile = None
             pluralforms = languages[language].pluralForms
 
-        # XXX: Carlos Perello Marin 15/10/04 WHY??
+        # If we only have a msgid, we change pluralforms to 1, if it's a
+        # plural form, it will be the number defined in the pofile header.
         if self.messageIDs().count() == 1:
             pluralforms = 1
 
@@ -416,7 +499,8 @@ class POTMsgSet(SQLBase):
             POMsgSet.pofile = %d AND
             POMsgSet.potmsgset = POTMsgSet.id AND
             POTMsgSet.primemsgid = %d'''
-           % (pofile.id, self.primemsgid_.id))
+           % (pofile.id, self.primemsgid_.id),
+           clauseTables = ['POTMsgSet', ])
 
         if not (0 <= results.count() <= 1):
             raise AssertionError("Duplicate message ID in PO file.")
@@ -445,8 +529,10 @@ class POTMsgSet(SQLBase):
     def makeMessageIDSighting(self, text, pluralForm, update=False):
         """Create a new message ID sighting for this message set."""
 
-        if type(text) is unicode:
-            text = text.encode('utf-8')
+        # This method used to accept 'text' parameters being string objects,
+        # but this is depracated.
+        if not isinstance(text, unicode):
+            raise TypeError("Message ID text must be unicode.")
 
         try:
             messageID = POMsgID.byMsgid(text)
@@ -485,17 +571,14 @@ class POMsgIDSighting(SQLBase):
 
     _table = 'POMsgIDSighting'
 
-    _columns = [
-        ForeignKey(name='potmsgset', foreignKey='POTMsgSet',
-            dbName='potmsgset', notNull=True),
-        ForeignKey(name='pomsgid_', foreignKey='POMsgID', dbName='pomsgid',
-            notNull=True),
-        DateTimeCol(name='datefirstseen', dbName='datefirstseen',
-            notNull=True),
-        DateTimeCol(name='datelastseen', dbName='datelastseen', notNull=True),
-        BoolCol(name='inlastrevision', dbName='inlastrevision', notNull=True),
-        IntCol(name='pluralform', dbName='pluralform', notNull=True),
-    ]
+    potmsgset = ForeignKey(foreignKey='POTMsgSet', dbName='potmsgset',
+        notNull=True)
+    pomsgid_ = ForeignKey(foreignKey='POMsgID', dbName='pomsgid',
+        notNull=True)
+    datefirstseen = DateTimeCol(dbName='datefirstseen', notNull=True)
+    datelastseen = DateTimeCol(dbName='datelastseen', notNull=True)
+    inlastrevision = BoolCol(dbName='inlastrevision', notNull=True)
+    pluralform = IntCol(dbName='pluralform', notNull=True)
 
 
 class POMsgID(SQLBase):
@@ -503,10 +586,8 @@ class POMsgID(SQLBase):
 
     _table = 'POMsgID'
 
-    _columns = [
-        StringCol(name='msgid', dbName='msgid', notNull=True, unique=True,
-            alternateID=True)
-    ]
+    msgid = StringCol(dbName='msgid', notNull=True, unique=True,
+        alternateID=True)
 
 
 class POFile(SQLBase):
@@ -514,38 +595,30 @@ class POFile(SQLBase):
 
     _table = 'POFile'
 
-    _columns = [
-        ForeignKey(name='potemplate', foreignKey='POTemplate',
-            dbName='potemplate', notNull=True),
-        ForeignKey(name='language', foreignKey='Language', dbName='language',
-            notNull=True),
-        StringCol(name='title', dbName='title', notNull=False, default=None),
-        StringCol(name='description', dbName='description', notNull=False,
-            default=None),
-        StringCol(name='topcomment', dbName='topcomment', notNull=False,
-            default=None),
-        StringCol(name='header', dbName='header', notNull=False, default=None),
-        BoolCol(name='fuzzyheader', dbName='fuzzyheader', notNull=True),
-        ForeignKey(name='lasttranslator', foreignKey='Person',
-            dbName='lasttranslator', notNull=False, default=None),
-#        ForeignKey(name='license', foreignKey='License', dbName='license',
-#            notNull=False, default=None),
-        IntCol(name='license', dbName='license', notNull=False, default=None),
-        IntCol(name='currentcount', dbName='currentcount', notNull=True),
-        IntCol(name='updatescount', dbName='updatescount', notNull=True),
-        IntCol(name='rosettacount', dbName='rosettacount', notNull=True),
-        DateTimeCol(name='lastparsed', dbName='lastparsed', notNull=False,
-            default=None),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
-            notNull=False, default=None),
-        IntCol(name='pluralforms', dbName='pluralforms', notNull=True),
-        StringCol(name='variant', dbName='variant', notNull=False,
-            default=None),
-        StringCol(name='filename', dbName='filename', notNull=False,
-            default=None),
-    ]
+    potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate',
+        notNull=True)
+    language = ForeignKey(foreignKey='Language', dbName='language',
+        notNull=True)
+    title = StringCol(dbName='title', notNull=False, default=None)
+    description = StringCol(dbName='description', notNull=False, default=None)
+    topcomment = StringCol(dbName='topcomment', notNull=False, default=None)
+    header = StringCol(dbName='header', notNull=False, default=None)
+    fuzzyheader = BoolCol(dbName='fuzzyheader', notNull=True)
+    lasttranslator = ForeignKey(foreignKey='Person', dbName='lasttranslator',
+        notNull=False, default=None)
+#   license = ForeignKey(foreignKey='License', dbName='license',
+#       notNull=False, default=None)
+    license = IntCol(dbName='license', notNull=False, default=None)
+    currentcount = IntCol(dbName='currentcount', notNull=True)
+    updatescount = IntCol(dbName='updatescount', notNull=True)
+    rosettacount = IntCol(dbName='rosettacount', notNull=True)
+    lastparsed = DateTimeCol(dbName='lastparsed', notNull=False, default=None)
+    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False,
+        default=None)
+    pluralforms = IntCol(dbName='pluralforms', notNull=True)
+    variant = StringCol(dbName='variant', notNull=False, default=None)
+    filename = StringCol(dbName='filename', notNull=False, default=None)
 
-    
     def currentMessageSets(self):
         return POMsgSet.select(
             '''
@@ -553,7 +626,7 @@ class POFile(SQLBase):
             POMsgSet.sequence > 0
             '''
             % self.id, orderBy='sequence')
-    
+
     # XXX: Carlos Perello Marin 15/10/04: I don't think this method is needed,
     # it makes no sense to have such information or perhaps we should have it
     # as pot's len + the obsolete msgsets from this .po file.
@@ -568,7 +641,7 @@ class POFile(SQLBase):
     def translatedCount(self):
         '''Returns the cached count of translated strings where translations
         exist in the files or in the database.'''
-        return self.currentcount + self.rosettacount
+        return self.currentCount() + self.rosettaCount()
 
     def translated(self):
         return iter(POMsgSet.select('''
@@ -602,8 +675,8 @@ class POFile(SQLBase):
 
         if isinstance(key, slice):
             # XXX: Carlos Perello Marin 19/10/04: Not sure how to handle this.
-            RunTimeError('Implement me!!')
-#            return POTMsgSet.select(query, orderBy='sequence')[key]
+            raise NotImplementedError
+#           return POTMsgSet.select(query, orderBy='sequence')[key]
 
         if not isinstance(key, unicode):
             raise TypeError(
@@ -649,7 +722,7 @@ class POFile(SQLBase):
             clauseTables = [
                 'POTMsgSet',
                 ]))
-   
+
     def hasMessageID(self, messageID):
         results = POMsgSet.select('''
             POMsgSet.pofile = %d AND
@@ -658,15 +731,27 @@ class POFile(SQLBase):
 
         return results.count() > 0
 
+    def messageCount(self):
+        return self.potemplate.messageCount()
+
+    def currentCount(self):
+        return self.currentcount
+
+    def updatesCount(self):
+        return self.updatescount
+
+    def rosettaCount(self):
+        return self.rosettacount
+
+
     # IEditPOFile
 
     def expireAllMessages(self):
         self._connection.query(
             '''UPDATE POMsgSet SET sequence = 0 WHERE pofile = %d'''
             % self.id)
-    
+
     def updateStatistics(self, newImport=False):
-    
         if newImport:
             # The current value should change only with a new import, if not,
             # it will be always the same.
@@ -680,7 +765,7 @@ class POFile(SQLBase):
             ''' % self.id, clauseTables=('POTMsgSet',)).count()
         else:
             current = self.currentcount
-        
+
         # XXX: Carlos Perello Marin 27/10/04: We should fix the schema if we
         # want that updates/rosetta is correctly calculated, if we have fuzzy msgset
         # and then we fix it from Rosetta it will be counted as an update when
@@ -705,7 +790,7 @@ class POFile(SQLBase):
                         FileSight.active = FALSE AND
                         RosettaSight.active = TRUE )
             ''' % self.id, clauseTables=('POTMsgSet', )).count()
-        
+
         rosetta = POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.fuzzy = FALSE AND
@@ -727,10 +812,10 @@ class POFile(SQLBase):
                     RosettaSight.pomsgset = POMsgSet.id AND
                     RosettaSight.inlastrevision = FALSE AND
                     RosettaSight.active = TRUE)
-            ''' % self.id, clauseTables=('POMsgSet PotSet',)).count()
-        self.set(currentCount=current,
-                 updateCount=updates,
-                 rosettaCount=rosetta)
+            ''' % self.id, clauseTables=('POTMsgSet',)).count()
+        self.set(currentcount=current,
+                 updatescount=updates,
+                 rosettacount=rosetta)
         return (current, updates, rosetta)
 
     def createMessageSetFromMessageSet(self, potmsgset):
@@ -754,7 +839,7 @@ class POFile(SQLBase):
             potmsgset = self.potemplate[text]
         except KeyError:
             potmsgset = self.potemplate.createMessageSetFromText(text)
-        
+
         return self.createMessageSetFromMessageSet(potmsgset)
 
 
@@ -763,19 +848,14 @@ class POMsgSet(SQLBase):
 
     _table = 'POMsgSet'
 
-    _columns = [
-        IntCol(name='sequence', dbName='sequence', notNull=True),
-        ForeignKey(name='pofile', foreignKey='POFile', dbName='pofile',
-            notNull=True),
-        BoolCol(name='iscomplete', dbName='iscomplete', notNull=True),
-        BoolCol(name='obsolete', dbName='obsolete', notNull=True),
-        BoolCol(name='fuzzy', dbName='fuzzy', notNull=True),
-        StringCol(name='commenttext', dbName='commenttext', notNull=False,
-            default=None),
-        ForeignKey(name='potmsgset', foreignKey='POTMsgSet',
-            dbName='potmsgset', notNull=True),
-    ]
-
+    sequence = IntCol(dbName='sequence', notNull=True)
+    pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
+    iscomplete = BoolCol(dbName='iscomplete', notNull=True)
+    obsolete = BoolCol(dbName='obsolete', notNull=True)
+    fuzzy = BoolCol(dbName='fuzzy', notNull=True)
+    commenttext = StringCol(dbName='commenttext', notNull=False, default=None)
+    potmsgset = ForeignKey(foreignKey='POTMsgSet', dbName='potmsgset',
+        notNull=True)
 
     def pluralForms(self):
         if self.potmsgset.messageIDs().count() > 1:
@@ -829,6 +909,10 @@ class POMsgSet(SQLBase):
             pomsgsetID=self.id)
 
     # IEditPOMsgSet
+
+    # XXX: Carlos Perello Marin 17/11/2004: I'm not sure this method is 
+    def setFuzzy(self, value):
+        self.fuzzy = value
 
     def makeTranslationSighting(self, person, text, pluralForm,
                               update=False, fromPOFile=False):
@@ -897,6 +981,13 @@ class POMsgSet(SQLBase):
                 id <> %d
             ''' % (self.id, pluralForm, sighting.id))
 
+        # Implicit set of iscomplete. If we have all translations, it's 
+        # complete, if we lack a translation, it's not complete.
+        if None in self.translations():
+            self.iscomplete = False
+        else:
+            self.iscomplete = True
+
         return sighting
 
 
@@ -905,26 +996,20 @@ class POTranslationSighting(SQLBase):
 
     _table = 'POTranslationSighting'
 
-    _columns = [
-        ForeignKey(name='pomsgset', foreignKey='POMsgSet', dbName='pomsgset',
-            notNull=True),
-        ForeignKey(name='potranslation', foreignKey='POTranslation',
-            dbName='potranslation', notNull=True),
-#        ForeignKey(name='license', foreignKey='License', dbName='license',
-#            notNull=True),
-        IntCol(name='license', dbName='license', notNull=True),
-        DateTimeCol(name='datefirstseen', dbName='datefirstseen',
-            notNull=True),
-        DateTimeCol(name='datelastactive', dbName='datelastactive',
-            notNull=True),
-        BoolCol(name='inlastrevision', dbName='inlastrevision', notNull=True),
-        IntCol(name='pluralform', dbName='pluralform', notNull=True),
-        BoolCol(name='active', dbName='active', notNull=True, default=DEFAULT),
-        # See canonical.lp.dbschema.RosettaTranslationOrigin.
-        IntCol(name='origin', dbName='origin', notNull=True),
-        ForeignKey(name='person', foreignKey='Person', dbName='person',
-            notNull=True),
-    ]
+    pomsgset = ForeignKey(foreignKey='POMsgSet', dbName='pomsgset',
+        notNull=True)
+    potranslation = ForeignKey(foreignKey='POTranslation',
+        dbName='potranslation', notNull=True)
+#   license = ForeignKey(foreignKey='License', dbName='license', notNull=True)
+    license = IntCol(dbName='license', notNull=True)
+    datefirstseen = DateTimeCol(dbName='datefirstseen', notNull=True)
+    datelastactive = DateTimeCol(dbName='datelastactive', notNull=True)
+    inlastrevision = BoolCol(dbName='inlastrevision', notNull=True)
+    pluralform = IntCol(dbName='pluralform', notNull=True)
+    active = BoolCol(dbName='active', notNull=True, default=DEFAULT)
+    # See canonical.lp.dbschema.RosettaTranslationOrigin.
+    origin = IntCol(dbName='origin', notNull=True)
+    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
 
 
 class POTranslation(SQLBase):
@@ -932,8 +1017,6 @@ class POTranslation(SQLBase):
 
     _table = 'POTranslation'
 
-    _columns = [
-        StringCol(name='translation', dbName='translation', notNull=True,
-            unique=True, alternateID=True)
-    ]
+    translation = StringCol(dbName='translation', notNull=True, unique=True,
+        alternateID=True)
 

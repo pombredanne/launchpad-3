@@ -58,6 +58,13 @@ class IProduct(Interface):
     releases = Attribute(_("""An iterator over the ProductReleases for this
         product."""))
 
+    bugsummary = Attribute(_("""A matrix by bug severity and status of the
+        number of bugs of that severity and status assigned to this
+        product."""))
+
+    branches = Attribute(_("""An iterator over the Bazaar branches that are
+    related to this product."""))
+
     def poTemplates():
         """Returns an iterator over this product's PO templates."""
 
@@ -100,3 +107,8 @@ class IProduct(Interface):
     def getRelease(version):
         """Returns the release for this product that has the version
         given."""
+
+    def packagedInDistros():
+        """Returns the distributions this product has been packaged in."""
+
+

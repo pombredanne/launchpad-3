@@ -31,8 +31,8 @@
     </tr>
     <tr tal:repeat="bug view/getBugs"
         tal:attributes="onclick string:window.location='${bug/id}';">
-      <span tal:define="sp_assignments bug/packageassignment;
-                        p_assignments bug/productassignment">
+      <span tal:define="sp_assignments bug/packageassignments;
+                        p_assignments bug/productassignments">
         <td valign="top" align="center" tal:content="bug/id">$Bug.title</td>
         <td valign="top">
           <a tal:content="bug/title" tal:attributes="href bug/id">title</a>
@@ -81,7 +81,7 @@
       <th tal:condition="not:owner">Owner</th>
     </tr>
     <span tal:repeat="bug view/getBugsAssignedToSourcePackages">
-      <tr tal:repeat="bugass bug/packageassignment" tal:attributes="onclick string:window.location='${bug/id}';">
+      <tr tal:repeat="bugass bug/packageassignments" tal:attributes="onclick string:window.location='${bug/id}';">
         <td tal:content="bug/id">$Bug.title</td>
         <td><a tal:content="bug/title"
                tal:attributes="href bug/id">title</a></td>
@@ -108,7 +108,7 @@
       <th tal:condition="not:owner">Owner</th>
     </tr>
     <span tal:repeat="bug view/getBugsAssignedToProducts">
-      <tr tal:repeat="bugass bug/productassignment"
+      <tr tal:repeat="bugass bug/productassignments"
           tal:attributes="onclick string:window.location='${bug/id}';">
         <td tal:content="bug/id">$Bug.title</td>
         <td><a tal:content="bug/title"

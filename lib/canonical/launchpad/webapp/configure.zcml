@@ -1,0 +1,141 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="canonical.launchpad">
+
+  <!-- Annotations -->
+
+  <content class="canonical.launchpad.webapp.annotation.SQLObjectAnnotation">
+    <require
+        permission="zope.Public"
+        interface="canonical.launchpad.interfaces.IReadZODBAnnotation"
+        />
+    <require
+        permission="launchpad.AnyPerson"
+        interface="canonical.launchpad.interfaces.IWriteZODBAnnotation"
+        />
+  </content>
+
+  <adapter
+      for="sqlobject.main.SQLObject"
+      provides="canonical.launchpad.interfaces.IZODBAnnotation"
+      factory="canonical.launchpad.webapp.annotation.SQLObjectAnnotation"
+      />
+
+  <!-- ZODB -->
+
+  <subscriber
+      for="zope.app.appsetup.IDatabaseOpenedEvent"
+      factory="canonical.launchpad.webapp.zodb.bootstrapSubscriber"
+      />
+
+  <!-- TALES namespaces. -->
+
+  <adapter
+      for="zope.publisher.interfaces.IApplicationRequest"
+      provides="zope.app.traversing.interfaces.IPathAdapter"
+      factory="canonical.launchpad.webapp.tales.RequestAPI"
+      name="lp"
+      />
+
+  <adapter
+      for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
+      provides="zope.app.traversing.interfaces.IPathAdapter"
+      factory="canonical.launchpad.webapp.tales.HTMLFormAPI"
+      name="htmlform"
+      />
+
+  <!-- The next directive should be registered for 'int' only.
+       However, there's a bug in adapter registration that stops
+       this working.  To be fixed in ZopeX3 RSN.
+    -->
+  <adapter
+      for="*"
+      provides="zope.app.traversing.interfaces.IPathAdapter"
+      factory="canonical.launchpad.webapp.tales.DBSchemaAPI"
+      name="lp"
+      />
+
+  <adapter
+      for="*"
+      provides="zope.app.traversing.interfaces.IPathAdapter"
+      factory="canonical.launchpad.webapp.tales.FormattersAPI"
+      name="fmt"
+      />
+
+
+  <!-- Authentication. -->
+  <utility
+      factory="canonical.launchpad.webapp.authentication.PlacelessAuthUtility"
+      provides="canonical.launchpad.webapp.interfaces.IPlacelessAuthUtility"
+      permission="zope.Public"
+      />
+
+  <subscriber
+      for="canonical.publication.IAfterTraverseEvent"
+      factory="canonical.launchpad.webapp.authentication.handle"
+      />
+
+  <subscriber
+      for="zope.app.publication.interfaces.IBeforeTraverseEvent"
+      factory="canonical.launchpad.webapp.authentication.handle"
+      />
+
+  <subscriber
+      for="canonical.launchpad.webapp.interfaces.ILoggedInEvent"
+      factory="canonical.launchpad.webapp.authentication.handle"
+      />
+
+  <subscriber
+      for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
+      factory="canonical.launchpad.webapp.authentication.handle"
+      />
+
+  <utility
+      factory="canonical.launchpad.webapp.authentication.SSHADigestEncryptor"
+      provides="canonical.launchpad.interfaces.IPasswordEncryptor"
+      permission="zope.Public"
+      />
+
+  <utility
+      factory="canonical.launchpad.webapp.authentication.LaunchpadLoginSource"
+      provides="canonical.launchpad.webapp.interfaces.IPlacelessLoginSource"
+      permission="zope.Public"
+      />
+
+  <!-- Session machinery. -->
+  <utility
+      component="canonical.launchpad.webapp.session.idmanager"
+      provides="zope.app.session.interfaces.IClientIdManager"
+      />
+  <utility
+      component="canonical.launchpad.webapp.session.datacontainer"
+      provides="zope.app.session.interfaces.ISessionDataContainer"
+      />
+
+  <!-- Login and logout pages. -->
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      class="canonical.launchpad.webapp.login.BasicLoginPage"
+      permission="launchpad.AnyPerson"
+      name="+basiclogin"
+      attribute="login"
+      />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      template="../templates/launchpad-login.pt"
+      class="canonical.launchpad.webapp.login.CookieLoginPage"
+      permission="zope.Public"
+      name="+login"
+      />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.ILaunchpadApplication"
+      template="../templates/launchpad-logout.pt"
+      class="canonical.launchpad.webapp.login.CookieLogoutPage"
+      permission="zope.Public"
+      name="+logout"
+      />
+
+</configure>

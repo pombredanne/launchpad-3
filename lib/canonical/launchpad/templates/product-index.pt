@@ -12,23 +12,27 @@
 
 <body>
 
-<div metal:fill-slot="main">
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/latestBugPortlet" />
+    <div tal:replace="structure view/branchesPortlet" />
+</metal:leftportlets>
 
-    <h1><span tal:replace="context/title">$Product.title</span></h1>
-
-    <div style="float: right; clear: both; margin-top: 0.25em;">
-
-        Product home page:
+<metal:rightportlets fill-slot="portlets_two">
+        <b>Product home page:</b><br />
         <a tal:content="context/homepageurl|default"
            tal:attributes="href context/homepageurl|nothing">(none
         supplied)</a><br />
-        [ <a href="+edit">Edit Product Details</a> ]<br />
+        <img src="/++resource++edit.gif">
+        <a href="+edit">Edit Product Details</a><br />
         [ <a href="+addsources">Add Revision Control System</a> ]<br />
         [ TODO: allow creation of link to packages ]<br />
         [ <a href="+addseries">Add a Release Series</a> ]<br />
         [ <a href="+addrelease">Register a New Release</a> ]
+</metal:rightportlets>
 
-    </div>
+<div metal:fill-slot="main">
+
+    <h1><span tal:replace="context/title">$Product.title</span></h1>
 
     <div class="documentDescription" tal:content="context/shortdesc">
         $Product.shortdesc goes here. This should be quite short,
@@ -63,18 +67,13 @@
 
         <h2>Distro Packages</h2>
 
-        <p>This shows you which distributions have packaged this product,
-        and allows you to navigate straight to the information about that
-        source package.</p>
+        <p>Here you can see distribution packages for this upstream product.</p>
 
-        <ul tal:repeat="package context/sourcepackages">
-
-            <li><a tal:content="package/name"
-	           tal:attributes="href string:/soyuz/distros/ubuntu/src/warty/${package/name}">$SourcePackage.name
-	    </a>
-	    </li>
-            
-        </ul>
+		<ul tal:repeat="package context/sourcepackages">
+			<li><a tal:attributes="href string:/soyuz/distros/${package/distro/name}">
+            <span tal:replace="package/name">name</span> (<span
+            tal:replace="package/distro/name">distro</span>)</a></li>
+		</ul>
 
     </div>
 

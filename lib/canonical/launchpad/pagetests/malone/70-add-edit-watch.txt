@@ -1,0 +1,116 @@
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/watches/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 0
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/malone/bugs/2/
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <h1>Add Watch</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/watches/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 408
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://localhost:9000/malone/bugs/2/watches/+new
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugtracker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugtracker-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.remotebug"
+  ... 
+  ... 101
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  <BLANKLINE>
+  ...
+          <h1>Add Watch</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/watches/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugs/2/watches/+new
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  <BLANKLINE>
+  ..
+  <BLANKLINE>
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/ HTTP/1.1
+  ... Referer: http://localhost:9000/malone/bugs/2/watches/+new
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  ...
+          <h1>
+              Blackhole Trash folder
+          </h1>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/watches/5/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugs/2/
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <h3>Change Bug Watch</h3>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/watches/5/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 411
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://localhost:9000/malone/bugs/2/watches/5/+edit
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugtracker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugtracker-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.remotebug"
+  ... 
+  ... 103
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  ...
+            <h3>Change Bug Watch</h3>
+  ...
+

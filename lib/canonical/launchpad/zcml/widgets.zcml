@@ -14,4 +14,36 @@
         permission="zope.Public"
         />
 
+    <!-- Launchpad Add and Edit Form METAL
+        These templates can be used by any of the add or edit forms
+        in Launchpad -->
+    <browser:page
+        for="*"
+        name="launchpad_addform"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/launchpad-addform.pt"
+        />
+
+    <browser:page
+        for="*"
+        name="launchpad_editform"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/launchpad-editform.pt"
+        />
+
+    <!-- Widget Macros
+         NB this file overrides the addform / editform widget
+         display layout used in Launchpad. It should be somewhere
+         more central than bug.zcml-->
+
+    <browser:page
+        for="*"
+        name="launchpad_widget_macros"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/launchpad-widget-macros.pt"
+        />
+
 </configure>

@@ -19,7 +19,7 @@
 
     <browser:suburl
         for="canonical.launchpad.interfaces.IDOAPApplication"
-        utility="canonical.launchpad.interfaces.IProjectContainer"
+        utility="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
         name="projects" />
 

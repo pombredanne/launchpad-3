@@ -12,203 +12,151 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+<div tal:replace="structure view/teamsPortlet" />
+<div tal:replace="structure view/subteamsPortlet" />
+<div tal:replace="structure view/membershipPortlet" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+<div tal:replace="structure view/bugsPortlet" />
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
-  <h1><span tal:content="context/person/displayname">context</span>
-  Page </h1>
+    <div id="content" class="documentEditable">
+        <ul class="contentViews">
+            <li id="contentview-view" class="selected">
+                <a href=".">View</a>
+            </li>
 
- <table width="100%">
- <tr><td valign="top"> 
-    <div>
-    <table>
-       <legend><h3>Private Information</h3></legend>
-       <tr><td>Name:</td><td 
-	tal:content="string:${context/person/displayname}(${context/person/name})">
-	DISPLAYNAME(NICK)</td></tr>
+            <li id="contentview-packages" class="plain">
+                <a href="+packages">Packages</a>
+            </li>
 
-       <tr tal:condition="context/person/teamowner">
-       <td>Owner:</td>
-       <td><a tal:attributes="href string:../${context/person/teamowner/id}"
-              tal:content="context/person/teamowner/displayname">
-              OWNER</a></td>
-       </tr>
+            <li tal:condition="view/permission"
+	        id="contentview-edit" class="plain">
+                <a href="+edit">Edit</a>
+            </li>
 
-       <tr tal:condition="context/person/teamdescription">
-       <td>Description:</td><td tal:content="context/person/teamdescription">
-           DESCRIPTION</td>
-       </tr>
-       
-       <tal:dummy tal:condition="context/email">
-       <tr tal:repeat="email context/email">
-       <td>Email:</td>
-       <td tal:content="string:${email/email} (${email/statusname})">EMAIL</td>
-       </tr>
-       </tal:dummy>
+            <li tal:condition="view/permission"
+	        id="contentview-add" class="plain">
+                <a href="+add">Add</a>
+            </li>
 
-       <tr tal:condition="context/wiki">
-       <td>Wiki:</td><td> 
-        <a tal:attributes="href string:${context/wiki/wiki}${context/wiki/wikiname}" 
-           tal:content="string:${context/wiki/wiki}${context/wiki/wikiname}"/>        
-	</td></tr>
+        </ul>
 
-       <tr tal:condition="context/irc">
-       <td>IRC:</td><td><span tal:content="context/irc/nickname"/> at 
-       <span tal:content="context/irc/network"/></td>
-       </tr> 
+        <div class="documentContent" id="region-content">
 
-       <tr tal:condition="context/jabber">
-       <td>Jabber:</td><td tal:content="context/jabber/jabberid"></td>
-       </tr> 
+              <h1><span tal:content="context/person/displayname">context</span>
+              Page </h1>
 
-       <tr tal:condition="context/archuser">
-       <td>Arch User:</td><td tal:content="context/archuser/archuserid"></td>
-       </tr>
+              <table width="100%">
+              <tr><td valign="top"> 
+              <div>
+              <table>
+               <legend><h3>Private Information</h3></legend>
+               <tr><td>Name:</td><td 
+            tal:content="string:${context/person/displayname} (${context/person/name})">
+            DISPLAYNAME(NICK)</td></tr>
 
-       <tr tal:condition="context/gpg">
-       <td>GPG:</td>
-       <td tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}"></td>
-       <th><a href="+key">Pub Key</a></th>
-       </tr>
+               <tr tal:condition="context/person/teamowner">
+               <td>Owner:</td>
+               <td><a tal:attributes="href string:../${context/person/teamowner/name}"
+                      tal:content="context/person/teamowner/displayname">
+                      OWNER</a></td>
+               </tr>
 
-       <tr><td></td><td align="right"><a href="+edit">
-       Edit Private Information</a>
-       </td></tr>
-   </table>
-   </div> 
-   <!--Roles distro and distrorelease -->
-    </td><td valign="top"> 
-    <div>
-      <table>
-        <legend><h3>Roles</h3></legend>
-        <tr><td>
-	  <div>
-	  <table>
-	  <legend><b>Distribution Role</b></legend>
-          
-          <tr tal:condition="not:context/distroroles">
-	    <td><b>No Distribution Roles</b></td>
-          </tr>
+               <tr tal:condition="context/person/teamdescription">
+               <td>Description:</td><td tal:content="context/person/teamdescription">
+                   DESCRIPTION</td>
+               </tr>
+               
+               <tal:dummy tal:condition="context/email">
+               <tr tal:repeat="email context/email">
+               <td>Email:</td>
+               <td tal:content="string:${email/email} (${email/statusname})">EMAIL</td>
+               </tr>
+               </tal:dummy>
 
-          <tr tal:condition="context/distroroles"
-	      tal:repeat="role context/distroroles">
-	    <td><span tal:content="role/rolename">ROLENAME</span> on 
-	      <a tal:attributes="href string:../../distros/${role/distribution/name}"
-                 tal:content="role/distribution/title">DISTRO</a></td>
-	  </tr>
+               <tr tal:condition="context/wiki">
+               <td>Wiki:</td><td> 
+                <a tal:attributes="href string:${context/wiki/wiki}${context/wiki/wikiname}">  
+            Wiki Homepage</a>
+            </td></tr>
+
+               <tr tal:condition="context/irc">
+               <td>IRC:</td><td><span tal:content="context/irc/nickname"/> at 
+               <span tal:content="context/irc/network"/></td>
+               </tr> 
+
+               <tr tal:condition="context/jabber">
+               <td>Jabber:</td><td tal:content="context/jabber/jabberid"></td>
+               </tr> 
+
+               <tr tal:condition="context/archuser">
+               <td>Arch User:</td><td tal:content="context/archuser/archuserid"></td>
+               </tr>
+
+               <tr tal:condition="context/gpg">
+               <td>GPG:</td>
+               <td tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}"></td>
+               <th><a href="+key">Pub Key</a></th>
+               </tr>
+           </table>
+           </div> 
+           <!--Roles distro and distrorelease -->
+            </td><td valign="top"> 
+            <div>
+              <table>
+                <legend><h3>Roles</h3></legend>
+                <tr><td>
+              <div>
+              <table>
+              <legend><b>Distribution Role</b></legend>
+                  
+                  <tr tal:condition="not:context/distroroles">
+                <td><b>No Distribution Roles</b></td>
+                  </tr>
+
+                  <tr tal:condition="context/distroroles"
+                  tal:repeat="role context/distroroles">
+                <td><span tal:content="role/rolename">ROLENAME</span> on 
+                  <a tal:attributes="href string:../../distros/${role/distribution/name}"
+                         tal:content="role/distribution/title">DISTRO</a></td>
+              </tr>
+                  </table>
+              </div>
+            </td></tr>
+            <tr><td>
+              <div>
+              <table>
+              <legend><b>Release Roles</b></legend>
+            
+                  <tr tal:condition="not:context/distroreleaseroles">
+                  <td><b>No Release Roles</b></td>
+                  </tr>
+
+              <tr tal:condition="context/distroreleaseroles"
+                      tal:repeat="role context/distroreleaseroles">
+                  <td><span tal:content="role/rolename">ROLENAME</span> on 
+                      <a tal:attributes="href string:../../distros/${role/distrorelease/distribution/name}/releases/${role/distrorelease/name}"
+                         tal:content="role/distrorelease/displayname">RELEASE</a>
+                      </td>
+              </tr>
+              </table>
+                  </div>
+            </td></tr>
+              </table>
+            </div>
+          </td></tr>
           </table>
-	  </div>
-	</td></tr>
-	<tr><td>
-	  <div>
-	  <table>
-	  <legend><b>Release Roles</b></legend>
-	
-          <tr tal:condition="not:context/distroreleaseroles">
-	      <td><b>No Release Roles</b></td>
-          </tr>
 
-	  <tr tal:condition="context/distroreleaseroles"
-              tal:repeat="role context/distroreleaseroles">
-	      <td><span tal:content="role/rolename">ROLENAME</span> on 
-	          <a tal:attributes="href string:../../distros/${role/distrorelease/distribution/name}/releases/${role/distrorelease/name}"
-	             tal:content="role/distrorelease/displayname">RELEASE</a>
-              </td>
-	  </tr>
-	  </table>
-          </div>
-	</td></tr>
-      </table>
+        </div>
     </div>
-  </td></tr>
-  <!--Membership if team case-->     
-  <tr tal:condition="context/person/teamowner">
-   <td> <div> 
-   <table>
-   <legend><h3>Members</h3></legend>
-
-   <tr tal:condition="not:context/members">
-      <td>This Team has no Member yet</td></tr>
-
-   <tr tal:condition="context/members">
-      <th>Name</th><th>Role</th><th>Status</th></tr>
-
-   <tr tal:repeat="member context/members">
-       <td><a tal:attributes="href string:../${member/person/id}"
-	      tal:content="member/person/displayname">MEMBER</a></td>
-       <td tal:content="member/rolename">ROLE</td>
-       <td tal:content="member/statusname">STATUS</td>
-   </tr>
-   <tr><td/><td/><td align="right"><a href="+join">
-           Join This Team</a></td></tr>
-   </table>
-   </div>
-  </td><td>
-  <div> 
-   <table>
-   <legend><h3>Sub Teams</h3></legend>
-
-   <tr tal:condition="not:context/subteams">
-      <td>This Team has no Sub teams yet</td></tr>
-
-   <tr tal:repeat="team context/subteams">
-       <td><a tal:attributes="href string:../${team/person/id}"
-	      tal:content="team/person/displayname">SUBTEAM</a></td>
-   </tr>
-   </table>
-   </div>
-  </td></tr>
-  <!-- Creating Team  Anyway-->
-   <tr><td></td><th align="right">
-   <a href="+add">Create a New Team</a>
-   </th></tr>
-  <!--TeamParticipation anyway -->
-  <tr tal:condition="context/teams">
-   <td> <div> 
-   <table>
-   <legend><h3>My Teams</h3></legend>
-   <tr tal:repeat="team context/teams">
-       <td><a tal:attributes="href string:../${team/team/id}"
-	      tal:content="team/team/displayname">MEMBER</a></td>
-   </tr>
-   </table>
-   </div>
-  </td></tr>
-  <!-- Package Maintainer  -->
-  <tr><td>
-  <div class="dummy">
-   <table>
-     <legend><h3>Packages Maintained by:</h3></legend>
-     <tr><td> XXX: Hardcoded distro & distrorelease link</td></tr>
-     <tr tal:condition="not:context/packages">
-       <td> No package available </td>
-     </tr>
-     <tr tal:repeat="package context/packages">
-       <!-- FIXME: distribuiton and distrorelease missed --> 
-       <td><a tal:attributes="href string:../../distros/ubuntu/src/warty/${package/sourcepackage/name}"
-         tal:content="string:${package/sourcepackage/name}">
-	     PACKAGES
-	   </a>
-       <td>
-     </tr>
-   </table>
-  </div>
-  <!-- Malone Portlet -->
-  </td><td valign="top">
-  <div class="dummy">
-    <table>
-      <legend><h3>Bugs Board</h3></legend>
-      <tr><td><b>ASSIGNED</b></td><th>221</th></tr>
-      <tr><td><b>OPEN</b></td><th>22</th></tr>
-      <tr><td><b>RESOLVED</b></td><th>199</th></tr>
-      <tr><td><b>SUBMITED</b></td><th>139</th></tr>
-      <tr><td></td><td><a href="">More Bugs</a></td></tr>   
-    </table>
-  </div>
-  </td></tr>
-  </table>
-
-
 </div>
+ 
 
 </body>
 </html>

@@ -5,7 +5,7 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces.bugtracker import \
+from canonical.launchpad.interfaces import \
         IBugTrackerType, IBugTracker, IBugTrackerSet
 
 from canonical.database.sqlbase import SQLBase
@@ -40,7 +40,11 @@ class BugTracker(SQLBase):
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person',
                 notNull=True)
-    contactdetails = StringCol(notNull=True)
+    contactdetails = StringCol(notNull=False)
+    watches = MultipleJoin('BugWatch', joinColumn='bugtracker')
+
+    def watchcount(self):
+        return len(list(self.watches))
 
 
 class BugTrackerSet(object):

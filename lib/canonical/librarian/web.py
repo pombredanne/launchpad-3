@@ -80,7 +80,7 @@ class DigestSearchResource(resource.Resource):
                    for aID, aName, aType in library.getAliases(fID)]
 
         text = '\n'.join(map(str, [len(matches)] + matches))
-        return static.Data(text, 'text/plain').render(request)
+        return static.Data(text.encode('utf-8'), 'text/plain; charset=utf-8').render(request)
     
 class AliasSearchResource(resource.Resource):
     def __init__(self,storage):
@@ -98,6 +98,6 @@ class AliasSearchResource(resource.Resource):
 
         # Desired format is fileid/aliasid/filename
         ret = "/%s/%s/%s\n" % (row.content.id, alias, row.filename)
-        # Dunno why I need the __str__() here but it breaks without it
-        return static.Data(ret.__str__(), 'text/plain').render(request)
+        return static.Data(ret.encode('utf-8'),
+                           'text/plain; charset=utf-8').render(request)
 

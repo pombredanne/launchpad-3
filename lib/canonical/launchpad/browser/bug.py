@@ -3,15 +3,15 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from zope.interface import implements
 from zope.schema.interfaces import IText
-from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, TextWidget
 
-from canonical.launchpad.database import BugAttachmentContainer, \
-        BugExternalRefContainer, BugSubscriptionContainer, \
-        BugWatchContainer, ProductBugAssignmentContainer, \
-        SourcePackageBugAssignmentContainer, \
-        BugProductInfestationContainer, \
-        BugPackageInfestationContainer, Person, Bug, \
-        BugsAssignedReport, BugContainer
+from canonical.launchpad.database import BugAttachmentSet, \
+        BugExternalRefSet, BugSubscriptionSet, \
+        BugWatchSet, ProductBugAssignmentSet, \
+        SourcePackageBugAssignmentSet, \
+        BugProductInfestationSet, \
+        BugPackageInfestationSet, Person, Bug, \
+        BugsAssignedReport, BugSet
 
 from canonical.launchpad.interfaces import IPerson
 
@@ -19,21 +19,21 @@ from canonical.lp import dbschema
 
 def traverseBug(bug, request, name):
     if name == 'attachments':
-        return BugAttachmentContainer(bug=bug.id)
+        return BugAttachmentSet(bug=bug.id)
     elif name == 'references':
-        return BugExternalRefContainer(bug=bug.id)
+        return BugExternalRefSet(bug=bug.id)
     elif name == 'people':
-        return BugSubscriptionContainer(bug=bug.id)
+        return BugSubscriptionSet(bug=bug.id)
     elif name == 'watches':
-        return BugWatchContainer(bug=bug.id)
+        return BugWatchSet(bug=bug.id)
     elif name == 'productassignments':
-        return ProductBugAssignmentContainer(bug=bug.id)
+        return ProductBugAssignmentSet(bug=bug.id)
     elif name == 'packageassignments':
-        return SourcePackageBugAssignmentContainer(bug=bug.id)
+        return SourcePackageBugAssignmentSet(bug=bug.id)
     elif name == 'productinfestations':
-        return BugProductInfestationContainer(bug=bug.id)
+        return BugProductInfestationSet(bug=bug.id)
     elif name == 'packageinfestations':
-        return BugPackageInfestationContainer(bug=bug.id)
+        return BugPackageInfestationSet(bug=bug.id)
     else:
        raise KeyError, name
 
@@ -41,19 +41,19 @@ def traverseBugs(bugcontainer, request, name):
     if name == 'assigned':
         return BugsAssignedReport()
     else:
-        return BugContainer()[int(name)]
+        return BugSet()[int(name)]
 
 
 # TODO: It should be possible to specify all this via ZCML and not require
-# the MaloneBugView class with its ViewPageTemplateFile attributes
-class MaloneBugView(object):
+# the BugView class with its ViewPageTemplateFile attributes
+class BugView(object):
     # XXX fix these horrific relative paths
     watchPortlet = ViewPageTemplateFile(
         '../templates/portlet-bug-watch.pt')
     productAssignmentPortlet = ViewPageTemplateFile(
-        '../templates/portlet-bug-productassignment.pt')
+        '../templates/portlet-bug-productassignments.pt')
     sourcepackageAssignmentPortlet = ViewPageTemplateFile(
-        '../templates/portlet-bug-sourcepackageassignment.pt')
+        '../templates/portlet-bug-packageassignments.pt')
     productInfestationPortlet = ViewPageTemplateFile(
         '../templates/portlet-bug-productinfestation.pt')
     packageInfestationPortlet = ViewPageTemplateFile(
@@ -94,14 +94,28 @@ class BugsCreatedByView(object):
 
 #
 # WIDGETS
+# XXX Mark Shuttleworth first put here because they were for Malone use,
+# since they are beng generalised we should move them somewhere dedicated
+# for fields, widgets.
 #
 
-# BugSummaryWidget
-# A widget to capture a bug summary
-class BugSummaryWidget(TextAreaWidget):
+# SummaryWidget
+# A widget to capture a summary
+class SummaryWidget(TextAreaWidget):
 
     implements(IText)
 
     width = 60
     height = 5
+
+
+# TitleWidget
+# A launchpad title widget... needs to be a little wider than a normal
+# Textline
+class TitleWidget(TextWidget):
+
+    implements(IText)
+
+    displayWidth = 60
+
 

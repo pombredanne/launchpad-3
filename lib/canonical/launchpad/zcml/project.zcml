@@ -14,9 +14,23 @@
         />
     </content>
 
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProject"
+        getter="getProduct" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
         name="+index" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        name="+malone-index" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        layer="canonical.launchpad.layers.ButtressLayer"
+        name="+buttress-index" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
@@ -25,7 +39,13 @@
         <browser:page
             name="+index"
             template="../templates/project-index.pt"
-            lp:url="doap/projects/$Project.name/+index" />
+            lp:url="doap/projects/$Project.name/" />
+        <browser:page name="+malone-index"
+            template="../templates/project-bugs.pt"
+            lp:url="malone/projects/$Project.name/" />
+        <browser:page name="+buttress-index"
+            template="../templates/project-branches.pt"
+            lp:url="buttress/upstream/$Project.name/" />
     </browser:pages>
 
     <browser:pages
@@ -46,68 +66,61 @@
             lp:url="doap/projects/$Project.name/+newbugtracker" />
     </browser:pages>
 
-    <!-- XXX Mark Shuttleworth 18/10/04
-             this needs to disappear or be integrated with Layers -->
-    <browser:pages for="canonical.launchpad.interfaces.IProject"
-        permission="zope.Public">
-        <browser:page name="+malone-index"
-            template="../templates/malone-project-index.pt"
-            lp:url="malone/projects/$Project.name/index" />
-    </browser:pages>
-
-    <browser:traverse
+    <browser:editform
+        name="+editme"
         for="canonical.launchpad.interfaces.IProject"
-        getter="getProduct" />
-
-    <!-- ProjectContainer-->
-    <content class="canonical.launchpad.database.ProjectContainer">
-        <allow interface="canonical.launchpad.interfaces.IProjectContainer" />
-    </content>
-
-    <utility
-        factory="canonical.launchpad.database.ProjectContainer"
-        provides="canonical.launchpad.interfaces.IProjectContainer" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProjectContainer"
-        name="+index" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProjectContainer"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProjectContainerView"
-        lp:url="doap/projects/">
-        <!-- XXX lp-projects is a guess -->
-        <browser:page
-            name="+index" 
-            template="../templates/lp-projects-index.pt"
-            lp:url="doap/projects/+index" />
-        <browser:page
-            name="+search"
-            template="../templates/lp-projects-search.pt"
-            lp:url="doap/projects/+search" />
-    </browser:pages>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IProjectContainer"
-        name="+new"
-        class="canonical.launchpad.browser.ProjectContainerView"
+        schema="canonical.launchpad.interfaces.IProject"
+        label="Edit Upstream Project Details:"
+        fields="name title shortdesc description homepageurl wikiurl sourceforgeproject freshmeatproject"
         permission="launchpad.AnyPerson"
-        template="../templates/project-new.pt"
-        lp:url="doap/projects/+new" />
+        template="../templates/launchpad-editform.pt"
+        lp:url="doap/projects/$Project.name/+editme">
+    </browser:editform>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProjectContainer"
-        getter="__getitem__" />
+        
 
-    <!-- ProjectSet -->
+    <!-- ProjectSet-->
     <content class="canonical.launchpad.database.ProjectSet">
         <allow interface="canonical.launchpad.interfaces.IProjectSet" />
     </content>
 
     <utility
         factory="canonical.launchpad.database.ProjectSet"
-        provides="canonical.launchpad.interfaces.IProjectSet"
-        />
+        provides="canonical.launchpad.interfaces.IProjectSet" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProjectSet"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProjectSet"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProjectSetView"
+        lp:url="doap/projects/">
+        <browser:page
+            name="+index" 
+            template="../templates/projects-index.pt"
+            lp:url="doap/projects/+index" />
+        <browser:page
+            name="+search"
+            template="../templates/projects-search.pt"
+            lp:url="doap/projects/+search" />
+    </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IProjectSet"
+        name="+new"
+        class="canonical.launchpad.browser.ProjectSetView"
+        permission="launchpad.AnyPerson"
+        template="../templates/project-new.pt"
+        lp:url="doap/projects/+new" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProjectSet"
+        getter="__getitem__" />
+
+    <content class="canonical.rosetta.domain.RosettaProject">
+        <allow interface="canonical.launchpad.interfaces.IRosettaProject"/>
+    </content>
 
 </configure>

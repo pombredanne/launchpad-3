@@ -1,0 +1,49 @@
+#! /bin/bash
+
+# Update a local mirror of a remote archive using rsync/ssh.
+
+# That's much faster than archive-mirror, but it may also leave the
+# mirror in an inconsistent state if the remote archive was in
+# transition during the sync.
+
+# This script does not support mirroring a local archive to a remote
+# location.
+
+### Configuration ###
+
+# We have redundant configuration information (that is tested for
+# sanity later on) because rsync use a different remote location
+# format than tla and we have not implemented the parsing logic.
+
+# Official name of the archive, registered name of the local mirror.
+archive=rocketfuel@canonical.com
+
+# Host of the remote archive.
+srchost=chinstrap.warthogs.hbd.com
+
+# Absolute path of the remote archive.
+srcpath=/home/warthogs/archives/rocketfuel@canonical.com
+
+# Absolute path of the local mirror.
+dest=/home/david/home/{archives}/rocketfuel@canonical.com
+
+### No user-serviceable parts below ###
+
+# Check that the configuration is consistent with the archive registry.
+
+if test "`$TLA whereis-archive $archive`" != "$dest" ; then
+    echo "error: destination mismatch" >&2 ; return 1
+fi
+if test "`$TLA whereis-archive $archive-SOURCE`" != \
+    sftp://"$srchost""$srcpath" ; then
+    echo "error: source mismatch" >&2 ; return 1
+fi
+
+# Perform sync.
+
+# The options --times and --ignore-existing are mere optimizations.
+# All the other options are required for proper operation.
+
+rsync --recursive --times --delete --ignore-existing \
+    --rsh=ssh --verbose --compress --exclude='/=meta-info/' "$@" \
+    "$srchost":"$srcpath"/ "$dest"

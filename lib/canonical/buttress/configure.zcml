@@ -1,0 +1,44 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- This view registers 'buttress' as a suburl of RootObject. -->
+    <browser:suburl
+        for="canonical.publication.RootObject"
+        class="canonical.buttress.ButtressApplication"
+        newlayer="canonical.launchpad.layers.ButtressLayer"
+        name="buttress" />
+
+    <!-- general template for everything in buttress
+    <browser:pages for="*" permission="zope.Public">
+        <browser:page name="malone_template"
+            template="../launchpad/templates/main-template.pt" />
+    </browser:pages>
+     -->
+    <browser:defaultView
+        for="canonical.buttress.IButtressApplication"
+        name="+index" />
+
+    <browser:suburl
+        for="canonical.buttress.IButtressApplication"
+        utility="canonical.launchpad.interfaces.IProjectSet"
+        permission="zope.Public"
+        name="upstream" />
+
+    <!-- pages for the buttress application -->
+    <browser:pages
+        for="canonical.buttress.IButtressApplication"
+        permission="zope.Public"
+        class="canonical.buttress.ButtressApplicationView"
+        lp:url="buttress">
+        <browser:page
+            name="+index"
+            template="../launchpad/templates/buttress-index.pt"
+            lp:url="buttress/+index" />
+    </browser:pages>
+
+</configure>
+

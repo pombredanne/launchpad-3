@@ -1,12 +1,12 @@
 
-
 import psycopg
 
 from canonical.database.sqlbase import quote, SQLBase
 from sqlobject import StringCol, BoolCol, ForeignKey, IntCol, DateTimeCol, \
                       MultipleJoin
 
-from canonical.launchpad.interfaces import ArchiveAlreadyRegistered, ArchiveNotRegistered, ArchiveLocationDoublyRegistered
+from canonical.launchpad.interfaces import ArchiveAlreadyRegistered, \
+                ArchiveNotRegistered, ArchiveLocationDoublyRegistered
 from canonical.launchpad.interfaces import RevisionNotRegistered
 from canonical.launchpad.interfaces import RevisionAlreadyRegistered
 from canonical.launchpad.interfaces import VersionNotRegistered
@@ -29,17 +29,14 @@ class Branch(SQLBase):
 
     implements(IBranch)
 
-    _table = 'branch'
-    _columns = [
-        ForeignKey(name='namespace', foreignKey='ArchNamespace', dbName='archnamespace',
-                  notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
-                   default=None),
-        ForeignKey(name='product', foreignKey='Product', dbName='product',
-                   default=None),
-    ]
+    _table = 'Branch'
+    namespace = ForeignKey(foreignKey='ArchNamespace', dbName='archnamespace',
+                           notNull=True)
+    title = StringCol(dbName='title', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
+    owner = ForeignKey(foreignKey='Person', dbName='owner',
+                       default=None)
+    product = ForeignKey(foreignKey='Product', dbName='product', default=None)
     changesets = MultipleJoin('Changeset', joinColumn='branch')
     subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
     objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')

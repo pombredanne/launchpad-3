@@ -1,39 +1,21 @@
 <div class="portlet">
-    <h4>External References</h4>
+
+    <h4>Related Web Links</h4>
 
     <div class="portletBody">
         <div class="portletContent odd"
              tal:repeat="ref context/externalrefs">
             <h5 tal:content="ref/bugreftype/lp:BugExternalReferenceType">CVE reference</h5>
             <a tal:attributes="href ref/url">
-            <img src="++resource++link_icon.gif" alt="" />
-            <span tal:replace="ref/description">CVE:Data</span>
+                <img src="/++resource++link_icon.gif" alt="" />
+                <span tal:replace="ref/description">CVE:Data</span>
             </a>
         </div>
-
-<!--
-        <div class="portletContent even">
-            <strong xtal:condition="">Other references</strong>
-            <br />
-            <a href="#"
-               title="Relevant description">Relevant URL</a>
-            <a href="#"
-               title="Another description">Another URL</a>
-        </div>
--->
-
-<!-- Previous code
-            <a xtal:content="ref/description"
-               xtal:attributes="title ref/bugreftype/lp:BugExternalReferenceType;
-                                href ref/url;">
-                The reference
-            </a>
--->
 
         <div class="portletContent odd">
-            <form action="references/+new" method="post">
-                <input type="submit" value="Add Reference" />
-            </form>
+            <img src="/++resource++add.gif" alt="Add">
+            <a href="references/+new">Add web link...
+            </a>
         </div>
     </div>
 </div>

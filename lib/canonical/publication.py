@@ -1,6 +1,5 @@
 # (c) Canonical Software Ltd. 2004, all rights reserved.
 #
-# arch-tag: e739465e-bd5d-458c-b332-de6a783f21b7
 
 __metaclass__ = type
 
@@ -8,8 +7,8 @@ __metaclass__ = type
 from zope.security.interfaces import Unauthorized
 from zope.security.management import newInteraction
 import transaction
-from canonical.lp.placelessauth.interfaces import IPlacelessAuthUtility
-import canonical.zodb
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+import canonical.launchpad.webapp.zodb
 
 from zope.app import zapi
 from zope.publisher.interfaces.browser import IDefaultSkin
@@ -19,6 +18,7 @@ from zope.interface import implements, Interface
 from zope.interface import providedBy
 
 import canonical.launchpad.layers as layers
+from canonical.launchpad.interfaces import ILaunchpadApplication
 
 from zope.component import queryView, getDefaultViewName, queryMultiView
 from zope.component import getUtility
@@ -98,7 +98,7 @@ class SubURLTraverser:
 
 
 class RootObject(Location):
-    implements(IContainmentRoot)
+    implements(IContainmentRoot, ILaunchpadApplication)
 
 
 
@@ -223,7 +223,7 @@ class BrowserPublication(BrowserPub):
         self.openedConnection(conn)
 
         root = conn.root()
-        canonical.zodb.handle_before_traversal(root)
+        canonical.launchpad.webapp.zodb.handle_before_traversal(root)
 
         self.clearSQLOSCache()
 

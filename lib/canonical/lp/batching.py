@@ -51,11 +51,55 @@ class BatchNavigator(object):
     def batchPageURLs(self):
         batches = self.getBatches()
         urls = []
-        for page_number in range(len(batches)):
-            this_batch = batches[page_number]
+        size = len(batches)
+
+        nextb = self.batch.nextBatch() 
+
+        # Find the current page
+        if nextb:
+            current = nextb.start/nextb.size
+        else:
+            current = size
+
+        self.current = current
+        # Find the start page to show
+        if (current - 5) > 0:
+            start = current-5
+        else:
+            start = 0
+
+        # Find the last page to show
+        if (start + 10) < size:
+            stop = start + 10
+        else:
+            stop = size
+
+        initial = start
+        while start < stop:
+            this_batch = batches[start]
             url = self.generateBatchURL(this_batch)
-            urls.append({ page_number + 1 : url })
-        return urls
+            if (start+1) == current:
+                urls.append({ '['+str(start + 1)+']' : url })
+            else:
+                urls.append({ start + 1 : url })
+            start += 1
+
+        if current != 1:
+            url = self.generateBatchURL(batches[0])
+            urls.insert(0,{'_first_':url})
+        if current != size:
+            url = self.generateBatchURL(batches[size-1])
+            urls.append({'_last_':url})
+            
+
+        return urls    
+
+##         for page_number in range(len(batches)):
+##             this_batch = batches[page_number]
+##             url = self.generateBatchURL(this_batch)
+##             urls.append({ page_number + 1 : url })
+##         return urls
+
 
     def currentBatch(self):
         return self.batch

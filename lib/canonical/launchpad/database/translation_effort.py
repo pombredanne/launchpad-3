@@ -1,4 +1,3 @@
-# arch-tag: 0a0b2b6c-e563-460a-93a7-a5d4b5384d55
 
 from canonical.database.sqlbase import SQLBase, quote
 

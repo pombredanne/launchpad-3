@@ -7,7 +7,7 @@ from sqlobject import RelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
-from canonical.launchpad.interfaces.language import ILanguageSet, ILanguage
+from canonical.launchpad.interfaces import ILanguageSet, ILanguage
 
 class LanguageSet(object):
     implements(ILanguageSet)

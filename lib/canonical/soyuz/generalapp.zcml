@@ -1,0 +1,19 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:rdb="http://namespaces.zope.org/rdb"
+    >
+
+  <!-- Content directives.  We need to make sure SubURLs and other kinds of
+       traversal work properly.  We also need to make security declarations.-->
+
+  <content class="canonical.soyuz.generalapp.builddepsSet">
+    <allow interface="canonical.launchpad.interfaces.IbuilddepsSet"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.generalapp.CurrentVersion">
+    <allow interface="canonical.launchpad.interfaces.ICurrentVersion"/>
+  </content>
+
+</configure>

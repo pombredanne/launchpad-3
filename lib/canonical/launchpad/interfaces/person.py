@@ -58,9 +58,20 @@ class IPersonSet(Interface):
     def __getitem__(personid):
         """Returns the person with the given id.
 
-	Raises KeyError if there is no such person.
-	"""
+        Raises KeyError if there is no such person.
+        """
 
+    def get(personid, default=None):
+        """Returns the person with the given id.
+
+        Returns the default value if there is no such person.
+        """
+
+    def getByEmail(email, default=None):
+        """Returns the person with the given email address.
+
+        Returns the default value if there is no such person.
+        """
 
 class IEmailAddress(Interface):
     """The object that stores the IPerson's emails."""

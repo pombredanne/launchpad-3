@@ -24,8 +24,8 @@ class IBugSubscription(Interface):
             vocabulary='Subscription')
 
 
-class IBugSubscriptionContainer(Interface):
-    """A container for IBugSubscription objects."""
+class IBugSubscriptionSet(Interface):
+    """A set for IBugSubscription objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 

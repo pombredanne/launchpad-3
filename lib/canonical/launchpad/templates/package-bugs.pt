@@ -1,0 +1,55 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="malone">
+<body>
+
+<div metal:fill-slot="main">
+    <h1>Bugs for Package: 
+        <span tal:content="context/name">$SourcePackage.title</span>
+    </h1>
+    <div class="documentDescription"
+        tal:content="context/shortdesc">$SourcePackage.shortdesc
+    </div>
+    <div tal:content="context/description">$SourcePackage.description
+    </div>
+
+    <table class="listing rowNavigation">
+        <tr>
+            <th>#</th>
+            <th>Bug</th>
+            <th>Status</th>
+            <th>Severity</th>
+            <th>Priority</th>
+            <th>(Binary Package)</th>
+            <th>Assignee</th>
+        </tr> 
+        <tr tal:repeat="bugass context/bugs"
+            tal:attributes="onclick
+                string:window.location='../../bugs/${bugass/bug/id}';">
+            <td tal:content="bugass/bug/id">#</td>
+            <td tal:content="bugass/bug/title" style="font-weight: bold;">
+                $Bug.title
+            </td>
+            <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
+                $SourcePackageBugAssignment.bugstatus
+            </td>
+            <td tal:content="bugass/severity/lp:BugSeverity">
+                $SourcePackageBugAssignment.severity
+            </td>
+            <td tal:content="bugass/priority/lp:BugPriority">
+                $SourcePackageBugAssignment.priority
+            </td>
+            <td tal:content="bugass/binarypackagename/name|default">
+                (unspecified)
+            </td>
+            <td tal:content="bugass/assignee/browsername|default">
+                -
+            </td>
+        </tr>
+    </table>
+    
+</div>
+
+</body>
+</html>

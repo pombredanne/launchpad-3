@@ -19,10 +19,10 @@ check:
 	# database.
 	./test_on_merge.py canonical
 
-	# Run the pagetests.  Ensure that launchpad is not running using
-	# the launchpad_test database, and that nothing else is using that
-	# database, or the tests will hang until these processes exit.
-	#./test_on_merge.py -f canonical.launchpad.ftest
+pagetests:
+	$(MAKE) -C sourcecode build
+	python test.py test_pages
+	
 
 XXXcheck: build
 	$(MAKE) -C sourcecode check
@@ -120,4 +120,3 @@ tags:
 	ctags -R
 
 
-# arch-tag: c5c98418-056f-41e0-896a-6714a77439a8

@@ -5,10 +5,10 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.database.bug import BugContainerBase
+from canonical.launchpad.database.bug import BugSetBase
 
-from canonical.launchpad.interfaces.bugattachment import \
-        IBugAttachment, IBugAttachmentContainer, IMaloneBugAttachment
+from canonical.launchpad.interfaces import \
+        IBugAttachment, IBugAttachmentSet, IBugAttachment
 
 from canonical.database.sqlbase import SQLBase
 
@@ -27,17 +27,11 @@ class BugAttachment(SQLBase):
                              dbName='libraryfile', notNull=False)
     datedeactivated = DateTimeCol(notNull=False, default=None)
 
+class BugAttachmentSet(BugSetBase):
+    """A set for bug attachments."""
 
-class MaloneBugAttachment(BugAttachment, BugContainerBase):
-    implements(IMaloneBugAttachment)
-    _table = 'BugAttachment'
-
-
-class BugAttachmentContainer(BugContainerBase):
-    """A container for bug attachments."""
-
-    implements(IBugAttachmentContainer)
-    table = MaloneBugAttachment
+    implements(IBugAttachmentSet)
+    table = BugAttachment
 
     def __init__(self, bug=None):
         self.bug = bug
@@ -56,7 +50,7 @@ class BugAttachmentContainer(BugContainerBase):
 
 def BugAttachmentFactory(context, **kw):
     bug = context.context.bug # view.attachmentcontainer.bug
-    return MaloneBugAttachment(bug=bug, **kw)
+    return BugAttachment(bug=bug, **kw)
 
 
 def BugAttachmentContentFactory(context, **kw):

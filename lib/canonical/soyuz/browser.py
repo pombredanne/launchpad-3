@@ -4,7 +4,7 @@
 """
 
 # sqlobject/sqlos
-from sqlobject import LIKE, LIKE, OR, AND
+from sqlobject import LIKE, LIKE, AND
 from canonical.database.sqlbase import quote
 
 # lp imports
@@ -13,16 +13,27 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 # database imports
-from canonical.launchpad.database import SourcePackage, WikiName
+from canonical.launchpad.database import WikiName
 from canonical.launchpad.database import JabberID 
 from canonical.launchpad.database import TeamParticipation, Membership
 from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID 
+from canonical.launchpad.database import createPerson
+from canonical.launchpad.database import createTeam
+from canonical.launchpad.database import getPermission
+
+# interface import
+from canonical.launchpad.database import IPerson
+
+# zope imports
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 # app components
-from canonical.soyuz.sql import Distribution, DistroRelease, Person
+from canonical.launchpad.database import Distribution, DistroRelease, Person
 from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
+# Stock View 
+from canonical.rosetta.browser import ViewProduct
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages 
@@ -86,16 +97,15 @@ class PeopleListView(object):
         self.request = request
 
     def viewPeopleBatchNavigator(self):
-        people = list(Person.select())
+        people = list(Person.select(orderBy='displayname'))
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', BATCH_SIZE))
         batch_size = BATCH_SIZE
         batch = Batch(list = people, start = start,
                       size = batch_size)
         return BatchNavigator(batch = batch,
-                              request = self.request)
-    
-    
+                              request = self.request)    
+
 class PeopleSearchView(object):
 
     def __init__(self, context, request):
@@ -122,11 +132,9 @@ class PeopleSearchView(object):
     def _findPeopleByName(self, name):
         name = name.replace('%', '%%')
         query = quote('%%'+ name.upper() + '%%')
-        #XXX: (order) cprov 20041003
-        ##  Order all results alphabetically,
-        ## btw, 'ORDER by displayname' doesn't work properly here and should
-        ## be moved to Person SQLBASE class
-        return Person.select("""UPPER(displayname) LIKE %s OR UPPER(teamdescription) LIKE %s"""%(query, query))
+        return Person.select("""UPPER(displayname) LIKE %s
+        OR UPPER(teamdescription) LIKE %s ORDER by displayname"""%(query,
+                                                                   query))
 
 
 class PeopleAddView(object):
@@ -135,10 +143,10 @@ class PeopleAddView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.error_msg = None
 
 
     def add_action(self):
-        enable_added = False
         displayname = self.request.get("displayname", "")
         givenname = self.request.get("givenname", "")
         familyname = self.request.get("familyname", "")
@@ -146,64 +154,67 @@ class PeopleAddView(object):
         password = self.request.get("password", "")
         retype = self.request.get("retype", "")
 
-        ##XXX: (uniques) cprov 20041003
-        ## Verify unique name before insert the information
-        ## otherwise we will get an exception 
         if displayname:
-            
-            self.results = Person(displayname=displayname,
-                                       givenname=givenname,
-                                       familyname=familyname,
-                                       password=password,
-                                       teamownerID=None,
-                                       teamdescription=None,
-                                       karma=None,
-                                       karmatimestamp=None)
-            
-            EmailAddress(person=self.results.id,
-                         email=email,
-                         status=int(dbschema.EmailAddressStatus.NEW))
-            
-            enable_added = True
-        ##XXX: (results) cprov 20041003
-        ## Verify imediate results raise an exception if something
-        ## was wrong
-        return enable_added
+            if password != retype:
+                self.error_msg = 'Password does not match'
+                return False
 
+            self.results = createPerson(displayname, givenname, familyname,
+                                        password, email)
+
+            if not self.results:
+                # it happens when generate_nick returns
+                # a nick that already exists
+                self.error_msg = 'Unhandled error creating person'
+                return False
+
+            return True
+
+        return False
+        
 class TeamAddView(object):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.results = []
+        self.error_msg = None
 
+        self.person = IPerson(self.request.principal, None)
+        self.permission = getPermission(self.person, self.context)        
 
     def add_action(self):
         enable_added = False
+
+        if not self.permission:
+            return False
+    
         displayname = self.request.get("displayname", "")
         teamdescription = self.request.get("teamdescription", "")
-
+        email = self.request.get("email", "")
+        password = self.request.get("password", "")
+        retype = self.request.get("retype", "")
 
         ##XXX: (uniques) cprov 20041003        
-        if displayname:
-            #XXX: (team+authserver) cprov 20041003
-            ##  The team is owned by the current ID now,
-            ##  but it should comes from authserver
-            self.results = Person(displayname=displayname,
-                                       givenname=None,
-                                       familyname=None,
-                                       password=None,
-                                       teamdescription=teamdescription,
-                                       teamowner=self.context.id,
-                                       karma=None,
-                                       karmatimestamp=None)
+        if displayname and self.person:
+            if password != retype:
+                self.error_msg = 'Password does not match'
+                return enable_added
 
-            TeamParticipation(personID=self.results.id,
-                              teamID=self.context.id)
+            teamowner = self.person.id
+            
+            self.results = createTeam(displayname,
+                                      teamowner,
+                                      teamdescription,
+                                      password,
+                                      email)
+            
+            if not self.results:
+                # it happens when generate_nick returns
+                # a nick that already exists
+                self.error_msg = 'Unhandled error creating person'
+                return enable_added
 
-            ##XXX: (membership) cprov 20041003
-            ## How will be the Membership ? the owner should be always
-            ## the admin ? I supose not !          
             enable_added = True
 
         return enable_added
@@ -214,50 +225,157 @@ class TeamJoinView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.results = []
 
+        self.person = IPerson(self.request.principal, None)
+
+            
     def join_action(self):
-        enable_join = False
-        
-        dummy_id = self.request.get("id", "")
         ## XXX: (proposed+member) cprov 20041003
         ##  Join always as PROPOSED MEMBER 
         role = dbschema.MembershipRole.MEMBER.value
         status = dbschema.MembershipStatus.PROPOSED.value
 
-        if dummy_id:
-            self.person = Person.get(dummy_id)
+        if self.person:
             ##XXX: (uniques) cprov 20041003
-            self.results = Membership(personID=dummy_id,
-                                      team=self.context.id,
-                                      role=role,
-                                      status=status)
+            Membership(personID=self.person.id,
+                       teamID=self.context.id,
+                       role=role,
+                       status=status)
             
             ##XXX: (teamparticipation) cprov 20041003
             ## How to do it recursively as it is suposed to be,
             ## I mean flatten participation ...            
-            self.results = TeamParticipation(personID=dummy_id,
+            TeamParticipation(personID=self.person.id,
+                              teamID=self.context.id)
+            return True
+        
+        return False
+
+class TeamUnjoinView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.person = IPerson(self.request.principal, None)
+            
+    def unjoin_action(self):
+
+        if self.person:            
+            teampart = TeamParticipation.selectBy(personID=self.person.id,
+                                                  teamID=self.context.id)[0]
+
+            membership = Membership.selectBy(personID=self.person.id,
+                                             teamID=self.context.id)[0]
+            teampart.destroySelf()
+            membership.destroySelf()
+            
+            return True
+
+        return False
+        
+                    
+class PersonView(object):
+    ## XXX:  cprov 20041101
+    ## Use the already done malone portlet !!!!
+    bugsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-bugs.pt')
+
+    teamsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-teams.pt')
+
+    subteamsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-subteams.pt')
+
+    membershipPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-membership.pt')
+
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.person = IPerson(self.request.principal, None)
+        self.permission = getPermission(self.person, self.context)
+        
+    def is_member(self):
+
+        if self.person and self.context.person.teamowner:
+
+            membership = Membership.selectBy(personID=self.person.id,
                                              teamID=self.context.id)
-            
-            enable_join = True
-        return enable_join
-            
+            if membership.count() > 0:
+                return True
+        
+        return False
+
+class PersonPackagesView(object):
+    packagesPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-packages.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.person = IPerson(self.request.principal, None)
+        self.permission = getPermission(self.person, self.context)
+
+
 class PersonEditView(object):
+    emailPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-email.pt')
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.results = []
 
+        user = IPerson(self.request.principal, None)
+        self.permission = getPermission(user, self.context)
+            
+    def email_action(self):
+
+        if not self.permission:
+            return False
+
+        email = self.request.get("email", "")
+        new_email = self.request.get("new_email", "")
+        operation = self.request.get("operation", "")
+        valid = int(dbschema.EmailAddressStatus.VALIDATED)
+        person = self.context.person.id
+
+        if operation == 'add' and new_email:
+
+            res = EmailAddress(email=new_email,
+                               personID=person,
+                               status=valid)                              
+            return res
+
+        elif operation == 'edit' and new_email:
+
+            result = EmailAddress.selectBy(email=email)[0]
+            result.email = new_email 
+            return result
+
+        elif operation == 'delete':
+            result = EmailAddress.selectBy(email=email)[0]
+            result.destroySelf()
+            return True
+        else:
+            return False
+        
+
+
     def edit_action(self):
         enable_edited = False
+        if not self.permission:
+            return False
 
         displayname = self.request.get("displayname", "")
         givenname = self.request.get("givenname", "")
         familyname = self.request.get("familyname", "")
         teamdescription = self.request.get("teamdescription", "")
 
-        ##email = self.request.get("email", "")
         wiki = self.request.get("wiki", "")
         wikiname = self.request.get("wikiname", "")
         network = self.request.get("network", "")
@@ -274,22 +392,6 @@ class PersonEditView(object):
             self.context.person.teamdescription = teamdescription
             enable_edited = True            
 
-##TODO: (email+portlet) cprov 20041003
-## Email Adress requires a specific Portlet to handle edit single email
-## inside a set of found ones and validade them across the GPG key
-#             EmailAddress                
-#             if self.context.email:
-#                 self.context.email.email = email
-#                 self.enable_edited = True
-#             else:
-#                 if email:
-#                     status = int(dbschema.EmailAddressStatus.VALIDATED)
-#                     person = self.context.person.id
-#                     self.context.email = \
-#                          Soyuz.EmailAddress(personID=person,
-#                                             email=email, status=status)
-#                 else:
-#                     self.context.email = None
             #WikiName
             if self.context.wiki:
                 self.context.wiki.wiki = wiki
@@ -402,14 +504,24 @@ class DistrosEditView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.permission = False
+        self.person = IPerson(self.request.principal, None)
+
+        if self.person:
+            
+            if self.person.id == self.context.distribution.owner.id:
+                self.permission = True
 
     def edit_action(self):
         enable_edited = False
+        if not self.permission:
+            return False
+        
         name = self.request.get("name", "")
         title = self.request.get("title", "")
         description = self.request.get("description", "")
 
-        if name or title or description:
+        if (name or title or description):
             ##XXX: (uniques) cprov 20041003
             ## again :)
             self.context.distribution.name = name
@@ -480,6 +592,21 @@ class DistroReleaseSourcesView(object):
 
         return BatchNavigator(batch = batch, request = self.request)
 
+class DistroReleaseView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def bugSourcePackagesBatchNavigator(self):
+        source_packages = list(self.context.bugSourcePackages())
+        start = int(self.request.get('batch_start', 0))
+        end = int(self.request.get('batch_end', BATCH_SIZE))
+        batch_size = BATCH_SIZE
+        batch = Batch(list = source_packages, start = start,
+                      size = batch_size)
+
+        return BatchNavigator(batch = batch, request = self.request)
+
 class DistroReleaseBinariesView(object):
     
     def __init__(self, context, request):
@@ -502,9 +629,20 @@ class ReleaseEditView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.permission = False
+        self.person = IPerson(self.request.principal, None)
+        
+        if self.person:
+
+            if self.person.id == self.context.release.owner.id:
+                self.permission = True
+                
 
     def edit_action(self):
         enable_edited = False
+        if not self.permission:
+            return False
+        
         name = self.request.get("name", "")
         title = self.request.get("title", "")
         shortdesc = self.request.get("shortdesc", "")
@@ -590,6 +728,32 @@ class DistrosReleaseBinariesSearchView(object):
         else:
             return None
 
+class DistroReleaseSourceView(object):
+    translationPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-translations-sourcepackage.pt')
+    watchPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-distroreleasesource-watch.pt')
+
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.person = IPerson(self.request.principal, None)
+
+
+    def productTranslations(self):
+        if self.context.sourcepackage.product:
+            return ViewProduct(self.context.sourcepackage.product,
+                               self.request)
+        return None
+
+    def sourcepackageWatch(self):
+        if self.person is not None:            
+            return True
+
+        return False
+    
 
 ##XXX: (old+stuff) cprov 20041003
 ## This Old stuff is unmaintained by Soyuz Team

@@ -7,12 +7,12 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces.bug import IBug
-from canonical.launchpad.interfaces.bugextref import IBugExternalRef
+from canonical.launchpad.interfaces import IBug
+from canonical.launchpad.interfaces import IBugExternalRef
 from canonical.launchpad.interfaces import *
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.database.bugcontainer import BugContainerBase
+from canonical.launchpad.database.bugset import BugSetBase
 
 
 
@@ -43,15 +43,16 @@ class BugExternalRef(SQLBase):
             return self.data
 
 
-class BugExternalRefContainer(BugContainerBase):
-    """A container for BugExternalRef."""
+class BugExternalRefSet(BugSetBase):
+    """A set for BugExternalRef."""
 
-    implements(IBugExternalRefContainer)
+    implements(IBugExternalRefSet)
     table = BugExternalRef
 
 
 def BugExternalRefFactory(context, **kw):
     bug = context.context.bug
-    owner = 1 # Will be id of logged in user
     datecreated = datetime.utcnow()
-    return BugExternalRef(bug=bug, owner=owner, datecreated=datecreated, **kw)
+    return BugExternalRef(
+        bug=bug, owner=context.request.principal.id,
+        datecreated=datecreated, **kw)

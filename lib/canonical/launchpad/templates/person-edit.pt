@@ -12,8 +12,51 @@
 
 <body>
 
+
+<metal:leftportlets fill-slot="portlets_one">
+<div tal:replace="structure view/emailPortlet" />  
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
+<div id="content" class="documentEditable">
+
+    <ul class="contentViews">
+        <li id="contentview-view" class="plain">
+            <a href="index.html">View</a>
+        </li>
+	
+	<li id="contentview-packages" class="plain">
+            <a href="+packages">Packages</a>
+        </li>
+	
+        <li tal:condition="view/permission"
+	    id="contentview-edit" class="selected">
+            <a>Edit</a>
+        </li>
+
+	<li tal:condition="view/permission"
+	    id="contentview-add" class="plain">
+            <a href="+add">Add</a>
+        </li>
+
+    </ul>
+
+    <div class="documentContent" id="region-content">
+
+      <div class="portalMessage" 
+           tal:condition="not:view/permission">
+	   <p>Warning: You are not authorized to change this page. If you
+	      change something your changes will be lost.
+	   <div align="right"><a href="index.html"><i>back</i></a></div>
+      </div>
+
+    <div tal:condition="view/permission">
     <h1>Edit <span tal:content="context/person/displayname">DISPLAYNAME</span> 
 	Information</h1>
 
@@ -21,13 +64,16 @@
     <p> Here you edit the Information about <span
     tal:content="context/person/displayname">DISPLAYNAME</span>  
     </div>
-    
+  
+
+    <div tal:condition="view/edit_action">
+    <p> <a tal:attributes="href string:../${context/person/name}"
+         tal:content="context/person/displayname">PERSON</a>
+	 Modified
+    </div>
+  
     <div>
     <form name="edit" action="" method="POST">
-    <fieldset>
-    <legend><h3>Edit <span
-	tal:content="context/person/displayname">DISPLAYNAME</span>
-	 Information</h3><legend> 
 	<table>
 	<tr><td>
 	<div class="field">
@@ -50,8 +96,7 @@
 	    <input type="text" name="givenname"
 	    tal:attributes="value context/person/givenname|nothing"/>
 	</div>
-	</td></tr>
-	<tr><td>
+	</td><td>
 	<div class="field">
 	    <label>Familyname</label>
 	    <div class="formHelp">
@@ -87,9 +132,7 @@
 	    <input type="text" name="wiki" size="40"
 	    tal:attributes="value context/wiki/wiki|nothing"/>
 	</div>
-	</td></tr>
-
-	<tr><td>
+	</td><td>
 	<div class="field">
 	    <label>Wikiname</label>
 	    <div class="formHelp">
@@ -109,9 +152,7 @@
 	    <input type="text" name="network" size="40"
 	    tal:attributes="value context/irc/network|nothing"/>
 	</div>
-	</td></tr>
-
-	<tr><td>
+	</td><td>
 	<div class="field">
 	    <label>IRC Nickname</label>
 	    <div class="formHelp">
@@ -131,15 +172,13 @@
 	    <input type="text" name="archuserid" 
 	    tal:attributes="value context/archuser/archuserid|nothing"/>
 	</div>
-	</td></tr>
-
-	<tr><td>
+	</td><td>
 	<div class="field">
 	    <label>JABBER ID</label>
 	    <div class="formHelp">
 	    Enter the Jabber ID.
             </div>
-	    <input type="text" name="jabberid" size="40"
+	    <input type="text" name="jabberid" size="20"
 	    tal:attributes="value context/jabber/jabberid|nothing"/>
 	</div>
 	</td></tr>
@@ -149,9 +188,6 @@
 	PUB KEY IMPORT ENGINE ????
 	</td></tr>
 
-	<tr><td class="dummy">
-	MISSED EMAIL EDIT ENGINE
-	</td></tr>
 
 	<tr><td>
 	<div class="formControls">
@@ -161,18 +197,10 @@
 	</table>
   </form>
   </div>
-
-  <tla:block tal:condition="view/edit_action">
-  <div>
-  <h4><a tal:attributes="href string:../${context/id}"
-         tal:content="context/person/displayname">PERSON</a>
-    Modified</h4>
+    
   </div>
-  </tla:block>
-
-
-
-
+</div>
+</div>
 </div>
 
 </body>

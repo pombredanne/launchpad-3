@@ -1,0 +1,27 @@
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/+messages/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 78
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/malone/bugs/2
+  ... 
+  ... field.title=test+comment+subject&field.contents=test+comment&UPDATE_SUBMIT=Add""")
+  HTTP/1.1 303 See Other
+  ...
+          <h1>Add a Comment</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/ HTTP/1.1
+  ... Referer: http://localhost:9000/malone/bugs/2
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  ...
+          <h1>
+              Blackhole Trash folder
+          </h1>
+  ...

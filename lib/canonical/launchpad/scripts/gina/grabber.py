@@ -6,18 +6,27 @@ from database import Launchpad, Katie
 from library import attachLibrarian
 
 #
-package_root = "/srv/archive.ubuntu.com/"
-distrorelease = "warty"
-components = ["main", "universe", "restricted"]
+package_root = "/srv/archive.ubuntu.com/ubuntu/"
+keyrings_root = "keyrings/"
+#distrorelease = "hoary"
+#components = ["main", "universe", "restricted"]
 #components = ["main", "restricted"]
 #components = ["restricted"]
-arch = "i386"
+#arch = "i386"
 
-LPDB = "launchpad_test"
+# Parse the commandline...
+
+import sys
+
+distrorelease = sys.argv[1]
+archs = sys.argv[2].split(",")
+components = sys.argv[3:]
+
+LPDB = "launchpad_dev_dsilvers"
 KTDB = "katie"
 
 LIBRHOST = "localhost"
-LIBRPORT = 19090
+LIBRPORT = 9090
 
 #
 # helpers
@@ -39,14 +48,14 @@ def get_tagfiles(root, distrorelease, component, arch):
 
     return srcfile, sources_tagfile, binfile, binaries_tagfile
 
-def do_packages(source_map, bin_map, lp, kdb, keyrings, component):
+def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
     try:
         srcfile, src_tags, binfile, bin_tags = \
             get_tagfiles(package_root, distrorelease, component, arch)
 
         sources = apt_pkg.ParseTagFile(srcfile)
         while sources.Step():
-            srcpkg = SourcePackageRelease(component=component, 
+            srcpkg = SourcePackageRelease(kdb, component=component, 
                                           **dict(sources.Section))
             source_map[srcpkg.package] = srcpkg
 
@@ -68,31 +77,7 @@ def do_sections(lp, kdb):
     for section in sections:
         lp.addSection( section[0] )
 
-if __name__ == "__main__":
-    # get the DB abstractors
-    lp = Launchpad(LPDB)
-    kdb = Katie(KTDB)
-
-    # Comment this out if you need to disable the librarian integration
-    # for a given run of gina. Note that without the librarian; lucille
-    # will be unable to publish any files imported into the database
-    attachLibrarian( LIBRHOST, LIBRPORT )
-
-    keyrings = ""
-    for keyring in os.listdir("keyrings"):
-          keyrings += " --keyring=./keyrings/%s" % keyring
-    if not keyrings:
-        raise AttributeError, "Keyrings not found in ./keyrings/"
-
-    # Build us dicts of all package releases
-    source_map = {}
-    bin_map = {}
-    for component in components:
-        print "@ Loading components for %s" % component
-        do_packages(source_map, bin_map, lp, kdb, keyrings, component)
-    print "@ Loading sections"
-    do_sections(lp, kdb)
-        
+def do_arch(lp, kdb, bin_map, source_map):
     # Loop through binaries and insert stuff in DB. We do this as a
     # separate loop mainly to ensure that all source packages get
     # preferentially the description relative to a homonymous binary
@@ -110,9 +95,6 @@ if __name__ == "__main__":
             print "\t** No source package parsed for %s" % binpkg.package
             continue
 
-        if binpkg.is_created(lp):
-            continue
-
         srcpkg = source_map[binpkg.source]
         if not srcpkg.is_processed:
             if not srcpkg.description:
@@ -122,23 +104,76 @@ if __name__ == "__main__":
             # Tricky bit here: even if the source package exists, we
             # need to process it to ensure it has all the data inside it
             # or binary package won't create properly
-            srcpkg.process_package(kdb, package_root, keyrings)
-            srcpkg.ensure_created(lp)
+            try:
+                srcpkg.process_package(kdb, package_root, keyrings)
+                srcpkg.ensure_created(lp)
+            except Exception, e:
+                print "\t!! sourcepackage addition threw an error."
+
+        if binpkg.is_created(lp):
+            continue
 
         # we read the licence from the source package but it is
         # stored in the BinaryPackage table
         binpkg.licence = srcpkg.licence
 
-        binpkg.process_package(kdb, package_root, keyrings)
-        binpkg.ensure_created(lp)
+        try:
+            binpkg.process_package(kdb, package_root, keyrings)
+            binpkg.ensure_created(lp)
+        except:
+            print "\t!! binarypackage addition threw an error."
+
         count = count + 1
         if count == 10:
             lp.commit()
             count = 0
             print "* Committed"
 
-    lp.commit()
-    lp.close()
+
+if __name__ == "__main__":
+    # get the DB abstractors
+    lp = {}
+    for arch in archs:
+        lp[arch] = Launchpad(LPDB, distrorelease, arch)
+    kdb = Katie(KTDB, distrorelease)
+
+    # Comment this out if you need to disable the librarian integration
+    # for a given run of gina. Note that without the librarian; lucille
+    # will be unable to publish any files imported into the database
+    #attachLibrarian( LIBRHOST, LIBRPORT )
+
+    # Validate that the supplied components are available...
+    print "@ Validating components"
+    for arch in archs:
+        for comp in components:
+            lp[arch].getComponentByName(comp)
+
+    keyrings = ""
+    for keyring in os.listdir(keyrings_root):
+          keyrings += " --keyring=./keyrings/%s" % keyring
+    if not keyrings:
+        raise AttributeError, "Keyrings not found in ./keyrings/"
+
+    # Build us dicts of all package releases
+    source_map = {}
+    bin_map = {}
+    for arch in archs:
+        bin_map[arch] = {}
+        for component in components:
+            print "@ Loading components for %s/%s" % (arch,component)
+            do_packages(source_map, bin_map[arch], lp[arch], kdb,
+                        keyrings, component, arch)
+    print "@ Loading sections"
+    for arch in archs:
+        do_sections(lp[arch], kdb)
+    
+    #sys.exit(0);
+
+    for arch in archs:
+        do_arch(lp[arch],kdb,bin_map[arch],source_map)
+        lp[arch].commit()
+        lp[arch].close()
+
     kdb.commit()
     kdb.close()
 

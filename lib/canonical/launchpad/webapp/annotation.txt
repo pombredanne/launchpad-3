@@ -1,0 +1,26 @@
+zodb annotations
+================
+
+IZODBAnnotation(obj)[namespace] = value
+value = IZODBAnnotation(obj)[namespace]
+
+for sqlobject objects, store:
+
+  (simple_classname, id_int)
+
+sqlobject_annotations
+  OOBTree
+  -----------------------------------------------
+  simple_classname -> OOBTree
+                      ---------------------------
+                      id_int -> PersistentDict
+                                -----------------
+                                namespace -> data
+
+
+We use an OOBTree for id->dict because ids need not
+be ints in a future version of sqlobject.
+
+1. look up IZODBAnnotation adapter for obj.
+2. use IZODBAnnotation(obj)[namespace] to get at persistent dict
+

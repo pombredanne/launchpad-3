@@ -9,7 +9,7 @@
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugSubscription"
-        for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
+        for="canonical.launchpad.interfaces.IBugSubscriptionSet"
         label="Add Person"
         fields="subscription person"
         content_factory="canonical.launchpad.database.BugSubscriptionFactory"
@@ -28,26 +28,26 @@
         fields="subscription"
         lp:url="malone/bugs/$Bug.id/people/$BugSubscription.id/+edit" />
 
-    <!-- BugSubscriptionContainer -->
-    <content class="canonical.launchpad.database.BugSubscriptionContainer">
-        <allow interface="canonical.launchpad.interfaces.IBugSubscriptionContainer" />
+    <!-- BugSubscriptionSet -->
+    <content class="canonical.launchpad.database.BugSubscriptionSet">
+        <allow interface="canonical.launchpad.interfaces.IBugSubscriptionSet" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.BugSubscriptionContainer"
-        provides="canonical.launchpad.interfaces.IBugSubscriptionContainer" />
+        factory="canonical.launchpad.database.BugSubscriptionSet"
+        provides="canonical.launchpad.interfaces.IBugSubscriptionSet" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
+        for="canonical.launchpad.interfaces.IBugSubscriptionSet"
         name="+index" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
+        for="canonical.launchpad.interfaces.IBugSubscriptionSet"
         getter="__getitem__" />
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
+        for="canonical.launchpad.interfaces.IBugSubscriptionSet"
         permission="zope.Public"
         lp:url="malone/bugs/$Bug.id/people">
         <browser:page name="+index"

@@ -16,7 +16,7 @@
 
   <browser:suburl
       for="canonical.launchpad.interfaces.IFOAFApplication"
-      utility="canonical.launchpad.interfaces.IProjectContainer"
+      utility="canonical.launchpad.interfaces.IProjectSet"
       permission="zope.Public"
       name="projects" />
 

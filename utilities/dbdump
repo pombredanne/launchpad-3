@@ -1,0 +1,24 @@
+#! /bin/sh
+
+DATE=`date '+%Y%m%d'`
+BACKUPDIR=~/
+
+# Full database dump
+DBDUMP=${BACKUPDIR}/launchpad.${DATE}.pg_dump
+/usr/bin/pg_dump \
+        --format=c --compress=0 --blobs ${LP_DBNAME} \
+	> $DBDUMP
+
+# Make a .sql that can easily be imported by developers. This involves
+# reordering the dump. The following method is not foolproof, but should
+# work happily with the launchpad database
+cd $BACKUPDIR
+pg_restore -l $DBDUMP | grep '\(FUNC\|PROC\)' > pg_restore.order
+pg_restore -l $DBDUMP | grep -v '\(FUNC\|PROC\)' >> pg_restore.order
+pg_restore -L pg_restore.order \
+	--no-acl --no-owner --disable-triggers $DBDUMP \
+	| bzip2 -c9 > ${LP_DBNAME}.${DATE}.sql.bz2
+
+# Remove the full dump
+rm $DBDUMP
+

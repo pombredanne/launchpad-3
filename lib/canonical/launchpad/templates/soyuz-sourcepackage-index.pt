@@ -34,7 +34,7 @@
 	      <a
 	      tal:content="context/sourcepackage/maintainer/displayname" 
 	      tal:attributes="href 
-	      string:/soyuz/people/${context/sourcepackage/maintainer/id}"
+	      string:/soyuz/people/${context/sourcepackage/maintainer/name}"
 	      />
 
 	      <p><b>Originating Distribution:   </b> 
@@ -133,12 +133,12 @@
 
           <fieldset>
           <legend>Last Packages</legend>
-          <ul>
-	    <li tal:condition="context/lastversions"
-	        tal:repeat="lastversion context/lastversions">
+          <ul tal:define="lastversions context/lastversions">
+	    <li tal:condition="lastversions"
+	        tal:repeat="lastversion lastversions">
               <a tal:content="lastversion/version" tal:attributes="href lastversion/version">0.0.0-0</a>
             </li>
-	    <li tal:condition="not:context/lastversions">
+	    <li tal:condition="not:lastversions">
 	       No Packages Available</li>
            </ul>
           </fieldset>
@@ -191,52 +191,10 @@
           </fieldset>
 
 	  <div tal:replace="structure view/translationPortlet" />
+       
+          <div tal:replace="structure view/watchPortlet" />
 
-
-     <fieldset>
-     <legend>Package Tracking System</legend>
-     <div class="dummy">
-     <table>
-     <tr><td>
-        <table>
-          <tr><th>Subscribers Count</th><td>(1)</td></tr>
-        </table>
-     </td></tr>    
-     <tr><td>
-     <form name="subscribe" action="" method="POST">
-        <div class="field">
-        <label>Action</label>
-        <div class="formHelp">
-	    Select an Action.
-        </div>
-	<select class="listing" name="operation">
-	 <option value="subscribe">Subscribe</option>
-	 <option value="unsubscribe">Unsubscribe</option>
-	 <option value="advanced">Advanced mode</option>
-	</select>
-	</div>
-
-        <div class="field">
-        <label>Email</label>
-        <div class="formHelp">
-	    Enter an Email.
-        </div>
-          <input class="listing" type="text" name="email" size="25"
-	  tal:attributes="value request/email|nothing"/>
-	</div>
-
-	<div class="formControl">
-          <input class="listing" type="submit" name="submit" value="Submit"> 
-	</div>
-
-     </form>
-
-     </td></tr>
-     </table>
-     </div>
-     </fieldset>
-
-   </td></tr>
+          </td></tr>
 </table>
 </div>
 </body>

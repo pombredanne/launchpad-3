@@ -167,8 +167,10 @@ class SourceSource(SQLBase):
 
         job.tagging_rules=[]
 
-  
-        job.name = str(self.name)
+        # XXX ddaa 2004-10-28: workaround for broken cscvs shell quoting
+        name = _job_name_munger.translate(self.name)
+        # XXX end
+        job.name = name
         job.RCS = RCSNames[self.rcstype]
         job.svnrepository = self.svnrepository
         job.module = str(self.cvsmodule)
@@ -183,6 +185,38 @@ class SourceSource(SQLBase):
         job.package_files = self.packagefiles_collapsed
         job.product_id = self.product.id
         return job
+
+
+class _JobNameMunger(object):
+    # XXX ddaa 2004-10-28: This is part of a short term workaround for
+    # code in cscvs which does not perform shell quoting correctly.
+    # https://bugzilla.canonical.com/bugzilla/show_bug.cgi?id=2149
+
+    def __init__(self):
+        self._table = None
+
+    def is_munged(self, char):
+        import string
+        return not (char in string.ascii_letters or char in string.digits
+                    or char in ",-.:=@^_" or ord(char) > 127)
+
+    def translation_table(self):
+        if self._table is not None: return self._table
+        table = []
+        for code in range(256):
+            if self.is_munged(chr(code)):
+                table.append('_')
+            else:
+                table.append(chr(code))
+        self._table = ''.join(table)
+        return self._table
+
+    def translate(self, text):
+        return text.encode('utf8').translate(self.translation_table())
+
+
+# XXX ddaa 2004-10-28: workaround for broken cscvs shell quoting
+_job_name_munger = _JobNameMunger()
 
 
 class SourceSourceSet(object):

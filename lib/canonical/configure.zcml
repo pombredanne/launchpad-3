@@ -3,7 +3,7 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
-    <include file="meta.zcml" />
+    <include package="canonical.launchpad.webapp" file="meta.zcml" />
     <includeOverrides file="defaultview-meta.zcml" />
 
     <browser:skin name="launchpad"
@@ -53,6 +53,7 @@
         component="canonical.publication.debughttp"
         provides="zope.app.server.servertype.IServerType"
         />
+
 
     <!-- This is an index.html view on the root object.
         The root object is not ever published itself.  Only its views are.

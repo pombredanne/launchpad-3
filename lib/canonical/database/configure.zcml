@@ -2,15 +2,9 @@
 
     <!-- TODO: Consider splitting this into multiple files, matching the .py -->
 
-    <content class="canonical.launchpad.database.Bug">
-        <allow interface="canonical.launchpad.interfaces.IBug" />
-        <require permission="zope.View"
-        set_schema="canonical.launchpad.interfaces.IBug" />
-    </content>
-
     <content class="canonical.launchpad.database.BugActivity">
         <allow interface="canonical.launchpad.interfaces.IBugActivity" />
-    </content> 
+    </content>
 
     <content class="canonical.launchpad.database.BugExternalRef">
         <allow interface="canonical.launchpad.interfaces.IBugExternalRef" />
@@ -34,12 +28,6 @@
         <allow interface="canonical.launchpad.interfaces.IBugMessage" />
     </content>
 
-    <content class="canonical.launchpad.database.BugAttachment">
-        <allow interface="canonical.launchpad.interfaces.IBugAttachment" />
-        <require permission="zope.View"
-        set_schema="canonical.launchpad.interfaces.IBugAttachment" />
-    </content>
-
     <content class="canonical.launchpad.database.ProductBugAssignment">
         <allow interface="canonical.launchpad.interfaces.IProductBugAssignment" />
         <require permission="zope.View"
@@ -47,7 +35,7 @@
     </content>
 
     <content class="canonical.launchpad.database.SourcePackageBugAssignment">
-        <allow 
+        <allow
             interface="canonical.launchpad.interfaces.ISourcePackageBugAssignment"/>
         <require
             permission="zope.View"
@@ -63,7 +51,7 @@
         />
     </content>
 
-    <adapter for="canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal"
+    <adapter for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
         provides="canonical.launchpad.interfaces.IPerson"
         factory="canonical.launchpad.database.personFromPrincipal" />
 

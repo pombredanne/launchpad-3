@@ -12,9 +12,8 @@ from xml.sax.saxutils import escape as xml_escape
 from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 
-from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 from canonical.launchpad.interfaces import ILanguageSet, IPerson
-from canonical.launchpad.interfaces import IProjectSet
+from canonical.launchpad.interfaces import IProjectSet, IPasswordEncryptor
 from canonical.launchpad.database import Language, Person
 
 from canonical.rosetta.poexport import POExport
@@ -113,6 +112,16 @@ def parse_cformat_string(s):
     # Give up.
 
     raise ValueError(s)
+
+
+class TabIndexGenerator:
+    def __init__(self):
+        self.index = 1
+
+    def generate(self):
+        index = self.index
+        self.index += 1
+        return index
 
 
 class ViewProjects:
@@ -251,95 +260,105 @@ class ViewProduct:
 
         self.languages = request_languages(self.request)
 
-    def thereAreTemplates(self):
-        return len(list(self.context.poTemplates())) > 0
+    def templates(self):
+        templates = self.context.poTemplates()
 
-    def languageTemplates(self):
-        if self.languages:
-            for language in self.languages:
-                yield LanguageTemplates(language, self.context.poTemplates())
+        if templates:
+            for template in templates:
+                yield TemplateLanguages(template, self.languages)
         else:
             raise RuntimeError(
-                "Can't generate LanguageTemplates without languages.")
+                "Can't generate TemplateLanguages without templates.")
 
 
-class LanguageTemplates:
-    def __init__(self, language, templates):
-        self.language = language
-        self._templates = templates
+class TemplateLanguages:
+    """Support class for ViewProduct."""
 
-    def templates(self):
-        for template in self._templates:
-            retdict = {
-                'name': template.name,
-                'title': template.title,
-                'poLen': len(template),
-                'poCurrentCount': 0,
-                'poRosettaCount': 0,
-                'poUpdatesCount' : 0,
-                'poNonUpdatesCount' : 0,
-                'poTranslated': 0,
-                'poUntranslated': len(template),
-                'poCurrentPercent': 0,
-                'poRosettaPercent': 0,
-                'poUpdatesPercent' : 0,
-                'poNonUpdatesPercent' : 0,
-                'poTranslatedPercent': 0,
-                'poUntranslatedPercent': 100,
-            }
+    def __init__(self, template, languages):
+        self.template = template
+        self._languages = languages
 
-            try:
-                poFile = template.poFile(self.language.code)
-            except KeyError:
-                pass
-            else:
-                total = len(template)
-                currentCount = poFile.currentcount
-                rosettaCount = poFile.rosettacount
-                updatesCount = poFile.updatescount
-                nonUpdatesCount = currentCount - updatesCount
-                translated = currentCount  + rosettaCount
-                untranslated = total - translated
+        self.name = self.template.name
+        self.title = self.template.title
 
-                try:
-                    currentPercent = float(currentCount) / total * 100
-                    rosettaPercent = float(rosettaCount) / total * 100
-                    updatesPercent = float(updatesCount) / total * 100
-                    nonUpdatesPercent = float (nonUpdatesCount) / total * 100
-                    translatedPercent = float(translated) / total * 100
-                    untranslatedPercent = float(untranslated) / total * 100
-                except ZeroDivisionError:
-                    # XXX: I think we will see only this case when we don't have
-                    # anything to translate.
-                    currentPercent = 0
-                    rosettaPercent = 0
-                    updatesPercent = 0
-                    nonUpdatesPercent = 0
-                    translatedPercent = 0
-                    untranslatedPercent = 100
+    def languages(self):
+        for language in self._languages:
+            yield self._language(language)
 
-                # NOTE: To get a 100% value:
-                # 1.- currentPercent + rosettaPercent + untranslatedPercent
-                # 2.- translatedPercent + untranslatedPercent
-                # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
-                # untranslatedPercent
-                retdict.update({
-                    'poLen': total,
-                    'poCurrentCount': currentCount,
-                    'poRosettaCount': rosettaCount,
-                    'poUpdatesCount' : updatesCount,
-                    'poNonUpdatesCount' : nonUpdatesCount,
-                    'poTranslated': translated,
-                    'poUntranslated': untranslated,
-                    'poCurrentPercent': currentPercent,
-                    'poRosettaPercent': rosettaPercent,
-                    'poUpdatesPercent' : updatesPercent,
-                    'poNonUpdatesPercent' : nonUpdatesPercent,
-                    'poTranslatedPercent': translatedPercent,
-                    'poUntranslatedPercent': untranslatedPercent,
-                })
+    def _language(self, language):
+        retdict = {
+            'name': language.englishName,
+            'title': self.title,
+            'code' : language.code,
+            'poLen': len(self.template),
+            'hasPOFile' : False,
+            'poCurrentCount': 0,
+            'poRosettaCount': 0,
+            'poUpdatesCount' : 0,
+            'poNonUpdatesCount' : 0,
+            'poTranslated': 0,
+            'poUntranslated': len(self.template),
+            'poCurrentPercent': 0,
+            'poRosettaPercent': 0,
+            'poUpdatesPercent' : 0,
+            'poNonUpdatesPercent' : 0,
+            'poTranslatedPercent': 0,
+            'poUntranslatedPercent': 100,
+        }
 
-            yield retdict
+        try:
+            poFile = self.template.poFile(language.code)
+        except KeyError:
+            return retdict
+
+        total = len(self.template)
+        currentCount = poFile.currentCount()
+        rosettaCount = poFile.rosettaCount()
+        updatesCount = poFile.updatesCount()
+        nonUpdatesCount = currentCount - updatesCount
+        translated = currentCount  + rosettaCount
+        untranslated = total - translated
+
+        try:
+            currentPercent = float(currentCount) / total * 100
+            rosettaPercent = float(rosettaCount) / total * 100
+            updatesPercent = float(updatesCount) / total * 100
+            nonUpdatesPercent = float (nonUpdatesCount) / total * 100
+            translatedPercent = float(translated) / total * 100
+            untranslatedPercent = float(untranslated) / total * 100
+        except ZeroDivisionError:
+            # XXX: I think we will see only this case when we don't have
+            # anything to translate.
+            currentPercent = 0
+            rosettaPercent = 0
+            updatesPercent = 0
+            nonUpdatesPercent = 0
+            translatedPercent = 0
+            untranslatedPercent = 100
+
+        # NOTE: To get a 100% value:
+        # 1.- currentPercent + rosettaPercent + untranslatedPercent
+        # 2.- translatedPercent + untranslatedPercent
+        # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
+        # untranslatedPercent
+        retdict.update({
+            'hasPOFile' : True,
+            'poLen': total,
+            'poCurrentCount': currentCount,
+            'poRosettaCount': rosettaCount,
+            'poUpdatesCount' : updatesCount,
+            'poNonUpdatesCount' : nonUpdatesCount,
+            'poTranslated': translated,
+            'poUntranslated': untranslated,
+            'poCurrentPercent': currentPercent,
+            'poRosettaPercent': rosettaPercent,
+            'poUpdatesPercent' : updatesPercent,
+            'poNonUpdatesPercent' : nonUpdatesPercent,
+            'poTranslatedPercent': translatedPercent,
+            'poUntranslatedPercent': untranslatedPercent,
+        })
+
+        return retdict
 
 
 class ViewPOTemplate:
@@ -450,14 +469,17 @@ class ViewPreferences:
             if self.request.method == "POST":
                 # First thing to do, check the password if it's wrong we stop.
                 currentPassword = self.request.form['currentPassword']
-                ssha = SSHADigestEncryptor()
-                if currentPassword and ssha.validate(currentPassword, self.person.password):
+                encryptor = getUtility(IPasswordEncryptor)
+                isvalid = encryptor.validate(
+                    currentPassword, self.person.password)
+                if currentPassword and isvalid:
                     # The password is valid
                     password1 = self.request.form['newPassword1']
                     password2 = self.request.form['newPassword2']
                     if password1 and password1 == password2:
                         try:
-                            self.person.password = ssha.encrypt(password1)
+                            self.person.password = encryptor.encrypt(
+                                password1)
                         except UnicodeEncodeError:
                             self.error_msg = \
                                 "The password can only have ascii characters."
@@ -581,17 +603,19 @@ class TranslatePOTemplate:
         #    The number of messages being translated.
         #  error:
         #    A flag indicating whether an error ocurred during initialisation.
+        # show:
+        #    Which messages to show: 'translated', 'untranslated' or 'all'.
         #
         # No initialisation if performed if the request's principal is not
         # authenticated.
+
+        self.context = context
+        self.request = request
 
         self.person = IPerson(request.principal, None)
 
         if self.person is None:
             return
-
-        self.context = context
-        self.request = request
 
         self.error = False
 
@@ -647,6 +671,20 @@ class TranslatePOTemplate:
             self.count = int(request.form.get('count'))
         else:
             self.count = self.DEFAULT_COUNT
+
+        # Get message display settings.
+
+        self.show = self.request.form.get('show')
+
+        if not self.show in ('translated', 'untranslated', 'all'):
+            self.show = 'all'
+
+        # Get a TabIndexGenerator.
+
+        self.tig = TabIndexGenerator()
+
+    def makeTabIndex(self):
+        return self.tig.generate()
 
     def atBeginning(self):
         return self.offset == 0
@@ -771,11 +809,18 @@ class TranslatePOTemplate:
         isPlural = len(list(messageIDs)) > 1
         messageID = self._messageID(messageIDs[0], set.flags())
         translations = {}
+        fuzzy = {}
 
         for language in self.languages:
             # XXX: missing exception handling
             translations[language] = \
                 set.translationsForLanguage(language.code)
+            try:
+                fuzzy[language] = set.potemplate.poFile(language.code)[messageIDs[0].msgid].fuzzy
+            except KeyError:
+                # We don't have a translation for this language, so it cannot
+                # be fuzzy.
+                fuzzy[language] = False
 
         if isPlural:
             messageIDPlural = self._messageID(messageIDs[1], set.flags())
@@ -792,12 +837,21 @@ class TranslatePOTemplate:
             'commentText' : set.commenttext,
             'sourceComment' : set.sourcecomment,
             'translations' : translations,
+            'fuzzy' : fuzzy,
         }
 
     def messageSets(self):
-        # XXX: The call to __getitem__() should be replaced with a [] when the
-        # implicit __getslice__ problem has been fixed.
-        for set in self.context.__getitem__(slice(self.offset, self.offset+self.count)):
+        if self.show == 'all':
+            translated = None
+        elif self.show == 'translated':
+            translated = True
+        elif self.show == 'untranslated':
+            translated = False
+        else:
+            raise RuntimeError('show = "%s"' % self.show)
+
+        for set in self.context.filterMessageSets(True, translated,
+            self.languages, slice(self.offset, self.offset+self.count)):
             yield self._messageSet(set)
 
     def submitTranslations(self):
@@ -824,6 +878,7 @@ class TranslatePOTemplate:
                 sets[id] = {}
                 sets[id]['msgid'] = self.request.form[key].replace('\r', '')
                 sets[id]['translations'] = {}
+                sets[id]['fuzzy'] = {}
 
         # Extract translations from form.
 
@@ -851,6 +906,14 @@ class TranslatePOTemplate:
                     sets[id]['translations'][code] = {}
 
                 sets[id]['translations'][code][pluralform] = self.request.form[key]
+
+            # We check if the msgset is fuzzy or not for this language.
+            match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
+
+            if match:
+                id = int(match.group(1))
+                code = match.group(2)
+                sets[id]['fuzzy'][code] = True
 
         # Get/create a PO file for each language.
         # XXX: This should probably be done more lazily.
@@ -917,6 +980,13 @@ class TranslatePOTemplate:
                             pluralForm = index,
                             update = True,
                             fromPOFile = False)
+
+                # We set the fuzzy flag as needed:
+                if code in set['fuzzy'] and po_set.fuzzy == False:
+                    po_set.fuzzy = True
+                elif code not in set['fuzzy'] and po_set.fuzzy == True:
+                    po_set.fuzzy = False
+                
 
         self.submitted = True
 
@@ -1003,23 +1073,4 @@ class ViewTranslationEffortCategory:
     def languageTemplates(self):
         for language in request_languages(self.request):
             yield LanguageTemplates(language, self.context.poTemplates())
-
-#
-# XXX Mark Shuttleworth 02/10/04 I've copied this into Doap, maybe Login
-#     needs to be common code in some way?
-#
-class LogIn:
-
-    def isSameHost(self, url):
-        """Returns True if the url appears to be from the same host as
-        we are."""
-        return url.startswith(self.request.getApplicationURL())
-
-    def login(self):
-        referer = self.request.getHeader('referer')  # Traditional w3c speling
-        if referer and self.isSameHost(referer):
-            self.request.response.redirect(referer)
-        else:
-            self.request.response.redirect(self.request.getURL(1))
-        return ''
 

@@ -1,4 +1,3 @@
-# arch-tag: f6bfc192-208c-4e7f-afd6-7526697b4c79
 # Author: David Allouche <david.allouche@canonical.com>
 # Copyright (C) 2004 Canonical Software
 #

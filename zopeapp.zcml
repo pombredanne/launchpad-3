@@ -95,8 +95,10 @@
   <!--  Not using folders
   <include package="zope.app.folder" />
   -->
+  <!-- Session machinery -->
+  <include file="zopeappsession.zcml" />
+
   <!-- Browser Configurations -->
   <include file="zopeappbrowser.zcml" />
 
 </configure>
-<!-- arch-tag: ae87fdb2-412e-42ab-9fe7-6394c74710da -->

@@ -1,4 +1,6 @@
+# Copyright 2004 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
 
 # Zope interfaces
 from zope.interface import implements
@@ -8,15 +10,20 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, SQLObjectNotFound
+from sqlobject import SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import UTC_NOW
 
 # canonical imports
-from canonical.launchpad.interfaces.person import IPerson, IPersonSet,  \
-                                                  IEmailAddress
-from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.interfaces import IPerson, IPersonSet, IEmailAddress
+from canonical.launchpad.interfaces import ILanguageSet
+from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.lp import dbschema
+from canonical.foaf import nickname
+
+# python imports
+from datetime import datetime
 
 
 class Person(SQLBase):
@@ -41,6 +48,8 @@ class Person(SQLBase):
     languages = RelatedJoin('Language', joinColumn='person',
         otherColumn='language', intermediateTable='PersonLanguage')
 
+    # XXX Steve Alexander, 2004-11-15.
+    #     The rosetta team need to clean this up.
     _emailsJoin = MultipleJoin('RosettaEmailAddress', joinColumn='person')
 
     def emails(self):
@@ -100,8 +109,31 @@ class PersonSet(object):
 
     def __getitem__(self, personid):
         """See IPersonSet."""
-        return Person.get(personid)
+        person = self.get(personid)
+        if person is None:
+            raise KeyError, personid
+        else:
+            return person
 
+    def get(self, personid, default=None):
+        """See IPersonSet."""
+        try:
+            return Person.get(personid)
+        except SQLObjectNotFound:
+            return default
+
+    def getByEmail(self, email, default=None):
+        """See IPersonSet."""
+        results = EmailAddress.selectBy(email=email)
+        resultscount = results.count()
+        if resultscount == 0:
+            return default
+        elif resultscount == 1:
+            return results[0].person
+        else:
+            raise AssertionError(
+                'There were %s email addresses matching %s'
+                % (resultscount, email))
 
 def PersonFactory(context, **kw):
     now = datetime.utcnow()
@@ -112,9 +144,79 @@ def PersonFactory(context, **kw):
                     **kw)
     return person
 
+# XXX: Daniel Debonzi 2004-10-28
+# Shold not it and PersonFactory be only
+# one function?
+def createPerson(displayname, givenname, familyname,
+                 password, email):
+    """Creates a new person"""
 
+    nick = nickname.generate_nick(email)
+    now = datetime.utcnow()
+
+    if Person.selectBy(name=nick).count() > 0:
+        return
+    
+    password = getUtility(IPasswordEncryptor).encrypt(password)
+    
+    person = Person(displayname=displayname,
+                    givenname=givenname,
+                    familyname=familyname,
+                    password=password,
+                    teamownerID=None,
+                    teamdescription=None,
+                    karma=0,
+                    karmatimestamp=now,
+                    name=nick)
+
+    EmailAddress(person=person.id,
+                 email=email,
+                 status=int(dbschema.EmailAddressStatus.NEW))
+
+    return person
+
+def createTeam(displayname, teamowner, teamdescription,
+               password, email):
+    """Creates a new team"""
+
+    nick = nickname.generate_nick(email)
+    now = datetime.utcnow()
+
+    if Person.selectBy(name=nick).count() > 0:
+        return
+    
+    password = getUtility(IPasswordEncryptor).encrypt(password)
+
+    role = dbschema.MembershipRole.ADMIN.value
+    status = dbschema.MembershipStatus.CURRENT.value
+
+    team = Person(displayname=displayname,
+                  givenname=None,
+                  familyname=None,
+                  password=password,
+                  teamownerID=teamowner,
+                  teamdescription=teamdescription,
+                  karma=0,
+                  karmatimestamp=now,
+                  name=nick)
+
+    EmailAddress(person=team.id,
+                 email=email,
+                 status=int(dbschema.EmailAddressStatus.NEW))
+
+    Membership(personID=teamowner,
+               team=team.id,
+               role=role,
+               status=status)
+
+    TeamParticipation(personID=teamowner,
+                      teamID=team.id)
+
+    return team
+
+    
 def personFromPrincipal(principal):
-    """Adapt canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal 
+    """Adapt canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal
        to IPerson
     """
     if IUnauthenticatedPrincipal.providedBy(principal):
@@ -123,6 +225,28 @@ def personFromPrincipal(principal):
         ##return None
         raise ComponentLookupError
     return Person.get(principal.id)
+
+def getPermission(user, context):
+    """
+    return True if the logged user has permission to add/edit the current
+    shown context (it might be the own person, or the teamowner)
+    """
+    permission = False
+    
+    if user:
+        pid = user.id
+
+        ## user is own person
+        if pid == context.person.id:
+            permission = True
+
+        ## person is team
+        if context.person.teamowner:
+            ## user is teamowner
+            if pid == context.person.teamowner.id:
+                permission = True
+                
+    return permission
 
 
 class EmailAddress(SQLBase):
@@ -242,11 +366,13 @@ class TeamParticipation(SQLBase):
     #
 
     def getSubTeams(klass, teamID):
+        clauseTables = ('person', 'person')
         query = ("team = %d "
                  "AND Person.id = TeamParticipation.person "
-                 "AND Person.teamowner IS NOT NULL" %teamID)
+                 "AND Person.teamowner IS NOT NULL" % teamID)
 
-        return klass.select(query)
+        return klass.select(query,
+                            clauseTables=clauseTables)
     getSubTeams = classmethod(getSubTeams)
     
         

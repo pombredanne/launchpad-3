@@ -1,0 +1,29 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+    <h1>Team Unjoined</h1>
+    
+     <div tal:condition="view/unjoin_action">
+        <p><a tal:attributes="href string:../${context/person/name}"
+              tal:content="context/person/displayname">
+              TEAM</a> was Unjoined by 
+	      <a tal:attributes="href string:../${view/person/name}"
+                 tal:content="view/person/displayname"></a>
+     </div>
+
+</div>
+
+</body>
+</html>

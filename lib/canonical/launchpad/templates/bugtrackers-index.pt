@@ -11,16 +11,29 @@
 
   <div class="documentDescription">
   This page lists the bug tracking systems that have been registered with
-  The Launchpad.
+  The Launchpad. Registering a bug tracking system allows you to link Malone
+  bugs with the upstream bug, so that bug assignees will get a notification
+  when the upstream bug changes state.
   </div>
 
   <table class="listing rowNavigation">
     <tr>
-      <th>Bug System</th>
+      <th>Bug Tracker</th>
+      <th>Title</th>
+      <th>Home Page</th>
+      <th>Owner</th>
+      <th>Watches</th>
     </tr>
-    <tr tal:repeat="bugtracker context" tal:attributes="onclick
-        string:window.location='${bugtracker/name}';">
-      <td tal:content="bugtracker/name">$BugTracker.name</td>
+    <tr tal:repeat="bugtracker context"
+        tal:attributes="onclick string:window.location='${bugtracker/name}';
+                        title bugtracker/shortdesc">
+        <td tal:content="bugtracker/name">$BugTracker.name</td>
+        <td tal:content="bugtracker/title"
+            style="font-weight: bold;">$Bugtracker.title</td>
+        <td tal:content="bugtracker/baseurl">$Bugtracker.baseurl</td>
+        <td tal:content="bugtracker/owner/browsername"
+            class="people">$Bugtracker.owner"</td>
+        <td tal:content="bugtracker/watchcount">bugcount</td>
     </tr>
   </table>
 

@@ -5,19 +5,11 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <browser:resource
-        name="bullet.gif" file="../launchpad/images/bullet.gif" />
-  
-    <browser:resource
-        name="required.gif" file="../launchpad/images/required.gif" />
-  
-    <browser:resource
-        name="malone.png" file="images/malone.png" />
-  
     <!-- This view registers 'malone' as a suburl of RootObject. -->
     <browser:suburl
         for="canonical.publication.RootObject"
         class="canonical.malone.MaloneApplication"
+        newlayer="canonical.launchpad.layers.MaloneLayer"
         name="malone" />
 
     <!-- general template for everything in malone -->
@@ -32,28 +24,27 @@
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.IBugContainer"
+        utility="canonical.launchpad.interfaces.IBugSet"
         permission="zope.Public"
         name="bugs" />
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.IProjectContainer"
+        utility="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
         name="projects" />
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.ISourcePackageContainer"
+        utility="canonical.launchpad.interfaces.ISourcePackageSet"
         permission="zope.Public"
-        name="package" />
+        name="packages" />
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"
         utility="canonical.launchpad.interfaces.IBugTrackerSet"
         permission="zope.Public"
         name="bugtrackers" />
-
 
     <!-- pages for the malone application -->
     <browser:pages

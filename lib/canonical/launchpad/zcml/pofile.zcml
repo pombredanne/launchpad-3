@@ -1,0 +1,40 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+
+    <content class="canonical.launchpad.database.POTemplate">
+      <allow interface="canonical.launchpad.interfaces.IEditPOTemplate"/>
+    </content>
+
+    <content class="canonical.launchpad.database.POTMsgSet">
+      <allow interface="canonical.launchpad.interfaces.IEditPOTMsgSet"/>
+    </content>
+
+    <content class="canonical.launchpad.database.POMsgID">
+      <allow interface="canonical.launchpad.interfaces.IPOMsgID"/>
+    </content>
+
+    <content class="canonical.launchpad.database.POFile">
+      <require permission="zope.Public"
+          interface="canonical.launchpad.interfaces.IEditPOFile"
+          set_attributes="header pluralForms"/>
+    </content>
+
+    <content class="canonical.launchpad.database.POMsgSet">
+      <require permission="zope.Public"
+          interface="canonical.launchpad.interfaces.IEditPOMsgSet"
+          set_attributes="fuzzy" />
+    </content>
+
+    <content class="canonical.launchpad.database.POTranslationSighting">
+      <allow interface="canonical.launchpad.interfaces.IPOTranslationSighting"/>
+    </content>
+  
+    <content class="canonical.launchpad.database.POTranslation">
+      <allow interface="canonical.launchpad.interfaces.IPOTranslation"/>
+    </content>
+
+</configure>

@@ -1,5 +1,5 @@
 # -*- coding: ascii -*-
-# Contains code from msgfmt.py,
+# Contains code from msgfmt.py (available from python source code),
 #     written by Martin v. Loewis <loewis@informatik.hu-berlin.de>
 #     changed by Christian 'Tiran' Heimes <ch@comlounge.net>
 
@@ -284,7 +284,9 @@ class POHeader(dict, POMessage):
             try:
                 field, value = l.split(':', 1)
             except ValueError:
-                raise POSyntaxError
+                warnings.warn(POSyntaxWarning(
+                    msg='PO file header entry has a bad entry: %s' % l))
+                continue
             field, value = field.strip(), value.strip()
             if field.lower() == 'plural-forms':
                 try:

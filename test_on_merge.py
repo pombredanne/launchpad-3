@@ -5,9 +5,33 @@
 
 import sys
 import os, os.path
+import popen2
 import tabnanny
 import checkarchtag
 from StringIO import StringIO
+from threading import Thread
+
+class NonBlockingReader(Thread):
+
+    result = None
+
+    def __init__(self,file):
+        Thread.__init__(self)
+        self.file = file
+
+    def run(self):
+        self.result = self.file.read()
+
+    def read(self):
+        if self.result is None:
+            raise RuntimeError("read() called before run()")
+        return self.result
+
+    def readlines(self):
+        if self.result is None:
+            raise RuntimeError("readlines() called before run()")
+        return self.result.splitlines()
+
 
 def main():
     """Call test.py with whatever arguments this script was run with.
@@ -28,6 +52,7 @@ def main():
         print 'Failed to create database'
         return 1
 
+    # Tabnanny
     org_stdout = sys.stdout
     sys.stdout = StringIO()
     tabnanny.check(os.path.join(here, 'lib', 'canonical'))
@@ -39,12 +64,35 @@ def main():
         print '---- end tabnanny bitching ----'
         return 1
 
+    # Ensure ++resource++ URL's are all absolute - this ensures they
+    # are cache friendly
+    results = os.popen(
+        "find lib/canonical -type f | xargs grep '[^/]++resource++'"
+        ).readlines()
+    if results:
+        print '---- non-absolute ++resource++ URLs found ----'
+        print ''.join(results)
+        print '---- end non-absolute ++resource++ URLs found ----'
+        return 1
+
     print 'Running tests.'
-    stdin, out, err = os.popen3('cd %s; python test.py %s < /dev/null' %
-        (here, ' '.join(sys.argv[1:])))
-    errlines = err.readlines()
-    dataout = out.read()
-    test_ok = errlines[-1] == 'OK\n'
+    proc = popen2.Popen3('cd %s; python test.py %s < /dev/null' %
+        (here, ' '.join(sys.argv[1:])), True)
+    stdin, out, err = proc.tochild, proc.fromchild, proc.childerr
+
+    # Use non-blocking reader threads to cope with differing expectations
+    # from the proess of when to consume data from out and error.
+    errthread = NonBlockingReader(err)
+    outthread = NonBlockingReader(out)
+    errthread.start()
+    outthread.start()
+    errthread.join()
+    outthread.join()
+    exitcode = proc.wait()
+    test_ok = (os.WIFEXITED(exitcode) and os.WEXITSTATUS(exitcode) == 0)
+
+    errlines = errthread.readlines()
+    dataout = outthread.read()
 
     if test_ok:
         print errlines[1]
@@ -55,7 +103,7 @@ def main():
         print '---- end test stdout ----'
 
         print '---- test stderr ----'
-        print ''.join(errlines)
+        print '\n'.join(errlines)
         print '---- end test stderr ----'
         return 1
 

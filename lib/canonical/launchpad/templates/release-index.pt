@@ -17,7 +17,6 @@
     <h1><span
     tal:content="context/release/displayname">displayname</span> 
     Overview</h1> 
-
    <table width="100%" border="0">
    <tr><td>
       <table width="100%">
@@ -63,7 +62,7 @@
          <table width="100%">
          <tr><td>Owner</td>
          <th align="right"> 
-           <a tal:attributes="href string:../../../../people/${context/release/owner/id}"
+           <a tal:attributes="href string:../../../../people/${context/release/owner/name}"
 	      tal:content="context/release/owner/displayname">OWNER</a>
          </th></tr> 
          <tr><td>State</td>
@@ -91,16 +90,17 @@
       <a href="+edit">Edit Release Information</a>
    </th></tr>
    <tr><td>
-     <div class="dummy">
+     <div>
       <table width="100%">
-      <legend><h4>Release Bugs (XXX)</h4></legend>
+      <legend><h4>Release Bugs</h4></legend>
       <tr><td>
         <fieldset>
         <div>
 	<table>
-	<tr><th>120</th><th>Openned Bugs</th></tr>
-	<tr><th>20</th><th>Resolved Bugs</th></tr>
-	<tr><th>12</th><th>Security Bugs</th></tr>
+	<tr><th>Total Bugs:</th><th tal:content="python:context.release.bugCounter[0]">TOTAL</th></tr>
+	<tr><th>New Bugs:</th><th tal:content="python:context.release.bugCounter[1]">NEW</th></tr>
+	<tr><th>Opened Bugs:</th><th tal:content="python:context.release.bugCounter[2]">OPEN</th></tr>
+	<tr><th>Closed Bugs:</th><th tal:content="python:context.release.bugCounter[3]">CLOSED</th></tr>
 	</table>
 	</div>
       </td></tr>
@@ -140,7 +140,7 @@
 	<table>
 	<tr tal:repeat="role context/roles">
 	 <td>
-	  <a tal:attributes="href string:../../../../people/${role/person/id}"
+	  <a tal:attributes="href string:../../../../people/${role/person/name}"
 	     tal:content="role/person/displayname">TEAM</a>
          </td>
 	 <td tal:content="role/rolename">ROLE</td>

@@ -1,6 +1,30 @@
+
 from zope.interface import Interface, Attribute
 
-class IPOTemplate(Interface):
+class IRosettaStats(Interface):
+    """Rosetta-related statistics."""
+
+    def messageCount():
+        """Returns the number of Current IPOMessageSets in all templates
+        inside this project."""
+
+    def currentCount(language=None):
+        """Returns the number of msgsets matched to a potemplate for this
+        project that have a non-fuzzy translation in its PO file for this
+        language when we last parsed it."""
+
+    def updatesCount(language=None):
+        """Returns the number of msgsets for this project where we have a
+        newer translation in rosetta than the one in the PO file for this
+        language, when we last parsed it."""
+
+    def rosettaCount(language=None):
+        """Returns the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file for this language when we
+        last parsed it."""
+
+
+class IPOTemplate(IRosettaStats):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
     product = Attribute("The PO template's product.")
@@ -22,16 +46,13 @@ class IPOTemplate(Interface):
     license = Attribute("The license that applies to this PO template.")
 
     datecreated = Attribute("When this template was created.")
-    
+
     path = Attribute("The path to the template in the source.")
 
     iscurrent = Attribute("Whether this template is current or not.")
 
-    messagecount = Attribute("The number of msgids inside this PO template.")
-
     owner = Attribute("The owner of the template.")
-    
-    
+
     # A "current" messageset is one that was in the latest version of
     # the POTemplate parsed and recorded in the database. Current
     # MessageSets are indicated by having 'sequence > 0'
@@ -59,6 +80,22 @@ class IPOTemplate(Interface):
         """Same as messageSet(), with onlyCurrent=True
         """
 
+    def filterMessageSets(current, translated, languages, slice):
+        '''
+        Return message sets from this PO template, filtered by various
+        properties.
+
+        current:
+            Whether the message sets need be complete or not.
+        translated:
+            Wether the messages sets need be translated in the specified
+            languages or not.
+        languages:
+            The languages used for testing translatedness.
+        slice:
+            The range of results to be selected, or None, for all results.
+        '''
+
     def languages():
         """Return an iterator over languages that this template's messages are
         translated into.
@@ -73,21 +110,6 @@ class IPOTemplate(Interface):
         without a variant is given.
 
         Raises KeyError if there is no such POFile."""
-
-    def currentCount(language):
-        """Returns the number of msgsets matched to a this potemplate that have
-        a non-fuzzy translation in its PO file for this language when we last
-        parsed it."""
-
-    def updatesCount(language):
-        """Returns the number of msgsets where we have a newer translation in
-        rosetta than the one in the PO file for this language, when we last
-        parsed it."""
-
-    def rosettaCount(language):
-        """Returns the number of msgsets where we have a translation in rosetta
-        but there was no translation in the PO file for this language when we
-        last parsed it."""
 
     def hasMessageID(msgid):
         """Check whether a message set with the given message ID exists within
@@ -136,6 +158,7 @@ class IEditPOTemplate(IPOTemplate):
         Returns the newly created message set.
         """
 
+
 class IPOTMsgSet(Interface):
     """A collection of message IDs."""
 
@@ -157,7 +180,6 @@ class IPOTMsgSet(Interface):
     sourcecomment = Attribute("The source code comments this set has.")
 
     flagscomment = Attribute("The flags this set has.")
-
 
     def flags():
         """Return a list of flags on this set."""
@@ -210,7 +232,7 @@ class IPOMsgID(Interface):
     msgid = Attribute("A msgid string.")
 
 
-class IPOFile(Interface):
+class IPOFile(IRosettaStats):
     """A PO File."""
 
     potemplate = Attribute("This PO file's template.")
@@ -231,21 +253,6 @@ class IPOFile(Interface):
 
     license = Attribute("The license under this translation is done.")
 
-    currentcount = Attribute("""
-        The number of msgsets matched to the potemplate that have a
-        non-fuzzy translation in the PO file when we last parsed it
-        """)
-
-    updatescount = Attribute("""
-        The number of msgsets where we have a newer translation in
-        rosetta than the one in the PO file when we last parsed it
-        """)
-
-    rosettacount = Attribute("""
-        The number of msgsets where we have a translation in rosetta
-        but there was no translation in the PO file when we last parsed it
-        """)
-
     lastparsed = Attribute("Last time this pofile was parsed.")
 
     owner = Attribute("The owner for this pofile.")
@@ -256,7 +263,6 @@ class IPOFile(Interface):
 
     filename = Attribute("The name of the file that was imported")
 
-    
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
 
@@ -302,7 +308,7 @@ class IPOFile(Interface):
         """
 
     def __getitem__(msgid):
-        """Same as messageSet(), with onlyCurrent=True
+        """Same as messageSet(), with onlyCurrent=True.
         """
 
     def messageSetsNotInTemplate():
@@ -362,7 +368,6 @@ class IPOMsgSet(Interface):
 
     potmsgset = Attribute("The msgid set that is translating this set.")
 
-
     def pluralForms():
         """Number of translations that have to point to this message set
         for it to be complete."""
@@ -380,6 +385,9 @@ class IPOMsgSet(Interface):
 
 class IEditPOMsgSet(IPOMsgSet):
     """Interface for editing a POMsgSet."""
+
+    fuzzy = Attribute("""Whether this set was marked as fuzzy in the PO file 
+        it came from.""")
 
     def makeTranslationSighting(person, text, pluralForm, update=False, fromPOFile=False):
         """Return a new translation sighting that points back to us.
@@ -399,12 +407,12 @@ class IPOTranslationSighting(Interface):
     potranslation = Attribute("The translation that is sighted.")
 
     license = Attribute("The license that has this sight.")
-    
+
     datefirstseen = Attribute("The first time we saw this translation.")
 
     datelastactive = Attribute("Last time we saw this translation.")
 
-    inlastrevision = Attribute("""True if this sighting is currently in last 
+    inlastrevision = Attribute("""True if this sighting is currently in last
         imported POFile, otherwise false.""")
 
     pluralform = Attribute("The # of pluralform that we are sighting.")
@@ -421,3 +429,9 @@ class IPOTranslation(Interface):
 
     translation = Attribute("A translation string.")
 
+
+class IPOExport(Interface):
+    """Interface to export .po/.pot files"""
+
+    def export(language):
+        """Exports the .po file for the specific language"""

@@ -1,0 +1,16 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/4 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: __ac_name="admin"
+  ... Referer: http://localhost:9000/malone/bugs/
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+              <h5>cc:</h5>
+              <ul class="people">
+                  <li>
+                    <a href="people/7/+edit">Foo Bar</a>
+                  </li>
+  ...

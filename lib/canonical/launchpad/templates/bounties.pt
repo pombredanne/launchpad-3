@@ -1,0 +1,60 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Launchpad Bounty Tracker!</h1>
+
+    <div style="float: right;">
+        [ <a href="+new">Create New Bounty</a> ]
+    </div>
+    
+    <div class="documentDescription">
+        Below are all of the outstanding bounties. You can change the sort
+        order by clicking on the column on which you want to sort. You can
+        stake a claim to any unclaimed bounty, but must then begin to
+        deliver code on a regular schedule, or forfeit the claim to someone
+        else. The reviewer will decide when the submission is complete, and
+        can also rule that a claimant is making no progress, which will make
+        the bounty available again. Payments will be made by Paypal, wire
+        transfer can also be made for bounties in excess of $500.
+    </div>
+
+    <table class="listing rowNavigation">
+        <tr>
+            <th>Date Created</th>
+            <th>Title</th>
+            <th>USD Value<sup>*</sup></th>
+            <th>Difficulty</th>
+            <th>Duration</th>
+        </tr>
+        <tr tal:repeat="bounty context" tal:attributes="onclick
+                        string:window.location='${bounty/name}';">
+            <td tal:content="python:bounty.datecreated.strftime('%d %b %y')">date</td>
+            <td><b><span tal:replace="bounty/title">title</span></b></td>
+            <td tal:content="bounty/usdvalue">usdvalue</td>
+            <td tal:content="bounty/difficulty">difficulty</td>
+            <td tal:content="bounty/duration">duration</td>
+        </tr>
+    </table>
+
+    <p><sup>*</sup> A bounty may include contributions in several
+    currencies, this is an estimate based on recent exchange rates.</p>
+
+</div>
+
+</body>
+</html>
+

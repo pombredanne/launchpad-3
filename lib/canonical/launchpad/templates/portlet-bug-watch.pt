@@ -1,6 +1,7 @@
 <div class="portlet">
-    <h4 title="Bug watches keep track of this bug in external bug trackers.">
-    Bug Watches
+
+    <h4 title="Bug watches keep track of this bug in other bug trackers.">
+    BugTracker Watches
     </h4>
     
     <div class="portletBody">
@@ -8,7 +9,7 @@
              tal:repeat="watch context/watches">
             
             <a tal:attributes="href string:watches/${watch/id}/+edit">
-                <img src="++resource++search_icon.gif" alt="" />
+                <img src="/++resource++search_icon.gif" alt="" />
                 #<span tal:replace="watch/remotebug" />,
                  <span tal:replace="watch/bugtracker/title" />
                 <div class="portletDetails"
@@ -18,9 +19,9 @@
         </div>
         
         <div class="portletContent even">
-            <form action="watches/+new" method="post">
-                <input type="submit" value="Add Watch" />
-            </form>
+            <img src="/++resource++add.gif" alt="Add">
+            <a href="watches/+new">Link to other bug tracker...</a>
         </div> 
     </div>
+
 </div>

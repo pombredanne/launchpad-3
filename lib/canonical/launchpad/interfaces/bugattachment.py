@@ -29,13 +29,8 @@ class IBugAttachment(Interface):
             title=_('Date deactivated'), required=False, readonly=False,
             )
 
-# XXX Mark Shuttleworth 17/10/04 this should almost certainly disappear.
-class IMaloneBugAttachment(IBugAttachment, IAddFormCustomization):
-    pass
-
-
-class IBugAttachmentContainer(IAddFormCustomization):
-    """A container for IBugAttachment objects."""
+class IBugAttachmentSet(IAddFormCustomization):
+    """A set for IBugAttachment objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 

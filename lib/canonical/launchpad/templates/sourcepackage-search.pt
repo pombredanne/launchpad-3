@@ -28,12 +28,12 @@
 
    <h4>Search Results</h4>
 
-  <tal:block tal:define="bn view/searchSourcesBatchNavigator;
-                         prev_url bn/prevBatchURL;
-                         next_url bn/nextBatchURL;"
+  <tal:block tal:define="bn view/searchSourcesBatchNavigator"
 			 tal:condition="bn">
 
-  <div tal:define="batch python:list(bn.currentBatch())">
+  <div tal:define="batch python:list(bn.currentBatch());
+                   prev_url bn/prevBatchURL;
+                   next_url bn/nextBatchURL;">
   <table tal:condition="batch">
     <tr>
       <th>Source Packages</th>
@@ -75,8 +75,6 @@
   </b>
   </div>
   </tal:block>
-
-
 
 </div>
 

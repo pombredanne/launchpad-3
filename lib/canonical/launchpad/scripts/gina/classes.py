@@ -127,7 +127,9 @@ class SourcePackageRelease(AbstractPackageRelease):
                              # (Roland Bauerschmidt <rb@debian.org>, 
                              #  Marc Haber <mh+debian-packages@zugschlus.de>
     ]
-    def __init__(self, **args):
+
+    def __init__(self, kdb, **args):
+        sentinel = object()
         for k, v in args.items():
             if k == 'Binary':
                 self.binaries = stripseq(v.split(","))
@@ -148,6 +150,15 @@ class SourcePackageRelease(AbstractPackageRelease):
                 self.uploaders = [person.split(" ", 1) for person in people]
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
+        if getattr(self, 'section', sentinel) == sentinel:
+            print "Source package %s lacks a section, looking it up..." % self.package
+            try:
+                self.section = kdb.getSourceSection(self.package)
+                if '/' in self.section:
+                    self.component, self.section = self.section.split("/")
+            except:
+                print "I had to assume 'misc'"
+                self.section = 'misc'
 
     def do_package(self, dir, package_root):
         self.package_root = package_root
@@ -209,7 +220,8 @@ class SourcePackageRelease(AbstractPackageRelease):
                 if alias is not None:
                     print "\t\t\t= %s" % alias
                     db.createSourcePackageReleaseFile(self, fname, alias)
-            
+        else:
+            print "\t= Source package already present?"
 
 class BinaryPackageRelease(AbstractPackageRelease):
     # package
@@ -283,7 +295,9 @@ class BinaryPackageRelease(AbstractPackageRelease):
     def do_katie(self, kdb, keyrings):
         data = kdb.getBinaryPackageRelease(self.package, self.version,
                                            self.architecture)
-        assert len(data) == 1
+        #assert len(data) >= 1
+        if len(data) == 0:
+            raise Exception, "assert len(data) >= 1"
         data = data[0]
         self.gpg_signing_key = data["fingerprint"]
         self.gpg_signing_key_owner = \

@@ -1,0 +1,42 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <div style="float: right;">
+        [ <a href="+edit">Edit</a> ]
+    </div>
+
+    <h1>Bounty details:<br/>
+    <span tal:replace="context/title">$Bounty.title</span></h1>
+
+    <div class="documentDescription" tal:content="context/summary">
+        $Bounty.summary goes here. This should be quite short,
+        just a single paragraph of text really, giving a summary of
+        this Bounty.
+    </div>
+
+    <div tal:content="context/description">
+        $Bounty.description goes here. It could be quite long, a few
+        paragraphs at least, and should specify in detail the requirements
+        of the bounty, so that both claimant and reviewer will know when the
+        bounty has been completed.
+    </div>
+
+    
+</div>
+
+</body>
+</html>

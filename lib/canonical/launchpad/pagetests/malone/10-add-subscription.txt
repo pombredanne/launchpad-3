@@ -1,0 +1,126 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/people/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugs/2
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  <BLANKLINE>
+  ...
+          <h1>Add Person</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/people/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 508
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://localhost:9000/malone/bugs/2/people/+new
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.subscription"
+  ... 
+  ... CC
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.subscription-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.person"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.person-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+          <h1>Add Person</h1>
+  ...
+  <select name="field.subscription" size="1" >
+  <option selected="selected" value="CC">CC</option>
+  <option value="Ignore">Ignore</option>
+  <option value="Watch">Watch</option>
+  </select>
+  ...
+  <select name="field.person" size="1" >
+  ...
+  </select>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/people/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugs/2/people/+new
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  <BLANKLINE>
+  ..
+  <!--
+  <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+        lang="en"
+        metal:use-macro="context/@@malone_template/master"
+        i18n:domain="rosetta">
+  <body>
+  <BLANKLINE>
+  <div metal:fill-slot="main">
+    <h1>People</h1>
+  <BLANKLINE>
+    <div class="portalMessage"
+         tal:condition="exists:request/delete">
+      <div tal:define="dummy python:context.delete(request.get('delete'))"
+           tal:replace="string:Subscription deleted" />
+    </div>
+  <BLANKLINE>
+    <table class="listing">
+      <tr>
+        <th>Relationship</th>
+        <th>Surname</th>
+        <th>Firstname</th>
+        <th>Action</th>
+      </tr>
+      <tr tal:repeat="sub context">
+        <td tal:content="sub/subscription/lp:BugSubscription">subscription</td>
+        <td tal:content="sub/person/familyname">familyname</td>
+        <td tal:content="sub/person/givenname">givenname</td>
+        <td>
+          <a tal:attributes="href string:index?delete=${sub/id}">Delete</a>
+        </td>
+      </tr>
+    </table>
+    <input type="submit" value="Add" onclick="window.open('+new','_top')" />
+  </div>
+  <BLANKLINE>
+  </body>
+  </html>
+  -->
+  <BLANKLINE>
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/ HTTP/1.1
+  ... Referer: http://localhost:9000/malone/bugs/2/people/+new
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+                  <li>
+                    <a href="people/6/+edit">...</a>
+                  </li>
+  ...
+          <h1>
+              Blackhole Trash folder
+          </h1>
+  ...
+

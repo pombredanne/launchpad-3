@@ -25,22 +25,26 @@ You can ask for the previous and next results' links:
   >>> reindeer_batch_navigator.nextBatchURL()
   'http://www.example.com/foo?batch_start=3&batch_end=6'
   >>> last_reindeer_batch = reindeer_batch.nextBatch().nextBatch()
-  >>> last_reindeer_batch_navigator = BatchNavigator(batch = last_reindeer_batch, request = request_without_qs)
+  >>> last_reindeer_batch_navigator = BatchNavigator(
+  ...     batch = last_reindeer_batch, request = request_without_qs)
   >>> last_reindeer_batch_navigator.nextBatchURL()
   ''
-  >>> reindeer_batch_navigator_with_qs = BatchNavigator(batch = reindeer_batch.nextBatch(), request = request_with_qs)
+  >>> reindeer_batch_navigator_with_qs = BatchNavigator(
+  ...     batch = reindeer_batch.nextBatch(), request = request_with_qs)
   >>> reindeer_batch_navigator_with_qs.prevBatchURL()
   'http://www.example.com/foo?fnorb=bar&batch_start=0&batch_end=3'
   >>> reindeer_batch_navigator_with_qs.nextBatchURL()
   'http://www.example.com/foo?fnorb=bar&batch_start=6&batch_end=9'
-  >>> reindeer_batch_navigator_with_qs_after_next = BatchNavigator(batch = reindeer_batch.nextBatch(), request = request_with_qs_after_next)
+  >>> reindeer_batch_navigator_with_qs_after_next = BatchNavigator(
+  ...     batch = reindeer_batch.nextBatch(),
+  ...     request = request_with_qs_after_next)
   >>> reindeer_batch_navigator_with_qs_after_next.prevBatchURL()
   'http://www.example.com/foo?fnorb=bar&batch_start=0&batch_end=3'
 
 Finally, you can ask for the links for each of the result pages:
 
   >>> reindeer_batch_navigator.batchPageURLs()
-  [{1: 'http://www.example.com/foo?batch_start=0&batch_end=3'}, {2: 'http://www.example.com/foo?batch_start=3&batch_end=6'}, {3: 'http://www.example.com/foo?batch_start=6&batch_end=9'}]
+  [{'[1]': 'http://www.example.com/foo?batch_start=0&batch_end=3'}, {2: 'http://www.example.com/foo?batch_start=3&batch_end=6'}, {3: 'http://www.example.com/foo?batch_start=6&batch_end=9'}, {'_last_': 'http://www.example.com/foo?batch_start=6&batch_end=9'}]
 
 TODO:
 

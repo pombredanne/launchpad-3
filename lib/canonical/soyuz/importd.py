@@ -3,27 +3,18 @@
 (c) Canonical Ltd. 2004
 """
 
-# Python standard library imports
-from sets import Set
-import datetime
-
 # Zope imports
 from zope.interface import implements
 
 # sql imports
-from sqlos.interfaces import IConnectionName
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
-from canonical.lp import dbschema
 from canonical.database.sqlbase import quote
 
 # Interfaces
-from canonical.launchpad.interfaces import ISourceSource
 from canonical.launchpad.interfaces import IProjectSet, IProduct, IProject
 from canonical.launchpad.database import Project as dbProject, Product \
      as dbProduct
 
-from canonical.soyuz.sql import RCSTypeEnum
+from canonical.launchpad.database import RCSTypeEnum
 
 
 class Projects(object):

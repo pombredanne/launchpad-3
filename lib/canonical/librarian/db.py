@@ -10,29 +10,28 @@ class AliasConflict(Exception):
     pass
 
 class Library(object):
+
+    def getTransaction(self):
+        return LibraryFileContent._connection.transaction()
+    
     def lookupBySHA1(self, digest):
         return [fc.id for fc in LibraryFileContent.selectBy(sha1=digest)]
 
-    def add(self, digest, size):
-        txn = LibraryFileContent._connection.transaction()
+    def add(self, digest, size, txn):
         lfc = LibraryFileContent(filesize=size, sha1=digest, connection=txn)
-        return lfc.id, txn
+        return lfc.id
 
-    def addAlias(self, fileid, filename, mimetype, txn=None):
+    def addAlias(self, fileid, filename, mimetype, txn):
         try:
-            existing = self.getAlias(fileid, filename)
+            existing = self.getAlias(fileid, filename, txn)
             if existing.mimetype != mimetype:
                 # FIXME: The DB should probably have a constraint that enforces
                 # this i.e. UNIQUE(content, filename)
                 raise AliasConflict
             return existing.id
         except IndexError:
-            if txn is not None:
-                return LibraryFileAlias(contentID=fileid, filename=filename,
-                        mimetype=mimetype, connection=txn).id
-            else:
-                return LibraryFileAlias(contentID=fileid, filename=filename,
-                        mimetype=mimetype).id
+            return LibraryFileAlias(contentID=fileid, filename=filename,
+                                    mimetype=mimetype, connection=txn).id
 
     def getAlias(self, fileid, filename, connection=None):
         return LibraryFileAlias.selectBy(contentID=fileid, filename=filename,
