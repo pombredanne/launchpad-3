@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-13 13:17:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1195
+
+    Summary:
+      checkwatches.py should commit
+    Revision:
+      launchpad--devel--0--patch-1195
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-82
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-83
+       checkwatches.py should commit
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/malone/checkwatches.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-82
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-83
+
+
 2005-01-13 11:44:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1194
 
     Summary:
