@@ -2,6 +2,53 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 22:37:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1236
+
+    Summary:
+      remove some rejected schema change proposals and submit the new schema
+ change proposal for private bugs
+    Revision:
+      launchpad--devel--0--patch-1236
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-314
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-315
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-316
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-317
+       remove schema change proposals for the rejected bug privacy implementation
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-318
+       add the schema change proposal for private bugs
+    
+
+    new files:
+     database/schema/pending/.arch-ids/bradb-bug-privacy.sql.id
+     database/schema/pending/bradb-bug-privacy.sql
+
+    removed files:
+     database/schema/pending/.arch-ids/bradb-bug-group-assignments.sql.id
+     database/schema/pending/.arch-ids/bradb-security-related-bugs.sql.id
+     database/schema/pending/bradb-bug-group-assignments.sql
+     database/schema/pending/bradb-security-related-bugs.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-314
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-315
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-316
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-317
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-318
+
+
 2005-01-21 19:08:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1235
 
     Summary:
