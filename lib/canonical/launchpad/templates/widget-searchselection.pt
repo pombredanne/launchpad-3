@@ -36,23 +36,40 @@
                         ">
 
 <fieldset>
-    <legend>Choose package</legend>
+    <legend>Package</legend>
     
     <tal:noselection condition="not: selection">
         <form action=""
               style="float: right;"
               xtal:attributes="action where-to-get-search-results">
-            <input type="text"
-                   tal:attributes="value searchstring" /> 
-            <input type="submit" class="context" value="Search"/>
+
+            <dl>
+                <dt>
+                    <div style="float: right;">
+                        <input type="text"
+                               tal:attributes="value searchstring" /> 
+                        <input type="submit" 
+                               class="context" 
+                               value="Search" />
+                    </div>
+
+                    <span class="discreet">
+                    To select a package, use the search field
+                    to find possible candidates.
+                    </span> 
+                </dt>
+            </dl>
         </form>
-        <div class="visualClear">&nbsp</div>
+        <div class="visualClear"></div>
     </tal:noselection>
     
     <tal:selection condition="selection">
         <dl>
             <dt>
-                <input type="submit" class="context" value="Change selection" style="float: right;" />
+                <input type="submit" 
+                       class="context" 
+                       value="Change selection" 
+                       style="float: right;" />
                 <span tal:replace="selection/title">Mozilla Firefox</span> 
             </dt>
             <dd>
@@ -91,6 +108,7 @@
         </tal:results>
     
         <div class="listingBar"
+            tal:condition="searchresults"
             xtal:condition="result set is more than X items">
             
             <span class="next">
