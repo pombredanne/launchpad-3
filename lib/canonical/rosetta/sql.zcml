@@ -22,8 +22,16 @@
     <allow interface="canonical.rosetta.interfaces.IEditPOTemplateOrPOFileMessageSet"/>
   </content>
 
+  <content class="canonical.rosetta.sql.RosettaPOTranslationSighting">
+    <allow interface="canonical.rosetta.interfaces.IPOTranslationSighting"/>
+  </content>
+
   <content class="canonical.rosetta.sql.RosettaPOMessageID">
     <allow interface="canonical.rosetta.interfaces.IPOMessageID"/>
+  </content>
+
+  <content class="canonical.rosetta.sql.RosettaPOTranslation">
+    <allow interface="canonical.rosetta.interfaces.IPOTranslation"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaLanguage">
