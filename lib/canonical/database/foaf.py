@@ -72,3 +72,28 @@ class Person(SQLBase):
         DateTimeCol('karmatimestamp')
     ]
 
+class IEmailAddress(Interface):
+    id = Int(
+        title=_('ID'), required=True, readonly=True,
+        )
+    email = Text(
+        title=_('Email Address'), required=True,
+        )
+    status = Int(
+        title=_('Status'), required=True,
+        )
+    person = Int(
+        title=_('Person'), required=True,
+        )
+    
+class EmailAddress(SQLBase):
+    implements(IEmailAddress)
+
+    _columns = [
+        StringCol('email', notNull=True, unique=True),
+        IntCol('status', notNull=True),
+        ForeignKey(
+            name='person', dbName='person', foreignKey='Person',
+            )
+        ]
+

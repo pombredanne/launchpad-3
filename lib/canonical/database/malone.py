@@ -449,24 +449,40 @@ class ProductBugAssignment(SQLBase):
     _columns = [
         ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
         ForeignKey(name='product', dbName='product', foreignKey='Product'),
-        IntCol('bugstatus'),
-        IntCol('priority'),
-        IntCol('severity')
+        IntCol('bugstatus', notNull=True,
+                default=int(dbschema.BugAssignmentStatus.NEW),
+                ),
+        IntCol('priority', notNull=True,
+                default=int(dbschema.BugPriority.MEDIUM),
+                ),
+        IntCol('severity', notNull=True,
+                default=int(dbschema.BugSeverity.NORMAL),
+                )
     ]
 
 
 class ISourcepackageBugAssignment(Interface):
     """The status of a bug with regard to a source package."""
 
-    bug = Int(title=_('Bug ID'))
-    sourcepackage = Int(title=_('Source Package'))
-    bugstatus = Choice(title=_('Bug Status'),
-                       vocabulary=BugStatusVocabulary)
-    priority = Choice(title=_('Priority'),
-                      vocabulary=BugPriorityVocabulary)
-    severity = Choice(title=_('Severity'),
-                      vocabulary=BugSeverityVocabulary)
-    binarypackage = Int(title=_('Binary Package'))
+    bug = Int(
+            title=_('Bug ID'), required=True,
+            )
+    sourcepackage = Int(
+            title=_('Source Package'), required=True,
+            )
+    bugstatus = Choice(
+            title=_('Bug Status'), vocabulary=BugStatusVocabulary,
+            required=True, default=int(dbschema.BugAssignmentStatus.NEW),
+            )
+    priority = Choice(
+            title=_('Priority'), vocabulary=BugPriorityVocabulary,
+            required=True, default=int(dbschema.BugPriority.MEDIUM),
+            )
+    severity = Choice(
+            title=_('Severity'), vocabulary=BugSeverityVocabulary,
+            required=True, default=int(dbschema.BugSeverity.NORMAL),
+            )
+    binarypackage = Int(title=_('Binary Package'), required=False,)
 
 class SourcepackageBugAssignment(SQLBase):
     """A relationship between a Sourcepackage and a Bug."""
@@ -478,9 +494,9 @@ class SourcepackageBugAssignment(SQLBase):
         ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
         ForeignKey(name='sourcepackage', dbName='sourcepackage',
                    foreignKey='Sourcepackage'),
-        IntCol('bugstatus'),
-        IntCol('priority'),
-        IntCol('severity'),
+        IntCol('bugstatus', default=int(dbschema.BugAssignmentStatus.NEW)),
+        IntCol('priority', default=int(dbschema.BugPriority.MEDIUM)),
+        IntCol('severity', default=int(dbschema.BugSeverity.NORMAL)),
         IntCol('binarypackage')
     ]
 

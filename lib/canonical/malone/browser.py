@@ -6,6 +6,13 @@ from datetime import datetime
 from email.Utils import make_msgid
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
+from zope.schema import TextLine, Int
+from canonical.database.doap import Product, Sourcepackage, Binarypackage
+
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('malone')
+
+from canonical.lp import dbschema
 
 # TODO: These interfaces should probably be moved into this file, since there
 # is only ever one class implementing them
@@ -20,7 +27,7 @@ from canonical.database.malone import \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
         ProductBugAssignment, SourcepackageBugAssignment
 from canonical.database.doap import Project
-from canonical.database.foaf import Person
+from canonical.database.foaf import Person, EmailAddress
 
 def traverseBug(bug, request, name):
     if name == 'attachments':
@@ -50,10 +57,43 @@ def traverseBugAttachment(bugattachment, request, name):
 class BugContainerBase(object):
     implements(IBugContainer, IAddFormCustomization)
     def add(self, ob):
-        return ob
+        '''Add a bug from an IMaloneBugAddForm'''
+        kw = {}
+        attrs = [
+            'name', 'title', 'shortdesc', 'description',
+            'duplicateof',
+            ]
+        for a in attrs:
+            kw[a] = getattr(ob, a, None)
+        # TODO: Get real owner when auth system is in place
+        kw['ownerID'] = 1
+        bug = MaloneBug(**kw)
 
-    def createAndAdd(self, ob):
-        raise NotImplementedError, 'createAndAdd'
+        # If the user has specified a product, create the ProductBugAssignment
+        productid = getattr(ob, 'product', None)
+        if productid:
+            product = Product.get(productid)
+            pba = ProductBugAssignment(bug=bug, product=product)
+
+        # If the user has specified a sourcepackage, create the 
+        # SourcepackageBugAssignment. This might also link to the
+        # binary package if it was specified.
+        sourcepkgid = getattr(ob, 'sourcepackage', None)
+        binarypkgid = getattr(ob, 'binarypackage', None)
+        if sourcepkgid:
+            sourcepkg = Sourcepackage.get(sourcepkgid)
+            if binarypkgid:
+                binarypkg = Binarypackage.get(binarypkgid)
+            else:
+                binarypkg = None
+            sba = SourcepackageBugAssignment(
+                    bug=bug, sourcepackage=sourcepkg,
+                    binarypackage=binarypkg,
+                    )
+
+        return ob # Return this rather than the bug we created from it,
+                  # as the return value must be adaptable to the interface
+                  # used to generate the form.
 
     def nextURL(self):
         return '.'
@@ -64,11 +104,35 @@ class MaloneBug(Bug):
 
     _table = 'Bug'
 
+    def __init__(self, **kw):
+        # TODO: Fix Z3 so these can use defaults set in the schema.
+        # Currently can't use a callable.
+        kw['datecreated'] = datetime.utcnow()
+        kw['communitytimestamp'] = datetime.utcnow()
+        kw['hitstimestamp'] = datetime.utcnow()
+        kw['activitytimestamp'] = datetime.utcnow()
+        Bug.__init__(self, **kw)
+
     def add(self, ob):
         return ob
 
     def nextURL(self):
         return '.'
+
+
+class IMaloneBugAddForm(IMaloneBug):
+    ''' Information we need to create a bug '''
+    #email = TextLine(title=_("Your Email Address"))
+    product = Int(title=_("Product"), required=False)
+    sourcepackage = Int(title=_("Source Package"), required=False)
+    binarypackage = Int(title=_("Binary Package"), required=False)
+
+
+class MaloneBugAddForm(object):
+    implements(IMaloneBugAddForm)
+    def __init__(self, **kw):
+        for k,v in kw.items():
+            setattr(self, k, v)
 
 
 class MaloneBugAttachment(BugAttachment, BugContainerBase):
@@ -117,9 +181,22 @@ class BugContainer(BugContainerBase):
             yield row
 
 
-def BugFactory(context, **kw):
+def MaloneBugFactory(context, **kw):
     now = datetime.utcnow()
-    bug = Bug(
+    # TODO: How do we handle this email address?
+    # If the user is not logged in, we might want to create a Person for
+    # them (although we really want to link their email address to their
+    # existing Person).
+    # If the user is not logged in, and the email address they entered is
+    # already in the system, do we create the Bug as that Person?
+    # If the user is logged in, we want to validate the email address is one
+    # of theirs.
+    #
+    #email = kw.get('email', None)
+    #del kw['email']
+    #if email:
+    #    e = EmailAddress.select(EmailAddress.q.email==email)
+    bug = MaloneBug(
             datecreated=now,
             communityscore=0,
             communitytimestamp=now,

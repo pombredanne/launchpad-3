@@ -121,13 +121,12 @@
     
                     <div class="boardCommentActions" >
                     
-                      <form action="comments/+new" method="post">
-                            <input class="standalone"
-                                   type="submit" 
-                                   value="Reply to this" 
-                                   />
-    
-                        </form>
+                      <form tal:attributes="action string:comments/${message/id}/+reply" method="post">
+                        <input class="standalone"
+                                type="submit" 
+                                value="Reply to this" 
+                                />
+                      </form>
     
                     </div>
     

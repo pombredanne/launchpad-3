@@ -14,13 +14,43 @@ _ = MessageIDFactory('canonical')
 
 # Zope schema imports
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
-from zope.schema import Password
+from zope.schema import Password, Bool
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 # TODO: Move this wrapper here
 from canonical.arch.sqlbase import SQLBase
+
+class IProject(Interface):
+    """A Project."""
+
+    id = Int(title=_('ID'))
+    owner = Int(title=_('Owner'))
+    name = TextLine(title=_('Name'))
+    title = TextLine(title=_('Title'))
+    description = Text(title=_('Description'))
+    homepageurl = TextLine(title=_('Homepage URL'))
+
+    def products():
+        """Return Products for this Project."""
+
+class Project(SQLBase):
+    """A Project"""
+
+    implements(IProject)
+
+    _columns = [
+        IntCol('owner'),
+        StringCol('name'),
+        StringCol('title'),
+        StringCol('description'),
+        DateTimeCol('datecreated'),
+        StringCol('homepageurl')
+    ]
+
+    products = MultipleJoin('Product', joinColumn='project')
+
 
 class IProduct(Interface):
     """A Product."""
@@ -63,56 +93,93 @@ class Product(SQLBase):
 
     bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
 
-class ISourcepackage(Interface):
-    """A Sourcepackage."""
 
-    maintainer = Int(title=_('Maintainer'))
-    name = TextLine(title=_('Name'))
-    title = TextLine(title=_('Title'))
-    description = Text(title=_('Description'))
-    manifest = Int(title=_('Manifest'))
+class ISourcepackage(Interface):
+    """A Sourcepackage"""
+    id = Int(title=_("ID"), required=True)
+    maintainer = Int(title=_("Maintainer"), required=True)
+    name = TextLine(title=_("Name"), required=True)
+    title = TextLine(title=_("Title"), required=True)
+    description = Text(title=_("Description"), required=True)
+    manifest = Int(title=_("Manifest"), required=False)
+    distro = Int(title=_("Distribution"), required=False)
 
 class Sourcepackage(SQLBase):
-    """A Sourcepackage."""
-
-    implements(ISourcepackage)
-
     _columns = [
-        ForeignKey(name='maintainer', dbName='maintainer', foreignKey='Person'),
-        StringCol('name'),
-        StringCol('title'),
-        StringCol('description'),
-        IntCol('manifest')
-    ]
+        ForeignKey(
+                name='maintainer', dbName='maintainer', foreignKey='Person',
+                notNull=True,
+                ),
+        StringCol('name', notNull=True),
+        StringCol('title', notNull=True),
+        StringCol('description', notNull=True),
+        ForeignKey(
+                name='manifest', dbName='manifest', foreignKey='Manifest',
+                notNull=False,
+                ),
+        ForeignKey(
+                name='distro', dbName='distro', foreignKey='Distribution',
+                notNull=False,
+                ),
+        ]
 
-class IProject(Interface):
-    """A Project."""
+class IBinarypackage(Interface):
+    id = Int(title=_('ID'), required=True)
+    sourcepackagerelease = Int(required=True)
+    binarypackagename = Int(required=True)
+    version = TextLine(required=True)
+    shortdesc = Text(required=True)
+    description = Text(required=True)
+    build = Int(required=True)
+    binpackageformat = Int(required=True)
+    component = Int(required=True)
+    section = Int(required=True)
+    priority = Int(required=False)
+    shlibdeps = Text(required=False)
+    recommends = Text(required=False)
+    suggests = Text(required=False)
+    conflicts = Text(required=False)
+    replaces = Text(required=False)
+    provides = Text(required=False)
+    essential = Bool(required=False)
+    installedsize = Int(required=False)
+    copyright = Text(required=False)
+    licence = Text(required=False)
 
-    id = Int(title=_('ID'))
-    owner = Int(title=_('Owner'))
-    name = TextLine(title=_('Name'))
-    title = TextLine(title=_('Title'))
-    description = Text(title=_('Description'))
-    homepageurl = TextLine(title=_('Homepage URL'))
-
-    def products():
-        """Return Products for this Project."""
-
-class Project(SQLBase):
-    """A Project"""
-
-    implements(IProject)
-
+class Binarypackage(SQLBase):
     _columns = [
-        IntCol('owner'),
-        StringCol('name'),
-        StringCol('title'),
-        StringCol('description'),
-        DateTimeCol('datecreated'),
-        StringCol('homepageurl')
-    ]
-
-    products = MultipleJoin('Product', joinColumn='project')
-
-
-
+        ForeignKey(
+                name='sourcepackagerelease', dbName='sourcepackagerelease',
+                foreignKey='SourcepackageRelease', notNull=True,
+                ),
+        ForeignKey(
+                name='binarypackagename', dbName='binarypackagename',
+                foreignKey='BinarypackageName', notNull=True,
+                ),
+        StringCol('version', notNull=True),
+        StringCol('shortdesc', notNull=True),
+        StringCol('description', notNull=True),
+        ForeignKey(
+                name='build', dbName='build', foreignKey='Build', notNull=True,
+                ),
+        IntCol('binpackageformat', notNull=True),
+        ForeignKey(
+                name='component', dbName='component', foreignKey='Component',
+                notNull=True,
+                ),
+        ForeignKey(
+                name='section', dbName='section', foreignKey='Section',
+                notNull=True,
+                ),
+        IntCol('priority'),
+        StringCol('shlibdeps'),
+        StringCol('recommends'),
+        StringCol('suggests'),
+        StringCol('conflicts'),
+        StringCol('replaces'),
+        StringCol('provides'),
+        BoolCol('essential'),
+        IntCol('installedsize'),
+        StringCol('copyright'),
+        StringCol('licence'),
+        ]
