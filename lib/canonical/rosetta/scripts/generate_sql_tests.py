@@ -10,7 +10,6 @@ interfaces = [
     'EditPOTemplate',
     'EditPOFile',
     'EditPOMessageSet',
-    'EditPOMessageIDSighting',
     'POMessageID',
     'POTranslationSighting',
     'POTranslation',
