@@ -2,6 +2,62 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-25 14:26:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1344
+
+    Summary:
+      Rewrote team's members page and added a pagetest for it.
+    Revision:
+      launchpad--devel--0--patch-1344
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--2--base-0
+       tag of guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-15
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-1
+       Almost rewrote team's members page to display only active (approved + admin) members. Also some changes in TeamView and Person
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-2
+       New pagetest for team's members page
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-3
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-4
+       Use ORDER BY on getMembershipsByStatus() and getMembersByStatus() now that spiv removed the SQLObject monkeypatch that made using ORDER BY breaks
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-5
+       merge from launchpad--team-membership--1, after merging it into rocketfuel
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-6
+       empty merge from rf. don't know why pqm said that it had conflicts when trying to merge into rf
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-7
+       We need spaces before ORDER BY on an SQL statement. duh
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-team-members.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-team-members.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/templates/team-index.pt
+     lib/canonical/launchpad/templates/team-members.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--team-membership--2--base-0
+     guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-1
+     guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-2
+     guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-3
+     guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-4
+     guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-5
+     guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-6
+     guilherme.salgado@canonical.com/launchpad--team-membership--2--patch-7
+
+
 2005-02-25 13:40:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1343
 
     Summary:

@@ -182,8 +182,16 @@ class TeamView(object):
         self.context = context
         self.request = request
 
-    def allMembersCount(self):
+    def activeMembersCount(self):
         return len(self.context.approvedmembers + self.context.administrators)
+
+    def activeMemberships(self):
+        status = int(TeamMembershipStatus.ADMIN)
+        admins = self.context.getMembershipsByStatus(status)
+
+        status = int(TeamMembershipStatus.APPROVED)
+        members = self.context.getMembershipsByStatus(status)
+        return list(admins) + list(members)
 
     def userInTeam(self):
         user = getUtility(ILaunchBag).user

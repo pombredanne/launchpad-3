@@ -24,7 +24,7 @@
       </li>
 
       <li id="contentview-members" class="plain">
-        <a href="+members">Team Members</a>
+        <a href="+members">Active Members</a>
       </li>
     </ul>
 
@@ -46,8 +46,8 @@
           </tr>
 
           <tr>
-            <td>Approved Members:</td>
-            <td><span tal:content="view/allMembersCount" />
+            <td>Active Members:</td>
+            <td><span tal:content="view/activeMembersCount" />
                 <tal:block tal:condition="view/userInTeam">
                   <a href="+unjoin">(Unjoin)</a>
                 </tal:block>

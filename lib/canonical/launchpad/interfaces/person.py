@@ -144,8 +144,31 @@ class IPerson(Interface):
     def inTeam(team):
         """Return true if this person is in the given team."""
 
-    def getMembershipByMember(member):
-        """Return a TeamMembership object of the given member in this team."""
+    def getMembershipsByStatus(status):
+        """Return all TeamMembership rows with the given status for this team"""
+
+    def hasMembershipEntryFor(team):
+        """Tell if this person is a direct member of the given team."""
+
+    def joinTeam(team):
+        """Join the given team if its subscriptionpolicy is not RESTRICTED.
+
+        Join the given team according to the policies and defaults of that
+        team:
+        - If the team subscriptionpolicy is OPEN, the user is added as
+          an APPROVED member with a NULL TeamMembership.reviewer.
+        - If the team subscriptionpolicy is MODERATED, the user is added as
+          a PROPOSED member and one of the team's administrators have to
+          approve the membership.
+        """
+
+    def unjoinTeam(team):
+        """Unjoin the given team.
+
+        If there's a membership entry for this person on the given team and
+        its status is either APPROVED or ADMIN, we change the status to
+        DEACTIVATED and remove the relevant entries in teamparticipation.
+        """
 
     def hasMembershipEntryFor(team):
         """Tell if this person is a direct member of the given team."""

@@ -23,56 +23,67 @@
       </li>
 
       <li id="contentview-members" class="selected">
-        <a href="+members">Team Members</a>
+        <a href="+members">Active Members</a>
       </li>
     </ul>
 
     <div class="documentContent" id="region-content">
 
-      <h1>Members of <span tal:replace="context/browsername" /></h1>
+      <h1>Active Members of <span tal:replace="context/browsername" /></h1>
 
-      <div tal:define="proposedmembers context/proposedmembers" 
-           tal:condition="proposedmembers" style="margin: 1em 3em">
-      <span tal:replace="python: len(proposedmembers)" />
-      new member(s) awaiting for approval.
-
-      <table width="80%" id="ass_listing" class="listing rowNavigation">
-        <tr>
-          <th>Name</th>
-        </tr>
-        <tr tal:repeat="member proposedmembers">
-          <td><a tal:attributes="href string:/foaf/people/${member/name}">
-            <span tal:replace="member/displayname" /></a></td>
-        </tr>
-      </table>
+      <div>This team currently have <em>
+        <span tal:replace="view/activeMembersCount" /></em> active members:
       </div>
 
-      <div tal:define="members context/currentmembers" tal:condition="members"
-           style="margin: 1em 3em">
-      <span tal:replace="python: len(members)" /> member(s)
-      currently approved.
-
-      <table width="80%" id="ass_listing" class="listing rowNavigation">
+      <table tal:condition="view/activeMembersCount"
+             width="100%" id="ass_listing" class="listing rowNavigation">
         <tr>
           <th>Name</th>
-          <th>Role</th>
+          <th>Joined</th>
+          <th>Expires</th>
+          <th>Status</th>
         </tr>
-        <tr tal:repeat="member members">
+        <tr tal:repeat="membership view/activeMemberships">
+          <tal:block tal:define="member membership/person">
           <td><a tal:attributes="href string:/foaf/people/${member/name}">
-            <span tal:replace="member/displayname" /></a></td>
-          <td><span tal:replace="python: context.getMembershipByMember(member).rolename" /></td>
+            <span tal:replace="member/browsername" /></a></td>
+          <td tal:content="membership/datejoined/date"></td>
+          <td tal:condition="membership/dateexpires"
+              tal:content="membership/dateexpires/date"></td>
+          <td tal:condition="not: membership/dateexpires">Never</td>
+          <td tal:content="membership/statusname"></td>
+          </tal:block>
         </tr>
       </table>
+
+      <div tal:define="proposedmembers context/proposedmembers;
+                       expiredmembers context/expiredmembers;
+                       deactivatedmembers context/deactivatedmembers"
+           tal:condition="python: proposedmembers or expiredmembers or deactivatedmembers">
+        There's also:
+        <div tal:condition="proposedmembers" style="margin: 0.5em 2em">
+          <span tal:replace="python: len(proposedmembers)" />
+          new member(s) awaiting for approval.
+        </div>
+
+        <div tal:condition="expiredmembers" style="margin: 0.5em 2em">
+          <span tal:replace="python: len(expiredmembers)" />
+          member(s) whose subscription is expired.
+        </div>
+
+        <div tal:condition="deactivatedmembers" style="margin: 0.5em 2em">
+          <span tal:replace="python: len(deactivatedmembers)" />
+          member(s) whose subscription have been canceled.
+        </div>
       </div>
 
-    <div style="float: right; padding-right: 1em">
-      <p><a href="+editmembers">Manage Team Members</a></p>
-    </div>
+      <div style="float: right; padding-right: 1em">
+        <p><a href="+editmembers">Manage All Members</a></p>
+      </div>
 
     </div>
   </div>
 </div>
-
 
 </body>
 </html>

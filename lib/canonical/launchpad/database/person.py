@@ -263,58 +263,48 @@ class Person(SQLBase):
             _fillTeamParticipation(self, team)
         return True
 
-    def getMembershipByMember(self, member):
-        table = TeamMembership
-        m = table.select(AND(table.q.teamID==self.id,
-                             table.q.personID==member.id))
-        assert m.count() == 1
-        return m[0]
+    def getMembershipsByStatus(self, status):
+        query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
+                 "AND Person.id = TeamMembership.team "
+                 "ORDER BY Person.name") % (self.id, status)
+        return TeamMembership.select(query, clauseTables=['Person'])
 
     def _getEmailsByStatus(self, status):
         return EmailAddress.select(AND(EmailAddress.q.personID==self.id,
                                        EmailAddress.q.status==int(status)))
 
-    def _getMembersByStatus(self, status):
-        table = TeamMembership
-        memberships = table.select(AND(table.q.teamID==self.id,
-                                       table.q.status==status))
-        return [m.person for m in memberships]
-
-    def _getMembersByRole(self, role):
-        # Check the roles only for approved members.
-        status = int(TeamMembershipStatus.CURRENT)
-        table = TeamMembership
-        memberships = table.select(AND(table.q.teamID==self.id,
-                                       table.q.status==status,
-                                       table.q.role==role))
-        return [m.person for m in memberships]
+    def getMembersByStatus(self, status):
+        query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
+                 "AND TeamMembership.person = Person.id "
+                 "ORDER BY Person.name") % (self.id, status)
+        return list(Person.select(query, clauseTables=['TeamMembership']))
 
     #
     # Properties
     #
 
     def _deactivatedmembers(self): 
-        return self._getMembersByStatus(int(TeamMembershipStatus.DEACTIVATED))
+        return self.getMembersByStatus(int(TeamMembershipStatus.DEACTIVATED))
     deactivatedmembers = property(_deactivatedmembers)
 
     def _expiredmembers(self): 
-        return self._getMembersByStatus(int(TeamMembershipStatus.EXPIRED))
+        return self.getMembersByStatus(int(TeamMembershipStatus.EXPIRED))
     expiredmembers = property(_expiredmembers)
 
     def _declinedmembers(self): 
-        return self._getMembersByStatus(int(TeamMembershipStatus.DECLINED))
+        return self.getMembersByStatus(int(TeamMembershipStatus.DECLINED))
     declinedmembers = property(_declinedmembers)
 
     def _proposedmembers(self):
-        return self._getMembersByStatus(int(TeamMembershipStatus.PROPOSED))
+        return self.getMembersByStatus(int(TeamMembershipStatus.PROPOSED))
     proposedmembers = property(_proposedmembers)
 
     def _administrators(self):
-        return self._getMembersByStatus(int(TeamMembershipStatus.ADMIN))
+        return self.getMembersByStatus(int(TeamMembershipStatus.ADMIN))
     administrators = property(_administrators)
 
     def _approvedmembers(self):
-        return self._getMembersByStatus(int(TeamMembershipStatus.APPROVED))
+        return self.getMembersByStatus(int(TeamMembershipStatus.APPROVED))
     approvedmembers = property(_approvedmembers)
 
     def _memberships(self):
