@@ -950,31 +950,14 @@ class TranslatePOTemplate:
                     po_set = pofiles[code][msgid_text]
                 except KeyError:
                     po_set = pofiles[code].createMessageSetFromText(msgid_text)
-
-                # Get a hold of a list of existing translations for the
-                # message set.
-
-                old_translations = po_set.translations()
-
-                for index in new_translations:
-                    # For each translation, add it to the database if it is
-                    # non-null and different to the old one.
-                    if (new_translations[index] is not None and
-                            new_translations[index] != '' and
-                            new_translations[index] !=
-                            old_translations[index]):
-                        po_set.makeTranslationSighting(
-                            person = self.person,
-                            text = new_translations[index],
-                            pluralForm = index,
-                            update = True,
-                            fromPOFile = False)
-
-                # We set the fuzzy flag as needed:
-                if code in set['fuzzy'] and po_set.fuzzy == False:
-                    po_set.fuzzy = True
-                elif code not in set['fuzzy'] and po_set.fuzzy == True:
-                    po_set.fuzzy = False
+                
+                fuzzy = code in set['fuzzy']
+                
+                po_set.updateTranslation(
+                    person=self.person,
+                    new_translations=new_translations,
+                    fuzzy=fuzzy,
+                    fromPOFile=False)
 
         self.submitted = True
 

@@ -978,12 +978,91 @@ class POMsgSet(SQLBase):
 
     # IEditPOMsgSet
 
-    # XXX: Carlos Perello Marin 17/11/2004: I'm not sure this method is 
-    def setFuzzy(self, value):
-        self.fuzzy = value
+    def updateTranslation(self, person, new_translations, fuzzy, fromPOFile):
+        was_complete = self.iscomplete
+        was_fuzzy = self.fuzzy
+        has_changes = False
+        # By default we will think that all translations for this pomsgset
+        # where available in last import
+        all_in_last_revision = True
 
+        # Get a hold of a list of existing translations for the message set.
+        old_translations = self.translations()
+
+        for index in new_translations.keys():
+            # For each translation, add it to the database if it is
+            # non-null and different to the old one.
+            if new_translations[index] != old_translations[index]:
+                has_changes = True
+                if (new_translations[index] == '' or
+                    new_translations[index] is None):
+                    # Make all sightings inactive.
+
+                    self._connection.query(
+                        '''
+                            UPDATE POTranslationSighting SET active = FALSE
+                            WHERE
+                                pomsgset = %d AND
+                                pluralform = %d
+                        ''' % (self.id, index))
+                    new_translations[index] = None
+                    self.iscomplete = False
+
+                else:
+                    if old_translations[index] is not None:
+                        old_sighting = self.getTranslationSighting(index)
+                        if not old_sighting.inlastrevision:
+                            # We found an old translation that it was not in last
+                            # revision, that means that we updated this pomsgset
+                            # already before this commit. This is needed to
+                            # prevent the pofile.updatescount increment more than
+                            # once since last import.
+                            all_in_last_revision = False
+                    self.makeTranslationSighting(
+                        person = person,
+                        text = new_translations[index],
+                        pluralForm = index,
+                        fromPOFile = fromPOFile)
+
+        # We set the fuzzy flag as needed:
+        if fuzzy and self.fuzzy == False:
+            self.fuzzy = True
+        elif not fuzzy and self.fuzzy == True:
+            self.fuzzy = False
+        
+        if not has_changes:
+            # We don't change the statistics if we didn't had any change.
+            return
+            
+        # We do now a live update of the statistics.
+        if self.iscomplete and not self.fuzzy:
+            # New msgset translation is ready to be used.
+            if not was_complete or was_fuzzy:
+                # It was not ready before this change.
+                if fromPOFile:
+                    # The change was done outside Rosetta.
+                    self.pofile.currentcount += 1
+                else:
+                    # The change was done with Rosetta.
+                    self.pofile.rosettacount += 1
+            elif not fromPOFile and all_in_last_revision:
+                # We have updated a translation from Rosetta that was
+                # already translated.
+                self.pofile.updatescount += 1
+        else:
+            # This new msgset translation is not yet finished.
+            if was_complete and not was_fuzzy:
+                # But previously it was finished, so we lost its translation.
+                if fromPOFile:
+                    # It was lost outside Rosetta
+                    self.pofile.currentcount -= 1
+                else:
+                    # It was lost inside Rosetta
+                    self.pofile.rosettacount -= 1
+                
+                
     def makeTranslationSighting(self, person, text, pluralForm,
-                              update=False, fromPOFile=False):
+        fromPOFile=False):
         """Create a new translation sighting for this message set."""
 
         # First get hold of a POTranslation for the specified text.
@@ -1004,11 +1083,6 @@ class POMsgSet(SQLBase):
             # A sighting already exists.
 
             assert results.count() == 1
-
-            if not update:
-                raise KeyError(
-                    "There is already a translation sighting for this "
-                    "message set, text, plural form and person.")
 
             sighting = results[0]
             sighting.set(
