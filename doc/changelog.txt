@@ -2,6 +2,44 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 10:36:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1417
+
+    Summary:
+      bounty portlets and sampledata for bounties
+    Revision:
+      launchpad--devel--0--patch-1417
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-823
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-824
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-825
+       add bounty sample data
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-826
+       portlets and related bounty pages working
+    
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     doc/changelog.txt
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/interfaces/bounty.py
+     lib/canonical/launchpad/templates/portlet-related-bounties.pt
+     lib/canonical/launchpad/zcml/distribution.zcml
+     lib/canonical/launchpad/zcml/project.zcml
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-823
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-824
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-825
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-826
+
+
 2005-03-11 06:56:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1416
 
     Summary:

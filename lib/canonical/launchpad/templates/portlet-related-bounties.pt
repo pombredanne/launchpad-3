@@ -16,11 +16,11 @@
             </tr>
         </table>
 
-        <a href="+newbounty"
+        <a href="+bounties"
             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-            title="Link to Another Bounty">
+            title="More bounties...">
             <img src="/++resource++add.gif" alt="+" />
-            Add bounty...
+            More...
         </a><br />
 
         </div>

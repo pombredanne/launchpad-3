@@ -32,8 +32,8 @@ class Distribution(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     releases = MultipleJoin('DistroRelease', joinColumn='distribution')
     bounties = RelatedJoin(
-        'Bounty', joinColumn='project', otherColumn='bounty',
-        intermediateTable='ProjectBounty')
+        'Bounty', joinColumn='distribution', otherColumn='bounty',
+        intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     role_users = MultipleJoin('DistributionRole', joinColumn='distribution')
 

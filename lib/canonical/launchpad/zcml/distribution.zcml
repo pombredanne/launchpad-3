@@ -31,35 +31,18 @@
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionView"
         permission="zope.Public" >
-
         <browser:page
             name="+index"
             template="../templates/distro-index.pt"
-            lp:url="Soyuz/distros/$Distribution.name/" />
-
+            lp:url="/distros/$Distribution.name/" />
         <browser:page
             name="+bugs"
             template="../templates/distribution-bugs.pt"
-            lp:url="malone/distros/$Distribution.name/" />
-
-        <!-- XXX sabdfl moved this here, need to reactivate search tools -->
-        <!--
-        XXX: Daniel Debonzi 20050105
-        Does it still useful? don't we have enought and better
-        search places?
-	I will let it commented. If nobody ask to keep it I will
-	remove this pages.
+            lp:url="/distros/$Distribution.name/" />
         <browser:page
-            name="+sources"
-            template="../templates/distro-sources.pt"
-            lp:url="Soyuz/distros/$Distribution.name/+sources"
-                />
-        <browser:page
-            name="+binaries"
-            template="../templates/binary-index.pt"
-            lp:url="Soyuz/distros/$Distribution.name/+binaries"
-            />
-        -->
+            name="+bounties"
+            template="../templates/related-bounties.pt"
+            lp:url="/distros/$Distribution.name/+bounties/" />
     </browser:pages>
 
     <browser:addform
@@ -92,7 +75,7 @@
         schema="canonical.launchpad.interfaces.IDistribution"
         fields="displayname title summary description"
         template="../templates/launchpad-editform.pt"
-        lp:url="Soyuz/distros/$Distribution.name/+edit" />
+        lp:url="/distros/$Distribution.name/+edit" />
 
     <!-- DistributionSet -->
     <content class="canonical.launchpad.database.DistributionSet">
@@ -122,24 +105,20 @@
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
         class="canonical.launchpad.browser.DistributionSetView">
-
         <browser:page
             name="+index"
             template="../templates/distros-index.pt"
             lp:url="/distros/" />
-
         <browser:page
             name="+bugs"
             template="../templates/malone-distros-index.pt"
-            lp:url="malone/distros/" />
-
+            lp:url="/distros/+bugs" />
     </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
         class="canonical.launchpad.browser.DistributionSetView">
-
     </browser:pages>
 
     <browser:page

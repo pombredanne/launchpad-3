@@ -23,7 +23,7 @@ class IBounty(IHasOwner):
             title=_('Bounty name'), required=True,
             description=_("""A short and unique name for this bounty. 
                 This allows us to refer to the bounty directly in a url,
-                so it needs to be destinct and descriptive. For example:
+                so it needs to be distinct and descriptive. For example:
                 mozilla-type-ahead-find and
                 postgres-smart-serial."""),
             constraint=valid_name,

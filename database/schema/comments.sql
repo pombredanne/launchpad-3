@@ -107,8 +107,16 @@ COMMENT ON COLUMN POFile.daterawimport IS 'The date when the rawfile was attache
 COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
 
 /*
-  Buttress
+  Bazaar
 */
+COMMENT ON TABLE Manifest IS 'A Manifest describes the branches that go into
+making up a source package or product release. This allows us to describe
+the source package or product release in a way that HCT can pull down the
+sources directly from The Bazaar and allow people to branch and edit
+immediately. Note that a Manifest does not have an owner, please ensure that
+ANYTHING that points TO a manifest, such as ProductRelease or
+SourcePackageRelease, has an owner, so that we do not end up with orphaned
+manifests.';
 
 
 
