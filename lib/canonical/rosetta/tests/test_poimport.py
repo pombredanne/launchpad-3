@@ -87,6 +87,7 @@ def test_suite():
     # doesn't pass yet, uncomment it when it does :-)
     #loader = unittest.TestLoader()
     #return loader.loadTestsFromTestCase(POImportTestCase)
+    pass
 
 if __name__ == '__main__':
     unittest.main()

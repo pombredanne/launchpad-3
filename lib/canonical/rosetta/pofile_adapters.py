@@ -4,6 +4,10 @@ from interfaces import IPOMessageSet
 from zope.interface import implements
 import sets
 
+# This file raises string exceptions.  These should be considered
+# "XXX FIXME" markings - as in, replace these with whatever real
+# exception should be raised in each case.
+
 class DatabaseConstraintError(Exception):
     pass
 
@@ -205,13 +209,15 @@ class TemplateImporter(object):
         proxy = MessageProxy(msgset)
         proxy.msgidPlural = kw.get('msgidPlural', '')
         if kw.get('msgstr'):
+            # if not is_it_the_header:
+            #    raise "You're on crack."
             proxy.msgstr = kw['msgstr']
         proxy.commentText = kw.get('commentText', '')
         proxy.sourceComment = kw.get('sourceComment', '')
         proxy.fileReferences = kw.get('fileReferences', '').strip()
         proxy.flags = kw.get('flags', ())
         if kw.get('msgstrPlurals'):
-            proxy.msgstrPlurals = kw['msgstrPlurals']
+            raise "You're on crack."
         proxy.obsolete = kw.get('obsolete', False)
 
 
