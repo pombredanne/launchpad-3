@@ -284,12 +284,16 @@ def test_escape_unescape_msgid():
     'foo\\\\bar'
     >>> escape_msgid('foo\nbar')
     'foo\\nbar'
+    >>> escape_msgid('foo\tbar')
+    'foo\\tbar'
     >>> unescape_msgid('foo')
     'foo'
     >>> unescape_msgid('foo\\\\bar')
     'foo\\bar'
     >>> unescape_msgid('foo\\nbar')
     'foo\nbar'
+    >>> unescape_msgid('foo\\tbar')
+    'foo\tbar'
     '''
 
 def test_parse_translation_form():
@@ -630,49 +634,40 @@ def test_TranslatePOTemplate_messageSets():
     >>> tearDown()
     '''
 
-def test_TranslatePOemplate_mungeMessageID():
-    '''
+def test_msgid_html():
+    r'''
     Test message ID presentation munger.
 
-    First, boilerplate setup code.
-
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-    >>> from canonical.rosetta.browser import TranslatePOTemplate
-
-    >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
-
-    >>> context = DummyPOTemplate()
-    >>> request = DummyRequest()
-    >>> t = TranslatePOTemplate(context, request)
+    >>> from canonical.rosetta.browser import msgid_html
 
     First, do no harm.
 
-    >>> t._mungeMessageID(u'foo bar', [], 'XXXA')
+    >>> msgid_html(u'foo bar', [], 'XXXA')
     u'foo bar'
 
     Test replacement of leading and trailing spaces.
 
-    >>> t._mungeMessageID(u' foo bar', [], 'XXXA')
+    >>> msgid_html(u' foo bar', [], 'XXXA')
     u'XXXAfoo bar'
-    >>> t._mungeMessageID(u'foo bar ', [], 'XXXA')
+    >>> msgid_html(u'foo bar ', [], 'XXXA')
     u'foo barXXXA'
-    >>> t._mungeMessageID(u'  foo bar  ', [], 'XXXA')
+    >>> msgid_html(u'  foo bar  ', [], 'XXXA')
     u'XXXAXXXAfoo barXXXAXXXA'
 
     Test replacement of newlines.
 
-    >>> t._mungeMessageID(u'foo\\nbar', [], newline='YYYA')
+    >>> msgid_html(u'foo\nbar', [], newline='YYYA')
     u'fooYYYAbar'
 
     And both together.
 
-    >>> t._mungeMessageID(u'foo \\nbar', [], 'XXXA', 'YYYA')
+    >>> msgid_html(u'foo \nbar', [], 'XXXA', 'YYYA')
     u'fooXXXAYYYAbar'
 
-    >>> tearDown()
+    Test treatment of tabs.
+
+    >>> msgid_html(u'foo\tbar', [])
+    u'foo\\tbar'
     '''
 
 def test_TabIndexGenerator():
