@@ -119,7 +119,7 @@
         <allow interface="canonical.launchpad.interfaces.IBugsAssignedReport" />
         <require
             permission="zope.View"
-            set_attributes="user minseverity" />
+            set_attributes="user minseverity minpriority showclosed" />
     </content>
 
     <utility

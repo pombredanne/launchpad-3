@@ -108,6 +108,28 @@ class IBugsAssignedReport(Interface):
     minseverity = Attribute(_("""The minimum severity of assignments to
         display in this report."""))
 
+    minpriority = Attribute(_("""The minimum priority of bug fixing
+        assignments to display in this report."""))
+
+    showclosed = Attribute(_("""Whether or not to show closed bugs on this
+        report."""))
+
+    def maintainedPackageBugs():
+        """Return an iterator over the assignments of bugs to distro
+        packages the user maintains."""
+
+    def maintainedProductBugs():
+        """Return an iterator over the assignments of bugs to upstream
+        products the user maintains."""
+
+    def productAssigneeBugs():
+        """Return an iterator over the bugassignments to upstream products
+        which are assigned directly to the user."""
+
+    def packageAssigneeBugs():
+        """Return an iterator over the bugassignments to distro packages
+        which are assigned directly to the user."""
+
     def assignedBugs():
         """An iterator over ALL the bugs directly or indirectly assigned
         to the person."""

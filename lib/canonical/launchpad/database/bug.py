@@ -6,7 +6,6 @@ Part of the Launchpad system.
 """
 
 from datetime import datetime
-from sets import Set
 
 from zope.interface import implements
 
@@ -129,65 +128,3 @@ class BugContainer(BugContainerBase):
         for row in self.table.select():
             yield row
 
-# REPORTS
-# TODO: Mark Shuttleworth 24/10/04 this should be in bugassignment.py but
-# it creates circular imports
-class BugsAssignedReport(object):
-
-    implements(IBugsAssignedReport)
-
-    def __init__(self):
-        # initialise the user to None, will raise an exception if the
-        # calling class does not set this to a person.id
-        self.user = None
-        self.minseverity = 0
-        self.BSA = SourcePackageBugAssignment
-        self.BPA = ProductBugAssignment
-
-    # bugs on packages maintained by the user
-    def maintainedPackageBugs(self):
-        return Bug.select("""Bug.id=SourcePackageBugAssignment.bug AND
-                             SourcePackageBugAssignment.sourcepackage=SourcePackage.id AND
-                             SourcePackage.maintainer=%s AND
-                             SourcePackageBugAssignment.severity>=%s""" % (self.user.id,
-                             self.minseverity))
-
-    # bugs on products owned by the user
-    def maintainedProductBugs(self):
-        return Bug.select("""Bug.id=ProductBugAssignment.bug AND
-                             ProductBugAssignment.product=Product.id AND
-                             Product.owner=%s AND
-                             ProductBugAssignment.severity>=%s""" % (self.user.id,
-                             self.minseverity))
-
-    # package bugs assigned specifically to the user
-    def packageAssigneeBugs(self):
-        return Bug.select("""Bug.id=SourcePackageBugAssignment.bug AND
-                             SourcePackageBugAssignment.assignee=%s AND
-                             SourcePackageBugAssignment.severity>=%s""" %
-                             (self.user.id, self.minseverity))
-
-    # product bugs assigned specifically to the user
-    def productAssigneeBugs(self):
-        return Bug.select("""Bug.id=ProductBugAssignment.bug AND
-                             ProductBugAssignment.assignee=%s AND
-                             ProductBugAssignment.severity>=%s""" %
-                             (self.user.id, self.minseverity))
-
-
-    # all bugs assigned to a user
-    def assignedBugs(self):
-        bugs = Set()
-        for bug in self.maintainedPackageBugs():
-            bugs.add(bug)
-        for bug in self.maintainedProductBugs():
-            bugs.add(bug)
-        for bug in self.packageAssigneeBugs():
-            bugs.add(bug)
-        for bug in self.productAssigneeBugs():
-            bugs.add(bug)
-        buglistwithdates = [ (bug.datecreated, bug) for bug in bugs ]
-        buglistwithdates.sort()
-        buglistwithdates.reverse()
-        bugs = [ bug[1] for bug in buglistwithdates ]
-        return bugs

@@ -17,11 +17,14 @@ class BugsAssignedReportView(object):
             except TypeError: pass
         # default to showing even wishlist bugs
         self.context.minseverity = int(self.form.get('minseverity', 0))
+        self.context.minpriority = int(self.form.get('minpriority', 0))
+        if self.form.get('showclosed', None)=='yes':
+            self.context.showclosed = True
 
 
     # TODO: replace this with a smart vocabulary and widget
     def userSelector(self):
-        html = '<select name="name" onclick="form.submit()">\n'
+        html = '<select name="name">\n'
         for person in self.allPeople():
             html = html + '<option value="'+person.name+'"'
             if person==self.context.user:
@@ -33,7 +36,7 @@ class BugsAssignedReportView(object):
 
     # TODO: replace this with a smart vocabulary and widget
     def severitySelector(self):
-        html = '<select name="minseverity" onclick="form.submit()">\n'
+        html = '<select name="minseverity">\n'
         for item in dbschema.BugSeverity.items:
             html = html + '<option value="' + str(item.value) + '"'
             if item.value==self.context.minseverity:
@@ -42,6 +45,26 @@ class BugsAssignedReportView(object):
             html = html + str(item.title)
             html = html + '</option>\n'
         html = html + '</select>\n'
+        return html
+
+    # TODO: replace this with a smart vocabulary and widget
+    def prioritySelector(self):
+        html = '<select name="minpriority">\n'
+        for item in dbschema.BugPriority.items:
+            html = html + '<option value="' + str(item.value) + '"'
+            if item.value==self.context.minpriority:
+                html = html + ' selected="yes"'
+            html = html + '>'
+            html = html + str(item.title)
+            html = html + '</option>\n'
+        html = html + '</select>\n'
+        return html
+
+    def showClosedSelector(self):
+        html = '<input type="checkbox" id="showclosed" name="showclosed" value="yes"'
+        if self.context.showclosed:
+            html = html + ' checked="yes"'
+        html = html + ' />'
         return html
 
     def allPeople(self):

@@ -46,7 +46,7 @@ from canonical.launchpad.interfaces.launchpad import *
 
 # these will go...
 from canonical.launchpad.iandrew import *
-from canonical.launchpad.imark import *
+from canonical.launchpad.idaf import *
 
 
 
