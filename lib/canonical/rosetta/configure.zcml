@@ -45,19 +45,10 @@
       name="+index"
       />
   <browser:defaultView
-      for="canonical.rosetta.domain.RosettaProject"
+      for="canonical.launchpad.interfaces.IRosettaProject"
       name="+index"
       />
-  <!--
-  XXX Mark Shuttleworth comments 03/10/04:
-  This needs to specify the default view in the Rosetta
-  skin for IProduct as being name="+rosetta-index". Daf,
-  talk to Steve for details.
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IProduct"
-      name="index"
-      />
-  -->
+
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPOTemplate"
       name="+index"

@@ -81,7 +81,8 @@ class Person(SQLBase):
                 POTemplate.product = Product.id AND
                 Product.project = Project.id
             ORDER BY ???
-            '''
+        '''
+        raise NotImplementedError
 
     def translatedTemplates(self):
         '''
@@ -96,10 +97,11 @@ class Person(SQLBase):
         # right now I'd rather have this working than spend time on working
         # out the Right solution.
         return POTemplate.select('''
-            id IN (SELECT potemplate FROM pomsgset WHERE
-                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
-                    origin = 2
-                ORDER BY datefirstseen DESC))
+            id IN (
+                SELECT potemplate FROM potmsgset WHERE id IN (
+                    SELECT potmsgset FROM pomsgset WHERE id IN (
+                        SELECT pomsgset FROM POTranslationSighting WHERE origin = 2
+                            ORDER BY datefirstseen DESC)))
             ''')
 
 

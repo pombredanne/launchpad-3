@@ -8,7 +8,7 @@
     <content class="canonical.launchpad.database.POFile">
         <require permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOFile"
-            set_attributes="header pluralForms rawimportstatus"/>
+            set_attributes="header pluralForms rawfile rawimporter daterawimport rawimportstatus"/>
     </content>
 
     <browser:pages

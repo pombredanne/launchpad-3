@@ -722,28 +722,35 @@ def write(f, header, recode=None, use_replace=False):
 
 if __name__ == '__main__':
     do_diff = False
+
+    for i in range(len(sys.argv)):
+        if sys.argv[i] == '--diff':
+            do_diff = True
+            del sys.argv[i]
+
     if len(sys.argv) > 1:
         in_f = file(sys.argv[1], 'rU')
     else:
         in_f = sys.stdin
-    while len(sys.argv) > 2:
-        if sys.argv[2] == '--diff':
-            from cStringIO import StringIO
-            do_diff = True
-            out_f = StringIO()
-            del sys.argv[2]
-        else:
-            out_f = file(sys.argv[2], 'w')
+
+    if len(sys.argv) > 2:
+        out_f = file(sys.argv[2], 'w')
     else:
         out_f = sys.stdout
 
+    if do_diff:
+        from cStringIO import StringIO
+        out_f = StringIO()
+
     parser = POParser()
+
     # let's both be nice to RAM and test how well POParser responds to batches
     while True:
         batch = in_f.read(1024)
         if not batch:
             break
         parser.write(batch)
+
     parser.finish()
 
     write(out_f, parser.header)
