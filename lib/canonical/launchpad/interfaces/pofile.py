@@ -1,3 +1,4 @@
+
 from zope.interface import Interface, Attribute
 
 class IPOTemplate(Interface):
@@ -22,7 +23,7 @@ class IPOTemplate(Interface):
     license = Attribute("The license that applies to this PO template.")
 
     datecreated = Attribute("When this template was created.")
-    
+
     path = Attribute("The path to the template in the source.")
 
     iscurrent = Attribute("Whether this template is current or not.")
@@ -30,8 +31,7 @@ class IPOTemplate(Interface):
     messagecount = Attribute("The number of msgids inside this PO template.")
 
     owner = Attribute("The owner of the template.")
-    
-    
+
     # A "current" messageset is one that was in the latest version of
     # the POTemplate parsed and recorded in the database. Current
     # MessageSets are indicated by having 'sequence > 0'
@@ -58,6 +58,22 @@ class IPOTemplate(Interface):
     def __getitem__(key):
         """Same as messageSet(), with onlyCurrent=True
         """
+
+    def filterMessageSets(current, translated, languages, slice):
+        '''
+        Return message sets from this PO template, filtered by various
+        properties.
+
+        current:
+            Whether the message sets need be complete or not.
+        translated:
+            Wether the messages sets need be translated in the specified
+            languages or not.
+        languages:
+            The languages used for testing translatedness.
+        slice:
+            The range of results to be selected, or None, for all results.
+        '''
 
     def languages():
         """Return an iterator over languages that this template's messages are
@@ -136,6 +152,7 @@ class IEditPOTemplate(IPOTemplate):
         Returns the newly created message set.
         """
 
+
 class IPOTMsgSet(Interface):
     """A collection of message IDs."""
 
@@ -157,7 +174,6 @@ class IPOTMsgSet(Interface):
     sourcecomment = Attribute("The source code comments this set has.")
 
     flagscomment = Attribute("The flags this set has.")
-
 
     def flags():
         """Return a list of flags on this set."""
@@ -256,7 +272,6 @@ class IPOFile(Interface):
 
     filename = Attribute("The name of the file that was imported")
 
-    
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
 
@@ -302,7 +317,7 @@ class IPOFile(Interface):
         """
 
     def __getitem__(msgid):
-        """Same as messageSet(), with onlyCurrent=True
+        """Same as messageSet(), with onlyCurrent=True.
         """
 
     def messageSetsNotInTemplate():
@@ -362,7 +377,6 @@ class IPOMsgSet(Interface):
 
     potmsgset = Attribute("The msgid set that is translating this set.")
 
-
     def pluralForms():
         """Number of translations that have to point to this message set
         for it to be complete."""
@@ -399,12 +413,12 @@ class IPOTranslationSighting(Interface):
     potranslation = Attribute("The translation that is sighted.")
 
     license = Attribute("The license that has this sight.")
-    
+
     datefirstseen = Attribute("The first time we saw this translation.")
 
     datelastactive = Attribute("Last time we saw this translation.")
 
-    inlastrevision = Attribute("""True if this sighting is currently in last 
+    inlastrevision = Attribute("""True if this sighting is currently in last
         imported POFile, otherwise false.""")
 
     pluralform = Attribute("The # of pluralform that we are sighting.")

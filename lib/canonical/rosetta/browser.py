@@ -581,17 +581,19 @@ class TranslatePOTemplate:
         #    The number of messages being translated.
         #  error:
         #    A flag indicating whether an error ocurred during initialisation.
+        # show:
+        #    Which messages to show: 'translated', 'untranslated' or 'all'.
         #
         # No initialisation if performed if the request's principal is not
         # authenticated.
+
+        self.context = context
+        self.request = request
 
         self.person = IPerson(request.principal, None)
 
         if self.person is None:
             return
-
-        self.context = context
-        self.request = request
 
         self.error = False
 
@@ -647,6 +649,13 @@ class TranslatePOTemplate:
             self.count = int(request.form.get('count'))
         else:
             self.count = self.DEFAULT_COUNT
+
+        # Get message display settings.
+
+        self.show = self.request.form.get('show')
+
+        if not self.show in ('translated', 'untranslated', 'all'):
+            self.show = 'all'
 
     def atBeginning(self):
         return self.offset == 0
@@ -795,9 +804,17 @@ class TranslatePOTemplate:
         }
 
     def messageSets(self):
-        # XXX: The call to __getitem__() should be replaced with a [] when the
-        # implicit __getslice__ problem has been fixed.
-        for set in self.context.__getitem__(slice(self.offset, self.offset+self.count)):
+        if self.show == 'all':
+            translated = None
+        elif self.show == 'translated':
+            translated = True
+        elif self.show == 'untranslated':
+            translated = False
+        else:
+            raise RuntimeError('show = "%s"' % self.show)
+
+        for set in self.context.filterMessageSets(True, translated,
+            self.languages, slice(self.offset, self.offset+self.count)):
             yield self._messageSet(set)
 
     def submitTranslations(self):
