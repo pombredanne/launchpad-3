@@ -12,6 +12,7 @@ from canonical.launchpad.mail import *
 from canonical.launchpad.mail import stub
 
 def setUp(junk):
+    # Reset the in-memory mail spool
     stub.test_emails[:] = []
     FunctionalTestSetup().setUp()
 
@@ -21,9 +22,6 @@ def tearDown(junk):
 
 def test_simple_sendmail():
     r"""
-    Note that we are using the TestMailer, so first we need to reset the
-    in-memory message store in case other tests have left a mess.
-
     Send an email (faked by TestMailer - no actual email is sent)
 
     >>> body = 'The email body'
