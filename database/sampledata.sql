@@ -416,188 +416,138 @@ INSERT INTO Distributionrole (person, distribution, role)
 	(SELECT id from Distribution WHERE name = 'ubuntu'),
 	1);
 
---DistroArchrelease
-INSERT INTO Distroarchrelease(distrorelease, processorfamily, architecturetag, 
-	owner) VALUES 
-	((SELECT id FROM Distrorelease where name = 'warty'), 
-	(SELECT id from Processorfamily where name = 'x86'), 
-	'warty--x86--devel--0', 
-	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')
-	);
+ -- ProcessorFamily
+INSERT INTO ProcessorFamily (name, title, description, owner) 
+VALUES ('x86', 'Intel 386 compatible chips', 'Bring back the 8086!', 
+         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'));
+ 
+ -- Processor
+INSERT INTO Processor (family, name, title, description, owner)
+VALUES ((SELECT id FROM ProcessorFamily WHERE name = 'x86'),
+         '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family',
+        (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'));
+ 
+ -- DistroArchRelease
+INSERT INTO DistroArchRelease (distrorelease, processorfamily, architecturetag, owner)
+VALUES ((SELECT id FROM DistroRelease WHERE name = 'warty'),
+         (SELECT id FROM ProcessorFamily WHERE name = 'x86'),
+	'warty--x86--devel--0',
+ 	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'));
+  
 
--- Build
+ -- Build
+INSERT INTO Build (processor, distroarchrelease, datecreated, buildstate)
+VALUES ((SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- warty--x86--devel--0
+        timestamp '2004-06-28 00:00', 1);
 
-INSERT INTO Build (datecreated, processor, distroarchrelease, buildstate)
-	VALUES
-	('2004-08-24',
-	(SELECT id FROM Processor where name = '386'),
-	1, -- hardcoded ?!?! use query instead
-	1  -- ??
-	);	
+INSERT INTO Build (processor, distroarchrelease, datecreated, buildstate)
+VALUES ((SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- warty--x86--devel--0
+        timestamp '2004-07-29 00:00', 1);
 
---Binarypackagename
-INSERT INTO Binarypackagename(name) VALUES ('mozilla-firefox');
-INSERT INTO Binarypackagename(name) VALUES ('mozilla-thunderbird');
-INSERT INTO Binarypackagename(name) VALUES ('python-twisted');
-INSERT INTO Binarypackagename(name) VALUES ('bugzilla');
-INSERT INTO Binarypackagename(name) VALUES ('arch');
-INSERT INTO Binarypackagename(name) VALUES ('kiwi');
-INSERT INTO Binarypackagename(name) VALUES ('plone');
+INSERT INTO Build (processor, distroarchrelease, datecreated, buildstate)
+VALUES ((SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- warty--x86--devel--0
+        timestamp '2004-05-29 00:00', 1);
+
+INSERT INTO Build (processor, distroarchrelease, datecreated, buildstate)
+VALUES ((SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- warty--x86--devel--0
+        timestamp '2004-05-29 00:00', 1);
+
+INSERT INTO Build (processor, distroarchrelease, datecreated, buildstate)
+VALUES ((SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- warty--x86--devel--0
+        timestamp '2004-06-29 00:00', 1);
+
+INSERT INTO Build (processor, distroarchrelease, datecreated, buildstate)
+VALUES ((SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- warty--x86--devel--0
+        timestamp '2004-03-29 00:00', 1);
+
+INSERT INTO Build (processor, distroarchrelease, datecreated, buildstate)
+VALUES ((SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- warty--x86--devel--0
+        timestamp '2004-06-23 00:00', 1);
 
 
-
+-- BinarypackageName
+INSERT INTO BinarypackageName (name) values ('mozilla-firefox');
+INSERT INTO BinarypackageName (name) values ('mozilla-thunderbird');
+INSERT INTO BinarypackageName (name) values ('python-twisted');
+INSERT INTO BinarypackageName (name) values ('bugzilla');
+INSERT INTO BinarypackageName (name) values ('arch');
+INSERT INTO BinarypackageName (name) values ('kiwi');
+INSERT INTO BinarypackageName (name) values ('plone');
 
 -- Binarypackage
-INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
-version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
-	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'mozilla-firefox')),
-(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
-'0.8', 'Mozilla Firefox 0.8', 'some text', 
-	1, -- hardcoded ?? use query instead
-	1, -- DEB ?
-	1, -- default component
-	1, -- default section
-	3); -- highest priority
+INSERT INTO Binarypackage (binarypackagename, shortdesc, description, sourcepackagerelease, version, build, binpackageformat, component, section) values ((SELECT id FROM BinarypackageName WHERE name = 'mozilla-firefox'), 'Mozilla Firefox', 'The Mozilla Firefox web browser', (SELECT SourcepackageRelease.id FROM SourcepackageRelease, Sourcepackage WHERE SourcepackageRelease.sourcepackage = Sourcepackage.id AND Sourcepackage.name = 'mozilla-firefox'), '0.9.1-1', 1, 1, 1, 1);
+INSERT INTO Binarypackage (binarypackagename, shortdesc, description, sourcepackagerelease, version, build, binpackageformat, component, section) values ((SELECT id FROM BinarypackageName WHERE name = 'mozilla-thunderbird'), 'Mozilla Thunderbird', 'The Mozilla Thunderbird mail client', (SELECT SourcepackageRelease.id FROM SourcepackageRelease, Sourcepackage WHERE SourcepackageRelease.sourcepackage = Sourcepackage.id AND Sourcepackage.name = 'mozilla-thunderbird'), '0.9.1-2', 1, 1, 1, 1);
+INSERT INTO Binarypackage (binarypackagename, shortdesc, description, sourcepackagerelease, version, build, binpackageformat, component, section) values ((SELECT id FROM BinarypackageName WHERE name = 'python-twisted'), 'Twisted', 'Twisted is an asynchronous networking library for Python.  It rocks.', (SELECT SourcepackageRelease.id FROM SourcePackageRelease, SourcePackage WHERE SourcepackageRelease.sourcepackage = Sourcepackage.id AND Sourcepackage.name = 'python-twisted'), '0.9.1-3', 1, 1, 1, 1);
+INSERT INTO Binarypackage (binarypackagename, shortdesc, description, sourcepackagerelease, version, build, binpackageformat, component, section) values ((SELECT id FROM BinarypackageName WHERE name = 'bugzilla'), 'Bugzilla bug tracking system', 'Whee!', (SELECT SourcepackageRelease.id FROM SourcepackageRelease, Sourcepackage WHERE SourcepackageRelease.sourcepackage = Sourcepackage.id AND Sourcepackage.name = 'bugzilla'), '0.9.1-4', 1, 1, 1, 1);
+INSERT INTO Binarypackage (binarypackagename, shortdesc, description, sourcepackagerelease, version, build, binpackageformat, component, section) values ((SELECT id FROM BinarypackageName WHERE name = 'arch'), 'Foo!', 'Bar!', (SELECT SourcepackageRelease.id FROM SourcepackageRelease, Sourcepackage WHERE SourcepackageRelease.sourcepackage = Sourcepackage.id AND Sourcepackage.name = 'arch'), '0.9.1-5', 1, 1, 1, 1);
+INSERT INTO Binarypackage (binarypackagename, shortdesc, description, sourcepackagerelease, version, build, binpackageformat, component, section) values ((SELECT id FROM BinarypackageName WHERE name = 'kiwi'), 'Hello?', 'Is this thing on?', (SELECT SourcepackageRelease.id FROM SourcepackageRelease, Sourcepackage WHERE SourcepackageRelease.sourcepackage = Sourcepackage.id AND Sourcepackage.name = 'kiwi'), '0.9.1-6', 1, 1, 1, 1);
+INSERT INTO Binarypackage (binarypackagename, shortdesc, description, sourcepackagerelease, version, build, binpackageformat, component, section) values ((SELECT id FROM BinarypackageName WHERE name = 'plone'), 'Plone', 'Zope 2 + love == Plone', (SELECT SourcepackageRelease.id FROM SourcepackageRelease, Sourcepackage WHERE SourcepackageRelease.sourcepackage = Sourcepackage.id AND Sourcepackage.name = 'plone'), '0.9.1-7', 1, 1, 1, 1);
+ 
+-- PackagePublishing
 
-INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
-version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
-	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'mozilla-thunderbird')),
-(SELECT id from Binarypackagename WHERE name = 'mozilla-thunderbird'), 
-'1.5', 'Mozilla Thunderbird 1.5', 'some text', 
-	1, -- hardcoded ?? use query instead
-	1, -- DEB ?
-	1, -- default component
-	1, -- default section
-	3); -- highest priority
+INSERT INTO PackagePublishing (binarypackage, distroarchrelease, component, section, priority) 
+VALUES ((SELECT id FROM Binarypackage WHERE version = '0.9.1-1'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
 
-INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
-version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
-	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'python-twisted')),
-(SELECT id from Binarypackagename WHERE name = 'python-twisted'), 
-'1.3', 'Python Twisted 1.3', 'some text', 
-	1, -- hardcoded ?? use query instead
-	1, -- DEB ?
-	1, -- default component
-	1, -- default section
-	3); -- highest priority
+INSERT INTO PackagePublishing (binarypackage, distroarchrelease, component, section, priority) 
+VALUES ((SELECT id FROM Binarypackage WHERE version = '0.9.1-2'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
 
-INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
-version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
-	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'bugzilla')),
-(SELECT id from Binarypackagename WHERE name = 'bugzilla'), 
-'2.18', 'Bugzilla 2.18', 'some text', 
-	1, -- hardcoded ?? use query instead
-	1, -- DEB ?
-	1, -- default component
-	1, -- default section
-	3); -- highest priority
+INSERT INTO PackagePublishing (binarypackage, distroarchrelease, component, section, priority) 
+VALUES ((SELECT id FROM Binarypackage WHERE version = '0.9.1-3'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
 
-INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
-version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
-	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'arch')),
-(SELECT id from Binarypackagename WHERE name = 'arch'), 
-'1.0', 'ARCH 1.0', 'some text', 
-	1, -- hardcoded ?? use query instead
-	1, -- DEB ?
-	1, -- default component
-	1, -- default section
-	3); -- highest priority
+INSERT INTO PackagePublishing (binarypackage, distroarchrelease, component, section, priority) 
+VALUES ((SELECT id FROM Binarypackage WHERE version = '0.9.1-4'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
 
-INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
-version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
-	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'kiwi2')),
-(SELECT id from Binarypackagename WHERE name = 'kiwi'), 
-'2.0', 'Python Kiwi 2.0', 'some text', 
-	1, -- hardcoded ?? use query instead
-	1, -- DEB ?
-	1, -- default component
-	1, -- default section
-	3); -- highest priority
+INSERT INTO PackagePublishing (binarypackage, distroarchrelease, component, section, priority) 
+VALUES ((SELECT id FROM Binarypackage WHERE version = '0.9.1-5'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
 
-INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
-version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
-	VALUES (
-(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'plone')),
-(SELECT id from Binarypackagename WHERE name = 'plone'), 
-'1.0', 'Plone 1.0', 'some text', 
-	1, -- hardcoded ?? use query instead
-	1, -- DEB ?
-	1, -- default component
-	1, -- default section
-	3); -- highest priority
+INSERT INTO PackagePublishing (binarypackage, distroarchrelease, component, section, priority) 
+VALUES ((SELECT id FROM Binarypackage WHERE version = '0.9.1-6'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
 
--- Packagepublishing
-
-INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component, 
-	section, priority) 
-	VALUES
-	((SELECT id FROM Binarypackage where binarypackagename = 
-	  (SELECT id FROM Binarypackagename where name = 'mozilla-firefox')
-	),
-	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
-	   'warty--x86--devel--0'),
-	1, -- default_component
-	1, -- default_section
-	3); -- ???
-
-INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component, 
-	section, priority) 
-	VALUES
-	((SELECT id FROM Binarypackage where binarypackagename = 
-	  (SELECT id FROM Binarypackagename where name = 
-	     'mozilla-thunderbird')
-	),
-	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
-	   'warty--x86--devel--0'),
-	1, -- default_component
-	1, -- default_section
-	3); -- ???
-
-INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component, 
-	section, priority) 
-	VALUES
-	((SELECT id FROM Binarypackage where binarypackagename = 
-	  (SELECT id FROM Binarypackagename where name = 'python-twisted')
-	),
-	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
-	   'warty--x86--devel--0'),
-	1, -- default_component
-	1, -- default_section
-	3); -- ???
-
-INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component, 
-	section, priority) 
-	VALUES
-	((SELECT id FROM Binarypackage where binarypackagename = 
-	  (SELECT id FROM Binarypackagename where name = 'kiwi')
-	),
-	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
-           'warty--x86--devel--0'),
-	1, -- default_component
-	1, -- default_section
-	3); -- ???
-
-
+INSERT INTO PackagePublishing (binarypackage, distroarchrelease, component, section, priority) 
+VALUES ((SELECT id FROM Binarypackage WHERE version = '0.9.1-7'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
+ 
 --SourcePackageUpload
 
 
@@ -715,8 +665,8 @@ INSERT INTO POTemplate (product, branch, priority, name, title,
 			path, iscurrent, messagecount, owner)
 VALUES ((SELECT id FROM Product WHERE name = 'evolution'),
         (SELECT id FROM Branch
-	WHERE title = 'Evolution 2.0'),
-	2, 'evolution-2.0',
+	WHERE title = 'Evolution 1.5.90'),
+	2, 'evolution-1.5.90',
 	'Main POT file for the Evolution 2.0 development branch',
 	'I suppose we should create a long description here....',
 	'Copyright (C) 2003  Ximian Inc.',
@@ -724,22 +674,6 @@ VALUES ((SELECT id FROM Product WHERE name = 'evolution'),
 	timestamp '2004-08-17 09:10',
 	'po/', TRUE, 3, 	
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'));
-
-INSERT INTO POTemplate (product, branch, priority, name, title,
-			description, copyright, license, datecreated,
-			path, iscurrent, messagecount, owner)
-VALUES ((SELECT id FROM Product WHERE name = 'iso-codes'),
-        (SELECT id FROM Branch
-	WHERE title = 'Iso-codes 0.35'),
-	2, 'languages',
-	'POT file for the iso_639 strings',
-	'I suppose we should create a long description here....',
-	'Copyright',
-	(SELECT id FROM License WHERE legalese = 'GPL-2'),
-	timestamp '2004-08-17 09:10',
-	'iso_639/', TRUE, 3, 	
-	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'));
-
 
 --  1
 INSERT INTO POMsgID (msgid) VALUES ('evolution addressbook');
@@ -1107,13 +1041,13 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete,
 		      obsolete, fuzzy) 
 VALUES (1, 1, 1, 1, TRUE, FALSE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
-			      datelastseen, inlastrevision, pluralform)
-VALUES (17, 1, now(), now(), TRUE, 0);
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
+			      lastseen, inpofile, pluralform)
+VALUES (16, 1, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
-				   inlastrevision, pluralform, person, origin)
-VALUES (17, 1, 1, now(), now(), TRUE, 0,
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
+				   inpofile, pluralform, person, origin)
+VALUES (16, 1, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
@@ -1124,13 +1058,13 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obso
 		      fuzzy) 
 VALUES (2, 2, 1, 1, TRUE, FALSE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
-			      datelastseen, inlastrevision, pluralform)
-VALUES (18, 2, now(), now(), TRUE, 0);
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
+			      lastseen, inpofile, pluralform)
+VALUES (17, 2, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
-				   inlastrevision, pluralform, person, origin)
-VALUES (18, 2, 1, now(), now(), TRUE, 0,
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
+				   inpofile, pluralform, person, origin)
+VALUES (17, 2, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 	
@@ -1141,13 +1075,13 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obso
 		      fuzzy) 
 VALUES (3, 3, 1, 1, FALSE, FALSE, TRUE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
-			      datelastseen, inlastrevision, pluralform)
-VALUES (19, 3, now(), now(), TRUE, 0);
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
+			      lastseen, inpofile, pluralform)
+VALUES (18, 3, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
-				   inlastrevision, pluralform, person, origin)
-VALUES (19, 3, 1, now(), now(), TRUE, 0,
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
+				   inpofile, pluralform, person, origin)
+VALUES (18, 3, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
@@ -1162,179 +1096,42 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obso
 		      fuzzy) 
 VALUES (93, 4, 1, 1, TRUE, FALSE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
-			      datelastseen, inlastrevision, pluralform)
-VALUES (20, 93, now(), now(), TRUE, 0);
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
+			      lastseen, inpofile, pluralform)
+VALUES (19, 93, now(), now(), TRUE, 0);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
-			      datelastseen, inlastrevision, pluralform)
-VALUES (20, 94, now(), now(), TRUE, 1);
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
+			      lastseen, inpofile, pluralform)
+VALUES (19, 94, now(), now(), TRUE, 1);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
-				   inlastrevision, pluralform, person, origin)
-VALUES (20, 4, 1, now(), now(), TRUE, 0,
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
+				   inpofile, pluralform, person, origin)
+VALUES (19, 4, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
-				   inlastrevision, pluralform, person, origin)
-VALUES (20, 5, 1, now(), now(), TRUE, 1,
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
+				   inpofile, pluralform, person, origin)
+VALUES (19, 5, 1, now(), now(), TRUE, 1,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
-
-/* A multiline example */
-INSERT INTO POTranslation (translation)
-VALUES ('La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.\n\nTenga paciencia mientras Evolution migra sus carpetas...');
-INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obsolete,
-		      fuzzy)
-VALUES (68, 5, 1, 1, TRUE, FALSE, FALSE);
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
-			     datelastseen, inlastrevision, pluralform)
-VALUES (21, 68, now(), now(), TRUE, 0);
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
-				   inlastrevision, pluralform, person, origin)
-VALUES (21, 6, 1, now(), now(), TRUE, 0,
-	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
-	0);
-
-/* A plural form + multiline example */
-INSERT INTO POTranslation (translation)
-VALUES ('Abrir %d contacto abrirá %d ventanas nuevas también.\n¿Quiere realmente mostrar este contacto?');
-INSERT INTO POTranslation (translation)
-VALUES ('Abrir %d contactos abrirá %d ventanas nuevas también.\n¿Quiere realmente mostrar todos estos contactos?');
-INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obsolete,
-		      fuzzy) 
-VALUES (95, 6, 1, 1, TRUE, FALSE, FALSE);
-
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
-			      datelastseen, inlastrevision, pluralform)
-VALUES (22, 95, now(), now(), TRUE, 0);
-
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
-			      datelastseen, inlastrevision, pluralform)
-VALUES (22, 96, now(), now(), TRUE, 1);
-
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
-				   inlastrevision, pluralform, person, origin)
-VALUES (22, 7, 1, now(), now(), TRUE, 0,
-	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
-	0);
-
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
-				   inlastrevision, pluralform, person, origin)
-VALUES (22, 8, 1, now(), now(), TRUE, 1,
-	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
-	0);
-
 
 /* An example for obsolete string */
 INSERT INTO POTranslation (translation)
 VALUES ('_Añadir grupo');
 INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obsolete,
-		      fuzzy)
-VALUES (97, 7, 1, 1, TRUE, TRUE, FALSE);
+		      fuzzy) 
+VALUES (95, 5, 1, 1, TRUE, TRUE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
-			      datelastseen, inlastrevision, pluralform)
-VALUES (23, 97, now(), now(), TRUE, 0);
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
+			      lastseen, inpofile, pluralform)
+VALUES (20, 95, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
-				   inlastrevision, pluralform, person, origin)
-VALUES (23, 9, 1, now(), now(), TRUE, 0,
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
+				   inpofile, pluralform, person, origin)
+VALUES (20, 6, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
-
-/* Malone sample data */
-/* 
-INSERT INTO Person (displayname, givenname, familyname)
-VALUES  ('Dave Miller', 'David', 'Miller');
-*/
-
-INSERT INTO Person (displayname) VALUES ('Sample Person');
-
-INSERT INTO EmailAddress (email, person, status) VALUES (
-'justdave@bugzilla.org',
-(SELECT id FROM Person WHERE displayname='Dave Miller'),
-2
-);
-INSERT INTO BugSystemType (name, title, description, homepage, owner)
-VALUES ('bugzilla', 'BugZilla', 'Dave Miller\'s Labour of Love, '
-|| 'the Godfather of Open Source project issue tracking.',
-'http://www.bugzilla.org/', 
-(SELECT id FROM Person WHERE displayname='Dave Miller')
-);
-INSERT INTO Project (owner, name, displayname, title, shortdesc, 
-description, homepageurl)
-VALUES (
-(SELECT id FROM Person WHERE displayname='Sample Person'),
-'mozilla', 'The Mozilla Project', 'The Mozilla Project',
-'The Mozilla Project is the largest open source web browser collaborative project.',
-'The Mozilla Project is the largest open source web browser '
-|| 'collaborative project. The Mozilla Project produces several internet '
-|| 'applications that are very widely used, and is also a center for '
-|| 'collaboration on internet standards work by open source groups.',
-'http://www.mozilla.org/'
-);
-INSERT INTO Product (project, owner, name, displayname,  title, shortdesc,
-description)
-VALUES (
-(SELECT id FROM Project WHERE name='mozilla'),
-(SELECT id FROM Person WHERE displayname='Sample Person'),
-'firefox', 'Mozilla Firefox', 'Mozilla Firefox',
-'The Mozilla Firefox web browser',
-'The Mozilla Firefox web browser'
-);
-INSERT INTO ProductRelease (product, datereleased, version, owner)
-VALUES (
-(SELECT id FROM Product WHERE name='firefox'),
-timestamp '2004-06-28 00:00', 'mozilla-firefox-0.9.1',
-(SELECT id FROM Person WHERE displayname='Sample Person')
-);
-
-/* 
-INSERT INTO Sourcepackage (maintainer, name, title, description)
-VALUES (
-(SELECT id FROM Person WHERE displayname='Sample Person'),
-'mozilla-firefox',
-'Ubuntu Mozilla Firefox Source Package', 'text'
-);
-*/
-INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-version, dateuploaded, urgency)
-VALUES (
-(SELECT id FROM Sourcepackage WHERE name='mozilla-firefox'),
-1, (SELECT id FROM Person WHERE displayname='Sample Person'),
-'0.9.1-1', timestamp '2004-06-29 00:00', 1
-);
-
-INSERT INTO Manifest (datecreated, owner)
-VALUES (
-timestamp '2004-06-29 00:00', 
-(SELECT id FROM Person WHERE displayname='Sample Person')
-);
-
-INSERT INTO CodeRelease (sourcepackagerelease, manifest)
-VALUES (
-(SELECT id FROM Sourcepackage WHERE name='mozilla-firefox'),
-(SELECT max(id) FROM Manifest)
-);
-
-INSERT INTO Bug (name, title, shortdesc, description, owner, communityscore,
-communitytimestamp, activityscore, activitytimestamp, hits,
-hitstimestamp)
-VALUES ('bob', 'An odd problem', 'Something strange is wrong somewhere',
-'Something strange is wrong somewhere',
-(SELECT id FROM Person WHERE displayname='Sample Person'),
-0, CURRENT_DATE, 0, CURRENT_DATE, 0, CURRENT_DATE
-);
-
-INSERT INTO BugActivity (bug, datechanged, person, whatchanged, oldvalue,
-newvalue, message)
-VALUES (
-(SELECT id FROM Bug WHERE name='bob'),
-CURRENT_DATE, 1, 'title', 'A silly problem',
-'An odd problem', 'Decided problem wasn\'t silly after all'
-);
 
 -- Assign bug 'bob' to the firefox product (NEW, HIGH, MAJOR)
 INSERT INTO ProductBugAssignment (bug, product, bugstatus, priority, severity)

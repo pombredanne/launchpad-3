@@ -70,6 +70,7 @@ class IDistroReleaseSourcesApp(Interface):
 class IDistroReleaseSourceApp(Interface):
     """A SourcePackage Proxy """
     sourcepackage = Attribute("SourcePackage")
+    proposed = Attribute("Proposed source package release")
     lastversions = Attribute("Last Release Versions")
     currentversions = Attribute("Current Release Versions")
     
@@ -333,8 +334,9 @@ class IBinaryPackage(Interface):
     # See the BinaryPackage table
 
     name = Attribute("A string")
-    title = Attribute("Package Title")
+    shortdesc = Attribute("Package Title")
     description = Attribute("Package Description")
+    maintainer = Attribute("Package maintainer")
     ##releases = Attribute("List of IBinaryPackageRelease objects")
 
 
@@ -361,6 +363,8 @@ class ISourcePackage(Interface):
     title = Attribute("Package Title")
     description = Attribute("Package Description")
     ##releases = Attribute("List of ISourcePackageRelease objects")
+    proposed = Attribute("A source package release with upload status of "
+                         "PROPOSED, else None")
 
 
 class ISourcePackageRelease(Interface):

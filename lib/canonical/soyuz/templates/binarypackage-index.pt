@@ -14,20 +14,14 @@
 
 <div metal:fill-slot="main">
 
-    <h1>
-       <tal:block
-       tal:replace="context/binarypackage/title">TITLE</tal:block>
-    </h1>
-    <h2>Binarypackage-index (...ubuntu/bin/warty/apache2/) </h2>
+    <h1 tal:content="context/binarypackage/name">Name</h1>
+    <h2 tal:content="context/binarypackage/shortdesc">Short Description</h2>
     <table width="80%">
     <tr>
     <td>
     <p> <h4>Description:  </h4> <tal:block tal:replace="context/binarypackage/description" />
     <p> <h4>Package name: </h4> <tal:block tal:replace="context/binarypackage/name" />
-    <p> <h4>Maintainer:   </h4> Maintainer Name
-
-    <p> <h4>Proposed:</h4>
-    0.0.0-1    
+    <p> <h4>Maintainer:   </h4> <tal:block tal:replace="context/binarypackage/maintainer/displayname" />
 
     <p> <h4>Current:</h4>
 

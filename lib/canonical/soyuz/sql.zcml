@@ -62,6 +62,11 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.soyuz.database.SoyuzBinaryPackage">
+    <allow interface="canonical.soyuz.interfaces.IBinaryPackage"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
 
 
  <content class="canonical.soyuz.sql.DistroBinariesApp">
@@ -135,12 +140,12 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.SourcePackage">
+  <content class="canonical.soyuz.sql.SoyuzSourcePackage">
     <allow interface="canonical.soyuz.interfaces.ISourcePackage"/>
   </content>
 
 
-  <content class="canonical.soyuz.sql.SourcePackageRelease">
+  <content class="canonical.soyuz.sql.SoyuzSourcePackageRelease">
     <allow interface="canonical.soyuz.interfaces.ISourcePackageRelease"/>
   </content>
 
