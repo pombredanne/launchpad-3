@@ -23,19 +23,19 @@ def repositoryIsTar(cvsroot):
 
 
 def updateCvsrootFromInfoFile(infofile):
+    print "** processing info file %r" % infofile
     import info2job
     info = info2job.read_info(infofile, logging)
     jobs = info2job.iter_jobs(info, logging)
     for job in jobs:
+        jobname = info2job.jobfile_name(info, job)
+        print "* processing job %r" % jobname
         cvsroot = info.get("cvsroot")
         if cvsroot is None: continue
-        jobname = info2job.jobfile_name(info, job)
-        query = (SourceSource.q.name == jobname
-                 and SourceSource.q.processingapproved == None)
+        query = (SourceSource.q.name == jobname)
         for source in  SourceSource.select(query):
-            print 'updateCvsroot: name    == ', source.name
             print 'updateCvsroot: cvsroot == ', source.cvsroot
-            if repositoryIsTar(source.cvsroot):
+            if source.cvsroot != cvsroot:
                 print 'updateCvsroot: cvsroot <= ', cvsroot
                 source.cvsroot = cvsroot
 
