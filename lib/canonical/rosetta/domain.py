@@ -23,6 +23,13 @@ class RosettaProject:
     def __init__(self, context):
         self.context = context
 
+    def product(self, name):
+        for p in self.context.rosettaProducts():
+            if p.name == name:
+                return p
+
+        raise KeyError(name)
+
     def poTemplates(self):
         """See IRosettaProject."""
         # A project's templates are the collection of all of the project's

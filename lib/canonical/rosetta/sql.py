@@ -2,8 +2,9 @@
 
 from canonical.database.sqlbase import SQLBase, quote
 
-from canonical.rosetta.interfaces import *
+import canonical.rosetta.interfaces as interfaces
 from canonical.database.doap import IProject, IProjects
+
 from sqlobject import ForeignKey, MultipleJoin, RelatedJoin, IntCol, \
     BoolCol, StringCol, DateTimeCol
 from zope.interface import implements, directlyProvides
@@ -59,7 +60,7 @@ msgstr ""
 '''
 
 
-class RosettaProjects(object):
+class xxxRosettaProjects(object):
     implements(IProjects)
 
     def __iter__(self):
@@ -90,8 +91,8 @@ class RosettaProjects(object):
             (query, query))
 
 
-class RosettaProject(SQLBase):
-    implements(IRosettaProject)
+class xxxRosettaProject(SQLBase):
+    implements(interfaces.IRosettaProject)
 
     _table = 'Project'
 
@@ -166,12 +167,12 @@ class RosettaProject(SQLBase):
 
 
 class RosettaProduct(SQLBase):
-    implements(IProduct)
+    implements(interfaces.IProduct)
 
     _table = 'Product'
 
     _columns = [
-        ForeignKey(name='project', foreignKey='RosettaProject', dbName='project',
+        ForeignKey(name='project', foreignKey='DBProject', dbName='project',
             notNull=True),
         StringCol(name='name', dbName='name', notNull=True, unique=True),
         StringCol(name='displayName', dbName='displayname', notNull=True),
@@ -301,7 +302,7 @@ def createMessageSetFromText(potemplate_or_pofile, text):
 
 
 class RosettaPOTemplate(SQLBase):
-    implements(IEditPOTemplate)
+    implements(interfaces.IEditPOTemplate)
 
     _table = 'POTemplate'
 
@@ -497,7 +498,7 @@ class RosettaPOTemplate(SQLBase):
 
 
 class RosettaPOFile(SQLBase):
-    implements(IEditPOFile)
+    implements(interfaces.IEditPOFile)
 
     _table = 'POFile'
 
@@ -641,7 +642,7 @@ class RosettaPOFile(SQLBase):
 
 
 class RosettaPOMessageSet(SQLBase):
-    implements(IEditPOTemplateOrPOFileMessageSet)
+    implements(interfaces.IEditPOTemplateOrPOFileMessageSet)
 
     _table = 'POMsgSet'
 
@@ -669,10 +670,10 @@ class RosettaPOMessageSet(SQLBase):
 
         if poFile is None:
             # this is a IPOTemplateMessageSet
-            directlyProvides(self, IPOTemplateMessageSet)
+            directlyProvides(self, interfaces.IPOTemplateMessageSet)
         else:
             # this is a IPOFileMessageSet
-            directlyProvides(self, IEditPOFileMessageSet)
+            directlyProvides(self, interfaces.IEditPOFileMessageSet)
 
     def messageIDs(self):
         return RosettaPOMessageID.select('''
@@ -748,7 +749,7 @@ class RosettaPOMessageSet(SQLBase):
 
         # Find the number of plural forms.
 
-        languages = getUtility(ILanguages)
+        languages = getUtility(interfaces.ILanguages)
 
         try:
             pofile = self.poTemplate.poFile(language)
@@ -900,7 +901,7 @@ class RosettaPOMessageSet(SQLBase):
 
 
 class RosettaPOMessageIDSighting(SQLBase):
-    implements(IPOMessageIDSighting)
+    implements(interfaces.IPOMessageIDSighting)
 
     _table = 'POMsgIDSighting'
 
@@ -915,7 +916,7 @@ class RosettaPOMessageIDSighting(SQLBase):
 
 
 class RosettaPOMessageID(SQLBase):
-    implements(IPOMessageID)
+    implements(interfaces.IPOMessageID)
 
     _table = 'POMsgID'
 
@@ -925,7 +926,7 @@ class RosettaPOMessageID(SQLBase):
 
 
 class RosettaPOTranslationSighting(SQLBase):
-    implements(IPOTranslationSighting)
+    implements(interfaces.IPOTranslationSighting)
 
     _table = 'POTranslationSighting'
 
@@ -949,7 +950,7 @@ class RosettaPOTranslationSighting(SQLBase):
 
 
 class RosettaPOTranslation(SQLBase):
-    implements(IPOTranslation)
+    implements(interfaces.IPOTranslation)
 
     _table = 'POTranslation'
 
@@ -958,7 +959,7 @@ class RosettaPOTranslation(SQLBase):
     ]
 
 class RosettaLanguages(object):
-    implements(ILanguages)
+    implements(interfaces.ILanguages)
 
     def __iter__(self):
         return iter(RosettaLanguage.select())
@@ -975,7 +976,7 @@ class RosettaLanguages(object):
         return [language.code for language in RosettaLanguage.select()]
 
 class RosettaLanguage(SQLBase):
-    implements(ILanguage)
+    implements(interfaces.ILanguage)
 
     _table = 'Language'
 
@@ -996,7 +997,7 @@ class RosettaLanguage(SQLBase):
 
 
 class RosettaPerson(SQLBase):
-    implements(IPerson)
+    implements(interfaces.IPerson)
 
     _table = 'Person'
 
@@ -1031,9 +1032,9 @@ class RosettaPerson(SQLBase):
         otherColumn='label', intermediateTable='PersonLabel')
 
     def languages(self):
-        languages = getUtility(ILanguages)
+        languages = getUtility(interfaces.ILanguages)
         schema = RosettaSchema.selectBy(name='translation-languages')[0]
-        
+
         for label in self._labelsJoin:
             if label.schema == schema:
                 yield languages[label.name]
@@ -1049,9 +1050,9 @@ class RosettaPerson(SQLBase):
         label = RosettaLabel.selectBy(schemaID=schema.id, name=language.code)[0]
         # This method comes from the RelatedJoin
         self.removeRosettaLabel(label)
-    
+
 class RosettaBranch(SQLBase):
-    implements(IBranch)
+    implements(interfaces.IBranch)
 
     _table = 'Branch'
 
@@ -1075,7 +1076,7 @@ def personFromPrincipal(principal):
             return ret[0]
 
 class RosettaSchemas(object):
-    implements(ISchemas)
+    implements(interfaces.ISchemas)
 
     def __getitem__(self, name):
         results = RosettaSchema.selectBy(name=name)
@@ -1090,8 +1091,8 @@ class RosettaSchemas(object):
 
 
 class RosettaSchema(SQLBase):
-    implements(ISchema)
-    
+    implements(interfaces.ISchema)
+
     _table = 'Schema'
 
     _columns = [
@@ -1123,7 +1124,7 @@ class RosettaSchema(SQLBase):
             return results[0]
 
 class RosettaLabel(SQLBase):
-    implements(ILabel)
+    implements(interfaces.ILabel)
 
     _table = 'Label'
 
@@ -1144,7 +1145,7 @@ class RosettaLabel(SQLBase):
 
 
 class RosettaCategory(RosettaLabel):
-    implements(ICategory)
+    implements(interfaces.ICategory)
 
     _effortPOTemplatesJoin = MultipleJoin('RosettaTranslationEffortPOTemplate',
         joinColumn='category')
@@ -1189,7 +1190,7 @@ class RosettaCategory(RosettaLabel):
 
 
 class RosettaTranslationEfforts(object):
-    implements(ITranslationEfforts)
+    implements(interfaces.ITranslationEfforts)
 
     def __iter__(self):
         return iter(RosettaTranslationEffort.select())
@@ -1220,14 +1221,14 @@ class RosettaTranslationEfforts(object):
 
 
 class RosettaTranslationEffort(SQLBase):
-    implements(ITranslationEffort)
+    implements(interfaces.ITranslationEffort)
 
     _table = 'TranslationEffort'
 
     _columns = [
         ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
             notNull=True),
-        ForeignKey(name='project', foreignKey='RosettaProject',
+        ForeignKey(name='project', foreignKey='DBProject',
             dbName='project', notNull=True),
         ForeignKey(name='categoriesSchema', foreignKey='RosettaSchema',
             dbName='categories', notNull=False),
@@ -1276,7 +1277,7 @@ class RosettaTranslationEffort(SQLBase):
 
 
 class RosettaTranslationEffortPOTemplate(SQLBase):
-    implements(ITranslationEffortPOTemplate)
+    implements(interfaces.ITranslationEffortPOTemplate)
 
     _table = 'TranslationEffortPOTemplate'
 

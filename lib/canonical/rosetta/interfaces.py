@@ -14,6 +14,7 @@ import canonical.database.doap as doap
 class IRosettaApplication(Interface):
     """Rosetta application class."""
 
+
 class IRosettaStats(Interface):
     """Rosetta-related statistics."""
 
@@ -36,6 +37,7 @@ class IRosettaStats(Interface):
         but there was no translation in the PO file for this language when we
         last parsed it."""
 
+
 class IRosettaProject(IRosettaStats, doap.IProject):
     """The rosetta interface to a project."""
 
@@ -44,6 +46,9 @@ class IRosettaProject(IRosettaStats, doap.IProject):
     def poTemplates():
         """Returns an iterator over this project's PO templates."""
 
+    def product(name):
+        """Return the product belonging to this project with the given
+        name."""
 
 
 class IProduct(Interface):
