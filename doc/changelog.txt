@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 06:56:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1416
+
+    Summary:
+      Reenable tests
+    Revision:
+      launchpad--devel--0--patch-1416
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-187
+       Reenable tests
+    
+
+    modified files:
+     Makefile doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-187
+
+
 2005-03-11 06:34:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1415
 
     Summary:

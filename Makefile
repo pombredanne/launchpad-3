@@ -21,8 +21,8 @@ check_merge: build
 	# finer grained testing anyway.
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	#env PYTHONPATH=$(PYTHONPATH) \
-	#${PYTHON} -t ./test_on_merge.py --dir hct --dir sourcerer --dir banzai
+	env PYTHONPATH=$(PYTHONPATH) \
+	${PYTHON} -t ./test_on_merge.py --dir hct --dir sourcerer --dir banzai
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
