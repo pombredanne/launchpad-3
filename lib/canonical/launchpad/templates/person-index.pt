@@ -66,7 +66,7 @@
 
        <tr tal:condition="context/gpg">
        <td>GPG:</td>
-       <td tal:content="context/gpg/keyid"></td>
+       <td tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}"></td>
        <th><a href="+key">Pub Key</a></th>
        </tr>
 

@@ -543,13 +543,10 @@ class GPGKey(SQLBase):
         IntCol('keysize', dbName='keysize', notNull=True),
         ]
 
-##XXX: (dbschema+gpg) cprov 20041004
-## Experimental API with 4 attributes (includes also name instead just
-##  value, title, description)
     def _algorithmname(self):
-        for name, algorithm in dbschema.GPGKeyAlgorithms.items.mapping.items():
+        for algorithm in dbschema.GPGKeyAlgorithms.items:
             if algorithm.value == self.algorithm:
-                return name
+                return algorithm.title
         return 'Unknown (%d)' %self.algorithm
     
     algorithmname = property(_algorithmname)

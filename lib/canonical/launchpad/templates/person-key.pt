@@ -16,13 +16,12 @@
 
     <h1 tal:content="context/person/displayname">PERSON</h1> 
     
-
     <fieldset>
     <legend>GPG Key Infromation </legend>
     <div>
     <table>
     <tr><td>Key ID : </td>
-    <td tal:content="string:${context/gpg/keyid}${context/gpg/keyid}/${context/gpg/keyid}"></td>
+    <td tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}"></td>
     <tr><td>Fingerprint :</td>
         <td tal:content="context/gpg/fingerprint">FINGERPRINT</td></tr>
     <tr><td>Revoked : </td>
