@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-07 13:59:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1159
+
+    Summary:
+      Fixed bug #24 (some msgid are modified when exported from Rosetta, they lose the last char if it's a white space) it's not the final fix but will fix most common cases.
+    Revision:
+      launchpad--devel--0--patch-1159
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-464
+       Fixed bug #24 (some msgid are modified when exported from Rosetta, they lose the last char if it's a white space) it's not the final fix but will fix most common cases.
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-465
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-466
+       Fixed the tests
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/rosetta/pofile.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-464
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-465
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-466
+
+
 2005-01-07 02:06:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1158
 
     Summary:
