@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-05 16:52:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1565
+
+    Summary:
+      Add SourcePackageReleasePublishingHistory table pending patch
+    Revision:
+      launchpad--devel--0--patch-1565
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1559
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-1
+       Add sprh pending db patch
+    
+
+    new files:
+     database/schema/pending/.arch-ids/dsilvers-sprh.sql.id
+     database/schema/pending/dsilvers-sprh.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--base-0
+     daniel.silverstone@canonical.com--desktop/launchpad--publishing--0--patch-1
+
+
 2005-04-05 16:41:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1564
 
     Summary:
