@@ -8,6 +8,9 @@
 */
 
 INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín' );
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Dafydd Harries', 'Dafydd', 'Harries' );
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Lalo Martins', 'Lalo', 'Martins' );
+
 INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
 	'gnome', 'GNOME', 'The GNOME Project', 'foo', 'bar', 'http://www.gnome.org/' );
@@ -589,3 +592,74 @@ INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstse
 VALUES (23, 9, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
+
+INSERT INTO Schema (name, title, description, owner)
+VALUES ('translation-languages', 'Translation Languages',
+	'Languages that a person can translate into',
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'));
+
+INSERT INTO Label (schema, name, title, description)
+VALUES ((SELECT id FROM Schema WHERE name='translation-languages'),
+	'es', 'Translates into Spanish',
+	'A person with this label says that knows how to translate into Spanish');
+
+INSERT INTO Label (schema, name, title, description)
+VALUES ((SELECT id FROM Schema WHERE name='translation-languages'),
+	'pt_BR', 'Translates into Brazilian Portuguese',
+	'A person with this label says that knows how to translate into Brazilian Portuguese');
+
+INSERT INTO Label (schema, name, title, description)
+VALUES ((SELECT id FROM Schema WHERE name='translation-languages'),
+	'cy', 'Translates into Welsh',
+	'A person with this label says that knows how to translate into Welsh');
+
+INSERT INTO Label (schema, name, title, description)
+VALUES ((SELECT id FROM Schema WHERE name='translation-languages'),
+	'ja', 'Translates into Japanese',
+	'A person with this label says that knows how to translate into Japanese');
+
+INSERT INTO Label (schema, name, title, description)
+VALUES ((SELECT id FROM Schema WHERE name='translation-languages'),
+	'en_GB', 'Translates into British English ',
+	'A person with this label says that knows how to translate into British English');
+
+INSERT INTO Label (schema, name, title, description)
+VALUES ((SELECT id FROM Schema WHERE name='translation-languages'),
+	'ca', 'Translates into Catalan',
+	'A person with this label says that knows how to translate into Catalan');
+
+INSERT INTO PersonLabel (person, label)
+VALUES ((SELECT id FROM Person Where displayname='Carlos Perelló Marín'),
+	(SELECT id FROM Label
+	 WHERE schema = (SELECT id FROM Schema WHERE name='translation-languages') AND
+	       name = 'es'));
+
+INSERT INTO PersonLabel (person, label)
+VALUES ((SELECT id FROM Person Where displayname='Carlos Perelló Marín'),
+	(SELECT id FROM Label
+	 WHERE schema = (SELECT id FROM Schema WHERE name='translation-languages') AND
+	       name = 'ca'));
+
+INSERT INTO PersonLabel (person, label)
+VALUES ((SELECT id FROM Person Where displayname='Dafydd Harries'),
+	(SELECT id FROM Label
+	 WHERE schema = (SELECT id FROM Schema WHERE name='translation-languages') AND
+	       name = 'cy'));
+
+INSERT INTO PersonLabel (person, label)
+VALUES ((SELECT id FROM Person Where displayname='Dafydd Harries'),
+	(SELECT id FROM Label
+	 WHERE schema = (SELECT id FROM Schema WHERE name='translation-languages') AND
+	       name = 'ja'));
+
+INSERT INTO PersonLabel (person, label)
+VALUES ((SELECT id FROM Person Where displayname='Dafydd Harries'),
+	(SELECT id FROM Label
+	 WHERE schema = (SELECT id FROM Schema WHERE name='translation-languages') AND
+	       name = 'en_GB'));
+
+INSERT INTO PersonLabel (person, label)
+VALUES ((SELECT id FROM Person Where displayname='Lalo Martins'),
+	(SELECT id FROM Label
+	 WHERE schema = (SELECT id FROM Schema WHERE name='translation-languages') AND
+	       name = 'pt_BR'));
