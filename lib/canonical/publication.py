@@ -4,20 +4,26 @@
 
 __metaclass__ = type
 
+
+from zope.security.interfaces import Unauthorized
+from zope.security.management import newInteraction
+from transaction import get_transaction
+from canonical.lp.placelessauth.interfaces import IPlacelessAuthUtility
+
 from zope.event import notify
 from zope.interface import implements, Interface
-from zope.component import \
-        queryView, getDefaultViewName, queryMultiView, getUtility
+from zope.component import queryView, getDefaultViewName, queryMultiView
+from zope.component import getUtility
 
 from zope.publisher.http import HTTPRequest
 from zope.publisher.browser import BrowserRequest
 
-from zope.app.publication.interfaces import IPublicationRequestFactory,\
-     BeforeTraverseEvent
+from zope.app.publication.interfaces import IPublicationRequestFactory
+from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.publication.http import HTTPPublication
 from zope.app.publication.browser import BrowserPublication as BrowserPub
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.publisher.interfaces import IPublishTraverse, NotFound
+from zope.publisher.interfaces import NotFound
 from zope.publisher.publish import publish
 
 from zope.app.applicationcontrol.applicationcontrol \
@@ -33,7 +39,6 @@ from zope.server.http.publisherhttpserver import PublisherHTTPServer
 from zope.interface.common.interfaces import IException
 from zope.exceptions.exceptionformatter import format_exception
 
-import transaction
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
 
@@ -129,9 +134,26 @@ class BrowserPublication(BrowserPub):
         # note, no ZODB
         pass
 
-    def beforeTraversal(self, request):
-        BrowserPub.beforeTraversal(self, request)
+    def getApplication(self, request):
+        # If the first name is '++etc++process', then we should
+        # get it rather than look in the database!
+        stack = request.getTraversalStack()
 
+        if '++etc++process' in stack:
+            return applicationControllerRoot
+
+        return rootObject
+
+    # the below ovverrides to zopepublication (callTraversalHooks,
+    # afterTraversal, and _maybePlacefullyAuthenticate) make the
+    # assumption that there will never be a ZODB "local"
+    # authentication service (such as the "pluggable auth service").
+    # If this becomes untrue at some point, the code will need to be
+    # revisited.
+
+    def beforeTraversal(self, request):
+        newInteraction(request)
+        get_transaction().begin()
         # Big boot for fixing SQLOS transaction issues - nuke the
         # connection cache at the start of a transaction. This shouldn't
         # affect performance much, as psycopg does connection pooling.
@@ -152,29 +174,6 @@ class BrowserPublication(BrowserPub):
         #t = transaction.get_transaction()
         #t.join(con._dm)
 
-    def getApplication(self, request):
-        # If the first name is '++etc++process', then we should
-        # get it rather than look in the database!
-        stack = request.getTraversalStack()
-
-        if '++etc++process' in stack:
-            return applicationControllerRoot
-
-        return rootObject
-
-    # the below ovverrides to zopepublication (callTraversalHooks,
-    # afterTraversal, and _maybePlacefullyAuthenticate) make the
-    # assumption that there will never be a ZODB "local"
-    # authentication service (such as the "pluggable auth service").
-    # If this becomes untrue at some point, the code will need to be
-    # revisited.
-
-    def beforeTraversal(self, request):
-        from zope.component import getUtility
-        from zope.security.interfaces import Unauthorized
-        from zope.security.management import newInteraction
-        from transaction import get_transaction
-        from canonical.lp.placelessauth.interfaces import IPlacelessAuthUtility
         # Try to authenticate against our registry
         prin_reg = getUtility(IPlacelessAuthUtility)
         p = prin_reg.authenticate(request)
@@ -184,9 +183,6 @@ class BrowserPublication(BrowserPub):
                 raise Unauthorized # If there's no default principal
 
         request.setPrincipal(p)
-        newInteraction(request)
-        get_transaction().begin()
-
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
@@ -211,7 +207,7 @@ class HTTPPublicationRequestFactory:
 
     def __init__(self, db):
         self._http = HTTPPublication(db)
-        self._brower = BrowserPublication()
+        self._browser = BrowserPublication()
 
     def __call__(self, input_stream, output_steam, env):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
@@ -219,7 +215,7 @@ class HTTPPublicationRequestFactory:
 
         if method in _browser_methods:
             request = BrowserRequest(input_stream, output_steam, env)
-            request.setPublication(self._brower)
+            request.setPublication(self._browser)
         else:
             request = HTTPRequest(input_stream, output_steam, env)
             request.setPublication(self._http)
