@@ -626,7 +626,9 @@ class POFile(SQLBase):
         else:
             assert results.count() == 1
 
-            poresults = POMsgSet.selectBy(potmsgsetID=results[0].id)
+            poresults = POMsgSet.selectBy(
+                potmsgsetID=results[0].id,
+                pofileID=self.id)
 
             if poresults.count() == 0:
                 raise KeyError, key
@@ -635,7 +637,6 @@ class POFile(SQLBase):
 
                 return poresults[0]
 
-    
     def __getitem__(self, msgid_text):
         return self.messageSet(msgid_text, onlyCurrent=True)
 
