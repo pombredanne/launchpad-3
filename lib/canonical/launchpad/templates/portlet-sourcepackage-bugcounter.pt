@@ -1,0 +1,34 @@
+  <div class="portlet">
+      <h4>Bug Count</h4>
+      <div class="portletBody">
+
+        <div class="portletContent even">
+
+	<table>
+	<tr><td>All bugs</td>
+	 <td>
+	  <a tal:content="python:context.bugsCounter[0]" >N</a></td>
+	</tr>
+	<tr><td>Release Critical</td>
+	    <td tal:content="python:context.bugsCounter[1]">N</td>
+        </tr>	
+	<tr><td>Important and Normal</td>
+	    <td tal:content="python:context.bugsCounter[2]">N</td>
+	</tr>
+	<tr>
+          <td>Minor and Wishlist</td>
+	  <td tal:content="python:context.bugsCounter[3]">N</td>
+        </tr>
+	<tr>
+           <td>Fixed and Pending</td>
+	   <td tal:content="python:context.bugsCounter[4]">N</td>
+	</tr><tr>
+           <td colspan="2" align="center">
+               <a tal:attributes="href string:/malone/packages/${context/sourcepackage/name}">
+                  View Bug List</a></td></tr>
+        </table>
+      </div>
+    </div>
+ </div>
+          
+

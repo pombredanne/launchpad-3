@@ -87,14 +87,13 @@ class DistroReleaseSourceView(object):
         '../templates/portlet-translations-sourcepackage.pt')
     watchPortlet = ViewPageTemplateFile(
         '../templates/portlet-distroreleasesource-watch.pt')
+    bugPortlet = ViewPageTemplateFile(
+        '../templates/portlet-sourcepackage-bugcounter.pt')
 
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-        self.person = IPerson(self.request.principal, None)
-
 
     def productTranslations(self):
         # XXX: Daniel Debonzi
@@ -108,6 +107,7 @@ class DistroReleaseSourceView(object):
         return None
 
     def sourcepackageWatch(self):
+        self.person = IPerson(self.request.principal, None)
         if self.person is not None:            
             return True
 

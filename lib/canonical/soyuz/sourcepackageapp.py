@@ -142,7 +142,7 @@ class DistroReleaseSourceReleaseApp(object):
     implements(IDistroReleaseSourceReleaseApp)
 
     def __init__(self, sourcepackage, version, distrorelease):
-        self.distroreleasename = distrorelease.name
+        self.distrorelease = distrorelease
 
         srcset = getUtility(ISourcePackageSet)
 
@@ -193,12 +193,14 @@ class DistroReleaseSourceReleaseApp(object):
     builddependsindep = property(builddependsindep)
 
     def __getitem__(self, arch):
-        return DistroReleaseSourceReleaseBuildApp(self.sourcepackagerelease,
+        return DistroReleaseSourceReleaseBuildApp(self.distrorelease,
+                                                  self.sourcepackagerelease,
                                                   arch)
 class DistroReleaseSourceReleaseBuildApp(object):
     implements(IDistroReleaseSourceReleaseBuildApp)
 
-    def __init__(self, sourcepackagerelease, arch):
+    def __init__(self, distrorelease, sourcepackagerelease, arch):
+        self.distrorelease = distrorelease
         self.sourcepackagerelease = sourcepackagerelease
         self.arch = arch
 

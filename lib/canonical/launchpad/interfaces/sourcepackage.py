@@ -167,6 +167,7 @@ class IDistroReleaseSourcesApp(Interface):
     
 class IDistroReleaseSourceApp(Interface):
     """A SourcePackage Proxy """
+    release = Attribute("Current DistroRelease")
     sourcepackage = Attribute("SourcePackage")
     releases = Attribute("SourcePackageReleases")
     proposed = Attribute("Proposed source package release")
@@ -184,15 +185,16 @@ class IDistroReleaseSourceReleaseApp(Interface):
     archs = Attribute("Builded archs")
     builddepends = Attribute("Builddepends for this sourcepackagerelease")
     builddependsindep = Attribute("BuilddependsIndep for this sourcepackagerelease")
-    distroreleasename = Attribute("The Distro Release name need to make links to bin packages")
+    distrorelease = Attribute("The DistroRelease need to make links to bin packages")
 
     def __getitem__(name):
         """Retrieve a package release build by arch."""
 
 class IDistroReleaseSourceReleaseBuildApp(Interface):
-        sourcepackagerelease = Attribute("SourcePackageRelease")
-        arch = Attribute("Builded arch")
-        build = Attribute("The SourcePackageRelease Build Table")
+    distrorelease = Attribute("Current DistroRelease")
+    sourcepackagerelease = Attribute("SourcePackageRelease")
+    arch = Attribute("Builded arch")
+    build = Attribute("The SourcePackageRelease Build Table")
 
 
 class IbuilddepsSet(Interface):

@@ -1,6 +1,11 @@
-<fieldset tal:condition="view/sourcepackageWatch">
-  <legend>Package Tracking System</legend>
+<div class="portlet" tal:condition="view/sourcepackageWatch">
+  <h4>Package Tracking System</h4>
+
+   <div class="portletBody">
+    <div class="portletContent even">
+
     <div class="dummy">
+
      <table>
      <tr><td>
         <table>
@@ -30,5 +35,8 @@
         </form>
      </td></tr>
     </table>
-  </div>
-</fieldset>
+
+   </div> 
+  </div> 
+ </div>
+</div>

@@ -12,19 +12,60 @@
 
 <body>
 
+
+<metal:leftportlets fill-slot="portlets_one">
+
+<tal:block tal:define="distro context/distrorelease/distribution">
+ <div class="portlet">
+  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
+
+   <div class="portletBody">
+
+     <div class="portletContent even">
+     <ul>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
+      Releases</a></li>
+
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
+      Source Packages</a></li>
+
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+      Binary Packages</a></li>
+
+     </ul>
+     </div>
+   </div>  
+ </div>
+
+ <div class="portlet">
+  <h4>Local Links</h4>
+   <div class="portletBody">
+     <div class="portletContent even">
+     <ul>
+     <li><a href="../"><span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
+     </a></li>
+     </ul>
+     </div>
+   </div>  
+ </div>
+</tal:block>
+
+</metal:leftportlets>
+
+
 <div metal:fill-slot="main">
 
+ <div id="content" class="documentEditable">
+  <div class="documentContent" id="region-content">
+
   <h1>
-    <span tal:content="context/sourcepackagerelease/sourcepackage/name">
-      TITLE
-    </span>
+    <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
+      TITLE</span>
     (<span tal:content="context/sourcepackagerelease/version" />)
   </h1>
 
- <fieldset>
-   <legend>
-     Source Package Release Information
-   </legend>
+   <h4>Source Package Release Information</h4>
+
    <p><b>Package name:</b> 
       <a tal:content="context/sourcepackagerelease/sourcepackage/name"
       tal:attributes="href
@@ -64,11 +105,11 @@
          <li tal:repeat="binary context/sourcepackagerelease/binaries" >
           <a tal:content="binary/name"
 	  tal:attributes="href 
-	  string:../../../../bin/${context/distroreleasename}/${binary/name}"
+	  string:../../../../bin/${context/distrorelease/name}/${binary/name}"
 	  /> ( 
           <a tal:content="binary/version"
 	  tal:attributes="href 
-	  string:../../../../bin/${context/distroreleasename}/${binary/name}/${binary/version}"
+	  string:../../../../bin/${context/distrorelease/name}/${binary/name}/${binary/version}"
 	  /> ): <span tal:content="binary/shortdesc"/>
          </li>
        </ul>
@@ -94,16 +135,8 @@
    </tal:block>
 
 
-    <div align="right">
-    </div>
-
-  </fieldset>
-
-  <fieldset condition="context/builddepends">
-    <legend>
-      Build Dependences
-    </legend>
-
+ <div condition="context/builddepends">
+  <h4>Build Dependences</h4>
   <table width="100%">
     <tr>
       <td valign="top">
@@ -125,7 +158,7 @@
 	    <span tal:repeat="builddepends python:context.builddepends[1]">
 	      <li>
 	        <a tal:content="builddepends/name" tal:attributes="href
-		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
+		string:../../../../bin/${context/distrorelease/name}/${builddepends/name}"/> 
 		<tal:dummy condition="builddepends/signal">
 		  (<span tal:content="builddepends/signal" /> 
 		  <span tal:content="builddepends/version" /> )
@@ -139,7 +172,7 @@
 	    <span tal:repeat="builddepends python:context.builddepends[2]">
 	      <li>
 	        <a tal:content="builddepends/name" tal:attributes="href
-		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
+		string:../../../../bin/${context/distrorelease/name}/${builddepends/name}"/> 
 		<tal:dummy condition="builddepends/signal">
 		  (<span tal:content="builddepends/signal" /> 
 		  <span tal:content="builddepends/version" /> )
@@ -161,7 +194,7 @@
 	    <span tal:repeat="builddependsindep python:context.builddependsindep[0]">
 	      <li>
 	        <a tal:content="builddependsindep/name" tal:attributes="href
-		string:../../../../bin/${context/distroreleasename}/${builddependsindep/name}"/> 
+		string:../../../../bin/${context/distrorelease/name}/${builddependsindep/name}"/> 
 		<tal:dummy condition="builddependsindep/signal">
 		  (<span tal:content="builddependsindep/signal" /> 
 		  <span tal:content="builddependsindep/version" /> )
@@ -175,7 +208,7 @@
 	    <span tal:repeat="builddependsindep python:context.builddependsindep[1]">
 	      <li>
 	        <a tal:content="builddependsindep/name" tal:attributes="href
-		string:../../../../bin/${context/distroreleasename}/${builddependsindep/name}"/> 
+		string:../../../../bin/${context/distrorelease/name}/${builddependsindep/name}"/> 
 		<tal:dummy condition="builddependsindep/signal">
 		  (<span tal:content="builddependsindep/signal" /> 
 		  <span tal:content="builddependsindep/version" /> )
@@ -189,7 +222,7 @@
 	    <span tal:repeat="builddependsindep python:context.builddependsindep[2]">
 	      <li>
 	        <a tal:content="builddependsindep/name" tal:attributes="href
-		string:../../../../bin/${context/distroreleasename}/${builddependsindep/name}"/> 
+		string:../../../../bin/${context/distrorelease/name}/${builddependsindep/name}"/> 
 		<tal:dummy condition="builddependsindep/signal">
 		  (<span tal:content="builddependsindep/signal" /> 
 		  <span tal:content="builddependsindep/version" /> )
@@ -201,9 +234,11 @@
 
     </tr>
   </table>
-  </fieldset>
+</div>
 
 
+  </div>
+ </div>
 </div>
 </body>
 </html>

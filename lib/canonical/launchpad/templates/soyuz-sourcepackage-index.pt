@@ -12,18 +12,66 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+
+<tal:block tal:define="distro context/release">
+ <div class="portlet">
+  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
+
+   <div class="portletBody">
+
+     <div class="portletContent even">
+     <ul>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
+      Releases</a></li>
+
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
+      Source Packages</a></li>
+
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+      Binary Packages</a></li>
+
+     </ul>
+     </div>
+   </div>  
+ </div>
+
+ <div class="portlet">
+  <h4>Local Links</h4>
+   <div class="portletBody">
+     <div class="portletContent even">
+     <ul>
+     <li><a href="">Not Yet</a></li>
+     </ul>
+     </div>
+   </div>  
+ </div>
+</tal:block>
+
+</metal:leftportlets>
+
+
+
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure view/bugPortlet" />
+  <div tal:replace="structure view/translationPortlet" />
+  <div tal:replace="structure view/watchPortlet" />
+</metal:rightportlets>
+
+
+
 <div metal:fill-slot="main">
+
+ <div id="content" class="documentEditable">
+  <div class="documentContent" id="region-content">
 
     <h1><span tal:content="context/sourcepackage/shortdesc"/></h1>
     
-    <table width="100%">
-       <tr>
-         <td valign="top" width="80%">
 	   <fieldset>
-	      <legend>
-	         Source Package Information
-	      </legend>
-	      <p><h4>Description:  </h4> 
+	      <legend>Source Package Information</legend>
+	      <p><h4>Description:</h4> 
+
 	      <tal:block tal:replace="context/sourcepackage/description" />
 	      <br>
 	      <br>
@@ -68,12 +116,12 @@
 	         <a tal:attributes="href string:/doap/projects/${product/project/name}/${product/name}" 
 	            tal:content="product/title" />
 	        </tal:dummy>
+
   	        <tal:dummy tal:condition="not:product">
 	         No Product for this Package Available
 	        </tal:dummy>
 
 	        </tal:dummy>
-
 	   </fieldset>
 
 	   <fieldset>
@@ -83,14 +131,6 @@
 	      
 	      <p><b>Proposed:</b>
 	      <i class="dummy">Not in dbschema anymore. Why?</i>
-<!-- 	      <tal:dummy tal:define="proposed context/proposed" tal:condition="proposed"> -->
-<!-- 	         <a tal:content="proposed/version" -->
-<!-- 		 tal:attributes="href proposed/version" /> -->
-<!-- 	      </tal:dummy> -->
-
-<!-- 	      <tal:dummy tal:define="proposed context/proposed" tal:condition="not:proposed"> -->
-<!-- 	         No Proposed Release Available -->
-<!-- 	      </tal:dummy> -->
 
 	      <p><b>Current:</b><br>
 	      <tal:dummy tal:condition="context/currentversions">
@@ -144,43 +184,6 @@
           </fieldset>
 
 
-       </td>
-       <td valign="top">
-
-
-          <fieldset>
-	     <legend>Bug Count</legend>
-	     <div>
-	        <table>
-		<tr><td>All bugs</td>
-		    <td>
-		      <a tal:content="python:context.bugsCounter[0]" >
-			 N
-		      </a>
-		    </td>
-		</tr>
-		<tr><td>Release Critical</td>
-		    <td tal:content="python:context.bugsCounter[1]">N</td>
-                </tr>	
-		<tr><td>Important and Normal</td>
-		    <td tal:content="python:context.bugsCounter[2]">N</td>
-		</tr>
-		<tr><td>Minor and Wishlist</td>
-		    <td tal:content="python:context.bugsCounter[3]">N</td>
-		</tr>
-		<tr><td>Fixed and Pending</td>
-		    <td tal:content="python:context.bugsCounter[4]">N</td>
-		</tr>
-        <tr><td colspan="2" align="center"><a tal:attributes="href
-	                 string:/malone/packages/${context/sourcepackage/name}">
-                View Bug List
-                 </a>
-            </td>
-        </tr>
-		</table>
-	     </div>
-	  </fieldset>    
-
           <fieldset>
           <legend>Other Links </legend> 
           <div>
@@ -190,12 +193,8 @@
           </div>
           </fieldset>
 
-	  <div tal:replace="structure view/translationPortlet" />
-       
-          <div tal:replace="structure view/watchPortlet" />
-
-          </td></tr>
-</table>
+  </div>
+ </div>
 </div>
 </body>
 </html>

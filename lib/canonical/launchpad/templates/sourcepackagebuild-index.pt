@@ -12,8 +12,54 @@
 
 <body>
 
+
+<metal:leftportlets fill-slot="portlets_one">
+
+<tal:block tal:define="distro context/distrorelease">
+ <div class="portlet">
+  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
+
+   <div class="portletBody">
+
+     <div class="portletContent even">
+     <ul>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
+      Releases</a></li>
+
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
+      Source Packages</a></li>
+
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+      Binary Packages</a></li>
+
+     </ul>
+     </div>
+   </div>  
+ </div>
+
+ <div class="portlet">
+  <h4>Local Links</h4>
+   <div class="portletBody">
+     <div class="portletContent even">
+     <ul>
+     <li><a tal:attributes="href string:../">     
+         <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
+     <span tal:content="context/sourcepackagerelease/version">Version</span>
+      </a></li>
+     </ul>
+     </div>
+   </div>  
+ </div>
+</tal:block>
+
+</metal:leftportlets>
+
+
+
 <div metal:fill-slot="main">
 
+ <div id="content" class="documentEditable">
+  <div class="documentContent" id="region-content">
 
     <h1> 
      <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
@@ -25,64 +71,64 @@
     </h1>
 
 
-    <fieldset>
-      <legend>
-        Source Package Build Data
-      </legend>
-    <p> <b>Datecreate: </b> 
-           <span tal:content="context/build/datecreated" />
+      <h4>Source Package Build Data</h4>
 
-    <p> <b>Processor: </b>
-           <span tal:content="context/build/processor/title" />
+      <ul>
+    <li> <b>Datecreate: </b> 
+           <span tal:content="context/build/datecreated" /></li>
 
-    <p> <b>Buildstate: </b>
-           <span tal:content="context/build/buildstate" />
+    <li> <b>Processor: </b>
+           <span tal:content="context/build/processor/title" /></li>
 
-    <p> <b>Datebuilt: </b> 
+    <li> <b>Buildstate: </b>
+           <span tal:content="context/build/buildstate" /></li>
+
+    <li> <b>Datebuilt: </b> 
            <span tal:condition="not:context/build/datebuilt">
 	     <i> Information not Available </i>
 	   </span>
-           <span tal:content="context/build/datebuilt" />
+           <span tal:content="context/build/datebuilt" /></li>
 
-    <p> <b>Buildduration: </b>
+    <li> <b>Buildduration: </b>
            <span tal:condition="not:context/build/buildduration">
 	     <i> Information not Available </i>
 	   </span>
-           <span tal:content="context/build/buildduration" />
+           <span tal:content="context/build/buildduration" /></li>
 
-    <p> <b>Buildlog: </b>
+    <li> <b>Buildlog: </b>
            <span tal:condition="not:context/build/buildlog">
 	     <i> Information not Available </i>
 	   </span>
 	   <a tal:condition="context/build/buildlog" href="+buildlog"> 
 	     <i> Build log </i> 
-	   </a>	   
+	   </a></li>
 	   	   
 
-    <p> <b>Builder: </b>
+    <li> <b>Builder: </b>
            <span tal:condition="not:context/build/builder">
 	     <i> Information not Available </i>
 	   </span>
            <span tal:condition="context/build/builder" 
-	   tal:content="context/build/builder/title" />
+	   tal:content="context/build/builder/title" /></li>
 
-    <p> <b>Gpgsigningkey Fingerprint: </b>
+    <li> <b>Gpgsigningkey Fingerprint: </b>
            <span tal:condition="not:context/build/gpgsigningkey">
 	     <i> Information not Available </i>
 	   </span>
 	   <span tal:condition="context/build/gpgsigningkey"
-	   tal:content="context/build/gpgsigningkey/fingerprint" />
+	   tal:content="context/build/gpgsigningkey/fingerprint" /></li>
 
-    <p> <b>Changes: </b> 
+    <li> <b>Changes: </b> 
            <span tal:condition="not:context/build/changes">
 	     <i> Information not Available </i>
 	   </span>
            <a tal:condition="context/build/changes" href="+changes">
 	     <i> Changes </i> 
-	   </a>
+	   </a></li>
+   </ul>
 
-    </fieldset>    
-
+   </div>
+ </div>
 </div>
 </body>
 </html>

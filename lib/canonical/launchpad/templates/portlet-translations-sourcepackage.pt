@@ -1,6 +1,6 @@
-    <tal:block tal:define="product_view view/productTranslations">
-	<fieldset>
-	  <legend tal:define="product context/sourcepackage/product">
+<div  class="portlet" tal:define="product_view view/productTranslations">
+
+	  <h4 tal:define="product context/sourcepackage/product">
 	    <a tal:condition="product" 
 	       tal:attributes="href string:/rosetta/projects/${product/project/name}/${product/name}">
 	         Rosetta Translations
@@ -8,7 +8,11 @@
 	    <tal:block tal:condition="not:product">
 	      Rosetta Translations
 	    </tal:block>
-	  </legend>
+	  </h4>
+
+   <div class="portletBody">
+
+     <div class="portletContent even">
 
         <tal:block condition="not:product_view">
 	   There is no associated product with this package.
@@ -76,7 +80,9 @@
                 </tbody>
             </table>
         </div>
-    </tal:block> <!-- <tal:block condition="product_view/thereAreTemplates"> -->
-    </tal:block> <!-- <tal:block condition="product_view"> -->
-    </fieldset>
-    </tal:block> 
+    </tal:block><!-- <tal:block condition="product_view/thereAreTemplates"> -->
+    </tal:block><!-- <tal:block condition="product_view"> -->    
+
+    </div> 
+  </div> 
+ </div> 
