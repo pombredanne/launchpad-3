@@ -19,11 +19,12 @@
     <h1>Welcome to Rosetta!</h1>
 
     <div class="documentDescription">
-    Rosetta is a tool for translating applications into your language. You can
-    also use it to find out whether a certain application or type of
-    application is available in your language. Use the search form below to
-    find an application, or see the <a href="about" title="About
-    Rosetta">about</a> page to find out more about Rosetta.
+        Rosetta is a tool for translating open source applications into
+        your language. You can also use it to find out whether a certain
+        application or type of application is available in your language.
+        Use the search form below to find an application, or see the
+        <a href="about" title="About Rosetta">about</a> page to find out
+        more about Rosetta.
     </div>
 
     <span tal:condition="not: request/lp:person">
@@ -36,7 +37,7 @@
     <form action="search-results"
           method="get">
     <fieldset>
-        <legend>Search</legend>
+        <legend>Upstream Project Search</legend>
 
         <div class="field">
             <label>Project name</label>
@@ -74,7 +75,6 @@
         </tbody>
 
     </table>
-
 
 </div>
 

@@ -1,0 +1,30 @@
+<div class="portlet">
+
+    <h4>Project Bug Trackers:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <table class="rowNavigation" border="0" width="100%">
+            <tr tal:repeat="tracker context/bugtrackers"
+                tal:attributes="onclick
+                string:window.location='/malone/bugtrackers/${tracker/name}';">
+                <td><b>
+                    <span tal:replace="tracker/name">bugtracker-name</span></b>:
+                    <br />
+                    <span tal:replace="tracker/title">tracker title</span>
+                </td>
+            </tr>
+        </table>
+
+        <a href="+newbugtracker"
+            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+            title="Add a project bugtracker">
+            <img src="/++resource++add.gif" alt="+" />
+            Add a bug tracker...
+        </a><br />
+
+        </div>
+                
+    </div>
+</div>

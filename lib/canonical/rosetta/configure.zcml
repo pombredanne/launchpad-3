@@ -16,12 +16,6 @@
       newlayer="canonical.launchpad.layers.RosettaLayer"
       />
 
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IProduct"
-      layer="canonical.launchpad.layers.RosettaLayer"
-      name="+rosetta-index"
-      />
-
   <browser:page
       for="*"
       permission="zope.Public"
@@ -53,7 +47,7 @@
     -->
   <browser:defaultView
       for="canonical.launchpad.interfaces.IRosettaApplication"
-      name="index"
+      name="+index"
       />
   <browser:defaultView
       for="canonical.rosetta.domain.RosettaProjectSet"
@@ -75,11 +69,11 @@
   -->
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPOTemplate"
-      name="index"
+      name="+index"
       />
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPOFile"
-      name="index"
+      name="+index"
       />
 
 <!--
@@ -90,7 +84,6 @@
 -->
 
   <include file="pages.zcml"/>
-  <include file="resources.zcml" />
 
 </configure>
 <!-- arch-tag: aa306648-cdb7-4165-8aed-cb36ced59e2f -->

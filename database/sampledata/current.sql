@@ -1177,6 +1177,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'projectbugtracker'::pg_catalog.regclass;
 
+INSERT INTO projectbugtracker (project, bugtracker, id) VALUES (5, 2, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'projectbugtracker'::pg_catalog.regclass;
@@ -1657,7 +1658,7 @@ SELECT pg_catalog.setval('sourcesource_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('projectbugtracker_id_seq', 1, false);
+SELECT pg_catalog.setval('projectbugtracker_id_seq', 1, true);
 
 
 

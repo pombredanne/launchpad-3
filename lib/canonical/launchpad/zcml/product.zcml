@@ -45,6 +45,12 @@
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+malone-index" />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProduct"
+        layer="canonical.launchpad.layers.RosettaLayer"
+        name="+rosetta-index"
+        />
+
     <!--PAGE DECLARATIONS-->
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"

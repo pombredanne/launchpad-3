@@ -1,6 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/browser">
-
-    <resource name="rosetta.png" file="images/rosetta.png" />
-
-</configure>
-<!-- arch-tag: 0f9efb09-00d3-48dd-b5e7-711a9ed3612b -->

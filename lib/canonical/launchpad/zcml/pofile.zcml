@@ -5,12 +5,6 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
-    <content class="canonical.launchpad.database.POTemplate">
-      <require permission="zope.Public"
-          interface="canonical.launchpad.interfaces.IEditPOTemplate"
-          set_attributes="rawimportstatus"/>
-    </content>
-
     <content class="canonical.launchpad.database.POTMsgSet">
       <allow interface="canonical.launchpad.interfaces.IEditPOTMsgSet"/>
     </content>

@@ -31,6 +31,7 @@
     <include file="processor.zcml" />
     <include file="language.zcml" />
     <include file="pofile.zcml" />
+    <include file="potemplate.zcml" />
 
     <include file="widgets.zcml" />
     <include file="fields.zcml" />

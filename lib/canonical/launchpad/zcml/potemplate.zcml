@@ -1,0 +1,41 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:zope="http://namespaces.zope.org/zope"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+    
+    <content class="canonical.launchpad.database.POTemplate">
+        <require permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IEditPOTemplate"
+            set_attributes="rawimportstatus"/>
+    </content>
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        getter="poFile"
+        />
+
+    <browser:pages for="canonical.launchpad.interfaces.IPOTemplate"
+        permission="zope.Public"
+        class="canonical.rosetta.browser.ViewPOTemplate"
+        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
+    <browser:page name="+index"
+        template="../templates/potemplate-index.pt"
+        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/+index" />
+    <browser:page name="upload"
+        template="../templates/potemplate-upload.pt"
+        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/upload" />
+    </browser:pages>
+
+    <browser:pages for="canonical.launchpad.interfaces.IPOTemplate"
+        permission="launchpad.AnyPerson"
+        class="canonical.rosetta.browser.TranslatePOTemplate"
+        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
+    <browser:page name="translate"
+        template="../templates/potemplate-translate.pt"
+        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/translate" />
+    </browser:pages>
+
+</configure>

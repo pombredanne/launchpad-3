@@ -11,7 +11,7 @@
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewProjects"
          lp:url="Rosetta/projects">
-    <page name="index"
+    <page name="+index"
           template="../launchpad/templates/rosetta-projects-index.pt"
           lp:url="Rosetta/projects" />
     <page name="+request"
@@ -28,46 +28,20 @@
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewProject"
          lp:url="Rosetta/projects/$Project.name">
-    <page name="index"
+    <page name="+index"
           template="../launchpad/templates/rosetta-project-index.pt"
-          lp:url="Rosetta/projects/$Project.name/index" />
+          lp:url="Rosetta/projects/$Project.name/+index" />
   </pages>
 
   <traverse for="canonical.launchpad.interfaces.IRosettaProject"
             getter="product" />
-
-  <!-- pages for a product -->
-  <!-- pages for a POTemplate -->
-  <pages for="canonical.launchpad.interfaces.IPOTemplate"
-         permission="zope.Public"
-         class="canonical.rosetta.browser.ViewPOTemplate"
-         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
-    <page name="index"
-          template="../launchpad/templates/potemplate-index.pt"
-          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/index" />
-    <page name="upload"
-          template="../launchpad/templates/potemplate-upload.pt"
-          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/upload" />
-  </pages>
-
-  <pages for="canonical.launchpad.interfaces.IPOTemplate"
-         permission="launchpad.AnyPerson"
-         class="canonical.rosetta.browser.TranslatePOTemplate"
-         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
-    <page name="translate"
-          template="../launchpad/templates/potemplate-translate.pt"
-          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/translate" />
-  </pages>
-
-  <traverse for="canonical.launchpad.interfaces.IPOTemplate" getter="poFile"
-    />
 
   <!-- pages for a POFile -->
   <pages for="canonical.launchpad.interfaces.IPOFile"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewPOFile"
          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language">
-    <page name="index"
+    <page name="+index"
           template="../launchpad/templates/pofile-index.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language"/>
   </pages>
@@ -97,9 +71,9 @@
   <pages for="canonical.launchpad.interfaces.IRosettaApplication"
          permission="zope.Public"
          lp:url="Rosetta">
-    <page name="index"
+    <page name="+index"
           template="../launchpad/templates/rosetta-index.pt"
-          lp:url="Rosetta/index" />
+          lp:url="Rosetta/+index" />
   </pages>
 
   <!-- pages that limi put in without knowing which interface they should
