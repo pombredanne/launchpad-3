@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-22 02:48:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1238
+
+    Summary:
+      Clarify sha1 and md5 compression
+    Revision:
+      launchpad--devel--0--patch-1238
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-96
+       Clarify character limits
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-97
+       Fix constraint
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/base.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-96
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-97
+
+
 2005-01-22 02:21:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1237
 
     Summary:

@@ -42,8 +42,16 @@ def base(number, radix):
     >>> base(int(md5.new('foo').hexdigest(), 16), 62)
     '5fX649Stem9fET0lD46zVe'
 
+    A sha1 hash can be compressed to 27 characters or less
+    >>> len(base(long('F'*40, 16), 62))
+    27
+
+    A md5 hash can be compressed to 22 characters or less
+    >>> len(base(long('F'*32, 16), 62))
+    22
+
     """
-    if not 2 <= radix <= 67:
+    if not 2 <= radix <= 62:
         raise ValueError, "radix must be in 2..62"
 
     result = []
