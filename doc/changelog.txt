@@ -2,6 +2,50 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-18 10:51:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1210
+
+    Summary:
+      We always show the complete list of contributors and the poimport daemon is now a cron task
+    Revision:
+      launchpad--devel--0--patch-1210
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-496
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-497
+       We list always all contributors
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-498
+       Converted the poimport daemon into a cron script
+    
+
+    new files:
+     lib/canonical/launchpad/scripts/.arch-ids/lockfile.py.id
+     lib/canonical/launchpad/scripts/lockfile.py
+     lib/canonical/launchpad/scripts/poimport/.arch-ids/=id
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/scripts/poimport/poimport.py
+
+    renamed files:
+     lib/canonical/rosetta/scripts/.arch-ids/import_daemon.py.id
+       ==> lib/canonical/launchpad/scripts/poimport/.arch-ids/poimport.py.id
+     lib/canonical/rosetta/scripts/import_daemon.py
+       ==> lib/canonical/launchpad/scripts/poimport/poimport.py
+
+    new directories:
+     lib/canonical/launchpad/scripts/poimport
+     lib/canonical/launchpad/scripts/poimport/.arch-ids
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-496
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-497
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-498
+
+
 2005-01-18 02:31:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1209
 
     Summary:

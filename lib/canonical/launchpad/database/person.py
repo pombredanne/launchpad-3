@@ -424,7 +424,6 @@ class PersonSet(object):
     def getContributorsForPOFile(self, pofile):
         """See IPersonSet."""
         return Person.select('''
-            POTranslationSighting.active = True AND
             POTranslationSighting.person = Person.id AND
             POTranslationSighting.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = %d''' % pofile.id,
