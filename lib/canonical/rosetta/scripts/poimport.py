@@ -4,10 +4,12 @@
 from zope.component.tests.placelesssetup import PlacelessSetup
 from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
-    RosettaProject, RosettaProduct 
+    RosettaProduct
+from canonical.database.doap import DBProjects
 from sqlobject import connectionForURI
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 from optparse import OptionParser
+from transaction import get_transaction
 
 class PODBBridge(PlacelessSetup):
 
@@ -17,7 +19,7 @@ class PODBBridge(PlacelessSetup):
     def imports(self, person, file, projectName, productName, poTemplateName,
         languageCode=None):
         try:
-            project = RosettaProject.selectBy(name = projectName)[0]
+            project = DBProjects()[projectName]
             product = RosettaProduct.selectBy(projectID = project.id,
                                               name=productName)[0]
         except (IndexError, KeyError):
@@ -60,28 +62,37 @@ class PODBBridge(PlacelessSetup):
 
 if __name__ == '__main__':
     parser = OptionParser()
-    parser.add_option("-o", "--owner", dest="ownerID",
-                      help="DB ID for the Owner")
+    parser.add_option("-o", "--owner", dest="owner",
+        help="The database ID for the owner of the imported file")
     parser.add_option("-f", "--file", dest="file",
-                      help="FILE to import")
+        help="The file to import data from")
     parser.add_option("-p", "--project", dest="project",
-                      help="Project name owner of this file")
+        help="The project the imported file belongs to")
     parser.add_option("-d", "--product", dest="product",
-                      help="Product name owner of this file")
+        help="The product the imported file belongs to")
     parser.add_option("-t", "--potemplate", dest="potemplate",
-                      help="POTemplate name owner of this file")
+        help="The template the imported file belongs to")
     parser.add_option("-l", "--language", dest="language",
-                      help="Language code for this pofile")
+        help="The language code, for importing PO files")
 
     (options, args) = parser.parse_args()
-    
+
+    for name in ('owner', 'file', 'project', 'product', 'potemplate'):
+        if getattr(options, name) is None:
+            raise RuntimeError("No %s specified." % name)
+
+    print "Connecting to database..."
     bridge = PODBBridge()
     in_f = file(options.file, 'rU')
-    person = RosettaPerson.get(int(options.ownerID))
+    person = RosettaPerson.get(int(options.owner))
+    transaction = get_transaction()
     try:
         print "Importing %s ..." % options.file
         bridge.imports(person, in_f, options.project, options.product,
                        options.potemplate, options.language)
+        # Explicit commit added in an attempt to fix the fact that message set
+        # sequence numbers are not being written to the database.
+        transaction.commit()
     except:
-        get_transaction().abort()
+        transaction.abort()
         raise
