@@ -109,6 +109,15 @@ class RosettaProject(SQLBase):
     def products(self):
         return iter(self._productsJoin)
 
+    def product(self, name):
+        print name
+        ret = RosettaProduct.selectBy(name=name)
+
+        if ret.count() == 0:
+            raise KeyError, name
+        else:
+            return ret[0]
+
     def poTemplate(self, name):
         results = RosettaPOTemplate.selectBy(name=name)
         count = results.count()
@@ -165,6 +174,7 @@ class RosettaProduct(SQLBase):
         StringCol(name='description', dbName='description', notNull=True),
         ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
             notNull=True),
+        StringCol(name='url', dbName='homepageurl')
     ]
 
     _poTemplatesJoin = MultipleJoin('RosettaPOTemplate', joinColumn='product')
@@ -448,13 +458,22 @@ class RosettaPOTemplate(SQLBase):
     # XXX: currentCount, updatesCount and rosettaCount should be updated with
     # a way that let's us query the database instead of use the cached value
     def currentCount(self, language):
-        return self.poFile(language).currentCount
+        try:
+            return self.poFile(language).currentCount
+        except KeyError:
+            return 0
 
     def updatesCount(self, language):
-        return self.poFile(language).updatesCount
+        try:
+            return self.poFile(language).updatesCount
+        except KeyError:
+            return 0
 
     def rosettaCount(self, language):
-        return self.poFile(language).rosettaCount
+        try:
+            return self.poFile(language).rosettaCount
+        except KeyError:
+            return 0
 
     def hasMessageID(self, messageID):
         results = RosettaPOMessageSet.selectBy(

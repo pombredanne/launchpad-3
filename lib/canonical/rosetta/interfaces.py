@@ -51,6 +51,8 @@ class IProject(Interface):
     def poTemplates():
         """Returns an iterator over this project's PO templates."""
 
+    def product(name):
+        """Returns the product with the given name."""
     def products():
         """Returns an iterator over this projects products."""
 

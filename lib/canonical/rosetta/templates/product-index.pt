@@ -17,8 +17,8 @@
     <h1>Translation overview: <span tal:replace="context/title">NAME</span></h1>
 
     <div style="float: right; clear: both; margin-top: 0.25em;">
-    Project home page:
-    <a href="http://project.home/page"
+    Product home page:
+    <a href="http://product.home/page"
        tal:content="context/url|default"
        tal:attributes="href context/url|nothing">(None supplied)</a>
     </div>
@@ -29,70 +29,73 @@
     chat software and calendar application.
     </p>
 
-<!-- Temporary manual override
-        <select style="float: right; clear: both;">
-            <option>All projects</option>
-            <option selected="selected">Afrikaans</option>
-            <option>Cymraeg</option>
-            <option>Norsk</option>
-        </select>
--->
     <p class="discreet">
     These language name headlines are based on the user preferences, if
     the user hasn't set anything, it's the stuff we can extract from
     browser/IP:
     </p>
 
-    <div tal:condition="view/thereAreProducts">
+    <div tal:condition="view/thereAreTemplates">
         <div class="documentDescription">
-        Here are the products available, select language from the
-        pulldown, and click a product.
+        Here are the translation resources available, select language from the
+        pulldown, and click an entry to translate.
         </div>
 
-        <div tal:repeat="LT view/languageProducts">
+        <div tal:repeat="LT view/languageTemplates">
 
             <h2 tal:content="LT/language/englishName">Language</h2>
 
             <table class="listing">
                 <thead>
-                    <th>Product</th>
+                    <th>Resource</th>
                     <th>Translated</th>
                     <th>Untranslated</th>
                     <th>Graph</th>
+                    <th>Message catalog</th>
                 </thead>
 
                 <tbody>
-                    <tr tal:repeat="product LT/products">
+                    <tr tal:repeat="template LT/templates">
+                        <!--
+                        XXX: Assumption that a PO file exists for this
+                        language.
+			CarlosPerelloMarin: Fixed for the statistics, we
+			should implement the export.po in a way we get
+			an empty .po file from the .pot one
+                        -->
                         <td><a tal:attributes="href
-                            string:${product/name}/"
-                            tal:content="product/title">Product Name</a></td>
-                        <td><span tal:replace="product/poTranslated">0</span></td>
-                        <td><span tal:replace="product/poUntranslated">0</span></td>
+                            string:${template/name}/translate"
+                            tal:content="template/title">Resource Name</a></td>
+                        <td><span tal:replace="template/poTranslated">0</span></td>
+                        <td><span tal:replace="template/poUntranslated">0</span></td>
                         <td>
                             <img src="++resource++green-bar.png"
                                 height="15"
                                 alt="Translated graph"
-                                tal:condition="product/poTranslated"
-                                tal:attributes="width product/poTranslatedPercent;
-                                                title string: Translated: ${product/poTranslatedPercent}%"
+                                tal:condition="template/poTranslated"
+                                tal:attributes="width template/poTranslatedPercent;
+                                                title string: Translated: ${template/poTranslatedPercent}%"
                             /><img src="++resource++red-bar.png"
                                 height="15"
                                 alt="Fuzzy graph"
-                                tal:condition="product/poUntranslated"
-                                tal:attributes="width product/poUntranslatedPercent;
-                                                title string: Untranslated: ${product/poUntranslatedPercent}%">
+                                tal:condition="template/poUntranslated"
+                                tal:attributes="width template/poUntranslatedPercent;
+                                                title string: Untranslated: ${template/poUntranslatedPercent}%">
                         </td>
+                        <td><a tal:attributes="href
+			    string:${template/name}/export.po">
+			    <img src="++resource++download.png" alt="Download PO file" />Download .po</a></td>
                     </tr>
                 </tbody>
             </table>
 
         </div>
-    </div> <!-- tal:condition="view/thereAreProducts -->
+    </div> <!-- tal:condition="view/thereAreTemplates -->
   
-    <div tal:condition="not: view/thereAreProducts">
+    <div tal:condition="not: view/thereAreTemplates">
         <p>
-        Rosetta doesn't currently know of any product for
-        <span tal:content="context/title">project title</span>.
+        Rosetta doesn't currently know of any translatable resources for
+        <span tal:content="context/title">product title</span>.
         </p>
     </div>
 

@@ -32,28 +32,42 @@
           lp:url="Rosetta/projects/$Project.name/index" />
   </pages>
 
-  <traverse for="canonical.rosetta.interfaces.IProject" getter="poTemplate" />
+  <traverse for="canonical.rosetta.interfaces.IProject" getter="product" />
+
+  <!-- pages for a product -->
+  <pages for="canonical.rosetta.interfaces.IProduct"
+         permission="zope.Public"
+         class="canonical.rosetta.browser.ViewProduct"
+         lp:url="Rosetta/projects/$Project.name/$Product.name">
+    <page name="index"
+          template="templates/product-index.pt"
+          lp:url="Rosetta/projects/$Project.name/$Product.name/index" />
+  </pages>
+
+
+  <traverse for="canonical.rosetta.interfaces.IProduct" getter="poTemplate" />
+  
 
   <!-- pages for a POTemplate -->
   <pages for="canonical.rosetta.interfaces.IPOTemplate"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewPOTemplate"
-         lp:url="Rosetta/projects/$Project.name/$POTemplate.name">
+         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
     <page name="index"
           template="templates/potemplate-index.pt"
-          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/index" />
+          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/index" />
     <page name="upload"
           template="templates/potemplate-upload.pt"
-          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/upload" />
+          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/upload" />
   </pages>
 
   <pages for="canonical.rosetta.interfaces.IPOTemplate"
          permission="zope.Public"
          class="canonical.rosetta.browser.TranslatePOTemplate"
-         lp:url="Rosetta/projects/$Project.name/$POTemplate.name">
+         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
     <page name="translate"
           template="templates/potemplate-translate.pt"
-          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/translate" />
+          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/translate" />
   </pages>
 
   <traverse for="canonical.rosetta.interfaces.IPOTemplate"
@@ -63,16 +77,16 @@
   <pages for="canonical.rosetta.interfaces.IPOFile"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewPOFile"
-         lp:url="Rosetta/projects/$Project.name/$POTemplate.name/$POFile.language">
+         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language">
     <page name="index"
           template="templates/pofile-index.pt"
-          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/$POFile.language"/>
+          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language"/>
     <page name="resources"
           template="templates/project-language-resources.pt"
-          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/$POFile.language/resources" />
+          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/resources" />
     <page name="+edit"
           template="templates/pofile-edit.pt"
-          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/$POFile.language/+edit" />
+          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
   </pages>
 
   <page name="export.po"
@@ -80,7 +94,7 @@
         permission="zope.Public"
         class="canonical.rosetta.browser.ViewPOExport"
 	attribute="__call__"
-        lp:url="Rosetta/projects/$Project.name/$POTemplate.name/$Language.code.po" />
+        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code.po" />
 
   <!-- pages for the rosetta application -->
   <pages for="canonical.rosetta.interfaces.IRosettaApplication"

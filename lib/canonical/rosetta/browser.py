@@ -46,8 +46,47 @@ class ViewProjects:
             self.submitted = False
             return ""
 
-
 class ViewProject:
+    def thereAreProducts(self):
+        return len(list(self.context.products())) > 0
+
+    def languageProducts(self):
+        for language in IPerson(self.request.principal).languages():
+            yield LanguageProducts(language, self.context.products())
+
+class LanguageProducts:
+    def __init__(self, language, products):
+        self.language = language
+        self._products = products
+
+    def products(self):
+        for product in self._products:
+            total = product.messageCount()
+            translated = product.currentCount(self.language.code) + \
+                product.rosettaCount(self.language.code)
+            untranslated = total - translated
+
+            try:
+                translatedPercent = float(translated) / total * 100
+                untranslatedPercent = float(untranslated) / total * 100
+            except ZeroDivisionError:
+                # XXX: I think we will see only this case when we don't have
+                # anything to translate.
+                translatedPercent = 0
+                untranslatedPercent = 100
+            
+            retdict = {
+                'name': product.name,
+                'title': product.title,
+                'poTranslated': translated,
+                'poUntranslated': untranslated,
+                'poTranslatedPercent': translatedPercent,
+                'poUntranslatedPercent': untranslatedPercent,
+            }
+
+            yield retdict
+
+class ViewProduct:
     def thereAreTemplates(self):
         return len(list(self.context.poTemplates())) > 0
 
