@@ -2,6 +2,55 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-13 14:55:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1196
+
+    Summary:
+      Changes to be able to have huge msgid fields (like drupal ones). Thanks Stuart
+    Revision:
+      launchpad--devel--0--patch-1196
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-3
+    
+     * carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--patch-1
+       Raise SQLObjectNotFound instead of KeyError
+    
+     * carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--patch-2
+       Merge with rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--hugepomsgid--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-81
+    
+     * stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-1
+       Use a hash to index POMsgID.msgid to allow large values
+    
+     * stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-2
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-3
+       Fix invalid class method declaration
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-25-0.sql.id
+     database/schema/patch-6-25-0.sql
+
+    modified files:
+     database/schema/trusted.sql doc/changelog.txt
+     lib/canonical/launchpad/database/pofile.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--patch-2
+     stuart.bishop@canonical.com/launchpad--hugepomsgid--0--base-0
+     stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-1
+     stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-2
+     stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-3
+
+
 2005-01-13 13:17:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1195
 
     Summary:
