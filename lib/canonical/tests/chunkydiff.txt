@@ -175,3 +175,21 @@ Multiple single characters.
     >>> elided_source(tested, actual)
     'ABCDE...X...'
 
+Test with differences in whitespace.
+
+    >>> actual = "ABC\nxxx DEF"
+    >>> tested = "ABC ... DEF"
+    >>> elided_source(tested, actual)
+    'ABC\nxxx DEF'
+
+    >>> actual = "ABC xxx DEF"
+    >>> tested = "ABC\n... DEF"
+    >>> elided_source(tested, actual, normalize_whitespace=True)
+    'ABC\n... DEF'
+
+Test with multiple whitespace characters.
+
+    >>> actual = "ABC xxx DEF"
+    >>> tested = "ABC\n\n... DEF"
+    >>> elided_source(tested, actual, normalize_whitespace=True)
+    'ABC\n\n... DEF'

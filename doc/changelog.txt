@@ -2,6 +2,42 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-08 17:42:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1387
+
+    Summary:
+      improvements to pagetest output
+    Revision:
+      launchpad--devel--0--patch-1387
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-316
+       fixed position of ellipsis in pagetest.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-317
+       minor reformatting of imports. roll on python2.4\!
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-318
+       Functional doctest output now takes into account ellipses and whitespace normalization.  Various less significant errors found in chunkydiff.py.  Marked with XXX until I write tests that demonstrate the problems.  Restored malone doctest to previous state, as whitespace is now taken into account.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-319
+       merge from rf, plus one char fix to pagetest i accidentally left in from earlier.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/chunkydiff.py
+     lib/canonical/functional.py
+     lib/canonical/launchpad/ftests/test_pages.py
+     lib/canonical/launchpad/pagetests/malone/10-add-subscription.txt
+     lib/canonical/tests/chunkydiff.txt
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-316
+     steve.alexander@canonical.com/launchpad--devel--0--patch-317
+     steve.alexander@canonical.com/launchpad--devel--0--patch-318
+     steve.alexander@canonical.com/launchpad--devel--0--patch-319
+
+
 2005-03-08 17:16:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1386
 
     Summary:

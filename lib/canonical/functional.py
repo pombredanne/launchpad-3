@@ -551,7 +551,10 @@ def sample_test_suite():
 
 class SpecialOutputChecker(doctest.OutputChecker):
     def output_difference(self, example, got, optionflags):
-        got = elided_source(example.want, got)
+        if optionflags & doctest.ELLIPSIS:
+            normalize_whitespace = optionflags & doctest.NORMALIZE_WHITESPACE
+            got = elided_source(example.want, got,
+                                normalize_whitespace=normalize_whitespace)
         return doctest.OutputChecker.output_difference(
             self, example, got, optionflags)
 

@@ -8,7 +8,8 @@ import re
 
 __metaclass__ = type
 
-def elided_source(tested, actual, debug=False, show=False):
+def elided_source(tested, actual, debug=False, show=False,
+                  normalize_whitespace=False):
     if debug:
         import pdb; pdb.set_trace()
     chunks = tested.split('...')
@@ -36,7 +37,8 @@ def elided_source(tested, actual, debug=False, show=False):
                 chunk, actual[currentpos:],
                 anchor_start=not chunk_starts_with_ellipsis,
                 anchor_end=not chunk_ends_with_ellipsis,
-                debug=debug, show=show)
+                debug=debug, show=show,
+                normalize_whitespace=normalize_whitespace)
             if result is None:
                 results.append(None)
             else:
@@ -88,7 +90,8 @@ def elided_source(tested, actual, debug=False, show=False):
                 break
 
     else:
-        raise ValueError("mixed output: %s" % resultsummary)
+        output = actual
+        #raise ValueError("mixed output: %s" % resultsummary)
 
     return output
 
@@ -112,46 +115,69 @@ def mnemonic_for_result(result):
         return 'S'
 
 def find_chunk(chunk, actual, anchor_start=False, anchor_end=False,
-               debug=False, show=False):
+               debug=False, show=False, normalize_whitespace=False):
     if debug:
         import pdb; pdb.set_trace()
     if not anchor_start:
         # Find the start of the chunk.
         beginning = ''
+        beginning_for_regex = ''
         manyfound = False
         for char in chunk:
+            if normalize_whitespace and char.isspace():
+                if beginning_for_regex[-2:] != r'\s':
+                    beginning_for_regex += r'\s'
+            else:
+                beginning_for_regex += re.escape(char)
             beginning += char
-            numfound = actual.count(beginning)
+            numfound = len(re.findall(beginning_for_regex, actual))
+            #numfound = actual.count(beginning)
             if numfound == 0:
                 if manyfound:
                     beginning = manyfound_beginning
+                    beginning_for_regex = manyfound_beginning_for_regex
                     if anchor_end:
-                        beginning_pos = actual.rfind(beginning)
+                        beginning_pos = list(re.finditer(
+                            beginning_for_regex, actual))[-1].start()
+                        #beginning_pos = actual.rfind(beginning)
                     else:
-                        beginning_pos = actual.find(beginning)
+                        beginning_pos = re.search(
+                            beginning_for_regex, actual).start()
+                        # XXX this should be .span()[1].  needs a test.
+                        #beginning_pos = actual.find(beginning)
                     break
                 else:
                     return None
             elif numfound == 1:
-                beginning_pos = actual.find(beginning) + len(beginning)
+                beginning_pos = re.search(
+                    beginning_for_regex, actual).span()[1]
+                #beginning_pos = actual.find(beginning) + len(beginning)
                 break
             else:
                 manyfound = True
                 manyfound_beginning = beginning
+                manyfound_beginning_for_regex = beginning_for_regex
         else:
             if manyfound:
                 if anchor_end:
-                    beginning_pos = actual.rfind(beginning)
+                    beginning_pos = list(re.finditer(
+                        beginning_for_regex, actual))[-1].start()
+                    #beginning_pos = actual.rfind(beginning)
                 else:
-                    beginning_pos = actual.find(beginning)
+                    beginning_pos = re.search(
+                        beginning_for_regex, actual).start()
+                    # XXX this should be .span()[1].  needs a test.
+                    #beginning_pos = actual.find(beginning)
             else:
                 return None
     else:
         beginning_pos = 0
         beginning = ''
+        beginning_for_regex = ''
 
     # Find the end of the chunk.
     end = ''
+    end_for_regex = ''
     chunk_with_no_beginning = chunk[len(beginning):]
     if not chunk_with_no_beginning:
         end_pos = beginning_pos
@@ -162,31 +188,46 @@ def find_chunk(chunk, actual, anchor_start=False, anchor_end=False,
         manyfound = False
         for char in reversed_chunk:
             end = char + end
-            numfound = actual.count(end)
+            if normalize_whitespace and char.isspace():
+                if end_for_regex[:2] != r'\s':
+                    end_for_regex = r'\s' + end_for_regex
+            else:
+                end_for_regex = re.escape(char) + end_for_regex
+            numfound = len(re.findall(end_for_regex, actual))
+            #numfound = actual.count(end)
             if numfound == 0:
                 # None found this time around.  If we previously found more
                 # than one match, then choose the closest to the beginning.
                 if manyfound:
                     end = manyfound_end
-                    end_pos = actual.find(end, beginning_pos)
+                    end_for_regex = manyfound_end_for_regex
+                    end_pos = re.search(end_for_regex, actual).start()
+                    #end_pos = actual.find(end, beginning_pos)
+                    # XXX: this was wrong -- shouldn't be beginning_pos as
+                    #      we've already chopped off the beginning!
                     break
                 else:
                     return None
             elif numfound == 1:
-                end_pos = actual.rfind(end)
+                end_pos = re.search(end_for_regex, actual).start()
+                #end_pos = actual.rfind(end)
+                # XXX: only one found, so why not use find() ?
                 break
             else:
                 manyfound = True
                 manyfound_end = end
+                manyfound_end_for_regex = end_for_regex
         else:
             return None
     else:
         end_pos = len(actual)
         end = ''
+        end_for_regex = ''
 
     chunk_equivalent = actual[beginning_pos:end_pos]
     if show:
         output = '[%s]%s[%s]' % (beginning, chunk_equivalent, end)
     else:
         output = '%s%s%s' % (beginning, chunk_equivalent, end)
+    # XXX: end_pos+1 is the end of chunk_equivalent, not end.
     return (output, end_pos+1)
