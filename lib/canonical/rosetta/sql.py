@@ -692,7 +692,14 @@ class RosettaPOMessageSet(SQLBase):
             return ret[0]
 
     def nplurals(self):
+        # we need to check a pot-set, if one exists, to find whether this set
+        # *does* have plural forms, by looking at the number of message ids.
+        # It's usually not safe to look at the message ids of this message set,
+        # because if it's a po-set it may be incorrect; but if a pot-set can't
+        # be found, then self is our best guess.
         if self.poFile is None:
+            # if this *is* a pot-set, then obviously it's an authoritative
+            # source for knowing if there are plurals
             potset = self
         else:
             potset = RosettaPOMessageSet.select('''
@@ -710,9 +717,11 @@ class RosettaPOMessageSet(SQLBase):
         if potset.messageIDs().count() > 1:
             # has plurals
             if self.poFile is None:
+                # nplurals() for pot-sets is always 2
                 return 2
             return self.poFile.pluralForms
         else:
+            # message set is singular
             return 1
 
     def translations(self):

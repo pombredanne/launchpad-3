@@ -405,7 +405,7 @@ class IPOFileMessageSet(IPOMessageSet):
         """)
 
     def nplurals():
-        """Number of message IDs that have to point to this message set
+        """Number of translations that have to point to this message set
         for it to be complete."""
 
     def translations():
