@@ -462,7 +462,6 @@ class POFileImporter(object):
         self.store_header()
         if not self.header_stored:
             raise POInvalidInputError('PO file has no header', 0)
-        self.pofile.updateStatistics()
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"

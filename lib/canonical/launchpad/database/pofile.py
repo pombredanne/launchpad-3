@@ -432,9 +432,8 @@ class POTemplate(SQLBase, RosettaStats):
     # Methods defined in IEditPOTemplate
 
     def expireAllMessages(self):
-        self._connection.query('UPDATE POTMsgSet SET sequence = 0'
-                               ' WHERE potemplate = %d'
-                               % self.id)
+        for msgset in self.currentMessageSets():
+            msgset.sequence = 0
 
     def getOrCreatePOFile(self, language_code, variant=None, owner=None):
         # see if one exists already
@@ -546,6 +545,12 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             # The import has been done, we mark it that way.
             self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+
+        # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
+        # a race condition that prevents the statistics to be calculated
+        # correctly. DON'T copy this, ask Andrew first.
+        for object in SQLBase._connection._dm.objects:
+            object.sync()
 
         # We update the cached value that tells us the number of msgsets this
         # .pot file has
@@ -944,9 +949,8 @@ class POFile(SQLBase, RosettaStats):
     # IEditPOFile
 
     def expireAllMessages(self):
-        self._connection.query(
-            '''UPDATE POMsgSet SET sequence = 0 WHERE pofile = %d'''
-            % self.id)
+        for msgset in self.currentMessageSets():
+            msgset.sequence = 0
 
     def updateStatistics(self, newImport=False):
         if newImport:
@@ -1073,6 +1077,12 @@ class POFile(SQLBase, RosettaStats):
         else:
             self.rawimportstatus = RosettaImportStatus.IMPORTED.value
 
+        # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
+        # a race condition that prevents the statistics to be calculated
+        # correctly. DON'T copy this, ask Andrew first.
+        for object in SQLBase._connection._dm.objects:
+            object.sync()
+        
         # Now we update the statistics after this new import
         self.updateStatistics(newImport=True)
 
@@ -1163,14 +1173,11 @@ class POMsgSet(SQLBase):
                 if (new_translations[index] == '' or
                     new_translations[index] is None):
                     # Make all sightings inactive.
-
-                    self._connection.query(
-                        '''
-                            UPDATE POTranslationSighting SET active = FALSE
-                            WHERE
-                                pomsgset = %d AND
-                                pluralform = %d
-                        ''' % (self.id, index))
+                    sightings = POTranslationSighting.select(
+                        'pomsgset=%d AND pluralform = %d' % (
+                        self.id, index))
+                    for sighting in sightings:
+                        sighting.active = False
                     new_translations[index] = None
                     self.iscomplete = False
 
@@ -1289,14 +1296,12 @@ class POMsgSet(SQLBase):
 
         # Make all other sightings inactive.
 
-        self._connection.query(
-            '''
-            UPDATE POTranslationSighting SET active = FALSE
-            WHERE
-                pomsgset = %d AND
-                pluralform = %d AND
-                id <> %d
-            ''' % (self.id, pluralForm, sighting.id))
+        sightings = POTranslationSighting.select(
+            '''pomsgset=%d AND
+             pluralform = %d AND
+             id <> %d''' % (self.id, pluralForm, sighting.id))
+        for oldsighting in sightings:
+            oldsighting.active = False
 
         # Implicit set of iscomplete. If we have all translations, it's 
         # complete, if we lack a translation, it's not complete.
