@@ -42,31 +42,38 @@
       <table border="1">
         <tr>
           <td>
-            <h2>Monday</h2>
+            <h2><a tal:attributes="href context/monday/dayURL"
+                   tal:content="context/monday/dayname">Monday</a></h2>
           </td>
           <td>
-            <h2>Tuesday</h2>
+            <h2><a tal:attributes="href context/tuesday/dayURL"
+                   tal:content="context/tuesday/dayname">Tuesday</a></h2>
           </td>
         </tr>
         <tr>
           <td>
-            <h2>Wednesday</h2>
+            <h2><a tal:attributes="href context/wednesday/dayURL"
+                   tal:content="context/wednesday/dayname">Wednesday</a></h2>
           </td>
           <td>
-            <h2>Thursday</h2>
+            <h2><a tal:attributes="href context/thursday/dayURL"
+                   tal:content="context/thursday/dayname">Thursday</a></h2>
           </td>
         </tr>
         <tr>
           <td rowspan="2">
-            <h2>Friday</h2>
+            <h2><a tal:attributes="href context/friday/dayURL"
+                   tal:content="context/friday/dayname">Friday</a></h2>
           </td>
           <td>
-            <h2>Saturday</h2>
+            <h2><a tal:attributes="href context/saturday/dayURL"
+                   tal:content="context/saturday/dayname">Saturday</a></h2>
           </td>
         </tr>
         <tr>
           <td>
-            <h2>Sunday</h2>
+            <h2><a tal:attributes="href context/sunday/dayURL"
+                   tal:content="context/sunday/dayname">Sunday</a></h2>
           </td>
         </tr>
       </table>

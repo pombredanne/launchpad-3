@@ -39,8 +39,18 @@
           <a tal:attributes="href context/prevURL">&lt;- Previous</a>
           <a tal:attributes="href context/nextURL">Next -&gt;</a>
 
-
-          <p>Month View</p>
+          <table border="1">
+            <tr>
+              <th tal:repeat="day context/daynames"
+                  tal:content="day">Day of Week</th>
+            </tr>
+            <tr tal:repeat="row context/days">
+              <td tal:repeat="day row"><div tal:condition="day">
+                <a tal:attributes="href day/dayURL"
+                   tal:content="day/date/day">1</a>
+              </div></td>
+            </tr>
+          </table>
         </div>
       </div>
     </div>

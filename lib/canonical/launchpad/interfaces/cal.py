@@ -2,9 +2,9 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from zope.interface import Interface, Attribute
-from zope.schema import Int, Object, TextLine
+from zope.schema import Int, Bool, Object, TextLine, Date, Datetime
 from canonical.launchpad.fields import Title
-from schoolbell.interfaces import IEditCalendar
+from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 
 
 class ILaunchpadCalendar(IEditCalendar):
@@ -13,7 +13,7 @@ class ILaunchpadCalendar(IEditCalendar):
     TODO: make it inherit IEditCalendar.
     """
 
-    owner = Attribute("The person who can edit this calendar")
+    owner = Attribute(_("The person who can edit this calendar"))
 
     title = Title(
                   title=_('Calendar title'), required=True,
@@ -82,10 +82,48 @@ class ICalendarDayView(ICalendarView):
 
 class ICalendarWeekView(ICalendarView):
     """A week view of a calendar."""
+    days = Attribute(_("A list of information about days of the week"))
+    monday = Attribute(_("Information about Monday"))
+    tuesday = Attribute(_("Information about Tuesday"))
+    wednesday = Attribute(_("Information about Wednesday"))
+    thursday = Attribute(_("Information about Thursday"))
+    friday = Attribute(_("Information about Friday"))
+    saturday = Attribute(_("Information about Saturday"))
+    sunday = Attribute(_("Information about Sunday"))
     
 class ICalendarMonthView(ICalendarView):
     """A month view of a calendar."""
+    daynames = Attribute(_("Translated day names"))
+    days = Attribute(_("A two dimensional array of days in the month"))
 
 class ICalendarYearView(ICalendarView):
     """A year view of a calendar."""
 
+class ICalendarDayInfo(Interface):
+    """Information about a particular day, used by the various
+    calendar views."""
+    date = Date(
+        title=_("Date"), required=False,
+        description=_("The date this refers object refers to"))
+    dayname = TextLine(
+        title=_("Day name"),
+        description=_("The name of this day"))
+    dayURL = TextLine(
+        title=_("Day URL"),
+        description=_("A URL referring to this particular day"))
+    hasEvents = Bool(
+        title=_("Whether the day has events"),
+        description=_("whether events occur on this day"))
+    events = Attribute(_("The events occurring on this day"))
+
+class ICalendarEventInfo(Interface):
+    """Information about an event, used by the calendar views."""
+    event = Object(
+        title=_('Event'),
+        schema=ILaunchpadCalendar,
+        description=_("""The event."""))
+    dtstart = Datetime(
+        title=_("Start date"), required=False,
+        description=_("The event start time in local time"))
+    timestring = TextLine(
+        title=_("The event start time as a string"))

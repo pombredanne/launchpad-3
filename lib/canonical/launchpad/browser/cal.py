@@ -10,6 +10,10 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import ICalendarView, ICalendarWeekView
 from canonical.launchpad.interfaces import ICalendarDayView, ICalendarMonthView
 from canonical.launchpad.interfaces import ICalendarYearView
+from canonical.launchpad.interfaces import ICalendarDayInfo, ICalendarEventInfo
+
+from schoolbell.utils import prev_month, next_month
+from schoolbell.utils import weeknum_bounds, check_weeknum
 
 daynames = [
     _("Monday"),
@@ -36,14 +40,22 @@ monthnames = [
     ]
 
 # XXX this should really be the user's timezone
-class UserTimeZone(tzinfo):
+class UtcTimeZone(tzinfo):
     def utcoffset(self, dt):
         return timedelta(0)
     def tzname(self, dt):
         return "UTC"
     def dst(self, dt):
         return timedelta(0)
-user_timezone = UserTimeZone()
+class PerthTimeZone(tzinfo):
+    def utcoffset(self, dt):
+        return timedelta(hours=8)
+    def tzname(self, dt):
+        return "AWST"
+    def dst(self, dt):
+        return timedelta(0)
+UTC = UtcTimeZone()
+user_timezone = PerthTimeZone()
 
 # XXXX we don't actually have any of these view classes yet ...
 _year_pat  = re.compile(r'^(\d\d\d\d)$')
@@ -90,101 +102,6 @@ def traverseCalendar(calendar, request, name):
         return MonthView(calendar,
                          year=now.year)
 
-def prev_month(date):
-    """Calculate the first day of the previous month for a given date.
-
-        >>> prev_month(date(2004, 8, 1))
-        datetime.date(2004, 7, 1)
-        >>> prev_month(date(2004, 8, 31))
-        datetime.date(2004, 7, 1)
-        >>> prev_month(date(2004, 12, 15))
-        datetime.date(2004, 11, 1)
-        >>> prev_month(date(2005, 1, 28))
-        datetime.date(2004, 12, 1)
-
-    """
-    return (date.replace(day=1) - timedelta(1)).replace(day=1)
-
-
-def next_month(date):
-    """Calculate the first day of the next month for a given date.
-
-        >>> next_month(date(2004, 8, 1))
-        datetime.date(2004, 9, 1)
-        >>> next_month(date(2004, 8, 31))
-        datetime.date(2004, 9, 1)
-        >>> next_month(date(2004, 12, 15))
-        datetime.date(2005, 1, 1)
-        >>> next_month(date(2004, 2, 28))
-        datetime.date(2004, 3, 1)
-        >>> next_month(date(2004, 2, 29))
-        datetime.date(2004, 3, 1)
-        >>> next_month(date(2005, 2, 28))
-        datetime.date(2005, 3, 1)
-
-    """
-    return (date.replace(day=28) + timedelta(7)).replace(day=1)
-
-
-def week_start(date, first_day_of_week=0):
-    """Calculate the first day of the week for a given date.
-
-    Assuming that week starts on Mondays:
-
-        >>> week_start(date(2004, 8, 19))
-        datetime.date(2004, 8, 16)
-        >>> week_start(date(2004, 8, 15))
-        datetime.date(2004, 8, 9)
-        >>> week_start(date(2004, 8, 14))
-        datetime.date(2004, 8, 9)
-        >>> week_start(date(2004, 8, 21))
-        datetime.date(2004, 8, 16)
-        >>> week_start(date(2004, 8, 22))
-        datetime.date(2004, 8, 16)
-        >>> week_start(date(2004, 8, 23))
-        datetime.date(2004, 8, 23)
-
-    Assuming that week starts on Sundays:
-
-        >>> import calendar
-        >>> week_start(date(2004, 8, 19), calendar.SUNDAY)
-        datetime.date(2004, 8, 15)
-        >>> week_start(date(2004, 8, 15), calendar.SUNDAY)
-        datetime.date(2004, 8, 15)
-        >>> week_start(date(2004, 8, 14), calendar.SUNDAY)
-        datetime.date(2004, 8, 8)
-        >>> week_start(date(2004, 8, 21), calendar.SUNDAY)
-        datetime.date(2004, 8, 15)
-        >>> week_start(date(2004, 8, 22), calendar.SUNDAY)
-        datetime.date(2004, 8, 22)
-        >>> week_start(date(2004, 8, 23), calendar.SUNDAY)
-        datetime.date(2004, 8, 22)
-
-    """
-    assert 0 <= first_day_of_week < 7
-    delta = date.weekday() - first_day_of_week
-    if delta < 0:
-        delta += 7
-    return date - timedelta(delta)
-
-def weeknum_bounds(year, weeknum):
-    """Calculates the inclusive date bounds for a (year, weeknum) tuple.
-    """
-    # The first week of a year is at least 4 days long, so January 4th
-    # is in the first week.
-    firstweek = week_start(date(year, 1, 4), calendar.MONDAY)
-    # move forward to the right week number
-    weekstart = firstweek + timedelta(weeks=weeknum-1)
-    weekend = weekstart + timedelta(days=6)
-    return (weekstart, weekend)
-
-def check_weeknum(year, weeknum):
-    """Checks to see whether a (year, weeknum) tuple refers to a real
-    ISO week number."""
-    weekstart, weekend = weeknum_bounds(year, weeknum)
-    isoyear, isoweek, isoday = weekstart.isocalendar()
-    return (year, weeknum) == (isoyear, isoweek)
-
 class CalendarView(object):
     """Base class for the various calendar views"""
     implements(ICalendarView)
@@ -202,6 +119,28 @@ class CalendarView(object):
         self.weekViewURL = '../%04d-W%02d' % (isoyear, isoweek)
         self.monthViewURL = '../%04d-%02d' % (date.year, date.month)
         self.yearViewURL = '../%04d' % date.year
+
+class DayInfo(object):
+    implements(ICalendarDayInfo)
+
+    def __init__(self, date):
+        self.date = date
+        self.dayname = daynames[self.date.weekday()]
+        self.dayURL = '../%04d-%02d-%02d' % (date.year,
+                                             date.month,
+                                             date.day)
+        self.events = []
+    def hasEvents(self):
+        return len(self.events) != 0
+    hasEvents = property(hasEvents)
+
+class EventInfo(object):
+    implements(ICalendarEventInfo)
+    def __init__(self, event):
+        self.event = event
+        self.dtstart = event.dtstart.astimezone(user_timezone)
+        self.timestring = '%02d:%02d' % (self.dtstart.hour,
+                                         self.dtstart.minute)
 
 class DayView(CalendarView):
     """A day view of the calendar."""
@@ -227,33 +166,56 @@ class WeekView(CalendarView):
     """A week view of the calendar."""
     implements(ICalendarWeekView)
 
-    def __init__(self, calendar, year, week):
+    def __init__(self, cal, year, week):
         assert check_weeknum(year, week), 'invalid week number'
-        CalendarView.__init__(self, calendar, 'Week %d, %04d' % (week, year))
+        CalendarView.__init__(self, cal, 'Week %d, %04d' % (week, year))
         self.year = year
         self.week = week
-        self.bounds = weeknum_bounds(year, week)
+        (start, end) = weeknum_bounds(year, week)
 
         # navigation links
-        (isoyear, isoweek, isoday) = (self.bounds[0] - timedelta(days=1)).isocalendar()
+        (isoyear, isoweek, isoday) = (start - timedelta(days=1)).isocalendar()
         self.prevURL = '../%04d-W%02d' % (isoyear, isoweek)
-        (isoyear, isoweek, isoday) = (self.bounds[1] + timedelta(days=1)).isocalendar()
+        (isoyear, isoweek, isoday) = (end + timedelta(days=1)).isocalendar()
         self.nextURL = '../%04d-W%02d' % (isoyear, isoweek)
 
-        self._setViewURLs(self.bounds[0])
+        self._setViewURLs(start)
+
+        self.days = []
+        for i in range(7):
+            day = DayInfo(start + timedelta(days=i))
+            self.days.append(day)
+        # XXXX : would be nice if I didn't need these.
+        self.monday = self.days[0]
+        self.tuesday = self.days[1]
+        self.wednesday = self.days[2]
+        self.thursday = self.days[3]
+        self.friday = self.days[4]
+        self.saturday = self.days[5]
+        self.sunday = self.days[6]
+
+        # find events for the week
+        self.events = []
+        start = datetime(start.year, start.month, start.day,
+                         0, 0, 0, 0, user_timezone).astimezone(UTC)
+        end = start + timedelta(weeks=1)
+        for event in self.calendar.expand(start, end):
+            ev = EventInfo(event)
+            self.days[ev.dtstart.weekday()].events.append(ev)
 
 class MonthView(CalendarView):
     """A month view of the calendar."""
     implements(ICalendarMonthView)
 
-    def __init__(self, calendar, year, month):
+    daynames = daynames
+
+    def __init__(self, cal, year, month):
         assert 1 <= month <= 12, 'invalid month number'
         datestring = '%s %04d' % (monthnames[month-1], year)
-        CalendarView.__init__(self, calendar, datestring)
+        CalendarView.__init__(self, cal, datestring)
         self.year = year
         self.month = month
         start = date(year, month, 1)
-        self.bounds = [start, next_month(start) - timedelta(days=1)]
 
         # navigation links
         prev = prev_month(start)
@@ -263,12 +225,39 @@ class MonthView(CalendarView):
 
         self._setViewURLs(start)
 
+        # create dayinfo instances for each day of the month
+        days = []
+        for i in range(calendar.monthrange(year, month)[1]):
+            days.append(DayInfo(date(year, month, i+1)))
+
+        # convert to UTC time offsets
+        start = datetime(start.year, start.month, start.day,
+                         0, 0, 0, 0, user_timezone).astimezone(UTC)
+        end = datetime(next.year, next.month, next.day,
+                         0, 0, 0, 0, user_timezone).astimezone(UTC)
+
+        for event in self.calendar.expand(start, end):
+            ev = EventInfo(event)
+            self.days[ev.dtstart.day - 1].events.append(ev)
+
+        # lay out the dayinfo objects in a 2D grid
+        layout = calendar.monthcalendar(year, month)
+        self.days = []
+        for layout_row in layout:
+            row = []
+            for item in layout_row:
+                if item == 0:
+                    row.append(None)
+                else:
+                    row.append(days[item - 1])
+            self.days.append(row)
+
 class YearView(CalendarView):
     """A month view of the calendar."""
     implements(ICalendarYearView)
 
-    def __init__(self, calendar, year):
-        CalendarView.__init__(self, calendar, '%04d' % year)
+    def __init__(self, cal, year):
+        CalendarView.__init__(self, cal, '%04d' % year)
         self.year = year
         start = date(year, 1, 1)
         end = date(year+1, 1, 1) - timedelta(days=1)
