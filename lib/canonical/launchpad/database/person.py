@@ -284,7 +284,7 @@ class Person(SQLBase):
 
     def _getPreferredemail(self):
         status = EmailAddressStatus.PREFERRED
-        emails = self._getEmailsByStatus(status)
+        emails = list(self._getEmailsByStatus(status))
         # There can be only one preferred email for a given person at a
         # given time, and this constraint must be ensured in the DB, but
         # it's not a problem if we ensure this constraint here as well.

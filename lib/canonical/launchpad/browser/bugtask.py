@@ -97,7 +97,8 @@ class BugTasksView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.batch = Batch(self.search(), int(request.get('batch_start', 0)))
+        self.batch = Batch(list(self.search()), 
+                           int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
 
     def search(self):

@@ -157,7 +157,7 @@ class ProductBugsView:
         self.context = context
         self.request = request
         self.batch = Batch(
-            self.bugtask_search(), int(request.get('batch_start', 0)))
+            list(self.bugtask_search()), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
 
     def hideGlobalSearchBox(self):

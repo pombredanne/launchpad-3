@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-24 05:23:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1340
+
+    Summary:
+      Remove SelectResults.__len__ monkeypatch.
+    Revision:
+      launchpad--devel--0--patch-1340
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--no-monkeypatch--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1339
+    
+     * andrew.bennetts@canonical.com/launchpad--no-monkeypatch--0--patch-1
+       Remove SelectResults.__len__ monkeypatch, fix the handful of places that depended on it, add copyright boilerplate to c.l.database.__init__.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/browser/packages.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/components/bugsubscription.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--no-monkeypatch--0--base-0
+     andrew.bennetts@canonical.com/launchpad--no-monkeypatch--0--patch-1
+
+
 2005-02-23 21:24:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1339
 
     Summary:
