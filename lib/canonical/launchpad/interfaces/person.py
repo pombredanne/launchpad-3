@@ -47,6 +47,12 @@ class IPerson(Interface):
             title=_('Karma Timestamp'), required=False, readonly=True,
             )
     languages = Attribute(_('List of know languages by this person'))
+
+    # bounty relations
+    ownedBounties = Attribute('Bounties issued by this person.')
+    reviewerBounties = Attribute('Bounties reviewed by this person.')
+    claimedBounties = Attribute('Bounties claimed by this person.')
+    subscribedBounties = Attribute('Bounties to which this person subscribes.')
     sshkeys = Attribute(_('List of SSH keys'))
 
     # XXX: This field is used only to generate the form to create a new person.
@@ -56,6 +62,7 @@ class IPerson(Interface):
 
     # Properties of the Person object.
     ubuntite = Attribute("Ubuntite Flag")
+    unvalidatedEmails = Attribute("The unvalidated emails requested by this person")
     gpg = Attribute("GPG")
     irc = Attribute("IRC")    
     bugs = Attribute("Bug")

@@ -5,6 +5,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <!-- SSHKey -->
     <content class="canonical.launchpad.database.SSHKey">
         <allow interface="canonical.launchpad.interfaces.ISSHKey" />
         <require
@@ -12,6 +13,7 @@
             set_attributes="keytext comment" />
     </content>
 
+    <!-- SSHKeySet -->
     <content class="canonical.launchpad.database.SSHKeySet">
         <allow interface="canonical.launchpad.interfaces.ISSHKeySet" />
     </content>
@@ -21,25 +23,5 @@
         provides="canonical.launchpad.interfaces.ISSHKeySet">
         <allow interface="canonical.launchpad.interfaces.ISSHKeySet" />
     </securedutility>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IPerson"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.SSHKeyView">
-        <browser:page
-            name="+sshkey"
-            attribute="show"
-            lp:url="foaf/people/$person.id/+sshkey" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IPerson"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.SSHKeyEditView">
-        <browser:page
-            name="+editsshkey"
-            template="../templates/person-sshkey.pt"
-            lp:url="foaf/people/$person.id/+editsshkey" />
-    </browser:pages>
 
 </configure>

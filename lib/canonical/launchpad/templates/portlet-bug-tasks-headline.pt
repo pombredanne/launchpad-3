@@ -28,16 +28,16 @@
                     tal:condition="bugtask/product"
                     tal:attributes="href string:/malone/products/${bugtask/product/name}"
                     >
-                    upstream <span tal:content="bugtask/product/name">$Product.name</span>
+                    upstream <span tal:replace="bugtask/product/name">$Product.name</span>
                 </a>
                 <a href=""
                     tal:condition="python: bugtask.distribution and bugtask.sourcepackagename"
                     tal:attributes="href string:/malone/distros/${bugtask/distribution/name}/${bugtask/sourcepackagename/name}"
                     >
-                        <span tal:content="bugtask/distribution/name">
+                        <span tal:replace="bugtask/distribution/name">
                             distro
                         </span>
-                        <span tal:content="bugtask/sourcepackagename/name">
+                        <span tal:replace="bugtask/sourcepackagename/name">
                             sourcepackagename
                         </span>
                 </a>
@@ -45,7 +45,7 @@
                     tal:condition="python: bugtask.distribution and not bugtask.sourcepackagename"
                     tal:attributes="href string:/malone/distros/${bugtask/distribution/name}/}"
                     >
-                        <span tal:content="bugtask/distribution/name">
+                        <span tal:replace="bugtask/distribution/name">
                             distro
                         </span>
                 </a>
@@ -53,10 +53,10 @@
                     tal:condition="python: bugtask.distrorelease and bugtask.sourcepackagename"
                     tal:attributes="href string:/malone/distros/${bugtask/distrorelease/distribution/name}/${bugtask/sourcepackagename/name}"
                     >
-                        <span tal:content="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
+                        <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                             distro
                         </span>
-                        <span tal:content="bugtask/sourcepackagename/name">
+                        <span tal:replace="bugtask/sourcepackagename/name">
                             sourcepackagename
                         </span>
                 </a>
@@ -64,7 +64,7 @@
                     tal:condition="python: bugtask.distrorelease and not bugtask.sourcepackagename"
                     tal:attributes="href string:/malone/distros/${bugtask/distrorelease/distribution/name}/}"
                     >
-                        <span tal:content="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
+                        <span tal:replace="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                             distro
                         </span>
                 </a>

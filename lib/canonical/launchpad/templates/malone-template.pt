@@ -1,0 +1,5 @@
+<metal:page metal:define-macro="master">
+This is from the malone template.
+<metal:page use-macro="main-template/macros/mainmaster" />
+This is the end of the template.
+</metal:page>

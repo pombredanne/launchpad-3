@@ -92,10 +92,7 @@ class CodeOfConductSet(object):
 
     implements(ICodeOfConductSet)
 
-    # XXX cprov 20050301
-    # Might be replace for something similar to displayname
     title = 'Codes of Conduct Page'
-
 
     def __getitem__(self, version):
         """See ICodeOfConductSet."""
@@ -264,7 +261,7 @@ class SignedCodeOfConductSet(object):
 
     def searchByUser(self, user_id):
         """See ISignedCodeOfConductSet"""        
-        return SignedCodeOfConduct.selectBy(personID=user_id)
+        return list(SignedCodeOfConduct.selectBy(personID=user_id))
 
     def deactivateSignature(self, sign_id):
         """See ISignedCodeOfConductSet"""

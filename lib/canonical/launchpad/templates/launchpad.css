@@ -86,6 +86,11 @@ fieldset.two-column {
 
 h1, h2, h3, h4, h5, h6 {
     text-shadow: #999999 3px 3px 3px;
+    border-bottom: none;
+}
+
+h3 {
+    list-style-image: url(/++resource++bullet.gif);
 }
 
 .listing td {
@@ -110,12 +115,12 @@ label {
     text-transform: lowercase;
 }
 
-h3 {
-    list-style-image: url(/++resource++bullet.gif);
-}
-
 #portal-logo {
     background: url(/++resource++rosetta.png) no-repeat;
+}
+
+#portal-personaltools {
+    clear: both;
 }
 
 #portal-personaltools .portalUser {
@@ -401,4 +406,112 @@ label.fuzzy-checkbox {
     color: red;
     font-size: 200%;
     margin: 1em;
+}
+
+
+/* === Undo bugs in plone.css === */
+
+body {
+  font-size: 100%;
+}
+
+.portlet, #portal-top, #portal-footer {
+  font-size: smaller;
+}
+
+ul {
+    line-height: 1em !important;
+}
+
+li {
+    margin-bottom: 0 !important;
+}
+/* === New design === */
+
+/* -- Stuff browsers should do, but don't -- */
+
+abbr, address {
+	font-style: inherit;
+}
+
+/* Launchpad-wide */
+
+.user {
+	float: right;
+}
+
+address.app, .apps {
+	font-family: "Lucida Grande", sans-serif;
+}
+address.app {
+	font-size: 2em;
+}
+.apps {
+	clear: right;
+	float: right;
+	margin-top: 0.5em;
+}
+.page-header {
+	width: 100%;
+}
+.page-header img {
+	float: left;
+}
+.page-header h2 {
+    padding-top: 0.75em;
+}
+
+.navigation li {
+	display: inline;
+	padding: 0.25em 0.5em;
+}
+.navigation li:before {
+	content: '\2022';
+}
+#main {
+	border-top: 2pt solid black;
+	clear: both;
+	margin: 0;
+	padding-top: 1em;
+	width: 100%;
+}
+
+.page-header-ribbon {
+    /* Bar with personalized menu (user preferences, favorites etc) */
+    background-color: #dee7ec;
+    border-top-color: #8cacbb;
+    border-top-style: solid;
+    border-top-width: 1px;
+    border-bottom-color: #8cacbb;
+    border-bottom-style: solid;
+    border-bottom-width: 1px;
+    line-height: 1.3em;
+    color: Black;
+    padding: 0em 1em 0em 0em;
+    margin: 0;
+    list-style: none;
+}
+
+.page-header-ribbon address {
+    width: 75%;
+}
+
+.launchpad-apps {
+    float: right;
+}
+.launchpad-apps td {
+}
+
+td.plain {
+    border: 1px dotted #8cacbb;
+}
+td.plain:hover {
+    background-color: #dee7ec;
+    color: #436976;
+    border: 1px solid #8cacbb;
+}
+td.selected {
+    background-color: #dee7ec;
+    color: #436976;
+    border: 1px solid #8cacbb;
 }

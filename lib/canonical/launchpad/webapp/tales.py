@@ -191,19 +191,17 @@ class RequestFormatterAPI:
         if last_clean_path_segment != last_path_info_segment:
             clean_path = '/'.join(clean_path_split[:-1])
         L = []
-        link = '/'
         for index, segment in enumerate(clean_path.split('/')):
             if not (segment.startswith('++vh++') or segment == '++'):
                 if not (index == last_clean_path_index
                         and last_path_info_segment == last_clean_path_index):
                     ##import pdb; pdb.set_trace()
-                    L.append('<a href="%s">%s</a>' %
+                    if not segment:
+                        segment = 'Launchpad'
+                    L.append('<a rel="parent" href="%s">%s</a>' %
                         (self.request.URL[index], segment))
-                    L.append('<span class="breadcrumbSeparator">'
-                             ' &raquo; '
-                             '</span>')
-                    link += '/' + segment
-        return ''.join(L)
+        sep = '<span class="breadcrumbSeparator"> &raquo; </span>'
+        return sep.join(L)
 
 
 class FormattersAPI:

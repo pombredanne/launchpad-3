@@ -5,11 +5,7 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-          <span>
-              <a href="/+login">Log In</a>
-              &mdash;
-              <a href="/+register">Join</a>
-          </span>
+  ...<a href="/+login">Log In</a>...
   ...
 
   >>> print http(r"""
@@ -18,11 +14,8 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-          <span>
-              Logged in as
-              <a href="/people/name16">
-              Foo Bar</a>
-              &mdash;
-              <a href="/+logout">Log Out</a>
-          </span>
+  Welcome,
+  ...<a href="/people/name16">
+  Foo Bar</a>...
+  ...<a href="/+logout">Log Out</a>...
   ...

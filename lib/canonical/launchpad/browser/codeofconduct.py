@@ -299,43 +299,6 @@ class SignedCodeOfConductDeactiveView(EditView):
         # How to proceed with no admincomment ?
 
 
-class PersonSignedCodesOfConductView(object):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.message = None
-        self.user = getUtility(ILaunchBag).user
-
-    def signatures(self):
-        """ """
-        # use utility to query on SignedCoCs
-        sCoC_util = getUtility(ISignedCodeOfConductSet)
-        return sCoC_util.searchByUser(self.user.id)
-
-
-    def performChanges(self):
-        """  """
-        sign_ids = self.request.form.get("DEACTIVE_SIGN")
-
-        self.message = 'Deactivating: '
-
-        if sign_ids is not None:
-            sCoC_util = getUtility(ISignedCodeOfConductSet)
-
-            # verify if we have multiple entries to deactive
-            if not isinstance(sign_ids, list):
-                sign_ids = [sign_ids]
-
-            for sign_id in sign_ids:
-                sign_id = int(sign_id)
-                self.message += '%d,' % sign_id
-                sCoC_util.deactivateSignature(sign_id)
-
-            return True
-
-
-
 
 
 

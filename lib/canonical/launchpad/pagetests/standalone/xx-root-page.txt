@@ -9,28 +9,9 @@ Make sure important links are there, title ad heading set correctly etc.
     Content-Length: ...
     Content-Type: text/html;charset=utf-8
     <BLANKLINE>
-    <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-    <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-          lang="en">
-    <head>
+    ...
         <title>The Launchpad Home Page</title>
-    ...
-    </head>
-    <body>
-        <div id="portal-top">
-            <a href="/">
-                <img src="/@@/launchpad.png" alt="Launchpad Home" />
-            </a>
-            <span>Launchpad</span>
-    ...
-                <a href="/+login">Log In</a>
-    ...
-                <a href="/+register">Join</a>
     ...
         <h1>Welcome to The Launchpad!</h1>
     ...
-    </body>
-    </html>
-    <BLANKLINE>
-    <BLANKLINE>
 

@@ -7,12 +7,10 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-          <span>
-              Logged in as
+              Welcome,
   ...
               Foo Bar</a>
   ...
-          </span>
   ...
       <h1>Upstream Bugs for:
           Mozilla Firefox

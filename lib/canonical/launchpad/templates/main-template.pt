@@ -17,86 +17,78 @@
 </head>
 
 <body>
-    <div id="portal-top">
-        <a href="/">
-            <img src="/@@/launchpad.png" alt="Launchpad Home" />
-        </a>
-        <span tal:content="context/title | default">Launchpad</span>
-    </div>
 
-    <ul id="portal-globalnav" tal:define="path_info request/PATH_INFO">
+    <div class="page-header">
+        <div class="page-header-ribbon">
+            <div class="user" tal:condition="not: request/lp:person">
+                <a href="/+login">Log In</a>
+            </div>
+            <div class="user" tal:condition="request/lp:person">
+                Welcome,
+                <a tal:attributes="href string:/people/${request/lp:person/name}">
+                <span tal:replace="request/lp:person/displayname">Foo Bar</span></a>
+                &ndash;
+                Prefs
+                &ndash;
+                <a href="/+logout">Log Out</a>
+            </div>
+            <address>
+               <span tal:replace="structure request/fmt:breadcrumbs" /><br />
+            </address>
+        </div>
+        <div class="clear-everything-hackishly" style="clear: both;">
+            <a href="/">
+                <img src="/@@/launchpad.png" alt="Launchpad Home" />
+            </a>
 
-        <li class="plain">
-            <a href=".">Home</a>
-        </li>
+            <table class="launchpad-apps" tal:define="path_info request/PATH_INFO">
+                <tr>
+                    <td class="plain">
+                        <a href=".">Overview</a>
+                    </td>
 
-        <li class="selected" tal:condition="python:'/people' in path_info">
-            <a href="/people/">People</a>
-        </li>
-        <li class="plain"
-            tal:condition="python:'/people' not in path_info">
-            <a href="/people/">People</a>
-        </li>
+              <td class="selected" tal:condition="python:'+bug' in path_info or '+malone' in path_info">
+                <a href="+bugs">Bugs</a>
+              </td>
+              <td class="plain"
+                tal:condition="python:'+bug' not in path_info or '+malone' in path_info">
+                <a href="+bugs">Bugs</a>
+              </td>
 
-        <li class="selected"
-            tal:condition="python:'/products' in path_info">
-            <a href="/products">Products</a>
-        </li>
-        <li class="plain"
-            tal:condition="python:'/products' not in path_info">
-            <a href="/products">Products</a>
-        </li>
+              <td class="selected"
+                tal:condition="python:'+transl' in path_info or '+roset' in path_info">
+                <a href="+translations">Translations</a>
+              </td>
+              <td class="plain"
+                tal:condition="python:'+transl' not in path_info or '+roset' in path_info">
+                <a href="+translations">Translations</a>
+              </td>
+              <td rowspan="2">
+                <img src="/@@/launchpad.png" alt="Launchpad Home" />
+              </td>
+            </tr><tr>
+              <td class="selected"
+                tal:condition="python:'/+bount' in path_info">
+                <a href="+bounties">Bounties</a>
+              </td>
+              <td class="plain"
+                tal:condition="python:'+bount' not in path_info">
+                <a href="+bounties">Bounties</a>
+              </td>
+            </tr>
+          </table>
 
-        <li class="selected"
-            tal:condition="python:'/distros' in path_info">
-            <a href="/distros">Distributions</a>
-        </li>
-        <li class="plain"
-            tal:condition="python:'/distros' not in path_info">
-            <a href="/distros">Distributions</a>
-        </li>
+          <h2 tal:content="context/title | default">The Launchpad</h2>
 
-        <li class="selected"
-            tal:condition="python:'/projects' in path_info">
-            <a href="/projects">Projects</a>
-        </li>
-        <li class="plain"
-            tal:condition="python:'/projects' not in path_info">
-            <a href="/projects">Projects</a>
-        </li>
+        </div>
 
-    </ul>
+        <div id="portal-personaltools"
+             style="text-align: left;"
+             tal:define="path_info request/PATH_INFO">
+           App Tabs Here
+        </div>
 
-    <div id="portal-personaltools" tal:define="path_info request/PATH_INFO">
-
-        <span tal:condition="request/lp:person">
-            Logged in as
-            <a tal:attributes="href string:/people/${request/lp:person/name}">
-            <span tal:replace="request/lp:person/displayname">Foo Bar</span></a>
-            &mdash;
-            <a href="/+logout">Log Out</a>
-        </span>
-
-        <span tal:condition="not: request/lp:person" tal:omit-tag>
-            <a href="/+login">Log In</a>
-            &mdash;
-            <a href="/+register">Join</a>
-        </span>
-
-        <span tal:condition="python:'/rosetta' in path_info"
-              tal:omit-tag>
-            &mdash;
-            <a href="/rosetta/translator">Translation Dashboard</a>
-            &mdash;
-            <a href="/rosetta/prefs">Rosetta Prefs</a>
-        </span>
-
-      </div>
-
-    <div id="portal-breadcrumbs">
-        You are here:
-        <span tal:replace="structure request/fmt:breadcrumbs" />
-    </div>
+    </div><!-- class="page-header"-->
 
     <div class="visualClear"></div>
 

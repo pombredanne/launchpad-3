@@ -35,6 +35,7 @@ from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
+from canonical.launchpad.database.logintoken import LoginToken
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.lp.dbschema import EnumCol
@@ -78,6 +79,14 @@ class Person(SQLBase):
     languages = RelatedJoin('Language', joinColumn='person', 
                             otherColumn='language', 
                             intermediateTable='PersonLanguage')
+
+    # relevant joins
+    ownedBounties = MultipleJoin('Bounty', joinColumn='owner')
+    reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer')
+    claimedBounties = MultipleJoin('Bounty', joinColumn='claimant')
+    subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
+                                     otherColumn='bounty',
+                                     intermediateTable='BountySubscription')
 
     def get(cls, id, connection=None, selectResults=None):
         """Override the classmethod get from the base class.
@@ -336,6 +345,11 @@ class Person(SQLBase):
     #
     # Properties
     #
+
+    def _unvalidatedEmails(self):
+        tokens = LoginToken.select("requester=%d AND email IS NOT NULL" % self.id)
+        return [token.email for token in tokens]
+    unvalidatedEmails = property(_unvalidatedEmails)
 
     def _title(self):
         return self.browsername()

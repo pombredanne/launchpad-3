@@ -17,9 +17,12 @@
 
   <h1>People and Teams in the Launchpad</h1>
 
-  <div> 
+  <div class="documentDescription"> 
     This is the Friend Of A Friend web service, where we catalogue all the 
-    users registered in The Launchpad.<br /> 
+    users registered in The Launchpad.
+  </div>
+
+  <div> 
     Please note that some of the accounts registered here may have been
     automatically created by our system, and thus we can have different
     accounts representing the same person. If you find a dupe for your

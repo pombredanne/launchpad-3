@@ -9,31 +9,31 @@
     Signed Codes of Conduct</title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
 
 <div metal:fill-slot="main">
 
-<div id="content" class="documentEditable">
-<div class="documentContent" id="region-content">
+  <h1>Code of Conduct Signatures</h1>
 
-<div>
-  <h1>Your signed codes of conduct</h1>
-
-
-  <div tal:condition="view/performChanges">
+  <div tal:condition="view/performCoCChanges">
     <p class="portalMessage" tal:content="view/message"></p>
   </div>
 
   <form name="coc" action="" method="POST">
 
-  <p>Here you can View your Signed Codes of Conduct and Deactivate any
-  Active one.</p>
+  <p class="documentDescription">The Ubuntu Code of Conduct is a commitment
+  to the principles of collaboration, tolerance and open communication that
+  drive the open source community.</p>
 
-  <table class="listing rowNavigation">
+  <p tal:condition="not: view/signatures"><span
+  tal:replace="context/displayname">Person Name</span> has never signed the
+  Ubuntu Code of Conduct.</p>
+
+  <table class="listing rowNavigation" tal:condition="view/signatures">
     <tr>
       <th>Signingkey</th>
       <th>Status</th>
@@ -46,11 +46,6 @@
       </td>
       <td tal:condition="not:sign/active">DEACTIVE</td>
     </tr>
-  </table>
-
-  <br />
-
-  <table>
     <tr>
       <td></td>
       <td align="right">
@@ -64,10 +59,6 @@
 
   <p>See or Sign new Code of Conducts Releases in <a
   href="/codeofconduct">Code of Conduct</a>.</p>
-
-</div>
-</div>
-</div>
 
 </body>
 </html>

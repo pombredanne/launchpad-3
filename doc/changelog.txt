@@ -2,6 +2,145 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-21 23:17:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1469
+
+    Summary:
+      new page header and big foaf page tidy
+    Revision:
+      launchpad--devel--0--patch-1469
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-844
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-845
+       add page for bounties for/by/to a person
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-846
+       merge from mpt
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-847
+       merge rocketfuel, resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-848
+       fixup foaf pages and portlets
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-849
+       fix page tests
+    
+     * mpt@canonical.com/launchpad--devel--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1371
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-1
+       tweak people and main template pages
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-2
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-3
+       page changes and improvements
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-4
+       merge rocketfuel, resolving conflicts
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-5
+       fix breadcrumbs and start work on new page header
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-6
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-7
+       page test tweaks
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-8
+       page test tweaks
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-9
+       fix page tests, ready to merge
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-10
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-11
+       hot sexy main template action
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-12
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-13
+       fix page tests
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/malone-template.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/person-bounties.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-person-actions.pt.id
+     lib/canonical/launchpad/templates/malone-template.pt
+     lib/canonical/launchpad/templates/person-bounties.pt
+     lib/canonical/launchpad/templates/portlet-person-actions.pt
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/functional.py
+     lib/canonical/launchpad/browser/codeofconduct.py
+     lib/canonical/launchpad/browser/emailaddress.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/sshkey.py
+     lib/canonical/launchpad/database/codeofconduct.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/foaf/02-addemail.txt
+     lib/canonical/launchpad/pagetests/foaf/31-deleteemail.txt
+     lib/canonical/launchpad/pagetests/foaf/32-setpreferredemail.txt
+     lib/canonical/launchpad/pagetests/foaf/96-del-sshkey.txt
+     lib/canonical/launchpad/pagetests/foaf/98-validateemail.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-login-and-join-links.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-person-packages.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-root-page.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/50-private-upstream-bug-not-accessible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/80-private-upstream-bug-accessible-to-subscribed-user.txt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/main-template.pt
+     lib/canonical/launchpad/templates/people-index.pt
+     lib/canonical/launchpad/templates/person-bugs.pt
+     lib/canonical/launchpad/templates/person-codesofconduct.pt
+     lib/canonical/launchpad/templates/person-edit.pt
+     lib/canonical/launchpad/templates/person-emails.pt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/person-packages.pt
+     lib/canonical/launchpad/templates/person-sshkey.pt
+     lib/canonical/launchpad/templates/person-translations.pt
+     lib/canonical/launchpad/templates/portlet-bug-tasks-headline.pt
+     lib/canonical/launchpad/webapp/tales.py
+     lib/canonical/launchpad/zcml/codeofconduct.zcml
+     lib/canonical/launchpad/zcml/emailaddress.zcml
+     lib/canonical/launchpad/zcml/person.zcml
+     lib/canonical/launchpad/zcml/sshkey.zcml
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-844
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-845
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-846
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-847
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-848
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-849
+     mpt@canonical.com/launchpad--devel--0--base-0
+     mpt@canonical.com/launchpad--devel--0--patch-1
+     mpt@canonical.com/launchpad--devel--0--patch-2
+     mpt@canonical.com/launchpad--devel--0--patch-3
+     mpt@canonical.com/launchpad--devel--0--patch-4
+     mpt@canonical.com/launchpad--devel--0--patch-5
+     mpt@canonical.com/launchpad--devel--0--patch-6
+     mpt@canonical.com/launchpad--devel--0--patch-7
+     mpt@canonical.com/launchpad--devel--0--patch-8
+     mpt@canonical.com/launchpad--devel--0--patch-9
+     mpt@canonical.com/launchpad--devel--0--patch-10
+     mpt@canonical.com/launchpad--devel--0--patch-11
+     mpt@canonical.com/launchpad--devel--0--patch-12
+     mpt@canonical.com/launchpad--devel--0--patch-13
+
+
 2005-03-21 21:18:17 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1468
 
     Summary:

@@ -193,15 +193,4 @@
     </browser:addform>
 
 
-    <!-- SignedCoCs for Person -->     
-    <browser:pages
-        for="canonical.launchpad.interfaces.IPerson"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.PersonSignedCodesOfConductView">
-        <browser:page
-            name="+codesofconduct"
-            template="../templates/person-codesofconduct.pt"
-            lp:url="foaf/people/$person.id/+codesofconduct" />
-    </browser:pages>
-
 </configure>

@@ -3,23 +3,30 @@
 # sqlobject/sqlos
 from canonical.database.sqlbase import flushUpdates
 
+# zope imports
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.app.form.browser.add import AddView
+from zope.component import getUtility
+
 # lp imports
-from canonical.lp.dbschema import LoginTokenType
+from canonical.lp.dbschema import LoginTokenType, SSHKeyType
+from canonical.lp.dbschema import EmailAddressStatus
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+from canonical.auth.browser import well_formed_email
 
 # interface import
+from canonical.launchpad.interfaces import ISSHKeySet
 from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
 from canonical.launchpad.interfaces import IWikiNameSet, IJabberIDSet
 from canonical.launchpad.interfaces import IIrcIDSet, IArchUserIDSet
 from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
-from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.interfaces import IPasswordEncryptor, \
+                                           ISignedCodeOfConduct,\
+                                           ISignedCodeOfConductSet
 
 from canonical.launchpad.mail.sendmail import simple_sendmail
-
-# zope imports
-from zope.app.form.browser.add import AddView
-from zope.component import getUtility
+from canonical.launchpad.browser.emailaddress import sendEmailValidationRequest
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages
@@ -113,13 +120,80 @@ class FOAFSearchView(object):
         return getUtility(IPersonSet).findByName(name)
 
 
-class PersonView(object):
-    """A simple View class to be used in Person's pages where we don't have
-    actions and all we need is the context/request."""
+# XXX sabdfl 21/03/05 debonzi please merge PersonSSHKeyEditView with
+# PersonView
+class PersonSSHKeyEditView(object):
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-person-actions.pt')
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.user = getUtility(ILaunchBag).user
+
+    def form_action(self):
+        if self.request.method != "POST":
+            # Nothing to do
+            return ''
+
+        action = self.request.form.get('action')
+        if action == 'add':
+            return self.add_action()
+        elif action == 'remove':
+            return self.remove_action()
+
+    def add_action(self):
+        sshkey = self.request.form.get('sshkey')
+        try:
+            kind, keytext, comment = sshkey.split(' ', 2)
+        except ValueError:
+            return 'Invalid public key'
+        
+        if kind == 'ssh-rsa':
+            keytype = SSHKeyType.RSA
+        elif kind == 'ssh-dss':
+            keytype = SSHKeyType.DSA
+        else:
+            return 'Invalid public key'
+        
+        getUtility(ISSHKeySet).new(self.user.id, keytype, keytext, comment)
+        return 'SSH public key added.'
+
+    def remove_action(self):
+        try:
+            id = self.request.form.get('key')
+        except ValueError:
+            return "Can't remove key that doesn't exist"
+
+        sshkey = getUtility(ISSHKeySet).get(id)
+        if sshkey is None:
+            return "Can't remove key that doesn't exist"
+
+        if sshkey.person != self.user:
+            return "Cannot remove someone else's key"
+
+        comment = sshkey.comment
+        sshkey.destroySelf()
+        return 'Key "%s" removed' % comment
+
+
+class PersonView(object):
+    """A simple View class to be used in Person's pages where we don't have
+    actions and all we need is the context/request."""
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-person-actions.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.message = None
+        self.user = getUtility(ILaunchBag).user
+
+    def showSSHKeys(self):
+        self.request.response.setHeader('Content-Type', 'text/plain')
+        return "\n".join([key.keytext for key in self.context.sshkeys])
 
     def membershipOrRoles(self):
         # XXX: salgado, 2005-01-13: I'll find a better way to display
@@ -131,13 +205,46 @@ class PersonView(object):
     def sshkeysCount(self):
         return len(self.context.sshkeys)
 
+    def signatures(self):
+        """Return a list of code-of-conduct signatures on record for this
+        person."""
+        # use utility to query on SignedCoCs
+        sCoC_util = getUtility(ISignedCodeOfConductSet)
+        return sCoC_util.searchByUser(self.user.id)
+
+    def performCoCChanges(self):
+        """Make changes to code-of-conduct signature records for this
+        person."""
+        sign_ids = self.request.form.get("DEACTIVE_SIGN")
+
+        self.message = 'Deactivating: '
+
+        if sign_ids is not None:
+            sCoC_util = getUtility(ISignedCodeOfConductSet)
+
+            # verify if we have multiple entries to deactive
+            if not isinstance(sign_ids, list):
+                sign_ids = [sign_ids]
+
+            for sign_id in sign_ids:
+                sign_id = int(sign_id)
+                self.message += '%d,' % sign_id
+                sCoC_util.deactivateSignature(sign_id)
+
+            return True
+
+
 
 class PersonEditView(object):
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-person-actions.pt')
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.errormessage = None
+        self.message = None
         self.user = getUtility(ILaunchBag).user
 
     def edit_action(self):
@@ -208,6 +315,115 @@ class PersonEditView(object):
             getUtility(IArchUserIDSet).new(person.id, archuserid)
 
         return True
+
+    def emailFormSubmitted(self):
+        if "SUBMIT_CHANGES" in self.request.form:
+            self.processEmailChanges()
+            self.message = 'Thank you for your email changes.'
+            return True
+        elif "VALIDATE_EMAIL" in self.request.form:
+            self.processValidationRequest()
+            self.message = 'Thank you for your email validation.'
+            return True
+        else:
+            return False
+
+    def processEmailChanges(self):
+        user = self.user
+        emailset = getUtility(IEmailAddressSet)
+        password = self.request.form.get("password")
+        encryptor = getUtility(IPasswordEncryptor)
+        if not encryptor.validate(password, user.password):
+            self.message = "Wrong password. Please try again."
+            return
+
+        newemail = self.request.form.get("newemail", "").strip()
+        if newemail:
+            if not well_formed_email(newemail):
+                self.message = "'%s' is not a valid email address." % newemail
+                return
+
+            email = emailset.getByEmail(newemail)
+            if email is not None and email.person.id == user.id:
+                self.message = ("The email address '%s' is already registered "
+                                "as your email address. This can be either "
+                                "because you already added this email address "
+                                "before or because it have been detected by "
+                                "our system as being yours. In case it was "
+                                "detected by our systeam, it's probably "
+                                "shown on this page, inside <em>Detected "
+                                "Emails</em>." % email.email)
+                return
+            elif email is not None:
+                self.message = ("The email address '%s' was already "
+                                "registered by user '%s'. If you think that "
+                                "is a duplicated account, you can go to the "
+                                "<a href=\"../+requestmerge\">Merge Accounts"
+                                "</a> page to claim this email address and "
+                                "everything that is owned by that account.") % \
+                               (email.email, email.person.browsername())
+                return
+
+            login = getUtility(ILaunchBag).login
+            logintokenset = getUtility(ILoginTokenSet)
+            token = logintokenset.new(user, login, newemail, 
+                                      LoginTokenType.VALIDATEEMAIL)
+            sendEmailValidationRequest(token, self.request.getApplicationURL())
+            self.message = ("A new message was sent to '%s', please follow "
+                            "the instructions on that message to validate "
+                            "your email address.") % newemail
+
+        id = self.request.form.get("PREFERRED_EMAIL")
+        if id is not None:
+            # XXX: salgado 2005-01-06: Ideally, any person that is able to
+            # login *must* have a PREFERRED email, and this will not be
+            # needed anymore. But for now we need this cause id may be "".
+            id = int(id)
+            if getattr(user.preferredemail, 'id', None) != id:
+                email = emailset.get(id)
+                assert email.person == user
+                assert email.status == EmailAddressStatus.VALIDATED
+                user.preferredemail = email
+
+        ids = self.request.form.get("REMOVE_EMAIL")
+        if ids is not None:
+            # We can have multiple email adressess marked for deletion, and in
+            # this case ids will be a list. Otherwise ids will be str or int
+            # and we need to make a list with that value to use in the for 
+            # loop.
+            if not isinstance(ids, list):
+                ids = [ids]
+
+            for id in ids:
+                email = emailset.get(id)
+                assert email.person == user
+                if user.preferredemail != email:
+                    # The following lines are a *real* hack to make sure we
+                    # don't let the user with no validated email address.
+                    # Ideally, we wouldn't need this because all users would
+                    # have a preferred email address.
+                    if user.preferredemail is None and \
+                       len(user.validatedemails) > 1:
+                        # No preferred email set. We can only delete this
+                        # email if it's not the last validated one.
+                        email.destroySelf()
+                    elif user.preferredemail is not None:
+                        # This user has a preferred email and it's not this
+                        # one, so we can delete it.
+                        email.destroySelf()
+
+        flushUpdates()
+
+    def processValidationRequest(self):
+        id = self.request.form.get("NOT_VALIDATED_EMAIL")
+        email = getUtility(IEmailAddressSet).get(id)
+        self.message = ("A new email was sent to '%s' with instructions "
+                        "on how to validate it.") % email.email
+        login = getUtility(ILaunchBag).login
+        logintokenset = getUtility(ILoginTokenSet)
+        token = logintokenset.new(self.user, login, email.email,
+                                  LoginTokenType.VALIDATEEMAIL)
+        sendEmailValidationRequest(token, self.request.getApplicationURL())
 
 
 class RequestPeopleMergeView(AddView):
