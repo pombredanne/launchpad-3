@@ -98,6 +98,7 @@ class SourceSource(SQLBase):
 
         ForeignKey(name='owner', foreignKey='ArchPerson', dbName='owner',
                    notNull=True),
+        StringCol('currentgpgkey', dbName='currentgpgkey', default-None)
     ]
 
     def _get_repository(self):
