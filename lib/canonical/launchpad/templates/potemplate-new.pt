@@ -112,7 +112,7 @@
                        value="po/" />
         </div>
 
-<!--        <div class="field">
+        <div class="field">
 
             <label>file</label>
 
@@ -122,8 +122,6 @@
 
                 <input name="file" type="file" />
         </div>
--->
-
 
         <div class="formControls">
 

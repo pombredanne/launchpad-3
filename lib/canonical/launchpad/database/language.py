@@ -40,3 +40,5 @@ class Language(SQLBase):
     translators = RelatedJoin('Person', joinColumn='language',
         otherColumn='person', intermediateTable='PersonLanguage')
 
+    countries = RelatedJoin('Country', joinColumn='language',
+        otherColumn='country', intermediateTable='SpokenIn')

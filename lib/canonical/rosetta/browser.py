@@ -181,21 +181,17 @@ class ViewProduct:
                                 messagecount=0,
                                 owner=owner)
 
-        # now redirect to view the page
-        self.request.response.redirect(name)
-        
-        return
-
-        # XXX: Carlos Perello Marin 02/12/2004 Disabled the file upload
-        # because we are not getting the upload :-?
-
         file = self.form['file']
 
-        # I've seen this happen with Epiphany once, so it seemed worth it to
-        # put a check in. Restarting Epiphany fixed it, though.
-        # -- Dafydd, 2004/11/25
+        # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
+        # aleatory bug with upload forms (or perhaps it's launchpad because
+        # I never had problems with bugzilla). The fact is that some uploads
+        # don't work and we get a unicode object instead of a file-like object
+        # in "file". We show an error if we see that behaviour.
+        # For more info, look at bug #116
 
-        if file == u'':
+        # XXX: Add some feedback about the error.
+        if isinstance(file, unicode):
             return
 
         filename = file.filename
@@ -214,8 +210,12 @@ class ViewProduct:
 
             potemplate.rawfile = base64.encodestring(potfile)
             potemplate.daterawimport = UTC_NOW
-            potemplate.context.rawimporter = owner
-            potemplate.context.rawimportstatus = RosettaImportStatus.PENDING.value
+            potemplate.rawimporter = owner
+            potemplate.rawimportstatus = RosettaImportStatus.PENDING.value
+
+        # now redirect to view the page
+        self.request.response.redirect(name)
+
 
 
 class TemplateLanguages:

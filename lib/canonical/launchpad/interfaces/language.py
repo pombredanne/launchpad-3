@@ -20,6 +20,9 @@ class ILanguage(Interface):
     translators = Attribute("""A list of Persons that are interested on 
         translate into this language.""")
 
+    countries = Attribute("""A list of Countries where this language is spoken
+        in.""")
+
 
 class ILanguageSet(Interface):
     """The collection of languages."""
