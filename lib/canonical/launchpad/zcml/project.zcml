@@ -121,4 +121,8 @@
         provides="canonical.launchpad.interfaces.IProjectSet"
         />
 
+    <content class="canonical.rosetta.domain.RosettaProject">
+        <allow interface="canonical.launchpad.interfaces.IRosettaProject"/>
+    </content>
+
 </configure>

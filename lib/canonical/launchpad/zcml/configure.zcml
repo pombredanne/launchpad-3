@@ -28,6 +28,8 @@
     <include file="distro.zcml" />
     <include file="person.zcml" />
     <include file="processor.zcml" />
+    <include file="language.zcml" />
+    <include file="pofile.zcml" />
 
     <include file="widgets.zcml" />
     <include file="fields.zcml" />
