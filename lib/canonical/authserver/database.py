@@ -93,12 +93,13 @@ class DatabaseUserDetailsStorage(object):
                                displayName, emailAddresses):
         # Note that any psycopg.DatabaseErrors that occur will be translated
         # into a return value of {} by the _eb_createUser errback.
+        # TODO: Catch bad types, e.g. unicode, and raise appropriate exceptions
 
         # Create the Person
         transaction.execute(
             "INSERT INTO Person (displayname, password) "
             "VALUES ('%s', '%s')"
-            % (displayName.replace("'", "''"),
+            % (displayName.replace("'", "''").encode('utf-8'),
               sshaDigestedPassword.replace("'", "''"))
         )
 
@@ -108,7 +109,7 @@ class DatabaseUserDetailsStorage(object):
             "FROM Person "
             "WHERE Person.displayname = '%s' "
             "AND Person.password = '%s'"
-            % (displayName.replace("'", "''"),
+            % (displayName.replace("'", "''").encode('utf-8'),
               sshaDigestedPassword.replace("'", "''"))
         )
 

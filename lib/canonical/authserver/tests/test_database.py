@@ -125,6 +125,22 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(displayname, userDict['displayname'])
         self.assertEqual(emailaddresses, userDict['emailaddresses'])
         
+    def test_createUserUnicode(self):
+        # Creating a user should return a user dict with that user's details
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('supersecret!')
+        # Name with an e acute, and an apostrophe too.
+        displayname = u'Test\xc3\xa9 the Test\' User'
+        emailaddresses = ['test1@test.test', 'test2@test.test']
+        # This test needs a real Transaction, because it calls rollback
+        trans = adbapi.Transaction(None, self.connection)
+        userDict = storage._createUserInteraction(
+            trans, ssha, displayname, emailaddresses
+        )
+        self.assertNotEqual({}, userDict)
+        self.assertEqual(displayname, userDict['displayname'])
+        self.assertEqual(emailaddresses, userDict['emailaddresses'])
+        
     # FIXME: behaviour of this case isn't defined yet
     ##def test_createUserFailure(self):
     ##    # Creating a user with a loginID that already exists should fail
