@@ -14,33 +14,16 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Soyuz People List</h1>
+  <h1>Soyuz People and Team Lists</h1>
 
-
-  <table class="listing">
-    <tr>
-      <th>Displayname</th>
-      <th>Givenname</th>
-      <th>Familyname</th>
-      <th>Karma</th>
-    </tr>
-    <tr tal:repeat="person context">
-      <td>
-        <a tal:content="person/displayname" 
-	   tal:attributes="href person/id">
-	  displayname
-	</a>
-      </td><td>
-        <span tal:content="person/givenname"> 
-	  givenname</span>
-      </td><td>
-        <span tal:content="person/familyname">
-	 familyname</span>
-      </td><td>
-        <span tal:content="person/karma"> 
-	  karma</span></td>
-    </tr>
-  </table>    
+  <ul>
+   <li tal:repeat="person context"> 
+     <a tal:content="person/displayname"
+	tal:attributes="href person/id"/>
+   </li>
+  
+ </ul>
+  
  
 </div>
 

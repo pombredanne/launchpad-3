@@ -29,13 +29,9 @@
        <legend>Teams</legend>
        <tr> <th> Name</th> <th> Role</th> </tr>
        <tr tal:repeat="team context/team">
-          <td tal:condition="not:team/person/teamowner">
-	      <a tal:attributes="href string:../../../people/${team/person/id}"
+          <td><a tal:attributes="href string:../../../people/${team/person/id}"
 	         tal:content="team/person/displayname">
                Displayname</a></td>
-	  <td tal:condition="team/person/teamowner">
-              <a href="" tal:content="team/person/teamdescription">
-               TEAMDESCRIPTION</a></td>
           <td><span tal:content="team/rolename">ROLENAME</span>
           (<span tal:content="team/role">ROLE</span>)</td>
        </tr>

@@ -30,25 +30,30 @@ INSERT INTO Person ( displayname, givenname, familyname ) VALUES
 
 -- Insert some Teams in Person following FOAF approach
 
-INSERT INTO Person (teamowner, teamdescription) VALUES
+INSERT INTO Person (teamowner, displayname, teamdescription) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	'Ubuntu Security Team');
+	'Ubuntu Security Team',
+	'This Team Is responsible for the Security Issues on whole Ubuntu Distribution');
 
-INSERT INTO Person (teamowner, teamdescription) VALUES
+INSERT INTO Person (teamowner, displayname, teamdescription) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	'Ubuntu Gnome Team');
+	'Ubuntu Gnome Team',
+ 	'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution');
 
-INSERT INTO Person (teamowner, teamdescription) VALUES
+INSERT INTO Person (teamowner, displayname, teamdescription) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	'Warty Gnome Team');
+	'Warty Gnome Team',
+  	'This Team is responsible for GNOME release Issues on Warty Distribution Release');
 
-INSERT INTO Person (teamowner, teamdescription) VALUES
+INSERT INTO Person (teamowner, displayname, teamdescription) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	'Warty Security Team');
+	'Warty Security Team',
+ 	'This Team is responsible for Security Issues on Warty Distribution Release');
 
-INSERT INTO Person (teamowner, teamdescription) VALUES
+INSERT INTO Person (teamowner, displayname, teamdescription) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	'Hoary Gnome Team');
+	'Hoary Gnome Team',
+	'This team is responsible for Security Issues on Hoary Distribution Release');
 
 -- EmailAdress
 
@@ -306,86 +311,101 @@ INSERT INTO IrcID (person, network, nickname) VALUES
 -- Membership
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	1, -- ADMIN (2 = MEMBER)
 	2); -- CURRENT (1 = PROPOSED)	
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	2, -- MEMBER
 	2); -- CURRENT
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	2, -- MEMBER
 	1); -- PROPOSED
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	2, -- MEMBER
 	1); -- PROPOSED
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	2, -- MEMBER
 	1); -- PROPOSED
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	2, -- MEMBER
 	1); -- PROPOSED
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
 	1, -- ADMIN
 	2); -- CURRENT	
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
 	2, -- MEMBER
 	2); -- CURRENT	
 	
 
 -- TeamParticipation	
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Steve Alexander')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Alexander Limi')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Colin Watson')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Andrew Bennetts')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Dave Miller')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Jeff Waugh')
 	);
+
+-- Nested Teams
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Warty Security Team')
+	);
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Warty Gnome Team')
+	);
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Hoary Gnome Team')
+	);
+
 
 -- Component
 INSERT INTO Component (name) VALUES ('default_component');
@@ -1188,19 +1208,19 @@ INSERT INTO Distroreleaserole (person, distrorelease, role)
 
 INSERT INTO Distroreleaserole (person, distrorelease, role) 
 	VALUES(
-	(SELECT id from Person WHERE teamdescription = 'Warty Security Team'),
+	(SELECT id from Person WHERE displayname = 'Warty Security Team'),
 	(SELECT id from Distrorelease WHERE name = 'warty'),
 	4);
 
 INSERT INTO Distroreleaserole (person, distrorelease, role) 
 	VALUES(
-	(SELECT id from Person WHERE teamdescription = 'Warty Gnome Team'),
+	(SELECT id from Person WHERE displayname = 'Warty Gnome Team'),
 	(SELECT id from Distrorelease WHERE name = 'warty'),
 	4);
 
 INSERT INTO Distroreleaserole (person, distrorelease, role) 
 	VALUES(
-	(SELECT id from Person WHERE teamdescription = 'Hoary Gnome Team'),
+	(SELECT id from Person WHERE displayname = 'Hoary Gnome Team'),
 	(SELECT id from Distrorelease WHERE name = 'hoary'),
 	4);
 
@@ -1241,13 +1261,13 @@ INSERT INTO Distributionrole (person, distribution, role)
 
 INSERT INTO Distributionrole (person, distribution, role) 
 	VALUES(
-	(SELECT id from Person WHERE teamdescription='Ubuntu Security Team'),
+	(SELECT id from Person WHERE displayname = 'Ubuntu Security Team'),
 	(SELECT id from Distribution WHERE name = 'ubuntu'),
 	3);
 
 INSERT INTO Distributionrole (person, distribution, role) 
 	VALUES(
-	(SELECT id from Person WHERE teamdescription = 'Ubuntu Gnome Team'),
+	(SELECT id from Person WHERE displayname = 'Ubuntu Gnome Team'),
 	(SELECT id from Distribution WHERE name = 'ubuntu'),
 	3);
 

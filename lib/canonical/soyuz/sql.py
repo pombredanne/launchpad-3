@@ -369,7 +369,9 @@ class DistroTeamApp(object):
 # new People Branch
 class PeopleApp(object):
     def __init__(self):
-        self.entries = SoyuzPerson.select('teamowner IS NULL').count()
+        #FIXME these names are totaly crap
+        self.p_entries = SoyuzPerson.select('teamowner IS NULL').count()
+        self.t_entries = SoyuzPerson.select('teamowner IS NOT NULL').count()
 
     #FIXME: traverse by ID ?
     def __getitem__(self, id):
@@ -380,14 +382,54 @@ class PeopleApp(object):
             raise
 
     def __iter__(self):
-        return iter(SoyuzPerson.select('teamowner IS NULL'))
+        #FIXME is that the only way to ORDER
+        return iter(SoyuzPerson.select('1=1 ORDER by displayname'))
 
 class PersonApp(object):
     def __init__(self, id):
         self.id = id
         self.person = SoyuzPerson.get(self.id)
+
         # FIXME: Most of this code probably belongs as methods/properties of
         #        SoyuzPerson
+
+        try:
+            self.members = Membership.selectBy(teamID=self.id)
+            if self.members.count() == 0:
+                self.members = None                
+        except IndexError:
+            self.members = None
+
+        try:
+            self.teams = TeamParticipation.selectBy(personID=self.id)
+            if self.teams.count() == 0:
+                self.teams = None                
+        except IndexError:
+            self.teams = None
+
+        try:
+            #thanks spiv !
+            query = "team = %d "%self.id
+            query += "AND Person.id = TeamParticipation.person "
+            query += "AND Person.teamowner IS NOT NULL"
+            
+            self.subteams = TeamParticipation.select(query)
+            
+            if self.subteams.count() == 0:
+                self.subteams = None                
+        except IndexError:
+            self.subteams = None
+
+        try:
+            self.distroroles = DistributionRole.selectBy(personID=self.id)
+        except IndexError:
+            self.distroroles = None
+
+        try:
+            self.distroreleaseroles = DistroReleaseRole.selectBy(personID=self.id)
+        except IndexError:
+            self.distroreleaseroles = None
+            
         try:
             # Prefer validated email addresses
             self.email = SoyuzEmailAddress.selectBy(

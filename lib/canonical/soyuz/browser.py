@@ -2,7 +2,7 @@ from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
 from canonical.soyuz.database import SoyuzSourcePackage, SoyuzBinaryPackage
 from sqlobject import LIKE, OR, AND
 
-
+from canonical.database.sqlbase import quote
 
 class DistrosSearchView(object):
 
@@ -38,12 +38,12 @@ class PeopleSearchView(object):
 
         name = self.request.get("name", "")
 
-        #FIXME: add operator '%' to query all persons
-        #FIXME: use 'UPPER(field) LIKE UPPER('%%name%%') 
         if name:
-            name_like = LIKE(SoyuzPerson.q.displayname,
-                             '%%' + name + '%%')
-            self.results = SoyuzPerson.select(AND(name_like))
+            name = name.replace('%', '%%')
+            query = quote('%%'+ name.upper() + '%%')
+
+            self.results = SoyuzPerson.select('UPPER(displayname) LIKE %s OR \
+            UPPER(teamdescription) LIKE %s' %(query, query))
 
             self.entries = self.results.count()
             self.enable_results = True

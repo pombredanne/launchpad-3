@@ -546,15 +546,15 @@ class Membership(SQLBase):
 
     def _rolename(self):
         for role in dbschema.MembershipRole.items:
-            if role.value == value:
+            if role.value == self.role:
                 return role.title
         return 'Unknown'
     
     rolename = property(_rolename)
 
     def _statusname(self):
-        for status in dbschema.MembershipRole.items:
-            if status.value == value:
+        for status in dbschema.MembershipStatus.items:
+            if status.value == self.status:
                 return status.title
         return 'Unknown'
     

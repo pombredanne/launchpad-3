@@ -206,7 +206,7 @@ class IDistroReleaseTeamApp(Interface):
 
 class IDistroReleaseRole(Interface):
     """A DistroReleaseRole Object """
-    release= Attribute("Release")
+    distrorelease= Attribute("Release")
     person = Attribute("Person")
     role = Attribute("Role")
     rolename = Attribute("Rolename")
@@ -220,7 +220,8 @@ class IDistributionRole(Interface):
 
 class IPeopleApp(Interface):
     """A People Tag """
-    entries = Attribute("Number of person entries")
+    p_entries = Attribute("Number of person entries")
+    t_entries = Attribute("Number of teams entries")
 
     def __getitem__(release):
         """retrieve personal by name"""
@@ -239,6 +240,12 @@ class IPersonApp(Interface):
     irc = Attribute("IRC")    
     gpg = Attribute("GPG")
 
+    members = Attribute("Members of a Team")
+    teams = Attribute("Team which I'm a member")
+    subteams = Attribute("Sub Teams")
+    distroroles = Attribute("Distribution Roles")
+    distroreleaseroles = Attribute("Distrorelase Roles")
+    
 # new people related table interfaces
 
 class ISoyuzEmailAddress(Interface):

@@ -14,82 +14,148 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Personal Page for <span
-  tal:content="context/person/displayname">context</span> </h1>
+  <h1><span tal:content="context/person/displayname">context</span>
+  Page </h1>
 
  <table width="100%">
- <tr><td>
-  <h3>Personal Information</h3>
-  </td><td>
-  <h3><span tal:content="context/person/displayname">context</span> Roles</h3>
-  </td></tr>
-  <tr><td>
+ <tr><td valign="top"> 
     <div>
     <table>
+       <legend><h3>Private Information</h3></legend>
        <tr><td>Name</td><td><span
          tal:content="context/person/displayname">
          context</span> </td></tr>
+
+       <tr tal:condition="context/person/teamowner">
+       <td>Owner</td>
+       <td><a tal:attributes="href string:../${context/person/teamowner/id}"
+              tal:content="context/person/teamowner/displayname">
+              OWNER</a></td>
+       </tr>
+
+       <tr tal:condition="context/person/teamdescription">
+       <td>Description</td><td tal:content="context/person/teamdescription">
+           DESCRIPTION</td>
+       </tr>
+
        <tr tal:condition="context/email">
        <td>Email</td><td tal:content="context/email/email">EMAIL</td>
        </tr>
+
        <tr tal:condition="context/wiki">
        <td>Wiki</td><td> <span tal:content="context/wiki/wiki"/>
        <span tal:content="context/wiki/wikiname"/></td>
        </tr>
+
        <tr tal:condition="context/irc">
        <td>IRC</td><td><span tal:content="context/irc/nickname"/> at 
        <span tal:content="context/irc/network"/></td>
        </tr> 
+
        <tr tal:condition="context/jabber">
        <td>Jabber</td><td tal:content="context/jabber/jabberid"></td>
        </tr> 
+
        <tr tal:condition="context/gpg">
        <td>GPG</td><td tal:content="context/gpg/keyid"></td>
        </tr>
+
        <tr><td></td><td align="right"><a href="+edit">
-       Edit Personal Information</a>
+       Edit Private Information</a>
        </td></tr>
    </table>
    </div> 
-   </td><td> 
-    <div class="dummy">
-      <ul>
-        <li>ALL - DUMMY</li>
-        <li>Release manager for <a href="">Warty</a></li>
-        <li>Release manager for <a href="">Hoary</a></li>
-        <li>Security Team for <a href="">Ubuntu</a></li>
-      </ul>
+   <!--Roles distro and distrorelease -->
+    </td><td valign="top" tal:condition="not:context/person/teamowner"> 
+    <div>
+      <table>
+        <legend><h3>Roles</h3></legend>
+        <tr tal:repeat="role context/distroroles">
+	<td><span tal:content="role/rolename">ROLENAME</span> on 
+	<span tal:content="role/distribution/title">DISTRO</span></td>
+	</tr>
+	<tr tal:repeat="role context/distroreleaseroles">
+	<td><span tal:content="role/rolename">ROLENAME</span> on 
+	<span tal:content="role/distrorelease/displayname">RELEASE</span></td>
+	</tr>
+      </table>
     </div>
-  </td></tr>     
-  <tr><td>
-    <h3><span tal:content="context/person/displayname">context</span> 
-    Bugs Board</h3>
-  </td><td>
-    <h3>Packages Maintained by <span 
-        tal:content="context/person/displayname">context</span>
-    </h3>
   </td></tr>
+  <!--Membership if person case-->     
+  <tr tal:condition="context/person/teamowner">
+   <td> <div> 
+   <table>
+   <legend><h3>Members</h3></legend>
+
+   <tr tal:condition="not:context/members">
+      <td>This Team has no Member yet</td></tr>
+
+   <tr tal:condition="context/members">
+      <th>Name</th><th>Role</th><th>Status</th></tr>
+
+   <tr tal:repeat="member context/members">
+       <td><a tal:attributes="href string:../${member/person/id}"
+	      tal:content="member/person/displayname">MEMBER</a></td>
+       <td tal:content="member/rolename">ROLE</td>
+       <td tal:content="member/statusname">STATUS</td>
+   </tr>
+   <tr><td/><td/><td align="right"><a href="+add">
+           Add Member</a></td></tr>
+   </table>
+   </div>
+  </td><td>
+  <div> 
+   <table>
+   <legend><h3>Sub Teams</h3></legend>
+
+   <tr tal:condition="not:context/subteams">
+      <td>This Team has no Sub teams yet</td></tr>
+
+   <tr tal:repeat="team context/subteams">
+       <td><a tal:attributes="href string:../${team/person/id}"
+	      tal:content="team/person/displayname">SUBTEAM</a></td>
+   </tr>
+
+   <tr><td/><td/><td align="right"><a href="+create">
+           Create a Sub Team</a></td></tr>
+   </table>
+   </div>
+  </td></tr>
+  <!--TeamParticipation anyway -->
+  <tr tal:condition="context/teams">
+   <td> <div> 
+   <table>
+   <legend><h3>My Teams</h3></legend>
+   <tr tal:repeat="team context/teams">
+       <td><a tal:attributes="href string:../${team/team/id}"
+	      tal:content="team/team/displayname">MEMBER</a></td>
+   </tr>
+   </table>
+   </div>
+  </td></tr>
+  <!-- Package Maintainer  -->
   <tr><td>
   <div class="dummy">
+   <table>
+     <legend><h3>Packages Maintained by:</h3></legend>
+     <tr><td><a href="">Apt</a></td></tr>
+     <tr><td><a href="">Dselect</a></td></tr>
+     <tr><td><a href="">Dpkg</a></td></tr>
+     <tr><td><a href="">Lintian</a></td></tr>
+     <tr><td><a href="">Deb-helper</a></td></tr>
+   </table>
+  </div>
+  <!-- Malone Portlet -->
+  </td><td valign="top">
+  <div class="dummy">
     <table>
-      <tr> ALL- DUMMY</tr>
+      <legend><h3>Bugs Board</h3></legend>
       <tr><td><b>ASSIGNED</b></td><th>221</th></tr>
       <tr><td><b>OPEN</b></td><th>22</th></tr>
       <tr><td><b>RESOLVED</b></td><th>199</th></tr>
       <tr><td><b>SUBMITED</b></td><th>139</th></tr>
       <tr><td></td><td><a href="">More Bugs</a></td></tr>   
     </table>
-  </div>
-  </td><td>
-  <div class="dummy">
-   <ul>
-     <li> ALL DUMMY </li>
-     <li><a href="">Apt</a></li>
-     <li><a href="">Dselect</a></li>
-     <li><a href="">Dpkg</a></li>
-     <li><a href="">Lintian</a></li>
-     <li><a href="">Deb-helper</a></li>
-   </ul>
   </div>
   </td></tr>
   </table>
