@@ -22,6 +22,9 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase
 
 from canonical.lp import dbschema
+from canonical.launchpad.interfaces import IBug, IBugAttachment, IBugActivity, \
+    IBugExternalRef, IBugMessage, IBugSubscription, IProductBugAssignment, \
+    ISourcepackageBugAssignment, IBugSystemType, IBugWatch
 
 def is_allowed_filename(value):
     if '/' in value: # Path seperator
