@@ -11,7 +11,8 @@ SETUPFLAGS=
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
 
-default: test
+# DO NOT ALTER : this should just build by default
+default: inplace
 
 check:
 	$(MAKE) -C sourcecode build
@@ -78,10 +79,11 @@ ftest_inplace: inplace
 	env PYTHONPATH=$(PYTHONPATH) \
 	$(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
-# XXX What should the default be?
-test: test_inplace
+### SteveA says these should be ripped
+#test: 
+#test_inplace
 
-ftest: ftest_inplace
+#ftest: ftest_inplace
 
 run: inplace
 	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) \
