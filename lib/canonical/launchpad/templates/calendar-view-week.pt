@@ -40,41 +40,16 @@
           <a tal:attributes="href context/nextURL">Next -&gt;</a>
 
       <table border="1">
-        <tr>
-          <td>
-            <h2><a tal:attributes="href context/monday/dayURL"
-                   tal:content="context/monday/dayname">Monday</a></h2>
+        <tr tal:repeat="row context/layout">
+          <div tal:omit-tag="" tal:repeat="daynum row">
+          <td tal:condition="daynum"
+              tal:attributes="rowspan python:context.rowspans[daynum-1]">
+            <div tal:define="day python:context.days[daynum-1]">
+            <h2><a tal:attributes="href day/dayURL"
+                   tal:content="day/dayname">Monday</a></h2>
+            </div>
           </td>
-          <td>
-            <h2><a tal:attributes="href context/tuesday/dayURL"
-                   tal:content="context/tuesday/dayname">Tuesday</a></h2>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <h2><a tal:attributes="href context/wednesday/dayURL"
-                   tal:content="context/wednesday/dayname">Wednesday</a></h2>
-          </td>
-          <td>
-            <h2><a tal:attributes="href context/thursday/dayURL"
-                   tal:content="context/thursday/dayname">Thursday</a></h2>
-          </td>
-        </tr>
-        <tr>
-          <td rowspan="2">
-            <h2><a tal:attributes="href context/friday/dayURL"
-                   tal:content="context/friday/dayname">Friday</a></h2>
-          </td>
-          <td>
-            <h2><a tal:attributes="href context/saturday/dayURL"
-                   tal:content="context/saturday/dayname">Saturday</a></h2>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <h2><a tal:attributes="href context/sunday/dayURL"
-                   tal:content="context/sunday/dayname">Sunday</a></h2>
-          </td>
+          </div>
         </tr>
       </table>
         </div>

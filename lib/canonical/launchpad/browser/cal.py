@@ -16,6 +16,7 @@ from canonical.launchpad.interfaces import ICalendarView, ICalendarWeekView
 from canonical.launchpad.interfaces import ICalendarDayView, ICalendarMonthView
 from canonical.launchpad.interfaces import ICalendarYearView
 from canonical.launchpad.interfaces import ICalendarDayInfo, ICalendarEventInfo
+from canonical.launchpad.interfaces import ICalendarMonthInfo
 
 from schoolbell.utils import prev_month, next_month
 from schoolbell.utils import weeknum_bounds, check_weeknum
@@ -125,6 +126,16 @@ class CalendarView(object):
         self.monthViewURL = '../%04d-%02d' % (date.year, date.month)
         self.yearViewURL = '../%04d' % date.year
 
+class MonthInfo(object):
+    implements(ICalendarMonthInfo)
+
+    def __init__(self, year, month):
+        self.monthname = monthnames[month-1]
+        self.days = []
+        for i in range(calendar.monthrange(year, month)[1]):
+            self.days.append(DayInfo(date(year, month, i+1)))
+        self.layout = calendar.monthcalendar(year, month)
+
 class DayInfo(object):
     implements(ICalendarDayInfo)
 
@@ -190,14 +201,6 @@ class WeekView(CalendarView):
         for i in range(7):
             day = DayInfo(start + timedelta(days=i))
             self.days.append(day)
-        # XXXX : would be nice if I didn't need these.
-        self.monday = self.days[0]
-        self.tuesday = self.days[1]
-        self.wednesday = self.days[2]
-        self.thursday = self.days[3]
-        self.friday = self.days[4]
-        self.saturday = self.days[5]
-        self.sunday = self.days[6]
 
         # find events for the week
         self.events = []
@@ -207,6 +210,15 @@ class WeekView(CalendarView):
         for event in self.calendar.expand(start, end):
             ev = EventInfo(event)
             self.days[ev.dtstart.weekday()].events.append(ev)
+
+        self.layout = [ [ 1, 2 ],
+                        [ 3, 4 ],
+                        [ 5, 6 ],
+                        [ 0, 7 ] ]
+        self.rowspans = [ None, None, None, None, 2, None, None ]
+
+        # self.layout = [[ 1, 2, 3, 4, 5, 6, 7 ]]
+        # self.rowspans = [ None, None, None, None, None, None, None ]
 
 class MonthView(CalendarView):
     """A month view of the calendar."""
@@ -231,14 +243,14 @@ class MonthView(CalendarView):
         self._setViewURLs(start)
 
         # create dayinfo instances for each day of the month
-        days = []
+        self.days = []
         for i in range(calendar.monthrange(year, month)[1]):
-            days.append(DayInfo(date(year, month, i+1)))
+            self.days.append(DayInfo(date(year, month, i+1)))
 
         # convert to UTC time offsets
-        start = datetime(start.year, start.month, start.day,
+        start = datetime(year, month, 1,
                          0, 0, 0, 0, user_timezone).astimezone(UTC)
-        end = datetime(next.year, next.month, next.day,
+        end = datetime(next.year, next.month, 1,
                          0, 0, 0, 0, user_timezone).astimezone(UTC)
 
         for event in self.calendar.expand(start, end):
@@ -246,16 +258,7 @@ class MonthView(CalendarView):
             self.days[ev.dtstart.day - 1].events.append(ev)
 
         # lay out the dayinfo objects in a 2D grid
-        layout = calendar.monthcalendar(year, month)
-        self.days = []
-        for layout_row in layout:
-            row = []
-            for item in layout_row:
-                if item == 0:
-                    row.append(None)
-                else:
-                    row.append(days[item - 1])
-            self.days.append(row)
+        self.layout = calendar.monthcalendar(year, month)
 
 class YearView(CalendarView):
     """A month view of the calendar."""
@@ -273,6 +276,25 @@ class YearView(CalendarView):
         self.nextURL = '../%04d' % (year + 1)
 
         self._setViewURLs(start)
+
+        self.months = []
+        for month in range(1, 13):
+            self.months.append(MonthInfo(year, month))
+
+        # convert to UTC time offsets
+        start = datetime(year, 1, 1,
+                         0, 0, 0, 0, user_timezone).astimezone(UTC)
+        end = datetime(year+1, 1, 1,
+                         0, 0, 0, 0, user_timezone).astimezone(UTC)
+        for event in self.calendar.expand(start, end):
+            ev = EventInfo(event)
+            self.months[ev.dtstart.month - 1].days[ev.dtstart.day - 1].events.append(ev)
+
+        self.daynames = [ d[0] for d in daynames ]
+        self.layout = [ [  1,  2,  3 ],
+                        [  4,  5,  6 ],
+                        [  7,  8,  9 ],
+                        [ 10, 11, 12 ] ]
 
 
 class CalendarEventAddView(AddView):

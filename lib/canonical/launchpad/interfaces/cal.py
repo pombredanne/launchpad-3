@@ -83,21 +83,28 @@ class ICalendarDayView(ICalendarView):
 class ICalendarWeekView(ICalendarView):
     """A week view of a calendar."""
     days = Attribute(_("A list of information about days of the week"))
-    monday = Attribute(_("Information about Monday"))
-    tuesday = Attribute(_("Information about Tuesday"))
-    wednesday = Attribute(_("Information about Wednesday"))
-    thursday = Attribute(_("Information about Thursday"))
-    friday = Attribute(_("Information about Friday"))
-    saturday = Attribute(_("Information about Saturday"))
-    sunday = Attribute(_("Information about Sunday"))
+    layout = Attribute(_("The layout of days in the week"))
+    rowspans = Attribute(_("Rowspans for days in the week"))
 
 class ICalendarMonthView(ICalendarView):
     """A month view of a calendar."""
     daynames = Attribute(_("Translated day names"))
-    days = Attribute(_("A two dimensional array of days in the month"))
+    days = Attribute(_("An array of days in the month"))
+    layout = Attribute(_("The layout of days in the month"))
 
 class ICalendarYearView(ICalendarView):
     """A year view of a calendar."""
+    daynames = Attribute(_("Translated day names"))
+    months = Attribute(_("An array of month structures"))
+    layout = Attribute(_("The layout of months in the year"))
+
+class ICalendarMonthInfo(Interface):
+    """Information about a particular month, used by the year view."""
+    monthname = TextLine(
+        title=_("Month name"),
+        description=_("The name of the month"))
+    days = Attribute(_("An array of the days in this month"))
+    layout = Attribute(_("The layout of days in this month"))
 
 class ICalendarDayInfo(Interface):
     """Information about a particular day, used by the various

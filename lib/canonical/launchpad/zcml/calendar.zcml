@@ -46,6 +46,10 @@
       for="schoolbell.interfaces.ICalendar"
       function="canonical.launchpad.browser.traverseCalendar" />
 
+  <content class="canonical.launchpad.browser.MonthInfo">
+    <allow interface="canonical.launchpad.interfaces.ICalendarMonthInfo" />
+  </content>
+
   <content class="canonical.launchpad.browser.DayInfo">
     <allow interface="canonical.launchpad.interfaces.ICalendarDayInfo" />
   </content>

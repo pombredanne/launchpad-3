@@ -39,8 +39,32 @@
           <a tal:attributes="href context/prevURL">&lt;- Previous</a>
           <a tal:attributes="href context/nextURL">Next -&gt;</a>
 
+          <table>
+            <tr tal:repeat="row context/layout">
+              <td tal:repeat="monthnum row">
+                <div tal:define="month python:context.months[monthnum-1]">
 
-          <p>Year View</p>
+                <h2 tal:content="month/monthname">Month</h2>
+
+                <table border="1">
+                  <tr>
+                    <th tal:repeat="day context/daynames"
+                        tal:content="day">Day of Week</th>
+                  </tr>
+                  <tr tal:repeat="row month/layout">
+                    <td tal:repeat="daynum row">
+                      <div tal:condition="daynum"
+                           tal:define="day python:month.days[daynum-1]">
+                      <a tal:attributes="href day/dayURL"
+                         tal:content="day/date/day">1</a>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+                </div>
+              </td>
+            </tr>
+          </table>
         </div>
       </div>
     </div>

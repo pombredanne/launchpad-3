@@ -44,11 +44,14 @@
               <th tal:repeat="day context/daynames"
                   tal:content="day">Day of Week</th>
             </tr>
-            <tr tal:repeat="row context/days">
-              <td tal:repeat="day row"><div tal:condition="day">
+            <tr tal:repeat="row context/layout">
+              <td tal:repeat="daynum row">
+                <div tal:condition="daynum"
+                     tal:define="day python:context.days[daynum-1]">
                 <a tal:attributes="href day/dayURL"
                    tal:content="day/date/day">1</a>
-              </div></td>
+                </div>
+              </td>
             </tr>
           </table>
         </div>
