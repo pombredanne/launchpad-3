@@ -1,0 +1,93 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+      <h1>Send this page to somebody</h1>
+
+      <div class="documentDescription">
+        (Not working yet :)
+        Fill in the email address of the person to send an email with a reference to this page.
+      </div>
+
+
+      <form name="sendto_form"
+            action="index_html/sendto_form" method="post"
+            enctype="multipart/form-data">
+
+        <fieldset>
+
+          <legend>Address info</legend>
+
+          <div class="field">
+
+            <label for="send_to_address">Send to</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    The e-mail address to send this link to.
+                  </div>
+
+                  <div></div>
+
+                  <input type="text" id="send_to_address"
+                         name="send_to_address" size="25"
+                         tabindex="1" />
+          </div>
+
+          <div class="field">
+
+            <label for="send_from_address">From</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    Your email address.
+                  </div>
+
+                  <div></div>
+
+                  <input type="text" id="send_from_address"
+                         name="send_from_address" size="25"
+                         tabindex="2" value="" />
+          </div>
+
+          <div class="field">
+            <label>Comment</label>
+
+            <div class="formHelp">
+              A comment about this link.
+            </div>
+
+            <textarea cols="80" rows="5" tabindex="3"
+                      name="comment"></textarea>
+          </div>
+
+          <div class="formControls">
+            <input class="context" tabindex="4"
+                   type="submit" name="form.button.Send"
+                   value="Send" />
+          </div>
+
+          <input type="hidden" name="form.submitted" value="1" />
+
+        </fieldset>
+
+      </form>
+
+</div>
+
+</body>
+</html>

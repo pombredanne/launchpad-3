@@ -1,0 +1,96 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Search</h1>
+
+    <form action="search-results"
+          method="get">
+    <fieldset>
+        <legend>Search</legend>
+
+        <div class="field">
+            <label>Project name</label>
+            <div class="formHelp">
+            Enter the name or type of project.
+            </div>
+            <input type="text" />
+            <a href="search">Advanced Search</a>
+        </div>
+
+        <div class="formControls">
+            <input type="submit" value="Search" />
+        </div>
+    </form>
+
+    <h1>Search results</h1>
+
+    <p>
+    Did you not find what you were looking for? Try the
+    <a href="">Advanced Search</a>
+    for more precise search options.
+    </p>
+
+    <strong>
+    <span>234</span> items matching your criteria.
+    </strong>
+
+    <a href="">
+    RSS feed of these search results
+    </a>
+
+    <!-- Search results -->
+
+    <dl>
+        <div tal:repeat="project view/projects">
+            <dt>
+                <a tal:attributes="href string:projects/${project/name}"
+                    tal:content="project/title">Project page</a>
+
+                <span class="discreet"
+                      title="Relevance">
+                    [<span>85</span>%]
+                </span>
+
+                <span class="discreet">
+                last updated by
+                <span>Author</span>,
+                <span>24th of March, 2004</span>
+                </span>
+
+            </dt>
+
+            <dd tal:content="project/description">
+            Mozilla offers a full suite of integrated Internet applications
+            including a web browser, e-mail client, address book, web page
+            composer, Internet chat software and calendar application.
+            </dd>
+        </div>
+    </dl>
+
+    <p>
+    If you wish to translate a project which is not in Rosetta yet, you can
+    <a href="projects/+submit">request a project</a>.
+    </p>
+
+    <!-- Batch Navigation -->
+    <div class="listingBar">
+    Batch navigation
+    </div>
+
+</div>
+
+</body>
+</html>

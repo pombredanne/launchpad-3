@@ -1,0 +1,129 @@
+<configure xmlns="http://namespaces.zope.org/browser"
+           xmlns:lp="http://launchpad.canonical.com">
+
+<!-- This file has the declarations for page templates
+
+     Use the lp:url attribute to refer to URLs in the table on the wiki.
+  -->
+
+  <!-- pages for the collection of projects -->
+  <pages for="canonical.rosetta.interfaces.IProjects"
+         permission="zope.Public"
+         class="canonical.rosetta.browser.ViewProjects"
+         lp:url="Rosetta/projects">
+    <page name="+submit"
+          template="templates/projects-submit.pt"
+          lp:url="Rosetta/projects/+submit" />
+  </pages>
+
+  <traverse for="canonical.rosetta.interfaces.IProjects"
+            getter="__getitem__" />
+
+  <!-- pages for a project -->
+  <pages for="canonical.rosetta.interfaces.IProject"
+         permission="zope.Public"
+         class="canonical.rosetta.browser.ViewProject"
+         lp:url="Rosetta/projects/$Project.name">
+    <page name="index"
+          template="templates/project-index.pt"
+          lp:url="Rosetta/projects/$Project.name/index" />
+  </pages>
+
+  <traverse for="canonical.rosetta.interfaces.IProject" getter="poTemplate" />
+
+  <!-- pages for a POTemplate -->
+  <pages for="canonical.rosetta.interfaces.IPOTemplate"
+         permission="zope.Public"
+         class="canonical.rosetta.browser.ViewPOTemplate"
+         lp:url="Rosetta/projects/$Project.name/$POTemplate.name">
+    <page name="index"
+          template="templates/potemplate-index.pt"
+          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/index" />
+    <page name="upload"
+          template="templates/potemplate-upload.pt"
+          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/upload" />
+    <page name="translate"
+          template="templates/potemplate-translate.pt"
+          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/translate" />
+  </pages>
+
+  <traverse for="canonical.rosetta.interfaces.IPOTemplate"
+            function="canonical.rosetta.browser.traverseIPOTemplate" />
+
+  <!-- pages for a POFile -->
+  <pages for="canonical.rosetta.interfaces.IPOFile"
+         permission="zope.Public"
+         class="canonical.rosetta.browser.ViewPOFile"
+         lp:url="Rosetta/projects/$Project/name/$POTemplate.name/$POFile.language">
+    <page name="index"
+          template="templates/pofile-index.pt"
+          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/$POFile.language"/>
+    <page name="resources"
+          template="templates/project-language-resources.pt"
+          lp:url="Rosetta/projects/$Project/name/$POTemplate.name/$POFile.language/resources" />
+  </pages>
+
+  <page name="export.po"
+        for="canonical.rosetta.interfaces.IPOTemplate"
+        permission="zope.Public"
+        class="canonical.rosetta.browser.ViewPOExport"
+	attribute="__call__"
+        lp:url="Rosetta/projects/$Project.name/$POTemplate.name/$Language.code.po" />
+
+  <!-- pages for the rosetta application -->
+  <pages for="canonical.rosetta.interfaces.IRosettaApplication"
+         permission="zope.Public"
+         lp:url="Rosetta">
+    <page name="index"
+          template="templates/rosetta-index.pt"
+          lp:url="Rosetta/index" />
+  </pages>
+
+  <!-- pages that limi put in without knowing which interface they should
+       be bound to - feel free to move around as required -->
+  <pages for="canonical.rosetta.interfaces.IRosettaApplication"
+         permission="zope.Public"
+         lp:url="Rosetta">
+    <page name="about"
+          template="templates/about.pt"
+          lp:url="Rosetta/about" />
+    <page name="maintainer"
+          template="templates/dashboard-maintainer.pt"
+          lp:url="Rosetta/maintainer" />
+    <page name="search"
+          template="templates/search.pt"
+          lp:url="Rosetta/search" />
+    <page name="interest"
+          template="templates/project-interest.pt"
+          lp:url="Rosetta/project/+interest" />
+    <page name="sitemap"
+          template="templates/sitemap.pt"
+          lp:url="Rosetta/sitemap" />
+    <page name="legal"
+          template="templates/legal.pt"
+          lp:url="Rosetta/legal" />
+    <page name="sendto"
+          template="templates/sendto.pt"
+          lp:url="Rosetta/sendto" />
+  </pages>
+
+  <pages for="canonical.rosetta.interfaces.IRosettaApplication"
+         permission="zope.Public"
+         class="canonical.rosetta.browser.TranslatorDashboard"
+         >
+    <page name="translator"
+          template="templates/dashboard-translator.pt"
+          lp:url="Rosetta/translator" />
+  </pages>
+
+  <pages for="canonical.rosetta.interfaces.IRosettaApplication"
+         permission="zope.Public"
+         class="canonical.rosetta.browser.ViewSearchResults"
+         >
+    <page name="search-results"
+          template="templates/search-results.pt"
+          lp:url="Rosetta/search-results" />
+  </pages>
+
+</configure>
+<!-- arch-tag: bd9952cf-5198-4ab5-a97f-8d2d9893b313 -->

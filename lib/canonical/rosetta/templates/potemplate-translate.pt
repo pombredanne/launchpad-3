@@ -1,0 +1,273 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Translating <span tal:replace="context/product/project/title">Project
+        title</span> &mdash; <span tal:replace="context/title">POT file
+        title</span></h1>
+
+    <div style="float:right;">
+        <input type="checkbox" checked="checked" class="noborder" /> 
+        Show String Information <br />
+        <input type="checkbox" class="noborder" /> 
+        Show only untranslated messages<br />
+        <input type="checkbox" class="noborder" checked="checked" /> 
+        Save changes when moving between pages
+    </div>
+
+    <div class="documentDescription">
+    Hint: use the <code>Tab</code> key to move quickly between translation fields.
+    </div>
+
+    <!-- Navigation XXX: not dynamic yet -->
+    <div class="listingBar">
+        <span class="previous">
+            <a href="">
+            &laquo; Previous <span>5</span> messages
+            </a>
+        </span>
+
+        <span class="next">
+            <a href="">
+            Next <span>5</span> messages &raquo;
+            </a>
+        </span>
+
+        <a href="">1</a>
+
+        [<span>2</span>]
+
+    <!-- Pagelist with links to next pages for quick navigation -->
+        <a href="">3</a>
+        <a href="">4</a>
+        <a href="">5</a>
+
+    <!-- Pagelist with quantum leap links to next pages for quick navigation -->
+
+        ...
+
+        <a href="">226</a>
+
+    </div>
+
+    <tal:msgstring repeat="set context">
+            <div tal:define="isPlural python: len(list(set.messageIDs())) > 1">
+        <fieldset class="message-strings">
+            <legend>String #120</legend>
+
+        <span tal:condition="isPlural">
+            <div class="field">
+                <label class="language-code">en[0]</label>
+                <span tal:content="python: set.messageIDs()[0].text">singular</span>
+            </div>
+
+            <div class="field">
+                <label class="language-code">en[1]</label>
+                <span tal:content="python: set.messageIDs()[1].text">plural</span>
+            </div>
+
+            <fieldset>
+                <legend>Plural forms translation</legend>
+
+                <span tal:repeat="language view/languages">
+
+                    <div class="field">
+                         <label class="language-code"
+                            tal:content="language/englishName">pt_BR[0]</label>
+                        <img src="++resource++info.gif" title="Example: 1 dead horse." />
+                        <input type="text"
+                           xtal:attributes="value python:sighting.currentTranslation(language).text[0]" />
+                    </div>
+
+                    <div class="field">
+                        <label class="language-code"
+                           tal:content="language/englishName">pt_BR[1]</label>
+                        <img src="++resource++info.gif" title="Example: 5 dead horses." />
+                        <input type="text"
+                           xtal:attributes="value python:sighting.currentTranslation(language).text[1]" />
+                    </div>
+
+                </span>
+            </fieldset>
+        </span>
+
+        <span tal:condition="not:isPlural">
+
+            <div class="field">
+                <label class="language-code">en</label>
+                <span tal:content="python: set.messageIDs()[0].text">sighting</span>
+            </div>
+
+            <div class="field" tal:repeat="language view/languages">
+                <label class="language-code"
+                    tal:content="language/englishName">pt_BR</label>
+                <input type="text"
+                       xtal:attributes="value python:sighting.currentTranslation(language).text[0]" />
+            </div>
+        </span>
+
+        </fieldset>
+
+        <fieldset class="message-strings">
+
+            <legend>String information</legend>
+
+            <div class="field">
+                <label>Comment</label>
+                <img src="++resource++arrowDown.gif" />
+                <div class="discreet">This refers to the content type.</div>
+            </div>
+
+            <div class="field">
+                <label>From file</label>
+                <span>./plone_forms/discussion_reply_form.pt</span>
+            </div>
+
+            <div class="field">
+                <label>Code reference</label>
+                <img src="++resource++arrowRight.gif" />
+            </div>
+        </fieldset>
+
+        <div class="visualClear"></div>
+            </div>
+    </tal:msgstring>
+        
+<!-- Multiline example start -->
+
+    <p class="discreet">
+    This is a static version of how multiline strings are handled:
+    </p>
+
+    <fieldset class="message-strings">
+        <legend>String #121</legend>
+
+        <div class="field">
+            <label class="language-code">en</label><br />
+            <span>English <br />Multiline-Blah</span>
+        </div>
+
+        <div class="field">
+            <label class="language-code">pt</label><br />
+            <span>Portugues <br />Multiline-Blah</span>
+        </div>
+
+        <div class="field">
+            <label class="language-code">pt-br</label>
+            <textarea type="text" columns="60" rows="5">Brazilian 
+Multiline-Blah</textarea>
+            <div class="formHelp">Fill in the Brazilian Portuguese translation.</div>
+        </div>
+
+    </fieldset>
+
+    <fieldset class="message-strings">
+
+        <legend>String information</legend>
+
+        <div class="field">
+            <label>Comment</label>
+            <img src="++resource++arrowRight.gif" />
+        </div>
+
+        <div class="field">
+            <label>From file</label>
+            <span>./plone_forms/discussion_reply_form.pt</span>
+        </div>
+
+        <div class="field">
+            <label>Code reference</label>
+            <img src="++resource++arrowDown.gif" />
+            <pre>
+&lt;input class="context" 
+    i18n:attributes="value" 
+    name="form.button.Save" 
+    tabindex="" 
+    tal:attributes="tabindex tabindex/next;
+                    name string:discussion_reply:method;" 
+    type="submit" 
+    value="Add Comment" /&gt;
+            </pre>
+
+        </div>
+    </fieldset>
+
+    <div class="visualClear"></div>
+<!-- Multiline example end -->
+
+<!-- Plural example start -->
+
+    <p class="discreet">
+    Plural translation example (XXX: not dynamic yet):
+    </p>    
+    <fieldset class="message-strings">
+        <legend>String #120</legend>
+
+        <div class="field">
+            <label class="language-code">en[0]</label>
+            <span>English Singular</span>
+        </div>
+
+        <div class="field">
+            <label class="language-code">en[1]</label>
+            <span>English Plural</span>
+        </div>
+
+        <fieldset>
+            <legend>Plural forms translation</legend>
+
+            <div class="field">
+                <label class="language-code">pt-br[0]</label>
+                <img src="++resource++info.gif" title="Example: 1 dead horse." />
+                <input type="text" value="Brazilian Blah" /><img src="++resource++arrowBottom.gif" title="Clone to other strings" />
+
+            </div>
+            <div class="field">
+                <label class="language-code">pt-br[1]</label>
+                <img src="++resource++info.gif" title="Example: 5 dead horses." />
+                <input type="text" value="Brazilian Blah"/>
+            </div>
+        </fieldset>
+
+    </fieldset>
+
+    <fieldset class="message-strings">
+
+        <legend>String information</legend>
+
+        <div class="field">
+            <label>Comment</label>
+            <img src="++resource++arrowDown.gif" />
+            <div class="discreet">This refers to the content type.</div>
+        </div>
+
+        <div class="field">
+            <label>From file</label>
+            <span>./plone_forms/discussion_reply_form.pt</span>
+        </div>
+
+        <div class="field">
+            <label>Code reference</label>
+            <img src="++resource++arrowRight.gif" />
+        </div>
+    </fieldset>
+
+    <div class="visualClear"></div>
+<!-- Plural example end -->
+
+</div>
+
+</body>
+</html>

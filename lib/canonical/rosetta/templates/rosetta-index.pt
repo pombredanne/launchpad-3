@@ -1,0 +1,47 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Welcome to Rosetta!</h1>
+
+    <div class="documentDescription">
+    Rosetta is a tool that helps with translating applications into your language
+    and to locate whether a certain application or application type is available
+    in your language. Use the search form below to find an application.
+    </div>
+
+    <form action="search-results"
+          method="get">
+    <fieldset>
+        <legend>Search</legend>
+
+        <div class="field">
+            <label>Project name</label>
+            <div class="formHelp">
+            Enter the name or type of project.
+            </div>
+            <input type="text" />
+            <a href="search">Advanced Search</a>
+        </div>
+
+        <div class="formControls">
+            <input type="submit" value="Search" />
+        </div>
+    </form>
+
+</div>
+
+</body>
+</html>
