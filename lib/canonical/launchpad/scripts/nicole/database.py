@@ -315,8 +315,6 @@ class Doap(SQLThing):
                   "wikiurl":             fit.wiki,
                   "sourceforgeproject":  fit.sourceforgeproject,
                   "freshmeatproject":    fit.freshmeatproject,
-                  "autoupdate":          'True',
-                  "reviewed":            'True',
                   }
                                           
         self._insert("project", dbdata)
@@ -335,8 +333,8 @@ class Doap(SQLThing):
         print '@\tProject Role %s Created' % role
 
     def getProject(self, name):
-        return self._query_single("""SELECT id FROM project WHERE name=%s;""",
-                                  (name,))
+        return self._query_single("""SELECT id FROM project WHERE name=%s;
+        """, name)
 
 
     def getProduct(self, project, name):
@@ -369,6 +367,7 @@ class Doap(SQLThing):
                   "programminglang":     fit.plang,
                   "sourceforgeproject":  fit.sourceforgeproject,
                   "freshmeatproject":    fit.freshmeatproject,             
+                  "autoupdate":          'True',
                 }
                                           
         self._update("product", dbdata, ("name='%s'" % product_name))
@@ -385,6 +384,7 @@ class Doap(SQLThing):
         if self.getProduct(project_id, data['project']):
             print '@\tSkipping Already Added Project'        
             return 
+
         fit = FitData(data)
 
         owner = self.ensurePerson(fit.pname, fit.pemail)[0]
@@ -407,6 +407,8 @@ class Doap(SQLThing):
                   "downloadurl":         fit.download,
                   "sourceforgeproject":  fit.sourceforgeproject,
                   "freshmeatproject":    fit.freshmeatproject,
+                  "autoupdate":          'True',
+                  "reviewed":            'False',
                   }
                                           
         self._insert("product", dbdata)
