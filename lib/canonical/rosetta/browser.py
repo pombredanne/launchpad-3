@@ -522,3 +522,84 @@ class TranslatePOTemplate:
         from xml.sax.saxutils import escape
         return "<pre>" + escape(pformat(sets)) + "</pre>"
 
+# XXX: Implement class ViewTranslationEfforts: to create new Efforts
+
+class ViewTranslationEffort:
+    def thereAreTranslationEffortCategories(self):
+        return len(list(self.context.categories())) > 0
+
+    def languageTranslationEffortCategories(self):
+        for language in IPerson(self.request.principal).languages():
+            yield LanguageTranslationEffortCategories(language,
+                self.context.categories())
+
+class LanguageTranslationEffortCategories:
+    def __init__(self, language, translationEffortCategories):
+        self.language = language
+        self._categories = translationEffortCategories
+
+    # XXX: We should create a common method so we reuse code with
+    # LanguageProducts.products()
+    def translationEffortCategories(self):
+        for category in self._categories:
+            total = category.messageCount()
+            currentCount = category.currentCount(self.language.code)
+            rosettaCount = category.rosettaCount(self.language.code)
+            updatesCount = category.updatesCount(self.language.code)
+            nonUpdatesCount = currentCount - updatesCount
+            translated = currentCount  + rosettaCount
+            untranslated = total - translated
+
+            try:
+                currentPercent = float(currentCount) / total * 100
+                rosettaPercent = float(rosettaCount) / total * 100
+                updatesPercent = float(updatesCount) / total * 100
+                nonUpdatesPercent = float (nonUpdatesCount) / total * 100
+                translatedPercent = float(translated) / total * 100
+                untranslatedPercent = float(untranslated) / total * 100
+            except ZeroDivisionError:
+                # XXX: I think we will see only this case when we don't have
+                # anything to translate.
+                currentPercent = 0
+                rosettaPercent = 0
+                updatesPercent = 0
+                nonUpdatesPercent = 0
+                translatedPercent = 0
+                untranslatedPercent = 100
+           
+            # NOTE: To get a 100% value:
+            # 1.- currentPercent + rosettaPercent + untranslatedPercent
+            # 2.- translatedPercent + untranslatedPercent 
+            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
+            # untranslatedPercent
+            retdict = {
+                'name': category.name,
+                'title': category.title,
+                'poLen': total,
+                'poCurrentCount': currentCount,
+                'poRosettaCount': rosettaCount,
+                'poUpdatesCount' : updatesCount,
+                'poNonUpdatesCount' : nonUpdatesCount, 
+                'poTranslated': translated,
+                'poUntranslated': untranslated,
+                'poCurrentPercent': currentPercent,
+                'poRosettaPercent': rosettaPercent,
+                'poUpdatesPercent' : updatesPercent,
+                'poNonUpdatesPercent' : nonUpdatesPercent,
+                'poTranslatedPercent': translatedPercent,
+                'poUntranslatedPercent': untranslatedPercent,
+            }
+
+            yield retdict
+
+
+# XXX: Is there any way to reuse ViewProduct, we have exactly the same code
+# here.
+class ViewTranslationEffortCategory:
+    def thereAreTemplates(self):
+        return len(list(self.context.poTemplates())) > 0
+
+    def languageTemplates(self):
+        for language in IPerson(self.request.principal).languages():
+            yield LanguageTemplates(language, self.context.poTemplates())
+

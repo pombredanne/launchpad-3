@@ -110,7 +110,6 @@ class RosettaProject(SQLBase):
         return iter(self._productsJoin)
 
     def product(self, name):
-        print name
         ret = RosettaProduct.selectBy(name=name)
 
         if ret.count() == 0:
@@ -1023,4 +1022,199 @@ def personFromPrincipal(principal):
         raise KeyError, principal
     else:
         return ret[0]
+
+class RosettaSchema(SQLBase):
+    implements(ISchema)
+    
+    _table = 'Schema'
+
+    _columns = [
+        ForeignKey(name='owner', foreignKey='RosettaPerson',
+            dbName='owner', notNull=True),
+        StringCol(name='name', dbName='name', notNull=True),
+        StringCol(name='title', dbName='title', notNull=True),
+        StringCol(name='description', dbName='description', notNull=True),
+#        BoolCol(name='extensible', dbName='extensible', notNull=True),
+    ]
+
+    _labelsJoin = MultipleJoin('RosettaLabel', joinColumn='schema')
+
+    def labels(self):
+        return iter(self._labelsJoin)
+
+    def label(self, name):
+        '''SELECT * FROM Label WHERE
+            Label.schema = id AND
+            Label.name = name;'''
+        results = RosettaLabel.select('''
+            Label.schema = %d AND
+            Label.name = %s''' %
+            (self.id, quote(name)))
+
+        if results.count() == 0:
+            raise KeyError, name
+        else:
+            return results[0]
+
+class RosettaLabel(SQLBase):
+    implements(ILabel)
+
+    _table = 'Label'
+
+    _columns = [
+        ForeignKey(name='schema', foreignKey='RosettaSchema', dbName='schema',
+            notNull=True),
+        StringCol(name='name', dbName='name', notNull=True),
+        StringCol(name='title', dbName='title', notNull=True),
+        StringCol(name='description', dbName='description', notNull=True),
+    ]
+
+
+class RosettaCategory(RosettaLabel):
+    implements(ICategory)
+
+    _effortPOTemplatesJoin = MultipleJoin('RosettaTranslationEffortPOTemplate',
+        joinColumn='category')
+
+    def poTemplates(self):
+        # XXX: We assume that template will have always a row because the
+        # database's referencial integrity
+        for effortPOTemplate in _effortPOTemplatesJoin:
+            template = RosettaPOTemplate.selectBy(id=effortPOTemplate.poTemplate)
+            yield template[0]
+
+    def poTemplate(self, name):
+        for template in self.poTemplates():
+            if template.name == name:
+                return template
+
+        raise KeyError, name
+
+    def messageCount(self):
+        count = 0
+        for t in self.poTemplates():
+            count += len(t)
+        return count
+
+    def currentCount(self, language):
+        count = 0
+        for t in self.poTemplates():
+            count += t.currentCount(language)
+        return count
+
+    def updatesCount(self, language):
+        count = 0
+        for t in self.poTemplates():
+            count += t.updatesCount(language)
+        return count
+
+    def rosettaCount(self, language):
+        count = 0
+        for t in self.poTemplates():
+            count += t.rosettaCount(language)
+        return count
+
+
+class RosettaTranslationEfforts(object):
+    implements(ITranslationEfforts)
+
+    def __iter__(self):
+        return iter(RosettaTranslationEffort.select())
+
+    def __getitem__(self, name):
+        ret = RosettaTranslationEffort.selectBy(name=name)
+
+        if ret.count() == 0:
+            raise KeyError, name
+        else:
+            return ret[0]
+
+    def new(self, name, title, shortDescription, description, owner, project):
+        if RosettaTranslationEffort.selectBy(name=name).count():
+            raise KeyError, "There is already a translation effort with that name"
+
+        return RosettaTranslationEffort(name=name,
+                              title=title,
+                              shortDescription=shortDescription,
+                              description=description,
+                              owner=owner, project=project)
+
+    def search(self, query):
+        query = quote('%%' + query + '%%')
+        #query = quote(query)
+        return RosettaTranslationEffort.select('''title ILIKE %s  OR description ILIKE %s''' %
+            (query, query))
+
+
+class RosettaTranslationEffort(SQLBase):
+    implements(ITranslationEffort)
+
+    _table = 'TranslationEffort'
+
+    _columns = [
+        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
+            notNull=True),
+        ForeignKey(name='project', foreignKey='RosettaProject',
+            dbName='project', notNull=True),
+        ForeignKey(name='categoriesSchema', foreignKey='RosettaSchema',
+            dbName='categories', notNull=False),
+        StringCol(name='name', dbName='name', notNull=True, unique=True),
+        StringCol(name='title', dbName='title', notNull=True),
+        StringCol(name='shortDescription', dbName='shortdesc', notNull=True),
+        StringCol(name='description', dbName='description', notNull=True),
+    ]
+
+    def categories(self):
+        '''SELECT * FROM Label
+            WHERE schema=self.categories'''
+        return iter(RosettaCategory.selectBy(schema=self.categories))
+
+    def category(self, name):
+        ret = RosettaCategory.selectBy(name=name, schema=self.categories)
+
+        if ret.count() == 0:
+            raise KeyError, name
+        else:
+            return ret[0]
+
+    def messageCount(self):
+        count = 0
+        for c in self.categories():
+            count += c.messageCount()
+        return count
+
+    def currentCount(self, language):
+        count = 0
+        for c in self.categories():
+            count += c.currentCount(language)
+        return count
+
+    def updatesCount(self, language):
+        count = 0
+        for c in self.categories():
+            count += c.updatesCount(language)
+        return count
+
+    def rosettaCount(self, language):
+        count = 0
+        for c in self.categories():
+            count += c.rosettaCount(language)
+        return count
+
+
+class RosettaTranslationEffortPOTemplate(SQLBase):
+    implements(ITranslationEffortPOTemplate)
+
+    _table = 'TranslationEffortPOTemplate'
+
+    _columns = [
+        ForeignKey(name='translationEffort',
+            foreignKey='RosettaTranslationEffort', dbName='translationeffort',
+            notNull=True),
+        ForeignKey(name='poTemplate', foreignKey='RosettaPOTemplate',
+            dbName='potemplate', notNull=True),
+        ForeignKey(name='category', foreignKey='RosettaCategory',
+            dbName='category', notNull=False),
+        IntCol(name='priority', dbName='priority', notNull=True),
+    ]
 
