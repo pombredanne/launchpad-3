@@ -319,6 +319,8 @@ class TranslatorDashboard:
 
     def submit(self):
         person = self.translator()
+        self.submitted_personal = False
+        self.error_msg = None
         if "SAVE-LANGS" in self.request.form:
             if self.request.method == "POST":
                 oldInterest = list(person.languages())
@@ -350,6 +352,19 @@ class TranslatorDashboard:
                 ssha = SSHADigestEncryptor()
                 if currentPassword and ssha.validate(currentPassword, person.password):
                     # The password is valid
+                    password1 = self.request.form['newPassword1']
+                    password2 = self.request.form['newPassword2']
+                    if password1 and password1 == password2:
+                        try:
+                            person.password = ssha.encrypt(password1)
+                        except UnicodeEncodeError:
+                            self.error_msg = \
+                                "The password can only have ascii characters."
+                    elif password1:
+                        #The passwords are differents.
+                        self.error_msg = \
+                            "The two passwords you entered did not match."
+
                     given = self.request.form['given']
                     if given and person.givenName != given:
                         person.givenName = given
@@ -359,21 +374,12 @@ class TranslatorDashboard:
                     display = self.request.form['display']
                     if display and person.displayName != display:
                         person.displayName = display
-                    password1 = self.request.form['newPassword1']
-                    password2 = self.request.form['newPassword2']
-                    if password1 and password1 == password2:
-                        try:
-                            person.password = ssha.encrypt(password1)
-                        except UnicodeEncodeError:
-                            print "ERROR"
-                    elif password1 != "":
-                        #The passwords are differents.
-                        foo = "bar"
                 else:
-                    # The password is not valid
-                    foo = "bar"
+                    self.error_msg = "The username or password you entered is not valid."
             else:
                 raise RuntimeError("This form must be posted!")
+
+            self.submitted_personal = True
 
 
 class ViewSearchResults:
