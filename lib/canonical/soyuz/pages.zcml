@@ -132,8 +132,6 @@
 
 	
 
-<!-- Tuesday Stuff -->
-
 <traverse for="canonical.soyuz.sql.DistroSourcesApp" getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroSourcesApp"
@@ -252,11 +250,16 @@
 	 name="index.html"
        />
 
-
-
+  <page for="canonical.soyuz.sql.PeopleApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.PeopleAddView"
+	 template="templates/people-add.pt"
+         lp:url="Soyuz/people/+add"
+	 name="+add"
+       />
 
    <pages for="canonical.soyuz.sql.PersonApp"
-	  allowed_attributes="results"	 
+	  allowed_attributes="results context" 
 	  permission="zope.Public"> 
 
 	<page  name="index.html"
@@ -265,6 +268,21 @@
 	/>
    </pages>
 
+  <page for="canonical.soyuz.sql.PersonApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.TeamAddView"
+	 template="templates/person-add.pt"
+         lp:url="Soyuz/people/$person.id/+add"
+	 name="+add"
+       />
+
+  <page for="canonical.soyuz.sql.PersonApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.PersonEditView"
+	 template="templates/person-edit.pt"
+         lp:url="Soyuz/people/$person.id/+edit"
+	 name="+edit"
+       />
 
 
 <traverse for="canonical.soyuz.sql.DistroBinariesApp" getter="__getitem__" />

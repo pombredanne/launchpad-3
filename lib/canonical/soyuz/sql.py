@@ -666,10 +666,10 @@ class SoyuzPerson(SQLBase):
         StringCol('displayname', dbName='displayname'),
         StringCol('password', dbName='password'),
         ForeignKey(name='teamowner', dbName='teamowner',
-                   foreignKey='SoyuzPerson', notNull=True),
+                   foreignKey='SoyuzPerson'),
         StringCol('teamdescription', dbName='teamdescription'),
         IntCol('karma', dbName='karma'),
-        DateTimeCol('karmatimestamp', dbName='karmatimestamp', notNull=True)
+        DateTimeCol('karmatimestamp', dbName='karmatimestamp')
         ]
 
     

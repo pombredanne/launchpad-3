@@ -1,0 +1,183 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Edit <span tal:content="context/person/displayname">DISPLAYNAME</span> 
+	Information</h1>
+
+    <div class="documentDescription">	
+    <p> Here you edit the Information about <span
+    tal:content="context/person/displayname">DISPLAYNAME</span>  
+    </div>
+    
+    <div>
+    <form name="edit" action="" method="POST">
+    <fieldset>
+    <legend><h3>Edit <span
+	tal:content="context/person/displayname">DISPLAYNAME</span>
+	 Information</h3><legend> 
+	<table>
+	<tr><td>
+	<div class="field">
+	    <label>Display Name</label>
+	    <div class="formHelp">
+	    Enter the Display Name.
+            </div>
+	    <input type="text" name="displayname"
+	    tal:attributes="value context/person/displayname|nothing"/>
+	</div>
+	</td></tr>
+
+	<tal:block tal:condition="not:context/person/teamowner">
+	<tr><td>
+	<div class="field">
+	    <label>Given Name</label>
+	    <div class="formHelp">
+	    Enter the Given Name.
+            </div>
+	    <input type="text" name="givenname"
+	    tal:attributes="value context/person/givenname|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Familyname</label>
+	    <div class="formHelp">
+	    Enter the Family Name.
+            </div>
+	    <input type="text" name="familyname"
+	    tal:attributes="value context/person/familyname|nothing"/>
+	</div>
+	</td></tr>
+	</tal:block>
+
+
+	<tal:block tal:condition="context/person/teamowner">
+	<tr><td>
+	<div class="field">
+	    <label>Team Description</label>
+	    <div class="formHelp">
+	    Enter the Team Description.
+            </div>
+            <textarea name="teamdescription" cols="60" rows="6"
+	    tal:content="context/person/teamdescription|nothing">
+	    </textarea>
+	</div>
+	</td></tr>
+	</tal:block>
+
+
+	<tr><td>
+	<div class="field">
+	    <label>Email</label>
+	    <div class="formHelp">
+	    Enter the Email.
+            </div>
+	    <input type="text" name="email"
+	    tal:attributes="value context/email/email|nothing"/>
+	</div>
+	</td></tr>
+
+	<tr><td>
+	<div class="field">
+	    <label>Wiki</label>
+	    <div class="formHelp">
+	    Enter the Wiki
+            </div>
+	    <input type="text" name="wiki" size="40"
+	    tal:attributes="value context/wiki/wiki|nothing"/>
+	</div>
+	</td></tr>
+
+	<tr><td>
+	<div class="field">
+	    <label>Wikiname</label>
+	    <div class="formHelp">
+	    Enter the Wiki Name.
+            </div>
+	    <input type="text" name="wikiname"
+	    tal:attributes="value context/wiki/wikiname|nothing"/>
+	</div>
+	</td></tr>
+
+	<tr><td>
+	<div class="field">
+	    <label>IRC Network</label>
+	    <div class="formHelp">
+	    Enter the IRC Network.
+            </div>
+	    <input type="text" name="network" size="40"
+	    tal:attributes="value context/irc/network|nothing"/>
+	</div>
+	</td></tr>
+
+	<tr><td>
+	<div class="field">
+	    <label>IRC Nickname</label>
+	    <div class="formHelp">
+	    Enter the IRC NickName.
+            </div>
+	    <input type="text" name="nickname"
+	    tal:attributes="value context/irc/nickname|nothing"/>
+	</div>
+	</td></tr>
+
+	<tr><td>
+	<div class="field">
+	    <label>JABBER ID</label>
+	    <div class="formHelp">
+	    Enter the Jabber ID.
+            </div>
+	    <input type="text" name="jabberid" size="40"
+	    tal:attributes="value context/jabber/jabberid|nothing"/>
+	</div>
+	</td></tr>
+
+	<tr><td>
+	<div class="field">
+	    <label>GPG ID</label>
+	    <div class="formHelp">
+	    Enter the GPG ID.
+            </div>
+	    <input type="text" name="gpgid"
+	    tal:attributes="value context/gpg/keyid|nothing"/>
+	</div>
+	</td></tr>
+
+
+	<tr><td>
+	<div class="formControls">
+	  <input type="submit" value="Edit"/>
+	</div>
+	</td></tr>
+	</table>
+  </form>
+  </div>
+
+  <tla:block tal:condition="view/enable_edited">
+  <div>
+  <h4><a tal:attributes="href string:../${context/id}"
+         tal:content="request/displayname">PERSON</a>
+    Modified</h4>
+  </div>
+  </tla:block>
+
+
+
+
+</div>
+
+</body>
+</html>

@@ -1,5 +1,6 @@
 from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
 from canonical.soyuz.database import SoyuzSourcePackage, SoyuzBinaryPackage
+from canonical.soyuz.database import TeamParticipation
 from sqlobject import LIKE, OR, AND
 
 from canonical.database.sqlbase import quote
@@ -42,11 +43,135 @@ class PeopleSearchView(object):
             name = name.replace('%', '%%')
             query = quote('%%'+ name.upper() + '%%')
 
+            #FIXME: 'ORDER by displayname' doesn't work properly 
             self.results = SoyuzPerson.select('UPPER(displayname) LIKE %s OR \
-            UPPER(teamdescription) LIKE %s' %(query, query))
+            UPPER(teamdescription) LIKE %s'%(query,query))
 
             self.entries = self.results.count()
             self.enable_results = True
+
+
+class PeopleAddView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+        self.enable_added = False
+
+        givenname = self.request.get("givenname", "")
+        familyname = self.request.get("familynname", "")
+        displayname = self.request.get("displayname", "")
+        password = self.request.get("password", "")
+
+        
+        if displayname:
+            #FIXME: How to get the true DB result of the INSERT ?
+            self.results = SoyuzPerson(displayname=displayname,
+                                       givenname=givenname,
+                                       familyname=familyname,
+                                       password=password,
+                                       teamownerID=None,
+                                       teamdescription=None,
+                                       karma=None,
+                                       karmatimestamp=None)
+            self.enable_added = True
+
+class TeamAddView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+        self.enable_added = False
+
+        displayname = self.request.get("displayname", "")
+        teamdescription = self.request.get("teamdescription", "")
+
+        #FIXME: How to get the true DB result of the INSERT ?
+        if displayname:
+
+            self.results = SoyuzPerson(displayname=displayname,
+                                       givenname=None,
+                                       familyname=None,
+                                       password=None,
+                                       teamdescription=teamdescription,
+                                       teamowner=self.context.id,
+                                       karma=None,
+                                       karmatimestamp=None)
+
+            TeamParticipation(person=self.context.id,team=self.results.id)
+
+            ##FIXME: what about Membership ? the owner should be always
+            ##       the admin ?
+            
+            self.enable_added = True
+
+class PersonEditView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+        self.enable_edited = False
+
+        displayname = self.request.get("displayname", "")
+        givenname = self.request.get("givename", "")
+        familyname = self.request.get("familyname", "")
+        teamdescription = self.request.get("teamdescription", "")
+
+        email = self.request.get("email", "")
+        wiki = self.request.get("wiki", "")
+        wikiname = self.request.get("wikiname", "")
+        network = self.request.get("network", "")
+        nickname = self.request.get("nickname", "")
+        jabberid = self.request.get("jabberid", "")
+        gpgid = self.request.get("gpgid", "")
+        
+        if displayname or givenname or familyname:
+            #FIXME: verify the unique name before update distro
+            self.context.person.displayname = displayname
+            self.context.person.givenname = givenname
+            self.context.person.familyname = familyname
+
+            self.enable_edited = True
+
+#        try:
+#            self.context.email.email = email
+#            self.enable_edited = True
+#        except IndexError:
+#            pass
+#
+#         try:
+#             self.context.wiki.wiki = wiki
+#             self.enable_edited = True
+#         except IndexError:
+#             pass
+#         try:
+#             self.context.wiki.wikiname = wikiname
+#             self.enable_edited = True
+#         except IndexError:
+#             pass
+#         try:
+#             self.context.irc.network = network
+#             self.enable_edited = True
+#         except IndexError:
+#             pass
+#         try:
+#             self.context.irc.nickname = nickname
+#             self.enable_edited = True
+#         except IndexError:
+#             pass
+#         try:
+#             self.context.jabber.jabberid = jabberid
+#             self.enable_edited = True
+#         except IndexError:
+#             pass
+#         try:
+#             self.context.gpg.gpgid = gpgid
+#             self.enable_edited = True
+#         except IndexError:
+#             pass
 
 class DistrosAddView(object):
 

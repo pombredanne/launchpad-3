@@ -528,7 +528,7 @@ class ISoyuzPerson(Interface):
     teamdescription = Attribute("The Team Description")
     karma = Attribute("Karma")
     karmatimestamp = Attribute("Karma Time stamp")
-    password = Attribute("Passwork ?!?!")
+    password = Attribute("Password")
     
 class IManifestEntry(Interface):
     """"""

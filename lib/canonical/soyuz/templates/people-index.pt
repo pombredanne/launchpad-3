@@ -48,7 +48,10 @@
 	 <tr><td>
 	 <b>(<span tal:content="context/p_entries">xx</span> Members and
 	 <span tal:content="context/t_entries">xx</span> Teams)</b>
-	 </td></tr>	
+	 </td></tr>
+	 <tr><th>
+	 <a href="+add">Create a New Person</a>
+	 </th></tr>	
 	 </table>
 	 </div>
 	 </td></tr>

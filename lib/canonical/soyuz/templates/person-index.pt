@@ -111,7 +111,7 @@
       </table>
     </div>
   </td></tr>
-  <!--Membership if person case-->     
+  <!--Membership if team case-->     
   <tr tal:condition="context/person/teamowner">
    <td> <div> 
    <table>
@@ -160,6 +160,9 @@
        <td><a tal:attributes="href string:../${team/team/id}"
 	      tal:content="team/team/displayname">MEMBER</a></td>
    </tr>
+   <tr><th align="right">
+   <a href="+add">Create a New Team</a>
+   </th></tr>
    </table>
    </div>
   </td></tr>
