@@ -1,17 +1,35 @@
 <configure
-  xmlns="http://namespaces.zope.org/zope"
-  xmlns:browser="http://namespaces.zope.org/browser">
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
 
-  <!-- The Zope3 WidgetInputError does not handle lists of validation
-    exceptions, despite what its documentation says. Fix this in launchpad
-    for now.
-    TODO: Feed back into Zope3
+    <!-- XXX: This stanza might not be necessary. StuartBishop 2004/11/12. -->
+    <content class="canonical.widgets.SinglePopupWidget">
+        <allow interface="canonical.widgets.ISinglePopupWidget" />
+    </content>
+
+    <!-- Define the views needed by the popup widget
+       TODO: These should probably just be attached to the add and edit
+       forms (StuartBishop 2004/11/12)
     -->
-  <view
-    type="zope.publisher.interfaces.browser.IBrowserRequest"
-    for=".exception.WidgetInputError"
-    provides="zope.app.form.browser.interfaces.IWidgetInputErrorView"
-    factory=".exception.WidgetInputErrorView"
-    permission="zope.Public"
-    />
+    <browser:page
+        for="*"
+        class="canonical.widgets.popup.SinglePopupView"
+        allowed_interface="canonical.widgets.popup.ISinglePopupView"
+        permission="zope.Public"
+        name="popup-window"
+        template="templates/popup-window.pt"
+        /> 
+
+    <!-- The Zope3 WidgetInputError does not handle lists of validation
+        exceptions, despite what its documentation says. Fix this in launchpad
+        for now.
+        TODO: Feed back into Zope3
+        -->
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for=".exception.WidgetInputError"
+        provides="zope.app.form.browser.interfaces.IWidgetInputErrorView"
+        factory=".exception.WidgetInputErrorView"
+        permission="zope.Public"
+        />
 </configure>

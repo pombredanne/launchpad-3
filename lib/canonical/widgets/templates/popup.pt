@@ -1,0 +1,6 @@
+
+<input type="text"
+    tal:attributes="value view/formToken; id view/name; name view/name; size view/displayWidth; maxlength view/displayMaxWidth; cssClass view/cssClass" />
+
+<a tal:attributes="href view/popupHref">(list)</a>
+

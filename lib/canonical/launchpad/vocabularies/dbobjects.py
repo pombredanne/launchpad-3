@@ -4,9 +4,10 @@ Vocabularies pulling stuff from the database.
 You probably don't want to use these classes directly - see the
 docstring in __init__.py for details
 '''
-from zope.interface import implements
+from zope.interface import implements, Interface
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.sourcepackage import SourcePackage, \
@@ -16,8 +17,17 @@ from canonical.launchpad.database.binarypackage import BinaryPackage, \
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtracker import BugTracker
+from canonical.database.sqlbase import SQLBase
 
-__metaclass__ = type
+
+class IHugeVocabulary(Interface):
+    """Marker interface for huge vocabularies.
+    
+    Items in an IHugeVocabulary should have human readable tokens or the
+    default UI will suck.
+
+    """
+    pass
 
 class SQLObjectVocabularyBase(object):
     """A base class for widgets that are rendered to collect values
@@ -50,7 +60,7 @@ class SQLObjectVocabularyBase(object):
             yield self._toTerm(obj)
 
     def __len__(self):
-        return len(iter(self))
+        return len(list(iter(self)))
 
     def __contains__(self, obj):
         try:
@@ -65,6 +75,17 @@ class SQLObjectVocabularyBase(object):
         return None
 
     def getTerm(self, value):
+        # Short circuit. There is probably a design problem here since we
+        # sometimes get the id and sometimes an SQLBase instance.
+        if isinstance(removeSecurityProxy(value), SQLBase):
+            return self._toTerm(value)
+
+        try:
+            int(value)
+        except:
+            import pdb; pdb.set_trace()
+            raise RuntimeError, 'Got a %r' % (value,)
+
         try:
             objs = list(self._table.select(self._table.q.id==int(value)))
         except ValueError:
@@ -102,10 +123,21 @@ class BinaryPackageNameVocabulary(SQLObjectVocabularyBase):
 
 
 class ProductVocabulary(SQLObjectVocabularyBase):
+    implements(IHugeVocabulary)
     _table = Product
 
     def _toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.displayname or obj.title)
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def getTermByToken(self, token):
+        tab = self._table
+        try:
+            objs = list(tab.select(tab.q.name == token))
+        except ValueError:
+            objs = ()
+        if len(objs) != 1:
+            raise LookupError, token
+        return self._toTerm(objs[0])
 
 # We cannot refer to a BinaryPackage unambiguously by a name, as
 # we have no assurace that a generated name using $BinaryPackageName.name

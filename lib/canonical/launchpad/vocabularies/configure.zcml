@@ -70,4 +70,14 @@
         factory="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
         />
 
+    <!-- Define the widget used by Choice fields that use huge vocabularies -->
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="zope.schema.interfaces.IChoice
+            canonical.launchpad.vocabularies.IHugeVocabulary"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.widgets.SinglePopupWidget"
+        permission="zope.Public"
+        />
+
 </configure>

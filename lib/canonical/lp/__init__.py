@@ -6,9 +6,14 @@ import sys, os
 from types import ClassType
 from zope.interface.advice import addClassAdvisor
 from zope.interface import classImplements
+from zope.i18n import MessageIDFactory
 
 from sqlobject import connectionForURI
 from canonical.database.sqlbase import ZopelessTransactionManager
+
+# Single MessageIDFactory for everyone
+_ = MessageIDFactory('launchpad')
+
 
 # Allow override by environment variables. This is needed to allow
 # tests to propogate values to spawned processes.

@@ -1,0 +1,61 @@
+<html>
+    <head>
+        <title tal:content="view/title">Title</title>
+        <tal:comment condition="nothing">
+            This javascript iterates over all forms and their elements in
+            the source window, and sets the elements value if the elements
+            name matches. It would be much nicer if the source form had a
+            name... or I knew Javascript ;-)
+        </tal:comment>
+        <script language="Javascript" type="text/javascript">
+            field = '<tal:x replace="request/form/fieldName" />';
+            function update(value) {
+            for (var i=0; window.opener.document.forms.length > i; i++) {
+                    f = window.opener.document.forms[i];
+                    for (var j=0; f.elements.length > i; j++) {
+                        e = f.elements[j]
+                        if (e.name = field) {
+                            e.value = value;
+                            window.close();
+                        }
+                    }
+                }
+            }
+        </script>
+    </head>
+    <body>
+        <div tal:define="batch view/batch">
+            <h1 tal:content="view/title">Title</h1>
+
+            <table>
+                <tr>
+                    <th>
+                        <a tal:attributes="href batch/prevBatchURL">&larr;</a>
+                    </th>
+                    <tal:x repeat="page_link batch/batchPageURLs">
+                        <th tal:condition="python:not
+                                str(page_link.keys()[0]).startswith('_')">
+                            <a tal:attributes="href
+                                    python:page_link.values()[0]"
+                                tal:content="python:page_link.keys()[0]">#</a>
+                        </th>
+                    </tal:x>
+                    <th>
+                        <a tal:attributes="href batch/nextBatchURL">&rarr;</a>
+                    </th>
+                </tr>
+            </table>
+            <dl>
+                <tal:x repeat="item batch/currentBatch">
+                    <dt>
+                        <a href="#" title="Click to select"
+                            tal:content="item/token"
+                            tal:attributes="onclick 
+                            string:update('${item/token}')">Token</a>
+                    </dt>
+                    <dd tal:content="item/title">Title</dd>
+                </tal:x>
+            </dl>
+        </div>
+    </body>
+</html>

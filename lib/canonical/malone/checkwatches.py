@@ -7,13 +7,11 @@ Cron job to run daily to check all of the BugWatches
 import sys, os.path
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
+from canonical.lp import initZopeless
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.database.sqlbase import SQLBase
 import sqlobject, externalsystem
-
-# This script probably doesn't work yet, it'll get cleaned up
-# after I get it tagged over to my desktop machine again. --dave
 
 versioncache = {}
 
@@ -50,13 +48,12 @@ def check_one_watch(watch):
         watch.lastchecked = 'NOW'
 
 def main():
-    uri = 'postgres:///launchpad_test'
-    SQLBase.initZopeless(sqlobject.connectionForURI(uri))
+    initZopeless()
 
     # We want 1 day, but we'll use 23 hours because we can't count on the cron
     # job hitting exactly the same time every day
     watches = BugWatch.select(
-        "(lastchecked < (now() - interval '23 hours'))")
+        "(lastchecked < (now() at time zone 'UTC' - interval '23 hours'))")
     for watch in watches:
         check_one_watch(watch)
 
