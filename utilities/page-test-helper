@@ -2,7 +2,7 @@
 
 set -e
 
-tempdir=`mktemp -d make-fdoctest.XXXXXX`
+tempdir=`mktemp -d page-test-helper.XXXXXX`
 listen_port=9000
 forward_port=8085
 

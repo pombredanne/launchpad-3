@@ -17,12 +17,12 @@
       for="canonical.publication.RootObject"
       class="canonical.rosetta.RosettaApplication"
       name="rosetta"
-      newskin="canonical.launchpad.skins.rosetta"
+      newlayer="canonical.launchpad.layers.RosettaLayer"
       />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IProduct"
-      layer="canonical.launchpad.skins.rosetta"
+      layer="canonical.launchpad.layers.RosettaLayer"
       name="+rosetta-index"
       />
 

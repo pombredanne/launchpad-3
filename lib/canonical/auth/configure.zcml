@@ -21,7 +21,7 @@
       permission="zope.Public"
       name="main_template"
       template="../launchpad/templates/ul-main-template.pt"
-      layer="canonical.launchpad.skins.ubuntulinux"
+      layer="canonical.launchpad.layers.UbuntuLinuxLayer"
    />
 
   <!-- This view registers 'auth' as a suburl of RootObject. -->
@@ -30,7 +30,7 @@
       class="canonical.auth.app.UbuntuLinuxSite"
       permission="zope.Public"
       name="ubuntulinux"
-      newskin="canonical.launchpad.skins.ubuntulinux"
+      newlayer="canonical.launchpad.layers.UbuntuLinuxLayer"
       />
 
   <browser:suburl

@@ -9,14 +9,13 @@ standardPOTemplateCopyright = 'Canonical Ltd'
 
 import canonical.launchpad.interfaces as interfaces
 from canonical.database.constants import nowUTC
+from canonical.launchpad.database import Label
 
 from sqlobject import ForeignKey, MultipleJoin, RelatedJoin, IntCol, \
     BoolCol, StringCol, DateTimeCol, SQLObjectNotFound
 from zope.interface import implements, directlyProvides
 from zope.component import getUtility
 from canonical.lp.dbschema import RosettaTranslationOrigin
-
-from canonical.launchpad.database import Person, Label
 
 
 # XXX: in the four strings below, we should fill in owner information
@@ -398,20 +397,6 @@ class POTranslation(SQLBase):
         StringCol(name='translation', dbName='translation', notNull=True,
             unique=True, alternateID=True)
     ]
-
-
-def personFromPrincipal(principal):
-    from zope.app.security.interfaces import IUnauthenticatedPrincipal
-    from canonical.lp.placelessauth.launchpadsourceutility import \
-        LaunchpadPrincipal
-
-    if IUnauthenticatedPrincipal.providedBy(principal):
-        return None
-
-    if not isinstance(principal, LaunchpadPrincipal):
-        return None
-
-    return Person.get(principal.id)
 
 
 class Category(Label):

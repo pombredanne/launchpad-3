@@ -2,14 +2,11 @@
 
 import os, unittest
 
-#from zope.app.tests.functional import FunctionalDocFileSuite
 from canonical.functional import FunctionalDocFileSuite
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(FunctionalDocFileSuite('halibut.txt'))
-    suite.addTest(FunctionalDocFileSuite('mackerel.txt'))
-    suite.addTest(FunctionalDocFileSuite('herring.txt'))
+    suite.addTest(FunctionalDocFileSuite('page-tests/rosetta-homepage.txt'))
     return suite
 
 if __name__ == '__main__':

@@ -47,7 +47,7 @@
 
 <!-- Note: debug view for exceptions. -->
   <page
-      layer="canonical.launchpad.skins.DebugLayer"
+      layer="canonical.launchpad.layers.DebugLayer"
       name="index.html"
       template="launchpad/templates/debug-error.pt"
       for="zope.interface.common.interfaces.IException"

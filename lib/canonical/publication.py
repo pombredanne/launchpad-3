@@ -18,7 +18,7 @@ from zope.event import notify
 from zope.interface import implements, Interface
 from zope.interface import providedBy
 
-import canonical.launchpad.skins as skins
+import canonical.launchpad.layers as layers
 
 from zope.component import queryView, getDefaultViewName, queryMultiView
 from zope.component import getUtility
@@ -107,7 +107,7 @@ class RootObject(Location):
 
 
 class DebugView:
-    """Helper class for views on exceptions for the Debug skin."""
+    """Helper class for views on exceptions for the Debug layer."""
 
     __used_for__ = IException
 
@@ -231,11 +231,11 @@ class BrowserPublication(BrowserPub):
 
         self.clearSQLOSCache()
 
-        # Set the default skin.
+        # Set the default layer.
         adapters = zapi.getService(zapi.servicenames.Adapters)
-        skin = adapters.lookup((providedBy(request),), IDefaultSkin, '')
-        if skin is not None:
-            skins.setAdditionalSkin(request, skin)
+        layer = adapters.lookup((providedBy(request),), IDefaultSkin, '')
+        if layer is not None:
+            layers.setAdditionalLayer(request, layer)
 
         # Try to authenticate against our registry
         prin_reg = getUtility(IPlacelessAuthUtility)
@@ -292,10 +292,10 @@ class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
 
     def __call__(self, input_stream, output_steam, env):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
-        # Mark the request with the 'canonical.launchpad.skins.debug' layer
+        # Mark the request with the 'canonical.launchpad.layers.debug' layer
         request = HTTPPublicationRequestFactory.__call__(
             self, input_stream, output_steam, env)
-        skins.setFirstSkin(request, skins.DebugLayer)
+        layers.setFirstLayer(request, layers.DebugLayer)
         return request
 
 

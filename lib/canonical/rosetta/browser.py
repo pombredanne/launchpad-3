@@ -164,10 +164,10 @@ class ViewProjects:
 
 class ViewProject:
     def thereAreProducts(self):
-        return len(list(self.context.products)) > 0
+        return len(list(self.context.products())) > 0
 
     def products(self):
-        for product in self.context.rosettaProducts():
+        for product in self.context.products():
             total = 0
             currentCount = 0
             rosettaCount = 0

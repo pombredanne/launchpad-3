@@ -12,6 +12,13 @@ from zope.interface import implements
 from zope.app.security.interfaces import IPrincipal
 from zope.publisher.interfaces.browser import IBrowserRequest
 
+class DummyProduct:
+    pass
+
+class DummyProject:
+    def products(self):
+        return [DummyProduct(), DummyProduct()]
+
 class DummyLanguage:
     def __init__(self, code, pluralForms):
         self.code = code
@@ -228,6 +235,16 @@ def test_parse_cformat_string():
     Traceback (most recent call last):
     ...
     ValueError: %
+    '''
+
+def test_ViewProject():
+    '''
+    >>> from canonical.rosetta.browser import ViewProject
+    >>> view = ViewProject()
+    >>> view.context = DummyProject()
+    >>> view.request = DummyRequest()
+    >>> view.thereAreProducts()
+    True
     '''
 
 def test_TranslatePOTemplate_init():

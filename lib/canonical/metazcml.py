@@ -11,7 +11,7 @@ from zope.schema import TextLine
 from zope.configuration.fields import GlobalObject, PythonIdentifier
 from zope.app.security.fields import Permission
 from zope.app.component.fields import LayerField
-from canonical.launchpad.skins import setAdditionalSkin
+from canonical.launchpad.layers import setAdditionalLayer
 
 from zope.component import queryView, getDefaultViewName, getUtility
 from zope.app.component.metaconfigure import view, PublicPermission
@@ -69,8 +69,8 @@ class ISubURLDirective(Interface):
         required=False
         )
 
-    newskin = LayerField(
-        title=u"New skin to use beneath this URL",
+    newlayer = LayerField(
+        title=u"New layer to use beneath this URL",
         required=False
         )
 
@@ -103,11 +103,16 @@ class ITraverseDirective(Interface):
         required=False
         )
 
+    layer = LayerField(
+        title=u"The layer that this traversal applies to",
+        required=False
+        )
+
 
 class SubURLDispatcher:
     implements(ISubURLDispatch)
 
-    newskin = None
+    newlayer = None
 
     def __init__(self, context, request):
         # In future, we may use the context to provide a __parent__ for
@@ -121,13 +126,13 @@ class SubURLDispatcher:
         raise NotImplementedError
 
 def suburl(_context, for_, name, permission=None, utility=None, class_=None,
-           adaptwith=None, newskin=None):
+           adaptwith=None, newlayer=None):
     if utility is None and class_ is None:
         raise TypeError("Cannot specify both utility and class.")
 
     # XXX check that for_ implements IHasSuburls
 
-    # TODO: Move skin-setting into a handler for the BeforeTraverse event
+    # TODO: Move layer-setting into a handler for the BeforeTraverse event
     #       because that's actually what we want to handle.
 
     if class_ is not None:
@@ -136,9 +141,9 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                 val = class_()
                 if adaptwith is not None:
                     val = adaptwith(val)
-                # Note that `newskin` is bound from the containing context.
-                if newskin is not None:
-                    setAdditionalSkin(self.request, newskin)
+                # Note that `newlayer` is bound from the containing context.
+                if newlayer is not None:
+                    setAdditionalLayer(self.request, newlayer)
                 return val
 
     if utility is not None:
@@ -147,9 +152,9 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                 val = getUtility(utility)
                 if adaptwith is not None:
                     val = adaptwith(val)
-                # Note that `newskin` is bound from the containing context.
-                if newskin is not None:
-                    setAdditionalSkin(self.request, newskin)
+                # Note that `newlayer` is bound from the containing context.
+                if newlayer is not None:
+                    setAdditionalLayer(self.request, newlayer)
                 return val
 
     factory = [Dispatcher]
@@ -226,13 +231,12 @@ class URLTraverseByFunction:
 
 
 def traverse(_context, for_, getter=None, function=None, permission=None,
-             adaptwith=None):
+             adaptwith=None, layer=IBrowserRequest):
     if getter is not None and function is not None:
         raise TypeError("Cannot specify both getter and function")
     if getter is None and function is None:
         raise TypeError("Must specify either getter or function")
 
-    type = IBrowserRequest
     name = ''
     provides = IBrowserPublisher
 
@@ -252,7 +256,7 @@ def traverse(_context, for_, getter=None, function=None, permission=None,
 
         factory = [URLTraverseFunction]
 
-    return view(_context, factory, type, name, [for_], permission=permission,
+    return view(_context, factory, layer, name, [for_], permission=permission,
                 provides=provides)
 
 

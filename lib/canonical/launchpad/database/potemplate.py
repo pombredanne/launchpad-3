@@ -9,6 +9,8 @@ standardPOTemplateCopyright = 'Canonical Ltd'
 
 from canonical.launchpad.interfaces import *
 from canonical.database.constants import nowUTC
+from canonical.launchpad.dlalo import POFile
+from canonical.launchpad.database.pomsgset import POMessageSet
 
 from sqlobject import ForeignKey, MultipleJoin, RelatedJoin, IntCol, \
     BoolCol, StringCol, DateTimeCol, SQLObjectNotFound
