@@ -597,3 +597,7 @@ class IBinarypackageName(Interface):
     name = TextLine(title=_('Name'), required=True)
     binarypackages = Attribute('binarypackages')
 
+    def nameSelector(sourcepackage=None, selected=None):
+        """Return browser-ready HTML to select a Binary Package Name"""
+
+

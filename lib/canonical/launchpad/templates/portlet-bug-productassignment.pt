@@ -5,6 +5,7 @@
             <th>Status</th>
             <th>Priority</th>
             <th>Severity</th>
+            <th>Assignee</th>
         </tr>
         <tr tal:repeat="bugass context/productassignment"
             tal:attributes="onclick 
@@ -18,6 +19,9 @@
             </td>
             <td tal:content="bugass/severity/lp:BugSeverity">
                 $ProductBugAssignment.severity
+            </td>
+            <td tal:content="bugass/assignee/browsername|python: string('(not assigned)')">
+                $ProductBugAssignment.assignee
             </td>
         </tr>
     </table>

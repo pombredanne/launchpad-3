@@ -21,12 +21,7 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, \
                                            ISourcepackageName, IBinarypackageName
 
 from canonical.launchpad.database import Product, Project
-from canonical.launchpad.database import Archive, Branch, ArchNamespace
 from canonical.launchpad.database.person import Person
-
-# This import has been moved to SoyuzSourcePackageRelease.architecturesReleased
-# to avoid a circular import.
-##from canonical.launchpad.database.distro import SoyuzDistroArchRelease
 
 
 class SoyuzPackagePublishing(SQLBase):
@@ -34,7 +29,7 @@ class SoyuzPackagePublishing(SQLBase):
     _table = 'PackagePublishing'
     
     _columns = [
-        ForeignKey(name='binaryPackage', foreignKey='SoyuzBinaryPackage', 
+        ForeignKey(name='binaryPackage', foreignKey='Binarypackage', 
                    dbName='binarypackage', notNull=True),
         ForeignKey(name='distroArchrelease', dbName='distroArchrelease',
                    foreignKey='SoyuzDistroArchRelease', notNull=True),
@@ -46,12 +41,12 @@ class SoyuzPackagePublishing(SQLBase):
     ]
 
 
-class SoyuzBinaryPackage(SQLBase):
+class Binarypackage(SQLBase):
     implements(IBinaryPackage)
     _table = 'BinaryPackage'
     _columns = [
         ForeignKey(name='binarypackagename', dbName='binarypackagename', 
-                   foreignKey='SoyuzBinaryPackageName', notNull=True),
+                   foreignKey='BinarypackageName', notNull=True),
         StringCol('version', dbName='version', notNull=True),
         StringCol('shortdesc', dbName='shortdesc', notNull=True, default=""),
         StringCol('description', dbName='description', notNull=True),
@@ -119,7 +114,7 @@ class SoyuzBinaryPackage(SQLBase):
     pkgpriority = property(_priority)
 
 
-class SoyuzBinaryPackageName(SQLBase):
+class BinarypackageName(SQLBase):
     _table = 'BinaryPackageName'
     _columns = [
         StringCol('name', dbName='name', notNull=True),
@@ -162,7 +157,7 @@ class SoyuzSourcePackageRelease(SQLBase):
 
     _table = 'SourcePackageRelease'
     _columns = [
-        ForeignKey(name='sourcepackage', foreignKey='SoyuzSourcePackage',
+        ForeignKey(name='sourcepackage', foreignKey='Sourcepackage',
                    dbName='sourcepackage', notNull=True),
         IntCol('srcpackageformat', dbName='srcpackageformat', notNull=True),
         ForeignKey(name='creator', foreignKey='Person', dbName='creator'),
@@ -205,7 +200,7 @@ class SoyuzSourcePackageRelease(SQLBase):
                  %self.id 
                  )
 
-        return SoyuzBinaryPackage.select(query)
+        return Binarypackage.select(query)
         
     binaries = property(binaries)
 
@@ -226,42 +221,7 @@ def createSourcePackage(name, maintainer=0):
         description='', # FIXME
     )
 
-def createBranch(repository):
-    archive, rest = repository.split('/', 1)
-    category, branchname = repository.split('--', 2)[:2]
-
-    try:
-        archive = Archive.selectBy(name=archive)[0]
-    except IndexError:
-        raise RuntimeError, "No archive '%r' in DB" % (archive,)
-
-    try:
-        archnamespace = ArchNamespace.selectBy(
-            archive=archive,
-            category=category,
-            branch=branch,
-        )[0]
-    except IndexError:
-        archnamespace = ArchNamespace(
-            archive=archive,
-            category=category,
-            branch=branchname,
-            visible=False,
-        )
-    
-    try:
-        branch = Branch.selectBy(archnamespace=archnamespace)[0]
-    except IndexError:
-        branch = Branch(
-            archnamespace=archnamespace,
-            title=branchname,
-            description='', # FIXME
-        )
-    
-    return branch
-
-
-class SoyuzSourcePackage(SQLBase):
+class Sourcepackage(SQLBase):
     """A source package, e.g. apache2."""
 
     implements(ISourcePackage)
@@ -271,7 +231,7 @@ class SoyuzSourcePackage(SQLBase):
         ForeignKey(name='maintainer', foreignKey='Person',
                    dbName='maintainer', notNull=True),
         ForeignKey(name='sourcepackagename',
-                   foreignKey='SoyuzSourcePackageName',
+                   foreignKey='SourcepackageName',
                    dbName='sourcepackagename', notNull=True),
         StringCol('shortdesc', dbName='shortdesc', notNull=True),
         StringCol('description', dbName='description', notNull=True),
@@ -362,27 +322,11 @@ class SoyuzSourcePackage(SQLBase):
         else:
             return None
 
-        
 
-class SoyuzSourcePackageName(SQLBase):
-    _table = 'SourcePackageName'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-    ]
+class SourcepackageName(SQLBase):
 
-    
-#
-#FIX ME
+    implements(ISourcepackageName)
 
-class Sourcepackage(SoyuzSourcePackage):
-    pass
+    _table = 'SourcepackageName'
 
-class SourcepackageName(SoyuzSourcePackageName):
-    pass
-
-class Binarypackage(SoyuzBinaryPackage):
-    pass
-
-class BinarypackageName(SoyuzBinaryPackageName):
-    pass
-
+    name = StringCol(dbName='name', notNull=True)

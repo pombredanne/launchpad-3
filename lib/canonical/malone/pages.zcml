@@ -44,15 +44,15 @@
         for="canonical.launchpad.interfaces.IBugContainer"
         class="canonical.malone.browser.BugsCreatedByView"
         permission="zope.Public"
-        lp:url="malone/bugs/createdby/$Bug.owner">
-        <page name="createdby"
+        lp:url="malone/bugs/created/$Bug.owner">
+        <page name="created"
             template="../launchpad/templates/bugs-createdby-index.pt"
-            lp:url="malone/bugs/createdby/$Bug.owner/index" />
+            lp:url="malone/bugs/created/$Bug.owner/index" />
     </pages>
 
     <traverse
         for="canonical.launchpad.interfaces.IBugContainer"
-        getter="__getitem__" />
+        function="canonical.malone.browser.traverseBugs" />
 
     <pages
         for="canonical.launchpad.interfaces.IMaloneBug"
@@ -227,6 +227,10 @@
             template="../launchpad/templates/reference-index.pt"
             lp:url="malone/bugs/$Bug.id/reference/$Reference.id" />
     </pages>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugsAssignedReport"
+        name="+index" />
 
     <pages
         for="canonical.launchpad.interfaces.IBugsAssignedReport"

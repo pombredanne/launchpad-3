@@ -151,3 +151,21 @@ class BranchRelationship(SQLBase):
     
 
 
+    def nameSelector(self, sourcepackage=None, selected=None):
+        html = '<select name="binarypackagename">\n'
+        if not sourcepackage: binpkgs = self._table.select()
+        else: binpkgs = self._table.select("""
+                binarypackagename.id = binarypackage.binarypackagename AND
+                binarypackage.build = build.id AND
+                build.sourcepackagerelease = sourcepackagerelease.id AND
+                sourcepackagerelease.sourcepackage = %s""" % str(sourcepackage),
+                clauseTables = [ 'binarypackagename', 'binarypackage',
+                'build', 'sourcepackagerelease'])
+        for pkg in binpkgs:
+            html = html + '<option value="' + pkg.name + '"'
+            if pkg.name==selected: html = html + ' selected'
+            html = html + '>' + pkg.name + '</option>\n'
+        html = html + '</select>\n'
+        return html
+        
+

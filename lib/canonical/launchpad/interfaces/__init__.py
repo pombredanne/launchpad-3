@@ -1,9 +1,3 @@
-from canonical.launchpad.iandrew import *
-from canonical.launchpad.imark import *
-from canonical.launchpad.ikiko import *
-from canonical.launchpad.isteve import *
-#from canonical.launchpad.icelso import *
-
 # XXX from auth/interfaces
 from zope.interface import Interface, Attribute
 from persistent import IPersistent
@@ -14,8 +8,17 @@ from persistent import IPersistent
 #
 
 from canonical.launchpad.interfaces.project import *
+from canonical.launchpad.interfaces.product import *
 from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.bug import *
+from canonical.launchpad.interfaces.schema import *
+from canonical.launchpad.interfaces.person import *
+from canonical.launchpad.interfaces.translationeffort import *
+
+# these will go...
+from canonical.launchpad.iandrew import *
+from canonical.launchpad.imark import *
+from canonical.launchpad.ikiko import *
 
 
 class IAuthApplication(Interface):
@@ -39,11 +42,3 @@ class IPasswordChangeApp(Interface):
     """Interface for PasswdChangeApp."""
     code = Attribute("The transaction code")
 
-class IPersonSet(Interface):
-    """The set of Persons."""
-
-    def __getitem__(personid):
-        """Returns the person with the given id.
-
-	Raises KeyError if there is no such person.
-	"""

@@ -6,6 +6,7 @@
             <th>Priority</th>
             <th>Severity</th>
             <th>Binary</th>
+            <th>Assignee</th>
         </tr>
         <tr tal:repeat="bugass context/sourceassignment"
             tal:attributes="onclick string:window.location='sourcepackageassignments/${bugass/id}/+edit';">
@@ -31,6 +32,8 @@
                       tal:condition="not:bugass/binarypackagename">
                     (none)
                 </span>
+            </td>
+            <td tal:content="bugass/assignee/browsername|python:string('(not assigned)')">
             </td>
         </tr>
     </table>

@@ -10,9 +10,16 @@ from zope.interface import implements
 # SQL imports
 from canonical.database.sqlbase import SQLBase
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
+from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces import *
+
+from canonical.launchpad.database.package import Sourcepackage
+from canonical.launchpad.database.product import Product
+
+# Python
+from sets import Set
 
 class Bug(SQLBase):
     """A bug."""
@@ -21,20 +28,22 @@ class Bug(SQLBase):
 
     _defaultOrder = '-id'
 
-    datecreated = DateTimeCol(notNull=True)
-    name = StringCol(unique=True, default=None)
-    title = StringCol(notNull=True)
-    shortdesc = StringCol(notNull=True)
-    description = StringCol(notNull=True)
-    owner = ForeignKey(foreignKey='Person', notNull=True, dbName='owner')
-    duplicateof = ForeignKey(foreignKey='Bug', dbName='duplicateof')
-    communityscore = IntCol(notNull=True, default=0)
-    communitytimestamp = DateTimeCol(notNull=True)
-    hits = IntCol(notNull=True, default=0)
-    hitstimestamp = DateTimeCol(notNull=True)
-    activityscore = IntCol(notNull=True, default=0)
-    activitytimestamp = DateTimeCol(notNull = True)
-
+    # db field names
+    name = StringCol(dbName='name', unique=True, default=None)
+    title = StringCol(dbName='title', notNull=True)
+    shortdesc = StringCol(dbName='shortdesc', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    duplicateof = ForeignKey(dbName='duplicateof', foreignKey='Bug')
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+    communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
+    communitytimestamp = DateTimeCol(dbName='communitytimestamp', notNull=True)
+    hits = IntCol(dbName='hits', notNull=True, default=0)
+    hitstimestamp = DateTimeCol(dbName='hitstimestamp', notNull=True)
+    activityscore = IntCol(dbName='activityscore', notNull=True, default=0)
+    activitytimestamp = DateTimeCol(dbName='activitytimestamp', notNull = True)
+    
+    # useful Joins
     activity = MultipleJoin('BugActivity', joinColumn='bug')
     messages = MultipleJoin('BugMessage', joinColumn='bug')
     # TODO: Standardize on pluralization and naming for table relationships
@@ -347,17 +356,25 @@ class BugsAssignedReport(object):
     implements(IBugsAssignedReport)
 
     def __init__(self):
-        # XXX Mark Shuttleworth 06/10/04  Temp Testing Hack hardcode person
-        self.user = 1
-        self._table = SourcepackageBugAssignment
+        # initialise the user to None, will raise an exception if the
+        # calling class does not set this to a person.id
+        self.user = None
+        self.BSA = SourcepackageBugAssignment
+        self.BPA = ProductBugAssignment
 
-    def directAssignments(self):
-        """An iterator over the bugs directly assigned to the person."""
-        assignments = self._table.selectBy(assigneeID=self.user)
-        for assignment in assignments:
-            yield assignment
-
-    def sourcepackageAssignments(self):
-        """An iterator over bugs assigned to the person's source
-        packages."""
-
+    def assignedBugs(self):
+        bugs = Set()
+        buglist = Bug.select(OR(AND(Bug.q.id==self.BSA.q.bugID,
+                                    self.BSA.q.assigneeID==self.user.id),
+                                AND(Bug.q.id==self.BPA.q.bugID,
+                                    self.BPA.q.assigneeID==self.user.id),
+                                AND(Bug.q.id==self.BSA.q.bugID,
+                                    self.BSA.q.sourcepackageID==Sourcepackage.q.id,
+                                    Sourcepackage.q.maintainerID==self.user.id),
+                                AND(Bug.q.id==self.BPA.q.bugID,
+                                    self.BPA.q.productID==Product.q.id,
+                                    Product.q.ownerID==self.user.id),
+                                ))
+        for bug in buglist:
+            bugs.add(bug)
+        return bugs

@@ -1,0 +1,81 @@
+<!--
+
+   ZCML for the Product object in Launchpad and related classes
+ 
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:zope="http://namespaces.zope.org/zope"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+    
+    <!-- This is class Product -->
+    <!-- CONTENT CLASSES -->
+    <content class="canonical.launchpad.database.Product">
+        <allow interface="canonical.launchpad.interfaces.IProduct" />
+        <require
+            permission="zope.View"
+            set_schema="canonical.launchpad.interfaces.IProduct"
+        />
+    </content>
+
+    <!-- UTILITY DECLARATION-->
+
+    <!-- VOCABULARIES -->
+    <vocabulary
+        name="Product"
+        factory="canonical.malone.vocabulary.ProductVocabulary" />
+
+
+
+    <!--TRAVERSALS-->
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProduct"
+        function="canonical.doap.browser.traverseProduct" />
+
+    
+    <!--BROWSER DEFAULTVIEWS-->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProduct"
+        name="+index" />
+
+    <!--PAGE DECLARATIONS-->
+    <browser:pages for="canonical.launchpad.interfaces.IProduct"
+        permission="zope.Public"
+        class="canonical.doap.browser.ProductView" >
+        <browser:page name="+index"
+            template="../templates/product-index.pt"
+            lp:url="doap/projects/$Project.name/$Product.name/" />
+    </browser:pages>
+
+    <browser:pages for="canonical.launchpad.interfaces.IProduct"
+        class="canonical.doap.browser.ProductView"
+        permission="launchpad.AnyPerson" >
+        <browser:page name="+edit"
+            template="../templates/product-edit.pt"
+            lp:url="doap/projects/$Project.name/$Product.name/+edit" />
+        <browser:page name="+addsources"
+            template="../templates/sourcesource-add.pt"
+            lp:url="doap/projects/$Project.name/$Product.name/+addsources"
+            />
+    </browser:pages>
+
+    <!--XXX Mark Shuttleworth 09/10/04 I think this is a hangover from
+    before the revolution -->
+    <browser:pages for="canonical.launchpad.interfaces.IProduct"
+        class="canonical.doap.browser.ProductView"
+        permission="zope.Public">
+        <browser:page name="+soyuz-index"
+            template="../templates/soyuz-product-index.pt"
+            lp:url="soyuz/projects/$Project.name/$Product.name/+soyuz-index"
+            />
+    </browser:pages>
+
+
+    <!--FORMS-->
+
+
+</configure>

@@ -58,7 +58,13 @@ class Projects(object):
 def getOwner():
     return 1
 
-class SoyuzProject(object):
+#
+# XXX Mark Shuttleworth 8/10/04 renamed SoyuzProduct to xSoyuzProduct and
+# SoyuzProject to xSoyuzProject to see what breaks. If nothing has broken
+# before 16/10/04 then please remove these classes altogether.
+#
+
+class xSoyuzProject(object):
     implements (IProject)
     def __init__(self, dbProject=None,name=None,title=None,url=None,description=None, shortDescription=None, displayname=None):
         if dbProject is not None:
@@ -114,7 +120,7 @@ class SoyuzProject(object):
             self._shortDescription=aDesc
         return self._shortDescription
 
-class SoyuzProduct(object):
+class xSoyuzProduct(object):
     implements (IProduct)
     def __init__(self, dbProduct=None, project=None, name=None, title=None, description=None, url=None):
         assert (project)
@@ -137,18 +143,6 @@ class SoyuzProduct(object):
             self.downloadurl=""
             self.lastdoap=""
             
-
-    def potFiles(self):
-        """Returns an iterator over this product's pot files."""
-
-    def newPotFile(self,branch):
-        """Creates a new POT file.
-
-        Returns the newly created POT file.
-        """
-
-    def branches(self):
-        """Iterate over this product's branches."""
 
     def sourcesources(self):
         """iterate over this product's sourcesource entries"""

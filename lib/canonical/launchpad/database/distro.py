@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import IDistributionRole, IDistroReleaseRole
                                            IDistribution, IRelease
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
-from canonical.launchpad.database.package import SoyuzSourcePackage, SoyuzBinaryPackage
+from canonical.launchpad.database.package import Sourcepackage, Binarypackage
 from canonical.launchpad.database.person import Person
 
 class DistributionRole(SQLBase):
@@ -178,7 +178,7 @@ class Release(SQLBase):
                 AND SourcePackageRelease.sourcepackage = SourcePackage.id
                 AND SourcePackageUpload.distrorelease = %s;""" % (self.id)
 
-        db = SoyuzSourcePackage._connection._connection
+        db = Sourcepackage._connection._connection
         db_cursor = db.cursor()
         db_cursor.execute(q)        
         return db_cursor.fetchall()[0][0]
@@ -194,7 +194,7 @@ class Release(SQLBase):
                AND binarypackagename.id = binarypackage.binarypackagename;
                """ % (self.id)
 
-        db = SoyuzBinaryPackage._connection._connection
+        db = Binarypackage._connection._connection
         db_cursor = db.cursor()
         db_cursor.execute(q)
         return db_cursor.fetchall()[0][0]

@@ -491,12 +491,9 @@ class IBugsAssignedReport(Interface):
 
     user = Attribute("The user for whom this report will be generated")
 
-    def directAssignments():
-        """An iterator over the bugs directly assigned to the person."""
-
-    def sourcepackageAssignments():
-        """An iterator over bugs assigned to the person's source
-        packages."""
+    def assignedBugs():
+        """An iterator over ALL the bugs directly or indirectly assigned
+        to the person."""
 
 
-    
+

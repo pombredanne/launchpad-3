@@ -10,14 +10,14 @@ To update the sample data:
   # connect to the db, and then do any INSERT or UPDATE commands you need
   psql launchpad_test
   # you could also run a script which updates the data in the way you want
-  # now dump a copy of that data to new-sampledata.sql
+  # now dump a copy of that data to newsampledata.sql
   # nb this excludes the language, spokenin and country tables which
   # are managed separately in language.sql
   make newsampledata
   # now inspect the new sample data
-  less new-sampledata.sql
+  less newsampledata.sql
   # if you like it, make it the current sampledata
-  cp new-sampledata.sql current.sql
+  cp newsampledata.sql current.sql
   # commit your changes
   tla commit -s "updated sample data to include..." (add your comments)
   

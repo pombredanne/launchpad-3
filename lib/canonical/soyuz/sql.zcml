@@ -144,11 +144,6 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzBinaryPackage">
-    <allow interface="canonical.launchpad.interfaces.IBinaryPackage"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
   <content class="canonical.soyuz.sql.SoyuzBuild">
     <allow interface="canonical.launchpad.interfaces.IBuild"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
@@ -240,12 +235,6 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.SoyuzSourcePackage">
-    <allow interface="canonical.launchpad.interfaces.ISourcePackage"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-
   <content class="canonical.soyuz.sql.SoyuzSourcePackageRelease">
     <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
@@ -281,6 +270,8 @@
     <allow interface="canonical.launchpad.interfaces.IProjectSet"/>
   </content>
   
+  <!-- removed SoyuzProject and SoyuzProduct because these should be handled
+  by DOAP
   <content class="canonical.soyuz.importd.SoyuzProject">
     <allow interface="canonical.launchpad.interfaces.IProject"/>
   </content>
@@ -288,6 +279,7 @@
   <content class="canonical.soyuz.importd.SoyuzProduct">
     <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
+  -->
   
   <content class="canonical.launchpad.database.SourceSource">
     <allow interface="canonical.launchpad.interfaces.ISourceSource"/>

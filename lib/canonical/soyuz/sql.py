@@ -22,8 +22,8 @@ from canonical.launchpad.interfaces import IBinaryPackage,IBinaryPackageBuild,\
                                            ISourcePackageSet,\
                                            IBranch, IChangeset 
 
-from canonical.launchpad.database import SoyuzBinaryPackage, SoyuzBuild, \
-                                         SoyuzSourcePackage, Manifest, \
+from canonical.launchpad.database import Binarypackage, SoyuzBuild, \
+                                         Sourcepackage, Manifest, \
                                          ManifestEntry, Release, \
                                          SoyuzSourcePackageRelease, \
                                          SoyuzDistroArchRelease, \
@@ -105,7 +105,7 @@ class DistroReleaseApp(object):
                  % quote('%%' + pattern + '%%')
                  + ' OR SourcePackage.shortdesc ILIKE %s)'
                  % quote('%%' + pattern + '%%'))        
-        return SoyuzSourcePackage.select(query)[:500]
+        return Sourcepackage.select(query)[:500]
 
     where = (
         'PackagePublishing.binarypackage = BinaryPackage.id AND '
@@ -123,7 +123,7 @@ class DistroReleaseApp(object):
                  % quote('%%' + pattern + '%%'))
         
         ## FIXME: is those unique ?
-        return SoyuzBinaryPackage.select(query)[:500]
+        return Binarypackage.select(query)[:500]
 
 
 class DistroReleasesApp(object):
@@ -300,7 +300,7 @@ class DistroReleaseSourcesApp(object):
                 (' AND SourcePackageName.name ILIKE %s'
                  % quote('%%' + pattern + '%%')
                  )
-        return SoyuzSourcePackage.select(query)[:500]
+        return Sourcepackage.select(query)[:500]
 
     def __getitem__(self, name):
         # XXX: What about multiple results?
@@ -575,7 +575,7 @@ class DistroReleaseBinaryReleaseApp(object):
     def __getitem__(self, arch):
         query = self.binselect.clause + \
                 ' AND DistroArchRelease.architecturetag = %s' %quote(arch)
-        binarypackage = SoyuzBinaryPackage.select(query)
+        binarypackage = Binarypackage.select(query)
         return DistroReleaseBinaryReleaseBuildApp(binarypackage[0],
                                                   self.version, arch)
     
@@ -615,7 +615,7 @@ class DistroReleaseBinaryApp(object):
     def __getitem__(self, version):
         query = self.binselect.clause + \
                 ' AND BinaryPackage.version = %s' %quote(version)
-        self.binarypackage = SoyuzBinaryPackage.select(query)
+        self.binarypackage = Binarypackage.select(query)
         return DistroReleaseBinaryReleaseApp(self.binarypackage,
                                              version, self.release)
 
@@ -639,7 +639,7 @@ class DistroReleaseBinariesApp(object):
 
         ## WTF ist That ?? I wonder how many copies of this code we will find !
         ##FIXME: expensive routine
-        selection = Set(SoyuzBinaryPackage.select(query)[:500])
+        selection = Set(Binarypackage.select(query)[:500])
 
         ##FIXME: Dummy solution to avoid a binarypackage to be shown more
         ##   then once
@@ -659,7 +659,7 @@ class DistroReleaseBinariesApp(object):
                      ' BinarypackageName.id '
                      'AND BinarypackageName.name = ' + quote(name)
                      )
-            return DistroReleaseBinaryApp(SoyuzBinaryPackage.select(where),
+            return DistroReleaseBinaryApp(Binarypackage.select(where),
                                           self.release)
         except IndexError:
             raise KeyError, name
@@ -669,7 +669,7 @@ class DistroReleaseBinariesApp(object):
     ##FIXME: they were LIMITED by hand
     def __iter__(self):
         query = self.where % self.release.id
-        return iter(SoyuzBinaryPackage.select(query, orderBy=\
+        return iter(Binarypackage.select(query, orderBy=\
                                               'Binarypackagename.name')[:500])
 
 class DistroBinariesApp(object):

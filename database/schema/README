@@ -42,10 +42,10 @@ to do this now' work.
 
 6.  Run `make newsampledata` in launchpad/database/schema.
 
-7.  Run `diff current.sql new-sampledata.sql` in launchpad/database/sampledata
+7.  Run `diff current.sql newsampledata.sql` in launchpad/database/sampledata
     to confirm the changes are sane
 
-8.  Move new-sampledata.sql to current.sql
+8.  Move newsampledata.sql to current.sql
 
 9.  Run `make` in launchpad/database/schema. Alter patch as necessary
     to minimize noise.
@@ -96,7 +96,7 @@ patches - you can see the first one in
 launchpad/database/schema/patch-1-1-0.sql.
 
 I think a good process for changes to the schema is to email requested
-changes to this mailing list (launchpad@rince.africaninspace.com)
+changes to this mailing list (launchpad@lists.ubuntu.com)
 and the acting DBA will approve the changes and put them in the
 correct place. This is me this week, and Robert Collins for a few
 weeks following that. I think the public forum is good for this so

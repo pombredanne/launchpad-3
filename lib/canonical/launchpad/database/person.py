@@ -11,7 +11,8 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet,  \
+                                                  IEmailAddress
 from canonical.lp import dbschema
 
 
@@ -37,6 +38,18 @@ class Person(SQLBase):
     def emails(self):
         return iter(self._emailsJoin)
 
+    def browsername(self):
+        """Returns a name suitable for display on a web page."""
+        if self.displayname: return self.displayname
+        webname = ''
+        if self.familyname:
+            webname.append(string.upper(self.familyname))
+            if self.givenname: webname.append(' '+self.givenname)
+        if not webname:
+            webname = 'UNKNOWN USER #'+str(self.id)
+        return webname
+        
+        
     # XXX: not implemented
     def maintainedProjects(self):
         '''SELECT Project.* FROM Project

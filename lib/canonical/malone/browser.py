@@ -15,22 +15,28 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
 
+#
 # Database access objects
+#
 from canonical.launchpad.database import \
         Sourcepackage, SourcepackageName, Binarypackage, \
-        BugTracker, BugWatch, Product, Person, EmailAddress, \
+        BugTracker, BugsAssignedReport, BugWatch, Product, Person, EmailAddress, \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
         ProductBugAssignment, SourcepackageBugAssignment, \
         BugProductInfestation
 from canonical.database import sqlbase
 
+#
 # I18N support for Malone
+#
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('malone')
 
 from canonical.lp import dbschema
 
+#
 # Interface imports
+#
 from canonical.launchpad.interfaces import \
         IBugMessagesView, IBugExternalRefsView, \
         IMaloneBug, IMaloneBugAttachment, \
@@ -39,6 +45,7 @@ from canonical.launchpad.interfaces import \
         IBugWatchContainer, IProductBugAssignmentContainer, \
         ISourcepackageBugAssignmentContainer, IBugProductInfestationContainer, \
         IPerson
+
 
 def traverseBug(bug, request, name):
     if name == 'attachments':
@@ -57,6 +64,12 @@ def traverseBug(bug, request, name):
         return BugProductInfestationContainer(bug=bug.id)
     else:
        raise KeyError, name
+
+def traverseBugs(bugcontainer, request, name):
+    if name == 'assigned':
+        return BugsAssignedReport()
+    else:
+        return BugContainer()[int(name)]
 
 
 def traverseBugAttachment(bugattachment, request, name):
@@ -668,17 +681,34 @@ class BugTrackerView(object):
         #
         self.request.response.redirect(self.request.URL[-1])
 
+
 # Bug Reports
 class BugsAssignedReportView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.form = self.request.form
-
-    def update(self):
         # Default to showing bugs assigned to the logged in user.
-        user = IPerson(self.request.principal).id
-        self.context.user = user
+        username = self.form.get('user', None)
+        if username: self.user = Person.selectBy(name=username)[0]
+        else:
+            try: self.user = IPerson(self.request.principal)
+            except TypeError: self.user = None
+        self.context.user = self.user
+
+    def userSelector(self):
+        html = '<select name="user" onclick="form.submit()">\n'
+        for person in self.allPeople():
+            html = html + '<option value="'+person.name+'"'
+            if person==self.user: html = html + ' selected="yes"'
+            html = html + '>'
+            html = html + person.browsername() + '</option>\n'
+        html = html + '</select>\n'
+        return html
+
+    def allPeople(self):
+        return Person.select()
+
 
 class BugsCreatedByView(object):
     def __init__(self, context, request):

@@ -59,9 +59,9 @@
           </span>
         </li>
         <li tal:condition="not:request/lp:person">
-          <a href="bugs/createdby">Show bugs by creator</a>
+          <a href="bugs/created">Show bugs you created</a>
         </li>
-        <li><a href="myassignedbugs">See the bugs I've been assigned</a></li>
+        <li><a href="bugs/assigned">See the bugs assigned to you</a></li>
         <li><a href="projects">Search projects</a></li>
         <li><a href="bugtrackers">Known bug trackers</a></li>
     </ul>

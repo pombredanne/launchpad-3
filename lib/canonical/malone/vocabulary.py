@@ -7,7 +7,8 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.launchpad.database import Person
-from canonical.launchpad.database import Sourcepackage, Binarypackage
+from canonical.launchpad.database import Sourcepackage, Binarypackage, \
+                                         BinarypackageName
 from canonical.launchpad.database import Product, ProductRelease
 from canonical.launchpad.database import BugTracker
 
@@ -85,6 +86,18 @@ class SourcepackageVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj.id, str(obj.id), name)
     def getTermByToken(self, token):
         return self.getTerm(token)
+
+
+class BinarypackageNameVocabulary(SQLObjectVocabularyBase):
+    _table = BinarypackageName
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj.id, obj.name, obj.name)
+
+    def getTermByToken(self, token):
+        return self.getTerm(token)
+
 
 
 class ProductVocabulary(SQLObjectVocabularyBase):
