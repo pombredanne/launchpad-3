@@ -180,6 +180,8 @@
                 <metal:portlets define-slot="portlets_one">
                 
                 </metal:portlets>
+                <div tal:condition="nothing"
+                    tal:replace="structure view/@@bag" />
                 &nbsp;
               </div>
             </td>

@@ -41,3 +41,5 @@ class MaloneApplicationView(object):
         self.context = context
         self.request = request
 
+    name = 'Malone'
+

@@ -14,7 +14,7 @@ __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IDOAPApplication', 'IFOAFApplication',
            'IPasswordEncryptor', 'IReadZODBAnnotation',
            'IWriteZODBAnnotation', 'IZODBAnnotation',
-           'IAuthorization')
+           'IAuthorization', 'IOpenLaunchBag', 'ILaunchBag')
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -23,6 +23,7 @@ class ILaunchpadApplication(Interface):
     application objects will provide an interface that extends this
     interface.
     """
+    name = Attribute('Name')
 
 
 class IMaloneApplication(ILaunchpadApplication):
@@ -105,4 +106,20 @@ class IAuthorization(Interface):
         'fall off the end' of the method.
         """
 
+class ILaunchBag(Interface):
+    site = Attribute('The application object, or None')
+    person = Attribute('Person, or None')
+    project = Attribute('Project, or None')
+    product = Attribute('Product, or None')
+    distribution = Attribute('Distribution, or None')
+    sourcepackage = Attribute('Sourcepackage, or None')
 
+    user = Attribute('Currently authenticated person, or None')
+
+class IOpenLaunchBag(ILaunchBag):
+    def add(ob):
+        '''Stick the object into the correct attribute of the ILaunchBag,
+        or ignored, or whatever'''
+    def clear():
+        '''Empty the bag'''
+    

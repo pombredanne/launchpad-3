@@ -20,7 +20,6 @@ from zope.interface import providedBy
 import canonical.launchpad.layers as layers
 from canonical.launchpad.interfaces import ILaunchpadApplication
 
-from zope.component import queryView, getDefaultViewName, queryMultiView
 from zope.component import getUtility
 
 from zope.publisher.http import HTTPRequest
@@ -31,8 +30,6 @@ from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.publication.zopepublication import Cleanup
 from zope.app.publication.http import HTTPPublication
 from zope.app.publication.browser import BrowserPublication as BrowserPub
-from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.publisher.interfaces import NotFound
 from zope.publisher.publish import publish
 
 from zope.app.errorservice import globalErrorReportingService
@@ -53,6 +50,8 @@ from zope.server.http.publisherhttpserver import PublisherHTTPServer
 from zope.interface.common.interfaces import IException
 from zope.exceptions.exceptionformatter import format_exception
 
+from canonical.launchpad.interfaces import IOpenLaunchBag
+
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
 
@@ -61,40 +60,6 @@ import traceback
 from new import instancemethod
 
 
-class ISubURLDispatch(Interface):
-
-    def __call__():
-        """Returns the object at this suburl"""
-
-
-class SubURLTraverser:
-    implements(IBrowserPublisher)
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def publishTraverse(self, request, name):
-        """Search for views, and if no view is found, look for subURLs."""
-        view = queryView(self.context, name, request)
-        # XXX I should be looking for views for normal publication here.
-        # so, views providing ISubURLDispatch and not "normal publication"
-        # shouldn't show up.
-        if view is None or ISubURLDispatch.providedBy(view):
-            if view is None:
-                dispatcher = queryMultiView((self.context,), request,
-                        providing=ISubURLDispatch, name=name)
-                if dispatcher is None:
-                    raise NotFound(self.context, name)
-            else:
-                dispatcher = view
-            return dispatcher()
-        else:
-            return view
-
-    def browserDefault(self, request):
-        view_name = getDefaultViewName(self.context, request)
-        return self.context, (view_name,)
 
 class RootObject(Location):
     implements(IContainmentRoot, ILaunchpadApplication)
@@ -180,6 +145,9 @@ class BrowserPublication(BrowserPub):
         if '++etc++process' in stack:
             return applicationControllerRoot
 
+        bag = getUtility(IOpenLaunchBag)
+        assert bag.site is None, 'Argh! Steve was wrong!'
+        bag.add(rootObject)
         return rootObject
 
     # the below ovverrides to zopepublication (callTraversalHooks,
@@ -225,6 +193,7 @@ class BrowserPublication(BrowserPub):
         canonical.launchpad.webapp.zodb.handle_before_traversal(root)
 
         self.clearSQLOSCache()
+        getUtility(IOpenLaunchBag).clear()
 
         # Set the default layer.
         adapters = zapi.getService(zapi.servicenames.Adapters)

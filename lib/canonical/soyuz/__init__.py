@@ -10,5 +10,6 @@ __metaclass__ = type
 class SoyuzApplication:
     """Something that URLs get attached to.  See configure.zcml."""
     implements(ISoyuzApplication)
+    name = 'Soyuz'
 
 # arch-tag: 095a4ca8-1a0f-4287-bb2d-fdd0d48b576b

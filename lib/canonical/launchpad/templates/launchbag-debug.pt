@@ -1,0 +1,34 @@
+<div class="portlet">
+    <h4>Context</h4>
+
+    <table tal:define="bag view/bag">
+        <tr>
+            <td>Site</td>
+            <td tal:content="bag/site/name|nothing" />
+        </tr>
+        <tr>
+            <td>Person</td>
+            <td tal:content="bag/person/displayname|nothing" />
+        </tr>
+        <tr>
+            <td>Project</td>
+            <td tal:content="bag/project/name|nothing" />
+        </tr>
+        <tr>
+            <td>Product</td>
+            <td tal:content="bag/product/name|nothing" />
+        </tr>
+        <tr>
+            <td>Distribution</td>
+            <td tal:content="bag/distribution/name|nothing" />
+        </tr>
+        <tr>
+            <td>Sourcepackage</td>
+            <td tal:content="bag/sourcepackage/name|nothing" />
+        </tr>
+        <tr>
+            <td>User</td>
+            <td tal:content="bag/user/displayname|nothing" />
+        </tr>
+    </table>
+</div>

@@ -27,6 +27,7 @@ class RosettaApplication:
         products = getUtility(IProductSet)
         return products.translatables(translationProject)
 
+    name = 'Rosetta'
 
 class RosettaApplicationView(object):
 
