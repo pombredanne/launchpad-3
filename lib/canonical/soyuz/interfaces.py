@@ -169,6 +169,7 @@ class IDistroReleaseBinaryApp(Interface):
     binarypackage = Attribute("BinaryPackage")
     lastversions = Attribute("Last Release Versions")
     currentversions = Attribute("Current Release Versions")
+    release = Attribute("Distro Release")
 
     def __getitem__(name):
         """Retrieve a package release by version."""
@@ -323,85 +324,6 @@ class IRelease(Interface):
 
 ################################################################
    
-class IProjects(Interface):
-    """Root object for collection of projects"""
-    def __getitem__(name):
-        """retrieve project by name"""
-    def projects():
-        """retrieve all projects"""
-
-    def __iter__():
-        """retrieve an iterator"""
-
-    def new(name, title, description, url):
-        """Creates a new project with the given name.
-
-        Returns that project.
-        """
-
-
-class IProject(Interface):
-    """A Project FIXME: why is this duplicated with the one in doap.py ???"""
-
-    name = Attribute("The project's name. (unique within IProjects)")
-
-    title = Attribute("The project's title.")
-
-    url = Attribute("The URL of the project's website.")
-
-    description = Attribute("The project's description.")
-
-    def displayName(aDesc=None):
-        """return the projects shortdesc, setting it if aDesc is provided"""
-
-    def potFiles():
-        """Returns an iterator over this project's pot files."""
-
-    def products():
-        """Returns an iterator over this projects products."""
-
-    def potFile(name):
-        """Returns the pot file with the given name."""
-
-    def newProduct(name, title, description, url):
-        """make a new product"""
-    def getProduct(name):
-        """blah"""
-    def shortDescription(aDesc=None):
-        """return the projects shortdesc, setting it if aDesc is provided"""
-        
-class IProduct(Interface):
-    """A Product.  For example 'firefox' in the 'mozilla' project."""
-
-    name = Attribute("The product's name, unique within a project.")
-
-    displayName = Attribute("The product's display name.")
-
-    title = Attribute("The product's title.")
-
-    description = Attribute("The product's description")
-
-    project = Attribute("The product's project.")
-
-    def potFiles():
-        """Returns an iterator over this product's pot files."""
-
-    def newPotFile(branch):
-        """Creates a new POT file.
-
-        Returns the newly created POT file.
-        """
-
-    def branches():
-        """Iterate over this product's branches."""
-
-    def syncs():
-        """iterate over this products syncs"""
-    def newSync(**kwargs):
-        """create a new sync job"""
-    def getSync(name):
-        """get a sync"""
-
 class ISync(Interface):
     """A sync job"""
 
@@ -526,6 +448,7 @@ class ISourcePackageRelease(Interface):
     dscsigningkey = Attribute("DSC Signing Key")
     component = Attribute("Source Package Component")
     changelog = Attribute("Source Package Change Log")
+    pkgurgency = Attribute("Source Package Urgency Translated using dbschema")
     
     def branches():
         """Return the list of branches in a source package release"""
@@ -567,8 +490,9 @@ class IChangeset(Interface):
 
 ##Dummy Interfaces
 class ICurrentVersion(Interface):
-    currentversion = Attribute("DUMMY")
-    currentbuilds = Attribute("DUMMY")
+    release = Attribute("The binary or source release object")
+    currentversion = Attribute("Current version of A binary or source package")
+    currentbuilds = Attribute("The current builds for binary or source package")
 
 
 # arch-tag: 3f98fde9-9a5b-447b-93e7-e4a9c770ca63

@@ -43,7 +43,7 @@
 
 	      <p><b>Product:   </b> 
 	      <tal:dummy tal:condition="context/sourcepackage/product">
-	         <a href="no-url-yet" tal:content="context/sourcepackage/product/displayName" />
+	         <a href="no-url-yet" tal:content="context/sourcepackage/product/title" />
 	      </tal:dummy>
 	      <tal:dummy tal:condition="not:context/sourcepackage/product">
 	         No Product for this Package Available

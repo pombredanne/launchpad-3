@@ -30,7 +30,6 @@
 	   <p><b>Package name: </b> 
 	   <tal:block tal:replace="context/binarypackage/name"/>
 	 </fieldset>
-
 	 <fieldset>
 	   <legend>
 	     Available Versions
@@ -52,7 +51,12 @@
              </a>
 	     ]
 	     </tal:block>
-	     )<br>
+	     [
+	     <a tal:attributes="href
+	     string:../../../src/${context/release/name}/${current/release/sourcepackage/name}">
+	     src
+	     </a>
+	     ])<br>
            </tal:block>
 	   </tal:dummy>
 	   <tal:dummy tal:condition="not:context/currentversions">

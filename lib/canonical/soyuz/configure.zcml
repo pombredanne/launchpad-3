@@ -72,7 +72,7 @@
   <!-- These are views on the soyuz projects list. -->
   <browser:suburl
       for="canonical.soyuz.SoyuzApplication"
-      utility="canonical.soyuz.interfaces.IProjects"
+      utility="canonical.database.doap.IProjects"
       permission="zope.Public"
       name="projects"
       />

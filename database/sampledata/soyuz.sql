@@ -144,7 +144,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-6',
         timestamp '2004-06-17 00:00',
-        1);
+	1);
 
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
@@ -155,7 +155,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-7',
         timestamp '2004-06-18 00:00',
-        1);
+	1);
 
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
@@ -166,7 +166,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-8',
         timestamp '2004-06-19 00:00',
-        1);
+	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
@@ -176,7 +176,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.0-9',
         timestamp '2004-06-20 00:00',
-        1);
+	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
@@ -186,7 +186,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.1-1',
         timestamp '2004-06-29 00:00',
-        1);
+	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
@@ -196,7 +196,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         (SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
         '0.9.1-2',
         timestamp '2004-06-30 00:00',
-        1);
+	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
@@ -206,7 +206,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         (SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
         '0.9.1-3',
         timestamp '2004-07-01 00:00',
-        1);
+	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
@@ -216,7 +216,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         (SELECT id FROM Person WHERE displayname = 'Dave Miller'),
         '0.9.1-4',
         timestamp '2004-07-02 00:00',
-        1);
+	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
@@ -226,7 +226,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         (SELECT id FROM Person WHERE displayname = 'James Blackwell'),
         '0.9.1-5',
         timestamp '2004-07-03 00:00',
-        1);
+	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
@@ -236,7 +236,7 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         (SELECT id FROM Person WHERE displayname = 'Christian Reis'),
         '0.9.1-6',
         timestamp '2004-07-04 00:00',
-        1);
+	1);
 
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
@@ -246,7 +246,9 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         (SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
         '0.9.1-7',
         timestamp '2004-07-05 00:00',
-        1);
+	1);
+
+UPDATE sourcepackagerelease set component = 1;
 
 UPDATE sourcepackagerelease set builddepends = 
 	'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch'
@@ -880,7 +882,7 @@ INSERT INTO Distroarchrelease(distrorelease, processorfamily, architecturetag,
 	owner) VALUES 
 	((SELECT id FROM Distrorelease where name = 'warty'), 
 	(SELECT id from Processorfamily where name = 'x86'), 
-	'warty--x86--devel--0', 
+	'i386', 
 	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')
 	);
 

@@ -42,11 +42,11 @@
        UPLOADDATE</span>
 
     <p><b>Urgency Level:</b>
-       <span tal:content="context/sourcepackagerelease/urgency">
+       <span tal:content="context/sourcepackagerelease/pkgurgency">
        URGENCY</span>
 
     <p><b>Component:</b>
-       <span tal:content="context/sourcepackagerelease/urgency">
+       <span tal:content="context/sourcepackagerelease/component/name">
        Component</span>
     
     <div align="right">

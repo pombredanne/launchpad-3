@@ -6,6 +6,7 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
 from sqlobject.sqlbuilder import func
 from canonical.database.sqlbase import SQLBase
+from canonical.database.doap import Product, DBProject
 from canonical.lp import dbschema
 
 # Soyuz interfaces
@@ -230,7 +231,7 @@ class SoyuzSourcePackage(SQLBase):
 
     def product(self):
         try:
-            return SoyuzProduct.select(
+            return Product.select(
                 "Product.id = Packaging.product AND "
                 "Packaging.sourcepackage = %d"
                 % self.id
@@ -316,6 +317,7 @@ class SoyuzSourcePackageRelease(SQLBase):
         DateTimeCol('dateuploaded', dbName='dateuploaded', notNull=True,
                     default='NOW'),
         IntCol('urgency', dbName='urgency', notNull=True),
+        ForeignKey(name='component', foreignKey='SoyuzComponent', dbName='component'),
         StringCol('changelog', dbName='changelog'),
         StringCol('builddepends', dbName='builddepends'),
         StringCol('builddependsindep', dbName='builddependsindep'),
@@ -332,6 +334,14 @@ class SoyuzSourcePackageRelease(SQLBase):
             % (distroRelease.id, self.id)
         )
         return archReleases
+
+    def _urgency(self):
+        for urgency in dbschema.SourcePackageUrgency.items:
+            if urgency.value == self.urgency:
+                return urgency.title
+        return 'Unknown (%d)' %self.urgency
+
+    pkgurgency = property(_urgency)
 
 
 def getSourcePackage(name):
@@ -452,54 +462,6 @@ class BranchRelationship(SQLBase):
         return [br for br in dbschema.BranchRelationships
                 if br == self.label][0]
         
-
-class SoyuzProduct(SQLBase):
-
-    _table = 'Product'
-
-    _columns = [
-        ForeignKey(name='project', foreignKey='Project', dbName='project',
-                   notNull=True),
-        ForeignKey(name='owner', foreignKey='SoyuzPerson', dbName='owner',
-                   notNull=True),
-        StringCol('name', dbName='name', notNull=True),
-        # TODO: remove default on displayname and shortdesc
-        StringCol('displayName', dbName='displayname', notNull=True,
-                  default=''),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('shortDescription', dbName='shortdesc', notNull=True, default=''),
-        StringCol('description', dbName='description', notNull=True),
-        DateTimeCol('datecreated', dbName='datecreated', notNull=True,
-                    default="NOW"),
-        StringCol('homepageurl', dbName='homepageurl'),
-        StringCol('screenshotsurl'),
-        StringCol('wikiurl'),
-        StringCol('programminglang'),
-        StringCol('downloadurl'),
-        StringCol('lastdoap'),
-        ]
-
-        
-
-class SoyuzProject(SQLBase):
-
-    _table = 'Project'
-
-    _columns = [
-        ForeignKey(name='owner', foreignKey='SoyuzPerson', dbName='owner',
-                   notNull=True),
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('displayName', dbName='displayname', notNull=True,
-                  default=""),
-        StringCol('title', dbName='title', notNull=True, default=""),
-        StringCol('shortDescription', dbName='shortdesc', notNull=True, default=""),
-        StringCol('description', dbName='description', notNull=True,
-                  default=""),
-        DateTimeCol('datecreated', dbName='datecreated', notNull=True,
-                    default="NOW"),
-        StringCol('homepageurl', dbName='homepageurl'),
-    ]
-
 # People Related sqlobject
 
 class SoyuzEmailAddress(SQLBase):

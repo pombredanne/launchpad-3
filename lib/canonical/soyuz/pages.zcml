@@ -407,7 +407,7 @@
         lp:url="Soyuz/distros/$Distribution.name/$Release.name/source/index.html"
         />
 
-  <pages for="canonical.soyuz.interfaces.IProjects"
+  <pages for="canonical.database.doap.IProjects"
          class="canonical.soyuz.browser.ViewProjects"
          permission="zope.Public">
     <page name="index.html"
@@ -424,10 +424,10 @@
           />
   </pages>
 
- <traverse for="canonical.soyuz.interfaces.IProjects" function="canonical.soyuz.browser.urlTraverseProjects" />
+ <traverse for="canonical.database.doap.IProjects" function="canonical.soyuz.browser.urlTraverseProjects" />
 
 
-  <pages for="canonical.soyuz.interfaces.IProject"
+  <pages for="canonical.database.doap.IProject"
          class="canonical.soyuz.browser.ViewProject"
          permission="zope.Public">
     <page name="index.html"
@@ -440,9 +440,9 @@
           />
     </pages>
 
-<traverse for="canonical.soyuz.interfaces.IProject" function="canonical.soyuz.browser.urlTraverseProducts" /> 
+<traverse for="canonical.database.doap.IProject" function="canonical.soyuz.browser.urlTraverseProducts" /> 
   
-  <pages for="canonical.soyuz.interfaces.IProduct"
+  <pages for="canonical.database.doap.IProduct"
          class="canonical.soyuz.browser.ViewProduct"
          permission="zope.Public">
     <page name="index.html"
@@ -455,7 +455,7 @@
           /> 
     </pages>
 
-  <traverse for="canonical.soyuz.interfaces.IProduct" function="canonical.soyuz.browser.urlTraverseSyncs" /> 
+  <traverse for="canonical.database.doap.IProduct" function="canonical.soyuz.browser.urlTraverseSyncs" /> 
  
   <pages for="canonical.soyuz.interfaces.ISync"
          class="canonical.soyuz.browser.ViewSync"
