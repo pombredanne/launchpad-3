@@ -138,7 +138,7 @@
       </td>
     </tr>
   </table>
-  <input type="submit" value="Submit a Bug" onclick="window.open('+new','_top')" />
+  <input type="button" value="Submit a Bug" onclick="window.location='/malone/bugs/+new'" />
 
     <fieldset>
         <legend>Filter Criteria</legend>
