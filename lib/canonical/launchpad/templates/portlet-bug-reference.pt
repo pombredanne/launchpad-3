@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/externalrefs">
 
     <h4>Related Web Links</h4>
 

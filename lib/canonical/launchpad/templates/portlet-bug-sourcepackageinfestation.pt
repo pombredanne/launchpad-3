@@ -1,4 +1,4 @@
-<div>
+<div tal:condition="context/packageinfestations">
     <table class="listing rowNavigation">
         <tr>
             <th>Source Package</th>

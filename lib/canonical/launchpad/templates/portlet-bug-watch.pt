@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/watches">
 
     <h4 title="Bug watches keep track of this bug in other bug trackers.">
     BugTracker Watches

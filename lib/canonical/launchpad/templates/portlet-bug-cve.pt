@@ -1,4 +1,4 @@
-<div class="portlet">
+<div class="portlet" tal:condition="context/cverefs">
 
     <h4>CVE References</h4>
 

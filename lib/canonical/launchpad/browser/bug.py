@@ -65,6 +65,8 @@ class BugView(object):
         '../templates/portlet-bug-people.pt')
     assignmentsHeadline = ViewPageTemplateFile(
         '../templates/portlet-bug-assignments-headline.pt')
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-bug-actions.pt')
 
 class BugAddView(AddView):
     def add(self, content):

@@ -1,4 +1,4 @@
-<div>
+<div tal:condition="context/productinfestations">
     <table class="listing rowNavigation">
         <tr>
             <th>Product</th>

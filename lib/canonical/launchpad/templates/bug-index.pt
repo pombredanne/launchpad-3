@@ -20,6 +20,7 @@
     <div tal:replace="structure view/cvePortlet" />
     <div tal:replace="structure view/referencePortlet" />
     <div tal:replace="structure view/watchPortlet" />
+    <div tal:replace="structure view/actionsPortlet" />
 </metal:rightportlets>
 
 
