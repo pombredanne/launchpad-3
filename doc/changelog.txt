@@ -2,6 +2,54 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-21 19:43:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1467
+
+    Summary:
+      Mirror database, interface and zcml files included.
+    Revision:
+      launchpad--devel--0--patch-1467
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-478
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-479
+       Mirror database, interface and zcml files included.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-480
+       merge from rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/database/.arch-ids/mirror.py.id
+     lib/canonical/launchpad/database/.arch-ids/mirrorcontent.py.id
+     lib/canonical/launchpad/database/.arch-ids/mirrorsourcecontent.py.id
+     lib/canonical/launchpad/database/mirror.py
+     lib/canonical/launchpad/database/mirrorcontent.py
+     lib/canonical/launchpad/database/mirrorsourcecontent.py
+     lib/canonical/launchpad/interfaces/.arch-ids/mirror.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/mirrorcontent.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/mirrorsourcecontent.py.id
+     lib/canonical/launchpad/interfaces/mirror.py
+     lib/canonical/launchpad/interfaces/mirrorcontent.py
+     lib/canonical/launchpad/interfaces/mirrorsourcecontent.py
+     lib/canonical/launchpad/zcml/.arch-ids/mirror.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/mirrorcontent.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/mirrorsourcecontent.zcml.id
+     lib/canonical/launchpad/zcml/mirror.zcml
+     lib/canonical/launchpad/zcml/mirrorcontent.zcml
+     lib/canonical/launchpad/zcml/mirrorsourcecontent.zcml
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-478
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-479
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-480
+
+
 2005-03-21 13:20:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1466
 
     Summary:
