@@ -53,6 +53,8 @@
 	- add DOAP fields for Product:
 	  - screenshotsurl, wikiurl, listurl, programminglang
 	  - downloadurl, lastdoap
+	- rewire BinarypackageUpload to point to DistroArchRelease
+	  instead of DistroRelease
   v0.98:
         - merge SourceSource table from Andrew Bennetts
 	- change SourceSource.homepageurl to SourceSource.product
@@ -1274,7 +1276,7 @@ CREATE TABLE BinarypackageBuildFile (
 */
 CREATE TABLE BinarypackageUpload (
   binarypackagebuild     integer NOT NULL REFERENCES BinarypackageBuild,
-  distrorelease          integer NOT NULL REFERENCES DistroRelease,
+  distroarchrelease      integer NOT NULL REFERENCES DistroArchRelease,
   -- see Package Upload Status schema
   uploadstatus           integer NOT NULL,
   component              integer NOT NULL REFERENCES Label,
