@@ -35,6 +35,10 @@ launchpad launchpad_test: %:
 	@ echo '* create the $* database tables'
 	psql --file launchpad.sql $*
 	psql --file default.sql $*
+	psql --file languages.sql $*
+
+sampledata: launchpad_test
+	psql --file sampledata.sql launchpad_test
 
 dropdb-launchpad dropdb-launchpad_test: dropdb-%: +%-db
 	@ echo '* remove the $* database'

@@ -4,6 +4,10 @@ from interfaces import IPOMessageSet
 from zope.interface import implements
 import sets
 
+# This file raises string exceptions.  These should be considered
+# "XXX FIXME" markings - as in, replace these with whatever real
+# exception should be raised in each case.
+
 class DatabaseConstraintError(Exception):
     pass
 
@@ -18,7 +22,7 @@ class WatchedSet(sets.Set):
         self._data = {}
         self._watcher = watcher
         if iterable is not None:
-            self._update(iterable)
+            sets.Set._update(self, iterable)
 
     def _update(self, iterable):
         sets.Set._update(self, iterable)
@@ -73,13 +77,18 @@ class TranslationsList(object):
 
     def __setitem__(self, index, value):
         current = self._msgset.getTranslationSighting(index)
-        if value == current.poTranslation.text:
-            return
-        current.setCurrent(False)
-        new = self._msgset.makeTranslationSighting(value, index)
+        if current is not None:
+            if value == current.poTranslation.text:
+                return
+            current.inPOFile = False
+        if value:
+            self._msgset.makeTranslationSighting(value, index)
 
     def __getitem__(self, index):
         return self._msgset.getTranslationSighting(index).poTranslation.text
+
+    def __len__(self):
+        return self._msgset.translations().count()
 
 
 class MessageProxy(POMessage):
@@ -97,44 +106,46 @@ class MessageProxy(POMessage):
     msgid = property(_get_msgid, _set_msgid)
 
     def _get_msgidPlural(self):
-        msgids = self._msgset.messageIDs()
-        if msgids.count() >= 2:
-            return msgids[1]
+        msgids = list(self._msgset.messageIDs())
+        if len(msgids) >= 2:
+            return msgids[1].text
         return None
     def _set_msgidPlural(self, value):
         # do we already have one?
         old_plural = self.msgidPlural
         if old_plural is not None:
             old_plural = self._msgset.getMessageIDSighting(1)
-            old_plural.setCurrent(False)
+            old_plural.inPOFile = False
         self._msgset.makeMessageIDSighting(value, 1)
-    msgidPlural = property(_get_msgidPlural)
+    msgidPlural = property(_get_msgidPlural, _set_msgidPlural)
 
     def _get_msgstr(self):
-        translations = self._msgset.translations()
-        if translations.count() == 1:
+        translations = list(self._msgset.translations())
+        if len(translations) == 1:
             return translations[0].text
     def _set_msgstr(self, value):
         current = self._msgset.getTranslationSighting(0)
         if value == current.poTranslation.text:
             return
-        current.setCurrent(False)
+        current.inPOFile = False
         new = self._msgset.makeTranslationSighting(0, index)        
-    msgstr = property(_get_msgstr)
+    msgstr = property(_get_msgstr, _set_msgstr)
 
     def _get_msgstrPlurals(self):
-        translations = self._msgset.translations()
-        if translations.count() > 1:
+        translations = list(self._msgset.translations())
+        if len(translations) > 1:
             # test is necessary because the interface says when
             # there are no plurals, msgstrPlurals is None
             return TranslationsList(self._msgset)
     def _set_msgstrPlurals(self, value):
         current = self.msgstrPlurals
-        if len(value) != len(current):
+        if current is not None and len(value) != len(current):
             raise ValueError("New list of message strings has different size as current one")
+        if current is None:
+            current = TranslationsList(self._msgset)
         for index, item in enumerate(value):
             current[index] = item
-    msgstrPlurals = property(_get_msgstrPlurals)
+    msgstrPlurals = property(_get_msgstrPlurals, _set_msgstrPlurals)
 
     def _get_commentText(self):
         return self._msgset.commentText
@@ -155,9 +166,10 @@ class MessageProxy(POMessage):
     fileReferences = property(_get_fileReferences, _set_fileReferences)
 
     def _get_flags(self):
+        flags = self._msgset.flagsComment or ''
         return WatchedSet(
             self._set_flags,
-            [flag.strip() for flag in self._msgset.flagsComment.split(',')]
+            [flag.strip() for flag in flags.split(',')]
             )
     def _set_flags(self, value):
         self._msgset.flagsComment = self.flagsText(value, withHash=False)
@@ -179,10 +191,7 @@ class TemplateImporter(object):
 
     def doImport(self, filelike):
         "Import a file (or similar object)"
-        # crack: will this work?  Suggestions of better ways are gladly accepted
-        self.potemplate._connection.query('UPDATE POMsgSet SET sequence = 0'
-                                          ' WHERE potemplate = %d AND pofile = NULL'
-                                          % self.potemplate.id)
+        self.potemplate.expireAllMessages()
         # what policy here? small bites? lines? how much memory do we want to eat?
         self.parser.write(filelike.read())
         self.parser.finish()
@@ -205,14 +214,21 @@ class TemplateImporter(object):
         proxy = MessageProxy(msgset)
         proxy.msgidPlural = kw.get('msgidPlural', '')
         if kw.get('msgstr'):
+            # if not is_it_the_header:
+            raise "You're on crack. (%r) as msgstr" % kw['msgstr']
             proxy.msgstr = kw['msgstr']
         proxy.commentText = kw.get('commentText', '')
         proxy.sourceComment = kw.get('sourceComment', '')
         proxy.fileReferences = kw.get('fileReferences', '').strip()
         proxy.flags = kw.get('flags', ())
-        if kw.get('msgstrPlurals'):
-            proxy.msgstrPlurals = kw['msgstrPlurals']
+        plurals = []
+        for inp_plural in kw.get('msgstrPlurals', ()):
+            if inp_plural:
+                raise "You're on crack (%r)." % kw.get('msgstrPlurals')
+            plurals.append(inp_plural)
+        proxy.msgstrPlurals = plurals
         proxy.obsolete = kw.get('obsolete', False)
+        return proxy
 
 
 class POFileImporter(object):
@@ -225,10 +241,7 @@ class POFileImporter(object):
 
     def doImport(self, filelike):
         "Import a file (or similar object)"
-        # crack: will this work?  Suggestions of better ways are gladly accepted
-        potemplate._connection.query('UPDATE POMsgSet SET sequence = 0'
-                                     ' WHERE potemplate = %d AND pofile = NULL'
-                                     % potemplate.id)
+        self.potemplate.expireAllMessages()
         # what policy here? small bites? lines? how much memory do we want to eat?
         parser.write(filelike.read())
         parser.finish()
@@ -256,3 +269,4 @@ class POFileImporter(object):
         if kw.get('msgstrPlurals'):
             proxy.msgstrPlurals = kw['msgstrPlurals']
         proxy.obsolete = kw.get('obsolete', False)
+        return proxy

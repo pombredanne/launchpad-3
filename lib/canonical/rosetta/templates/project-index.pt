@@ -18,21 +18,16 @@
 
     <div style="float: right; clear: both; margin-top: 0.25em;">
     Project home page:
-    <a href=""
+    <a href="http://project.home/page"
        tal:content="context/url|default"
        tal:attributes="href context/url|nothing">(None supplied)</a>
     </div>
 
     <p tal:content="context/description">
-        Mozilla offers a full suite of integrated Internet applications 
-        including a web browser, e-mail client, address book, web page composer,
-        Internet chat software and calendar application.
+    Mozilla offers a full suite of integrated Internet applications including
+    a web browser, e-mail client, address book, web page composer, Internet
+    chat software and calendar application.
     </p>
-
-    <div class="documentDescription">
-      Here are the translation resources available, select language from the
-      pulldown, and click an entry to translate.
-    </div>
 
 <!-- Temporary manual override
         <select style="float: right; clear: both;">
@@ -42,11 +37,17 @@
             <option>Norsk</option>
         </select>
 -->
-        <p class="discreet">
-        These language name headlines are based on the user preferences, if
-        the user hasn't set anything, it's the stuff we can extract from
-        browser/IP:
-        </p>
+    <p class="discreet">
+    These language name headlines are based on the user preferences, if
+    the user hasn't set anything, it's the stuff we can extract from
+    browser/IP:
+    </p>
+
+    <div tal:condition="view/thereAreTemplates">
+        <div class="documentDescription">
+        Here are the translation resources available, select language from the
+        pulldown, and click an entry to translate.
+        </div>
 
         <div tal:repeat="LT view/languageTemplates">
 
@@ -92,14 +93,14 @@
             </table>
 
         </div>
+    </div> <!-- tal:condition="view/thereAreTemplates -->
 
-        <h2>Japanese</h2>
-
-        <p class="discreet">
-        In the case that the project doesn't have any translations into this
-        language, the resources just show up as 0% translated. You become a
-        member of a team simply by participating.
+    <div tal:condition="not: view/thereAreTemplates">
+        <p>
+        Rosetta doesn't currently know of any translatable resources for
+        <span tal:content="context/title">project title</span>.
         </p>
+    </div>
 
 </div>
 

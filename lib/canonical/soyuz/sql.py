@@ -14,7 +14,7 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
 from canonical.arch.sqlbase import SQLBase
 
 # sibling import
-from canonical.soyuz.interfaces import IBinaryPackage, IBinaryPackageRelease
+from canonical.soyuz.interfaces import IBinaryPackage, IBinaryPackageBuild
 from canonical.soyuz.interfaces import ISourcePackageRelease, IManifestEntry
 from canonical.soyuz.interfaces import IBranch, IChangeset, IPackages
 from canonical.soyuz.interfaces import IBinaryPackageSet, ISourcePackageSet
@@ -65,23 +65,29 @@ class BinaryPackage(SQLBase):
         StringCol('title', dbName='Title'),
         StringCol('description', dbName='Description'),        
     ]
-    releases = MultipleJoin('BinaryPackageRelease', joinColumn='binarypackage')
+    releases = MultipleJoin('SoyuzBinaryPackageBuild', joinColumn='binarypackage')
 
 
-class BinaryPackageRelease(SQLBase):
-    implements(IBinaryPackageRelease)
+class SoyuzBinaryPackageBuild(SQLBase):
+    implements(IBinaryPackageBuild)
 
-    # TODO: Which table is this?
+    _table = 'BinarypackageBuild'
     _columns = [
-        ForeignKey(name='binaryPackage', foreignKey='BinaryPackage', 
-                   dbName='binaryPackage', notNull=True),
         ForeignKey(name='sourcePackageRelease', 
                    foreignKey='SourcePackageRelease', 
-                   dbName='sourcePackageRelease', notNull=True),
-        StringCol('name', dbName='Name'),
-        StringCol('version', dbName='Version'),
+                   dbName='sourcepackagerelease', notNull=True),
+        ForeignKey(name='binaryPackage', foreignKey='BinaryPackage', 
+                   dbName='binarypackage', notNull=True),
+        ForeignKey(name='processor', foreignKey='Processor', 
+                   dbName='processor', notNull=True),
+        IntCol('binpackageformat', dbName='binpackageformat', notNull=True),
+        StringCol('version', dbName='Version', notNull=True),
+        DateTimeCol('datebuilt', dbName='datebuilt', notNull=True),
+        # TODO: More columns
     ]
 
+    def _get_sourcepackage(self):
+        return self.sourcePackageRelease.sourcepackage
 
 
 class SoyuzPerson(SQLBase):
@@ -147,8 +153,15 @@ class Release(SQLBase):
             raise KeyError, name
 
 
-class GenericPackages:
-    # FIXME: This abstract base class probably doesn't need to exist anymore
+class SourcePackages(object):
+    """Container of SourcePackage objects.
+
+    Used for web UI.
+    """
+    implements(ISourcePackageSet)
+
+    table = SourcePackageRelease
+    clauseTables = ('SourcePackage', 'SourcePackageUpload',)
 
     def __init__(self, release):
         self.release = release
@@ -180,24 +193,45 @@ class GenericPackages:
             yield bp
 
 
-class BinaryPackages(GenericPackages):
+class BinaryPackages(object):
     """Container of BinaryPackage objects.
 
     Used for web UI.
     """
     implements(IBinaryPackageSet)
 
-    table = BinaryPackage
+    table = SoyuzBinaryPackageBuild
+    clauseTables = ('BinaryPackageUpload', 'DistroArchRelease')
 
-class SourcePackages(GenericPackages):
-    """Container of SourcePackage objects.
+    def __init__(self, release):
+        self.release = release
 
-    Used for web UI.
-    """
-    implements(ISourcePackageSet)
+    def _query(self):
+        return (
+            'BinaryPackageUpload.binarypackagebuild = BinaryPackageBuild.id '
+            'AND BinaryPackageUpload.distroarchrelease = DistroArchRelease.id '
+            'AND DistroArchRelease.distrorelease = %d '
+            % (self.release.id))
+        
+    def __getitem__(self, name):
+        # XXX: What about multiple results?
+        #      (which shouldn't happen here...)
 
-    table = SourcePackageRelease
-    clauseTables = ('SourcePackage', 'SourcePackageUpload',)
+        query = self._query()
+        query += ' AND BinaryPackageBuild.binarypackage = BinaryPackage.id'
+        query += ' AND BinaryPackage.name = %s' % quote(name.encode('ascii'))
+        try:
+            return self.table.select(query, clauseTables=self.clauseTables)[0]
+        except IndexError:
+            # Convert IndexErrors into KeyErrors so that Zope will give a
+            # NotFound page.
+            raise KeyError, name
+
+    def __iter__(self):
+        for bp in self.table.select(self._query(),
+                                    clauseTables=self.clauseTables):
+            yield bp
+
 
 ###########################################################################
 

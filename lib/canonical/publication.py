@@ -108,7 +108,7 @@ class BrowserPublication(BrowserPub):
     superclass of z.a.publication.BrowserPublication.
     """
 
-    def __init__(self):
+    def __init__(self, db=None):
         # note, no ZODB
         pass
 

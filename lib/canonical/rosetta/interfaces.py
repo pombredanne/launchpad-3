@@ -114,10 +114,14 @@ class IPOTemplate(Interface):
 class IEditPOTemplate(IPOTemplate):
     """Edit interface for an IPOTemplate."""
 
-    def newMessageSet(messageID):
-        """Add a message set to this template."""
+    def expireAllMessages():
+        """Mark our of our message sets as not current (sequence=0)"""
 
-    def createPOFile(language):
+    def newMessageSet(text):
+        """Add a message set to this template.  Primary message ID
+        is 'text'."""
+
+    def createPOFile(language, variant):
         """Create and return a new po file in the given language.
 
         Raises an KeyError if a po file of that language already exists.
@@ -138,13 +142,12 @@ class IPOFile(Interface):
 
     header = Attribute("The header of this .po file")
 
-    # XXX: not in the database
     headerFuzzy = Attribute("If the header is fuzzy or not")
 
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
 
-    def translated_count():
+    def translatedCount():
         """
         Returns the number of message sets which this PO file has current
         translations for.
@@ -155,7 +158,7 @@ class IPOFile(Interface):
         Iterate over translated message sets in this PO file.
         """
 
-    def untranslated_count():
+    def untranslatedCount():
         """
         Return the number of messages which this PO file has no translation
         for.
@@ -166,7 +169,7 @@ class IPOFile(Interface):
         Iterate over untranslated message sets in this PO file.
         """
 
-    # Invariant: translated() + untranslated() = __len__()
+    # Invariant: translatedCount() + untranslatedCount() = __len__()
     # XXX: add a test for this
 
     def __iter__():
@@ -181,6 +184,9 @@ class IPOFile(Interface):
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
 
+    def expireAllMessages():
+        """Mark our of our message sets as not current (sequence=0)"""
+
     def newTranslation(IPOTSighting_or_msgid):
         """Create and return a new IPOTranslation.
 
@@ -192,11 +198,15 @@ class IEditPOFile(IPOFile):
 class IPOMessageSet(Interface):
     """A collection of message IDs and possibly translations."""
 
-    poTemplate = Attribute("""The template this set is associated with, if
-        it's associated with a template.""")
+    id = Attribute("""A unique ID for the message set.""")
+
+    id = Attribute("""An identifier for this POMessageSet""")
+
+    poTemplate = Attribute("""The template this set is associated with.""")
 
     poFile = Attribute("""The PO file this set is associated with, if it's
-        associated with a PO file.""")
+        associated with a PO file. For sets from PO templates, this is
+        None.""")
 
     # Invariant: poTemplate == None || poFile == None
     # Invariant: poTemplate != None || poFile != None
@@ -207,7 +217,7 @@ class IPOMessageSet(Interface):
 
     # XXX: test that
 
-    primeMessageID = Attribute("The primary message ID of this set.")
+    primeMessageID_ = Attribute("The primary message ID of this set.")
 
     sequence = Attribute("The ordering of this set within its file.")
 
@@ -256,8 +266,8 @@ class IPOMessageSet(Interface):
         """Return the message ID sighting that is current and has the
         plural form provided."""
 
-    # XXX: is the primary message ID the same as the message ID with plural
-    # form 0? (Ask Mark)
+    # The primary message ID is the same as the message ID with plural
+    # form 0 -- i.e. it's redundant. However, it acts as a cached value.
 
     def translations():
         """Iterate over this set's translations."""
@@ -265,6 +275,9 @@ class IPOMessageSet(Interface):
     def getTranslationSighting(plural_form):
         """Return the translation sighting that is current and has the
         plural form provided."""
+
+    def translationSightings():
+        """Iterate over current translation sightings."""
 
 
 class IEditPOMessageSet(IPOMessageSet):
@@ -282,7 +295,7 @@ class IPOMessageIDSighting(Interface):
 
     poMessageSet = Attribute("")
 
-    poMessageID = Attribute("")
+    poMessageID_ = Attribute("")
 
     firstSeen = Attribute("")
 
@@ -298,10 +311,7 @@ class IEditPOMessageIDSighting(IPOMessageIDSighting):
     """Interface for editing a MessageIDSighting."""
 
     def touch():
-        """Update timestamp of this sighting."""
-
-    def setCurrent(current):
-        """Set isCurrent."""
+        """Update timestamp of this sighting and mark it as inPOFile."""
 
 
 class IPOMessageID(Interface):

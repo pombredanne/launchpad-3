@@ -79,12 +79,31 @@ class ReleasesAddView(object):
         description = self.request.get("description", "").encode("ascii")
         version = self.request.get("version", "").encode("ascii")
 
-        if name or title or description:
+        if name or title or description or version:
             Release(distribution=self.context.distribution.id, name=name,\
                     title=title, description=description,version=version,\
                     components=1, releasestate=1,sections=1,\
                     datereleased='2004-08-15 10:00', owner=1)
-            
+
+
+class ReleasesEditView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+
+        name = self.request.get("name", "").encode("ascii")
+        title = self.request.get("title", "").encode("ascii")            
+        description = self.request.get("description", "").encode("ascii")
+        version = self.request.get("version", "").encode("ascii")
+
+        if name or title or description or version:
+            self.context.name = name
+            self.context.title = title
+            self.context.description = description
+            self.context.version = version
+
 ################################################################
 
 # these are here because there is a bug in sqlobject that stub is fixing,

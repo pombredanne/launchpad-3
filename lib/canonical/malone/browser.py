@@ -2,10 +2,25 @@
 #
 # arch-tag: FA3333EC-E6E6-11D8-B7FE-000D9329A36C
 
+from datetime import datetime
+from email.Utils import make_msgid
 from zope.interface import implements
-from interfaces import IBugMessagesView, IBugExternalRefsView
-from sql import BugAttachmentContainer, BugExternalRefContainer
-from sql import BugSubscriptionContainer
+from zope.app.form.browser.interfaces import IAddFormCustomization
+
+# TODO: These interfaces should probably be moved into this file, since there
+# is only ever one class implementing them
+from interfaces import \
+        IBugMessagesView, IBugExternalRefsView, \
+        IMaloneBug, IMaloneBugAttachment, \
+        IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
+        IBugSubscriptionContainer, IProjectContainer
+
+# TODO: Anything that relies on these imports should not be in this file!
+from canonical.database.malone import \
+        Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
+        ProductBugAssignment, SourcepackageBugAssignment
+from canonical.database.doap import Project
+from canonical.database.foaf import Person
 
 def traverseBug(bug, request, name):
     if name == 'attachments':
@@ -32,6 +47,34 @@ def traverseBugAttachment(bugattachment, request, name):
         raise KeyError, name
 
 
+class BugContainerBase(object):
+    implements(IBugContainer, IAddFormCustomization)
+    def add(self, ob):
+        return ob
+
+    def createAndAdd(self, ob):
+        raise NotImplementedError, 'createAndAdd'
+
+    def nextURL(self):
+        return '.'
+
+
+class MaloneBug(Bug):
+    implements(IMaloneBug)
+
+    _table = 'Bug'
+
+    def add(self, ob):
+        return ob
+
+    def nextURL(self):
+        return '.'
+
+
+class MaloneBugAttachment(BugAttachment, BugContainerBase):
+    implements(IMaloneBugAttachment)
+    _table = 'BugAttachment'
+
 class BugAttachmentContentView(object):
     def __init__(self, context, request):
         self.context = context
@@ -40,6 +83,7 @@ class BugAttachmentContentView(object):
     def index(self):
         self.request.response.setHeader('Content-Type', self.context.mimetype)
         return self.context.content
+
 
 class BugMessagesView(object):
     implements(IBugMessagesView)
@@ -54,6 +98,190 @@ class BugMessagesView(object):
     def nextURL(self):
         return '..'
 
+
+class BugContainer(BugContainerBase):
+    """A container for bugs."""
+
+    implements(IBugContainer)
+    table = MaloneBug
+
+    def __getitem__(self, id):
+        try:
+            return self.table.select(self.table.q.id == id)[0]
+        except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select():
+            yield row
+
+
+def BugFactory(context, **kw):
+    now = datetime.utcnow()
+    bug = Bug(
+            datecreated=now,
+            communityscore=0,
+            communitytimestamp=now,
+            duplicateof=None,
+            hits=0,
+            hitstimestamp=now,
+            activityscore=0,
+            activitytimestamp=now,
+            owner=1, # will be logged in user
+            **kw
+            )
+    return bug
+
+class BugAttachmentContainer(BugContainerBase):
+    """A container for bug attachments."""
+ 
+    implements(IBugAttachmentContainer)
+    table = MaloneBugAttachment
+ 
+    def __init__(self, bug=None):
+        self.bug = bug
+ 
+    def __getitem__(self, id):
+        try:
+            return self.table.select(self.table.q.id == id)[0]
+        except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+ 
+    def __iter__(self):
+        for row in self.table.select(self.table.q.bug == self.bug):
+            yield row
+
+
+def BugAttachmentFactory(context, **kw):
+    bug = context.context.bug # view.attachmentcontainer.bug
+    return MaloneBugAttachment(bug=bug, **kw)
+
+def BugAttachmentContentFactory(context, **kw):
+    bugattachment= context.context.id # view.attachment.id
+    daterevised = datetime.utcnow()
+    return BugAttachmentContent(
+            bugattachment=bugattachment,
+            daterevised=daterevised,
+            **kw
+            )
+
+def BugMessageFactory(context, **kw):
+    bug = context.context.context.id # view.comments.bug
+    return BugMessage(
+            bug=bug, parent=None, datecreated=datetime.utcnow(),
+            rfc822msgid=make_msgid('malone'), **kw
+            )
+
+def PersonFactory(context, **kw):
+    now = datetime.utcnow()
+    person = Person(teamowner=1,
+                    teamdescription='',
+                    karma=0,
+                    karmatimestamp=now,
+                    **kw)
+    return person
+
+def BugSubscriptionFactory(context, **kw):
+    bug = context.context.bug
+    return BugSubscription(bug=bug, **kw)
+
+def ProductBugAssignmentFactory(context, **kw):
+    pba = ProductBugAssignment(bug=context.context.id, **kw)
+    return pba
+
+def SourcepackageBugAssignmentFactory(context, **kw):
+    sa = SourcepackageBugAssignment(bug=context.context.id,
+                                    binarypackage=None,
+                                    **kw)
+    return sa
+
+
+class BugExternalRefContainer(BugContainerBase):
+    """A container for BugExternalRef."""
+
+    implements(IBugExternalRefContainer)
+    table = BugExternalRef
+
+    def __init__(self, bug=None):
+        self.bug = bug
+
+    def __getitem__(self, id):
+       try:
+            return self.table.select(self.table.q.id == id)[0]
+       except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select(self.table.q.bug == self.bug):
+            yield row
+
+def BugExternalRefFactory(context, **kw):
+    bug = context.context.bug
+    owner = 1 # Will be id of logged in user
+    datecreated = datetime.utcnow()
+    return BugExternalRef(bug=bug, owner=owner, datecreated=datecreated, **kw)
+
+
+class BugSubscriptionContainer(BugContainerBase):
+    """A container for BugSubscription objects."""
+
+    implements(IBugSubscriptionContainer)
+    table = BugSubscription
+
+    def __init__(self, bug=None):
+        self.bug = bug
+
+    def __getitem__(self, id):
+       try:
+            return self.table.select(self.table.q.id == id)[0]
+       except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select(self.table.q.bug == self.bug):
+            yield row
+
+    def delete(self, id):
+        # BugSubscription.delete(id) raises an error in SQLObject
+        # why this is I do not know
+        conn = BugSubscription._connection
+        # I want an exception raised if id can't be converted to an int
+        conn.query('DELETE FROM BugSubscription WHERE id=%d' % int(id))
+  
+
+class ProjectContainer(object):
+    """A container for Project objects."""
+
+    implements(IProjectContainer)
+    table = Project
+
+    def __getitem__(self, id):
+        try:
+            return self.table.select(self.table.q.id == id)[0]
+        except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select():
+            yield row
+
+    def search(self, name, title):
+        if name and title:
+            return Project.select(AND(Project.q.name==name,
+                                      Project.q.title==title))
+        elif name:
+            return Project.select(Project.q.name==name)
+        elif title:
+            return Project.select(LIKE(Project.q.title, '%%' + title + '%%'))
+        else:
+            return []
+
+
 class BugExternalRefsView(object):
     implements(IBugExternalRefsView)
     def __init__(self, context, request):
@@ -65,4 +293,5 @@ class BugExternalRefsView(object):
 
     def nextURL(self):
         return '..'
+
 

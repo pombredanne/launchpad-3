@@ -22,6 +22,10 @@ import sys, os
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(here, 'lib'))
 
+# Nothing to see here... move along...
+from zope.app.tests.functional import FunctionalTestSetup
+FunctionalTestSetup.__init__ = lambda *x: None
+
 import zope.app.tests.test
 
 if __name__ == '__main__':

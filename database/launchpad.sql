@@ -58,6 +58,7 @@
 	- rename POMsgSet.iscurrent to POMsgSet.iscomplete
 	   -> .iscurrent is now represented by .sequence>0
 	- make POTemplate.branch NOT NULL
+	- add POFile.fuzzyheader
   v0.98:
         - merge SourceSource table from Andrew Bennetts
 	- change SourceSource.homepageurl to SourceSource.product
@@ -1484,7 +1485,8 @@ CREATE TABLE Language (
   id                    serial PRIMARY KEY,
   code                  text NOT NULL UNIQUE,
   englishname           text,
-  nativename            text
+  nativename            text,
+  pluralform		text
 );
 
 
@@ -1584,6 +1586,7 @@ CREATE TABLE POFile (
   description          text,
   topcomment           text,  -- the comment at the top of the file
   header               text,  -- the contents of the NULL msgstr
+  fuzzyheader          boolean NOT NULL,
   lasttranslator       integer REFERENCES Person,
   license              integer REFERENCES License,
   -- the number of msgsets matched to the potemplate that have a

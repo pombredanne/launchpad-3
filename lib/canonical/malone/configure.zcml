@@ -9,7 +9,6 @@
     -->
   <content class="canonical.malone.MaloneApplication">
     <implements interface="canonical.publication.IHasSuburls" />
-    <allow interface=".interfaces.IUsesAddForm" />
   </content>
 
   <!-- This view registers 'malone' as a suburl of RootObject. -->
@@ -39,7 +38,7 @@
       name="index" />
 
   <browser:defaultView
-      for="canonical.malone.interfaces.IBug"
+      for=".interfaces.IMaloneBug"
       name="index" />
 
   <browser:defaultView
@@ -47,11 +46,11 @@
       name="index" />
 
   <browser:defaultView
-      for="canonical.malone.interfaces.IBugAttachment"
+      for=".interfaces.IMaloneBugAttachment"
       name="index" />
 
   <browser:defaultView
-      for="canonical.malone.interfaces.IBugAttachmentContent"
+      for="canonical.database.malone.IBugAttachmentContent"
       name="index" />
 
   <browser:defaultView
@@ -59,7 +58,7 @@
       name="search" />
 
   <browser:defaultView
-      for="canonical.malone.interfaces.IProject"
+      for="canonical.database.doap.IProject"
       name="index" />
 
   <browser:defaultView
@@ -67,7 +66,7 @@
       name="index" />
 
   <browser:defaultView
-      for="canonical.malone.interfaces.IBugExternalRef"
+      for="canonical.database.malone.IBugExternalRef"
       name="index" />
 
   <browser:defaultView
@@ -75,12 +74,12 @@
       name="index" />
 
   <browser:traverse
-      for="canonical.malone.interfaces.IBug"
+      for="canonical.malone.interfaces.IMaloneBug"
       function="canonical.malone.browser.traverseBug" />
 
   <browser:traverse
-      for="canonical.malone.interfaces.IBugAttachment"
-      function="canonical.malone.browser.traverseBugAttachment" />
+      for=".interfaces.IMaloneBugAttachment"
+      function=".browser.traverseBugAttachment" />
 
   <include file="pages.zcml" />
   <include file="forms.zcml" />

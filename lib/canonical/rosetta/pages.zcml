@@ -11,6 +11,9 @@
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewProjects"
          lp:url="Rosetta/projects">
+    <page name="index"
+          template="templates/projects-index.pt"
+          lp:url="Rosetta/projects" />
     <page name="+submit"
           template="templates/projects-submit.pt"
           lp:url="Rosetta/projects/+submit" />
@@ -42,6 +45,12 @@
     <page name="upload"
           template="templates/potemplate-upload.pt"
           lp:url="Rosetta/projects/$Project.name/$POTemplate.name/upload" />
+  </pages>
+
+  <pages for="canonical.rosetta.interfaces.IPOTemplate"
+         permission="zope.Public"
+         class="canonical.rosetta.browser.TranslatePOTemplate"
+         lp:url="Rosetta/projects/$Project.name/$POTemplate.name">
     <page name="translate"
           template="templates/potemplate-translate.pt"
           lp:url="Rosetta/projects/$Project.name/$POTemplate.name/translate" />

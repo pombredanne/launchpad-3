@@ -5,6 +5,7 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from canonical.rosetta.interfaces import IProjects, ILanguages, IPerson
+from canonical.rosetta.sql import RosettaLanguage
 from canonical.rosetta.poexport import POExport
 
 class ViewProjects:
@@ -28,15 +29,17 @@ class ViewProjects:
             self.submitted = False
             return ""
 
+
 class ViewProject:
+    def thereAreTemplates(self):
+        return len(list(self.context.poTemplates())) > 0
+
     def languageTemplates(self):
-        templates = list(self.context.poTemplates())
         for language in IPerson(self.request.principal).languages():
-            yield LanguageTemplates(language, templates)
+            yield LanguageTemplates(language, self.context.poTemplates())
 
 
 class LanguageTemplates:
-
     def __init__(self, language, templates):
         self.language = language
         self._templates = templates
@@ -58,8 +61,8 @@ class LanguageTemplates:
                 pass
             else:
                 poLength = len(poFile)
-                poTranslated = poFile.translated_count()
-                poUntranslated = poFile.untranslated_count()
+                poTranslated = poFile.translatedCount()
+                poUntranslated = poFile.untranslatedCount()
 
                 retdict.update({
                     'poLength': poLength,
@@ -71,6 +74,7 @@ class LanguageTemplates:
 
             yield retdict
 
+
 class ViewPOTemplate:
     def num_messages(self):
         N = len(self.context)
@@ -81,20 +85,6 @@ class ViewPOTemplate:
         else:
             return "%s messages" % N
 
-    # XXX: this should probably be moved into a separate class
-
-    def languages(self):
-        codes = self.request.form.get('languages')
-        languages = getUtility(ILanguages)
-        if codes:
-            for code in codes.split(','):
-                yield languages[code]
-        else:
-            # XXX: hardcoded default
-            for code in ('cy',):
-                yield languages[code]
-
-
     def isPlural(self):
         if len(self.context.sighting('23').pluralText) > 0:
             return True
@@ -103,10 +93,6 @@ class ViewPOTemplate:
 
 
 def traverseIPOTemplate(potemplate, request, name):
-    try:
-        return potemplate.sighting(name)
-    except KeyError:
-        pass
     try:
         return potemplate.poFile(name)
     except KeyError:
@@ -119,22 +105,12 @@ class ViewPOFile:
             float(len(self.context)) / len(self.context.poTemplate) * 100)
 
     def untranslated(self):
-        return len(self.context.potTemplate) - len(self.context)
+        return len(self.context.poTemplate) - len(self.context)
+
 
 class TranslatorDashboard:
     def projects(self):
         return getUtility(IProjects)
-
-
-class ViewPOTSighting:
-
-    def translations(self):
-        langs = self.request.form.get('languages')
-        if langs:
-            languages = getUtility(ILanguages)
-            for code in langs.split(','):
-                language = languages[code]
-                yield self.context.currentTranslation(language)
 
 
 class ViewSearchResults:
@@ -143,10 +119,10 @@ class ViewSearchResults:
 
 
 class ViewPOExport:
-
     def __call__(self):
         self.export = POExport(self.context)
 
+        # XXX: hardcoded values
         self.pofile = self.export.export('cy')
 
         self.request.response.setHeader('Content-Type', 'application/x-po')
@@ -155,3 +131,28 @@ class ViewPOExport:
             'attachment; filename="%s"' % 'cy.po')
 
         return self.pofile
+
+
+class TranslatePOTemplate:
+    def submitTranslations(self):
+
+        if "SUBMIT" in self.request.form:
+            from pprint import pformat
+            from xml.sax.saxutils import escape
+            self.submitted = True
+            return escape(pformat(self.request.form))
+        else:
+            self.submitted = False
+
+    def languages(self):
+        codes = self.request.form.get('languages')
+
+        if codes:
+            languages = getUtility(ILanguages)
+
+            for code in codes.split(','):
+                yield languages[code]
+        else:
+            for language in IPerson(self.request.principal).languages():
+                yield language
+
