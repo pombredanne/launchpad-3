@@ -13,7 +13,6 @@ from canonical.lp.dbschema import LoginTokenType, SSHKeyType
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.auth.browser import well_formed_email
 
 # interface import
 from canonical.launchpad.interfaces import ISSHKeySet
@@ -26,6 +25,7 @@ from canonical.launchpad.interfaces import IPasswordEncryptor, \
                                            ISignedCodeOfConductSet
 from canonical.launchpad.interfaces import IGPGKeySet
 
+from canonical.launchpad.helpers import well_formed_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.browser.emailaddress import sendEmailValidationRequest
 

@@ -9,13 +9,13 @@ from zope.component import getUtility
 from zope.app.session.interfaces import ISession
 from zope.event import notify
 
+from canonical.launchpad.helpers import well_formed_email
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.interfaces import ILoginTokenSet, IPersonSet
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.lp.dbschema import LoginTokenType
-from canonical.auth.browser import well_formed_email
 
 
 class BasicLoginPage:

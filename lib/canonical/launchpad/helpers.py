@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 import os
+import re
 import tarfile
 from StringIO import StringIO
 
@@ -239,4 +240,34 @@ def requestCountry(request):
 def browserLanguages(request):
     """Return a list of Language objects based on the browser preferences."""
     return IRequestPreferredLanguages(request).getPreferredLanguages()
+
+# Note that this appears as "valid email" in the UI, because that term is
+# more familiar to users, even if it is less correct.
+well_formed_email_re = re.compile(
+    r"^[_\.0-9a-z-+]+@([0-9a-z-]{1,}\.)*[a-z]{2,}$")
+
+def well_formed_email(emailaddr):
+    """Returns True if emailaddr is well-formed, otherwise returns False.
+
+    >>> well_formed_email('foo.bar@baz.museum')
+    True
+    >>> well_formed_email('mark@hbd.com')
+    True
+    >>> well_formed_email('art@cat-flap.com')
+    True
+    >>> well_formed_email('a@b.b.tw')
+    True
+    >>> well_formed_email('a@b.b.b.b.tw')
+    True
+    >>> well_formed_email('i@tm')
+    True
+    >>> well_formed_email('')
+    False
+    >>> well_formed_email('a@b')
+    False
+    >>> well_formed_email('a@foo.b')
+    False
+
+    """
+    return bool(well_formed_email_re.match(emailaddr))
 

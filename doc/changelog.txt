@@ -2,6 +2,71 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-04 20:07:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1554
+
+    Summary:
+      Purging canonical/auth/. ubuntulinux.org forgottenpassword's page now redirects to launchpad.
+    Revision:
+      launchpad--devel--0--patch-1554
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-247
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-248
+       Purging canonical/auth/. ubuntulinux.org forgottenpassword's page now redirects to launchpad.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-249
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/tests/.arch-ids/test_rundoctests.py.id
+     lib/canonical/launchpad/tests/test_rundoctests.py
+
+    removed files:
+     lib/canonical/auth/.arch-ids/=id
+     lib/canonical/auth/.arch-ids/__init__.py.id
+     lib/canonical/auth/.arch-ids/browser.py.id
+     lib/canonical/auth/.arch-ids/configure.zcml.id
+     lib/canonical/auth/.arch-ids/forgotten-password-email.txt.id
+     lib/canonical/auth/__init__.py lib/canonical/auth/browser.py
+     lib/canonical/auth/configure.zcml
+     lib/canonical/auth/forgotten-password-email.txt
+     lib/canonical/auth/templates/.arch-ids/=id
+     lib/canonical/auth/tests/.arch-ids/=id
+     lib/canonical/auth/tests/.arch-ids/__init__.py.id
+     lib/canonical/auth/tests/.arch-ids/test_passwordresets.py.id
+     lib/canonical/auth/tests/.arch-ids/zodb_password_resets.txt.id
+     lib/canonical/auth/tests/__init__.py
+     lib/canonical/auth/tests/test_passwordresets.py
+     lib/canonical/auth/tests/zodb_password_resets.txt
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-forgotten-password.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-forgotten-password.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/configure.zcml
+     lib/canonical/foaf/nickname.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/templates/debug-root-index.pt
+     lib/canonical/launchpad/templates/ul-main-template.pt
+     lib/canonical/launchpad/webapp/login.py
+     lib/canonical/launchpad/webapp/zodb.py
+
+    removed directories:
+     lib/canonical/auth lib/canonical/auth/.arch-ids
+     lib/canonical/auth/templates
+     lib/canonical/auth/templates/.arch-ids
+     lib/canonical/auth/tests lib/canonical/auth/tests/.arch-ids
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-247
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-248
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-249
+
+
 2005-04-04 19:14:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1553
 
     Summary:
