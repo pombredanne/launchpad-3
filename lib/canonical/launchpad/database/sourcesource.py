@@ -16,6 +16,8 @@ from canonical.database.sqlbase import SQLBase, quote
 # Launchpad interfaces
 from canonical.launchpad.interfaces import *
 
+# tools
+import datetime
 
 class SourceSource(SQLBase): 
     """SourceSource table"""
@@ -76,23 +78,20 @@ class SourceSource(SQLBase):
         StringCol('fileidreference', dbName='fileidreference', default=None),
     ]
 
-    def branchfrom(self):
-        return self.cvsbranch
-
-    def enable(self):
+    def certifyForSync(self):
         """enable the sync for processing"""
         self.processingapproved='NOW'
         self.frequency=datetime.timedelta(1)
     
-    def enabled(self):
+    def syncCertified(self):
         """is the sync enabled"""
         return self.processingapproved is not None
 
-    def autosyncing(self):
+    def autoSyncEnabled(self):
         """is the sync automatically scheduling"""
         return self.syncingapproved is not None
 
-    def autosync(self):
+    def enableAutoSync(self):
         """enable autosyncing"""
         self.syncingapproved='NOW'
 

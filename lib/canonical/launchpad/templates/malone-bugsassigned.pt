@@ -1,0 +1,46 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@malone_template/master"
+    i18n:domain="malone">
+<body>
+<div metal:fill-slot="main">
+
+    <tal:block condition="view/update" />
+
+    <h1>Bugs Assigned to Mark Shuttleworth</h1>
+
+    <h3>Direct Assignments</h3>
+
+    <form method="post">
+        <fieldset>
+            <legend>Search details</legend>
+
+            <div class="field">
+                <input name="query" />
+            </div>
+
+            <div class="formControls">
+                <input type="submit" value="Search" />
+            </div>
+        </fieldset>
+    </form>
+
+    <div>
+        <table class="listing rowNavigation">
+            <tr>
+                <th>Bug</th>
+            </tr>
+            <tr tal:repeat="assignment context/directAssignments"
+                tal:attributes="onclick
+                       string:window.location='/malone/bugs/${assignment/bug/id}'">
+                <td>
+                     <span tal:content="assignment/bug/title">
+                         $SourcepackageName.name</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+  
+</div>
+</body>
+</html>

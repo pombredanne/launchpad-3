@@ -31,11 +31,10 @@ from canonical.malone.browser import newBugTracker
 # about a project or product
 #
 def traverseProduct(product, request, name):
-    if name == 'sourcesource':
+    if name == '+sources':
         return SourceSourceSet()
     else:
-       raise KeyError, name
-
+        raise KeyError, name
 
 def traverseProject(project, request, name):
     return project.getProduct(name)
@@ -236,7 +235,7 @@ class ProductView(object):
             return
         owner = IPerson(self.request.principal)
         ss = self.context.newSourceSource(self.form, owner)
-        self.request.response.redirect(self.form['name'])
+        self.request.response.redirect('+sources/'+self.form['name'])
  
 
 

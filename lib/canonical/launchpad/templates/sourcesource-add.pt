@@ -23,7 +23,7 @@
     imported into the Product.
     </div>
 
-    <form action="+addsourcesource" method="post">
+    <form method="post">
     
     <fieldset>
 

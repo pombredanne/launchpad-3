@@ -85,6 +85,22 @@ class IBug(Interface):
 
     url = Attribute('Generated URL based on data and reference type')
 
+
+class IBugTrackerSet(Interface):
+    """An interface for the BugTrackerSet. This models a set of BugTracker's
+    (either the full set in the db or a subset). Each BugTracker is a
+    distinct instance of a bug tracking tool. For example,
+    bugzilla.mozilla.org is distinct from bugzilla.gnome.org.
+    """
+    def __getitem__(name):
+        """Get a BugTracker by its name in the database. NB! We do not want to
+        expose the BugTracker.id to the world so we use its name.
+        """
+
+    def __iter__():
+        """Iterate through BugTrackers."""
+
+
 class IBugAttachment(Interface):
     """A file attachment to an IBugMessage."""
 
@@ -419,3 +435,23 @@ class IBugProductRelationship(Interface):
     bugstatus = Int(title=_('Bug Status'))
     priority = Int(title=_('Priority'))
     severity = Int(title=_('Severity'))
+
+
+#
+# Bug Report Objects
+#
+
+
+class IBugsAssignedReport(Interface):
+
+    user = Attribute("The user for whom this report will be generated")
+
+    def directAssignments():
+        """An iterator over the bugs directly assigned to the person."""
+
+    def sourcepackageAssignments():
+        """An iterator over bugs assigned to the person's source
+        packages."""
+
+
+    

@@ -94,6 +94,10 @@
         <page name="+edit"
             template="../launchpad/templates/product-edit.pt"
             lp:url="doap/projects/$Project.name/$Product.name/+edit" />
+        <page name="+addsources"
+            template="../launchpad/templates/sourcesource-add.pt"
+            lp:url="Soyuz/projects/$Project.name/$Product.name/+addsources"
+            />
     </pages>
 
     <pages for="canonical.launchpad.interfaces.IProduct"
@@ -102,10 +106,6 @@
         <page name="+soyuz-index"
             template="../launchpad/templates/soyuz-product-index.pt"
             lp:url="Soyuz/projects/$Project.name/$Product.name/+soyuz-index"
-            />
-        <page name="+addsourcesource"
-            template="../launchpad/templates/sourcesource-add.pt"
-            lp:url="Soyuz/projects/$Project.name/$Product.name/+addsourcesource"
             />
     </pages>
 
@@ -121,7 +121,7 @@
            class="canonical.soyuz.browser.SourceSourceView" >
            <page name="+index"
                  template="../launchpad/templates/sourcesource-index.pt"
-                 lp:url="Doap/project/$Project.name/$Product.name/sourcesource/$SourceSource.name"
+                 lp:url="Doap/project/$Project.name/$Product.name/+sources/$SourceSource.name/"
                  />
     </pages>
 

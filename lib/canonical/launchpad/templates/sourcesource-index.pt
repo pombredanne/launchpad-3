@@ -14,34 +14,19 @@
 
 <div metal:fill-slot="main">
 
-   <tal:dummy condition="view/handle_submit" />
-    <h1>Add Source Import</h1>
+    <tal:dummy condition="view/edit" />
+   
+    <h1>Upstream Source Import</h1>
 
     <div class="documentDescription">
-    Please fill in the details below to register a source that can be 
-    imported into the Product.
+    You can edit the details of this Source Import below.
     </div>
 
-    <form tal:attributes="action request/URL" method="post">
-    
+    <form method="post">
+ 
     <fieldset>
 
         <legend>Source Import Details</legend>
-
-        <div class="field">
-
-            <label>Name</label>
-
-            <span class="fieldRequired" title="Required">(Required)</span>
-
-                  <div class="formHelp">
-                    A short name for the import (job name)
-                  </div>
-
-                <input type="text" name="name" size="30"
-                tal:attributes="value context/name"
-                       style="text-transform: lowercase" />
-        </div>
 
         <div class="field">
 
@@ -66,31 +51,37 @@
                   </div>
 
                 <textarea cols="40" rows="5" name="description"
-                tal:attributes="value context/description"></textarea>
+                tal:content="context/description"></textarea>
         </div>
 
         <div class="field">
             <label>Enabled</label>
             <div class="formHelp">Is this source certified for syncronization?
             </div>
-            <input type="checkbox" name="enabled" tal:attributes="checked context/enabled" />
+            <input type="checkbox" name="syncCertified"
+            tal:attributes="checked context/syncCertified" />
         </div>
 
         <div class="field">
+        
             <label>Source Syncing Enabled</label>
-            <div class="formHelp">Is this source source enabled for running
-            automatic syncs?</div>
-            <input type="checkbox" name="autosyncenabled" tal:attributes="checked context/autosyncing" />
+            
+            <div class="formHelp">Is this upstream source being syncronised
+            to Arch automatically?</div>
+
+            <input type="checkbox" name="autoSyncEnabled"
+                   tal:attributes="checked context/autoSyncEnabled" />
         </div>
 
     </fieldset>
 
     <fieldset style="width: 45%; float: right">
-        <legend><input type="radio" /> CVS details</legend>
+
+        <legend><input type="radio" />CVS Repository</legend>
 
         <div class="field">
 
-            <label>CVS root</label>
+            <label>CVS Root</label>
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
@@ -100,27 +91,29 @@
         
         <div class="field">
 
-            <label>CVS module</label>
+            <label>CVS Module</label>
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
                 <input type="text" name="cvsmodule" size="30"
                        tal:attributes="value context/cvsmodule" />
+
         </div>
 
         <div class="field">
 
-            <label>CVS tar file url</label>
+            <label>CVS Tar File URL</label>
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
-                <input type="text" name="cvstarfile" size="30"
-                       tal:attributes="value context/cvstarfile" />
+                <input type="text" name="cvstarfileurl" size="30"
+                       tal:attributes="value context/cvstarfileurl" />
+
         </div>
 
         <div class="field">
 
-            <label>CVS branch name</label>
+            <label>CVS Branch</label>
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
@@ -131,16 +124,17 @@
     </fieldset>
 
     <fieldset style="width: 45%; float: right">
-        <legend><input type="radio" /> SVN details</legend>
+        <legend><input type="radio" />SVN Repository</legend>
         
         <div class="field">
 
-            <label>SVN repository</label>
+            <label>SVN Repository</label>
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
                   <div class="formHelp">
-                    Address for the SVN repository, either in svn:// or http(s):// form.
+                    Address for the SVN repository, in svn:// or
+                    http(s):// format.
                   </div>
 
                 <input type="text" name="svnrepository" size="30"
@@ -152,7 +146,7 @@
     <div class="visualClear"></div>
 
     <fieldset>
-        <legend>Arch target</legend>
+        <legend>Arch Branch to Sync Into</legend>
         
         <div class="field">
 
@@ -170,7 +164,7 @@
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
-            <input type="text" name="category" size="30"
+            <input type="text" name="newbranchcategory" size="30"
                    tal:attributes="value context/newbranchcategory" />
         </div>
 
@@ -196,8 +190,13 @@
 
     </fieldset>
 
+        <!--
+          XXX Mark Shuttleworth 06/10/04
+              These fields were commented out at the request of
+              XXX Robert Collins because they have not yet been implemented
+              in the database.
     <fieldset>
-        <legend>Arch source</legend>
+        <legend>Arch Source</legend>
         
         <p class="discreet">
         If you include this, the CVS/SVN/Arch stuff above isn't required.
@@ -214,11 +213,6 @@
                    value="" />
         </div>
 
-        <!--
-          XXX Mark Shuttleworth 06/10/04
-              These fields were commented out at the request of
-              XXX Robert Collins because they have not yet been implemented
-              in the database.
         <div class="field">
 
             <label>Arch Archive Name</label>
@@ -238,9 +232,11 @@
             <input type="text" name="archsourceurl" size="30"
                    value="" />
         </div>
-        -->
 
     </fieldset>
+
+        -->
+
 
     <fieldset tal:condition="context/canChangeProduct">
         <legend>Change Product</legend>
@@ -259,7 +255,7 @@
         <input class="context" type="submit"
                tabindex="5"
                name="Update"
-               value="Update" />
+               value="Update Upstream Source" />
 
     </div>
 

@@ -197,5 +197,14 @@
             template="../launchpad/templates/reference-index.pt"
             lp:url="malone/bugs/$Bug.id/reference/$Reference.id" />
     </pages>
+
+    <pages
+        for="canonical.launchpad.interfaces.IBugsAssignedReport"
+        class="canonical.malone.browser.BugsAssignedReportView"
+        permission="launchpad.AnyPerson">
+        <page name="+index"
+              template="../launchpad/templates/malone-bugsassigned.pt"
+              lp:url="malone/assigned/" />
+    </pages>
   
 </configure>

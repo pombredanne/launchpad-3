@@ -291,6 +291,13 @@
   
   <content class="canonical.launchpad.database.SourceSource">
     <allow interface="canonical.launchpad.interfaces.ISourceSource"/>
+    <require
+     permission="launchpad.AnyPerson"
+     set_attributes="title description cvsroot cvsbranch cvsmodule
+                     cvstarfileurl svnrepository releaseroot releaseverstyle
+                     releasefileglobe newarchive newbranchcategory
+                     newbranchbranch newbranchversion product"
+     />
   </content>
 
 

@@ -194,18 +194,21 @@ class ProductBugAssignment(SQLBase):
 
     _table = 'ProductBugAssignment'
 
-    bug = ForeignKey(dbName='bug', foreignKey='Bug')
-    product = ForeignKey(dbName='product', foreignKey='Product')
-    bugstatus = IntCol(
+    _columns = [
+        ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
+        ForeignKey(name='product', dbName='product', foreignKey='Product'),
+        IntCol(name='bugstatus',
             notNull=True, default=int(dbschema.BugAssignmentStatus.NEW)
-            )
-    priority = IntCol(
+            ),
+        IntCol(name='priority',
             notNull=True, default=int(dbschema.BugPriority.MEDIUM),
-            )
-    severity = IntCol(
+            ),
+        IntCol(name='severity',
             notNull=True, default=int(dbschema.BugSeverity.NORMAL),
-            )
-    assignee = ForeignKey(dbName='assignee', foreignKey='Person', default=None)
+            ),
+        ForeignKey(name='assignee', dbName='assignee', foreignKey='Person', default=None)
+        ]
+
 
 class SourcepackageBugAssignment(SQLBase):
     """A relationship between a Sourcepackage and a Bug."""
@@ -214,17 +217,19 @@ class SourcepackageBugAssignment(SQLBase):
 
     _table = 'SourcepackageBugAssignment'
 
-    bug = ForeignKey(dbName='bug', foreignKey='Bug')
-    sourcepackage = ForeignKey(
-            dbName='sourcepackage', foreignKey='Sourcepackage'
-            )
-    bugstatus = IntCol(default=int(dbschema.BugAssignmentStatus.NEW))
-    priority = IntCol(default=int(dbschema.BugPriority.MEDIUM))
-    severity = IntCol(default=int(dbschema.BugSeverity.NORMAL))
-    binarypackage = ForeignKey(
-            dbName='binarypackage', foreignKey='Binarypackage', default=None
-            )
-    assignee = ForeignKey(dbName='assignee', foreignKey='Person', default=None)
+    _columns = [
+        ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
+        ForeignKey(name='sourcepackage', 
+            dbName='sourcepackage', foreignKey='Sourcepackage'),
+        IntCol('bugstatus', default=int(dbschema.BugAssignmentStatus.NEW)),
+        IntCol('priority', default=int(dbschema.BugPriority.MEDIUM)),
+        IntCol('severity', default=int(dbschema.BugSeverity.NORMAL)),
+        ForeignKey(name='binarypackagename', dbName='binarypackagename',
+                   foreignKey='BinarypackageName', default=None),
+        ForeignKey(name='assignee', dbName='assignee',
+                   foreignKey='Person', notNull=True, default=None),
+        ]
+
 
 class BugTrackerType(SQLBase):
     """A type of supported remote  bug system. eg Bugzilla."""
@@ -304,5 +309,26 @@ class BugWatch(SQLBase):
                 notNull=True),
         ]
 
+#
+# REPORTS
+#
 
+class BugsAssignedReport(object):
+
+    implements(IBugsAssignedReport)
+
+    def __init__(self):
+        # XXX Mark Shuttleworth 06/10/04  Temp Testing Hack hardcode person
+        self.user = 1
+        self._table = SourcepackageBugAssignment
+
+    def directAssignments(self):
+        """An iterator over the bugs directly assigned to the person."""
+        assignments = self._table.selectBy(assigneeID=self.user)
+        for assignment in assignments:
+            yield assignment
+
+    def sourcepackageAssignments(self):
+        """An iterator over bugs assigned to the person's source
+        packages."""
 

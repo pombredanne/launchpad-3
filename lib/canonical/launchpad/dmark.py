@@ -13,6 +13,10 @@ from canonical.database.sqlbase import SQLBase, quote
 import canonical.launchpad.interfaces as interfaces
 from canonical.launchpad.interfaces import *
 from canonical.launchpad.database import *
+#
+# XXX Mark Shuttleworth 06/10/06 till we sort out database locations and
+#     import sequence
+from canonical.launchpad.database.sourcesource import SourceSource
 
 
 
@@ -330,14 +334,11 @@ class Product(SQLBase):
 
     sourcesources = MultipleJoin('SourceSource', joinColumn='product')
 
-    packages = RelatedJoin('Sourcepackage', joinColumn='product',
+    sourcepackages = RelatedJoin('Sourcepackage', joinColumn='product',
                            otherColumn='sourcepackage',
                            intermediateTable='Packaging')
 
-    #def sourcesources(self):
-    #   """iterate over this product's sourcesource entries"""
-    #   for source in SourceSource.select("sourcesource.product=%s" % quote(self._product.id)):
-    #       yield Sync(self, sync)
+
 
     def newSourceSource(self, form, owner):
         rcstype=RCSTypeEnum.cvs

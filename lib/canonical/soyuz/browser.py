@@ -549,58 +549,70 @@ class DistrosReleaseBinariesSearchView(object):
 def urlTraverseProjects(projects, request, name):
     return projects[str(name)]
 
-def urlTraverseProducts(project, request, name):
-    return project.getProduct(str(name))
 
-def urlTraverseSyncs(product, request, name):
-    return product.getSync(str(name))
+class SourceSourceView(object):
+    """Present a SourceSource table for a browser."""
 
-# DONE!
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = request.form
 
-#
-# XXX Mark Shuttleworth 02/10/04 Steve and I far prefer using Views that
-#     inherit from (object), then using an __init__ that has a line like
-#     self.form = request.form 
-#     to make form data more accessible. This would allow us to get rid
-#     of the View class below altogether.
-#
-class View(object):
-    def setArg(self, name, kwargs):
-        kwargs[name]=self.getField(name)
-    def getField(self, name):
-        return self.request.form[name]
-
-
-class SourceSourceView(View):
-    """har har"""
-    def handle_submit(self):
-        if not self.request.form.get("Update", None)=="Update":
+    def edit(self):
+        if not self.request.form.get("Update", None)=="Update Upstream Source":
             return
         if not self.request.method == "POST":
             return
-        kwargs={}
-        for param in ["name", "title", "description", "cvsroot", "cvsmodule","cvstarfile",
-            "branchfrom","svnrepository","archarchive","category","branchto","archversion","archsourcegpgkeyid","archsourcename","archsourceurl"]:
-            self.setArg(param, kwargs)
-        newurl=None
-        if kwargs.get('name', self.context.name) != self.context.name:
-            newurl='../' + kwargs['name']
-        self.context.update(**kwargs)
-        if self.request.form.get('enabled', None):
-            if not self.context.enabled():
-                self.context.enable()
-        if self.request.form.get('autosyncenabled', None):
-            if not self.context.autosyncing():
-                self.context.autosync()
-        if self.context.canChangeProduct() and self.request.form.has_key('product'):
-            self.context.changeProduct(self.request.form.get('product'))
-            newurl='../../../' + self.context.product.project.name + "/" + self.context.product.name #+ '/' + self.context.name
-        self.submittedok=True
+        formdata = {}
+        #
+        # Extract the form data
+        #
+        title = self.form.get('title', None)
+        description = self.form.get('description', None)
+        cvsroot = self.form.get('cvsroot', None)
+        cvsmodule = self.form.get('cvsmodule', None)
+        cvstarfileurl = self.form.get('cvstarfileurl', None)
+        cvsbranch = self.form.get('cvsbranch', None)
+        svnrepository = self.form.get('svnrepository', None)
+        releaseroot = self.form.get('releaseroot', None)
+        releaseverstyle = self.form.get('releaseverstyle', None)
+        releasefileglob = self.form.get('releasefileglob', None)
+        archarchive = self.form.get('newarchive', None)
+        archversion = self.form.get('newbranchcategory', None)
+        newbranchbranch = self.form.get('newbranchbranch', None)
+        newbranchversion = self.form.get('newbranchversion', None)
+        product = self.form.get('product', None)
+        if title: self.context.title = title
+        if description: self.context.description = description
+        if cvsroot: self.context.cvsroot = cvsroot
+        if cvsmodule: self.context.cvsmodule = cvsmodule
+        if cvstarfileurl: self.context.cvstarfileurl = cvstarfileurl
+        if cvsbranch: self.context.cvsbranch = cvsbranch
+        if svnrepository: self.context.svnrepository = svnrepository
+        if releaseroot: self.context.releaseroot = releaseroot
+        if releaseverstyle: self.context.releaseverstyle = releaseverstyle
+        if releasefileglob: self.context.releasefileglob = releasefileglob
+        if archarchive: self.context.archarchive = archarchive
+        if archversion: self.context.archversion = archversion
+        if newbranchbranch: self.context.newbranchbranch = newbranchbranch
+        if newbranchversion: self.context.newbranchversion = newbranchversion
+        if self.form.get('syncCertified', None):
+            if not self.context.syncCertified():
+                self.context.certifyForSync()
+        if self.form.get('autoSyncEnabled', None):
+            if not self.context.autoSyncEnabled():
+                self.context.enableAutoSync()
+        newurl = None
+        if product and self.context.canChangeProduct():
+            self.context.changeProduct(product)
+            newurl='../../../' + self.context.product.project.name + "/" + self.context.product.name
         if newurl:
             self.request.response.redirect(newurl)
 
+
     def selectedProduct(self):
         return self.context.product.name + "/" + self.context.product.project.name
+
     def products(self):
         """all the products that context can switch between"""
         """ugly"""

@@ -16,6 +16,16 @@
         <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IMaloneBug" />
     </content>
 
+    <content class="canonical.launchpad.database.BugsAssignedReport">
+        <allow interface="canonical.launchpad.interfaces.IBugsAssignedReport" />
+        <require permission="zope.View"
+        set_attributes="user" />
+    </content>
+
+    <utility
+        factory="canonical.launchpad.database.BugsAssignedReport"
+        provides="canonical.launchpad.interfaces.IBugsAssignedReport" />
+        
     <content class=".browser.BugContainer">
         <allow interface="canonical.launchpad.interfaces.IBugContainer" />
     </content>

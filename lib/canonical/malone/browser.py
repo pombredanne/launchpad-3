@@ -639,3 +639,22 @@ class BugTrackerView(object):
         # Now redirect to view it again
         #
         self.request.response.redirect(self.request.URL[-1])
+
+
+#
+# Bug Reports
+#
+class BugsAssignedReportView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = self.request.form
+
+    def update(self):
+        #
+        # Default to showing bugs assigned to the logged in user.
+        #
+        user = IPerson(self.request.principal).id
+        self.context.user = user
+

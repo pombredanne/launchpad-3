@@ -29,6 +29,7 @@ class ISourceSource(Interface):
     cvsroot = Attribute("The CVSRoot of this SourceSource")
     cvsmodule = Attribute("The CVS Module of this SourceSource")
     cvstarfile = Attribute("The TAR file name of the CVS repo tarball")
+    cvstarfileurl = Attribute("The URL where we retrieved the CVS repo tarball")
     cvsbranch = Attribute("Branch From...")
     svnrepository = Attribute("Subversion repository, if this code is in\
                                subversion")
@@ -59,10 +60,16 @@ class ISourceSource(Interface):
     currentgpgkeyd = Attribute("Robert please explain me")
     fileidreference = Attribute("Robert please explain me")
     
-    def autosync():
+    def certifyForSync():
+        """enable this to sync"""
+
+    def syncCertified():
+        """is the sourcesource sync enabled?"""
+
+    def enableAutoSync():
         """enable this sourcesource for automatic syncronisation"""
     
-    def autosyncing():
+    def autoSyncEnabled():
         """is the sourcesource enabled for automatic syncronisation?"""
     
     def canChangeProduct():
@@ -71,12 +78,6 @@ class ISourceSource(Interface):
     def changeProduct(product):
         """change the product this sync belongs to to be 'product'"""
     
-    def enable():
-        """enable this to sync"""
-
-    def enabled():
-        """is the sourcesource sync enabled?"""
-
 
 class ISourceSourceSet(Interface):
     """An interface for the set of all SourceSource objects."""

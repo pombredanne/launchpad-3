@@ -448,24 +448,5 @@
           />
   </pages>
 
- <traverse for="canonical.launchpad.interfaces.IProjectSet" function="canonical.soyuz.browser.urlTraverseProjects" />
-
-
-<!--
-    XXX MARK-ENABLED BUSTAGE
-  <traverse for="canonical.launchpad.interfaces.IProduct" function="canonical.soyuz.browser.urlTraverseSyncs" />
-
-  <pages for="canonical.launchpad.interfaces.ISourceSource"
-         class="canonical.soyuz.browser.ViewSync"
-         permission="zope.Public">
-    <page name="index.html"
-          template="../launchpad/templates/sourcesource-index.pt"
-          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/?syncs?/$Sync.name/index.html"
-          />
-  </pages>
--->
-
-
-
 </configure>
 <!-- arch-tag: d60390fd-285e-4aa1-844e-24e11159e74c -->

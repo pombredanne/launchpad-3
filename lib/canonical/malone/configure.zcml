@@ -32,6 +32,16 @@
       utility="canonical.launchpad.interfaces.IProjectContainer"
       permission="zope.Public"
       name="projects" />
+  
+  <browser:suburl
+      for="canonical.malone.IMaloneApplication"
+      utility="canonical.launchpad.interfaces.IBugsAssignedReport"
+      permission="launchpad.AnyPerson"
+      name="assignedto" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugsAssignedReport"
+      name="+index" />
 
   <browser:suburl
       for="canonical.malone.IMaloneApplication"

@@ -7,21 +7,6 @@ _ = MessageIDFactory('launchpad')
 
 
 
-class IBugTrackerSet(Interface):
-    """An interface for the BugTrackerSet. This models a set of BugTracker's
-    (either the full set in the db or a subset). Each BugTracker is a
-    distinct instance of a bug tracking tool. For example,
-    bugzilla.mozilla.org is distinct from bugzilla.gnome.org.
-    """
-    def __getitem__(name):
-        """Get a BugTracker by its name in the database. NB! We do not want to
-        expose the BugTracker.id to the world so we use its name.
-        """
-
-    def __iter__():
-        """Iterate through BugTrackers."""
-
-
 
 
 class IProject(Interface):
@@ -932,6 +917,9 @@ class IProduct(Interface):
         pointers to the revision control system for that product, along \
         with status information about our ability to publish that \
         source in Arch.'))
+
+    sourcepackages = Attribute(_("List of distribution packages for this \
+        product"))
 
     packages = Attribute (_('Sourcepackages related to a Product'))
 
