@@ -1,1 +1,43 @@
-<include package="zope.app.mail"/>
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:mail="http://namespaces.zope.org/mail"
+    i18n_domain="zope">
+    <include package="zope.app.mail"/>
+
+    <mail:stubMailer 
+        name="stub" 
+        from_addr="root@localhost" to_addr="root@localhost"
+        />
+
+    <!-- Production should use this in its 
+        override-includes/mail-configure.zcml
+
+    <mail:queuedDelivery permission="zope.SendMail"
+        queuePath="/var/tmp/launchpad_mailqueue" mailer="sendmail" />
+    -->
+
+    <!-- Development configuration to avoid spamming innocent people -->
+    <mail:queuedDelivery permission="zope.SendMail"
+        queuePath="/var/tmp/launchpad_mailqueue" mailer="stub" />
+
+    <!-- For developers, to redirect emails to you create a file
+    override-includes/+mail-configure.zcml containing something like
+    the following:
+
+    <configure
+        xmlns="http://namespaces.zope.org/zope"
+        xmlns:mail="http://namespaces.zope.org/mail"
+        i18n_domain="zope">
+
+        <mail:stubMailer
+            name="stub"
+            from_addr="stuart.bishop@canonical.com"
+            to_addr="stuart.bishop@canonical.com"
+            />
+
+        <mail:queuedDelivery permission="zope.SendMail"
+            queuePath="/var/tmp/launchpad_mailqueue" mailer="stub" />
+    </configure>
+    -->
+
+</configure>

@@ -11,11 +11,13 @@ messaging settings -- stub 2004-10-21
 
 """
 
+__all__ = ['sendmail', 'simple_sendmail', 'raw_sendmail']
+
 from email.Utils import make_msgid, formatdate
 from email.Message import Message
 from email.MIMEText import MIMEText
 from zope.app import zapi
-from zope.app.mail.interfaces import IMailer
+from zope.app.mail.interfaces import IMailDelivery
 
 def simple_sendmail(from_addr, to_addrs, subject, body):
     """Construct an email.Message.Message and pass it to sendmail
@@ -26,7 +28,7 @@ def simple_sendmail(from_addr, to_addrs, subject, body):
     msg['To'] = ', '.join([str(a) for a in to_addrs])
     msg['From'] = from_addr
     msg['Subject'] = subject
-    sendmail(msg)
+    return sendmail(msg)
 
 def sendmail(message):
     """Send an email.Message.Message
@@ -57,8 +59,7 @@ def sendmail(message):
 
     # Add a Message-Id: header if it isn't already there
     if 'message-id' not in message:
-        message_id = make_msgid('launchpad@canonical')
-        message['Message-Id'] = message_id
+        message['Message-Id'] = make_msgid('launchpad@canonical')
 
     # Add a Date: header if it isn't already there
     if 'date' not in message:
@@ -79,9 +80,7 @@ def sendmail(message):
     del message['X-Generated-By']
     message['X-Generated-By'] = 'Launchpad (canonical.com)'
 
-    raw_sendmail(from_addr, to_addrs, message.as_string())
-
-    return message_id
+    return raw_sendmail(from_addr, to_addrs, message.as_string())
 
 def raw_sendmail(from_addr, to_addrs, raw_message):
     """Send a raw RFC8222 email message. 
@@ -92,25 +91,12 @@ def raw_sendmail(from_addr, to_addrs, raw_message):
     You should not need to call this method directly, although it may be
     necessary to pass on signed or encrypted messages.
 
+    Returns the message-id
+
     """
     assert not isinstance(to_addrs, basestring), 'to_addrs must be a sequence'
     assert isinstance(raw_message, str), 'Not a plain string'
     assert raw_message.decode('ascii'), 'Not ASCII - badly encoded message'
-    mailer = zapi.getUtility(IMailer, 'sendmail')
-    mailer.send(from_addr, to_addrs, raw_message)
-
-'''
-def sendmail(from_addr, to_addrs, subject, body):
-    """Send a mail from from_addr to to_addrs with the subject and
-    body specified."""
-    server = smtplib.SMTP('localhost')
-    msg = """\
-From: %s
-To: %s
-Subject: %s
-
-%s""" % (from_addr, ", ".join(to_addrs), subject, body)
-    server.sendmail(from_addr, to_addrs, msg)
-    server.quit()
-'''
+    mailer = zapi.getUtility(IMailDelivery, 'Mail')
+    return mailer.send(from_addr, to_addrs, raw_message)
 

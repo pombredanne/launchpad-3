@@ -1,0 +1,10 @@
+<configure 
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:meta="http://namespaces.zope.org/meta">
+
+  <meta:directive 
+      namespace="http://namespaces.zope.org/mail"
+      name="stubMailer" 
+      schema=".meta.IStubMailerDirective"
+      handler=".meta.stubMailerHandler" />
+</configure>
