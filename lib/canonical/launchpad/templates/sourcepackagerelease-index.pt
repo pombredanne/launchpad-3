@@ -60,7 +60,7 @@
              <tal:block tal:condition="context/sourcepackage/product/project">
                <a tal:define="project context/sourcepackage/product/project"
                 tal:content="project/displayname"
-                tal:attributes="href string:/doap/projects/${project/name}">
+                tal:attributes="href string:/projects/${project/name}">
                 Project</a>
              </tal:block>
              <i tal:condition="not:context/sourcepackage/product/project">
@@ -75,7 +75,7 @@
            <a tal:condition="context/sourcepackage/product"
               tal:define="product context/sourcepackage/product"
               tal:content="product/displayname"
-              tal:attributes="href string:/doap/products/${product/name}">
+              tal:attributes="href string:/products/${product/name}">
            Product</a>
            <i tal:condition="not:context/sourcepackage/product">
              No product available for this sourcepackage

@@ -3,7 +3,8 @@
   <form action="" method="GET"
      tal:define="listing_columns view/task_columns;
                  logged_in request/lp:person;
-                 task_batch view/batch">
+                 task_batch view/batch;
+                 mass_edit python: 'select' in listing_columns and view.is_maintainer">
 
   <small> 
       <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackagename=all&search=Search">unassigned</a> .
@@ -32,7 +33,7 @@
   <table id="ass_listing"
          class="listing rowNavigation">
     <tr>
-      <th tal:condition="view/is_maintainer">Select</th>
+      <th tal:condition="mass_edit">Select</th>
       <th tal:condition="python:'id' in listing_columns">Bug #</th>
       <th tal:condition="python:'product' in listing_columns">Product</th>
       <th tal:condition="python:'package' in listing_columns">Package</th>
@@ -63,7 +64,7 @@
                         severity task/severity/title;
                         statusid string:status${repeat/task/number};
                         assigneeid string:assignee${repeat/task/number};">
-          <td tal:condition="view/is_maintainer">
+          <td tal:condition="mass_edit">
             <input type="checkbox" name="task" value="" tal:attributes="value task/id" />
           </td>
           <td tal:content="bugid"
@@ -157,8 +158,8 @@
     </tr>
   </table>
 
-  <input tal:condition="view/is_maintainer" type="submit" name="assign_to_milestone" value="Assign to Milestone" />
-  <select tal:condition="view/is_maintainer" name="milestone">
+  <input tal:condition="mass_edit" type="submit" name="assign_to_milestone" value="Assign to Milestone" />
+  <select tal:condition="mass_edit" name="milestone">
     <option tal:repeat="milestone context/milestones"
             tal:attributes="value milestone/name"
             tal:content="milestone/name">milestone1</option>

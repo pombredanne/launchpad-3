@@ -740,7 +740,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distribution'::pg_ca
 
 INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new
 approach to Linux Distribution that includes regular releases, and a
-simplified single-CD installation system.', 'ubuntulinux.org', 1, NULL, 'ubuntu', 'Ubuntu is a new
+simplified single-CD installation system.', 'ubuntulinux.org', 17, NULL, 'ubuntu', 'Ubuntu is a new
 approach to Linux Distribution that includes regular releases, and a
 simplified single-CD installation system.', 1);
 INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a
@@ -771,7 +771,7 @@ Release', 'Warty was the first stable release of Ubuntu. Key feature goals
 included releasing on time, with the latest version of the Gnome Desktop
 Environment, and the creation of all the infrastructure required to manage
 Ubuntu itself. Warty includes excellent support for Python, with most of the
-widely used Python libraries installed by default.', '4.10', 1, 1, 3, '2004-08-20 00:00:00', NULL, 1, NULL, 'Warty is the first release of Ubuntu,
+widely used Python libraries installed by default.', '4.10', 1, 1, 3, '2004-08-20 00:00:00', NULL, 17, NULL, 'Warty is the first release of Ubuntu,
 with a planned release date of October 2004.', 'warty');
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, shortdesc, displayname) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 1, 1, 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH', 'six');
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, shortdesc, displayname) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 1, 1, 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'hoary');

@@ -2,6 +2,42 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-04 19:14:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1553
+
+    Summary:
+      fix production bug 285 and dogfood bug 250.
+    Revision:
+      launchpad--devel--0--patch-1553
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-285--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1551
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-285--0--patch-1
+       change ubuntu's owner to the ubuntu team.
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-285--0--patch-2
+       make milestone editing only happen on upstream bug listings. remove /doap from urls.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-view-distro-buglisting-maintainer.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-view-distro-buglisting-maintainer.txt
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+     lib/canonical/launchpad/templates/product-bugs.pt
+     lib/canonical/launchpad/templates/sourcepackagerelease-index.pt
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--production-bug-285--0--base-0
+     bjorn.tillenius@canonical.com/launchpad--production-bug-285--0--patch-1
+     bjorn.tillenius@canonical.com/launchpad--production-bug-285--0--patch-2
+
+
 2005-04-04 18:23:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1552
 
     Summary:

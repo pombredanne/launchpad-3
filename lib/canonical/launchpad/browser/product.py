@@ -236,7 +236,9 @@ class ProductBugsView:
     def task_columns(self):
         """The columns to show in the bug task listing."""
         return [
-            "id", "title", "milestone", "status", "submittedby", "assignedto"]
+            "select", "id", "title", "milestone", "status",
+            "submittedby", "assignedto"
+            ]
 
     def assign_to_milestones(self):
         """Assign bug tasks to the given milestone."""
