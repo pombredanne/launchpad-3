@@ -60,11 +60,8 @@ class MessageSet:
 def BugMessageFactory(context, **kw):
     from canonical.launchpad.database import BugMessage
     bug = context.context.context.id # view.comments.bug
-    msg = Message(parent=None,
-            ownerID=context.request.principal.id,
-            rfc822msgid=make_msgid('malone'),
-            **kw)
+    msg = Message(
+        parent=None, ownerID=context.request.principal.id,
+        rfc822msgid=make_msgid('malone'), **kw)
     bmsg = BugMessage(bug=bug, message=msg.id)
-    return msg
-
-
+    return bmsg

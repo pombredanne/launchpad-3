@@ -13,9 +13,21 @@
             />
     </content>
 
+    <securedutility
+        class="canonical.launchpad.database.DistroReleaseSet"
+        provides="canonical.launchpad.interfaces.IDistroReleaseSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
+    </securedutility>
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroRelease"
+        layer="canonical.launchpad.layers.SoyuzLayer"
         name="+index" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistroRelease"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        name="+bugs" />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistroRelease"

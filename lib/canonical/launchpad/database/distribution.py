@@ -97,6 +97,10 @@ class DistributionSet(object):
         except SQLObjectNotFound:
             raise KeyError, name
 
+    def get(self, distributionid):
+        """See canonical.launchpad.interfaces.IDistributionSet."""
+        return Distribution.get(distributionid)
+
     def count(self):
         return Distribution.select().count()
 

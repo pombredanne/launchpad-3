@@ -28,14 +28,16 @@ class DistroReleaseView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.batch = Batch(
+            list(self.context.bugtasks), int(request.get('batch_start', 0)))
+        self.batchnav = BatchNavigator(self.batch, request)
 
-    def bugSourcePackagesBatchNavigator(self):
-        packages = list(self.context.getBugSourcePackages())
-        start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', BATCH_SIZE))
+    def task_columns(self):
+        return [
+            "id", "package", "title", "status", "submittedby", "assignedto"]
 
-        batch = Batch(list=packages, start=start, size=BATCH_SIZE)
-        return BatchNavigator(batch=batch, request=self.request)
+    def assign_to_milestones(self):
+        return []
 
 class ReleasesAddView(object):
 

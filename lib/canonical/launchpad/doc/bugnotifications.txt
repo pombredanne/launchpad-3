@@ -1,0 +1,227 @@
+Malone Bug Notifications
+========================
+
+What is a bug notification?
+---------------------------
+
+A bug notification is an email that gets sent to Cc'd subscribers of a bug when
+something interesting happens to that bug.
+
+When do bug notifications get sent?
+-----------------------------------
+
+Not *every* change on a bug causes a notification to be sent. This section will
+give a rundown of the things that do cause notifications to be sent. To start
+with let's simulate an interaction with the system as a logged-in user:
+
+    >>> import zope.security.management
+    >>> from zope.interface import implements
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from zope.app.tests import ztapi
+    >>> from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
+
+    >>> class Participation:
+    ...     interaction = None
+    >>> class MockLaunchBag(object):
+    ...     implements(ILaunchBag)
+    ...     def __init__(self, login=None, user=None):
+    ...         self.login = login
+    ...         self.user = user
+
+    >>> firefox_maintainer = LaunchpadPrincipal(
+    ...     12, "firefox maintainer",
+    ...     "i can't think of a description to write here")
+    >>> firefox_maintainer_participation = Participation()
+    >>> firefox_maintainer_participation.principal = firefox_maintainer
+    >>> zope.security.management.newInteraction(firefox_maintainer_participation)
+    >>> ztapi.provideUtility(
+    ...     ILaunchBag, MockLaunchBag("test@canonical.com", firefox_maintainer))
+
+Then, let's get a handle to our mailer. This is the thing we'll examine to show
+what email has been sent, to whom, and what the body of the message contains:
+
+    >>> from canonical.launchpad.mail import stub
+    >>> stub.test_emails = []
+
+And with that, here are the things that cause bug notifications to be sent, and
+what those notifications look like:
+
+    >>> import email
+    >>> from zope.event import notify
+    >>> from zope.app.event.objectevent import ObjectCreatedEvent
+    >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
+    >>> from canonical.launchpad.database.bug import BugFactory
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IProductSet, IPersonSet, \
+    ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet
+
+    >>> bug_submitter = getUtility(IPersonSet).get(12)
+    >>> firefox = getUtility(IProductSet).get(4)
+    
+    >>> firefox_crashes = BugFactory(
+    ...     product = firefox, title = "firefox crashes all the time",
+    ...     comment = "this is a comment", owner = bug_submitter)
+    >>> notify(ObjectCreatedEvent(firefox_crashes))
+
+    >>> import transaction
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    'Bug #...: "firefox crashes all the time" added'
+
+    >>> stub.test_emails = []
+
+2. Filing a new task on an existing bug
+
+There are three kinds of tasks that can be added to an existing bug.
+
+  2.1 Distro Task
+
+    A task that says this bug must be fixed in a certain distro. Because no
+    specific release is specified, the developer will assume that the fix
+    belongs in the current development release. For backporting a fix to a
+    specific distro release, see 2.2.
+
+    >>> from canonical.launchpad.database.bugtask import BugTaskFactory
+    >>> class FakeContext:
+    ...     pass
+    >>> class StubView:
+    ...     def __init__(self, bug):
+    ...         self.context = FakeContext()
+    ...         self.context.bug = bug.id
+    >>> view = StubView(firefox_crashes)
+
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> firefox_source = getUtility(ISourcePackageNameSet).get(1)
+    >>> firefox_crashes_in_ubuntu = BugTaskFactory(
+    ...     view, distribution = ubuntu.id,
+    ...     sourcepackagename = firefox_source.id, owner = bug_submitter.id)
+    >>> notify(ObjectCreatedEvent(firefox_crashes_in_ubuntu))
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '...task added'
+
+    >>> stub.test_emails = []
+
+  2.2 Distro Release Task
+
+    Similar to a distro task, except that a task filed on a specific distro
+    release is meant to be used for backport fixes (e.g. for critical data
+    loss or security bugs.) Tasks filed on specific distro releases are not
+    listed in the more generic, distro-wide bug task listings.
+
+    >>> warty = getUtility(IDistroReleaseSet).get(1)
+    >>> firefox_crashes_in_warty = BugTaskFactory(
+    ...     view, distrorelease = warty.id,
+    ...     sourcepackagename = firefox_source.id, owner = bug_submitter.id)
+    >>> notify(ObjectCreatedEvent(firefox_crashes_in_warty))
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '...task added'
+
+    >>> stub.test_emails = []
+
+  2.3 Upstream Task
+
+    An upstream tasks notes that a bug needs to be fixed upstream. "Upstream"
+    is a somewhat ambiguous term -- it can have different meanings in the eyes
+    of an Ubuntu maintainer vs. a maintainer of a package from an Ubuntu
+    derivative. At the moment, "upstream" means "the distro-agnostic place from
+    which we procured a source tarball to create a source package for a distro."
+    The common case will be that bugs filed in distros bubble up to upstream,
+    and are fixed there then bubble back down (via patches) to the various
+    distros via patches.
+
+    >>> firefox_crashes_upstream = BugTaskFactory(
+    ...     view, product = firefox.id, owner = bug_submitter.id)
+    >>> notify(ObjectCreatedEvent(firefox_crashes_upstream))
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '...task added'
+
+    >>> stub.test_emails = []
+
+3. Commenting on a bug
+
+    >>> from canonical.launchpad.database.message import BugMessageFactory
+
+    XXX: Brad Bollenbach, 2005-02-28: Hacks to get around the message
+    BugMessageFactory implementation. Fixed this up in the next round
+    of BugMessageFactory refactoring!
+
+    >>> class StubRequest:
+    ...     def __init__(self, principal):
+    ...         self.principal = principal
+    >>> class StubView2:
+    ...     def __init__(self, bug):
+    ...         self.context = FakeContext()
+    ...         self.request = StubRequest(bug_submitter)
+    ...         self.context.context = FakeContext()
+    ...         self.context.context.id = bug.id
+    >>> view2 = StubView2(firefox_crashes)
+    >>> comment_on_firefox_crashes_in_ubuntu = BugMessageFactory(
+    ...     view2, title = "some title", contents = "just a test comment")
+    >>> notify(ObjectCreatedEvent(comment_on_firefox_crashes_in_ubuntu))
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '...comment added'
+
+    >>> stub.test_emails = []
+
+4. Editing a task (e.g. marking a task "Fixed")
+
+Implifications of Bug Privacy
+-----------------------------
+
+XXX: blah blah privacy blah (demonstrate how
+
+    >>> ztapi.unprovideUtility(ILaunchBag)
+    >>> zope.security.management.endInteraction()

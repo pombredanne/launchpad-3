@@ -10,18 +10,103 @@ the bug task that tracks priority, severity, assignee, etc.
 Working with Bug Tasks in Launchpad
 ===================================
 
-All BugTask creation and retrieval is done through BugTaskSet.  BugTaskSet can
-be accessed as a utility.
+Creating Bug Tasks
+------------------
+
+All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
     >>> from zope.component import getUtility
     >>> import transaction
     >>> from canonical.launchpad.interfaces import IBugTaskSet
     >>> bugtaskset = getUtility(IBugTaskSet)
 
-To retrieve a specific BugTask, use BugTaskSet.get. As an example,
-interacting with the system as an anonymous (i.e. unauthenticated) user:
+To create a bug task, you have to be logged in:
 
     >>> import zope.security.management
+    >>> from zope.interface import implements
+    >>> from zope.app.tests import ztapi
+    >>> from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> class Participation:
+    ...     interaction = None
+    >>> foobar = LaunchpadPrincipal(
+    ...     16, "firefox maintainer",
+    ...     "i can't think of a description to write here")
+    >>> foobar_participation = Participation()
+    >>> foobar_participation.principal = foobar
+    >>> zope.security.management.newInteraction(foobar_participation)
+    >>> class MockLaunchBag(object):
+    ...     implements(ILaunchBag)
+    ...     def __init__(self, login=None, user=None):
+    ...         self.login = login
+    ...         self.user = user
+    >>> ztapi.provideUtility(
+    ...     ILaunchBag,
+    ...     MockLaunchBag("foo.bar@canonical.com", foobar))
+
+There are three kinds of bug tasks. We need to pass the bug task creation
+methods some other objects to create a task, so lets get the utilities we need
+to access those other objects:
+
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet, \
+    ...     IProductSet, IDistributionSet, IDistroReleaseSet
+    >>> productset = getUtility(IProductSet)
+    >>> distroset = getUtility(IDistributionSet)
+    >>> distoreleaseset = getUtility(IDistroReleaseSet)
+    >>> bugset = getUtility(IBugSet)
+    >>> personset = getUtility(IPersonSet)
+    >>> bug_one = bugset.get(1)
+    >>> sabdfl = personset.get(1)
+
+Next, we need to grab some values to provide for priority, severity and status.
+
+    >>> from canonical.lp.dbschema import BugTaskStatus, BugSeverity, BugPriority
+    >>> STATUS_NEW = BugTaskStatus.NEW.value
+    >>> SEVERITY_NORMAL = BugSeverity.NORMAL.value
+    >>> PRIORITY_MEDIUM = BugPriority.MEDIUM.value
+
+  i. Upstream -- a bug that has to be fixed in an upstream product
+
+    >>> evolution = productset.get(5)
+    >>> upstream_task = bugtaskset.createTask(
+    ...     bug = bug_one, product = evolution, owner = sabdfl,
+    ...     status = STATUS_NEW, priority = PRIORITY_MEDIUM,
+    ...     severity = SEVERITY_NORMAL)
+    >>> upstream_task.product == evolution
+    True
+
+  ii. Distro -- a bug that has to be fixed in a specific distro
+
+    >>> ubuntu = distroset.get(1)
+    >>> distro_task = bugtaskset.createTask(
+    ...     bug = bug_one, distribution = ubuntu, owner = sabdfl,
+    ...     status = STATUS_NEW, priority = PRIORITY_MEDIUM,
+    ...     severity = SEVERITY_NORMAL)
+    >>> distro_task.distribution == ubuntu
+    True
+
+  ii. Distro Release -- a bug that has to be fixed in a specific distro
+  release. This primary use case for distro release bug tasks is for backporting
+  fixes (e.g. for security bugs or bugs causing critical data loss.)
+
+    >>> hoary = distoreleaseset.get(3)
+    >>> distro_release_task = bugtaskset.createTask(
+    ...     bug = bug_one, distrorelease = hoary, owner = sabdfl,
+    ...     status = STATUS_NEW, priority = PRIORITY_MEDIUM,
+    ...     severity = SEVERITY_NORMAL)
+    >>> distro_release_task.distrorelease == hoary
+    True
+
+XXX: Brad Bollenbach, 2005-02-24: See the bottom of this file for a chunk of
+test documentation that is missing from here, due to problems with resetting
+the connection after an IntegrityError is raised. ARGH.
+
+Retrieving and Searching for Bug Tasks
+--------------------------------------
+
+To retrieve a specific BugTask, use IBugTaskSet.get. As an example, interacting
+with the system as an anonymous (i.e. unauthenticated) user:
+
     >>> from canonical.launchpad.interfaces import IPerson
     >>> from canonical.launchpad.database import Person
     >>> class Principal:
@@ -30,21 +115,12 @@ interacting with the system as an anonymous (i.e. unauthenticated) user:
     ...         self.groups = []
     >>> principal = Principal('launchpad.anonymous')
 
-    >>> class Participation:
-    ...     interaction = None
     >>> anon_participation = Participation()
     >>> anon_participation.principal = principal
 
+    >>> zope.security.management.endInteraction()
     >>> zope.security.management.newInteraction(anon_participation)
 
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> from zope.app.tests import ztapi
-    >>> from zope.interface import implements
-    >>> class MockLaunchBag(object):
-    ...     implements(ILaunchBag)
-    ...     def __init__(self, login=None, user=None):
-    ...         self.login = login
-    ...         self.user = user
     >>> launchbag = MockLaunchBag()
     >>> ztapi.provideUtility(ILaunchBag, launchbag)
 
@@ -106,7 +182,6 @@ anyone.
 
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
-    >>> from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
     >>> foobar = LaunchpadPrincipal(
     ...     16, "firefox maintainer",
     ...     "i can't think of a description to write here")
@@ -184,6 +259,24 @@ And, as you would expect, we'll also be able to access it directly:
     >>> bug_firefox_no_svg_support = bugtaskset.get(2)
     >>> bug_firefox_no_svg_support.bug.title
     u'Firefox does not support SVG'
+
+XXX: Brad Bollenbach, 2005-02-24: This bit testing the IntegrityError should be
+higher up in the file (under the explanation about creating tasks), but I can't
+figure out how to reset the connection properly after an IntegrityError is
+raised. ARGH.
+
+Note that a task filed on a specific distro release does *not* have its
+distribution column set. In fact, a task must have exactly one of its product,
+distribution or distrorelease fields set, otherwise the database integrity
+constraints will be violated.
+
+    >>> bad_task = bugtaskset.createTask(
+    ...     bug = bug_one, distribution = ubuntu, distrorelease = hoary,
+    ...     owner = sabdfl, status = STATUS_NEW, priority = PRIORITY_MEDIUM,
+    ...     severity = SEVERITY_NORMAL)
+    Traceback (most recent call last):
+      ...
+    IntegrityError: ...
 
 XXX: Brad Bollenbach, 2005-02-03: this shouldn't be in a doctest, but I don't
 have time to think about a better place to put this at the moment.

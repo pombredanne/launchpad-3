@@ -21,6 +21,11 @@
         />
 
     <vocabulary
+        name="DistroRelease"
+        factory="canonical.launchpad.vocabularies.DistroReleaseVocabulary"
+        />
+
+    <vocabulary
         name="BinaryPackage"
         factory="canonical.launchpad.vocabularies.BinaryPackageVocabulary"
         />

@@ -116,29 +116,25 @@ def notify_bug_modified(modified_bug, event):
             "Edited bug: %s" % event.object_before_modification.title),
         changes = changes)
 
-def notify_bug_assigned_product_added(product_task, event):
-    """Notify CC'd list that this bug has been assigned to
-    a product."""
-    product_task = event.object
+def notify_bugtask_added(bugtask, event):
+    """Notify CC'd list that this bug has been marked as needing fixing
+    somewhere else."""
+    bugtask = event.object
     assignee_name = "(not assigned)"
-    if product_task.assignee:
-        assignee_name = product_task.assignee.displayname
-    msg = """\
-Product: %(product)s
-Status: %(status)s
-Priority: %(priority)s
-Severity: %(severity)s
-Assigned: %(assigned)s
-""" % {'product' : product_task.product.displayname,
-       'status' : BugTaskStatus.items[int(product_task.bugstatus)].title,
-       'priority' : BugPriority.items[int(product_task.priority)].title,
-       'severity' : BugSeverity.items[int(product_task.severity)].title,
-       'assigned' : assignee_name}
+    if bugtask.product:
+        msg = "Upstream: %s" % bugtask.product.displayname
+    elif bugtask.distribution:
+        msg = "Distribution: %s" % bugtask.distribution.displayname
+    elif bugtask.distrorelease: 
+        msg = "Distribution Release: %s (%s)" % (
+            bugtask.distrorelease.distribution.displayname,
+            bugtask.distrorelease.displayname)
+    else:
+        raise ValueError("Unrecognized BugTask type")
 
     send_edit_notification_simple(
-        product_task.bug,
-        FROM_ADDR, get_cc_list(product_task.bug),
-        '"%s" assigned to product' % product_task.bug.title, msg)
+        bugtask.bug, FROM_ADDR, get_cc_list(bugtask.bug),
+        '"%s" task added' % bugtask.bug.title, msg)
 
 def notify_bug_assigned_product_modified(modified_product_task, event):
     """Notify CC'd list that this bug product task has been

@@ -2,6 +2,113 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-01 20:18:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1354
+
+    Summary:
+      universe support added to Malone. various bug notification fixes. add
+ more bits to the CA to keep the database code import fascists at bay.
+    Revision:
+      launchpad--devel--0--patch-1354
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-364
+       add support for filing distro release bug tasks on bugs.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-365
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-366
+       add support for listing bug tasks on distro releases
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-367
+       change message ordering to be ascending on id, so that the oldest comments on a bug are shown first.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-368
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-369
+       some UI and URL tidying up of the distro release task functionality
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-370
+       revert the comment ordering change
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-371
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-372
+       fix various notifications and ensure that they don't break anymore
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-373
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-374
+       merge from rocketfuel
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-375
+       small fixes after merging
+    
+
+    new files:
+     database/schema/pending/.arch-ids/bradb-bugtask-constraint.sql.id
+     database/schema/pending/bradb-bugtask-constraint.sql
+     lib/canonical/launchpad/components/.arch-ids/bugmessage.py.id
+     lib/canonical/launchpad/components/bugmessage.py
+     lib/canonical/launchpad/doc/.arch-ids/bugnotifications.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/distribution.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/distrorelease.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/sourcepackage.txt.id
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/doc/distribution.txt
+     lib/canonical/launchpad/doc/distrorelease.txt
+     lib/canonical/launchpad/doc/sourcepackage.txt
+     lib/canonical/launchpad/templates/.arch-ids/malone-distro-index.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/malone-distros-index.pt.id
+     lib/canonical/launchpad/templates/malone-distro-index.pt
+     lib/canonical/launchpad/templates/malone-distros-index.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/interfaces/bugmessage.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/interfaces/distribution.py
+     lib/canonical/launchpad/interfaces/distrorelease.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/mail/sendmail.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+     lib/canonical/launchpad/templates/distrorelease-bugs.pt
+     lib/canonical/launchpad/templates/portlet-bug-tasks-headline.pt
+     lib/canonical/launchpad/vocabularies/configure.zcml
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/zcml/bug-events.zcml
+     lib/canonical/launchpad/zcml/bugtask.zcml
+     lib/canonical/launchpad/zcml/distribution.zcml
+     lib/canonical/launchpad/zcml/distrorelease.zcml
+     lib/canonical/launchpad/zcml/message.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-364
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-365
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-366
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-367
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-368
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-369
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-370
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-371
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-372
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-373
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-374
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-375
+
+
 2005-03-01 19:20:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1353
 
     Summary:

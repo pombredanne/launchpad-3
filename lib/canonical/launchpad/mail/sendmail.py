@@ -36,7 +36,7 @@ def simple_sendmail(from_addr, to_addrs, subject, body):
         to_addrs = [to_addrs]
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-    msg['To'] = ', '.join([str(a) for a in to_addrs])
+    msg['To'] = ','.join([str(a) for a in to_addrs])
     msg['From'] = from_addr
     msg['Subject'] = subject
     return sendmail(msg)

@@ -40,7 +40,8 @@ class IBugTask(IHasDateCreated):
         title=_("Source Package Name"), required=False, vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
-    distrorelease = Attribute('The targetted distrorelease')
+    distrorelease = Choice(
+        title=_("Distribution Release"), required=False, vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
@@ -121,6 +122,15 @@ class IBugTaskSet(Interface):
         For a more thorough treatment, check out:
 
             lib/canonical/launchpad/doc/bugtask.txt
+        """
+
+    def createTask(bug, product=None, distribution=None, distrorelease=None,
+                   sourcepackagename=None, binarypackagename=None, status=None,
+                   priority=None, severity=None, assignee=None, owner=None,
+                   milestone=None):
+        """Create a bug task on a bug.
+
+        Exactly one of product, distribution or distrorelease must be provided.
         """
 
 class IBugTasksReport(Interface):

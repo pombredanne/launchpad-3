@@ -25,8 +25,8 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionView"
-        permission="zope.Public"
-        >
+        layer="canonical.launchpad.layers.SoyuzLayer"
+        permission="zope.Public" >
 
         <browser:page
             name="+index"
@@ -51,9 +51,18 @@
             lp:url="Soyuz/distros/$Distribution.name/+binaries"
             />
         -->
+    </browser:pages>
 
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionView"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        permission="zope.Public">
 
-
+        <browser:page
+            name="+index"
+            template="../templates/malone-distro-index.pt"
+            lp:url="malone/distros/$Distribution.name/" />
     </browser:pages>
 
     <browser:editform
@@ -63,8 +72,7 @@
         schema="canonical.launchpad.interfaces.IDistribution"
         fields="displayname title summary description"
         template="../templates/launchpad-editform.pt"
-        lp:url="Soyuz/distros/$Distribution.name/+edit"
-        />
+        lp:url="Soyuz/distros/$Distribution.name/+edit" />
 
     <!-- DistributionSet -->
     <content class="canonical.launchpad.database.DistributionSet">
@@ -88,6 +96,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
+        layer="canonical.launchpad.layers.SoyuzLayer"
         class="canonical.launchpad.browser.DistributionSetView">
 
         <browser:page
@@ -95,6 +104,18 @@
             template="../templates/distros-index.pt"
             lp:url="Soyuz/distros/" />
 
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistributionSet"
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        class="canonical.launchpad.browser.DistributionSetView">
+
+        <browser:page
+            name="+index"
+            template="../templates/malone-distros-index.pt"
+            lp:url="malone/distros/" />
     </browser:pages>
 
     <browser:page
