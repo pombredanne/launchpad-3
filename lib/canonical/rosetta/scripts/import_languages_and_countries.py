@@ -191,7 +191,7 @@ def insert_language(cnx, data, plural_forms):
                 POMsgSet.obsolete = FALSE AND
                 POMsgSet.fuzzy = FALSE AND
                 POMsgSet.id = POTranslationSighting.pomsgset AND
-                POTranslationSighting.deprecated = FALSE AND
+                POTranslationSighting.active = TRUE AND
                 POTranslationSighting.potranslation = POTranslation.id""",
         { 'languagecode': data['code'],
           'englishname': data['englishname'].encode('utf-8') })

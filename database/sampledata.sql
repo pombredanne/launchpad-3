@@ -648,7 +648,7 @@ INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
 		    lasttranslator, currentcount, updatescount, rosettacount,
 		    pluralforms)
 VALUES ((SELECT id FROM POTemplate WHERE name = 'evolution-2.0'),
-        (SELECT id FROM Language WHERE code = 'cy'),
+        (SELECT id FROM Language WHERE code = 'es'),
 	' traducción de es.po al Spanish\n'
         ' translation of es.po to Spanish\n'
         ' translation of evolution.HEAD to Spanish\n'

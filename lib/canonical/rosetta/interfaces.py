@@ -96,7 +96,7 @@ class IProduct(Interface):
 
         Returns the newly created template.
 
-        Raises an KeyError if a po template with that name already exists.
+        Raises an KeyError if a PO template with that name already exists.
         """
 
     def messageCount():
@@ -147,7 +147,7 @@ class IPOTemplate(Interface):
     def __len__():
         """Returns the number of Current IPOMessageSets in this template."""
 
-    def __iter__():
+    def __iter__(offset=0, count=None):
         """Return an iterator over Current IPOMessageSets in this template."""
 
     def __getitem__(msgid):
@@ -285,6 +285,7 @@ class IEditPOFile(IPOFile):
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
 
+
 class IPOMessageSet(Interface):
     """A collection of message IDs and possibly translations."""
 
@@ -359,6 +360,15 @@ class IPOMessageSet(Interface):
 
     def translations():
         """Return an iterator over this set's translations."""
+
+    def translationsForLanguage(language):
+        """Return an iterator over translation strings for this set in the
+        given language.
+
+        This method is applicable to PO template sets only.
+
+        XXX: This is quite UI-oriented. Refactor?
+        """
 
     def getTranslationSighting(plural_form):
         """Return the translation sighting that is current and has the

@@ -5,6 +5,7 @@ from canonical.rosetta.interfaces import *
 from sqlobject import ForeignKey, MultipleJoin, IntCol, BoolCol, StringCol, \
     DateTimeCol
 from zope.interface import implements
+from zope.component import getUtility
 from canonical.rosetta import pofile
 from types import NoneType
 from datetime import datetime
@@ -289,8 +290,11 @@ class RosettaPOTemplate(SQLBase):
             '''
             % self.id, orderBy='sequence')
 
-    def __iter__(self):
-        return iter(self.currentMessageSets())
+    def __iter__(self, offset=0, count=None):
+        if count == None:
+            return self.currentMessageSets()[offset:]
+        else:
+            return self.currentMessageSets()[offset:offset+count]
 
     def __len__(self):
         '''Return the number of CURRENT MessageSets in this POTemplate.'''
@@ -540,34 +544,67 @@ class RosettaPOMessageSet(SQLBase):
         else:
             return ret[0]
 
-    def newTranslation(self, sighting_or_msgid):
-        raise NotImplementedError
-
-
     def translations(self):
         return RosettaPOTranslation.select('''
             POTranslationSighting.pomsgset = %d AND
             POTranslationSighting.potranslation = POTranslation.id
             ''' % self.id, clauseTables=('POTranslationSighting',))
 
-    def getTranslationsForThatPOMessageSetOverThere(self):
+    def translationsForLanguage(self, language):
+        if self.poFile is not None:
+            raise RuntimeError, "Naughty!"
+
+        # Find the number of plural forms.
+
+        languages = getUtility(ILanguages)
+
+        try:
+            pofile = self.poTemplate.poFile(language)
+            pluralforms = pofile.pluralForms
+        except KeyError:
+            pofile = None
+            pluralforms = languages[language].pluralForms
+
+        if pluralforms == None:
+            raise RuntimeError, """Don't know the number of plural forms for
+                this language! Bad call!"""
+
+        if pofile is None:
+            return [None] * pluralforms
+
+        # XXX: We might want to look the number of plural forms up in the
+        # language if the PO file exists but has .pluralForms == None.
+
+        # Find the sibling message set.
+
         '''
-        SELECT DISTINCT ON (sighting.pluralform) sighting.* FROM
-            POMsgSet potset,
-            POMsgSet poset,
-            POFile pofile,
-            POTranslation translation,
-            POTranslationSighting sighting
-            WHERE
-            potset.id = 5 AND
-            potset.pofile IS NULL AND
-            potset.potemplate = pofile.potemplate AND
-            pofile.id = poset.pofile AND
-            potset.primemsgid = poset.primemsgid AND
-            poset.id = sighting.pomsgset AND
-            sighting.potranslation = translation.id
-            ORDER BY sighting.pluralform, sighting.lasttouched
+        SELECT * FROM POMsgSet WHERE
+            pofile = ${pofile} AND
+            primemsgid = ${self.primemsgid} AND
+            sequence > 0
         '''
+
+        results = RosettaPOMessageSet.select('''pofile = %d AND primemsgid = %d AND
+            sequence > 0''' % (pofile.id, self.primeMessageID_.id))
+
+        assert 0 <= results.count() <= 1
+
+        if results.count() == 0:
+            return [None] * pluralforms
+
+        translations = []
+        translation_set = results[0]
+
+        results = list(RosettaPOTranslationSighting.select(
+            'pomsgset = %d AND active=True' % translation_set.id, orderBy='pluralForm'))
+
+        for form in range(pluralforms):
+            if results and results[0].pluralForm == form:
+                translations.append(results.pop(0).poTranslation.translation)
+            else:
+                translations.append(None)
+
+        return translations
 
     def getTranslationSighting(self, plural_form):
         """Return the translation sighting that is committed and has the

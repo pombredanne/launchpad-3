@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+import re
+
 from zope.component import getUtility
 from canonical.rosetta.interfaces import IProjects, ILanguages, IPerson
 from canonical.rosetta.sql import RosettaLanguage
@@ -122,7 +124,6 @@ class ViewPOFile:
 
     def editSubmit(self):
         if "SUBMIT" in self.request.form:
-#            import pdb; pdb.set_trace()
             if self.request.method == "POST":
                 self.header['Plural-Forms'] = 'nplurals=%s; plural=%s;' % (
                     self.request.form['pluralforms'],
@@ -137,7 +138,7 @@ class ViewPOFile:
         else:
             self.submitted = False
             return ""
- 
+
 
 class TranslatorDashboard:
     def projects(self):
@@ -148,7 +149,7 @@ class ViewSearchResults:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        
+
         self.projects = getUtility(IProjects)
         self.queryProvided = 'q' in request.form and \
             request.form.get('q')
@@ -178,25 +179,167 @@ class ViewPOExport:
 
 
 class TranslatePOTemplate:
+    defaultCount = 5
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.codes = request.form.get('languages')
+
+        languages = getUtility(ILanguages)
+
+        if self.codes:
+            self.languages = []
+
+            for code in self.codes.split(','):
+                try:
+                    self.languages.append(languages[code])
+                except KeyError:
+                    pass
+        else:
+            self.languages = list(IPerson(request.principal).languages())
+
+        self.pluralForms = {}
+
+        for language in self.languages:
+            try:
+                pofile = context.poFile(language.code)
+                self.pluralForms[language.code] = pofile.pluralForms
+            except KeyError:
+                if languages[language.code].pluralForms is not None:
+                    self.pluralForms[language.code] = \
+                        languages[language.code].pluralForms
+                else:
+                    raise RuntimeError, "Eeek!"
+
+        if 'offset' in request.form:
+            self.offset = int(request.form.get('offset'))
+        else:
+            self.offset = 0
+
+        if 'count' in request.form:
+            self.count = int(request.form.get('count'))
+        else:
+            self.count = TranslatePOTemplate.defaultCount
+
+    def atBeginning(self):
+        return self.offset == 0
+
+    def atEnd(self):
+        return self.offset + self.count >= len(self.context)
+
+    def _makeURL(self, **kw):
+        parameters = {}
+
+        # Parameters to copy from kwargs or form.
+        for name in ('languages', 'count'):
+            if name in kw:
+                parameters[name] = kw[name]
+            elif name in self.request.form:
+                parameters[name] = self.request.form.get(name)
+
+        # Parameters to copy from kwargs only.
+        for name in ('offset',):
+            if name in kw:
+                parameters[name] = kw[name]
+
+        return str(self.request.URL) + '?' + '&'.join(map(
+            lambda x: x + '=' + str(parameters[x]), parameters))
+
+    def beginningURL(self):
+        return self._makeURL()
+
+    def endURL(self):
+        return self._makeURL(offset =
+            (len(self.context) - self.count) / self.count * self.count)
+
+    def previousURL(self):
+        if self.offset - self.count <= 0:
+            return self._makeURL()
+        else:
+            return self._makeURL(offset = self.offset - self.count)
+
+    def nextURL(self):
+        if self.offset + self.count >= len(self.context):
+            raise ValueError
+        else:
+            return self._makeURL(offset = self.offset + self.count)
+
+    def _munge(self, text):
+        #return text.replace(' ', u'\u2423\u200b').replace('\n', u'\u21b5<br/>\n')
+        return text.replace('\n', u'\u21b5<br/>\n')
+
+    def _messageID(self, messageID):
+        return {
+            'isMultiline' : '\n' in messageID.msgid,
+            'text' : self._munge(messageID.msgid)
+        }
+
+    def _messageSet(self, set):
+        messageIDs = set.messageIDs()
+        isPlural = len(list(messageIDs)) > 1
+        messageID = self._messageID(messageIDs[0])
+        translations = {}
+
+        for language in self.languages:
+            # XXX: missing exception handling
+            translations[language] = \
+                set.translationsForLanguage(language.code)
+
+        if isPlural:
+            messageIDPlural = self._messageID(messageIDs[1])
+        else:
+            messageIDPlural = False
+
+        return {
+            'id' : set.id,
+            'isPlural' : isPlural,
+            'messageID' : messageID,
+            'messageIDPlural' : messageIDPlural,
+            'sequence' : set.sequence,
+            'fileReferences': set.fileReferences,
+            'commentText' : set.commentText,
+            'translations' : translations,
+        }
+
+    def messageSets(self):
+        for set in self.context.__iter__(self.offset, self.count):
+            yield self._messageSet(set)
+
     def submitTranslations(self):
+        self.submitted = False
 
-        if "SUBMIT" in self.request.form:
-            from pprint import pformat
-            from xml.sax.saxutils import escape
-            self.submitted = True
-            return escape(pformat(self.request.form))
-        else:
-            self.submitted = False
+        if not "SUBMIT" in self.request.form:
+            return None
 
-    def languages(self):
-        codes = self.request.form.get('languages')
+        from pprint import pformat
+        from xml.sax.saxutils import escape
+        self.submitted = True
 
-        if codes:
-            languages = getUtility(ILanguages)
+        translations = []
 
-            for code in codes.split(','):
-                yield languages[code]
-        else:
-            for language in IPerson(self.request.principal).languages():
-                yield language
+        for field in self.request.form:
+            value = self.request.form[field]
+
+            # singular
+
+            match = re.match('^t_(\d+)_([a-z]+)$', field)
+
+            if match:
+                translations.append((int(match.group(1)), match.group(2),
+                    value))
+
+            # plural
+
+            match = re.match('^t_(\d+)_([a-z]+)_(\d+)$', field)
+
+            if match:
+                translations.append((int(match.group(1)), match.group(2),
+                    int(match.group(3)), value))
+
+        # XXX: database code goes here
+        # If the PO file doesn't exist, we need to create it first.
+
+        return translations
 

@@ -15,91 +15,120 @@
 <div metal:fill-slot="main">
 
     <div tal:content="view/submitTranslations" />
+    <!--
     <div tal:condition="not: view/submitted">
+    -->
 
     <h1>Translating <span tal:replace="context/product/project/title">Project
         title</span> &mdash; <span tal:replace="context/title">POT file
         title</span></h1>
 
-    <!--
-    <div style="float:right;">
-        <input type="checkbox" checked="checked" class="noborder" />
-        Show String Information <br />
-        <input type="checkbox" class="noborder" />
-        Show only untranslated messages<br />
-        <input type="checkbox" class="noborder" checked="checked" />
-        Save changes when moving between pages
-    </div>
-    -->
-
     <div class="documentDescription">
     Hint: use the <code>Tab</code> key to move quickly between translation fields.
     </div>
 
-    <!-- Navigation XXX: not dynamic yet -->
+    <!-- Show which messages are displayed. -->
+
+    <div tal:condition="view/atBeginning">
+        <div tal:condition="view/atEnd">
+            Showing all
+            <span tal:replace="context/__len__">23</span>
+            messages.
+        </div>
+    </div>
+
+    <div tal:condition="python:
+            (not view.atBeginning()) or (not view.atEnd())">
+        Showing messages
+        <span tal:replace="python: view.offset + 1"
+            >5</span>
+        &ndash;
+        <span tal:replace="python:
+            min(len(context), view.offset + view.count)">10</span>
+        of
+        <span tal:replace="context/__len__">23</span>.
+    </div>
+
+    <!-- Navigation doodads. -->
+
     <div class="listingBar">
         <span class="previous">
-            <a href="">
-            &laquo; Previous <span>5</span> messages
-            </a>
+            <!-- Link to beginning, if this is not the beginning page. -->
+            <span tal:condition="not:view/atBeginning">
+                <a tal:attributes="href view/beginningURL">&laquo; Beginning</a>
+            </span>
+
+            <!-- Link to previous page, if it's not the beginning page. -->
+            <span tal:condition="python: view.offset - view.count > 0">
+                <a tal:attributes="href view/previousURL">&laquo; Previous
+                    <span tal:replace="view/count">5</span> messages</a>
+            </span>
         </span>
 
         <span class="next">
-            <a href="">
-            Next <span>5</span> messages &raquo;
-            </a>
+            <!-- Link to next page, if it's not the end page. -->
+            <span tal:condition="python:
+                    view.offset + 2 * view.count < len(context)">
+                <a tal:attributes="href view/nextURL">Next
+                    <span tal:replace="view/count">5</span> messages &raquo;</a>
+            </span>
+
+            <!-- Link to end page, if this is not the end page. -->
+            <span tal:condition="not:view/atEnd">
+                <a tal:attributes="href view/endURL">End &raquo;</a>
+            </span>
         </span>
-
-        <a href="">1</a>
-
-        [<span>2</span>]
-
-    <!-- Pagelist with links to next pages for quick navigation -->
-        <a href="">3</a>
-        <a href="">4</a>
-        <a href="">5</a>
-
-    <!-- Pagelist with quantum leap links to next pages for quick navigation -->
-
-        ...
-
-        <a href="">226</a>
-
     </div>
 
+    <!-- The actual translation form. -->
+
     <form method="POST" tal:attributes="action request/URL">
-    <tal:msgstring repeat="set context">
-        <fieldset class="message-strings"
-                tal:define="isPlural python: len(list(set.messageIDs())) > 1">
+    <tal:msgstring repeat="set view/messageSets">
+        <fieldset class="message-strings">
             <legend>String #<span tal:replace="set/sequence">120</span></legend>
 
                 <!-- Simple message. -->
-                <span tal:condition="not:isPlural">
+                <span tal:condition="not:set/isPlural">
                     <div class="field">
                         <label class="language-code">English</label>:
-                        <span tal:content="python: set.messageIDs()[0].msgid">sighting</span>
+                        <!--
+                        <span
+                            tal:condition="not:set/messageID/isMultiline"><span
+                            tal:content="set/messageID/text">text</span></span>
+                        -->
+                        <div
+                            xtal:condition="set/messageID/isMultiline"><span
+                            tal:content="structure set/messageID/text">text</span></div>
                     </div>
 
                     <div class="field" tal:repeat="language view/languages">
                         <label class="language-code"
                             tal:content="language/englishName">pt_BR</label>:
+                        <br/>
                         <input type="text"
-                               xtal:attributes="value python:sighting.currentTranslation(language).text[0]"
-                               tal:attributes="name
-                                   string:t_${set/id}_${language/code}" />
+                            tal:condition="not:set/messageID/isMultiline"
+                            xtal:attributes="value python:sighting.currentTranslation(language).text[0]"
+                            tal:attributes="
+                                name string:t_${set/id}_${language/code};
+                                value python:set['translations'][language][0];
+                                " />
+                        <textarea
+                            tal:condition="set/messageID/isMultiline"
+                            tal:attributes="name
+                                string:t_${set/id}_${language/code}"></textarea>
                     </div>
                 </span>
 
                 <!-- Plural message. -->
-                <span tal:condition="isPlural">
+                <span tal:condition="set/isPlural">
                     <div class="field">
                         <label class="language-code">English 1</label>:
-                        <span tal:content="python: set.messageIDs()[0].msgid">singular</span>
+                        <span tal:content="set/messageID/text">singular</span>
                     </div>
 
                     <div class="field">
                         <label class="language-code">English 2</label>:
-                        <span tal:content="python: set.messageIDs()[1].msgid">plural</span>
+                        <span tal:content="set/messageIDPlural/text">plural</span>
                     </div>
 
                     <fieldset>
@@ -107,26 +136,19 @@
 
                         <span tal:repeat="language view/languages">
 
-                            <div class="field">
+                            <div class="field" tal:repeat="i python:
+                                    range(view.pluralForms[language.code])">
                                 <label class="language-code"
                                     tal:content="language/englishName">pt_BR[0]</label>:
                                 <input type="text"
-                                   xtal:attributes="value python:sighting.currentTranslation(language).text[0]"
-                                   tal:attributes="name
-                                       string:t_${set/id}_${language/code}_0"
+                                    tal:attributes="
+                                        name string:t_${set/id}_${language/code}_0;
+                                        value python:set['translations'][language][0];
+                                        "
                                    />
+                                <!--
                                 <img src="++resource++info.gif" title="Example: 1 dead horse." />
-                            </div>
-
-                            <div class="field">
-                                <label class="language-code"
-                                   tal:content="language/englishName">pt_BR[1]</label>:
-                                <input type="text"
-                                   xtal:attributes="value python:sighting.currentTranslation(language).text[1]"
-                                   tal:attributes="name
-                                       string:t_${set/id}_${language/code}_1"
-                                   />
-                                <img src="++resource++info.gif" title="Example: 5 dead horses." />
+                                -->
                             </div>
 
                         </span>
@@ -139,18 +161,15 @@
 
             <legend>String information</legend>
 
-            <!--
-            <div class="field">
+            <div class="field" tal:condition="set/commentText">
                 <label>Comment</label>
                 <img src="++resource++arrowDown.gif" />
-                <div class="discreet">This refers to the content type.</div>
+                <div class="discreet" tal:content="set/commentText">This refers to the content type.</div>
             </div>
-            -->
 
             <div class="field">
                 <label>From files:</label>
-                <span
-                tal:content="set/fileReferences"
+                <span tal:content="set/fileReferences"
                     >./plone_forms/discussion_reply_form.pt</span>
             </div>
 
@@ -159,142 +178,20 @@
                 <label>Code reference</label>
                 <img src="++resource++arrowRight.gif" />
             </div>
-	    -->
+            -->
         </fieldset>
 
         <div class="visualClear"></div>
     </tal:msgstring>
 
+        <!-- Offset of next page, if not at end. -->
+        <input type="hidden" name="offset"
+            tal:condition="not: view/atEnd"
+            tal:attributes="value python: view.offset + view.count" />
         <input type="submit" name="SUBMIT" value="Submit" />
     </form>
 
-<!-- From here to the end are only hardcoded samples, we should move them to the dynamic part -->
-<!-- Multiline example start -->
-
-    <!--
-    <p class="discreet">
-    This is a static version of how multiline strings are handled:
-    </p>
-
-    <fieldset class="message-strings">
-        <legend>String #121</legend>
-
-        <div class="field">
-            <label class="language-code">en</label><br />
-            <span>English <br />Multiline-Blah</span>
-        </div>
-
-        <div class="field">
-            <label class="language-code">pt</label><br />
-            <span>Portugues <br />Multiline-Blah</span>
-        </div>
-
-        <div class="field">
-            <label class="language-code">pt-br</label>
-            <textarea type="text" columns="60" rows="5">Brazilian 
-Multiline-Blah</textarea>
-            <div class="formHelp">Fill in the Brazilian Portuguese translation.</div>
-        </div>
-
-    </fieldset>
-
-    <fieldset class="message-strings">
-
-        <legend>String information</legend>
-
-        <div class="field">
-            <label>Comment</label>
-            <img src="++resource++arrowRight.gif" />
-        </div>
-
-        <div class="field">
-            <label>From file</label>
-            <span>./plone_forms/discussion_reply_form.pt</span>
-        </div>
-
-        <div class="field">
-            <label>Code reference</label>
-            <img src="++resource++arrowDown.gif" />
-            <pre>
-&lt;input class="context" 
-    i18n:attributes="value" 
-    name="form.button.Save" 
-    tabindex="" 
-    tal:attributes="tabindex tabindex/next;
-                    name string:discussion_reply:method;" 
-    type="submit" 
-    value="Add Comment" /&gt;
-            </pre>
-
-        </div>
-    </fieldset>
-
-    <div class="visualClear"></div>
--->
-<!-- Multiline example end -->
-
-<!-- Plural example start -->
-<!--
-    <p class="discreet">
-    Plural translation example (XXX: not dynamic yet):
-    </p>    
-    <fieldset class="message-strings">
-        <legend>String #120</legend>
-
-        <div class="field">
-            <label class="language-code">en[0]</label>
-            <span>English Singular</span>
-        </div>
-
-        <div class="field">
-            <label class="language-code">en[1]</label>
-            <span>English Plural</span>
-        </div>
-
-        <fieldset>
-            <legend>Plural forms translation</legend>
-
-            <div class="field">
-                <label class="language-code">pt-br[0]</label>
-                <img src="++resource++info.gif" title="Example: 1 dead horse." />
-                <input type="text" value="Brazilian Blah" /><img src="++resource++arrowBottom.gif" title="Clone to other strings" />
-
-            </div>
-            <div class="field">
-                <label class="language-code">pt-br[1]</label>
-                <img src="++resource++info.gif" title="Example: 5 dead horses." />
-                <input type="text" value="Brazilian Blah"/>
-            </div>
-        </fieldset>
-
-    </fieldset>
-
-    <fieldset class="message-strings">
-
-        <legend>String information</legend>
-
-        <div class="field">
-            <label>Comment</label>
-            <img src="++resource++arrowDown.gif" />
-            <div class="discreet">This refers to the content type.</div>
-        </div>
-
-        <div class="field">
-            <label>From file</label>
-            <span>./plone_forms/discussion_reply_form.pt</span>
-        </div>
-
-        <div class="field">
-            <label>Code reference</label>
-            <img src="++resource++arrowRight.gif" />
-        </div>
-    </fieldset>
-
-    <div class="visualClear"></div>
--->
-<!-- Plural example end -->
-
-    </div> <!-- tal:condition="not: view/submitted" -->
+    <!-- </div> --> <!-- tal:condition="not: view/submitted" -->
 </div>
 
 </body>
