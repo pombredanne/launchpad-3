@@ -101,7 +101,7 @@ Submitted By: %(owner)s
         bug,
         FROM_ADDR,
         get_cc_list(bug),
-        "'%s' added" % bug.title, msg)
+        '"%s" added' % bug.title, msg)
 
 def notify_bug_modified(modified_bug, event):
     """Notify the Cc'd list that this bug has been modified."""
@@ -118,7 +118,7 @@ def notify_bug_modified(modified_bug, event):
         bug = modified_bug,
         from_addr = FROM_ADDR,
         to_addrs = get_cc_list(modified_bug),
-        subject = "'%s' edited" % event.object_before_modification.title,
+        subject = '"%s" edited' % event.object_before_modification.title,
         edit_header_line = (
             "Edited bug: %s" % event.object_before_modification.title),
         changes = changes)
@@ -145,7 +145,7 @@ Assigned: %(assigned)s
     send_edit_notification_simple(
         product_assignment.bug,
         FROM_ADDR, get_cc_list(product_assignment.bug),
-        '"%s" product assignment' % product_assignment.bug.title, msg)
+        '"%s" assigned to product' % product_assignment.bug.title, msg)
 
 def notify_bug_assigned_product_modified(modified_product_assignment, event):
     """Notify CC'd list that this bug product assignment has been
@@ -197,7 +197,7 @@ Assigned: %(assigned)s
     send_edit_notification_simple(
         package_assignment.bug,
         FROM_ADDR, get_cc_list(package_assignment.bug),
-        '"%s" package assignment' % package_assignment.bug.title, msg)
+        '"%s" assigned to package' % package_assignment.bug.title, msg)
 
 def notify_bug_assigned_package_modified(modified_package_assignment, event):
     """Notify CC'd list that something had been changed about this bug
@@ -312,7 +312,7 @@ def notify_bug_comment_added(comment, event):
     send_edit_notification_simple(
         comment.bug,
         FROM_ADDR, get_cc_list(comment.bug),
-        'Comment on "%s"' % comment.bug.title, msg)
+        '"%s" comment added' % comment.bug.title, msg)
 
 def notify_bug_external_ref_added(ext_ref, event):
     """Notify CC'd list that a new external reference has
