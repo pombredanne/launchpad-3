@@ -45,6 +45,7 @@
     <include file="pomsgset.zcml" />
     <include file="potranslationsighting.zcml" />
     <include file="potranslation.zcml" />
+    <include file="calendar.zcml" />
 
     <include file="widgets.zcml" />
     <include file="fields.zcml" />

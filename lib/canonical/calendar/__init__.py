@@ -11,7 +11,8 @@ from zope.publisher.interfaces import IPublishTraverse
 from zope.publisher.interfaces import NotFound
 
 from schoolbell.interfaces import ICalendar
-from canonical.launchpad.interfaces.person import IPerson
+from canonical.launchpad.interfaces import ILaunchpadCalendar, ICalendarOwner
+from canonical.launchpad.interfaces import IPerson
 
 __metaclass__ = type
 
@@ -88,7 +89,7 @@ class CalendarAdapterTraverser:
 
     implements(IBrowserPublisher)
 
-    name = '+calendar'
+    name = 'calendar'
 
     def __init__(self, context, request):
         self.context = context
@@ -108,3 +109,11 @@ class CalendarAdapterTraverser:
         if adapter is not self:
             return adapter.browserDefault(request)
         raise NotFound(self.context, self.name, request)
+
+def calendarFromPersonApp(personapp):
+    """Adapt canonical.launchpad.interfaces.IPersonApp to
+    canonical.launchpad.interfaces.ICalendar"""
+    import sys
+    person = personapp.person
+    print >> sys.stderr, (personapp, person, person.calendar)
+    return person.calendar

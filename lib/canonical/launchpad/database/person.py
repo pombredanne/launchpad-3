@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces import IPerson, IPersonSet, IEmailAddress
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.interfaces import ITeamParticipationSet
+from canonical.launchpad.interfaces import ICalendarOwner
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.lp.dbschema import KarmaField
 from canonical.lp import dbschema
@@ -31,7 +32,7 @@ from datetime import datetime
 class Person(SQLBase):
     """A Person."""
 
-    implements(IPerson)
+    implements(IPerson, ICalendarOwner)
 
     _columns = [
         StringCol('name', alternateID=True),
@@ -43,7 +44,9 @@ class Person(SQLBase):
             default=None),
         StringCol('teamdescription', default=None),
         IntCol('karma', default=0),
-        DateTimeCol('karmatimestamp', default=UTC_NOW)
+        DateTimeCol('karmatimestamp', default=UTC_NOW),
+        ForeignKey(name='calendar', foreignKey='Calendar', dbName='calendar',
+                   default=None),
     ]
 
     # RelatedJoin gives us also an addLanguage and removeLanguage for free

@@ -11,8 +11,8 @@ SET client_min_messages TO error;
  * don't actually have to get it perfect.
  */
 
-ALTER TABLE BinaryPackage ADD COLUMN fti tsvector;
-ALTER TABLE SourcePackage ADD COLUMN fti tsvector;
+ALTER TABLE BinaryPackage ADD COLUMN fti ts2.tsvector;
+ALTER TABLE SourcePackage ADD COLUMN fti ts2.tsvector;
 
 CREATE VIEW PublishedPackageView AS SELECT
        PackagePublishing.id AS id,
