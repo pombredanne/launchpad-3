@@ -15,10 +15,6 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-<div tal:replace="structure view/leftMenu" />
-</metal:leftportlets>
-
 <div metal:fill-slot="main">
 
   <div id="content" class="documentEditable">
@@ -142,18 +138,18 @@
 
 
     <!-- Teams and Roles-->
-    <div tal:condition="python: context.teams or
+    <div tal:condition="python: context.memberships or
                                 context.distroroles or
                                 context.distroreleaseroles">
       <fieldset>
         <legend><span tal:replace="context/displayname"></span> is
         </legend>
         <table>
-          <tr tal:repeat="team context/teams">
+          <tr tal:repeat="membership context/memberships">
             <td>
-              <span tal:replace="team/rolename"></span> of 
-              <a tal:attributes="href string:../${team/team/name}"
-                 tal:content="team/team/displayname">foo</a>
+              <span tal:replace="membership/rolename"></span> of 
+              <a tal:attributes="href string:../${membership/team/name}"
+                 tal:content="membership/team/displayname">foo</a>
             </td>
           </tr>
           <tr><td></td></tr>

@@ -2,6 +2,70 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 18:20:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1188
+
+    Summary:
+      Some fixes on browser/people.py. Improved docs for IPerson together with new properties. Template fixes and new pages to view and manage team members.
+    Revision:
+      launchpad--devel--0--patch-1188
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-69
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-70
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-71
+       small fix on TeamAddView
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-72
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-73
+       Some fixes on browser/people.py. Improved docs for IPerson together with new properties. Template fixes and new pages to view and manage team members.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-74
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/team-editmembers.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/team-index.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/team-members.pt.id
+     lib/canonical/launchpad/templates/team-editmembers.pt
+     lib/canonical/launchpad/templates/team-index.pt
+     lib/canonical/launchpad/templates/team-members.pt
+
+    removed files:
+     lib/canonical/launchpad/interfaces/.arch-ids/team.py.id
+     lib/canonical/launchpad/interfaces/team.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/templates/person-bugs.pt
+     lib/canonical/launchpad/templates/person-edit.pt
+     lib/canonical/launchpad/templates/person-emails.pt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/person-karma.pt
+     lib/canonical/launchpad/templates/person-newteam.pt
+     lib/canonical/launchpad/templates/person-packages.pt
+     lib/canonical/launchpad/templates/person-translations.pt
+     lib/canonical/launchpad/zcml/person.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-69
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-70
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-71
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-72
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-73
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-74
+
+
 2005-01-12 15:11:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1187
 
     Summary:

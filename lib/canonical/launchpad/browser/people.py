@@ -163,8 +163,6 @@ class NewAccountView(BaseAddView):
         email = EmailAddress(person=person.id, email=self.context.email,
                              status=int(EmailAddressStatus.PREFERRED))
         self._nextURL = '/foaf/people/%s' % person.name
-        # We don't need this LoginToken anymore.
-        self.context.destroySelf()
         return True
 
 
@@ -175,6 +173,7 @@ class TeamAddView(BaseAddView):
         for key, value in data.items():
             kw[str(key)] = value
 
+        person = IPerson(self.request.principal, None)
         team = createTeam(kw['displayname'], person.id,
                           kw['teamdescription'], kw['email'])
         notify(ObjectCreatedEvent(team))
@@ -220,46 +219,30 @@ def sendNewUserEmail(token):
 
 
 class PersonView(object):
-    """ A Base class for views of a specific person/team. """
-
-    leftMenu = ViewPageTemplateFile('../templates/foaf-menu.pt')
+    """A simple View class to be used in Person's pages where we don't have
+    actions and all we need is the context/request."""
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.person = IPerson(self.request.principal, None)
-
-    # XXX: salgado: 2005-01-06: The following two methods doesn't seem to
-    # be used anymore and I'll remove them on the next cleanup of FOAF
-    # code, which will be soon.
-    def is_member(self):
-        if self.person and self.context.teamowner:
-            membership = Membership.selectBy(personID=self.person.id,
-                                             teamID=self.context.id)
-            if membership.count() > 0:
-                return True
-
-        return False
-
-    def unjoin_action(self):
-        if self.person:
-            teampart = TeamParticipation.selectBy(personID=self.person.id,
-                                                  teamID=self.context.id)[0]
-
-            membership = Membership.selectBy(personID=self.person.id,
-                                             teamID=self.context.id)[0]
-            teampart.destroySelf()
-            membership.destroySelf()
-            return True
-
-        return False
 
 
-class PersonEditView(PersonView):
+class TeamView(object):
+    """A simple View class to be used in Team's pages where we don't have
+    actions and all we need is the context/request."""
 
     def __init__(self, context, request):
-        PersonView.__init__(self, context, request)
+        self.context = context
+        self.request = request
+
+
+class PersonEditView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
         self.errormessage = None
+        self.user = getUtility(ILaunchBag).user
 
     def edit_action(self):
         if self.request.get("REQUEST_METHOD") != "POST":
@@ -267,11 +250,12 @@ class PersonEditView(PersonView):
             return False
 
         person = self.context
+        request = self.request
 
-        password = self.request.get("password", "")
-        newpassword = self.request.get("newpassword", "")
-        newpassword2 = self.request.get("newpassword2", "")
-        displayname = self.request.get("displayname", "")
+        password = request.form.get("password")
+        newpassword = request.form.get("newpassword")
+        newpassword2 = request.form.get("newpassword2")
+        displayname = request.form.get("displayname")
 
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(password, person.password):
@@ -290,60 +274,53 @@ class PersonEditView(PersonView):
                 newpassword = encryptor.encrypt(newpassword)
                 person.password = newpassword
 
-        givenname = self.request.get("givenname", "")
-        familyname = self.request.get("familyname", "")
-        teamdescription = self.request.get("teamdescription", "")
-
-        wiki = self.request.get("wiki", "")
-        wikiname = self.request.get("wikiname", "")
-        network = self.request.get("network", "")
-        nickname = self.request.get("nickname", "")
-        jabberid = self.request.get("jabberid", "")
-        archuserid = self.request.get("archuserid", "")
-
         person.displayname = displayname
-        person.givenname = givenname
-        person.familyname = familyname
-        person.teamdescription = teamdescription
+        person.givenname = request.form.get("givenname")
+        person.familyname = request.form.get("familyname")
+
+        wiki = request.form.get("wiki")
+        wikiname = request.form.get("wikiname")
+        network = request.form.get("network")
+        nickname = request.form.get("nickname")
+        jabberid = request.form.get("jabberid")
+        archuserid = request.form.get("archuserid")
 
         #WikiName
-        if self.context.wiki:
-            self.context.wiki.wiki = wiki
-            self.context.wiki.wikiname = wikiname
-        else:
-            if wiki and wikiname:
-                WikiName(personID=person.id, wiki=wiki, wikiname=wikiname)
+        if person.wiki:
+            person.wiki.wiki = wiki
+            person.wiki.wikiname = wikiname
+        elif wiki and wikiname:
+            WikiName(personID=person.id, wiki=wiki, wikiname=wikiname)
 
         #IrcID
-        if self.context.irc:
-            self.context.irc.network = network
-            self.context.irc.nickname = nickname
-        else:
-            if network and nickname:
-                IrcID(personID=person.id, network=network, nickname=nickname)
+        if person.irc:
+            person.irc.network = network
+            person.irc.nickname = nickname
+        elif network and nickname:
+            IrcID(personID=person.id, network=network, nickname=nickname)
 
         #JabberID
-        if self.context.jabber:
-            self.context.jabber.jabberid = jabberid
-        else:
-            if jabberid:
-                JabberID(personID=person.id, jabberid=jabberid)
+        if person.jabber:
+            person.jabber.jabberid = jabberid
+        elif jabberid:
+            JabberID(personID=person.id, jabberid=jabberid)
 
         #ArchUserID
-        if self.context.archuser:
-            self.context.archuser.archuserid = archuserid
-        else:
-            if archuserid:
-                ArchUserID(personID=person.id, archuserid=archuserid)
+        if person.archuser:
+            person.archuser.archuserid = archuserid
+        elif archuserid:
+            ArchUserID(personID=person.id, archuserid=archuserid)
 
         return True
 
 
-class EmailAddressEditView(PersonView):
+class EmailAddressEditView(object):
 
     def __init__(self, context, request):
-        PersonView.__init__(self, context, request)
+        self.context = context
+        self.request = request
         self.message = "Your changes had been saved."
+        self.user = getUtility(ILaunchBag).user
 
     def formSubmitted(self):
         if self.request.form.get("SUBMIT_CHANGES", ""):
@@ -356,10 +333,10 @@ class EmailAddressEditView(PersonView):
         return True
 
     def processEmailChanges(self):
-        person = self.person
+        user = self.user
         password = self.request.get("password", "")
         encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(password, person.password):
+        if not encryptor.validate(password, user.password):
             self.message = "Wrong password. Please try again."
             return
 
@@ -379,7 +356,7 @@ class EmailAddressEditView(PersonView):
                 return
 
             login = getUtility(ILaunchBag).login
-            token = newLoginToken(person, login, newemail, 
+            token = newLoginToken(user, login, newemail, 
                                   LoginTokenType.VALIDATEEMAIL)
             sendEmailValidationRequest(token)
             self.message = """A new message was sent to '%s', please follow
@@ -395,11 +372,11 @@ the instructions on that message to validate your email address.""" % newemail
             # login *must* have a PREFERRED email, and this will not be
             # needed anymore. But for now we need this cause id may be "".
             id = int(id)
-            if getattr(person.preferredemail, 'id', None) != id:
+            if getattr(user.preferredemail, 'id', None) != id:
                 email = EmailAddress.get(id)
-                assert email.person == person
+                assert email.person == user
                 assert email.status == int(EmailAddressStatus.VALIDATED)
-                person.preferredemail = email
+                user.preferredemail = email
 
         ids = self.request.form.get("REMOVE_EMAIL", "")
         if ids:
@@ -412,12 +389,9 @@ the instructions on that message to validate your email address.""" % newemail
 
             for id in ids:
                 email = EmailAddress.get(id)
-                assert email.person == person
-                if person.preferredemail == email:
-                    # Go on and delete other selected emails, but do not
-                    # delete the preferred one.
-                    continue
-                email.destroySelf()
+                assert email.person == user
+                if user.preferredemail != email:
+                    email.destroySelf()
 
     def processValidationRequest(self):
         id = self.request.form.get("NOT_VALIDATED_EMAIL")
@@ -425,7 +399,7 @@ the instructions on that message to validate your email address.""" % newemail
         self.message = """A new email was sent to '%s' with instructions on 
 how to validate it.""" % email.email
         login = getUtility(ILaunchBag).login
-        token = newLoginToken(self.person, login, email.email,
+        token = newLoginToken(self.user, login, email.email,
                               LoginTokenType.VALIDATEEMAIL)
         sendEmailValidationRequest(token)
 
@@ -505,9 +479,7 @@ class GPGKeyView(object):
         self.context = context
 
     def show(self):
-        if self.request is not None:
-            self.request.response.setHeader('Content-Type', 'text/plain')
-
+        self.request.response.setHeader('Content-Type', 'text/plain')
         return self.context.gpg.pubkey
 
 
@@ -518,13 +490,17 @@ class SSHKeyView(object):
         self.context = context
 
     def show(self):
-        if self.request is not None:
-            self.request.response.setHeader('Content-Type', 'text/plain')
-
+        self.request.response.setHeader('Content-Type', 'text/plain')
         return "\n".join([key.keytext for key in self.context.sshkeys])
 
 
-class SSHKeyEditView(PersonView):
+class SSHKeyEditView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+
     def form_action(self):
         if self.request.get("REQUEST_METHOD") != "POST":
             # Nothing to do
@@ -550,7 +526,7 @@ class SSHKeyEditView(PersonView):
         else:
             return 'Invalid public key'
         
-        SSHKey(personID=self.person.id, keytype=keytype, keytext=keytext,
+        SSHKey(personID=self.user.id, keytype=keytype, keytext=keytext,
                comment=comment)
         return 'SSH public key added.'
 
@@ -565,10 +541,20 @@ class SSHKeyEditView(PersonView):
         except SQLObjectNotFound:
             return "Can't remove key that doesn't exist"
 
-        if sshkey.person != self.person:
+        if sshkey.person != self.user:
             return "Cannot remove someone else's key"
 
         comment = sshkey.comment
         sshkey.destroySelf()
         return 'Key "%s" removed' % comment
+
+
+class TeamMembersEditView:
+
+    # XXX: salgado, 2005-01-12: Not yet ready for review. I'm working on
+    # this.
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
 

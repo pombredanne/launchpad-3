@@ -43,7 +43,6 @@ from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.manifest import *
 from canonical.launchpad.interfaces.manifestentry import *
 from canonical.launchpad.interfaces.processor import *
-from canonical.launchpad.interfaces.team import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.files import *

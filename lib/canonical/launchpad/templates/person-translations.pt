@@ -14,10 +14,6 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-<div tal:replace="structure view/leftMenu" />
-</metal:leftportlets>
-
 <div metal:fill-slot="main">
 
 <div id="content" class="documentEditable">

@@ -53,22 +53,37 @@ class IPerson(Interface):
     irc = Attribute("IRC")    
     bugs = Attribute("Bug")
     wiki = Attribute("Wiki")
-    teams = Attribute("Team which I'm a member")
+    teams = Attribute("List of teams this Person is a member of.")
     emails = Attribute("Email")
     jabber = Attribute("Jabber")
-    roleset = Attribute("Possible Roles")
-    members = Attribute("Members of a Team")
     archuser = Attribute("Arch user")    
-    subteams = Attribute("Sub Teams")
     packages = Attribute("A Selection of SourcePackageReleases")
-    statusset = Attribute("Possible Status")
     activities = Attribute("Karma")
-    distroroles = Attribute("Distribution Roles")
+    distroroles = Attribute(("List of Distribution Roles Played by this "
+                             "Person/Team."))
+    memberships = Attribute(("List of Membership objects for Teams this "
+                             "Person is a member of. Either as a PROPOSED "
+                             "or CURRENT member."))
     translations = Attribute("Translations")
-    preferredemail = Attribute("The preferred email address (status == PREFERRED)")
+    preferredemail = Attribute(("The preferred email address for this "
+                                "person. The one we'll use to communicate "
+                                "with him."))
     validatedemails = Attribute("Emails with status VALIDATED")
-    distroreleaseroles = Attribute("Distrorelase Roles")
-    notvalidatedemails = Attribute("Emails waiting validation (status == NEW)")
+    distroreleaseroles = Attribute(("List of DistributionRelease Roles "
+                                    "Played by this Person/Team."))
+    notvalidatedemails = Attribute("Emails waiting validation.")
+
+    # XXX: salgado: 2005-11-01: Is it possible to move this properties to
+    # ITeam to ensure that they are acessible only via Persons marked
+    # with the ITeam interface?
+    currentmembers = Attribute("List of approved Members of this Team.")
+    subteams = Attribute(("List of subteams of this Team. That is, teams "
+                          "which are members of this Team."))
+    members = Attribute(("List of approved members with MEMBER role on this "
+                         "Team."))
+    administrators = Attribute(("List of approved members with ADMIN role on "
+                                "this Team.")) 
+    proposedmembers = Attribute("List of members awaiting for approval.")
 
     def browsername():
         """Return a textual name suitable for display in a browser."""
@@ -81,6 +96,9 @@ class IPerson(Interface):
 
     def inTeam(team_name):
         """Return true if this person is in the named team."""
+
+    def getMembershipByMember(member):
+        """Return a Membership object of the given member in this team."""
 
 
 class ITeam(IPerson):
@@ -142,4 +160,35 @@ class IEmailAddress(Interface):
         title=_('Person'), required=True,
         )
     statusname = Attribute("StatusName")
+
+
+class IMembership(Interface):
+    """Membership for Users"""
+    id = Int(title=_('ID'), required=True, readonly=True)
+    team = Int(title=_("Team"), required=True, readonly=False)
+    person = Int(title=_("Owner"), required=True, readonly=False)
+
+    role= Int(title=_("Role of the Person on the Team"), required=True,
+              readonly=False)
+
+    status= Int(title=_("If Membership was approved or not"), required=True,
+                readonly=False)
+
+    # Properties
+    rolename = Attribute("Role Name")
+    statusname = Attribute("Status Name")
+
+
+class ITeamParticipation(Interface):
+    """Team Participation for Users"""
+    id = Int(title=_('ID'), required=True, readonly=True)
+    team = Int(title=_("Team"), required=True, readonly=False)
+    person = Int(title=_("Owner"), required=True, readonly=False)
+
+
+class ITeamParticipationSet(Interface):
+    """A set for ITeamParticipation objects."""
+
+    def getSubTeams(teamID):
+        """Return all subteams for the specified team."""
 

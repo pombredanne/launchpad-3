@@ -19,7 +19,10 @@ from canonical.database.constants import UTC_NOW
 
 # canonical imports
 from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
+from canonical.launchpad.interfaces import IMembership
 from canonical.launchpad.interfaces import IEmailAddress
+from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
+from canonical.launchpad.interfaces import ISSHKey, IGPGKey
 from canonical.launchpad.interfaces import IObjectAuthorization
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.interfaces import ITeamParticipationSet
@@ -220,25 +223,62 @@ class Person(SQLBase):
         else:
             return False
 
+    def getMembershipByMember(self, member):
+        m = Membership.select(AND(Membership.q.teamID==self.id,
+                                  Membership.q.personID==member.id))
+        assert m.count() == 1
+        return m[0]
+
     def _getEmailsByStatus(self, status):
         return EmailAddress.select(AND(EmailAddress.q.personID==self.id,
                                        EmailAddress.q.status==int(status)))
+
+    def _getMembersByStatus(self, status):
+        memberships = Membership.select(AND(Membership.q.teamID==self.id,
+                                            Membership.q.status==status))
+        return [m.person for m in memberships]
+
+    def _getMembersByRole(self, role):
+        # Check the roles only for approved members.
+        status = int(MembershipStatus.CURRENT)
+        memberships = Membership.select(AND(Membership.q.teamID==self.id,
+                                            Membership.q.status==status,
+                                            Membership.q.role==role))
+        return [m.person for m in memberships]
 
     #
     # Properties
     #
 
-    def _members(self): 
-        return Membership.selectBy(teamID=self.id)
+    def _currentmembers(self): 
+        return self._getMembersByStatus(int(MembershipStatus.CURRENT))
+    currentmembers = property(_currentmembers)
+
+    def _proposedmembers(self):
+        return self._getMembersByStatus(int(MembershipStatus.PROPOSED))
+    proposedmembers = property(_proposedmembers)
+
+    def _administrators(self):
+        return self._getMembersByRole(int(MembershipRole.ADMIN))
+    administrators = property(_administrators)
+
+    def _members(self):
+        return self._getMembersByRole(int(MembershipRole.MEMBER))
     members = property(_members)
 
-    def _teams(self):
+    def _memberships(self):
         return Membership.selectBy(personID=self.id)
+    memberships = property(_memberships)
+
+    def _teams(self):
+        memberships = Membership.selectBy(personID=self.id)
+        return [m.team for m in memberships]
     teams = property(_teams)
 
     def _subteams(self):
         teampart = getUtility(ITeamParticipationSet)
-        return teampart.getSubTeams(self.id)
+        participations = teampart.getSubTeams(self.id)
+        return [p.team for p in participations]
     subteams = property(_subteams)
 
     def _distroroles(self):
@@ -576,6 +616,7 @@ class IrcID(SQLBase):
 
 class Membership(SQLBase):
     _table = 'Membership'
+    implements(IMembership)
 
     team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -587,7 +628,6 @@ class Membership(SQLBase):
             if role.value == self.role:
                 return role.title
         return 'Unknown (%d)' %self.role
-    
     rolename = property(_rolename)
 
     def _statusname(self):
@@ -595,8 +635,8 @@ class Membership(SQLBase):
             if status.value == self.status:
                 return status.title
         return 'Unknown (%d)' %self.status
-    
     statusname = property(_statusname)
+
 
 class TeamParticipationSet(object):
     """ A Set for TeamParticipation objects. """
@@ -620,6 +660,7 @@ class TeamParticipation(SQLBase):
 
 
 class Karma(SQLBase):
+    # XXX: salgado, 2005-01-12: Define an IKarma interface.
     _table = 'Karma'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
