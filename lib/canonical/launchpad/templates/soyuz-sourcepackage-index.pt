@@ -172,7 +172,7 @@
 		    <td tal:content="python:context.bugsCounter[4]">N</td>
 		</tr>
         <tr><td colspan="2" align="center"><a tal:attributes="href
-	                 string:/malone/package/${context/sourcepackage/name}">
+	                 string:/malone/packages/${context/sourcepackage/name}">
                 View Bug List
                  </a>
             </td>

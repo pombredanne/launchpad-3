@@ -9,6 +9,7 @@ from apt_pkg import ParseDepends
 
 # Zope imports
 from zope.interface import implements
+from zope.component import getUtility
 
 # sqlos and SQLObject imports
 from canonical.lp import dbschema
@@ -17,11 +18,8 @@ from canonical.lp import dbschema
 from canonical.soyuz.generalapp import CurrentVersion, builddepsSet
 
 #Launchpad imports
-from canonical.launchpad.database import BinaryPackage, \
-                                         DistroRelease, \
-                                         VSourcePackageReleasePublishing
-
 from canonical.launchpad.interfaces import IDistroBinariesApp, \
+                                           IBinaryPackageSet, \
                                            IDistroReleaseBinaryReleaseBuildApp, \
                                            IDistroReleaseBinariesApp, \
                                            IDistroReleaseBinaryApp, \
@@ -31,21 +29,16 @@ from canonical.launchpad.interfaces import IDistroBinariesApp, \
 # 
 #
 
-# Debonzi 2004-11-10 Who did this comment?
-# Binary app component (bin) still using stubs ...
 class DistroBinariesApp(object):
     implements(IDistroBinariesApp)
     def __init__(self, distribution):
         self.distribution = distribution
         
     def __getitem__(self, name):
-        release = DistroRelease.selectBy(distributionID=self.distribution.id,
-                                   name=name)[0]
-        return DistroReleaseBinariesApp(release)
+        return DistroReleaseBinariesApp(self.distribution.getRelease(name))
     
     def __iter__(self):
-        return iter(DistroRelease.selectBy(distributionID=\
-                                           self.distribution.id))
+        return iter(self.distribution.releases)
 
 class DistroReleaseBinariesApp(object):
     """BinaryPackages from a Distro Release"""
@@ -53,10 +46,11 @@ class DistroReleaseBinariesApp(object):
 
     def __init__(self, release):
         self.release = release
-
+        self.binariesutil = getUtility(IBinaryPackageSet)
     def findPackagesByName(self, pattern):
-        selection = Set(BinaryPackage.findBinariesByName(self.release,
-                                                         pattern))
+
+        selection = Set(self.binariesutil.findByName(self.release.id,
+                                                      pattern))
 
         # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
         # expensive routine
@@ -73,13 +67,13 @@ class DistroReleaseBinariesApp(object):
         
     def __getitem__(self, name):
         try:
-            bins = BinaryPackage.getBinariesByName(self.release, name)
+            bins = self.binariesutil.getByName(self.release.id, name)
             return DistroReleaseBinaryApp(bins, self.release)
         except IndexError:
             raise KeyError, name
 
     def __iter__(self):
-        return iter(BinaryPackage.getBinaries(self.release))
+        return iter(self.binariesutil.getBinaryPackages(self.release.id))
 
     
 class DistroReleaseBinaryApp(object):
@@ -89,7 +83,7 @@ class DistroReleaseBinaryApp(object):
         try:
             self.binarypackage = binarypackage[0]
             self.binselect = binarypackage
-        except:
+        except IndexError:
             self.binarypackage = binarypackage
 
         self.release = release
@@ -128,8 +122,11 @@ class DistroReleaseBinaryApp(object):
     lastversions = property(lastversions)
 
     def __getitem__(self, version):
-        binarypackage = BinaryPackage.getByVersion(self.binselect
-                                                            , version)
+        binariesutil = getUtility(IBinaryPackageSet)
+        binarypackage = binariesutil.getByNameVersion(self.release.id,
+                                                      self.binarypackage.name,
+                                                      version)
+        
         return DistroReleaseBinaryReleaseApp(binarypackage,
                                              version, self.release)
 
@@ -144,29 +141,28 @@ class DistroReleaseBinaryReleaseApp(object):
         except:
             self.binarypackagerelease = binarypackagerelease[0]
 
-
-        self.sourcedistrorelease = \
-             DistroRelease.getBySourcePackageRelease(\
-            self.binarypackagerelease.build.sourcepackagerelease.id)
+        self.distrorelease = distrorelease
 
         # It is may be a bit confusing but is used to get the binary
         # status that comes from SourcePackageRelease
-        sourceReleases = self.binarypackagerelease.current(distrorelease)
 
-        sourceReleases = VSourcePackageReleasePublishing.\
-                         selectByBinaryVersion(sourceReleases,
-                                               version)
+        # Find distroarchs for that release
 
-        self.archs = None
-
-        for release in sourceReleases:
-            # Find distroarchs for that release
-            archReleases = release.architecturesReleased(distrorelease)
-            self.archs = [a.architecturetag for a in archReleases]
+        # XXX: Daniel Debonzi 2004-12-03
+        # Review this code for archRelease. Its is probably not
+        # doing the right thing. I think it should make it for all
+        # binselect no for only a binarypackage.
+        sprelease = self.binarypackagerelease.build.sourcepackagerelease
+        archReleases = sprelease.architecturesReleased(distrorelease)
+        self.archs = [a.architecturetag for a in archReleases]
 
     def __getitem__(self, arch):
-        binarypackage = BinaryPackage.selectByArchtag(self.binselect,
-                                                            arch)
+        binariesutil = getUtility(IBinaryPackageSet)
+        binarypackage = binariesutil.getByArchtag(self.distrorelease.id,
+                                                  self.binarypackagerelease.name,
+                                                  self.binarypackagerelease.version,
+                                                  arch)
+
         return DistroReleaseBinaryReleaseBuildApp(binarypackage,
                                                   self.version, arch)
 

@@ -12,8 +12,13 @@ class IDistribution(Interface):
     description = Attribute("The distro's description.")
     domainname = Attribute("The distro's domain name.")
     owner = Attribute("The distro's owner.")
+    releases = Attribute("DistroReleases inside this Distributions")
+    roles = Attribute("Roles inside this Distributions")
+    
     bugCounter = Attribute("The distro bug counter")
 
+    def getRelease(name):
+        """Returns an Release that matchs name"""
 
 class IDistroReleaseRole(Interface):
     """A Distroreleaserole Object """
@@ -120,4 +125,16 @@ class IDistroReleaseApp(Interface):
 
     def findBinariesByName(name):
         """Returns The Release BianriesPackages by name"""
+
+class IDistrosSet(Interface):
+    """Interface for DistrosSet"""
+
+    def getDistros():
+        """Returns all distributions available on the Database"""
+
+    def getDistrosCounter():
+        """Returns the number of Distributions available"""
+
+    def getDistribution(name):
+        """Returns a Distribution with name=name"""
 

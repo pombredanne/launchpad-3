@@ -19,7 +19,7 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IDistributionRole, IDistroReleaseRole, \
-                                           IDistribution, IDistroRelease
+                                           IDistribution, IDistroRelease, IDistrosSet
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
 from canonical.launchpad.database.sourcepackage import SourcePackage
@@ -87,6 +87,12 @@ class Distribution(SQLBase):
                    notNull=True)
         ]
 
+    releases = MultipleJoin('DistroRelease', joinColumn='distribution') 
+    roles = MultipleJoin('DistributionRole', joinColumn='distribution')
+   
+    def getRelease(self, name):
+        return DistroRelease.selectBy(distributionID = self.id,
+                                      name=name)[0]
 
     def bugCounter(self):
         counts = []
@@ -175,6 +181,8 @@ class DistroRelease(SQLBase):
     architectures = MultipleJoin( 'DistroArchRelease',
                                   joinColumn='distrorelease' )
 
+    roles = MultipleJoin('DistroReleaseRole', joinColumn='distrorelease')
+
     def displayname(self):
         return "%s %s (%s)" % (self.distribution.title, self.version,
                                self.title)
@@ -260,18 +268,21 @@ class DistroRelease(SQLBase):
 
     bugCounter = property(bugCounter)
 
-    #
-    # DistroRelease Class Methods
-    #
 
-    def getBySourcePackageRelease(klass, sourcepackagereleaseID):
-        clauseTables=('SourcePackagePublishing',)
-        query = ('SourcePackagePublishing.distrorelease = DistroRelease.id '
-                 'AND SourcePackagePublishing.sourcepackagerelease = %i '
-                 %(sourcepackagereleaseID))
-        
-        return klass.select(query, clauseTables=clauseTables)[0]
-    getBySourcePackageRelease = \
-                              classmethod(getBySourcePackageRelease)
+class DistrosSet(object):
+    """This class is to deal with Distribution related stuff"""
 
+    implements(IDistrosSet)
+
+    def getDistros(self):
+        """Returns all Distributions available on the datasbase"""
+        return Distribution.select()
+
+    def getDistrosCounter(self):
+        """Returns the number of Distributions available"""
+        return Distribution.select().count()
+
+    def getDistribution(self, name):
+        """Returns a Distribution with name = name"""
+        return Distribution.selectBy(name=name)[0]
 

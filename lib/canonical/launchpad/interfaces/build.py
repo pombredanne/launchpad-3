@@ -34,3 +34,8 @@ class IBuilder(Interface):
     description = Attribute("The Builder Description")
     owner = Attribute("The Builder Owner")
 
+class IBuildSet(Interface):
+    """Inteface sor IBuildSet"""
+    def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
+        """return a build for a SourcePackageRelease and an ArchTag"""
+        

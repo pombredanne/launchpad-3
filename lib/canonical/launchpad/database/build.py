@@ -15,7 +15,7 @@ from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp import dbschema
 
 # interfaces and database 
-from canonical.launchpad.interfaces import IBuild, IBuilder
+from canonical.launchpad.interfaces import IBuild, IBuilder, IBuildSet
 
 #
 # Build related SQLObjects
@@ -45,10 +45,9 @@ class Build(SQLBase):
 
     ]
 
-    #
-    # Build Class Methods
-    #
-    def getSourceReleaseBuild(klass, sourcepackagereleaseID, archtag):
+class BuildSet(object):
+    implements(IBuildSet)
+    def getBuildBySRAndArchtag(self, sourcepackagereleaseID, archtag):
         clauseTables = ('DistroArchRelease', )
         query = ('Build.sourcepackagerelease = %i '
                  'AND Build.distroarchrelease = DistroArchRelease.id '
@@ -57,8 +56,6 @@ class Build(SQLBase):
                  )
 
         return Build.select(query, clauseTables=clauseTables)
-
-    getSourceReleaseBuild = classmethod(getSourceReleaseBuild)
 
 
 class Builder(SQLBase):

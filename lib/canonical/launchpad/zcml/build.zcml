@@ -15,4 +15,8 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <utility
+     factory="canonical.launchpad.database.BuildSet"
+     provides="canonical.launchpad.interfaces.IBuildSet" />
+
 </configure>

@@ -5,6 +5,7 @@
 
 # Zope imports
 from zope.interface import implements
+from zope.component import getUtility
 
 #Soyuz imports
 from canonical.soyuz.sourcepackageapp import DistroSourcesApp
@@ -24,7 +25,9 @@ from canonical.launchpad.interfaces import IDistribution, \
                                            IDistroReleasesApp, \
                                            IDistroReleaseTeamApp, \
                                            IDistroTeamApp,\
-                                           IAuthorization
+                                           IAuthorization, IDistrosSet,\
+                                           ISourcePackageSet
+                                           
 
 
 #
@@ -35,23 +38,26 @@ class DistrosApp(object):
     implements(IDistribution)
 
     def __init__(self):
-        self.entries = Distribution.select().count()
+        self.dst = getUtility(IDistrosSet)
+        self.entries = self.dst.getDistrosCounter()
 
     def __getitem__(self, name):
         return DistroApp(name)
 
     def distributions(self):
-        return Distribution.select()
+        return self.dst.getDistros()
 
     
 class DistroApp(object):
     implements(IDistroApp, IAuthorization)
 
     def __init__(self, name):
-        self.distribution = Distribution.selectBy(name=name)[0]
-        self.releases = DistroRelease.selectBy(distributionID=self.distribution.id)
+        dstutil = getUtility(IDistrosSet)
+        self.distribution = dstutil.getDistribution(name)
 
-        if self.releases.count():
+        self.releases = self.distribution.releases
+
+        if len(self.releases) != 0:
             self.enable_releases = True
         else:
             self.enable_releases = False
@@ -79,15 +85,20 @@ class DistroReleaseApp(object):
 
     def __init__(self, release):
         self.release = release
-        self.roles=DistroReleaseRole.selectBy(distroreleaseID=self.release.id) 
+        self.roles = release.roles 
 
     def checkPermission(self, principal, permission):
         if permission == 'launchpad.Edit':
             return self.release.owner.id == principal.id
 
-    def findSourcesByName(self, pattern):
-        return SourcePackage.findSourcesByName(self.release, pattern)
 
+    def findSourcesByName(self, pattern):
+        srcset = getUtility(ISourcePackageSet)
+        return self.srcset.findByName(self.release.id, pattern)
+
+    # FIXME: Daniel Debonzi 2004-12-02
+    # Go away with this classmethods when
+    # working with Binary Packages
     def findBinariesByName(self, pattern):
         return BinaryPackage.findBinariesByName(self.release, pattern)
 
@@ -105,11 +116,10 @@ class DistroReleasesApp(object):
             return self.distribution.owner.id == principal.id
 
     def __getitem__(self, name):
-        return DistroReleaseApp(DistroRelease.selectBy(distributionID=
-                                                 self.distribution.id,
-                                                 name=name)[0])
+        return DistroReleaseApp(self.distribution.getRelease(name))
+
     def __iter__(self):
-        return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
+        return iter(self.distribution.releases)
 
 
 class DistroReleaseTeamApp(object):
@@ -127,16 +137,12 @@ class DistroTeamApp(object):
 
     def __init__(self, distribution):
         self.distribution = distribution
-        self.team = DistributionRole.selectBy(distributionID=
-                                            self.distribution.id)
+        self.team = self.distribution.roles
 
     def __getitem__(self, name):
-        return DistroReleaseTeamApp(DistroRelease.selectBy(distributionID=
-                                                     self.distribution.id,
-                                                     name=name)[0])
+        return DistroReleaseTeamApp(self.distribution.getRelease(name))
 
     def __iter__(self):
-        return iter(DistroRelease.selectBy(distributionID=\
-                                           self.distribution.id))
+        return iter(self.distribution.releases)
 
 

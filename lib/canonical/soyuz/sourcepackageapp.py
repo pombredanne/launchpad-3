@@ -8,6 +8,7 @@ from apt_pkg import ParseSrcDepends
 
 # Zope imports
 from zope.interface import implements
+from zope.component import getUtility
 
 # sqlos and SQLObject imports
 from canonical.database.sqlbase import quote
@@ -16,12 +17,10 @@ from canonical.database.sqlbase import quote
 from canonical.soyuz.generalapp import CurrentVersion, builddepsSet
 
 #Launchpad imports
-from canonical.launchpad.database import Build, \
-                                         DistroRelease, \
-                                         VSourcePackageReleasePublishing, \
-                                         SourcePackageInDistro
 
-from canonical.launchpad.interfaces import IDistroSourcesApp, \
+from canonical.launchpad.interfaces import IBuildSet, \
+                                           IDistroSourcesApp, \
+                                           ISourcePackageSet, \
                                            IDistroReleaseSourcesApp, \
                                            IDistroReleaseSourceApp, \
                                            IDistroReleaseSourceReleaseApp, \
@@ -42,13 +41,10 @@ class DistroSourcesApp(object):
         self.distribution = distribution
 
     def __getitem__(self, name):
-        return DistroReleaseSourcesApp(DistroRelease.selectBy(distributionID=\
-                                                        self.distribution.id,
-                                                        name=name)[0])
+        return DistroReleaseSourcesApp(self.distribution.getRelease(name))
 
     def __iter__(self):
-        return iter(DistroRelease.selectBy(distributionID=\
-                                           self.distribution.id))
+        return iter(self.distribution.releases)
 
 class DistroReleaseSourcesApp(object):
     """Container of SourcePackage objects.
@@ -59,13 +55,14 @@ class DistroReleaseSourcesApp(object):
 
     def __init__(self, release):
         self.release = release
+        self.srcset = getUtility(ISourcePackageSet)
         
     def findPackagesByName(self, pattern):
-        return SourcePackageInDistro.findSourcesByName(self.release, pattern)
+        return self.srcset.findByName(self.release.id, pattern)
 
     def __getitem__(self, name):
         try:
-            package = SourcePackageInDistro.getByName(self.release, name)
+            package = self.srcset.getByName(self.release.id, name)
         except IndexError:
             # Convert IndexErrors into KeyErrors so that Zope will give a
             # NotFound page.
@@ -74,7 +71,7 @@ class DistroReleaseSourcesApp(object):
             return DistroReleaseSourceApp(self.release, package)
 
     def __iter__(self):
-        ret = SourcePackageInDistro.getReleases(self.release)
+        ret = self.srcset.getSourcePackages(self.release.id)
         return iter(ret)
 
 class DistroReleaseSourceApp(object):
@@ -141,16 +138,15 @@ class DistroReleaseSourceApp(object):
 
     lastversions = property(lastversions)
 
-
 class DistroReleaseSourceReleaseApp(object):
     implements(IDistroReleaseSourceReleaseApp)
 
     def __init__(self, sourcepackage, version, distrorelease):
         self.distroreleasename = distrorelease.name
 
-        results = VSourcePackageReleasePublishing.select(
-                "sourcepackage = %d AND version = %s" % \
-                (sourcepackage.id, quote(version)))
+        srcset = getUtility(ISourcePackageSet)
+
+        results = srcset.getSourcePackageRelease(sourcepackage.id, version)
 
         nresults = results.count()
         if nresults == 0:
@@ -159,15 +155,12 @@ class DistroReleaseSourceReleaseApp(object):
             assert nresults == 1
             self.sourcepackagerelease = results[0]
 
-        sourceReleases = sourcepackage.current(distrorelease)
-        sourceReleases = VSourcePackageReleasePublishing.selectByVersion(
-                sourceReleases, version)
-        self.archs = None
 
-        for release in sourceReleases:
-            # Find distroarchs for that release
-            archReleases = release.architecturesReleased(distrorelease)
-            self.archs = [a.architecturetag for a in archReleases]
+        # XXX: Daniel Debonzi 2004-12-03
+        # Review this code for archRelease. Its is probably not
+        # doing the right thing.
+        archReleases = self.sourcepackagerelease.architecturesReleased(distrorelease)
+        self.archs = [a.architecturetag for a in archReleases]
 
         if self.sourcepackagerelease.builddepends:
             self.builddepends = []
@@ -199,9 +192,10 @@ class DistroReleaseSourceReleaseBuildApp(object):
     def __init__(self, sourcepackagerelease, arch):
         self.sourcepackagerelease = sourcepackagerelease
         self.arch = arch
-        
-        build_results = Build.getSourceReleaseBuild(sourcepackagerelease.id,
-                                                 arch)
+
+        buildset = getUtility(IBuildSet)
+        build_results = buildset.getBuildBySRAndArchtag(sourcepackagerelease.id,
+                                                        arch)
         if build_results.count() > 0:
             self.build = build_results[0]
 

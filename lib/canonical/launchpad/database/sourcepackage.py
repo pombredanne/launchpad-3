@@ -107,7 +107,7 @@ class SourcePackage(SQLBase):
             # XXX: Daniel Debonzi 2004-12-01
             # Check if the orderBy is working properly
             # as soon as we have enought data in db.
-            # Anyway, seems to br ok
+            # Anyway, seems to be ok
             return VSourcePackageReleasePublishing.select(query,
                                                   orderBy='dateuploaded')
         
@@ -148,63 +148,7 @@ class SourcePackageInDistro(SourcePackage):
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease')
 
-    #
-    # Class Methods
-    #
-    def getByName(klass, distrorelease, name):
-        """Get A SourcePackageInDistro in a distrorelease by its name"""
-        ret = klass.getReleases(distrorelease, name)
-        assert ret.count() == 1
-        return ret[0]
-
-    getByName = classmethod(getByName)
-
-    def getReleases(klass, distrorelease, name=None):
-        """
-        Answers the question: what source packages have releases
-        published in the specified distribution (optionally named)
-        """
-        query = 'distrorelease = %d ' \
-                % distrorelease.id
-        if name is not None:
-            query += ' AND name = %s' % quote(name)
-        return klass.select(query, orderBy='name')
-
-    getReleases = classmethod(getReleases)
-
-    def getBugSourcePackages(klass, distrorelease):
-        """Get SourcePackages in a DistroRelease with BugAssignement"""
-
-        clauseTables=["SourcePackageBugAssignment",]
-        query = ("VSourcePackageInDistro.distrorelease = %i AND "
-                 "VSourcePackageInDistro.id = SourcePackageBugAssignment.sourcepackage AND "
-                 "(SourcePackageBugAssignment.bugstatus != %i OR "
-                 "SourcePackageBugAssignment.bugstatus != %i)"
-                 %(distrorelease.id,
-                   int(dbschema.BugAssignmentStatus.FIXED),
-                   int(dbschema.BugAssignmentStatus.REJECTED)))
-
-        return Set(klass.select(query, clauseTables=clauseTables))
-
-    getBugSourcePackages = classmethod(getBugSourcePackages)
-
-    def getByPersonID(klass, personID):
-        # XXXkiko: we should allow supplying a distrorelease here and
-        # get packages by distro
-        return klass.select("maintainer = %d" % personID, orderBy='name')
-
-    getByPersonID = classmethod(getByPersonID)
-
-    def findSourcesByName(klass, distroRelease, pattern):
-        """Search for SourcePackages in a distrorelease that matches"""
-        pattern = quote("%%" + pattern.replace('%', '%%') + "%%")
-        query = ('distrorelease = %d AND '
-                 '(name ILIKE %s OR shortdesc ILIKE %s)' %
-                 (distroRelease.id, pattern, pattern))
-        return VSourcePackageReleasePublishing.select(query, orderBy='name')
-
-    findSourcesByName = classmethod(findSourcesByName)
-
+    releases = MultipleJoin('SourcePackageRelease', joinColumn='sourcepackage')
 
 class SourcePackageSet(object):
     """A set for SourcePackage objects."""
@@ -238,6 +182,46 @@ class SourcePackageSet(object):
             pkgset.add(pkg)
         return pkgset
 
+    def getSourcePackages(self, distroreleaseID):
+        """Returns a set of SourcePackage in a DistroRelease"""
+        query = ('distrorelease = %d ' 
+                 % (distroreleaseID)
+                 )
+
+        return SourcePackageInDistro.select(query, orderBy='name')
+
+    def findByName(self, distroreleaseID, pattern):
+        """Returns a set o sourcepackage that matchs pattern
+        inside a distrorelease"""
+
+        pattern = quote("%%" + pattern.replace('%', '%%') + "%%")
+        query = ('distrorelease = %d AND '
+                 '(name ILIKE %s OR shortdesc ILIKE %s)' %
+                 (distroreleaseID, pattern, pattern))
+        return VSourcePackageReleasePublishing.select(query, orderBy='name')
+
+    def getByName(self, distroreleaseID, name):
+        """Returns a SourcePackage by its name"""
+
+        query = ('distrorelease = %d ' 
+                 ' AND name = %s'
+                 % (distroreleaseID, quote(name))
+                 )
+
+        return SourcePackageInDistro.select(query, orderBy='name')[0]
+
+    def getSourcePackageRelease(self, sourcepackageID, version):
+        table = VSourcePackageReleasePublishing 
+        return table.select("sourcepackage = %d AND version = %s"
+                            % (sourcepackageID, quote(version)))
+
+    
+    def getByPersonID(self, personID):
+        # XXXkiko: we should allow supplying a distrorelease here and
+        # get packages by distro
+        return SourcePackageInDistro.select("maintainer = %d" % personID,
+                                            orderBy='name')
+   
 
 class SourcePackageName(SQLBase):
     implements(ISourcePackageName)
@@ -267,6 +251,8 @@ class SourcePackageRelease(SQLBase):
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
+
+    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease')
 
     #
     # Properties
@@ -324,33 +310,6 @@ class SourcePackageRelease(SQLBase):
             'AND Build.sourcepackagerelease = %d'
             % (distroRelease.id, self.id), clauseTables=clauseTables))
         return archReleases
-
-    #
-    # Class Methods
-    #
-    def selectByVersion(klass, sourcereleases, version):
-        """Select from SourcePackageRelease.SelectResult that have
-        version=version"""
-        
-        query = sourcereleases.clause + \
-                ' AND version = %s' % quote(version)
-
-        return klass.select(query)
-
-    selectByVersion = classmethod(selectByVersion)
-
-    def selectByBinaryVersion(klass, sourcereleases, version):
-        """Select from SourcePackageRelease.SelectResult that have
-        BinaryPackage.version=version"""
-        clauseTables = ('Build', 'BinaryPackage')
-        query = sourcereleases.clause + \
-                '''AND Build.id = BinaryPackage.build
-                   AND Build.sourcepackagerelease = 
-                       VSourcePackageReleasePublishing.id
-                   AND BinaryPackage.version = %s''' % quote(version)
-        return klass.select(query, clauseTables=clauseTables)
-
-    selectByBinaryVersion = classmethod(selectByBinaryVersion)
 
 
 class VSourcePackageReleasePublishing(SourcePackageRelease):
