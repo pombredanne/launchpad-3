@@ -5,7 +5,7 @@
 """
 __metaclass__ = type
 
-import cgi
+import cgi, re
 from zope.interface import Interface, Attribute, implements
 
 from zope.publisher.interfaces import IApplicationRequest
@@ -120,7 +120,22 @@ class FormattersAPI:
         return cgi.escape(self._stringtoformat).replace('\n','<br />\n')
 
     def nice_pre(self):
-        """<pre>, except the browser knows it is allowed to break long lines"""
-        txt = self.nl_to_br().replace(' ','&nbsp;').replace('\t','&nbsp;'*8)
-        return '''<div style="font-family: monospace">%s</div>''' % txt
+        """<pre>, except the browser knows it is allowed to break long lines
+        
+        Note that CSS will eventually have a property to specify this
+        behaviour, but we want this now. To do this we need to use the mozilla
+        specific -moz-pre-wrap value of the white-space property. We try to
+        fall back for IE by using the IE specific word-wrap property.
+
+        TODO: Test IE compatibility. StuartBishop 2004/11/18
+        TODO: This should probably just live in the stylesheet if this
+            CSS implementation is good enough.
+        """
+
+        return (
+                '<div style="font-family: monospace; '
+                'white-space: pre; '
+                'white-space: -moz-pre-wrap; white-space: -o-pre-wrap; '
+                'word-wrap: break-word;">%s</div>' % self.nl_to_br()
+                )
 
