@@ -2,14 +2,17 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 # arch-tag: 752bd71e-584e-416e-abff-a4eb6c82399c
 
-import sys
+import sys, base64
 
 from optparse import OptionParser
 
+from canonical.database.constants import UTC_NOW
 import canonical.lp
-from canonical.launchpad.database import Person, POTemplate, Product
-from canonical.launchpad.database import ProjectSet
+from canonical.launchpad.database import Person, POTemplate
+from canonical.launchpad.database import ProductSet
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
+
+from canonical.lp.dbschema import RosettaImportStatus
 
 stats_message = """
 Msgsets matched to the potemplate that have a non-fuzzy translation in
@@ -22,37 +25,26 @@ Msgsets where we have a translation in rosetta but there was no
 translation in the PO file when we last parsed it: %d
 """
 
-def get_project(name):
-    # XXX: We should probably be using a utility for getting the project.
+def get_product(name):
+    # XXX: We should probably be using a utility for getting the product.
     # -- Dafydd Harries, Fri, 19 Nov 2004 01:31:23 -0500
     # XXX: This will be difficult when this is run as a script.
     #      Perhaps initZopeless needs to load adapters and utilities too?
     # -- Steve Alexander, Fri Nov 19 15:25:08 UTC 2004
-
     try:
-        project = ProjectSet()[name]
+        product = ProductSet()[name]
     except KeyError:
-        print "project '%s' does not exist"
+        print "product '%s' does not exist" % name
         sys.exit(1)
 
-    return project
-
-def get_product(project, name):
-    products = list(Product.selectBy(projectID = project.id, name = name))
-
-    if len(products) == 0:
-        print "product '%s' does not exist for project '%s'" % (
-            name, project.name)
-        sys.exit(1)
-
-    return products[0]
+    return product
 
 def get_template(product, name):
     templates = list(POTemplate.selectBy(productID = product.id, name = name))
 
     if len(templates) == 0:
-        print ("template '%s' does not exist for project '%s', product '%s'"
-               % (name, product.project.name, product.name))
+        print ("template '%s' does not exist for product '%s'"
+               % (name, product.name))
         sys.exit(1)
 
     return templates[0]
@@ -68,15 +60,25 @@ class PODBBridge:
     def abort(self):
         self._tm.abort()
 
-    def imports(self, person, fileHandle, projectName, productName,
+    def imports(self, person, fileHandle, productName,
             poTemplateName, languageCode = None):
-        project = get_project(projectName)
-        product = get_product(project, productName)
+        product = get_product(productName)
         poTemplate = get_template(product, poTemplateName)
+
+        fileData = fileHandle.read()
+
+        from canonical.rosetta.pofile import POParser
+
+        parser = POParser()
+        parser.write(fileData)
+        parser.finish()
 
         if languageCode is None:
             # We are importing a POTemplate.
-            importer = TemplateImporter(poTemplate, None)
+            poTemplate.rawfile = base64.encodestring(fileData)
+            poTemplate.daterawimport = UTC_NOW
+            poTemplate.rawimporter = person
+            poTemplate.rawimportstatus = RosettaImportStatus.PENDING.value
         else:
             # We are importing a POFile.
             try:
@@ -84,20 +86,20 @@ class PODBBridge:
             except KeyError:
                 poFile = poTemplate.newPOFile(person, languageCode)
 
-            importer = POFileImporter(poFile, person)
+            poFile.rawfile = base64.encodestring(fileData)
+            poFile.daterawimport = UTC_NOW
+            poFile.rawimporter = person
+            poFile.rawimportstatus = RosettaImportStatus.PENDING.value
 
-        importer.doImport(fileHandle)
-
-    def update_stats(self, projectName, productName, poTemplateName,
-            languageCode, newImport = False):
-        project = get_project(projectName)
-        product = get_product(project, productName)
+    def update_stats(self, productName, poTemplateName,
+            languageCode):
+        product = get_product(productName)
         poTemplate = get_template(product, poTemplateName)
         # XXX: Perhaps we should try and catch the case where the PO file does
         # not exist.
         #  -- Dafydd Harries, Fri, 19 Nov 2004 01:29:30 -0500
         poFile = poTemplate.poFile(languageCode)
-        current, updates, rosetta = poFile.updateStatistics(newImport)
+        current, updates, rosetta = poFile.updateStatistics()
         print stats_message % (current, updates, rosetta)
 
 def parse_options():
@@ -106,8 +108,6 @@ def parse_options():
         help="The database ID for the owner of the imported file")
     parser.add_option("-f", "--file", dest="filename",
         help="The file to import data from")
-    parser.add_option("-p", "--project", dest="project",
-        help="The project the imported file belongs to")
     parser.add_option("-d", "--product", dest="product",
         help="The product the imported file belongs to")
     parser.add_option("-t", "--potemplate", dest="potemplate",
@@ -126,14 +126,14 @@ def parse_options():
 
     return options
 
-def main(owner, project, product, potemplate, language, update_stats_only,
+def main(owner, product, potemplate, language, update_stats_only,
         filename, noop):
     if update_stats_only:
         print "Connecting to database..."
         bridge = PODBBridge()
         try:
             print "Updating %s pofile for '%s'..." % (potemplate, language)
-            bridge.update_stats(project, product, potemplate, language)
+            bridge.update_stats(product, potemplate, language)
         except: # Bare except followed by a raise.
             print "aborting database transaction"
             bridge.abort()
@@ -156,15 +156,8 @@ def main(owner, project, product, potemplate, language, update_stats_only,
         try:
             print "Importing %s ..." % filename
 
-            bridge.imports(person, in_f, project, product, potemplate,
+            bridge.imports(person, in_f, product, potemplate,
                 language)
-
-            if language is not None:
-                print "Updating %s pofile for '%s'..." % (
-                    potemplate, language)
-
-                bridge.update_stats(project, product, potemplate, language,
-                    True)
         except: # Bare except followed by a raise.
             print "aborting database transaction"
             bridge.abort()
@@ -178,13 +171,12 @@ def main(owner, project, product, potemplate, language, update_stats_only,
 if __name__ == '__main__':
     options = parse_options()
 
-    for name in ('owner', 'project', 'product', 'potemplate'):
+    for name in ('owner', 'product', 'potemplate'):
         if getattr(options, name) is None:
             raise RuntimeError("No %s specified." % name)
 
     main(
         owner = options.owner,
-        project = options.project,
         product = options.product,
         potemplate = options.potemplate,
         language = options.language,

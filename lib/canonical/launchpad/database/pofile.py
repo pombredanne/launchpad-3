@@ -451,6 +451,8 @@ class POTemplate(SQLBase):
 
         # And now, we should update the statistics for all po files this .pot
         # file has because a number of msgsets could have change.
+        # XXX: Carlos Perello Marin 09/12/2004 We should handle this case
+        # better. The pofile don't get updated the currentcount updated...
         for pofile in self.poFiles():
             pofile.updateStatistics()
 

@@ -17,7 +17,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILanguageSet, IPerson
-from canonical.launchpad.interfaces import IProjectSet, IPasswordEncryptor
+from canonical.launchpad.interfaces import IProjectSet, IProductSet
+from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.database import Language, Person, POTemplate, POFile
 
 from canonical.rosetta.poexport import POExport
