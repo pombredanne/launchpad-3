@@ -2,6 +2,81 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 05:50:42 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1489
+
+    Summary:
+      Review and fix database security update code
+    Revision:
+      launchpad--devel--0--patch-1489
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-223
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-224
+       Permissions on BountySubscription
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-225
+       Remove noise
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-226
+       Add command line to security.py for debug work
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-227
+       Oops... shouldn't have committed change to security.cfg
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-228
+       Ensure group membership is reset between runs
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-229
+       Handle 'database does not exist' error caused by interrupting a previous test run at the wrong time
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-230
+       Dev environment should connect as the correct PostgreSQL user
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-231
+       Launchpad needs DELETE on EmailAddress
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-232
+       Don't drop groups since they are global to the cluster - just remove all the users we care about instead
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-233
+       'read' and 'admin' groups now automatically maintained
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-234
+       Raise an exception if we have no security settings for a table or view
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-235
+       Pull dbhost/dbuser code -- need to support PQM
+    
+
+    removed files:
+     database/schema/.arch-ids/hack.py.id database/schema/hack.py
+
+    modified files:
+     database/schema/security.cfg database/schema/security.py
+     doc/changelog.txt
+     package-includes/launchpad-sql-configure-normal.zcml
+     package-includes/launchpad-sql-configure-testing.zcml
+     test_on_merge.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-223
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-224
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-225
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-226
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-227
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-228
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-229
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-230
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-231
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-232
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-233
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-234
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-235
+
+
 2005-03-24 01:33:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1488
 
     Summary:
