@@ -1,9 +1,9 @@
-from sqlobject.sqlbuilder import AND, IN, ISNULL
+from sqlobject.sqlbuilder import AND, IN, ISNULL, OR, SQLOp
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import IPerson
-from canonical.launchpad.database import Person, \
+from canonical.launchpad.database import Bug, Person, \
      SourcePackageBugAssignment, ProductBugAssignment
 from canonical.lp import dbschema
 from canonical.launchpad.vocabularies import PersonVocabulary, \
@@ -97,6 +97,34 @@ class BugAssignmentsView(object):
         """Find the bug assignments the user wants to see."""
         pba_params = []
         spba_params = []
+
+        param_searchtext = self.request.get('searchtext', None)
+        if param_searchtext:
+            try:
+                int(param_searchtext)
+                self.request.response.redirect("/malone/bugs/" + param_searchtext)
+            except ValueError:
+                # XXX: Brad Bollenbach, 2004-11-26: I always found it particularly
+                # unhelpful that sqlobject doesn't have this by default, for DB
+                # backends that support it.
+                def ILIKE(expr, string):
+                    return SQLOp("ILIKE", expr, string)
+
+                # looks like user wants to do a text search of
+                # title/shortdesc/description
+                searchtext = '%' + param_searchtext + '%'
+                bugs = Bug.select(
+                    OR(ILIKE(Bug.q.title, searchtext),
+                       ILIKE(Bug.q.shortdesc, searchtext),
+                       ILIKE(Bug.q.description, searchtext)))
+                bugids = [bug.id for bug in bugs]
+                if bugids:
+                    pba_params.append(
+                        IN(ProductBugAssignment.q.bugID, bugids))
+                    spba_params.append(
+                        IN(SourcePackageBugAssignment.q.bugID, bugids))
+                
+
         param_status = self.request.get('status', self.DEFAULT_STATUS)
         if param_status and param_status != 'all':
             status = []
