@@ -46,9 +46,7 @@ from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.launchpad import *
-
-# these will go...
-from canonical.launchpad.iandrew import *
+from canonical.launchpad.interfaces.pyarch import *
 
 
 class IAuthApplication(Interface):
