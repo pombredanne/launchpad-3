@@ -23,7 +23,8 @@ from canonical.launchpad.database import SourcePackageName, \
                                          BinaryPackageName,\
                                          SourcePackageInDistro,\
                                          BinaryPackageSet, \
-                                         SourcePackageInDistroSet
+                                         SourcePackageInDistroSet, \
+                                         PublishedPackageSet
 
 
 class DistroRelease(SQLBase):
@@ -166,10 +167,14 @@ class DistroRelease(SQLBase):
 #        srcset = getUtility(ISourcePackageSet)
 #        return srcset.getByNameInDistroRelease(self.id, name)
 
-    def __getitem__(self, arch):
-        if arch == 'sources':
+    def traverse(self, name):
+        if name == '+sources':
             return SourcePackageInDistroSet(self)
-        
+        if name  == '+packages':
+            return PublishedPackageSet()
+        return self.__getitem__(name)
+
+    def __getitem__(self, arch):
         return BinaryPackageSet(self, arch)
     
 

@@ -56,6 +56,11 @@ class IDistroRelease(Interface):
 #        """Return the latest source package of this name uploaded to this
 #        distro release."""
 
+    def traverse(name):
+        """Traverse across a distrorelease in Launchpad. This looks for
+        special URL items, like +sources or +packages, then goes on to
+        traverse using __getitem__."""
+
     def __getitem__(arch):
         """Return a Set of Binary Packages in this distroarchrelease."""
 

@@ -57,7 +57,7 @@ class PublishedPackageSet(object):
               distrorelease=None, distroarchrelease=None):
         querytxt = '1=1'
         if name:
-            name = name.lower().strip()
+            name = name.lower().strip().split()[0]
             name.replace('%','%%')
             querytxt += " AND binarypackagename ILIKE %s" % quote('%'+name+'%')
         if distribution:

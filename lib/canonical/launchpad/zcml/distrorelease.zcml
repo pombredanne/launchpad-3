@@ -19,7 +19,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistroRelease"
-        getter="__getitem__" />
+        getter="traverse" />
 
 	<browser:page
             for="canonical.launchpad.interfaces.IDistroRelease"

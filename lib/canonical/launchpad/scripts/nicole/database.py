@@ -64,6 +64,10 @@ class SQLThing:
         return cursor
 
     def _insert(self, table, data):
+        data = dict(data)
+        for key in data:
+            if data[key] is None:
+                del data[key]
         keys = data.keys()
         query = "INSERT INTO %s (%s) VALUES (%s)" \
                  % (table, ",".join(keys), ",".join(["%s"] * len(keys)))
@@ -74,22 +78,21 @@ class SQLThing:
             raise
 
     def _update(self, table, data, clause):
-        fields = ''
-        for k, v in data.items():
-            if v :
-                v = v.replace("'", "")
-                fields += """ %s='%s',""" % (k, v)
+        fieldstring = ''
+        for key, value in data.items():
+            if value:
+                value = value.replace("'", "")
+                fieldstring += """ %s='%s',""" % (key, value)
 
         ## delete the last ','
-        fields = fields[:-1]
-               
-        query = "UPDATE %s SET %s WHERE %s;" % (table, fields, clause)
+        fieldstring = fieldstring[:-1]
+ 
+        query = "UPDATE %s SET %s WHERE %s;" % (table, fieldstring, clause)
         try:
             self._exec(query)
             #print query
         except:
-            print "Bad things happened, data was %s" % data
-            raise
+            raise Error, "Bad things happened, data was %s" % data
 
 class FitData(SQLThing):
     pname = None
@@ -125,18 +128,18 @@ class FitData(SQLThing):
                 print '@\tDEBUG:', self.pemail
             except:
                 print '@\tDEBUG: No Devel'
-                
+ 
         ## both have project
-        self.name = self.ensure_string_format(data['project'])
+        self.name = self.ensure_string_format(data['product'])
 
         ## only SF has projectname
         try:
-            self.displayname = self.ensure_string_format(data['projectname'])
-            self.title = self.ensure_string_format(data['projectname'])
+            self.displayname = self.ensure_string_format(data['productname'])
+            self.title = self.ensure_string_format(data['productname'])
         except:
-            ## try to imporve it
-            self.displayname = self.ensure_string_format(data['project'])
-            self.title = self.ensure_string_format(data['project'])
+            ## try to improve it
+            self.displayname = self.ensure_string_format(data['product'])
+            self.title = self.ensure_string_format(data['product'])
 
         ## both have shortdesc        
         try:
@@ -163,19 +166,15 @@ class FitData(SQLThing):
             plang = self.ensure_string_format(temp_plang)
         except:
             plang = None
-            
+
         try:
             screenshot = self.ensure_string_format(data['screenshot'])
         except:
             screenshot = None
 
-        ## support several lists
+        ## we cannot support several lists
         try:
-            orig_list = data['list']
-            temp_list = '' 
-            for url in orig_list:
-                temp_list += ' ' + url                
-            listurl = self.ensure_string_format(temp_list)
+            listurl = self.ensure_string_format(data['list'][0])
         except:
             listurl = None
     
@@ -188,8 +187,8 @@ class FitData(SQLThing):
             self.freshmeatproject = self.ensure_string_format(data['fm'])
         except:
             self.freshmeatproject = None
-        
-        
+ 
+ 
 class Doap(SQLThing):
     #
     # SourcePackageName
@@ -200,47 +199,32 @@ class Doap(SQLThing):
         name = self.ensure_string_format(name)
         self._insert("sourcepackagename", {"name": name})
 
-
     def getSourcePackage(self, name):
-        return self._query_single("""SELECT id FROM SourcePackage WHERE
-                                     sourcepackagename = (SELECT id from
-                                     sourcepackagename WHERE name = %s);""",
-                                  (name,))
-    
+        # only get the Ubuntu source package
+        return self._query_single("""SELECT id FROM SourcePackage,
+            SourcePackagename WHERE
+            SourcePackage.distro = 1 AND
+            SourcePackage.sourcepackagename = SourcePackageName.id AND
+            SourcePackageName.name = %s);""", (name,))
 
     def getSourcePackageName(self, name):
         return self._query_single("""SELECT id FROM sourcepackagename
                                      WHERE name = %s;""", (name,))
 
-    ## insert LIMIT if necessary ...
     def getSourcePackageNames(self):
         return self._query_to_dict("""SELECT name FROM sourcepackagename;""")
 
-
-    #
-    # People
-    #
-    def getPeople(self, name, email):        
-        name = self.ensure_string_format(name)
-        email = self.ensure_string_format(email)
-        self.ensurePerson(name, email)
-        return self.getPersonByEmail(email)
-
     def getPersonByEmail(self, email):
-        return self._query_single("""SELECT Person.id FROM Person,emailaddress 
-                                     WHERE email = %s AND 
-                                           Person.id = emailaddress.person;""",
-                                  (email,))
-    
+        return self._query_single("""SELECT
+            Person.id FROM Person,emailaddress 
+            WHERE email = %s AND 
+            Person.id = emailaddress.person;""", (email,))
+ 
     def getPersonByName(self, name):
         return self._query_single("""SELECT Person.id FROM Person
                                      WHERE name = %s""", (name,))
-    
-    def getPersonByDisplayName(self, displayname):
-        return self._query_single("""SELECT Person.id FROM Person 
-                                     WHERE displayname = %s""", (displayname,))
 
-    def createPeople(self, name, email):
+    def createPerson(self, name, email):
         print "@\tCreating Person %s <%s>" % (name, email)
         name = self.ensure_string_format(name)
 
@@ -261,32 +245,33 @@ class Doap(SQLThing):
         self._insert("person", data)
         pid = self._query_single("SELECT CURRVAL('person_id_seq')")[0]
         self.createEmail(pid, email)
-        
+ 
     def createEmail(self, pid, email):
         data = {
             "email":    email,
             "person":   pid,
-            "status":   1, # XXX
+            "status":   1, # Status 'New' 
         }
         self._insert("emailaddress", data)
 
     def ensurePerson(self, name, email):
-        people = self.getPersonByEmail(email)
-        if people:
-            return people
+        person = self.getPersonByEmail(email)
+        if person:
+            return person
         # XXX this check isn't exactly right -- if there are name
         # collisions, we just add addresses because there is no way to
         # validate them. Bad bad kiko.
-        people = self.getPersonByDisplayName(name)
+        person = self.getPersonByDisplayName(name)
 
-        if people:
+        if person:
             print "@\tAdding address <%s> for %s" % (email, name)
             self.createEmail(people[0], email)
-            return people
+            return person
 
         self.createPeople(name, email)
 
         return self.getPersonByEmail(email)
+
     #
     # Project
     #
@@ -332,47 +317,40 @@ class Doap(SQLThing):
         self._insert("projectrole", dbdata)
         print '@\tProject Role %s Created' % role
 
-    def getProject(self, name):
+    def getProjectByName(self, name):
         return self._query_single("""SELECT id FROM project WHERE name=%s;
         """, name)
 
+    def getProductByName(self, name):
+        return self._query_single("""SELECT * FROM product WHERE name=%s;""", name)
 
-    def getProduct(self, project, name):
-        return self._query_single("""SELECT * FROM product WHERE name=%s
-        AND project=%s;""", (name, project))
-
-    ##XXX Verify Database Changes
     def getProductsForUpdate(self):
-        products = self._query("""SELECT * FROM product WHERE autoupdate=True;""")
+        products = self._query("""SELECT * FROM product WHERE
+        autoupdate=True AND reviewed=True;""")
         return len(products), products
 
-    def getProductSeries(self, product, displayname):
+    def getProductSeries(self, product, name):
         return self._query_single("""SELECT * FROM productseries WHERE
-        displayname=%s
-        AND product=%s;""", (displayname, product))
-
+        name=%s AND product=%s;""", (name, product))
 
     def updateProduct(self, data, product_name):
         fit = FitData(data)
 
-        ## Missed lastdoap field
-        dbdata = {"displayname":         fit.displayname,
-                  "title":               fit.title,
-                  "shortdesc":           fit.shortdesc,
-                  "description":         fit.description,
-                  "homepageurl":         fit.homepage,
+        # only update peripheral data, rather than the summary and
+        # description, when we are in update mode.
+        dbdata = {"homepageurl":         fit.homepage,
                   "screenshotsurl":      fit.screenshot,
                   "listurl":             fit.listurl,
                   "downloadurl":         fit.download,
                   "programminglang":     fit.plang,
                   "sourceforgeproject":  fit.sourceforgeproject,
                   "freshmeatproject":    fit.freshmeatproject,             
-                  "autoupdate":          'True',
                 }
                                           
-        self._update("product", dbdata, ("name='%s'" % product_name))
+        # the query reinforces the requirement that we only update when the
+        # autoupdate field is true
+        self._update("product", dbdata, ("name='%s' and autoupdate=True" % product_name))
         print '@\tProduct %s Updated' % fit.displayname
-
 
     def ensureProduct(self, project, data, source):
 
@@ -407,8 +385,6 @@ class Doap(SQLThing):
                   "downloadurl":         fit.download,
                   "sourceforgeproject":  fit.sourceforgeproject,
                   "freshmeatproject":    fit.freshmeatproject,
-                  "autoupdate":          'True',
-                  "reviewed":            'False',
                   }
                                           
         self._insert("product", dbdata)

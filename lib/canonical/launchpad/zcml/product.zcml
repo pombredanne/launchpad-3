@@ -121,14 +121,15 @@
         fields="name displayname title shortdesc description homepageurl
                 screenshotsurl wikiurl programminglang downloadurl
                 sourceforgeproject freshmeatproject project active
-                reviewed"
+                autoupdate reviewed "
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-editform.pt"
         lp:url="doap/projects/$Project.name/$Product.name/+review">
     </browser:editform>
 
+    <!-- bug filing on products hidden at this new URL till its ready -->
     <browser:addform
-        name="+filebug"
+        name="+XXXfilebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report Bug on Upstream Product"

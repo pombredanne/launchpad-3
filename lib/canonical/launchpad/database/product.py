@@ -72,11 +72,11 @@ class Product(SQLBase):
 
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
 
+    autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
+
     freshmeatproject = StringCol(notNull=False, default=None)
 
     sourceforgeproject = StringCol(notNull=False, default=None)
-
-    autoupdate = BoolCol(notNull=True, default=False)
 
     #
     # useful Joins

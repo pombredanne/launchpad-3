@@ -40,15 +40,6 @@
               tal:define="path_info request/PATH_INFO">
 
             <li class="selected"
-                tal:condition="python:path_info.endswith('/ubuntu')">
-              <a href="http://localhost:8080/ubuntu">Ubuntu</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:not path_info.endswith('/ubuntu')">
-              <a href="http://localhost:8080/ubuntu">Ubuntu</a>
-            </li>
-
-            <li class="selected"
                 tal:condition="python:'/foaf' in path_info">
               <a href="/foaf">People</a>
             </li>
@@ -91,15 +82,6 @@
             <li class="plain"
                 tal:condition="python:'/soyuz' not in path_info">
               <a href="/soyuz">Soyuz</a>
-            </li>
-
-            <li class="selected"
-                tal:condition="python:'/lists' in path_info">
-              <a href="/lists">Lists</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:'/lists' not in path_info">
-              <a href="/lists">Lists</a>
             </li>
 
             <li class="selected"

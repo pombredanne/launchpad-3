@@ -60,8 +60,8 @@ class IProduct(IHasOwner):
     freshmeatproject = TextLine(title=_('Freshmeat Project'),
         required=False)
 
-    autoupdate = Bool(title=_('Autoupdate'), description=_("""Whether or not
-        this product's attributes are autoupdated."""))
+    autoupdate = Bool(title=_('Automatic update'), description=_("""Whether or not
+        this product's attributes are updated automatically."""))
 
     manifest = Attribute(_('Manifest'))
 
