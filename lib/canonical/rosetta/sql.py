@@ -402,6 +402,14 @@ class RosettaPOMessageSet(SQLBase):
     def getTranslationSighting(self, plural_form):
         """Return the translation sighting that is current and has the
         plural form provided."""
+        raise NotImplementedError
+
+    def translationSightings(self):
+        if self.poFile == None:
+            raise ValueError
+        else:
+            return RosettaPOTranslationSighting.selectBy(
+                poMessageSetID=self.id)
 
 
 class RosettaEditPOMessageSet(RosettaPOMessageSet):

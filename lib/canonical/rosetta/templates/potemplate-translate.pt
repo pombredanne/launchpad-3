@@ -131,8 +131,10 @@
             </div>
 
             <div class="field">
-                <label>From file</label>
-                <span>./plone_forms/discussion_reply_form.pt</span>
+                <label>From files:</label>
+                <span
+                tal:content="set/fileReferences"
+                    >./plone_forms/discussion_reply_form.pt</span>
             </div>
 
             <div class="field">
@@ -144,7 +146,7 @@
         <div class="visualClear"></div>
             </div>
     </tal:msgstring>
-        
+
 <!-- Multiline example start -->
 
     <p class="discreet">

@@ -201,7 +201,17 @@ class IPOMessageSet(Interface):
     poTemplate = Attribute("""The template this set is associated with.""")
 
     poFile = Attribute("""The PO file this set is associated with, if it's
-        associated with a PO file.""")
+        associated with a PO file. For sets from PO templates, this is
+        None.""")
+
+    # Invariant: poTemplate == None || poFile == None
+    # Invariant: poTemplate != None || poFile != None
+
+    # Rephrased:
+    # Invariant: ((poTemplate == None) && (poFile != None)) ||
+    #            ((poTemplate != None) && (poFile == None))
+
+    # XXX: test that
 
     primeMessageID = Attribute("The primary message ID of this set.")
 
@@ -261,6 +271,9 @@ class IPOMessageSet(Interface):
     def getTranslationSighting(plural_form):
         """Return the translation sighting that is current and has the
         plural form provided."""
+
+    def translationSightings():
+        """Iterate over current translation sightings."""
 
 
 class IEditPOMessageSet(IPOMessageSet):
