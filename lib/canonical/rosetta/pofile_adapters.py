@@ -494,10 +494,10 @@ class POFileImporter(object):
             # set (or unset) msgidPlural
             proxy.msgidPlural = kw.get('msgidPlural', None)
             # if we got msgstr, then it's a singular; store it
-            if kw.get('msgstr'):
+            if 'msgstr' in kw:
                 proxy.msgstr = kw['msgstr']
             # or was it plural?  In fact, store them all!
-            elif kw.get('msgstrPlurals'):
+            elif 'msgstrPlurals' in kw:
                 proxy.msgstrPlurals = kw['msgstrPlurals']
             # store comments
             proxy.commentText = kw.get('commentText', '')
