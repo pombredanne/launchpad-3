@@ -265,6 +265,7 @@ class ZopelessTransactionManager(object):
 
     def commit(self, sub=False):
         self.manager.get().commit(sub)
+        self._clearCache()
         self.begin()
 
     def abort(self, sub=False):
@@ -273,7 +274,18 @@ class ZopelessTransactionManager(object):
         for obj in objects:
             obj.reset()
             obj.expire()
+        self._clearCache()
         self.begin()
+
+    def _clearCache(self):
+        """Clear SQLObject's object cache for the current connection."""
+        # XXX: There is a different hack for (I think?) similar reasons in
+        #      canonical.publication.  This should probably share code with
+        #      that one.
+        #        - Andrew Bennetts, 2005-02-01
+        for c in SQLBase._connection.cache.allSubCaches():
+            c.clear()
+
 
 def quote(x):
     r"""Quote a variable ready for inclusion into an SQL statement.

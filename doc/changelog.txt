@@ -2,6 +2,71 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-01 13:43:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1268
+
+    Summary:
+      Fix another zopeless transaction issue
+    Revision:
+      launchpad--devel--0--patch-1268
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-325
+       Make test_zopeless actually use FunctionalTestSetup
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-326
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-327
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-4
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-5
+       Merge from andrew.bennetts@canonical.com/launchpad--devel--0
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-6
+       Failing test case
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-7
+       Keep the test case minimal
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-8
+       Make initZopeless clear SQLObject's cache after a commit/abort
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-9
+       Add XXX comment
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-10
+       We still need to clear objects out of the data manager, too
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-11
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-12
+       Remove unneeded FunctionalTestSetup
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/database/sqlbase.py
+     lib/canonical/lp/ftests/test_zopeless.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-325
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-326
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-327
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-4
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-5
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-6
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-7
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-8
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-9
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-10
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-11
+     andrew.bennetts@canonical.com/launchpad--zopelessfix--0--patch-12
+
+
 2005-02-01 13:31:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1267
 
     Summary:
