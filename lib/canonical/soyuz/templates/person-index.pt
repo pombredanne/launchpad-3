@@ -37,10 +37,13 @@
        <td>Description:</td><td tal:content="context/person/teamdescription">
            DESCRIPTION</td>
        </tr>
-
-       <tr tal:condition="context/email">
-       <td>Email:</td><td tal:content="context/email/email">EMAIL</td>
+       
+       <tal:dummy tal:condition="context/email">
+       <tr tal:repeat="email context/email">
+       <td>Email:</td>
+       <td tal:content="string:${email/email} (${email/statusname})">EMAIL</td>
        </tr>
+       </tal:dummy>
 
        <tr tal:condition="context/wiki">
        <td>Wiki:</td><td> 
@@ -62,7 +65,8 @@
        </tr>
 
        <tr tal:condition="context/gpg">
-       <td>GPG:</td><td tal:content="context/gpg/keyid"></td>
+       <td>GPG:</td>
+       <td tal:content="context/gpg/keyid"></td>
        <th><a href="+key">Pub Key</a></th>
        </tr>
 
@@ -174,14 +178,14 @@
   <div class="dummy">
    <table>
      <legend><h3>Packages Maintained by:</h3></legend>
-     <tr><td> XXX: Real data but link is missing</td></tr>
+     <tr><td> XXX: Hardcoded distro & distrorelease link</td></tr>
      <tr tal:condition="not:context/packages">
        <td> No package available </td>
      </tr>
      <tr tal:repeat="package context/packages">
        <!-- FIXME: distribuiton and distrorelease missed --> 
        <td><a tal:attributes="href string:../../distros/ubuntu/src/warty/${package/sourcepackage/name}"
-         tal:content="string:${package/sourcepackage/name}-${package/version}">
+         tal:content="string:${package/sourcepackage/name}">
 	     PACKAGES
 	   </a>
        <td>

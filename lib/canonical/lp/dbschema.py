@@ -272,6 +272,42 @@ class Packaging(DBSchema):
         ''')
 
 
+class GPGKeyAlgorithms(DBSchema):
+    """
+    GPG Compilant Key Algorithms Types:
+
+    1 : "R", # RSA
+    16: "g", # ElGamal
+    17: "D", # DSA
+    20: "G", # ElGamal, compromised
+
+    FIXME
+    Rewrite it according the experimental API retuning also a name attribute
+    tested on 'algorithmname' attribute
+
+    """
+
+    R = Item(1, '''
+        R
+
+        RSA''')
+
+    g = Item(16, '''
+        g
+
+        ElGamal''')
+
+    D = Item(17, '''
+        D
+
+        DSA''')
+
+    G = Item(20, '''
+        G
+
+        ElGamal, compromised''')
+
+
 class BranchRelationships(DBSchema):
     """Branch relationships.
 

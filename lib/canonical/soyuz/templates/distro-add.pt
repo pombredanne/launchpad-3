@@ -66,7 +66,7 @@
   </form>
   </div>
 
-  <tla:block tal:condition="view/enable_added">
+  <tla:block tal:condition="view/add_action">
   <div>
   <h4><a tal:attributes="href request/name">
   <span tal:content="view/results/title"/></a> 

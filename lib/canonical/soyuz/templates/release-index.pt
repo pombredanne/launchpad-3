@@ -167,13 +167,13 @@
 	    <tr><th><a 
 	    tal:attributes="href string:../../src/${context/release/name}">
 	    View Source Packages List</a></th>
-	    <th>( <span tal:content="context/release/sourcecount"/> 
+	    <th>(<span tal:content="context/release/sourcecount"/> 
 	    Packages)</th>
 	    </tr><tr>
 	    <th><a
 	    tal:attributes="href string:../../bin/${context/release/name}">
 	    View Binary Packages List</a></th>
-	    <th>( <span tal:content="context/release/binarycount"/> 
+	    <th>(<span tal:content="context/release/binarycount"/> 
 	    Packages)</th>
 	    </tr>
 	    </table>

@@ -114,13 +114,11 @@ class DistroReleaseApp(object):
     def findSourcesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
         query = (self._sourcequery() +
-                 ' AND ( UPPER(SourcePackageName.name) LIKE UPPER(%s)'
+                 ' AND (SourcePackageName.name ILIKE %s'
                  % quote('%%' + pattern + '%%')
-                 + ' OR UPPER(SourcePackage.shortdesc) LIKE UPPER(%s))'
-                 % quote('%%' + pattern + '%%'))
-        
-        from sets import Set
-        return Set(SoyuzSourcePackage.select(query))
+                 + ' OR SourcePackage.shortdesc ILIKE %s)'
+                 % quote('%%' + pattern + '%%'))        
+        return SoyuzSourcePackage.select(query)[:50]
 
     where = (
         'PackagePublishing.binarypackage = BinaryPackage.id AND '
@@ -132,13 +130,13 @@ class DistroReleaseApp(object):
     def findBinariesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
         query = (self.where % self.release.id +
-                 'AND (UPPER(BinarypackageName.name) LIKE UPPER(%s) '
+                 'AND (BinarypackageName.name ILIKE %s '
                  % quote('%%' + pattern + '%%')
-                 + 'OR UPPER(Binarypackage.shortdesc) LIKE UPPER(%s))'
+                 + 'OR Binarypackage.shortdesc ILIKE %s)'
                  % quote('%%' + pattern + '%%'))
-
-        from sets import Set
-        return Set(SoyuzBinaryPackage.select(query))
+        
+        ## FIXME: is those unique ?
+        return SoyuzBinaryPackage.select(query)[:50]
 
 
 class DistroReleasesApp(object):
@@ -152,8 +150,6 @@ class DistroReleasesApp(object):
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
 
-
-####### end of distroRelease app component
 
 # Source app component Section (src) 
 class DistroReleaseSourceReleaseBuildApp(object):
@@ -201,24 +197,28 @@ class DistroReleaseSourceReleaseApp(object):
             builddepends = split(self.sourcepackagerelease.builddepends, ',')
             for pack in builddepends:
                 tmp = split(pack)
-                self.builddepends.append( builddepsContainer( tmp[0],join(tmp[1:]) ) )
+                self.builddepends.append(builddepsContainer(tmp[0],
+                                                            join(tmp[1:])))
         else:
             self.builddepends = None
 
 
         if self.sourcepackagerelease.builddependsindep:
             self.builddependsindep = []
-            builddependsindep = split(self.sourcepackagerelease.builddependsindep, ',')
+            builddependsindep = split(self.sourcepackagerelease.\
+                                      builddependsindep, ',')
             for pack in builddependsindep:
                 tmp = split(pack)
-                self.builddependsindep.append( builddepsContainer( tmp[0],join(tmp[1:]) ) )
+                self.builddependsindep.\
+                        append(builddepsContainer(tmp[0],
+                                                  join(tmp[1:])))
         else:
             self.builddependsindep = None
 
     def __getitem__(self, arch):
         return DistroReleaseSourceReleaseBuildApp(self.sourcepackagerelease,
                                                   arch)
-
+    
 class CurrentVersion(object):
     def __init__(self, release, builds):
         self.release = release
@@ -231,7 +231,8 @@ class DistroReleaseSourceApp(object):
         self.sourcepackage = sourcepackage
 
     def __getitem__(self, version):
-        return DistroReleaseSourceReleaseApp(self.sourcepackage, version, self.release)
+        return DistroReleaseSourceReleaseApp(self.sourcepackage, version,
+                                             self.release)
 
     def proposed(self):
         return self.sourcepackage.proposed(self.release)
@@ -252,7 +253,8 @@ class DistroReleaseSourceApp(object):
         return current
 
     def currentversions(self):
-        return [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
+        return [CurrentVersion(k, v) for k,v in self.currentReleases().\
+                iteritems()]
 
         
         # FIXME: Probably should be more than just PUBLISHED uploads (e.g.
@@ -264,11 +266,12 @@ class DistroReleaseSourceApp(object):
 
     lastversions = property(lastversions)
     
-
     ##Does this relation SourcePackageRelease and Builds exists??
-    ##Is it missing in the database or shoult it be retrived using binarypackage table?
+    ##Is it missing in the database or shoult it be retrived
+    ##   using binarypackage table?
     def builds(self):
         return self.sourcepackage.builds
+
     builds = property(builds)
 
     
@@ -277,12 +280,10 @@ class DistroReleaseSourcesApp(object):
 
     Used for web UI.
     """
-#    implements(ISourcePackageSet)
-
-    # FIXME: docstring says this contains SourcePackage objects, but it seems to
+    # FIXME:docstring says this contains SourcePackage objects, but it seems to
     # contain releases.  Is this a bug or is the docstring wrong?
     table = SoyuzSourcePackageRelease
-    clauseTables = ('SourcePackage', 'SourcePackageUpload',)
+    clauseTables = ('SourcePackage', 'SourcePackageUpload')
 
     def __init__(self, release):
         self.release = release
@@ -299,18 +300,18 @@ class DistroReleaseSourcesApp(object):
     def findPackagesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
         query = self._query() + \
-                (' AND UPPER(SourcePackageName.name) LIKE UPPER(%s)'
+                (' AND SourcePackageName.name ILIKE %s'
                  % quote('%%' + pattern + '%%')
                  )
-        from sets import Set
-        return Set(SoyuzSourcePackage.select(query))
+        return SoyuzSourcePackage.select(query)[:50]
 
     def __getitem__(self, name):
         # XXX: What about multiple results?
         #      (which shouldn't happen here...)
 
         query = self._query() + \
-                ' AND SourcePackageName.name = %s ORDER BY dateuploaded DESC' % quote(name)
+                (' AND SourcePackageName.name = '
+                 '%s' % quote(name))
         try:
             release = self.table.select(query,
                                         clauseTables=self.clauseTables)[0]
@@ -322,14 +323,13 @@ class DistroReleaseSourcesApp(object):
             sourcePackage = release.sourcepackage
             return DistroReleaseSourceApp(self.release, sourcePackage)
 
+
+    ##FIXME: the results are NOT UNIQUE (DISTINCT)
+    ##FIXME: the results are LIMITED by hand
     def __iter__(self):
-        #FIXME: Dummy solution to avoid a sourcepackage to be shown more then once
-        present = []
-        for bp in self.table.select(self._query(),
-                                    clauseTables=self.clauseTables):
-            if bp.sourcepackage.name not in present:
-                present.append(bp.sourcepackage.name)
-                yield bp
+        query = self._query()
+        return iter(self.table.select(query,
+                                      orderBy='sourcepackagename.name')[:50])
 
 class DistroSourcesApp(object):
     def __init__(self, distribution):
@@ -343,11 +343,6 @@ class DistroSourcesApp(object):
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
 
-# end of distrosource app component
-
-###########################################################
-
-# Team app component (team)
 class DistroReleaseTeamApp(object):
     def __init__(self, release):
         self.release = release
@@ -369,9 +364,8 @@ class DistroTeamApp(object):
 
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
-#end of DistroTeam app component
 
-# new People Branch
+
 class PeopleApp(object):
     def __init__(self):
         #FIXME these names are totaly crap
@@ -430,7 +424,6 @@ class PersonApp(object):
             self.teams = None
 
         try:
-            #thanks spiv !
             query = ("team = %d "
                      "AND Person.id = TeamParticipation.person "
                      "AND Person.teamowner IS NOT NULL" %self.id)
@@ -458,19 +451,10 @@ class PersonApp(object):
         except IndexError:
             self.distroreleaseroles = None
             
-        try:
-            # Prefer validated email addresses
-            self.email = SoyuzEmailAddress.selectBy(
-                personID=self.id,
-                status=int(dbschema.EmailAddressStatus.VALIDATED))[0]
-        except IndexError:
-            try:
-                # If not validated, fallback to new
-                self.email = SoyuzEmailAddress.selectBy(
-                    personID=self.id,
-                    status=int(dbschema.EmailAddressStatus.NEW))[0]
-            except IndexError:
-                self.email = None
+        # Retrieve an email by person id
+        #FIXME: limited to one, solve the EDIT multi emails problem 
+        self.email = SoyuzEmailAddress.selectBy(personID=self.id)
+
         try:
             self.wiki = WikiName.selectBy(personID=self.id)[0]
         except IndexError:
@@ -493,15 +477,16 @@ class PersonApp(object):
             self.gpg = None
 
     def _getsourcesByPerson(self):
-        clauseTables = ('SourcePackage', 'SourcePackageUpload',)
-        pid = str(self.id)
-        query = ('SourcePackageUpload.sourcepackagerelease = SourcePackageRelease.id '
-                 'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+        query = ('SourcePackageUpload.sourcepackagerelease = '
+                 'SourcePackageRelease.id '
+                 'AND SourcePackageRelease.sourcepackage = '
+                 'SourcePackage.id '
                  'AND SourcePackage.maintainer = %i'
-                 %self.id
-                 )
-
+                 %self.id)
+        
+##FIXME: ORDER by Sourcepackagename !!!
         return Set(SoyuzSourcePackageRelease.select(query))
+    
 
 
 # Binary app component (bin) still using stubs ...
@@ -545,8 +530,7 @@ class DistroReleaseBinaryReleaseApp(object):
 
     def __getitem__(self, arch):
         return DistroReleaseBinaryReleaseBuildApp(self.binarypackagerelease,
-                                                  self.version,
-                                                  arch)
+                                                  self.version, arch)
     
 class DistroReleaseBinaryApp(object):
     def __init__(self, binarypackage, release):
@@ -559,9 +543,9 @@ class DistroReleaseBinaryApp(object):
         self.release = release
 
     def currentReleases(self):
-        """The current releases of this binary package by architecture.
-        
-        :returns: a dict of version -> list-of-architectures
+        """
+        The current releases of this binary package by architecture.
+        Returns: a dict of version -> list-of-architectures
         """
         binaryReleases = list(self.binarypackage.current(self.release))
         current = {}
@@ -574,7 +558,8 @@ class DistroReleaseBinaryApp(object):
         return current
 
     def currentversions(self):
-        return [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
+        return [CurrentVersion(k, v) for k,v in self.currentReleases().\
+                iteritems()]
 
     def lastversions(self):
         return self.binarypackage.lastversions(self.release)
@@ -585,7 +570,8 @@ class DistroReleaseBinaryApp(object):
         query = self.binselect.clause + \
                 ' AND BinaryPackage.version = %s' %quote(version)
         self.binarypackage = SoyuzBinaryPackage.select(query)
-        return DistroReleaseBinaryReleaseApp(self.binarypackage[0], version, self.release)
+        return DistroReleaseBinaryReleaseApp(self.binarypackage[0],
+                                             version, self.release)
 
 class DistroReleaseBinariesApp(object):
     """Binarypackages from a Distro Release"""
@@ -603,9 +589,14 @@ class DistroReleaseBinariesApp(object):
                  'AND  BinaryPackage.binarypackagename = BinarypackageName.id '
                  'AND  UPPER(BinarypackageName.name) LIKE UPPER(%s)'
                  % quote('%%' + pattern + '%%'))
+
+
+## WTF ist That ?? I wonder how many copies of this code we will find !
+##FIXME: expensive routine
         from sets import Set
         selection = Set(SoyuzBinaryPackage.select(query))
-        #FIXME: Dummy solution to avoid a binarypackage to be shown more then once
+        ##FIXME: Dummy solution to avoid a binarypackage to be shown more
+        ##   then once
         present = []
         result = []
         for srcpkg in selection:
@@ -614,27 +605,26 @@ class DistroReleaseBinariesApp(object):
                 result.append(srcpkg)
         return result
                         
-##         return Set(SoyuzBinaryPackage.select(query))
         
     def __getitem__(self, name):
         try:
             where = self.where % self.release.id + \
-                    ('AND Binarypackage.binarypackagename = BinarypackageName.id '
+                    ('AND Binarypackage.binarypackagename ='
+                     ' BinarypackageName.id '
                      'AND BinarypackageName.name = ' + quote(name)
                      )
-            return DistroReleaseBinaryApp(SoyuzBinaryPackage.select(where), self.release)
+            return DistroReleaseBinaryApp(SoyuzBinaryPackage.select(where),
+                                          self.release)
         except IndexError:
             raise KeyError, name
-         
+
+
+    ##FIXME: The results are NOT UNIQUE (DISTINCT)
+    ##FIXME: they were LIMITED by hand
     def __iter__(self):
-##         return iter([DistroReleaseBinaryApp(p, self.release) for p in 
-##                      SoyuzBinaryPackage.select(self.where % self.release.id)])
-        #FIXME: Dummy solution to avoid a binarypackage to be shown more then once
-        present = []
-        for bp in SoyuzBinaryPackage.select(self.where % self.release.id):
-            if bp.binarypackagename not in present:
-                present.append(bp.binarypackagename)
-                yield bp
+        query = self.where % self.release.id
+        return iter(SoyuzBinaryPackage.select(query, orderBy=\
+                                              'Binarypackagename.name')[:50])
 
 class DistroBinariesApp(object):
     def __init__(self, distribution):

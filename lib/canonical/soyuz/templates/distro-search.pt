@@ -64,7 +64,7 @@
 	 </table>
     </form>
 
-    <tal:block tal:condition="view/enable_results">
+    <tal:block tal:condition="view/search_action">
     <div>
     <h3>Results</h3>
     <h4><span tal:content="view/entries"/> entries found</h4> 

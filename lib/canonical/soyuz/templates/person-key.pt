@@ -22,7 +22,7 @@
     <div>
     <table>
     <tr><td>Key ID : </td>
-        <td tal:content="context/gpg/keyid">ID</td></tr>
+    <td tal:content="string:${context/gpg/keyid}${context/gpg/keyid}/${context/gpg/keyid}"></td>
     <tr><td>Fingerprint :</td>
         <td tal:content="context/gpg/fingerprint">FINGERPRINT</td></tr>
     <tr><td>Revoked : </td>

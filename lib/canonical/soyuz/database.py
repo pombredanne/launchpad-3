@@ -492,8 +492,8 @@ class BranchRelationship(SQLBase):
         self.object = value
 
     def _get_labelText(self):
-        # FIXME: There should be a better way to look up a schema item given its
-        #        value
+        # FIXME: There should be a better way to look up a schema
+        #  item given its value
         return [br for br in dbschema.BranchRelationships
                 if br == self.label][0]
         
@@ -507,6 +507,17 @@ class SoyuzEmailAddress(SQLBase):
         StringCol('email', dbName='email', notNull=True),
         IntCol('status', dbName='status', notNull=True)
         ]
+
+    def _statusname(self):
+        for status in dbschema.EmailAddressStatus.items:
+            if status.value == self.status:
+                return status.title
+        return 'Unknown (%d)' %self.status
+    
+    statusname = property(_statusname)
+
+
+
     
 class GPGKey(SQLBase):
     _table = 'GPGKey'
@@ -517,7 +528,21 @@ class GPGKey(SQLBase):
         StringCol('fingerprint', dbName='fingerprint', notNull=True),
         StringCol('pubkey', dbName='pubkey', notNull=True),
         BoolCol('revoked', dbName='revoked', notNull=True)
+##FIXME pending 'algorithm' and 'keysize' !!!
         ]
+
+
+##FIXME: Experimental API with 4 attributes (includes also name instead just
+##    value, title, description)
+    def _algorithmname(self):
+        for name, algorithm in dbschema.GPGKeyAlgorithms.items.mapping.items():
+            if algorithm.value == self.algorithm:
+                return name
+        return 'Unknown (%d)' %self.algorithm
+    
+    algorithmname = property(_algorithmname)
+
+
     
 class ArchUserID(SQLBase):
     _table = 'ArchUserID'

@@ -36,31 +36,6 @@
 	</div>
 	</td></tr>
 	<tr><td>
-	<div class="dummy">
-	    <label>Role</label>
-	    <div class="formHelp">
-	    Enter the Person Role.
-            </div>
-	    <select class="formHelp" name="role">
-	    <tal:block tal:repeat="role context/roleset">	    
-	    <option tal:content="role"/>
-	    </tal:block>
-	    </select> 
-	    </div>
-	</td></tr>
-	<tr><td>
-	<div class="dummy">
-	    <label>Status</label>
-	    <div class="formHelp">
-	    Enter the Person Status.
-            </div>
-	    <select class="formHelp" name="status">
-	    <tal:block tal:repeat="status context/statusset">	    
-	    <option tal:content="status"/>
-	    </tal:block>
-	    </select> 
-	</div>
-	<tr><td>
 	<div class="formControls">
 	  <input type="submit" value="Join"/>
 	</div>
@@ -69,7 +44,7 @@
   </form>
   </div>
 
-  <tla:block tal:condition="view/enable_join">
+  <tla:block tal:condition="view/join_action">
   <div>
   <h4><a tal:attributes="href string:../${context/person/id}"
          tal:content="context/person/displayname">

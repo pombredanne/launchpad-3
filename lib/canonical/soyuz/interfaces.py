@@ -261,6 +261,7 @@ class ISoyuzEmailAddress(Interface):
     person = Attribute("Owner")
     email = Attribute("Email")
     status = Attribute("Status")
+    statusname = Attribute("StatusName")
 
 class IGPGKey(Interface):
     """GPG support"""
@@ -269,6 +270,8 @@ class IGPGKey(Interface):
     pubkey = Attribute("Pub Key itself")
     fingerprint = Attribute("User Fingerprint")
     revoked = Attribute("Revoked")
+    algorithm = Attribute("Algorithm")
+    keysize = Attribute("Keysize")
 
 class IArchUserID(Interface):
     """ARCH specific user ID """

@@ -70,7 +70,7 @@
   </form>
   </div>
 
-  <tla:block tal:condition="view/enable_edited">
+  <tla:block tal:condition="view/edit_action">
   <div>
   <h4><a tal:attributes="href string:../${request/name}">
   <span tal:content="request/title"/></a>

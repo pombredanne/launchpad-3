@@ -20,8 +20,9 @@ class DistrosSearchView(object):
         self.context = context
         self.request = request
         self.results = []
-        self.enable_results = False
 
+    def search_action(self):
+        enable_results = False
         name = self.request.get("name", "")
         title = self.request.get("title", "")
         description = self.request.get("description", "")
@@ -36,16 +37,21 @@ class DistrosSearchView(object):
             self.results = SoyuzDistribution.select(AND(name_like, title_like,
                                                         description_like))
             self.entries = self.results.count()
-            self.enable_results = True
+            enable_results = True                
 
+        return enable_results
+
+    
 class PeopleSearchView(object):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.results = []
-        self.enable_results = False
 
+
+    def search_action(self):
+        enable_results = False       
         name = self.request.get("name", "")
 
         if name:
@@ -57,8 +63,9 @@ class PeopleSearchView(object):
             UPPER(teamdescription) LIKE %s'%(query,query))
 
             self.entries = self.results.count()
-            self.enable_results = True
+            enable_results = True
 
+        return enable_results
 
 class PeopleAddView(object):
 
@@ -66,8 +73,10 @@ class PeopleAddView(object):
         self.context = context
         self.request = request
         self.results = []
-        self.enable_added = False
 
+
+    def add_action(self):
+        enable_added = False
         displayname = self.request.get("displayname", "")
         givenname = self.request.get("givenname", "")
         familyname = self.request.get("familyname", "")
@@ -86,12 +95,14 @@ class PeopleAddView(object):
                                        teamdescription=None,
                                        karma=None,
                                        karmatimestamp=None)
-
+            
             SoyuzEmailAddress(person=self.results.id,
                          email=email,
                          status=int(dbschema.EmailAddressStatus.NEW))
+            
+            enable_added = True
 
-            self.enable_added = True
+        return enable_added
 
 class TeamAddView(object):
 
@@ -99,8 +110,10 @@ class TeamAddView(object):
         self.context = context
         self.request = request
         self.results = []
-        self.enable_added = False
 
+
+    def add_action(self):
+        enable_added = False
         displayname = self.request.get("displayname", "")
         teamdescription = self.request.get("teamdescription", "")
 
@@ -122,9 +135,12 @@ class TeamAddView(object):
                               teamID=self.context.id)
 
             ##FIXME: what about Membership ? the owner should be always
-            ##       the admin ? I supose not and
+            ##       the admin ? I supose not and 
+            
+            enable_added = True
 
-            self.enable_added = True
+        return enable_added
+            
 
 class TeamJoinView(object):
 
@@ -132,143 +148,151 @@ class TeamJoinView(object):
         self.context = context
         self.request = request
         self.results = []
-        self.enable_join = False
 
+    def join_action(self):
+        enable_join = False
+        
         dummy_id = self.request.get("id", "")
-        proto_role = self.request.get("role", "")
-        proto_status = self.request.get("status", "")
-
-        role = dbschema.MembershipRole.MEMBER
-        for item in dbschema.MembershipRole.items:
-            if item.title == proto_role:
-                role = item.value
-
-        status = dbschema.MembershipStatus.PROPOSED
-        for item in dbschema.MembershipStatus.items:
-            if item.title == proto_status:
-                status = item.value
-
+        ## FIXME: always as PROPOSED MEMBER 
+        role = dbschema.MembershipRole.MEMBER.value
+        status = dbschema.MembershipStatus.PROPOSED.value
 
         if dummy_id:
             self.person = SoyuzPerson.get(dummy_id)
-            #FIXME: verify if the person is already a member
+            #FIXME: verify if the person is already a member 
             self.results = Membership(personID=dummy_id,
                                       team=self.context.id,
                                       role=role,
                                       status=status)
-
+            
             #FIXME: How to do it recursively as it is suposed to be
             self.results = TeamParticipation(personID=dummy_id,
                                              teamID=self.context.id)
-
-            self.enable_join = True
-
-
+            
+            enable_join = True
+        return enable_join
+            
 class PersonEditView(object):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.results = []
-        self.enable_edited = False
+
+    def edit_action(self):
+        enable_edited = False
 
         displayname = self.request.get("displayname", "")
         givenname = self.request.get("givenname", "")
         familyname = self.request.get("familyname", "")
         teamdescription = self.request.get("teamdescription", "")
 
-        email = self.request.get("email", "")
+        ##email = self.request.get("email", "")
         wiki = self.request.get("wiki", "")
         wikiname = self.request.get("wikiname", "")
         network = self.request.get("network", "")
         nickname = self.request.get("nickname", "")
         jabberid = self.request.get("jabberid", "")
         archuserid = self.request.get("archuserid", "")
-        gpgid = self.request.get("gpgid", "")
-
+        #gpgid = self.request.get("gpgid", "")
+        
         #FIXME: verify the unique name before update distro
         if displayname :
             self.context.person.displayname = displayname
             self.context.person.givenname = givenname
             self.context.person.familyname = familyname
             self.context.person.teamdescription = teamdescription
-            self.enable_edited = True
+            enable_edited = True            
 
-            #EmailAddress
-            if self.context.email:
-                self.context.email.email = email
-                self.enable_edited = True
-            else:
-                try:
-                    self.context.email = Soyuz.EmailAddress(personID=self.context.person.id,
-                                                            email=email,
-                                                            status=int(dbschema.EmailAddressStatus.NEW))
-                except:
-                    pass
+            #EmailAddress                
+#             if self.context.email:
+#                 self.context.email.email = email
+#                 self.enable_edited = True
+#             else:
+#                 if email:
+#                     status = int(dbschema.EmailAddressStatus.VALIDATED)
+#                     person = self.context.person.id
+#                     self.context.email = \
+#                          Soyuz.EmailAddress(personID=person,
+#                                             email=email, status=status)
+#                 else:
+#                     self.context.email = None
             #WikiName
             if self.context.wiki:
                 self.context.wiki.wiki = wiki
                 self.context.wiki.wikiname = wikiname
-                self.enable_edited = True
+                enable_edited = True
             else:
-                try:
-                    self.context.wiki = WikiName(personID=self.context.person.id,
+                if wiki or wikiname:
+                    person = self.context.person.id
+                    self.context.wiki = WikiName(personID=person,
                                                  wiki=wiki,
                                                  wikiname=wikiname)
-                except:
-                    pass
+                    enable_edited = True
+                else:
+                    self.context.wiki = None
+
             #IrcID
             if self.context.irc:
                 self.context.irc.network = network
                 self.context.irc.nickname = nickname
-                self.enable_edited = True
+                enable_edited = True
             else:
-                try:
-                    self.context.irc = IrcID(personID=self.context.person.id,
+                if network or nickname:
+                    person = self.context.person.id
+                    self.context.irc = IrcID(personID=person,
                                              network=network,
                                              nickname=nickname)
-                except IndexError:
-                    pass
-            #JabberID
+                    enable_edited = True
+                else:
+                    self.context.irc = None
+                    
+            #JabberID    
             if self.context.jabber:
                 self.context.jabber.jabberid = jabberid
-                self.enable_edited = True
+                enable_edited = True
             else:
-                try:
-                    self.context.jabber = JabberID(personID=self.context.person.id,
+                if jabberid:
+                    person = self.context.person.id                    
+                    self.context.jabber = JabberID(personID=person,
                                                    jabberid=jabberid)
-                except IndexError:
-                    pass
+                    enable_edited = True
+                else:
+                    self.context.jabber = None
+                    
             #ArchUserID
             if self.context.archuser:
                 self.context.archuser.archuserid = archuserid
-                self.enable_edited = True
+                enable_edited = True
             else:
-                try:
-                    self.context.archuser = ArchUserID(personID=self.context.person.id,
-                                                   archuserid=archuserid)
-                except IndexError:
-                    pass
+                if archuserid:
+                    person = self.context.person.id                    
+                    self.context.archuser = ArchUserID(personID=person,
+                                                       archuserid=archuserid)
+                    enable_edited = True
+                else:
+                    self.context.archuser = None
 
+#             #GPGKey
+#             if self.context.gpg:
+#                 self.context.gpg.keyid = gpgid
+#                 self.context.gpg.fingerprint = fingerprint
+#                 self.enable_edited = True
+#             else:
+#                 #FIXME: more fields ...
+#                 if gpgid:
+#                     #FIXME: lazy unique fingerprint and pubkey
+#                     pubkey = 'sample%d'%self.context.id
+#                     person = self.context.person.id
+#                     self.context.gpg = GPGKey(personID=person,
+#                                               keyid=gpgid,
+#                                               fingerprint=fingerprint,
+#                                               pubkey=pubkey,
+#                                               revoked=False)
+#                 else:
+#                     self.context.gpg = None
 
-
-            #GPGKey
-            if self.context.gpg:
-                self.context.gpg.keyid = gpgid
-                self.enable_edited = True
-            else:
-                try:
-                    #FIXME: lazy unique fingerprint and pubkey
-                    fingerprint = 'sample%d'%self.context.id
-                    pubkey = fingerprint
-
-                    self.context.gpg = GPGKey(personID=self.context.person.id,
-                                              keyid=gpgid,
-                                              fingerprint=fingerprint,
-                                              pubkey=pubkey,
-                                              revoked=False)
-                except IndexError:
-                    pass
+        return enable_edited
 
 class DistrosAddView(object):
 
@@ -276,10 +300,13 @@ class DistrosAddView(object):
         self.context = context
         self.request = request
         self.results = []
-        self.enable_added = False
 
+
+    def add_action(self):
+        enable_added = False
+        
         name = self.request.get("name", "").encode("ascii")
-        title = self.request.get("title", "").encode("ascii")
+        title = self.request.get("title", "").encode("ascii")            
         description = self.request.get("description", "").encode("ascii")
 
         if name or title or description:
@@ -290,8 +317,9 @@ class DistrosAddView(object):
                                              description=description,\
                                              domainname='domain', owner=1)
             #FIXME: verify results
-            self.enable_added = True
+            enable_added = True
 
+        return enable_added
 
 class DistrosEditView(object):
 
@@ -299,8 +327,9 @@ class DistrosEditView(object):
         self.context = context
         self.request = request
         self.results = []
-        self.enable_edited = False
 
+    def edit_action(self):
+        enable_edited = False
         name = self.request.get("name", "").encode("ascii")
         title = self.request.get("title", "").encode("ascii")
         description = self.request.get("description", "").encode("ascii")
@@ -310,7 +339,40 @@ class DistrosEditView(object):
             self.context.distribution.name = name
             self.context.distribution.title = title
             self.context.distribution.description = description
-            self.enable_edited = True
+            enable_edited = True
+
+        return enable_edited
+
+class ReleasesAddView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+
+    def add_action(self):
+        enable_added = False
+
+        name = self.request.get("name", "").encode("ascii")
+        title = self.request.get("title", "").encode("ascii")            
+        description = self.request.get("description", "").encode("ascii")
+        version = self.request.get("version", "").encode("ascii")
+
+        if name or title or description or version:
+            #FIXME: verify unique name before insert a new release
+            #FIXME: get current UTC
+            #FIXME: What about figure out finally what to do with
+            #      components, sections ans so on ...
+            #FIXME: parentrelease hardcoded to "warty" 
+            self.results = Release(distribution=self.context.distribution.id,\
+                                   name=name, title=title, \
+                                   description=description,version=version,\
+                                   components=1, releasestate=1,sections=1,\
+                                   datereleased='2004-08-15 10:00', owner=1,
+                                   parentrelease=1)
+            #FIXME: verify the results 
+            enable_added = True
+        return enable_added
 
 class DistroReleaseSourcesView(object):
 
@@ -329,34 +391,7 @@ class DistroReleaseSourcesView(object):
             list = source_packages, start = start, size = batch_size)
         return BatchNavigator(batch = batch, request = self.request)
 
-class ReleasesAddView(object):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.results = []
-        self.enable_added = False
-
-        name = self.request.get("name", "").encode("ascii")
-        title = self.request.get("title", "").encode("ascii")
-        description = self.request.get("description", "").encode("ascii")
-        version = self.request.get("version", "").encode("ascii")
-
-        if name or title or description or version:
-            #FIXME: verify unique name before insert a new release
-            #FIXME: get current UTC
-            #FIXME: What about figure out finally what to do with
-            #      components, sections ans so on ...
-            #FIXME: parentrelease hardcoded to "warty"
-            self.results = Release(distribution=self.context.distribution.id,\
-                                   name=name, title=title, \
-                                   description=description,version=version,\
-                                   components=1, releasestate=1,sections=1,\
-                                   datereleased='2004-08-15 10:00', owner=1,
-                                   parentrelease=1)
-            #FIXME: verify the results
-            self.enable_added = True
-
+##FIXME insert especific method NOT IN INIT !!!!
 class ReleaseEditView(object):
 
     def __init__(self, context, request):
@@ -364,7 +399,7 @@ class ReleaseEditView(object):
         self.request = request
         self.results = []
         self.enable_edited = False
-
+        
         name = self.request.get("name", "").encode("ascii")
         title = self.request.get("title", "").encode("ascii")
         description = self.request.get("description", "").encode("ascii")

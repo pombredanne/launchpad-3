@@ -78,18 +78,6 @@
 	</td></tr>
 	</tal:block>
 
-
-	<tr><td>
-	<div class="field">
-	    <label>Email</label>
-	    <div class="formHelp">
-	    Enter the Email.
-            </div>
-	    <input type="text" name="email"
-	    tal:attributes="value context/email/email|nothing"/>
-	</div>
-	</td></tr>
-
 	<tr><td>
 	<div class="field">
 	    <label>Wiki</label>
@@ -161,6 +149,10 @@
 	PUB KEY IMPORT ENGINE ????
 	</td></tr>
 
+	<tr><td class="dummy">
+	MISSED EMAIL EDIT ENGINE
+	</td></tr>
+
 	<tr><td>
 	<div class="formControls">
 	  <input type="submit" value="Edit"/>
@@ -170,7 +162,7 @@
   </form>
   </div>
 
-  <tla:block tal:condition="view/enable_edited">
+  <tla:block tal:condition="view/edit_action">
   <div>
   <h4><a tal:attributes="href string:../${context/id}"
          tal:content="context/person/displayname">PERSON</a>
