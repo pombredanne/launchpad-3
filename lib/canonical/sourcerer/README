@@ -1,0 +1,30 @@
+Sourcerer
+---------
+
+	"There was a man and he had eight sons.  Apart from that, he
+	 was nothing more than a comma on the page on History.  It's
+	 sad, but that's all you can say about some people.
+	   But the eighth son grew up and married and had eight sons,
+	 and because there is only one suitable profession for the
+	 eighth son of an eighth son, he became a wizard.  And he
+	 became wise and powerful, or at any rate powerful, and wore a
+	 pointed hat and there it would have ended ...
+	   Should have ended ...
+	   But against the Lore of Magic and certainly against all
+	 reason -- except the reasons of the heart, which are warm and
+	 messy and, well, /unreasonable/ -- he fled the halls of magic
+	 and fell in love and got married, not necessarily in that
+	 order.
+	   And he had seven sons, each one from the cradle at least as
+	 powerful as any wizard in the world.
+	   And then he had an eighth son.
+	   A wizard squared.  A source of magic.
+	   A sourcerer."
+
+	   -- Terry Pratchett, Sourcery.
+
+
+This is the Debian-specific version of Sourcerer, it is only intended for use
+with Debian source packages.  The basic idea is to test out the general
+principles with some code we have an immediate use for and then merge in
+support for other package formats at a later stage.
