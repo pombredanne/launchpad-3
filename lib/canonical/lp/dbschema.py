@@ -43,8 +43,6 @@ __all__ = (
 'ImportTestStatus',
 'KarmaField',
 'ManifestEntryType',
-'TeamMembershipRole',
-'TeamMembershipStatus',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'Packaging',
@@ -58,6 +56,8 @@ __all__ = (
 'SourcePackageRelationships',
 'SourcePackageUrgency',
 'SSHKeyType',
+'TeamMembershipStatus',
+'TeamSubscriptionPolicy',
 'TranslationPriority',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
@@ -515,37 +515,12 @@ class EmailAddressStatus(DBSchema):
         receiving notifications from Launchpad.
         """)
 
-class TeamMembershipRole(DBSchema):
-    """TeamMembership Role
-
-    Launchpad knows about teams and individuals. People can be a member
-    of many teams, and in each team that they are a member they will
-    have a specific role. These are the kind of roles they could have.
-    """
-
-    ADMIN = Item(1, """
-        Administrator
-
-        The person is an administrator of this team. Typically that means
-        that they can do anything that the owner of the team can do, it is
-        a way for the owner to delegate authority in the team.
-        """)
-
-    MEMBER = Item(2, """
-        Member
-
-        The person is a normal member of the team, and can view and edit
-        objects associated with that team accordingly.
-        """)
-
 class TeamMembershipStatus(DBSchema):
     """TeamMembership Status
 
-    Some teams to not have automatic membership to anybody who wishes to
-    join. In this case, a person can be proposed for membership, and the
-    request can be approved or declined. The status of a membership can
-    be one of these values. The Person.teamowner is always an admin
-    member of the team, they do not need to have a membership record.
+    According to the policies specified by each team, the membership status of
+    a given member can be one of multiple different statuses. More information
+    can be found in the TeamMembership spec.
     """
 
     PROPOSED = Item(1, """
@@ -556,12 +531,68 @@ class TeamMembershipStatus(DBSchema):
         privileges to the person.
         """)
 
-    CURRENT = Item(2, """
-        Current Member
+    APPROVED = Item(2, """
+        Approved Member
 
         This person is currently a member of the team. This status means
-        that the person will have full access as a member or admin, depending
-        on their role.
+        that the person will have full access as a member of the team.
+        """)
+
+    ADMIN = Item(3, """
+        Current Member
+
+        This person is currently an administrator of the team. This status 
+        means that the person will have full access as an administrator of 
+        the team.
+        """)
+
+    DEACTIVATED = Item(4, """
+        Deactivated Member
+
+        Either the member or any of the team's administrators have canceled
+        this subscription.
+        """)
+
+    EXPIRED = Item(5, """
+        Expired Member
+        
+        The period for which this subscription was valid has expired.
+        """)
+
+    DECLINED = Item(6, """
+        Declined Member
+
+        User was proposed as a member but the subscription was not approved.
+        """)
+
+
+class TeamSubscriptionPolicy(DBSchema):
+    """Team Subscription Policies
+
+    The policies that apply to a team and specify how new subscriptions must
+    be handled. More information can be found in the TeamMembershipPolicies
+    spec.
+    """
+
+    MODERATED = Item(1, """
+        Moderated Team
+
+        All subscriptions for this team are subjected to approval by one of
+        the team's administrators.
+        """)
+
+    OPEN = Item(2, """
+        Open Team
+
+        This team is 'Free for All', which means that anyone can join and
+        new subscriptions are not subjected to approval.
+        """)
+
+    RESTRICTED = Item(3, """
+        Restricted Team
+
+        New members can only be added by one of the team's administrators.
+        Users cannot ask to join the team.
         """)
 
 

@@ -144,7 +144,7 @@
         <table>
           <tr tal:repeat="membership context/memberships">
             <td>
-              <span tal:replace="membership/rolename"></span> of 
+              <span tal:replace="membership/statusname"></span> of 
               <a tal:attributes="href string:../${membership/team/name}"
                  tal:content="membership/team/displayname">foo</a>
             </td>

@@ -6,7 +6,7 @@ from canonical.database.sqlbase import quote, flushUpdates
 
 # lp imports
 from canonical.lp.dbschema import EmailAddressStatus, SSHKeyType
-from canonical.lp.dbschema import LoginTokenType, TeamMembershipRole
+from canonical.lp.dbschema import LoginTokenType
 from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
@@ -172,6 +172,9 @@ class TeamView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+
+    def allMembersCount(self):
+        return len(self.context.approvedmembers + self.context.administrators)
 
 
 class PersonEditView(object):
@@ -497,8 +500,7 @@ class TeamMembersEditView:
 
     def authorizeProposed(self, personID, team):
         membership = self._getMembership(personID, team.id)
-        membership.status = int(TeamMembershipStatus.CURRENT)
-        membership.role = int(TeamMembershipRole.MEMBER)
+        membership.status = int(TeamMembershipStatus.APPROVED)
 
     def removeMember(self, personID, team):
         if personID == team.teamowner.id:
@@ -513,7 +515,7 @@ class TeamMembersEditView:
 
     def giveAdminRole(self, personID, team):
         membership = self._getMembership(personID, team.id)
-        membership.role = int(TeamMembershipRole.ADMIN)
+        membership.status = int(TeamMembershipStatus.ADMIN)
 
     def revokeAdminiRole(self, personID, team):
         membership = self._getMembership(personID, team.id)

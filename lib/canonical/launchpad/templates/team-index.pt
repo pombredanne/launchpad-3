@@ -47,7 +47,7 @@
 
           <tr>
             <td>Members:</td>
-            <td tal:content="python: len(context.currentmembers)">123</td>
+            <td tal:content="view/allMembersCount">123</td>
           </tr>
 
           <tr tal:condition="context/preferredemail">

@@ -36,7 +36,7 @@ from canonical.launchpad.database.pofile import POTemplate
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.lp.dbschema import KarmaField
 from canonical.lp.dbschema import EmailAddressStatus
-from canonical.lp.dbschema import TeamMembershipRole
+from canonical.lp.dbschema import TeamSubscriptionPolicy
 from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.lp.dbschema import GPGKeyAlgorithms
 from canonical.foaf import nickname
@@ -61,6 +61,12 @@ class Person(SQLBase):
 
     karma = IntCol(dbName='karma', default=0)
     karmatimestamp = DateTimeCol(dbName='karmatimestamp', default=UTC_NOW)
+
+    subscriptionpolicy = IntCol(dbName='subscriptionpolicy', 
+                                default=int(TeamSubscriptionPolicy.MODERATED))
+    defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
+    defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
+                                     default=None)
 
     # RelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = RelatedJoin('Language', joinColumn='person', 
@@ -236,21 +242,29 @@ class Person(SQLBase):
     # Properties
     #
 
-    def _currentmembers(self): 
-        return self._getMembersByStatus(int(TeamMembershipStatus.CURRENT))
-    currentmembers = property(_currentmembers)
+    def _deactivatedmembers(self): 
+        return self._getMembersByStatus(int(TeamMembershipStatus.DEACTIVATED))
+    deactivatedmembers = property(_deactivatedmembers)
+
+    def _expiredmembers(self): 
+        return self._getMembersByStatus(int(TeamMembershipStatus.EXPIRED))
+    expiredmembers = property(_expiredmembers)
+
+    def _declinedmembers(self): 
+        return self._getMembersByStatus(int(TeamMembershipStatus.DECLINED))
+    declinedmembers = property(_declinedmembers)
 
     def _proposedmembers(self):
         return self._getMembersByStatus(int(TeamMembershipStatus.PROPOSED))
     proposedmembers = property(_proposedmembers)
 
     def _administrators(self):
-        return self._getMembersByRole(int(TeamMembershipRole.ADMIN))
+        return self._getMembersByStatus(int(TeamMembershipStatus.ADMIN))
     administrators = property(_administrators)
 
-    def _members(self):
-        return self._getMembersByRole(int(TeamMembershipRole.MEMBER))
-    members = property(_members)
+    def _approvedmembers(self):
+        return self._getMembersByStatus(int(TeamMembershipStatus.APPROVED))
+    approvedmembers = property(_approvedmembers)
 
     def _memberships(self):
         return TeamMembership.selectBy(personID=self.id)
@@ -592,17 +606,14 @@ class TeamMembership(SQLBase):
 
     _table = 'TeamMembership'
 
-    team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
+    team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    role = IntCol(dbName='role', notNull=True)
+    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
     status = IntCol(dbName='status', notNull=True)
-
-    def _rolename(self):
-        for roleitem in TeamMembershipRole.items:
-            if roleitem.value == self.role:
-                return roleitem.title
-        return 'Unknown (%d)' % self.role
-    rolename = property(_rolename)
+    datejoined = DateTimeCol(dbName='datejoined', default=datetime.utcnow(),
+                             notNull=True)
+    dateexpires = DateTimeCol(dbName='dateexpires', default=None)
+    reviewercomment = StringCol(dbName='reviewercomment', default=None)
 
     def _statusname(self):
         for statusitem in TeamMembershipStatus.items:

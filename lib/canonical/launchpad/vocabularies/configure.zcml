@@ -41,6 +41,11 @@
         />
 
     <vocabulary
+        name="TeamSubscriptionPolicy"
+        factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
+        />
+
+    <vocabulary
         name="ValidOwner"
         factory="canonical.launchpad.vocabularies.ValidOwnerVocabulary"
         />
