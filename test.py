@@ -20,7 +20,7 @@ $Id: test.py 25177 2004-06-02 13:17:31Z jim $
 import sys, os
 
 here = os.path.dirname(os.path.realpath(__file__))
-sys.path.append(os.path.join(here, 'src'))
+sys.path.append(os.path.join(here, 'lib'))
 
 import zope.app.tests.test
 
