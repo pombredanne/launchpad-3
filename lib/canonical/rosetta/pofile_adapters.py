@@ -194,7 +194,7 @@ class MessageProxy(POMessage):
     msgstrPlurals = property(_get_msgstrPlurals, _set_msgstrPlurals)
 
     def _get_commentText(self):
-        if self._msgset.commentText is None:
+        if not self._msgset.commentText:
             return None
         return self._msgset.commentText + '\n'
     def _set_commentText(self, value):
@@ -204,7 +204,7 @@ class MessageProxy(POMessage):
     commentText = property(_get_commentText, _set_commentText)
 
     def _get_sourceComment(self):
-        if self._master_msgset.sourceComment is None:
+        if not self._master_msgset.sourceComment:
             return None
         return self._master_msgset.sourceComment + '\n'
     def _set_sourceComment(self, value):
