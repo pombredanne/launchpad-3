@@ -3,84 +3,18 @@ from datetime import datetime
 
 # Zope imports
 from zope.interface import implements
-from zope.component import getUtility
 
-# SQLObject/SQLBase
-from sqlobject import StringCol, ForeignKey, IntCol
-
-from canonical.database.sqlbase import SQLBase
+# LP imports
 from canonical.lp import dbschema
 
 # interfaces and database 
-from canonical.launchpad.interfaces import IDistributionRole
-from canonical.launchpad.interfaces import IDistroReleaseRole
-from canonical.launchpad.interfaces import IDistroArchRelease
 from canonical.launchpad.interfaces import IDistroTools
-from canonical.launchpad.interfaces import IBinaryPackageUtility
 
 from canonical.launchpad.database.distribution import Distribution
 
-class DistributionRole(SQLBase):
-
-    implements(IDistributionRole)
-
-    _table = 'DistributionRole'
-    _columns = [
-        ForeignKey(name='person', dbName='person', foreignKey='Person',
-                   notNull=True),
-        ForeignKey(name='distribution', dbName='distribution',
-                   foreignKey='Distribution', notNull=True),
-        IntCol('role', dbName='role')
-        ]
-
-    def _rolename(self):
-        for role in dbschema.DistributionRole.items:
-            if role.value == self.role:
-                return role.title
-        return 'Unknown (%d)' %self.role
-    
-    rolename = property(_rolename)
-        
-
-class DistroReleaseRole(SQLBase):
-
-    implements(IDistroReleaseRole)
-
-    _table = 'DistroReleaseRole'
-    _columns = [
-        ForeignKey(name='person', dbName='person', foreignKey='Person',
-                   notNull=True),
-        ForeignKey(name='distrorelease', dbName='distrorelease',
-                   foreignKey='DistroRelease',
-                   notNull=True),
-        IntCol('role', dbName='role')
-        ]
-
-    def _rolename(self):
-        for role in dbschema.DistroReleaseRole.items:
-            if role.value == self.role:
-                return role.title
-        return 'Unknown (%d)' %self.role
-
-    rolename = property(_rolename)
-
-class Component(SQLBase):
-    """  Component table SQLObject """
-
-    _table = 'Component'
-
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-        ]
-
-class Section(SQLBase):
-    """  Section table SQLObject """
-
-    _table = 'Section'
-
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-        ]
+#
+#
+#
 
 class DistroTools(object):
     """Tools for help Distribution and DistroRelase Manipulation """

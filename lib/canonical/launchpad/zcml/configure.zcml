@@ -70,7 +70,10 @@
     <include file="teammembership.zcml" />
     <include file="teamparticipation.zcml" />
     <include file="wikiname.zcml" />
-
+    <include file="component.zcml" />
+    <include file="section.zcml" />
+    <include file="distributionrole.zcml" />
+    <include file="distroreleaserole.zcml" />
 
     <include file="fields.zcml" />
     <include file="resources.zcml" />
@@ -83,6 +86,6 @@
 
     <!-- Special Utilities -->
     <include file="geoip.zcml" />
-
+    <include file="distrotool.zcml" />
 
 </configure>

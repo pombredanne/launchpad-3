@@ -2,6 +2,77 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-14 15:56:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1429
+
+    Summary:
+      Got away with soyuz.py from database, interfaces and browser, and distroarchrelease.zcml clean up.
+    Revision:
+      launchpad--devel--0--patch-1429
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-464
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-465
+       Got away with soyuz.py from database, interfaces and browser, and distroarchrelease.zcml clean up.
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/role.py.id
+     lib/canonical/launchpad/browser/role.py
+     lib/canonical/launchpad/database/.arch-ids/component.py.id
+     lib/canonical/launchpad/database/.arch-ids/distributionrole.py.id
+     lib/canonical/launchpad/database/.arch-ids/distroreleaserole.py.id
+     lib/canonical/launchpad/database/.arch-ids/distrotool.py.id
+     lib/canonical/launchpad/database/.arch-ids/section.py.id
+     lib/canonical/launchpad/database/component.py
+     lib/canonical/launchpad/database/distributionrole.py
+     lib/canonical/launchpad/database/distroreleaserole.py
+     lib/canonical/launchpad/database/distrotool.py
+     lib/canonical/launchpad/database/section.py
+     lib/canonical/launchpad/interfaces/.arch-ids/component.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/distributionrole.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/distroreleaserole.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/distrotool.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/section.py.id
+     lib/canonical/launchpad/interfaces/component.py
+     lib/canonical/launchpad/interfaces/distributionrole.py
+     lib/canonical/launchpad/interfaces/distroreleaserole.py
+     lib/canonical/launchpad/interfaces/distrotool.py
+     lib/canonical/launchpad/interfaces/section.py
+     lib/canonical/launchpad/zcml/.arch-ids/component.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/distributionrole.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/distroreleaserole.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/distrotool.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/section.zcml.id
+     lib/canonical/launchpad/zcml/component.zcml
+     lib/canonical/launchpad/zcml/distributionrole.zcml
+     lib/canonical/launchpad/zcml/distroreleaserole.zcml
+     lib/canonical/launchpad/zcml/distrotool.zcml
+     lib/canonical/launchpad/zcml/section.zcml
+
+    removed files:
+     lib/canonical/launchpad/database/.arch-ids/soyuz.py.id
+     lib/canonical/launchpad/database/soyuz.py
+     lib/canonical/launchpad/interfaces/.arch-ids/soyuz.py.id
+     lib/canonical/launchpad/interfaces/soyuz.py
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distribution.py
+     lib/canonical/launchpad/browser/soyuz.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/distroarchrelease.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-464
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-465
+
+
 2005-03-14 14:41:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1428
 
     Summary:

@@ -2,21 +2,18 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
 from zope.component import getUtility
-from zope.schema import TextLine, Int, Choice
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
 from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form import CustomWidgetFactory
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.event.objectevent import ObjectCreatedEvent
 import zope.security.interfaces
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.database import Distribution, DistributionSet, \
-    BugFactory
+from canonical.launchpad.database import Distribution, BugFactory
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
@@ -162,3 +159,101 @@ class DistributionSetSearchView:
 
     def count(self):
         return 3
+
+class DistrosSearchView(object):
+    """
+    DistroSearchView:
+    This Views able the user to search on all distributions hosted on
+    Soyuz by Name Distribution Title (Dispalyed name),  
+    """
+    # TODO: (class+doc) cprov 20041003
+    # This is the EpyDoc Class Document Format,
+    # Does it fits our expectations ? (except the poor content)
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+
+    def search_action(self):
+        name = self.request.get("name", "")
+        title = self.request.get("title", "")
+        description = self.request.get("description", "")
+
+        if not (name or title or description):
+            return False
+
+        name = name.replace('%', '%%')
+        title = title.replace('%', '%%')
+        description = description.replace('%', '%%')
+
+        name_like = LIKE(Distribution.q.name, "%%" + name + "%%")
+        title_like = LIKE(Distribution.q.title, "%%" + title + "%%")
+        description_like = LIKE(Distribution.q.description,
+                                "%%" + description + "%%")
+        query = AND(name_like, title_like, description_like) 
+
+##XXX: (case+insensitive) cprov 20041003
+## Performe case insensitive queries using ILIKE doesn't work
+## properly, since we don't have ILIKE method on SQLObject
+## ===============================================================            
+#            name_like = ("name ILIKE %s" % "%%" + name + "%%")
+#            title_like = ("title ILIKE %s" % "%%" + title + "%%")
+#            description_like = ("description ILIKE %s" % "%%"\
+#                                + description + "%%")
+#=================================================================
+
+        self.results = Distribution.select(query)
+        self.entries = self.results.count()
+        return True
+
+class DistrosAddView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def add_action(self):
+        name = self.request.get("name", "")
+        displayname = self.request.get("displayname", "")
+        title = self.request.get("title", "")
+        summary = self.request.get("summary", "")
+        description = self.request.get("description", "")
+        domain = self.request.get("domain", "")
+        person = IPerson(self.request.principal, None)
+
+        
+        if not person:
+            return False
+        
+        if not title:
+            return False
+
+        dt = getUtility(IDistroTools)
+        res = dt.createDistro(person.id, name, displayname,
+            title, summary, description, domain)
+        self.results = res
+        return res
+
+class DistrosEditView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def edit_action(self):
+        name = self.request.get("name", "")
+        title = self.request.get("title", "")
+        domainname = self.request.get("domainname", "")
+        description = self.request.get("description", "")
+
+        if not (name or title or description):
+            return False
+
+        ##XXX: (uniques) cprov 20041003
+        ## again :)
+        self.context.distribution.name = name
+        self.context.distribution.title = title
+        self.context.distribution.domainname = domainname
+        self.context.distribution.description = description
+        return True
+

@@ -30,8 +30,8 @@ from canonical.launchpad.interfaces import ISourcePackageSet, IEmailAddressSet
 from canonical.launchpad.interfaces import ICodeOfConductConf
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
-from canonical.launchpad.database.soyuz import DistributionRole
-from canonical.launchpad.database.soyuz import DistroReleaseRole
+from canonical.launchpad.database.distributionrole import DistributionRole
+from canonical.launchpad.database.distroreleaserole import DistroReleaseRole
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct

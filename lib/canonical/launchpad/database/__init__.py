@@ -59,8 +59,10 @@ from canonical.launchpad.database.country import *
 from canonical.launchpad.database.spokenin import *
 from canonical.launchpad.database.logintoken import *
 from canonical.launchpad.database.codeofconduct import *
+from canonical.launchpad.database.distributionrole import *
+from canonical.launchpad.database.distrotool import *
+from canonical.launchpad.database.distroreleaserole import *
+from canonical.launchpad.database.component import *
+from canonical.launchpad.database.section import *
 
-# XXX old style file with all the Soyuz classes in it that still need to br
-# broken out.
-from canonical.launchpad.database.soyuz import *
 
