@@ -2,6 +2,96 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-31 08:50:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1527
+
+    Summary:
+      revamp rosetta url schema, traversals and template listings
+    Revision:
+      launchpad--devel--0--patch-1527
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-887
+       initial cut of upstream translations with new POTemplateLinkages
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-888
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-889
+       new traversal system
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-890
+       further url tweaks
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-891
+       add page tests for +translations pages
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-892
+       polish template comments
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-893
+       merge rocketfuel, resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-894
+       merge rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-productrelease-list.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-sourcepackage-list.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-productrelease-list.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-sourcepackage-list.txt
+     lib/canonical/launchpad/templates/.arch-ids/object-pots.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-productrelease-details.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-productset-details.pt.id
+     lib/canonical/launchpad/templates/object-pots.pt
+     lib/canonical/launchpad/templates/portlet-productrelease-details.pt
+     lib/canonical/launchpad/templates/portlet-productset-details.pt
+
+    removed files:
+     lib/canonical/launchpad/templates/.arch-ids/distrorelease-translations.pt.id
+     lib/canonical/launchpad/templates/distrorelease-translations.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/browser/potemplate.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productrelease.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/distrorelease.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/productrelease.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-distrorelease-list.txt
+     lib/canonical/launchpad/templates/portlet-product-translations.pt
+     lib/canonical/launchpad/templates/potemplatesubset-index.pt
+     lib/canonical/launchpad/templates/product-translations.pt
+     lib/canonical/launchpad/templates/products-index.pt
+     lib/canonical/launchpad/templates/rosetta-index.pt
+     lib/canonical/launchpad/zcml/distrorelease.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/launchpad/zcml/productrelease.zcml
+     lib/canonical/launchpad/zcml/sourcepackage.zcml
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-887
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-888
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-889
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-890
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-891
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-892
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-893
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-894
+
+
 2005-03-30 23:12:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1526
 
     Summary:

@@ -15,6 +15,10 @@ class ISourcePackage(Interface):
 
     maintainer = Attribute("Maintainer")
 
+    name = Attribute("The text name of this source package, from "
+                     "SourcePackageName.")
+
+    displayname = Attribute("A displayname, constructed, for this package")
     title = Attribute("Title")
 
     shortdesc = Attribute("Summary")
@@ -39,9 +43,6 @@ class ISourcePackage(Interface):
 
     sourcepackagename = Attribute("SourcePackageName")
 
-    name = Attribute("The text name of this source package, from "
-                     "SourcePackageName.")
-
     bugtasks = Attribute("Bug Tasks that reference this Source Package name "
                     "in the context of this distribution.")
 
@@ -59,6 +60,13 @@ class ISourcePackage(Interface):
         of a source package with this name in the distribution or
         distrorelease, or None if no source package with that name is
         published in this distrorelease.""")
+
+    def potemplates():
+        """Returns the set of POTemplates that exist for this
+        distrorelease/sourcepackagename combination."""
+
+    potemplatecount = Attribute("The number of POTemplates for this "
+                        "SourcePackage.")
 
     def bugsCounter():
         """A bug counter widget for sourcepackage. This finds the number of

@@ -19,9 +19,13 @@ from canonical.lp import dbschema
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.database.sqlbase import quote
+
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      MilestoneVocabulary
+
+from canonical.rosetta.browser import request_languages, TemplateLanguages
+
 from canonical.launchpad.database import Product, ProductSeriesSet, \
      BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
@@ -271,6 +275,60 @@ class ProductBugsView:
         return dbschema.BugTaskStatus.items
 
 
+class ProductTranslationView:
+    # XXX sabdfl 17/03/05 please merge this with ProductView.
+    summaryPortlet = ViewPageTemplateFile(
+        '../templates/portlet-object-summary.pt')
+
+    branchesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-branches.pt')
+
+    detailsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-details.pt')
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-actions.pt')
+
+    projectPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-project.pt')
+
+    prefLangsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-pref-langs.pt')
+
+    statusLegend = ViewPageTemplateFile(
+        '../templates/portlet-rosetta-status-legend.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = self.request.form
+        # List of languages the user is interested on based on their browser,
+        # IP address and launchpad preferences.
+        self.languages = request_languages(self.request)
+        # Cache value for the return value of self.templates
+        self._template_languages = None
+        # List of the templates we have in this subset.
+        self._templates = self.context.potemplates()
+        self.status_message = None
+        # Whether there is more than one PO template.
+        self.has_multiple_templates = len(self._templates) > 1
+
+    def projproducts(self):
+        """Return a list of other products from the same project as this
+        product, excluding this product"""
+        if self.context.project is None:
+            return []
+        return [p for p in self.context.project.products \
+                    if p.id <> self.context.id]
+
+    def templates(self):
+        if self._template_languages is None:
+            self._template_languages = [TemplateLanguages(template, self.languages)
+                               for template in self._templates]
+
+        return self._template_languages
+
+
 class ProductFileBugView(AddView):
 
     __used_for__ = IProduct
@@ -306,6 +364,9 @@ class ProductFileBugView(AddView):
 class ProductSetView:
 
     __used_for__ = IProductSet
+
+    detailsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-productset-details.pt')
 
     def __init__(self, context, request):
 

@@ -406,84 +406,30 @@ class RosettaApplicationView(object):
     def browserLanguages(self):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
 
-class ProductView:
-    # XXX sabdfl 17/03/05 please merge this with the browser/product.py
-    # ProductView.
-    summaryPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-object-summary.pt')
-
-    branchesPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-product-branches.pt')
-
-    detailsPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-product-details.pt')
-
-    actionsPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-product-actions.pt')
-
-    projectPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-product-project.pt')
-
-    prefLangsPortlet = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-pref-langs.pt')
-
-    statusLegend = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-rosetta-status-legend.pt')
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form = self.request.form
-        # List of languages the user is interested on based on their browser,
-        # IP address and launchpad preferences.
-        self.languages = request_languages(self.request)
-        # Cache value for the return value of self.templates
-        self._template_languages = None
-        # List of the templates we have in this subset.
-        self._templates = self.context.potemplates()
-        self.status_message = None
-        # Whether there is more than one PO template.
-        self.has_multiple_templates = len(self._templates) > 1
-
-    def projproducts(self):
-        """Return a list of other products from the same project as this
-        product, excluding this product"""
-        if self.context.project is None:
-            return []
-        return [p for p in self.context.project.products \
-                    if p.id <> self.context.id]
-
-    def templates(self):
-        if self._template_languages is None:
-            self._template_languages = [TemplateLanguages(template, self.languages)
-                               for template in self._templates]
-
-        return self._template_languages
-
-
 class TemplateLanguages:
     """Support class for ProductView."""
 
-    def __init__(self, template, languages, baseurl=''):
+    def __init__(self, template, languages, relativeurl=''):
         self.template = template
         self.name = template.potemplatename.name
         self.title = template.title
+        self.description = template.description
         self._languages = languages
-        self.baseurl = baseurl
+        self.relativeurl = relativeurl
 
     def languages(self):
         for language in self._languages:
-            yield TemplateLanguage(self.template, language, self.baseurl)
+            yield TemplateLanguage(self.template, language, self.relativeurl)
 
 
 class TemplateLanguage:
     """Support class for ProductView."""
 
-    def __init__(self, template, language, baseurl=''):
+    def __init__(self, template, language, relativeurl=''):
         self.name = language.englishname
         self.code = language.code
         self.translateURL = '+translate?languages=' + self.code
-        self.baseurl = baseurl
+        self.relativeurl = relativeurl
 
         poFile = template.queryPOFileByLang(language.code)
 

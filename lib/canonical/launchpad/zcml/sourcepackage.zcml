@@ -35,6 +35,10 @@
             name="+changelog"
             template="../templates/sourcepackage-changelog.pt"
             lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+changelog" />
+        <browser:page
+            name="+translations"
+            template="../templates/object-pots.pt"
+            lp:url="/distros/ubuntu/hoary/+sources/mozilla-firefox/+translations" />
     </browser:pages>
 
     <browser:pages

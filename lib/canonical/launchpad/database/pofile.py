@@ -259,6 +259,19 @@ class POTemplateSubset:
         else:
             return res[0]
 
+    def title(self):
+        titlestr = ''
+        if self.distrorelease:
+            titlestr += ' ' + self.distrorelease.displayname
+        if self.sourcepackagename:
+            titlestr += ' ' + self.sourcepackagename.name
+        if self.productrelease:
+            titlestr += ' '
+            titlestr += self.productrelease.productseries.product.displayname
+            titlestr += ' ' + self.productrelease.version
+        return titlestr
+    title = property(title)
+
     def new(self, potemplatename, title, contents, owner):
         if self.sourcepackagename is not None:
             sourcepackagename_id = self.sourcepackagename.id
@@ -387,16 +400,8 @@ class POTemplate(SQLBase, RosettaStats):
     languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
     filename = StringCol(dbName='filename', notNull=False, default=None)
 
+    # joins
     poFiles = MultipleJoin('POFile', joinColumn='potemplate')
-
-
-    def currentMessageSets(self):
-        return POTMsgSet.select(
-            '''
-            POTMsgSet.potemplate = %d AND
-            POTMsgSet.sequence > 0
-            '''
-            % self.id, orderBy='sequence')
 
     def __len__(self):
         '''Return the number of CURRENT POTMsgSets in this POTemplate.'''
@@ -404,6 +409,14 @@ class POTemplate(SQLBase, RosettaStats):
 
     def __iter__(self):
             return iter(self.currentMessageSets())
+
+    def __getitem__(self, key):
+        return self.messageSet(key, onlyCurrent=True)
+
+    # properties
+    def name(self):
+        return self.potemplatename.name
+    name = property(name)
 
     def messageSet(self, key, onlyCurrent=False):
         query = '''potemplate = %d''' % self.id
@@ -436,8 +449,13 @@ class POTemplate(SQLBase, RosettaStats):
 
             return results[0]
 
-    def __getitem__(self, key):
-        return self.messageSet(key, onlyCurrent=True)
+    def currentMessageSets(self):
+        return POTMsgSet.select(
+            '''
+            POTMsgSet.potemplate = %d AND
+            POTMsgSet.sequence > 0
+            '''
+            % self.id, orderBy='sequence')
 
     def filterMessageSets(self, current, translated, languages, slice = None):
         '''
@@ -538,9 +556,9 @@ class POTemplate(SQLBase, RosettaStats):
         ignored, if we have three variants for en_GB we will simply
         return the one with variant=NULL.'''
 
-        return Language.select("POFile.language = Language.id AND"
-                               " POFile.potemplate = %d AND"
-                               " POFile.variant IS NULL" % self.id,
+        return Language.select("POFile.language = Language.id AND "
+                               "POFile.potemplate = %d AND "
+                               "POFile.variant IS NULL" % self.id,
                                clauseTables=('POFile', 'Language'),
                                distinct=True
                                )

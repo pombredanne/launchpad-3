@@ -62,7 +62,13 @@ class POTemplateSubsetView(object):
 
     def isDistroReleaseSubset(self):
         return (self.context.distrorelease is not None and
-            self.context.sourcepackagename is None)
+                self.context.sourcepackagename is None)
+
+    def isSourcePackageSubset(self):
+        return self.context.sourcepackagename is not None
+
+    def isProductReleaseSubset(self):
+        return self.context.productrelease is not None
 
     def presentDistroReleasePOTemplate(self, template):
         '''Convert a PO template linked to a distribution to a dictionary.

@@ -1,6 +1,8 @@
-<div class="portlet">
+<div class="portlet"
+     tal:define="translatable context/primary_translatable"
+     tal:condition="translatable">
 
-    <h4>Rosetta Translations:</h4>
+    <h4>Translation Sets:</h4>
 
     <div class="portletBody">
 
@@ -8,10 +10,10 @@
 
         <table class="rowNavigation" border="0">
 
-            <tr tal:repeat="template context/potemplates"
+            <tr tal:repeat="template translatable/potemplates"
 
                 tal:attributes="onclick
-                string:window.location='/rosetta/products/${context/name}/${template/name}';">
+                string:window.location='/products/${context/name}/${translatable/version}/+pot/${template/name}';">
                 <td tal:content="template/title">template title</td>
             </tr>
 
@@ -19,7 +21,7 @@
 
         <a tal:attributes="href string:/rosetta/products/${context/name}"
             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-            title="See all translations for this product">
+            title="See more translation options for this product">
             <img src="/++resource++add.gif" alt="+" />
             More...
         </a><br />

@@ -46,6 +46,8 @@ class IDistroRelease(IHasOwner):
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
+    potemplates = Attribute("The set of potemplates in the release")
+    potemplatecount = Attribute("The number of potemplates for this release")
     architectures = Attribute("The Architecture-specific Releases")
 
     def architecturecount():

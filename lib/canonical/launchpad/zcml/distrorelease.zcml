@@ -58,12 +58,12 @@
 	    <browser:page
 	        name="+bugs"
             template="../templates/distrorelease-bugs.pt"
-	        lp:url="Soyuz/distros/$Distribution.name/$Release.name/+bugs"
+	        lp:url="/distros/$Distribution.name/$Release.name/+bugs"
 	        />
 	    <browser:page
             name="+translations"
-            template="../templates/distrorelease-translations.pt"
-	        lp:url="Soyuz/distros/$Distribution.name/$Release.name/+translations"
+            template="../templates/object-pots.pt"
+	        lp:url="/distros/ubuntu/hoary/+translations"
 	        />
     </browser:pages>
 

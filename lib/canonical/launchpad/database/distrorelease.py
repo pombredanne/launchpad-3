@@ -27,6 +27,8 @@ from canonical.launchpad.database import SourcePackageInDistro, \
     SourcePackageSet, PublishedPackageSet, PackagePublishing
 
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
+# sabdfl 30/03/05 grrr.... this should be in its own file, please fix it
+from canonical.launchpad.database.pofile import POTemplate
 
 class DistroRelease(SQLBase):
     """A particular release of a distribution."""
@@ -96,6 +98,14 @@ class DistroRelease(SQLBase):
     def architecturecount(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
         return len(list(self.architectures))
+
+    def potemplates(self):
+        return POTemplate.selectBy(distroreleaseID=self.id)
+    potemplates = property(potemplates)
+
+    def potemplatecount(self):
+        return self.potemplates.count()
+    potemplatecount = property(potemplatecount)
 
     def getBugSourcePackages(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""

@@ -1,0 +1,26 @@
+<div class="portlet">
+
+    <h4 tal:content="context/title">launchpad products:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <ul>
+            <li><span tal:replace="context/count_all">5</span> 
+            registered</li>
+
+            <li><span tal:replace="context/count_translatable">5</span> 
+            with translations</li>
+
+            <li><span tal:replace="context/count_buggy">5</span> 
+            with bugs filed</li>
+
+            <li><span tal:replace="context/count_bounties">5</span> 
+            with bounties</li>
+
+            <li><span tal:replace="context/count_reviewed">5</span> 
+            reviewed</li>
+
+        </div>
+    </div>
+</div>

@@ -18,12 +18,12 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import IPerson,\
                                            IPersonSet, \
-                                           IDistroTools, \
-                                           ILaunchBag
+                                           IDistroTools
 from canonical.launchpad.database import IPOTemplateSet
 
 # depending on apps
 from canonical.soyuz.generalapp import builddepsSet
+from canonical.rosetta.browser import request_languages, TemplateLanguages
 
 BATCH_SIZE = 40
 
@@ -44,7 +44,7 @@ def linkify_changelog(changelog, sourcepkgnametxt):
     return changelog
 
 def traverseSourcePackage(sourcepackage, request, name):
-    if name == '+rosetta':
+    if name in ['+rosetta', '+pots']:
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(
                    distrorelease=sourcepackage.distrorelease,
@@ -53,6 +53,7 @@ def traverseSourcePackage(sourcepackage, request, name):
         raise KeyError, 'No such suburl for Source Package: %s' % name
 
 class SourcePackageReleasePublishingView(object):
+
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-sourcepackagerelease-actions.pt')
 
@@ -65,7 +66,6 @@ class SourcePackageReleasePublishingView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.bag = getUtility(ILaunchBag)
 
     def builddepends(self):
         if not self.context.builddepends:
@@ -106,7 +106,7 @@ class SourcePackageReleasePublishingView(object):
         """Format binary packeges into binarypackagename and archtags"""
 
         all_arch = [] # all archtag in this distrorelease
-        for arch in self.bag.distrorelease.architectures:
+        for arch in self.context.distrorelease.architectures:
             all_arch.append(arch.architecturetag)
         all_arch.sort()
 
@@ -135,8 +135,6 @@ class SourcePackageInDistroSetView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.bag = getUtility(ILaunchBag)
-
         self.fti = self.request.get("fti", "")
 
     def sourcePackagesBatchNavigator(self):
@@ -161,9 +159,21 @@ class SourcePackageInDistroSetView(object):
 
 
 class SourcePackageView:
+
+    statusLegend = ViewPageTemplateFile(
+        '../templates/portlet-rosetta-status-legend.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        # List of languages the user is interested on based on their browser,
+        # IP address and launchpad preferences.
+        self.languages = request_languages(self.request)
+        # Cache value for the return value of self.templates
+        self._template_languages = None
+        # List of the templates we have in this subset.
+        self._templates = self.context.potemplates
+        self.status_message = None
 
     def binaries(self):
         """Format binary packeges into binarypackagename and archtags"""
@@ -216,6 +226,20 @@ class SourcePackageView:
 
     def linkified_changelog(self):
         return linkify_changelog(self.context.changelog, self.context.sourcepackagename.name)
+
+    def potemplates(self):
+        if self._template_languages is None:
+            self._template_languages = [
+                    TemplateLanguages(template,
+                                      self.languages,
+                                      relativeurl='+pots/'+template.name)
+                               for template in self._templates]
+
+        return self._template_languages
+
+
+
+
 
 class SourcePackageBugsView:
 

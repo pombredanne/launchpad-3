@@ -6,6 +6,7 @@ import os
 
 from sets import Set
 from datetime import datetime
+from warnings import warn
 
 from zope.interface import implements
 from zope.exceptions import NotFoundError
@@ -112,6 +113,18 @@ class Product(SQLBase):
                     for r in ret]
     sourcepackages = property(sourcepackages)
 
+    def primary_translatable(self):
+        releases = ProductRelease.select(
+                        "POTemplate.productrelease=ProductRelease.id AND "
+                        "ProductRelease.productseries=ProductSeries.id AND "
+                        "ProductSeries.product=%d" % self.id,
+                        clauseTables=['POTemplate', 'ProductRelease',
+                                      'ProductSeries'],
+                        orderBy='-datereleased', distinct=True)
+        if releases.count() > 0:
+            return releases[0]
+        return None
+
     def newseries(self, form):
         # Extract the details from the form
         name = form['name']
@@ -167,7 +180,11 @@ class Product(SQLBase):
                                 )[0])
 
     def potemplates(self):
+        # XXX sabdfl 30/03/05 this method is really obsolete, because what
+        # we really care about now is ProductRelease.potemplates
         """See IProduct."""
+        warn("Product.potemplates is obsolete, should be on ProductRelease",
+             DeprecationWarning)
         templates = []
         for series in self.serieslist:
             for release in series.releases:
@@ -177,6 +194,8 @@ class Product(SQLBase):
         return templates
 
     def poTemplatesToImport(self):
+        # XXX sabdfl 30/03/05 again, i think we want to be using
+        # ProductRelease.poTemplatesToImport
         for template in iter(self.potemplates):
             if template.rawimportstatus == RosettaImportStatus.PENDING:
                 yield template
@@ -185,12 +204,17 @@ class Product(SQLBase):
     # This method should be removed as soon as we have completely removed the old
     # URL space.
     def poTemplate(self, name):
+        # XXX sabdfl 30/03/05 this code is no longer correct, because a
+        # potemplatename cannot be assumed to be unique for a given product.
+        # It should be unique for a given productrelease.
+        warn("Product.poTemplate(name) should be on ProductRelease instead",
+             DeprecationWarning)
         results = POTemplate.select(
-            "ProductSeries.product = %d AND"
-            " ProductSeries.id = ProductRelease.productseries AND"
-            " ProductRelease.id = POTemplate.productrelease AND"
-            " POTemplate.potemplatename = POTemplateName.id AND"
-            " POTemplateName.name = %s" % (self.id, quote(name)),
+            "ProductSeries.product = %d AND "
+            "ProductSeries.id = ProductRelease.productseries AND "
+            "ProductRelease.id = POTemplate.productrelease AND "
+            "POTemplate.potemplatename = POTemplateName.id AND "
+            "POTemplateName.name = %s" % (self.id, quote(name)),
             clauseTables=['ProductSeries', 'ProductRelease',
                           'POTemplateName'])
 
@@ -240,7 +264,7 @@ class Product(SQLBase):
         return ProductRelease.selectBy(productID=self.id, version=version)[0]
 
     def packagedInDistros(self):
-        # XXX: This function-local import is so we avoid a circular import
+        # This function-local import is so we avoid a circular import
         #   --Andrew Bennetts, 2004/11/07
         from canonical.launchpad.database import Distribution
 
@@ -290,209 +314,6 @@ class Product(SQLBase):
             resultset.append(statusline)
         return resultset
 
-    def attachTranslations(self, tarfile, prefix=None, sourcepackagename=None,
-                           distrorelease=None, version=None, logger=None):
-        '''See IProduct.'''
-
-        # updated is a list of .pot files that are being used to update an
-        # existen POTemplate objects.
-        updated = []
-        # added is a list of .pot files that are being used to create new
-        # POTemplate objects.
-        added = []
-        # errors is a list of .pot and .po files that gave us an error while
-        # processing them.
-        errors = []
-
-        # Check to see if we have already imported this tarball successfully.
-        # We do it before the tarfile.read() so we don't download the file if
-        # it's not needed.
-        for pot in self.potemplates:
-            if (pot.distrorelease == distrorelease and
-                version is not None and
-                pot.sourcepackageversion is not None):
-                deb = canonical.sourcerer.deb
-                if deb.version.Version(version) <= pot.sourcepackageversion:
-                    if logger is not None:
-                        logger.info("This tarball or a newer one is already"
-                                    " imported. Ignoring it...")
-                    return updated, added, errors
-
-        tarball = helpers.string_to_tarfile(tarfile.read())
-        pot_paths, po_paths = helpers.examine_tarfile(tarball)
-
-        if len(pot_paths) == 0:
-            # It's not a valid tar file, it does not have any .pot file.
-            if logger is not None:
-                logger.warning("We didn't found any .pot file")
-
-            return updated, added, errors
-        else:
-            # It's the first time we import this tarball or last try gave us
-            # an error, we should retry it until the system accepts it.
-
-            # Get the list of domains
-            domains = []
-            try:
-                domains_file = tarball.extractfile('domains.txt')
-                # We have that file inside the tar file.
-                for line in domains_file.readlines():
-                    domains.append(line.strip())
-            except KeyError, key:
-                # The tarball does not have a domains.txt file.
-                pass
-            for pot_path in pot_paths:
-                pot_base_dir = os.path.dirname(pot_path)
-                pot_file = os.path.basename(pot_path)
-                root, extension = os.path.splitext(pot_file)
-                if pot_base_dir == 'debian/po':
-                    # The .pot inside that directory are special ones and have
-                    # a concrete name.
-                    potname = 'debconf-templates'
-                elif len(domains) == 1 and len(pot_paths) == 1:
-                    # There is only a .pot file and we know its domain name.
-                    potname = domains[0]
-                elif len(domains) > 1:
-                    # There are more than one .pot file and we have the list
-                    # of names but don't know which one we should use.
-                    # XXX: Carlos Perello Marin 2005-02-01 We should implement
-                    # this case (a tarball with more than one .pot file
-                    # without counting the debian/po directory).
-                    if logger is not None:
-                        logger.warning("We got more than one domain, this is"
-                                       " a corner case and we should"
-                                       " implement it...")
-                        for domain in domains:
-                            logger.warning(domain)
-
-                    break
-                else:
-                     potname = root
-
-                if prefix is not None:
-                    potname = '%s-%s' % (prefix, potname)
-
-                try:
-                    potemplate = self.poTemplate(potname)
-                    updated.append(pot_path)
-                    # Check to detect pot files moved. It's not usual and
-                    # logging it could help us to detect problems with the
-                    # import.
-                    if (potemplate.path is not None and
-                       potemplate.path != pot_base_dir):
-                        # The template has moved from its previous location,
-                        # log it so it helps to detect errors.
-                        if logger is not None:
-                            logger.warning("The POTemplate %s has been moved"
-                                           "from %s to %s" % (
-                                            potname,
-                                            potemplate.path,
-                                            pot_base_dir))
-                        # Update new path.
-                        potemplate.path = pot_base_dir
-                except KeyError:
-                    # The POTemplate was not found, before creating a new one,
-                    # we look for it based on the path.
-                    potemplate = None
-                    for pot in self.potemplates:
-                        if (pot.distrorelease == distrorelease and
-                           pot.path is not None and
-                           pot.path == pot_base_dir):
-                            # We have found a potemplate using this path so we
-                            # log it, as always to be able to detect any
-                            # problem and continue the normal process with it.
-                            if logger is not None:
-                                logger.warning("The POTemplate %s has been"
-                                               " detected as beeing the same"
-                                               " than %s because both share"
-                                               " the same path." % (
-                                                pot.name, potname))
-                            potemplate = pot
-                            updated.append(pot_path)
-                            break
-                    if potemplate is None:
-                        # It's a new pot file.
-                        potemplate = self.newPOTemplate(potname, potname)
-                        added.append(pot_path)
-
-                potfilecontent = tarball.extractfile(pot_path).read()
-                try:
-                    potemplate.attachRawFileData(potfilecontent)
-                except (POSyntaxError, POInvalidInputError):
-                    # The file has an error detected by our parser.
-                    errors.append(pot_path)
-                    if logger is not None:
-                        logger.error('Parser error with potfile: %s',
-                                     pot_path, exc_info=1)
-                    # Jump to the next .pot file
-                    continue
-
-                # Update always the sourcepackagename and distrorelease
-                # fields. No matter if they are None or not.
-                potemplate.sourcepackagename = sourcepackagename
-                potemplate.distrorelease = distrorelease
-
-                # The path from where the .pot file was extracted is also
-                # stored inside the POTemplate object.
-                potemplate.path = pot_base_dir
-
-                for po_path in po_paths:
-                    po_base_dir = os.path.dirname(po_path)
-                    po_file = os.path.basename(po_path)
-                    if pot_base_dir == po_base_dir:
-                        # 99% of the time it should be this way, all .po and
-                        # .pot files inside the same directory.
-                        root, extension = os.path.splitext(po_file)
-
-                        if '@' in root:
-                            code, variant = [unicode(field) for field in root.split('@', 1)]
-                        else:
-                            code, variant = root, None
-
-                        try:
-                            pofile = potemplate.getOrCreatePOFile(code, variant)
-                        except ValueError, value:
-                            # The language code does not exists in our
-                            # database. Usually, it's a translator error.
-                            if logger is not None:
-                                logger.warning("The '%s' code does not exist"
-                                               " as a valid language code in"
-                                               " Rosetta." % code)
-                            errors.append(po_path)
-                            continue
-                        pofilecontent = tarball.extractfile(po_path).read()
-                        try:
-                            pofile.attachRawFileData(pofilecontent)
-                        except (POSyntaxError, POInvalidInputError):
-                            # The file has an error detected by our parser.
-                            errors.append(po_path)
-                            if logger is not None:
-                                logger.error('Parser error with pofile: %s',
-                                             po_path, exc_info=1)
-                            # Jump to the next .pot file
-                            continue
-                    else:
-                        # XXX: Carlos Perello Marin 2005-01-28, Implement
-                        # support for Python/PHP like trees.
-                        # https://dogfood.ubuntu.com/malone/bugs/235
-                        errors.append(po_path)
-                        continue
-
-            if version is not None and len(errors) == 0:
-                # If the list of errors is empty, the potemplates can be
-                # marked as being in sync with the tarball attached. If
-                # the version field is not None, we store that information
-                # inside the potemplate.
-                # This lets us prevent import a tar.gz twice or import an old
-                # tarball.
-                for potemplate in self.potemplates:
-                    if potemplate.distrorelease == distrorelease:
-                        # The version is stored only if the potemplate is
-                        # related to the current distrorelease.
-                        potemplate.sourcepackageversion = version
-
-            return updated, added, errors
-
 
 class ProductSet:
     implements(IProductSet)
@@ -538,9 +359,11 @@ class ProductSet:
                        freshmeatproject=freshmeatproject,
                        sourceforgeproject=sourceforgeproject)
     
+
     def forReview(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return Product.select("reviewed IS FALSE")
+
 
     def search(self, text=None, soyuz=None,
                rosetta=None, malone=None,
@@ -577,7 +400,27 @@ class ProductSet:
         """
         clauseTables = ['Product', 'ProductRelease', 'POTemplate']
         query = ("POTemplate.productrelease=ProductRelease.id AND"
-                 " ProductRelease.product = Product.id")
+                 " ProductRelease.product=Product.id")
         return Product.select(query, distinct=True,
                               clauseTables=clauseTables)
+
+    def count_all(self):
+        return Product.select().count()
+
+    def count_translatable(self):
+        return self.translatables().count()
+
+    def count_reviewed(self):
+        return Product.select("reviewed IS TRUE and active IS TRUE").count()
+
+    def count_bounties(self):
+        return Product.select("ProductBounty.product=Product.id",
+                              distinct=True,
+                              clauseTables=['ProductBounty']).count()
+
+    def count_buggy(self):
+        return Product.select("BugTask.product=Product.id",
+                              distinct=True,
+                              clauseTables=['BugTask']).count()
+
 

@@ -29,6 +29,7 @@ from canonical.launchpad.database.sourcepackagerelease import \
     SourcePackageRelease
 from canonical.launchpad.database.sourcepackagename import \
     SourcePackageName
+from canonical.launchpad.database.pofile import POTemplate
 
 class SourcePackage(object):
     """A source package, e.g. apache2, in a distribution or distrorelease.
@@ -62,6 +63,12 @@ class SourcePackage(object):
             # there is no published package in that distrorelease with this
             # name
             self.currentrelease = None
+
+    def displayname(self):
+        dn = ' the ' + self.sourcepackagename.name + ' source package in '
+        dn += self.distrorelease.displayname
+        return dn
+    displayname = property(displayname)
 
     def title(self):
         titlestr = self.sourcepackagename.name
@@ -123,6 +130,16 @@ class SourcePackage(object):
         querystr %= (self.distribution, self.sourcepackagename)
         return BugTask.select(querystr)
     bugtasks = property(bugtasks)
+
+    def potemplates(self):
+        return POTemplate.selectBy(
+                    distroreleaseID=self.distrorelease.id,
+                    sourcepackagenameID=self.sourcepackagename.id)
+    potemplates = property(potemplates)
+
+    def potemplatecount(self):
+        return self.potemplates.count()
+    potemplatecount = property(potemplatecount)
 
     def product(self):
         try:
