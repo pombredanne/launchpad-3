@@ -7,6 +7,7 @@ Part of the Launchpad system.
 
 # Zope
 from zope.interface import implements
+from zope.component import getUtility
 
 # SQL object
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
@@ -17,7 +18,7 @@ from canonical.database.sqlbase import SQLBase, quote
 # XXX: Daniel Debonzi 2004-11-25
 # Why RCSTypeEnum is inside launchpad.interfaces?
 from canonical.launchpad.interfaces import ISourceSource, ISourceSourceSet, \
-                                           RCSTypeEnum, RCSNames
+                                           RCSTypeEnum, RCSNames, IProductSet
 from canonical.lp.dbschema import ImportTestStatus
 
 # tools
@@ -119,7 +120,7 @@ class SourceSource(SQLBase):
         """change the product this sync belongs to to be 'product'"""
         assert (self.canChangeProduct())
         products = getUtility(IProductSet)
-        self.product=products()[targetname]
+        self.product=products[targetname]
 
     def needsReview(self):
         if not self.syncapproved and self.autotested:
