@@ -93,8 +93,8 @@
 	         <a tal:content="current/currentversion" 
 		 tal:attributes="href current/currentversion" />
 		 (<tal:block tal:repeat="currentbuild current/currentbuilds">
-		       [<a tal:content="currentbuild" tal:attributes="href
-		       string:${current/currentversion}/${currentbuild}" />]
+		       [<a tal:content="currentbuild"
+	                   tal:attributes="href string:${current/currentversion}/${currentbuild}" />]
 		  </tal:block>
 		  )
 		  <br>
@@ -104,35 +104,115 @@
 	        No Current Releases Available
 	     </tal:dummy>
 	  </fieldset>
+
+	  <fieldset>
+	    <legend>Source Files (Librarian/Lucille)</legend>
+	      <div class="dummy">
+
+	      <ul tal:define="name context/sourcepackage/name"
+		  tal:condition="context/currentversions"
+		  tal:repeat="current context/currentversions"> 
+
+	      <li><a tal:content="string:${name}_${current/currentversion}.dsc"
+	             href="">DSC</a></li>
+	      <li><a tal:content="string:${name}_${current/currentversion}_orig.tar.gz"
+	             href="">TGZ</a></li>
+	      <li><a tal:content="string:${name}_${current/currentversion}.diff.gz"
+	             href="">DIFF</a></li>
+	      </ul>
+	      
+	      <ul tal:condition="not:context/currentversions">
+	      <li>No Source Files Available</li>
+	      </ul>
+	      </div>
+	  </fieldset>
+
+          <fieldset>
+          <legend>Last Packages</legend>
+          <ul>
+	    <li tal:condition="context/lastversions"
+	        tal:repeat="lastversion context/lastversions">
+              <a tal:content="lastversion/version" tal:attributes="href lastversion/version">0.0.0-0</a>
+            </li>
+	    <li tal:condition="not:context/lastversions">
+	       No Packages Available</li>
+           </ul>
+          </fieldset>
+
+
        </td>
        <td valign="top">
+
+
           <fieldset>
-	     <legend>
-	        BUGS
-	     </legend>
+	     <legend>Bug Count</legend>
 	     <div class="dummy">
-	        #1, #2, #3
+	        <table>
+		<tr><td>All bugs</td><td>5</td></tr>
+		<tr><td>Release Critical</td><td>0</td></tr>	
+		<tr><td>Important and Normal</td><td>3</td></tr>
+		<tr><td>Minor and Wishlist</td><td>2</td></tr>
+		<tr><td>Fixed and Pending</td><td>0</td></tr>
+		</table>
 	     </div>
 	  </fieldset>    
 
-	  <tal:dummy tal:condition=" context/lastversions">    
-	     <fieldset>
-	        <legend>
-		   Last Packages
-		</legend>
-		<ul>
-		<li tal:repeat="lastversion context/lastversions">
-		   <a tal:content="lastversion/version" tal:attributes="href 
-		   lastversion/version">0.0.0-0</a>
-		</li>
-		</ul>
-	     </fieldset>
-	  </tal:dummy>
+          <fieldset>
+          <legend>Other Links </legend> 
+          <div class="dummy">
+           <ul>
+            <li><a href="">Build Log</a></li>
+            <li><a href="">Translations</a></li>
+           </ul>
+          </div>
+          </fieldset>
 
-      </td>
-   <tr>
+
+     <fieldset>
+     <legend>Package Tracking System</legend>
+     <div class="dummy">
+     <table>
+     <tr><td>
+        <table>
+          <tr><th>Subscribers Count</th><td>(1)</td></tr>
+        </table>
+     </td></tr>    
+     <tr><td>
+     <form name="subscribe" action="" method="POST">
+        <div class="field">
+        <label>Action</label>
+        <div class="formHelp">
+	    Select an Action.
+        </div>
+	<select class="listing" name="operation">
+	 <option value="subscribe">Subscribe</option>
+	 <option value="unsubscribe">Unsubscribe</option>
+	 <option value="advanced">Advanced mode</option>
+	</select>
+	</div>
+
+        <div class="field">
+        <label>Email</label>
+        <div class="formHelp">
+	    Enter an Email.
+        </div>
+          <input class="listing" type="text" name="email" size="25"
+	  tal:attributes="value request/email|nothing"/>
+	</div>
+
+	<div class="formControl">
+          <input class="listing" type="submit" name="submit" value="Submit"> 
+	</div>
+
+     </form>
+
+     </td></tr>
+     </table>
+     </div>
+     </fieldset>
+
+   </td></tr>
 </table>
-
 </div>
 </body>
 </html>

@@ -232,16 +232,26 @@ class Doap(SQLThing):
             homepage = self.ensure_string_format(data['homepage'])
         except:
             homepage = None
+
+
+        ## XXX: (missed+fields) cprov 20041015
+        ## Request this field in sourceforge.py
+        wiki = None
         
-        ##XXX need improve
-        dbdata = {"owner":        owner,
-                  "name" :        name,
-                  "displayname" : displayname,
-                  "title" :       title,
-                  "shortdesc" :   shortdesc,
-                  "description":  description,
-                  "datecreated":  datecreated,
-                  "homepageurl":  homepage,
+        
+        ##XXX: (project+lastdoap) cprov 20041015
+        ## Missing just lastdoap field
+        dbdata = {"owner":               owner,
+                  "name" :               name,
+                  "displayname":         displayname,
+                  "title" :              title,
+                  "shortdesc" :          shortdesc,
+                  "description":         description,
+                  "datecreated":         datecreated,
+                  "homepageurl":         homepage,
+                  "wikiurl":             wiki,
+                  "sourceforgeproject":  data['sf'],
+                  "freshmeatproject":    data['fm'],
                   }
                                           
         self._insert("project", dbdata)
@@ -362,19 +372,29 @@ class Doap(SQLThing):
         except:
             listurl = None
         
-        ##XXX need improve
-        dbdata = {"project":      project_id,
-                "owner":        owner,
-                "name" :        name,
-                "displayname":  displayname,
-                "title":        title,
-                "shortdesc":    shortdesc,
-                "description":  description,
-                "datecreated":  datecreated,
-                "homepageurl":  homepage,
-                "screenshotsurl": screenshot,
-                "listurl":       listurl,
-                "programminglang": plang,
+        ## XXX: (missed+fields) cprov 20041015
+        ## Request this field in sourceforge.py
+        wiki = None
+        download = None
+
+
+        ##XXX: (product+lastdoap) cprov 20041015
+        ## Missed lastdoap field
+        dbdata = {"project":           project_id,
+                  "owner":             owner,
+                  "name" :             name,
+                  "displayname":       displayname,
+                  "title":             title,
+                  "shortdesc":         shortdesc,
+                  "description":       description,
+                  "datecreated":       datecreated,
+                  "homepageurl":       homepage,
+                  "screenshotsurl":    screenshot,
+                  "listurl":           listurl,
+                  "programminglang":   plang,
+                  "downloadurl":       download,
+                  "sourceforgeproject":  data['sf'],
+                  "freshmeatproject":    data['fm'],                  
                 }
                                           
         self._insert("product", dbdata)

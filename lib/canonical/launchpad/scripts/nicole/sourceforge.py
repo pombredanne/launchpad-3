@@ -367,6 +367,13 @@ class ProjectPage:
 		naturallang = self.getNaturallang()
 		if naturallang: self.theDict['naturallang'] = naturallang
 
+		if self.repository == 'sf':
+			self.theDict['sf'] = self.url
+			self.theDict['fm'] = None
+		if self.repository == 'fm':
+			self.theDict['sf'] = None
+			self.theDict['fm'] = self.url
+		
 	def getDict(self):
 		return self.theDict
 

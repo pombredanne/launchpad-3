@@ -1,5 +1,6 @@
 from string import split
 from time import sleep
+from re import sub
 from sourceforge import getProjectSpec
 from database import Doap
 from datetime import datetime
@@ -101,12 +102,12 @@ def grab_for_product(data, project, name):
         ##XXX: (product+notfound) cprov 20041014
         ## Insert a product anyway !!! see alsa-xxx for futher
         ## result feedback
-        data_dummy={"project":      name,
-                    "projectname":  name,
-                    "description": 'Nicole Dummy Product Description.'
-                    }
-        doap.ensureProduct(project, data_dummy, name)
-        print '@\tCreating a Dummy Product'
+        ##data_dummy={"project":      name,
+        ##            "projectname":  name,
+        ##            "description": 'Nicole Dummy Product Description.'
+        ##            }
+        ##doap.ensureProduct(project, data_dummy, name)
+        ##print '@\tCreating a Dummy Product'
 
 def present_data(data):
     print '========================================================'
@@ -147,7 +148,9 @@ if __name__ == "__main__":
         ## chars 
         if len(name) < 3:
             name = package.replace('-', '')
-            
+
+        ## clean the version tag    
+        #name = sub('[0-9._]', '', name)    
 
         print '@ Proposed Project name %s'% name
 
@@ -182,20 +185,21 @@ if __name__ == "__main__":
 
             else:
                 print '@\tNo Product Found for %s' % name
+                append_list(package)                
                 ##XXX: (project+notfound) cprov 20041014
                 ## Insert a product anyway !!! see alsa-xxx for futher
                 ## result feedback
-                data_dummy={"project":      name,
-                            "projectname":  name,
-                            "description": 'Nicole Dummy Project Description.'
-                            } 
-                doap.ensureProject(data_dummy)
+                ##data_dummy={"project":      name,
+                ##            "projectname":  name,
+                ##           "description": 'Nicole Dummy Project Description.'
+                ##           } 
+                ##doap.ensureProject(data_dummy)
                 ## Partially Commit DB Project Info
-                doap.commit()
-                grab_for_product(data_dummy, name, package)
+                ##doap.commit()
+                ##grab_for_product(data_dummy, name, package)
+                ##print '@\tDummy Project/Product Created'
 
-                append_list(package)                
-                print '@\tDummy Project/Product Created'
+
             
             ## Partially Commit DB Product Info
             doap.commit()
