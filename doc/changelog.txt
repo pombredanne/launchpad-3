@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-04 20:42:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1555
+
+    Summary:
+      fix some code breakage that arose from code not handling tasks that don't have maintainers
+    Revision:
+      launchpad--devel--0--patch-1555
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-479
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-480
+       add some doctests for distro-side IBugTask.maintainer
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-481
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-482
+       fix https://launchpad.ubuntu.com/malone/bugs/261 (i think; need to confirm after rollout, because i can't see the error message on prod)
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-483
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/doc/bugtask.txt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-479
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-480
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-481
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-482
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-483
+
+
 2005-04-04 20:07:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1554
 
     Summary:

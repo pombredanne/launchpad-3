@@ -177,6 +177,37 @@ It's also possible to iterate over all the bug tasks:
     >>> print len(bugtasks)
     12
 
+Bug Task Maintainers
+--------------------
+
+The upcoming sections mention bug task maintainers, so we should
+probably clarify that before going any further. IBugTask provides a
+maintainer attribute, and a maintainer_displayname attribute; the
+latter is mainly for use in ZCML configuration on add/editforms where
+you want to show the maintainer's name. maintainer_displayname will
+probably go away in the future and be replaced by a smarter display
+widget for the maintainer name.
+
+The maintainer of an upstream task is simply the Product.owner:
+
+    >>> bugtask = bugtaskset.get(1)
+    >>> bugtask.maintainer.id
+    17
+
+The maintainer of a distribution task is the source package maintainer:
+
+    >>> bugtask = bugtaskset.get(4)
+    >>> bugtask.maintainer.id
+    1
+
+or None, if the task is not yet assigned to a specific source
+package. So, borrowing the distro task we filed earlier:
+
+    >>> print distro_task.maintainer
+    None
+    >>> print distro_task.maintainer_displayname
+    None
+
 Editing Bug Tasks
 -----------------
 
