@@ -212,7 +212,6 @@ DROP TABLE BranchRelationship;
 DROP TABLE ProjectBugsystem;
 DROP TABLE BugWatch;
 DROP TABLE BugSystem;
-DROP TABLE BugAttachmentContent;
 DROP TABLE BugAttachment;
 DROP TABLE POTranslationSighting;
 DROP TABLE POMsgIDSighting;
@@ -301,9 +300,10 @@ DROP TABLE LibraryFileContent;
 DROP TABLE Label;
 DROP TABLE Schema;
 DROP TABLE Person;
--- Remove these two in a few days
+-- Remove these three in a few days
 DROP TABLE LaunchpadFileHash;
 DROP TABLE LaunchpadFile;
+DROP TABLE BugAttachmentContent;
 
 
 
@@ -2140,39 +2140,6 @@ CREATE TABLE ProjectBugSystem (
 
 
 /*
-  BugAttachment
-  A table of attachments to bugs. These are typically patches, screenshots,
-  mockups, or other documents.
-*/
-CREATE TABLE BugAttachment (
-  id              serial PRIMARY KEY,
-  bug             integer NOT NULL REFERENCES Bug,
-  -- name (filename) is in BugAttachmentContent
-  title           text NOT NULL,
-  description     text NOT NULL
-);
-
-
-
-/*
-  BugAttachmentContent
-  The actual content of a bug attachment. There can be multiple
-  uploads over time, each revision gets a changecomment.
-*/
-CREATE TABLE BugAttachmentContent (
-  id             serial PRIMARY KEY,
-  bugattachment  integer NOT NULL REFERENCES BugAttachment,
-  daterevised    timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
-  changecomment  text NOT NULL,
-  content        bytea NOT NULL,
-  filename       text NOT NULL,
-  mimetype       text,
-  owner          integer REFERENCES Person
-);
-
-
-
-/*
   BugLabel
   Allows us to attach arbitrary metadata to a bug.
 */
@@ -2198,7 +2165,6 @@ CREATE TABLE BugRelationship (
 
 
 
-
 /*
   BugMessage
   A table of messages about bugs. Could be from the web
@@ -2217,6 +2183,23 @@ CREATE TABLE BugMessage (
   parent               integer REFERENCES BugMessage, -- gives us threading
   distribution         integer REFERENCES Distribution,
   rfc822msgid          text
+);
+
+
+/*
+  BugAttachment
+  A table of attachments to BugMessages. These are typically patches,
+  screenshots, mockups, or other documents. We need to ensure that only
+  valid attachments get automatically added into the database, stripping
+  
+*/
+CREATE TABLE BugAttachment (
+  id              serial PRIMARY KEY,
+  bugmessage      integer NOT NULL REFERENCES BugMessage,
+  name            text,
+  description     text,
+  libraryfile     int NOT NULL REFERENCES LibraryFileAlias,
+  datedeactivated timestamp
 );
 
 
