@@ -10,16 +10,14 @@
   <h1>Bugs</h1>
   <table class="listing rowNavigation">
     <tr>
-      <th>Bug</th>
-      <th>Nickname</th>
+      <th>Bug #</th>
       <th>Title</th>
-      <th>Date Created</th>
-      <th>Owner</th>
+      <th>Date Submitted</th>
+      <th>Submitted By</th>
     </tr>
     <tr tal:repeat="bug context" tal:attributes="onclick
         string:window.location='${bug/id}';">
       <td tal:content="bug/id">$Bug.title</td>
-      <td tal:content="bug/name">$Bug.name</td>
       <td><a tal:content="bug/title"
              tal:attributes="href bug/id">title</a></td>
       <td tal:content="python:bug.datecreated.strftime('%d %b %y')">date</td>
