@@ -2,10 +2,6 @@
 
 import re
 
-VALID_EMAIL_1 = re.compile(
-    r"^[_\.0-9a-z-+]+@([0-9a-z][0-9a-z-]*\.)+[a-z]{2,4}$")
-VALID_EMAIL_2 = re.compile(
-    r"^[_\.0-9a-z-]+@([0-9a-z][0-9a-z-]+)$")
 MIN_NICK_LENGTH = 2
 
 class NicknameGenerationError(Exception):
@@ -54,12 +50,11 @@ def generate_nick(email_addr, registered=_nick_registered,
     'foo+bar'
     """
 
+    from canonical.auth.browser import well_formed_email
+
     email_addr = email_addr.strip().lower()
 
-    # XXX: slightly dirty, but my regex-fu isn't good enough at the moment to
-    # do this all in once regex
-    if (not VALID_EMAIL_1.match(email_addr) and 
-        not VALID_EMAIL_2.match(email_addr)):
+    if not well_formed_email(email_addr):
         raise NicknameGenerationError("%s is not a valid email address" 
                                       % email_addr)
 

@@ -45,10 +45,19 @@
                            <td>
                                <span tal:repeat="build version/builds"
                                tal:omit-tag>
-                                   <a
+				   <!-- If searching from distribution context -->
+				   <a
+				   tal:condition="not:view/launchbag/distrorelease"
                                    tal:content="build/processorfamilyname"
                                    tal:attributes="href
 				   string:../${release/distroreleasename}/${build/distroarchrelease/architecturetag}/${package/name}"
+                                   />,
+				   <!-- If searching from distrorelease context -->
+                                   <a
+				   tal:condition="view/launchbag/distrorelease"
+                                   tal:content="build/processorfamilyname"
+                                   tal:attributes="href
+				   string:../${build/distroarchrelease/architecturetag}/${package/name}"
                                    />,
 				   <!-- Daniel Debonzi 20050105-->
 				   <!-- Old link. Changed by me until we discuss if  -->

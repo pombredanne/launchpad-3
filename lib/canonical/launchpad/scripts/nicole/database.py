@@ -116,8 +116,19 @@ class FitData(object):
     freshmeatproject = None
     plang = None
 
-    
-    def __init__(self, data):
+    def __init__(self, data, name):
+        ## XXX cprov
+        ## if no data is available
+        ## Create an Empty Product
+        if not data:
+            self.name = name
+            self.displayname = name
+            self.title = name
+            self.shortdesc = 'No Short Description Available'
+            self.description = 'No Description Available'
+            return
+        
+        ## XXX cprov
         ## both have devels        
         ## strange shit with wrong encode keys
         ## multiple devels and so
@@ -186,13 +197,18 @@ class Doap(SQLThing):
     # SourcePackageName
     #
 
-    def getSourcePackage(self, name):
+    def getPackaging(self, product_id, package_id):
+        return self._query_single("""SELECT * FROM Packaging
+        WHERE product = %s AND sourcepackage = %s""",
+                                  (product_id, package_id))
+
+    def getSourcePackageByName(self, name):
         # only get the Ubuntu source package
-        return self._query_single("""SELECT id FROM SourcePackage,
-            SourcePackagename WHERE
-            SourcePackage.distro = 1 AND
+        return self._query_single("""SELECT SourcePackage.id
+            FROM SourcePackage,SourcePackagename
+            WHERE SourcePackage.distro = 1 AND
             SourcePackage.sourcepackagename = SourcePackageName.id AND
-            SourcePackageName.name = %s);""", (name,))
+            SourcePackageName.name = %s;""", (name,))
 
     def getSourcePackageName(self, name):
         return self._query_single("""SELECT id FROM sourcepackagename
@@ -257,7 +273,8 @@ class Doap(SQLThing):
         return self.getPersonByEmail(email)
 
     def getProductByName(self, name):
-        return self._query_single("""SELECT * FROM product WHERE name=%s;""", name)
+        return self._query_single("""SELECT * FROM product WHERE name=%s;""",
+                                  name)
 
     ##XXX: cprov
     ## Try to return the right project name (reviewed sf/fm one)
@@ -271,8 +288,17 @@ class Doap(SQLThing):
         return self._query_single("""SELECT * FROM productseries WHERE
         name=%s AND product=%s;""", (name, product))
 
-    def updateProduct(self, data, product_name):
-        fit = FitData(data)
+    def updateProduct(self, data, productname, packagename):
+        ## ensure packaging anyway
+        if packagename:
+            self.ensurePackaging(productname, packagename)
+
+        ## if there is no data available simply return
+        if not data:
+            print '@\t No data available for Update'
+            return
+        
+        fit = FitData(data, productname)
 
         # only update peripheral data, rather than the summary and
         # description, when we are in update mode.
@@ -286,25 +312,15 @@ class Doap(SQLThing):
                 }
                                           
         # the query reinforces the requirement that we only update when the
-        # autoupdate field is true
+        # autoupdate field is true        
         self._update("product", dbdata, ("name='%s' and autoupdate=True"
-                                         % product_name))
+                                         % productname))
+        print '@\tUpdating ', productname        
 
 
-    def ensureProduct(self, data, product_name, source):            
-        if self.getProductByName(data['product']):
-            print '@\tUpdating...'        
-            self.updateProduct(data, product_name)
-            return 
+    def createProduct(self, owner, fitted_data):
 
-        fit = FitData(data)
-        #XXX cprov 
-        # Problems with wierd developers name and/or email
-        try:
-            owner = self.ensurePerson(fit.pdisplayname, fit.pemail)[0]
-        except:
-            print "@\t Mark wins a Product "
-            owner = 1
+        fit = fitted_data
             
         datecreated = 'now()'
 
@@ -329,12 +345,7 @@ class Doap(SQLThing):
         self._insert("product", dbdata)
         print '@\tProduct %s created' % fit.displayname
 
-
-        ## productrole
-        product = self.getProductByName(fit.name)[0]
-        ##XXX:  Hardcoded Role too Member
-        role = 1
-
+    def createProductRole(self, owner, product, role):
         dbdata = { "person":  owner,
                    "product": product,
                    "role": role,
@@ -343,6 +354,45 @@ class Doap(SQLThing):
         self._insert("productrole", dbdata)
         print '@\tProduct Role %s Created' % role
 
+    def createProductSeries(self, product, name, displayname, shortdesc):
+        dbdata = {"product":     product,
+                  "name":        name,
+                  "shortdesc":   shortdesc,
+                  "displayname": displayname,
+                  }
+        
+        self._insert("productseries", dbdata)
+        print '@\tProduct Series %s Created' % displayname
+            
+    def ensureProduct(self, data, productname, packagename=None):
+
+        if self.getProductByName(productname):
+            self.updateProduct(data, productname, packagename)
+            return 
+
+        ## Fits the data (sanitizer, multiple entries handling, clean-up, etc)
+        fit = FitData(data, productname)
+
+        #XXX cprov 
+        # Problems with wierd developers name and/or email
+        try:
+            owner = self.ensurePerson(fit.pdisplayname, fit.pemail)[0]
+        except:
+            print "@\t Mark wins a Product "
+            owner = 1
+
+        ## Create a product based on fitted data
+        self.createProduct(owner, fit)
+
+        ## Get the 'just inserted' product id
+        product = self.getProductByName(fit.name)[0]
+        ## XXX cprov
+        ## Hardcoded Role too Member
+        role = 1
+
+        ## create productrole        
+        self.createProductRole(owner, product, role)
+        
         ## productseries
 
         ##XXX: (series+name) cprov 20041012
@@ -358,35 +408,49 @@ class Doap(SQLThing):
         series are usually development milestones and test
         releases.""" % fit.displayname
         
-        dbdata = {"product":     product,
-                  "name":        name,
-                  "shortdesc":   shortdesc,
-                  "displayname": displayname,
-                  }
-
-        self._insert("productseries", dbdata)
-        print '@\tProduct Series %s Created' % displayname
-
-        ## product/source packaging
-        if not source:
-            return 
+        self.createProductSeries(product, name, displayname, shortdesc)
         
-        sourcepackage = self.getSourcePackage(source)
+        ## product/source packaging
+        if not packagename:
+            return 
 
-        if sourcepackage:
-            sourcepackage = sourcepackage[0]
+        self.ensurePackaging(productname, packagename) 
+
+
+    def ensurePackaging(self, productname, packagename):
+        
+        product = self.getProductByName(productname)
+        
+        if product:
+            product_id = product[0]
         else:
             ## Aborting !!!
-            print('@ Current SourcePackage not Found !!!!')
+            print '@ %s Product not Found !!!!' % productname
             return
+
+        sourcepackage = self.getSourcePackageByName(packagename)
+        
+        if sourcepackage:
+            package_id = sourcepackage[0]
+        else:
+            ## Aborting !!!
+            print '@ %s SourcePackage not Found !!!!' % packagename
+            return
+
+        ## verify the respective packaging entry
+        if self.getPackaging(product_id, package_id):
+            print '@\tPackaging Entry Found'
+            return
+        
         ##XXX: hardcoded Prime Packaging
         packaging = 1
 
-        dbdata = { "product" : product,
-                   "sourcepackage": sourcepackage,
+        dbdata = { "product" : product_id,
+                   "sourcepackage": package_id,
                    "packaging": packaging,
                    }
 
         self._insert("packaging", dbdata)
-        print '@\tPackaging Created' 
+        print '@\tPackaging %s - %s Created' % (productname, packagename)
 
+        

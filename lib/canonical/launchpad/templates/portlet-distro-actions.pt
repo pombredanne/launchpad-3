@@ -6,8 +6,14 @@
 
         <img src="/++resource++edit.gif">
         <a href="+edit">Edit Distro Details</a><br />
-        <img src="/++resource++edit.gif">
-        <a href="+new">Create Release</a><br />
+<!-- 	XXX: Daniel Debonzi 20050107 -->
+<!-- 	Create DistroRelease is not working when at this time -->
+<!-- 	when Im changing write permissions to launchpad.Admin -->
+<!-- 	to be able to get Soyuz im production. Instead of get it -->
+<!-- 	working I will comment the link since there is no derivation -->
+<!-- 	definitions enought to implement it properly. -->
+<!--         <img src="/++resource++edit.gif"> -->
+<!--         <a href="+new">Create Release</a><br /> -->
         <img src="/++resource++add.gif">
         <a href="+packages">Search Packages</a><br />
 

@@ -1,16 +1,13 @@
 # Python imports
-import re
 from sets import Set
-from datetime import datetime
 
 # Zope imports
 from zope.interface import implements
 from zope.component import getUtility
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
+from sqlobject import MultipleJoin
+from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, DateTimeCol
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp import dbschema
@@ -20,6 +17,7 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, \
                                            ISourcePackageReleasePublishing, \
                                            ISourcePackage, \
                                            ISourcePackageName, \
+                                           ISourcePackageNameSet, \
                                            ISourcePackageSet, \
                                            ISourcePackageInDistroSet, \
                                            ISourcePackageUtility
@@ -127,7 +125,7 @@ class SourcePackage(SQLBase):
         :returns: iterable of SourcePackageReleases
         """
         return self.uploadsByStatus(distroRelease, 
-                                    dbschema.PackagePublishingStatus.PUBLISHED)
+                                    dbschema.PackagePublishingStatus.PUBLISHED)[0]
 
     def lastversions(self, distroRelease):
         return self.uploadsByStatus(distroRelease, 
@@ -278,10 +276,25 @@ class SourcePackageName(SQLBase):
     implements(ISourcePackageName)
     _table = 'SourcePackageName'
 
-    name = StringCol(dbName='name', notNull=True)
+    name = StringCol(dbName='name', notNull=True, unique=True,
+        alternateID=True)
 
     def __unicode__(self):
         return self.name
+
+
+class SourcePackageNameSet(object):
+    implements(ISourcePackageNameSet)
+
+    def __getitem__(self, name):
+        try:
+            return SourcePackageName.byName(name)
+        except SQLObjectNotFound:
+            raise KeyError, name
+
+    def __iter__(self):
+        for sourcepackagename in SourcePackageName.select():
+            yield sourcepackagename
 
 
 class SourcePackageRelease(SQLBase):

@@ -10,7 +10,7 @@ CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean AS '
     if name is None or re.match(pat, name):
         return 1
     return 0
-' LANGUAGE plpythonu;
+' LANGUAGE plpythonu IMMUTABLE;
 
 COMMENT ON FUNCTION valid_name(text)
     IS 'validate a name.
@@ -31,7 +31,7 @@ CREATE OR REPLACE FUNCTION valid_bug_name(text) RETURNS boolean AS '
     if name is None or re.match(pat, name):
         return 1
     return 0
-' LANGUAGE plpythonu;
+' LANGUAGE plpythonu IMMUTABLE;
 
 COMMENT ON FUNCTION valid_bug_name(text) IS 'validate a bug name
 
@@ -46,7 +46,7 @@ CREATE OR REPLACE FUNCTION valid_version(text) RETURNS boolean AS '
     if name is None or re.match(pat, name):
         return 1
     return 0
-' LANGUAGE plpythonu;
+' LANGUAGE plpythonu IMMUTABLE;
 
 COMMENT ON FUNCTION valid_version(text) IS 'validate a version number
 
@@ -67,7 +67,7 @@ CREATE OR REPLACE FUNCTION valid_cve(text) RETURNS boolean AS '
     if re.match(pat, name):
         return 1
     return 0
-' LANGUAGE plpythonu;
+' LANGUAGE plpythonu IMMUTABLE;
 
 COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number
 

@@ -6,7 +6,7 @@ use strict;
 # "." characters at the beginning of a line in the message are escaped by
 # prepending another ".".)
 
-use lib '/srv/debzilla.no-name-yet.com/perl';
+# use lib '/srv/debzilla.no-name-yet.com/perl';
 use Debbugs::Log;
 
 sub read_log ($)

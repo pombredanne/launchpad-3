@@ -8,6 +8,7 @@
     <include file="soyuz.zcml" />
 
     <!-- Content class configuration -->
+    <include file="logintoken.zcml" />
     <include file="archuserid.zcml" />
     <include file="emailaddress.zcml" />
     <include file="teamparticipation.zcml" />

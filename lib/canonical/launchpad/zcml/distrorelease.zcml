@@ -32,7 +32,7 @@
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistroRelease"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Admin"
         name="+edit"
         schema="canonical.launchpad.interfaces.IDistroRelease"
         fields="displayname title shortdesc description version"

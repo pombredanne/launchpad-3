@@ -35,7 +35,7 @@ class IRosettaStats(Interface):
 
     def translatedCount(language=None):
         """Returns the number of msgsets that are translated."""
-    
+
     def translatedPercentage(language=None):
         """Returns the percentage of msgsets translated for this object."""
 
@@ -86,13 +86,19 @@ class IPOTemplate(IRosettaStats):
     owner = Attribute("The owner of the template.")
 
     rawfile = Attribute("The pot file itself in raw mode.")
-   
+
     rawimporter = Attribute("The person that attached the rawfile.")
-    
+
     daterawimport = Attribute("The date when the rawfile was attached.")
 
     rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
         imported, 2 failed.""")
+
+    sourcepackagename = Attribute("""The name of the sourcepackage from where
+        this PO template is.""")
+
+    distrorelease = Attribute("""The distribution where this PO template
+        belongs""")
 
 
     # A "current" messageset is one that was in the latest version of

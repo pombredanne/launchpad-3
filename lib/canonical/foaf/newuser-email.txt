@@ -1,0 +1,8 @@
+You have registered as a member of the Launchpad Team. To complete your
+register process, please click on the link bellow and follow the
+instructions specified on that page.
+
+https://launchpad.ubuntu.com/foaf/logintoken/%(longstring)s/+newaccount
+
+Thank You,
+Launchpad Team

@@ -4,87 +4,100 @@
       i18n:domain="launchpad">
 
 <head>
-    <title metal:fill-slot="title">Edit
-      <span tal:replace="context/displayname">Name</span>
-      Information</title>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
-    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+  <title metal:fill-slot="title">Edit
+    <span tal:replace="context/displayname">Name</span>
+    Information</title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Soyuz style sheet -->
+  <style type="text/css" media="screen">@import url(soyuz.css);</style>
 </head>
 
 <body>
-
-<metal:leftportlets fill-slot="portlets_one">
-<div tal:replace="structure view/leftMenu" />
-</metal:leftportlets>
 
 <div metal:fill-slot="main">
 
 <div id="content" class="documentEditable">
 <div class="documentContent" id="region-content">
 
- <div>
-   <h1>Email Engine</h1>
+<div>
+  <h1>Your email adresses</h1>
 
-
-  <tal:dummy tal:condition="view/email_action"/>
-
-   <form name="email" action="" method="POST">
-
-   <div class="field">
-      <label>Select an Email</label>
-      <div class="formHelp">
-      Select an Email to perform the Action
-      </div>
-      <select class="listing" name="email">
-	 <option tal:repeat="email context/emails"
-	         tal:content="email/email"
-	         tal:attributes="value email/email">EMAIL</option>
-      </select>
-   </div>
-
-
-   <div class="field">
-      <label>Add New Email</label>
-      <div class="formHelp">
-        Enter a New Email or a Replacement for one
-      </div>
-      <input class="listing" type="text" name="new_email" size="20"/>
-   </div>
-
-
-   <div class="field">
-      <label>Select an Action</label>
-      <div class="formHelp">
-	Select an Action to be performed
-      </div>
-
-      <select class="listing" name="operation">
-	 <option value="add">Add</option>
-	 <option value="delete">Delete</option>
-   <option value="replace">Replace</option>
-      </select>
-   </div>
-
-   <div class="FormControl" align="right">
-      <input class="listing" type="submit" value="Apply"/>
-   </div>   
-
-   </form>
-   
-
-  <div class="field">
-     <h4><span tal:content="context/displayname">
-               PERSON</span> Emails</h4>
-
-     <ul>
-       <li tal:repeat="email context/emails"
-           tal:content="email/email"> XXXXX </li>
-     </ul>
+  <tal:dummy tal:define="submitted view/formSubmitted">
+  <div tal:condition="submitted">
+    <p class="portalMessage" tal:content="view/message"></p>
   </div>
+  </tal:dummy>
+  
+  <form name="email" action="" method="POST">
 
- </div>
+  <p>Your preferred email address is the only one we'll use to communicate with
+  you. There can be only one preferred email at a time, and this email
+  cannot be removed.</p>
+
+  <table id="ass_listing" class="listing rowNavigation">
+    <tr>
+      <th>Preferred</th>
+      <th>Email</th>
+      <th>Remove</th>
+    </tr>
+    <tr tal:define="email context/preferredemail" tal:condition="email">
+      <td>
+        <input type="radio" name="PREFERRED_EMAIL"
+               tal:attributes="value email/id" checked />
+      </td>
+      <td tal:content="email/email">email</td>
+      <td>
+        <input tal:attributes="value email/id" name="REMOVE_EMAIL" type="checkbox" disabled/>
+      </td>
+    </tr>
+    <tr tal:repeat="email context/validatedemails">
+      <td>
+        <input type="radio" name="PREFERRED_EMAIL" tal:attributes="value email/id" />
+      </td>
+      <td tal:content="email/email">email</td>
+      <td> 
+        <input tal:attributes="value email/id" name="REMOVE_EMAIL" type="checkbox" />
+      </td>
+    </tr>
+  </table>
+  <br />
+
+  <table>
+    <tr>
+      <td>Add a New Email: </td>
+      <td><input type="text" name="newemail" /></td>
+    </tr>
+
+    <tr>
+      <td>Password: </td>
+      <td><input type="password" name="password" /></td>
+    </tr>
+    <tr>
+      <td></td>
+      <td align="right"><input type="submit" name="SUBMIT_CHANGES" value="Submit"/>
+      </td>
+    </tr>
+  </table>
+
+  <tal:block define="notvalidatedemails context/notvalidatedemails">
+  <fieldset tal:condition="notvalidatedemails">
+    <legend>Guessed Emails</legend>
+    <p>The following emails have been guessed by our system as probably
+    being your email addresses, but in order to use them on the Launchpad
+    system you must validate them. To do so, just select the one you want
+    and click on the Validate button.</p>
+    <select name="NOT_VALIDATED_EMAIL">
+      <option tal:repeat="email notvalidatedemails"
+              tal:attributes="value email/id"
+              tal:content="email/email">email</option>
+    </select>
+    <input type="submit" value="Validate" name="VALIDATE_EMAIL" />
+  </fieldset>
+  </tal:block>
+
+  </form>
+  </div>
 
 </div>
 </div>

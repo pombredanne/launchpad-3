@@ -8,6 +8,7 @@ import sys, os.path
 sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
 
 from canonical.lp import initZopeless
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.database.sqlbase import SQLBase
@@ -21,11 +22,12 @@ def check_one_watch(watch):
         version = versioncache[bugtracker.baseurl]
     else:
         version = None
-    print "Checking: %s %s for bug %d" % (bugtracker.name,
-        watch.remotebug, watch.bug.id)
+    print "Checking: %s %s for bug %d" % (
+            bugtracker.name, watch.remotebug, watch.bug.id
+            )
+    watch.lastchecked = UTC_NOW
     try:
         remotesystem = externalsystem.ExternalSystem(bugtracker,version)
-    # XXX this name doesn't exist anywhere
     except externalsystem.UnknownBugTrackerTypeError, val:
         print "*** WARNING: BugTrackerType '%s' is not known" % (
             val.bugtrackertypename, )
@@ -44,8 +46,7 @@ def check_one_watch(watch):
             if remotestatus == None:
                 remotestatus = 'UNKNOWN'
             watch.remotestatus = remotestatus
-            watch.lastchanged = 'NOW'
-        watch.lastchecked = 'NOW'
+            watch.lastchanged = UTC_NOW
 
 def main():
     initZopeless()

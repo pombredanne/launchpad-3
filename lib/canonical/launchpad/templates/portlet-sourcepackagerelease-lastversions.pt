@@ -9,12 +9,27 @@
 	     <i>No Latest Versions.</i>	   
 	   </li>
 
+	   <tal:block condition="python:view.context not in lastversions">
 	   <li tal:repeat="spackage lastversions">
 	     <a tal:content="string:${spackage/name}-${spackage/version}"
 	        tal:attributes="href spackage/version" />
 	   </li>
-	 </ul>
+	   </tal:block>
 
+	   <tal:block condition="python:view.context in lastversions">
+	   <li tal:repeat="spackage lastversions">
+
+	     <a tal:condition="python:spackage != view.context"
+	        tal:content="string:${spackage/name}-${spackage/version}"
+	        tal:attributes="href string:../${spackage/version}" />
+
+	     <span tal:condition="python:spackage == view.context"
+	           tal:content="string:${spackage/name}-${spackage/version}" />
+
+	   </li>
+	   </tal:block>
+
+	 </ul>
         </div>
     </div>
 </div>

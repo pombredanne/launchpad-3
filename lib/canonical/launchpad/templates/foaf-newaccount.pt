@@ -1,0 +1,32 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="launchpad">
+
+    <title metal:fill-slot="title">FOAF: New Account</title>
+
+  <body>
+
+  <!-- This page uses the launchpad-addform.pt METAL -->
+
+  <div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_addform/addform">
+
+        <h3 metal:fill-slot="heading">Create a new Account</h3>
+
+        <div metal:fill-slot="extra_info" class="formHelp">
+          Fill in the form bellow to finish your registration process on
+          Launchpad.
+        </div>
+
+        <legend metal:fill-slot="addform_legend">
+          Personal Information</legend>
+
+  </div>
+
+  </div>
+  </body>
+
+</html>
+

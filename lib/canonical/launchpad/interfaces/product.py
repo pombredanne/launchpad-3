@@ -26,8 +26,10 @@ class IProduct(IHasOwner):
     owner = Int(title=_('Owner'))
 
     name = TextLine(title=_('Name'), description=_("""The short name of this
-        product, which must be unique among all the products from the same
-        project."""))
+        product, which must be unique among all the products. It should be
+        at least one lowercase letters or number followed by one or more chars,
+        numbers, plusses, dots or hyphens and will be part of the url to this
+        product in the Launchpad."""))
 
     displayname = TextLine(title=_('Display Name'), description=_("""The
         display name of this product is the name of this product as it
@@ -178,6 +180,11 @@ class IProductSet(Interface):
     def __getitem__(name):
         """Get a product by its name."""
 
+    # XXX cprov 20050112
+    # Avoid collapsed **kw, use explicit expanded arguments
+    def createProduct(**kw):
+        """Create and Return a brand new Product."""
+        
     def forReview():
         """Return an iterator over products that need to be reviewed."""
 

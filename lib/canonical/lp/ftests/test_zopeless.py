@@ -1,9 +1,9 @@
 """
 Tests to make sure that initZopeless works as expected.
 """
-import unittest, psycopg
+import unittest, warnings, sys, psycopg
 from canonical.lp import initZopeless
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg
 from canonical.ftests.pgsql import PgTestCase
 from threading import Thread
 
@@ -18,6 +18,33 @@ class MoreBeer(SQLBase):
         StringCol('name', unique=True, notNull=True),
         IntCol('rating', default=None),
         ]
+
+
+class TestInitZopeless(PgTestCase):
+    dbname = 'ftest_tmp'
+    
+    def test_initZopelessTwice(self):
+        # Hook the warnings module, so we can verify that we get the expected
+        # warning.
+        showwarning = warnings.showwarning
+        warnings.showwarning = self.expectedWarning
+        self.warned = False
+        try:
+            # Calling initZopeless with the same arguments twice should return
+            # the exact same object twice, but also emit a warning.
+            tm1 = initZopeless(dbname=self.dbname, dbhost='')
+            tm2 = initZopeless(dbname=self.dbname, dbhost='')
+        finally:
+            # Put the warnings module back the way we found it.
+            warnings.showwarning = showwarning
+        self.failUnless(tm1 is tm2)
+        self.failUnless(self.warned)
+            
+    def expectedWarning(self, message, category, filename, lineno,
+                        file=sys.stderr):
+        self.failUnlessEqual(alreadyInstalledMsg, str(message))
+        self.warned = True
+        
 
 class TestZopeless(PgTestCase):
     dbname = 'ftest_tmp'
@@ -46,7 +73,6 @@ class TestZopeless(PgTestCase):
 
         b = MoreBeer.get(id1)
         self.failUnlessEqual(b.rating, 3)
-
 
     def test_multipleTransactions(self):
         # Here we create a MoreBeer and make modifications in a number
@@ -127,6 +153,7 @@ def test_suite():
     # Tests disabled - no gain
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestZopeless))
+    suite.addTest(unittest.makeSuite(TestInitZopeless))
     return suite
 
 if __name__ == '__main__':

@@ -10,12 +10,23 @@ from canonical.lp import dbschema
 from canonical.launchpad.interfaces import IHasProductAndAssignee
 
 class IEditableUpstreamBugTask(IHasProductAndAssignee):
+    """A bug assigned to upstream, which is editable by the current
+    user."""
     pass
 
-class IReadOnlyUpstreamBugTask(Interface):
+class IReadOnlyUpstreamBugTask(IHasProductAndAssignee):
+    """A bug assigned to upstream, which is read-only by the current
+    user."""
     pass
 
-class ISourcePackageBugTask(Interface):
+class IEditableDistroBugTask(Interface):
+    """A bug assigned to a distro package, which is editable by
+    the current user."""
+    pass
+
+class IReadOnlyDistroBugTask(Interface):
+    """A bug assigned to a distro package, which is read-only by the
+    current user."""
     pass
 
 class IBugTaskSet(Interface):

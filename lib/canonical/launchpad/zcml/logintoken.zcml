@@ -1,0 +1,45 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <content class="canonical.launchpad.database.LoginTokenSet">
+        <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
+    </content>
+
+    <utility 
+        provides="canonical.launchpad.interfaces.ILoginTokenSet"
+        factory="canonical.launchpad.database.LoginTokenSet"
+        permission="zope.Public" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ILoginTokenSet"
+        getter="__getitem__" />
+
+
+    <content class="canonical.launchpad.database.LoginToken">
+        <allow interface="canonical.launchpad.interfaces.ILoginToken" />
+    </content>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILoginToken"
+        name="+validate"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ValidateEmailView"
+        template="../templates/foaf-validateemail.pt"
+        lp:url="foaf/logintoken/$token/+validate" />
+
+    <browser:addform
+        name="+newaccount"
+        for="canonical.launchpad.interfaces.ILoginToken"
+        schema="canonical.launchpad.interfaces.IPerson"
+        fields="displayname givenname familyname password password2"
+        content_factory="canonical.launchpad.database.Person"
+        class="canonical.launchpad.browser.NewAccountView"
+        permission="zope.Public"
+        template="../templates/foaf-newaccount.pt"
+        lp:url="foaf/logintoken/$token/+newaccount" />
+
+</configure>

@@ -1,27 +1,18 @@
 #!/usr/bin/env python
 from string import split
 from time import sleep
-from sys import argv, exit
 from re import sub
 from datetime import datetime
+from optparse import OptionParser
+import sys
+import os
 
 #local imports
 from database import Doap
 
 #Morgan's import
 import sourceforge 
-
-
-## DOAP is inside our current Launchpad production DB
-DOAPDB = "launchpad_dev"
-
-
-## Web search interval avoiding to be blocked by high threshould
-## of requests reached by second
-SLEEP = 10
-
-## Entries not found
-LIST = 'nicole_notfound'
+import rdfproj
 
 
 def clean_list():
@@ -63,7 +54,7 @@ def grab_web_info(name):
 
     for short, desc in repositories:
 
-        print '@ Looking for %s on %s' % (name, desc)
+        print '@ Looking for %s on %s in WEB' % (name, desc)
         try:
             data = sourceforge.getProductSpec(name, short)
             print '@\tFound at %s' % desc        
@@ -75,45 +66,171 @@ def grab_web_info(name):
     return datas['fm']
 #    return merge_data(datas['fm'], datas['sf'])
 
-def createorupdate(doap, product_name):
-    data = grab_web_info(product_name)
+def grab_rdf_info(name):
+    print '@ Looking for %s on FM RDF' % (name)
+    data = rdfproj.getProductSpec(name)
 
-    if data:
-        doap.ensureProduct(data, product_name, None)
+    if data is None:
+        print '@\tNot Found'
+        return
+
+    print '@\tFound at FM RDF'
+    return data
+    
+def createorupdate(doap, productname, source, packagename=None, force=None):
+    if source == 'web':
+        data = grab_web_info(productname)
     else:
-        print '@\tNo Product Found for %s' % product_name
-        append_list(product_name)                
+        data = grab_rdf_info(productname)
+
+    if data or force:
+        doap.ensureProduct(data, productname, packagename=packagename)
+    else:
+        print '@\tNo Product Found for %s' % productname
+        append_list(productname)                
 
 
 if __name__ == "__main__":
+    # Parse the commandline...
+    parser = OptionParser()
+    ## Select the available Mode to run nicole
+    ## Create -> create from a given name list
+    ## Update -> update products with AutoUpdate & Reviewed ON
+    parser.add_option("-m", "--mode", dest="mode",
+                      help="Operation mode ['create', 'update']",
+                      metavar="MODE",
+                      default="")
+    ## Initial file list containing suggested product names
+    ## line by line
+    parser.add_option("-f", "--file", dest="filename",
+                      help="Product Name List",
+                      metavar="FILE",
+                      default="source_list")
+    ## Data source WEB (HTML parser) or RDF (splited RDF files)
+    parser.add_option("-s", "--source", dest="source",
+                      help="Data Source ['web', 'rdf']",
+                      metavar="SRC",
+                      default="rdf")
+    ## DOAP is inside our current Launchpad production DB
+    parser.add_option("-d", "--database", dest="doapdb",
+                      help="DOAP Database name",
+                      metavar="DBNAME",
+                      default="launchpad_dev")
+    ## Web search interval avoiding to be blocked by high threshould
+    ## of requests reached by second
+    parser.add_option("-w", "--wait", dest="wait",
+                      help="Interval in seconds",
+                      metavar="TIME",
+                      default="10")
+
+    ## Where Not Found Entries will be stored
+    parser.add_option("-l", "--list", dest="listfile",
+                      help="Not Found list file",
+                      metavar="FILE",
+                      default="nicole_notfound")
+    ## Commit in DB or not
+    parser.add_option("-n", "--dry-run", dest="dry_run",
+                      help="don't commit changes to database",
+                      default=False, action='store_true')
+
+    parser.add_option("-F", "--force", dest="force",
+                      help="Force the creation of the Objects",
+                      default=False, action='store_true')
+
+    parser.add_option("-p", "--package", dest="package",
+                      help="Two columms format list",
+                      default=False, action='store_true')
+
+    
+    (options,args) = parser.parse_args()
+    
+    mode = options.mode
+    filename = options.filename
+    source = options.source
+    DOAPDB = options.doapdb
+    WAIT = int(options.wait)
+    LIST = options.listfile
+    DRY = options.dry_run
+    FORCE = options.force
+    PKG = options.package
+    
     # get the DB abstractors
     doap = Doap(DOAPDB)
 
-    print '\tNicole: Product Information Finder'
-
-    index = 0
-    clean_list()
+    print '=================================='
+    print 'Nicole: Product Information Finder'
+    print '=================================='
+    print '\tMode:', mode
+    if mode == 'create':
+        print '\tList:', filename
+    print '\tSource:', source
+    print '\tDOAP:', DOAPDB
+    print '\tWait:', WAIT, 's'
+    print '\tNotFOUND:', LIST
+    print '\tDRY-RUN:', DRY
+    print '\tFORCE:', FORCE
+    print '\tPKG:', PKG
+    print '=================================='
+    print ''
     
-    if len(argv) > 1:
-        f = open(argv[1], 'r')
+    if mode == 'create':
+        # test file list 
+        if not os.access(filename, os.F_OK):
+            print "Source list not found:", filename
+            sys.exit(1)
+            
+        f = open(filename, 'r')
         products = f.read().strip().split('\n')
         #print products
         tries = len(products)
-    else:
+        
+    elif mode == 'update':
         tries, products = doap.getProductsForUpdate()
         #print products
 
+    elif not mode:
+        # clean exit 
+        print 'No MODE select'
+        sys.exit(0)        
+    else:
+        # clean exit 
+        print 'MODE not implemented: ', mode
+        sys.exit(0)
+
+    index = 0
+    clean_list()
+
+    # main looping
     for product in products:
-        index +=1
+        index += 1
+
+        if PKG:
+            try:                
+                productname, packagename = product.split()
+            except ValueError:
+                print 'Wrong List Format use:'
+                print 'PRODUCT SRC'
+                print 'PRODUCT SRC'
+                print '...'
+                sys.exit(1)
+        else:
+            productname =  product
+            packagename = None
+
         print ' '
-        print '@ Search for "%s" (%d/%d)' % (product,
+        print '@ Search for "%s" (%d/%d)' % (productname,
                                              index,
                                              tries)
-        createorupdate(doap, product)
-        ## Partially Commit DB Product Info
-        doap.commit()            
+    
+        createorupdate(doap, productname, source, packagename=packagename,
+                       force=FORCE)
+
+        ## If permitted, partially Commit DB Product Info
+        if not DRY:
+            doap.commit()            
+
         ## We sleep to avoid overloading SF or FM servers
-        sleep(SLEEP)
+        sleep(WAIT)
  
     doap.close()
     print 'Thanks for using Nicole'

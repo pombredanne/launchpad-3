@@ -1,0 +1,16 @@
+
+Hi
+
+We received a request from %(requester)s using email %(requesteremail)s
+trying to register this email address (%(toaddress)s) on the Launchpad
+system (https://launchpad.ubuntu.com).
+
+If you've made this request, you can click on the link below and follow
+the instructions to get this email available on Launchpad.
+
+https://launchpad.ubuntu.com/foaf/logintoken/%(longstring)s/+validate
+
+Questions or comments?  Please send them to launchpad@ubuntu.com.
+
+The Launchpad Team 
+

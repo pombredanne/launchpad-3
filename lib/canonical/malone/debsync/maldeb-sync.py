@@ -13,15 +13,18 @@ import urllib
 import urllib2
 import re
 import StringIO
-import sys
+from datetime import datetime
 
+from mx.DateTime import DateTime
 import ginalog
 from canonical.lp import initZopeless
 from canonical.database.sqlbase import quote
 ztm = initZopeless()
 from canonical.lp.dbschema import *
-from canonical.launchpad.database import BugFactory
+from canonical.launchpad.database import BugFactory, PersonSet
 from canonical.launchpad.scripts.nicole.database import Doap
+from canonical.lp.encoding import guess as ensure_unicode
+
 
 from malone import Launchpad
 
@@ -29,14 +32,21 @@ from malone import Launchpad
 #  - make sure Messages are created with the correct createdate and owner
 
 # setup core values and defaults
-deb = debbugs.Database('/srv/debzilla.no-name-yet.com/debbugs')
-doap = Doap()
-debian = Launchpad.get_distribution_by_name('debian')
-ubuntu = Launchpad.get_distribution_by_name('ubuntu')
+deb = debbugs.Database('/srv/mirrors/bugs.debian.org/')
+doap = Doap('launchpad_dev')
+lp = Launchpad()
+people = PersonSet()
+
+debian = lp.get_distribution_by_name('debian')
+ubuntu = lp.get_distribution_by_name('ubuntu')
 
 # setup mappings of source package names and binary package names
-sourcepackageset = Set([ package[1] for package in ginalog.packages ])
-binarypackagedict = dict(ginalog.packages)
+sourcepackageset = Set([ package[1].split()[0] for package in ginalog.packages ])
+binarypackagedict = {}
+for package in ginalog.packages:
+    binpkgname = package[0].split()[0]
+    srcpkgname = package[1].split()[0]
+    binarypackagedict[binpkgname] = srcpkgname
 
 statusmap = {'open': BugAssignmentStatus.NEW.value,
              'forwarded': BugAssignmentStatus.ACCEPTED.value,
@@ -44,8 +54,16 @@ statusmap = {'open': BugAssignmentStatus.NEW.value,
              }
 
 bugzillaref = re.compile(r'(https?://.+/)show_bug.cgi.+id=(\d+).*')
-msgidset = get_msgid_set()
 newbugs = 0
+
+print 'Ensuring package names are in place.'
+for name in binarypackagedict.keys():
+    if not lp.get_binarypackagename(name):
+        lp.create_binarypackagename(name)
+    if not lp.get_sourcepackagename(binarypackagedict[name]):
+        lp.create_sourcepackagename(binarypackagedict[name])
+    ztm.commit()
+
 
 def main():
     if len(sys.argv) > 1:
@@ -57,13 +75,17 @@ def main():
         sync()
     ztm.commit()
 
-
-def get_source_package(pkgname):
-    if pkgname in sourcepackageset:
-        return doap.get_sourcepackagename_by_name(pkgname)
+def get_packagenames(pkgname):
     srcpkgname = binarypackagedict.get(pkgname, None)
-    return doap.get_sourcepackagename_by_name(srcpkgname)
-
+    if srcpkgname:
+        binpkgname = pkgname
+    else:
+        srcpkgname = pkgname
+        binpkgname = None
+    srcpkgname = lp.get_sourcepackagename(srcpkgname)
+    if binpkgname:
+        binpkgname = lp.get_binarypackagename(binpkgname)
+    return (srcpkgname, binpkgname)
 
 def bug_filter(bug):
     # this decides which debian bugs will get processed by the sync
@@ -89,15 +111,22 @@ def sync():
     print 'Importing bugs...'
     for debian_bug in debian_bugs:
         import_bug(debian_bug)
+        ztm.commit()
         if newbugs>1000:
             print 'Done 1000 new bugs!'
             break
 
 
+def ensurePerson(displayname, email):
+    person = people.getByEmail(email)
+    if not person:
+        return createPerson(displayname, email)
+
+
 def import_bug(debian_bug):
     global newbugs
     packagelist = debian_bug.packagelist()
-    malone_bug = Launchpad.get_malonebug_for_debbug(debian_bug)
+    malone_bug = lp.get_malonebug_for_debbug(debian_bug)
 
     if malone_bug is None:
         comment = """This bug was automatically imported from Debian bug
@@ -117,17 +146,20 @@ report #%d""" % debian_bug.id
         # get the email which started it all
         initemail = debian_bug.emails()[0]
         # get the details of the person who created the debian bug
-        debowneraddr = initemail['From']
+        debowneraddr = initemail['from']
         debownername, debowneremail = parseaddr(debowneraddr)
         # make sure we have a Person to work with
-        owner = doap.ensurePerson(debownername, debowneremail)
+        owner = doap.ensurePerson(debownername, debowneremail)[0]
         # figure out the date of the debian bug message
-        datecreated = mktime_tz(parsedate_tz(initemail['Date']))
-        firstpkg = get_source_package(debian_bug.packagelist()[0])
+        datecreated = datetime.fromtimestamp(mktime_tz(parsedate_tz(initemail['Date'])))
+        firstpkg, firstbinpkg = get_packagenames(debian_bug.packagelist()[0])
         malone_bug = BugFactory(
+                         distribution=debian,
+                         sourcepackagename=firstpkg,
+                         binarypackagename=firstbinpkg,
                          title=title,
                          comment=comment,
-                         rfc822msgid=initemail['Message-ID'],
+                         rfc822msgid=initemail['message-id'],
                          owner=owner, 
                          datecreated=datecreated,
                          )
@@ -143,19 +175,17 @@ report #%d""" % debian_bug.id
 
     # link the bug to the ubuntu package, if it isn't already linked
     for packagename in debian_bug.packagelist():
-        if packagename not in sourcepackageset:
-            continue
-        ubuntu_package = ubuntupackagemap.get(packagename, None)
-        if ubuntu_package is not None:
-            bugass = get_bug_assignment(malone_bug, ubuntu_package)
-            if bugass is None:
-                print '\t\tLinking bug %d and package %s' % (malone_bug.id,
-                    ubuntu_package.name)
-                bugass is add_bug_assignment(malone_bug,
-                                             ubuntu_package,
+        pkgname, binpkgname = get_packagenames(packagename)
+        bugtask = lp.get_bug_task(malone_bug, debian, pkgname,
+                                         binpkgname)
+        if bugtask is None:
+            print '\t\tLinking bug %d and package %s' % malone_bug.id, pkgname.name
+            bugtask = lp.add_bug_task(malone_bug,
+                                             debian,
+                                             pkgname,
+                                             binpkgname,
                                              statusmap[debian_bug.status],
-                                             # XXX need the correct owner
-                                             1)
+                                             owner)
 
     known_msg_ids = Set()
     for msg in malone_bug.messages:
@@ -176,16 +206,19 @@ report #%d""" % debian_bug.id
             print "\t\tSkipping message: exceeds size limit"
 
         # check if this message is already in the db at all
-        if message_id not in msgidset:
+        lp_msg = lp.get_message_by_id(message_id)
+        if not lp_msg:
             # create a Message in the db
-            print '\t\tAdding message to database.'
-            # XXX owner should be the correct one
-            lp_msg = add_message(message, 1)
+            print '\t\tAdding message %s to database.' % message_id
+            sender = message['from']
+            sendername, senderemail = parseaddr(sender)
+            # make sure we have a Person to work with
+            sender = doap.ensurePerson(senderername, senderemail)
+            datecreated = datetime.fromtimestamp(mktime_tz(parsedate_tz(message['Date'])))
+            lp_msg = lp.add_message(message, sender, datecreated)
             if lp_msg is None:
                 print '\t\tERROR adding message %s to database' % message_id
                 continue
-            msgidset.add(message_id)
-        lp_msg = get_msg_by_msgid(message_id)
 
         # create the link between the bug and this message
         print '\t\tLinking message %d to bug %d' % (lp_msg.id,
@@ -220,8 +253,6 @@ report #%d""" % debian_bug.id
                     # XXX we probably want to trigger an email, or add a
                     # comment, or at least touch the history here
 
-
-    bugmap[debian_bug.id] = malone_bug
     return malone_bug
 
 
@@ -232,6 +263,7 @@ def import_id(debian_id):
     for item in debian_bugs:
         if item.id == debian_id:
             import_bug(item)
+            ztm.commit()
 
 
 def get_body_text(message):

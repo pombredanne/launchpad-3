@@ -1,3 +1,10 @@
+# Copyright 2004 Canonical Ltd.  All rights reserved.
+'''
+Test harness for tests needing a PostgreSQL backend.
+'''
+
+__metaclass__ = type
+
 import unittest
 import os, os.path
 import re
@@ -5,140 +12,147 @@ import time
 from warnings import warn
 
 import psycopg
+from zope.app.rdb.interfaces import DatabaseException
 
-from zope.app import zapi
-from zope.component.exceptions import ComponentLookupError
-from zope.component.servicenames import Utilities
-from zope.component import getService
-from zope.app.rdb.interfaces import IZopeDatabaseAdapter
-from sqlos.interfaces import IConnectionName
-
-
-class ConWrapper:
-    """A wrapper around the real connection that ensures all cursors
-    are closed.
-
-    This ensures that no tables remain locked causing our tearDown
-    method to hang.
-
-    """
-    _con = None
-    _curs = None
-
-    def __init__(self, con):
-        self.__dict__['_con'] = con
-        self.__dict__['_curs'] = []
-
-    def cursor(self):
-        c = self._con.cursor()
-        self._curs.append(c)
-        return c
+class ConnectionWrapper(object):
+    real_connection = None
+    def __init__(self, real_connection):
+        self.__dict__['real_connection'] = real_connection
+        PgTestSetup.connections.append(self)
 
     def close(self):
-        for c in self._curs:
-            try:
-                c.close()
-            except psycopg.InterfaceError, x:
-                if 'already closed' in str(x):
-                    pass
-                else:
-                    raise
-        return self._con.close()
+        if self in PgTestSetup.connections:
+            PgTestSetup.connections.remove(self)
+            self.__dict__['real_connection'].close()
 
-    def __getattr__(self, key):
-        return getattr(self.__dict__['_con'], key)
-
-    def __setattr__(self, key, value):
-        return setattr(self.__dict__['_con'], key, value)
-
-def PgTestCaseSetUp(template, dbname):
-    db_adapter = None
-    try:
-        name = zapi.getUtility(IConnectionName).name
-        db_adapter = zapi.getUtility(IZopeDatabaseAdapter, name)
-        if db_adapter.isConnected():
-            # we have to disconnect long enough to drop
-            # and recreate the DB
-            db_adapter.disconnect()
-    except ComponentLookupError, err:
-        # configuration not yet loaded, no worries
-        pass
-
-    con = psycopg.connect('dbname=%s' % template)
-    try:
+    def rollback(self):
+        # In our test suites, rollback ends up being called twice in some
+        # circumstances. Silently ignoring this is probably not correct,
+        # but the alternative is wasting further time chasing this 
+        # and probably refactoring sqlos and/or zope3
+        # -- StuartBishop 2005-01-11
         try:
-            cur = con.cursor()
-            cur.execute('ABORT TRANSACTION')
-            cur.execute('DROP DATABASE %s' % dbname)
-        except psycopg.ProgrammingError, x:
-            if 'does not exist' not in str(x):
-                raise
-        for i in range(0,100):
-            try:
-                cur.execute(
-                    "CREATE DATABASE %s TEMPLATE=%s ENCODING='UNICODE'" % (
-                        dbname, template))
-                break
-            except psycopg.ProgrammingError, x:
-                x = str(x)
-                if 'being accessed by other users' not in x:
-                    raise
-            time.sleep(0.1)
-    finally:
-        try:
-            if db_adapter and not db_adapter.isConnected():
-                # the dirty deed is done, time to reconnect
-                db_adapter.connect()
-
-            con.close()
-        except psycopg.Error:
+            self.__dict__['real_connection'].rollback()
+        except psycopg.InterfaceError:
             pass
 
-def PgTestCaseTearDown(template, dbname):
-    for i in range(0,100):
-        try:
-            con = psycopg.connect('dbname=%s' % template)
-        except psycopg.OperationalError, x:
-            if 'does not exist' in x:
-                return
-            raise
-        cur = con.cursor()
-        cur.execute('ABORT TRANSACTION')
-        try:
-            cur.execute('DROP DATABASE %s' % dbname)
-        except psycopg.ProgrammingError, x:
-            x = str(x)
-            if 'being accessed by other users' in x:
-                time.sleep(0.1)
-                continue
-            if 'does not exist' not in str(x):
-                raise
+    def __getattr__(self, key):
+        return getattr(self.__dict__['real_connection'], key)
 
-class PgTestCase(unittest.TestCase):
-    """This test harness will create and destroy a database
-    in the setUp and tearDown methods."""
+    def __setattr__(self, key, val):
+        return setattr(self.__dict__['real_connection'], key, val)
 
-    _cons = None
-    dbname = 'unittest_tmp'
+_org_connect = None
+def fake_connect(*args, **kw):
+    global _org_connect
+    return ConnectionWrapper(_org_connect(*args, **kw))
+
+def installFakeConnect():
+    global _org_connect
+    assert _org_connect is None
+    _org_connect = psycopg.connect
+    psycopg.connect = fake_connect
+
+def uninstallFakeConnect():
+    global _org_connect
+    assert _org_connect is not None
+    psycopg.connect = _org_connect
+    _org_connect = None
+
+class PgTestSetup(object):
+    connections = [] # Shared
+
     template = 'template1'
+    dbname = 'unittest_tmp'
+
+    def __init__(self, template=None, dbname=None):
+        if template is not None:
+            self.template = template
+        if dbname is not None:
+            self.dbname = dbname
+
+    def setUp(self):
+        '''Create a fresh database (dropping the old if necessary)'''
+        installFakeConnect()
+        self.dropDb()
+        con = psycopg.connect('dbname=%s' % self.template)
+        try:
+            try:
+                cur = con.cursor()
+                cur.execute('ABORT TRANSACTION')
+                cur.execute('DROP DATABASE %s' % self.dbname)
+            except psycopg.ProgrammingError, x:
+                if 'does not exist' not in str(x):
+                    raise
+            for i in range(0,100):
+                try:
+                    cur.execute(
+                        "CREATE DATABASE %s TEMPLATE=%s ENCODING='UNICODE'" % (
+                            self.dbname, self.template))
+                    break
+                except psycopg.ProgrammingError, x:
+                    x = str(x)
+                    if 'being accessed by other users' not in x:
+                        raise
+                time.sleep(0.1)
+        finally:
+            con.close()
+
+    def tearDown(self):
+        '''Close all outstanding connections and drop the database'''
+        while self.connections:
+            con = self.connections[-1]
+            con.close() # Removes itself
+        self.dropDb()
+        uninstallFakeConnect()
 
     def connect(self):
         """Get an open DB-API Connection object to a temporary database"""
-        con = psycopg.connect('dbname=%s' % self.dbname)
-        self._cons.append(con)
+        con = ConnectionWrapper(psycopg.connect('dbname=%s' % self.dbname))
         return con
 
+    def dropDb(self):
+        '''Drop the database if it exists.
+        
+        Raises an exception if there are open connections
+        
+        '''
+        attempts = 100
+        for i in range(0, attempts):
+            try:
+                con = psycopg.connect('dbname=%s' % self.template)
+            except psycopg.OperationalError, x:
+                if 'does not exist' in x:
+                    return
+                raise
+            try:
+                cur = con.cursor()
+                cur.execute('ABORT TRANSACTION')
+                try:
+                    cur.execute('DROP DATABASE %s' % self.dbname)
+                except psycopg.ProgrammingError, x:
+                    if i == attempts - 1:
+                        # Too many failures - raise an exception
+                        raise
+                    if 'being accessed by other users' in str(x):
+                        if i < attempts - 1:
+                            time.sleep(0.1)
+                            continue
+                    if 'does not exist' in str(x):
+                        break
+                    raise
+            finally:
+                con.close()
+
+class PgTestCase(unittest.TestCase):
+    dbname = None
+    template = None
     def setUp(self):
-        self._cons = []
-        PgTestCaseSetUp(self.template, self.dbname)
+        PgTestSetup(self.template, self.dbname).setUp()
 
     def tearDown(self):
-        # Close any unclosed connections if our tests are being lazy
-        for con in self._cons:
-            try:
-                con.commit()
-                con.close()
-            except psycopg.InterfaceError:
-                pass # Already closed
-        PgTestCaseTearDown(self.template, self.dbname)
+        PgTestSetup(self.template, self.dbname).tearDown()
+
+    def connect(self):
+        return PgTestSetup().connect()
 

@@ -80,7 +80,7 @@ class Bugzilla(ExternalSystem):
         #print "probing version of %s" % self.baseurl
         try:
             url = urllib2.urlopen("%s/xml.cgi?id=1" % self.baseurl)
-        except urllib2.HTTPError, val:
+        except (urllib2.HTTPError, urllib2.URLError), val:
             raise BugTrackerConnectError(self.baseurl, val)
         ret = url.read()
         document = minidom.parseString(ret)

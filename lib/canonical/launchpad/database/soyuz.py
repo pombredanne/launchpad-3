@@ -1,18 +1,13 @@
-
 # Python imports
-from sets import Set
 from datetime import datetime
 
 # Zope imports
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
-from sqlobject.sqlbuilder import func
+from sqlobject import StringCol, ForeignKey, IntCol
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase
 from canonical.lp import dbschema
 
 # interfaces and database 
@@ -22,11 +17,6 @@ from canonical.launchpad.interfaces import IDistroArchRelease
 from canonical.launchpad.interfaces import IDistroTools
 
 from canonical.launchpad.database.distribution import Distribution
-from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.sourcepackage import SourcePackageInDistro
-from canonical.launchpad.database.binarypackage import BinaryPackage
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.project import Project
 
 class DistroArchRelease(SQLBase):
 

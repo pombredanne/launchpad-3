@@ -43,7 +43,6 @@ from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.manifest import *
 from canonical.launchpad.interfaces.manifestentry import *
 from canonical.launchpad.interfaces.processor import *
-from canonical.launchpad.interfaces.team import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.files import *
@@ -56,6 +55,7 @@ from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.cal import *
+from canonical.launchpad.interfaces.logintoken import *
 
 # XXX this is old soyuz style and must go
 from canonical.launchpad.interfaces.soyuz import *

@@ -54,7 +54,7 @@
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Admin"
         name="+edit"
         schema="canonical.launchpad.interfaces.IDistribution"
         fields="displayname title summary description"
@@ -110,7 +110,7 @@
         fields="name displayname title summary description domainname owner"
         content_factory="canonical.launchpad.database.Distribution"
         class="canonical.launchpad.browser.DistributionSetAddView"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
         lp:url="soyuz/distros/+add">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />

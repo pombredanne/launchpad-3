@@ -63,11 +63,17 @@
             <span tal:repeat="language view/badLanguages" tal:omit-tag>
                <span tal:replace="language/englishname">language</span>,
             </span>
-        please contact the <a
+        please read the <a
+        href="http://www.gnu.org/software/gettext/manual/html_chapter/gettext_10.html#SEC150">
+        documentation</a> about plural forms and contact the <a
         href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
-        mailing list</a> to resolve this. This procedure only ever needs to be
-        done once per language. Once we have the information, you can
-        translate into these languages.
+        mailing list</a> to resolve this giving us the plural form expression
+        as the documentation specifies it.<br />
+        If you don't understand exactly how it works, just give us the rules
+        you follow when writing into your language and we will try to write
+        the expression for you.<br />
+        This procedure only ever needs to be done once per language. Once we have
+        the information, you can translate into these languages.
         </p>
 
     </div>

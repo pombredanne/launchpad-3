@@ -1,4 +1,3 @@
-
 from sets import Set
 
 # Zope imports
@@ -6,12 +5,11 @@ from zope.interface import implements
 from zope.component import getUtility
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import MultipleJoin
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
-from sqlobject.sqlbuilder import func
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase
 from canonical.lp import dbschema
 
 # interfaces and database 
@@ -19,21 +17,14 @@ from canonical.launchpad.interfaces import IDistroRelease, \
                                            IBinaryPackageUtility, \
                                            ISourcePackageUtility
 
-from canonical.launchpad.database import SourcePackageName, \
-                                         BinaryPackageName,\
-                                         SourcePackageInDistro,\
-                                         BinaryPackageSet, \
-                                         SourcePackageInDistroSet, \
-                                         PublishedPackageSet, \
-                                         PackagePublishing
+from canonical.launchpad.database import SourcePackageInDistro, \
+    BinaryPackageSet, SourcePackageInDistroSet, PublishedPackageSet, \
+    PackagePublishing
+
 # XXX: Daniel Debonzi 20040401
 # It is been done inside DistroRelease.sourcecount to avoid
 # circular import
 ## from canonical.launchpad.database import SourcePackagePublishing
-
-#
-#
-#
 
 class DistroRelease(SQLBase):
     """Distrorelease SQLObject"""

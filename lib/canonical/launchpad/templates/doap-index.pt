@@ -19,18 +19,15 @@
     <a href="+about">here</a>. We urge you to register your open source
     project with The Launchpad.</p>
 
+    <h2>Open Source Products</h2>
+
+    <p>The Launchpad includes information on hundreds of applications that
+    are part of the open source universe. For each of these applications it
+    is usually possible to file bugs, help to translate the application and
+    review the application's source code using Bazaar. These links allow you
+    to find or register an open source product in the Launchpad:</p>
+
 	<ul>
-
-        <li><a href="projects/">Find Project</a>: find your open source
-        project if it has been registered in The Launchpad.</li>
-
-		<li><a href="projects/+search">Advanced Project Search</a>: 
-        Search for projects that are not only registered in the Launchpad
-        but which are also available for translating, or have bugs listed,
-        or have their source code available as Bazaar branches.</li>
-
-        <li><a href="projects/+new">Register Project</a>: register an open
-        source project with The Launchpad.</li>
 
         <li><a href="products/">Find Product</a>: find your open source
         product if it has been registered in The Launchpad.</li>
@@ -44,6 +41,31 @@
         source product with The Launchpad.</li>
 
 	</ul>
+
+    <h2>Open Source Projects</h2>
+
+    <p>The DOAP system also knows about broader open source projects which
+    might be responsible for multiple products. For example, the Mozilla
+    Project publishes several open source products, such as Thunderbird and
+    Firefox and Sunbird, not to mention Gecko and other libraries. A Project
+    is a distinct group of people who work together on a set of (usually
+    related) products. You can find open source projects or register yours
+    using the links below:</p>
+
+    <ul>
+    
+        <li><a href="projects/">Find Project</a>: find your open source
+        project if it has been registered in The Launchpad.</li>
+
+		<li><a href="projects/+search">Advanced Project Search</a>: 
+        Search for projects that are not only registered in the Launchpad
+        but which are also available for translating, or have bugs listed,
+        or have their source code available as Bazaar branches.</li>
+
+        <li><a href="projects/+new">Register Project</a>: register an open
+        source project with The Launchpad.</li>
+
+    </ul>
 
 </div>
 </body>

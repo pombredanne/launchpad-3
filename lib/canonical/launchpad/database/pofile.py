@@ -13,9 +13,9 @@ from datetime import datetime
 from sets import Set
 
 # canonical imports
-from canonical.launchpad.interfaces import IPOTemplate, IPOTMsgSet, \
-    IEditPOTemplate, IEditPOTMsgSet, IPOMsgID, IPOMsgIDSighting, IPOFile, \
-    IEditPOFile, IPOMsgSet, IEditPOMsgSet, IPOTranslation, \
+from canonical.launchpad.interfaces import IPOTMsgSet, \
+    IEditPOTemplate, IPOMsgID, IPOMsgIDSighting, \
+    IEditPOFile, IPOTranslation, IEditPOMsgSet, \
     IPOTranslationSighting, IPersonSet, IRosettaStats
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
@@ -201,6 +201,10 @@ class POTemplate(SQLBase, RosettaStats):
         default=None)
     rawimportstatus = IntCol(dbName='rawimportstatus', notNull=True,
         default=RosettaImportStatus.IGNORE.value)
+    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+        dbName='sourcepackagename', notNull=False, default=None)
+    distrorelease = ForeignKey(foreignKey='DistroRelease',
+        dbName='distrorelease', notNull=False, default=None)
 
     poFiles = MultipleJoin('POFile', joinColumn='potemplate')
 
@@ -530,11 +534,11 @@ class POTemplate(SQLBase, RosettaStats):
 
     def doRawImport(self):
         import logging
-        
+
         importer = TemplateImporter(self, self.rawimporter)
-    
+
         file = StringIO.StringIO(base64.decodestring(self.rawfile))
-    
+
         try:
             importer.doImport(file)
 
@@ -544,13 +548,13 @@ class POTemplate(SQLBase, RosettaStats):
             # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
             # a race condition that prevents the statistics to be calculated
             # correctly. DON'T copy this, ask Andrew first.
-            for object in SQLBase._connection._dm.objects:
+            for object in list(SQLBase._connection._dm.objects):
                 object.sync()
-    
+
             # We update the cached value that tells us the number of msgsets this
             # .pot file has
             self.messagecount = self.currentMessageSets().count()
-    
+
             # And now, we should update the statistics for all po files this .pot
             # file has because a number of msgsets could have change.
             # XXX: Carlos Perello Marin 09/12/2004 We should handle this case
@@ -1068,7 +1072,7 @@ class POFile(SQLBase, RosettaStats):
             return
         
         rawdata = base64.decodestring(self.rawfile)
-        
+
         # We need to parse the file to get the last translator information so
         # the translations are not assigned to the person who imports the
         # file.
@@ -1082,60 +1086,67 @@ class POFile(SQLBase, RosettaStats):
             # before being imported, but this could help prevent programming
             # errors.
             return
-        
-        last_translator = parser.header['Last-Translator']
 
-        # XXX: Carlos Perello Marin 20/12/2004 All this code should be moved
-        # into person.py, most of it comes from gina.
+        try:
+            last_translator = parser.header['Last-Translator']
+            # XXX: Carlos Perello Marin 20/12/2004 All this code should be moved
+            # into person.py, most of it comes from gina.
 
-        first_left_angle = last_translator.find("<")
-        first_right_angle = last_translator.find(">")
-        name = last_translator[:first_left_angle].replace(",","_")
-        email = last_translator[first_left_angle+1:first_right_angle]
-        name = name.strip()
-        email = email.strip()
-
-        if email == 'EMAIL@ADDRESS':
-            # We don't have a real account, thus we just use the import person
-            # as the owner.
+            first_left_angle = last_translator.find("<")
+            first_right_angle = last_translator.find(">")
+            name = last_translator[:first_left_angle].replace(",","_")
+            email = last_translator[first_left_angle+1:first_right_angle]
+            name = name.strip()
+            email = email.strip()
+        except:
+            # Usually we should only get a KeyError exception but if we get
+            # any other exception we should do the same, use the importer name
+            # as the person who owns the imported po file.
             person = self.rawimporter
         else:
-            # This import is here to prevent circular dependencies.
-            from canonical.launchpad.database.person import PersonSet
+            # If we didn't got any error getting the Last-Translator field
+            # from the pofile.
+            if email == 'EMAIL@ADDRESS':
+                # We don't have a real account, thus we just use the import person
+                # as the owner.
+                person = self.rawimporter
+            else:
+                # This import is here to prevent circular dependencies.
+                from canonical.launchpad.database.person import PersonSet
 
-            person_set = PersonSet()
+                person_set = PersonSet()
 
-            person = person_set.getByEmail(email)
-
-            if person is None:
-                items = name.split()
-                if len(items) == 1:
-                    givenname = name
-                    familyname = ""
-                elif not items:
-                    # No name, just an email
-                    givenname = email.split("@")[0]
-                    familyname = ""
-                else:
-                    givenname = items[0]
-                    familyname = " ".join(items[1:])
-
-                # We create a new user without a password.
-                try:
-                    person = person_set.createPerson(name, givenname,
-                        familyname, None, email)
-                except:
-                    # We had a problem creating the person...
-                    person = None
+                person = person_set.getByEmail(email)
 
                 if person is None:
-                    # XXX: Carlos Perello Marin 20/12/2004 We have already
-                    # that person in the database, we should get it instead of
-                    # use the importer one...
-                    person = self.rawimporter
+                    items = name.split()
+                    if len(items) == 1:
+                        givenname = name
+                        familyname = ""
+                    elif not items:
+                        # No name, just an email
+                        givenname = email.split("@")[0]
+                        familyname = ""
+                    else:
+                        givenname = items[0]
+                        familyname = " ".join(items[1:])
+
+                    # We create a new user without a password.
+                    try:
+                        person = person_set.createPerson(name, givenname,
+                            familyname, None, email)
+                    except:
+                        # We had a problem creating the person...
+                        person = None
+
+                    if person is None:
+                        # XXX: Carlos Perello Marin 20/12/2004 We have already
+                        # that person in the database, we should get it instead of
+                        # use the importer one...
+                        person = self.rawimporter
 
         importer = POFileImporter(self, person)
-    
+
         try:
             file = StringIO.StringIO(rawdata)
 
@@ -1146,7 +1157,7 @@ class POFile(SQLBase, RosettaStats):
             # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
             # a race condition that prevents the statistics to be calculated
             # correctly. DON'T copy this, ask Andrew first.
-            for object in SQLBase._connection._dm.objects:
+            for object in list(SQLBase._connection._dm.objects):
                 object.sync()
 
             # Now we update the statistics after this new import

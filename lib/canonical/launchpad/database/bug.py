@@ -20,12 +20,8 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
 
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.message import Message, MessageSet
 from canonical.launchpad.database.bugmessage import BugMessage
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.bugsubscription import BugSubscription
-from canonical.lp.dbschema import BugSubscription as BugSubscriptionVocab
 from canonical.lp import dbschema
 
 class Bug(SQLBase):
@@ -84,10 +80,7 @@ def BugFactory(*args, **kw):
     # make sure that the factory has been passed enough information
     if not (kw.get('distribution') or kw.get('product')):
         raise ValueError, 'Must pass BugFactory a distro or a product'
-    if kw.get('distribution'):
-        if not kw.get('sourcepackagename'):
-            raise ValueError, 'Must pass BugFactory a SourcePackageName'
-    if not (kw.get('comment', None) or kw.get('distribution', None)):
+    if not (kw.get('comment', None) or kw.get('description', None)):
         raise ValueError, 'Must pass BugFactory a comment or description'
     
     description = kw.get('description', None)
@@ -167,7 +160,7 @@ class BugSet(BugSetBase):
 class BugTask(SQLBase):
     implements(IBugTask)
     _table = "BugTask"
-    _defaultOrder = "bug"
+    _defaultOrder = "-bug"
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug')
     product = ForeignKey(
@@ -215,7 +208,8 @@ class BugTask(SQLBase):
         return "(none)"
 
     def bugdescription(self):
-        return self.bug.messages[0].contents
+        if self.bug.messages:
+            return self.bug.messages[0].contents
 
     maintainer = property(maintainer)
     bugtitle = property(bugtitle)

@@ -1,0 +1,64 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Join Launchpad</title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Soyuz style sheet -->
+  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+<div id="content" class="documentEditable">
+
+  <h3>Join Launchpad</h3>
+
+  <div class="formHelp">
+    To Join Launchpad, just type your email address on the form bellow
+    and we will send you an email message with instructions on how to
+    complete your registration process.
+  </div>
+
+  <div class="documentContent" id="region-content">
+    <br />
+    <tal:block define="submitted view/formSubmitted">
+
+      <div tal:condition="python: submitted and not view.errormessage">
+        <p>An email message was sent to <span tal:replace="view/email"></span>
+        with instructions on how to finish the registration process. Thank you
+        for joining Launchpad.</p>
+      </div>
+
+      <div tal:condition="python: not submitted or view.errormessage">
+        <div class="portalMessage" tal:condition="view/errormessage"
+             tal:content="view/errormessage">
+        </div>
+        <form name="join" action="" method="POST">
+        <table>
+          <tr>
+            <td>Email:</td>
+            <td><input type="text" name="email"
+                       tal:attributes="value view/email|nothing" /></td>
+          </tr>
+          <tr>
+            <td colspan="2" align="right">
+              <input type="submit" name="SUBMIT" value="Join" />
+            </td>
+          </tr>
+        </table>
+        </form>
+      </div>
+    </tal:block>
+  </div>
+</div>
+</div>
+</body>
+
+</html>
+

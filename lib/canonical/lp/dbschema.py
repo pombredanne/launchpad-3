@@ -507,6 +507,13 @@ class EmailAddressStatus(DBSchema):
         content from that email address with that person.
         """)
 
+    PREFERRED = Item(4, """
+        Preferred Email Address
+
+        The email address was validated and is the person's choice for
+        receiving notifications from Launchpad.
+        """)
+
 class MembershipRole(DBSchema):
     """Membership Role
 

@@ -1,27 +1,9 @@
-# Python imports
-from sets import Set
-from datetime import datetime
-
-# Zope imports
-from zope.interface import implements
-
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
-from sqlobject.sqlbuilder import func
+from sqlobject import ForeignKey, IntCol
 
-from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.project import Project
+from canonical.database.sqlbase import SQLBase
 from canonical.lp import dbschema
 
-
-#
-#
-#
-
- 
 class BranchRelationship(SQLBase):
     """A relationship between branches.
     

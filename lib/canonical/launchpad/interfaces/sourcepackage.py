@@ -52,6 +52,9 @@ class ISourcePackage(Interface):
         Get the lastest version of a
         sourcepackagerelease in a distrorelease
         """
+
+    def current(distrorelease):
+        """Current SourcePackageRelease of a SourcePackage"""
         
 class ISourcePackageinDistro(Interface):
     """A SourcePackage in Distro PG View"""
@@ -89,6 +92,14 @@ class ISourcePackageName(Interface):
 
     def __unicode__():
         """Return the name"""
+
+
+class ISourcePackageNameSet(Interface):
+    """A set of SourcePackageName"""
+    def __getitem__(name):
+        """Retrieve a sourcepackage by name."""
+    def __iter__():
+        """Iterate over names"""
 
 
 class ISourcePackageSet(Interface):

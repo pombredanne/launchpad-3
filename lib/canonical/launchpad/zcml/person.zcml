@@ -9,9 +9,11 @@
       <allow interface="canonical.launchpad.interfaces.IPersonSet" />
   </content>
 
-  <utility provides="canonical.launchpad.interfaces.IPersonSet"
-           factory="canonical.launchpad.database.PersonSet"
-           permission="zope.Public" />
+  <securedutility
+      class="canonical.launchpad.database.PersonSet"
+      provides="canonical.launchpad.interfaces.IPersonSet">
+      <allow interface="canonical.launchpad.interfaces.IPersonSet" />
+  </securedutility>
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IPersonSet"
@@ -51,31 +53,14 @@
           lp:url="foaf/people/+index" />
   </browser:pages>
 
-  <browser:addform
-      name="+new"
+  <browser:page
+      name="+join"
       for="canonical.launchpad.interfaces.IPersonSet"
-      schema="canonical.launchpad.interfaces.IPerson"
-      label="Create a new Person"
-      fields="displayname givenname familyname email password password2"
-      content_factory="canonical.launchpad.database.Person"
-      class="canonical.launchpad.browser.PeopleAddView"
+      class="canonical.launchpad.browser.JoinLaunchpadView"
       permission="zope.Public"
-      template="../templates/launchpad-addform.pt"
-      lp:url="foaf/people/+new">
-  </browser:addform>
-
-  <browser:addform
-      name="+newteam"
-      for="canonical.launchpad.interfaces.IPersonSet"
-      schema="canonical.launchpad.interfaces.ITeam"
-      label="Create a new Team"
-      fields="displayname teamdescription email"
-      content_factory="canonical.launchpad.database.Person"
-      class="canonical.launchpad.browser.TeamAddView"
-      permission="zope.Public"
-      template="../templates/launchpad-addform.pt"
-      lp:url="foaf/people/+newteam">
-  </browser:addform>
+      template="../templates/foaf-join.pt"
+      lp:url="foaf/people/+join">
+  </browser:page>
 
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
@@ -88,6 +73,24 @@
       for="canonical.launchpad.interfaces.IPerson"
       name="+index" />
 
+  <browser:addform
+      name="+newteam"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.ITeam"
+      label="Create a new Team"
+      fields="displayname teamdescription email"
+      content_factory="canonical.launchpad.database.Person"
+      class="canonical.launchpad.browser.TeamAddView"
+      permission="launchpad.AnyPerson"
+      template="../templates/foaf-newteam.pt"
+      lp:url="foaf/people/$person.id/+newteam">
+      <browser:widget
+          field="teamdescription"
+          class="zope.app.form.browser.TextAreaWidget"
+          displayWidth="50"
+          height="10" />
+  </browser:addform>
+
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
       permission="zope.Public"
@@ -99,29 +102,19 @@
       <browser:page
           name="+packages"
           template="../templates/person-packages.pt"
-          lp:url="foaf/people/$person.id/packages" />
+          lp:url="foaf/people/$person.id/+packages" />
       <browser:page
           name="+bugs"
           template="../templates/person-bugs.pt"
-          lp:url="foaf/people/$person.id/bugs" />
+          lp:url="foaf/people/$person.id/+bugs" />
       <browser:page
           name="+karma"
           template="../templates/person-karma.pt"
-          lp:url="foaf/people/$person.id/karma" />
+          lp:url="foaf/people/$person.id/+karma" />
       <browser:page
           name="+translations"
           template="../templates/person-translations.pt"
-          lp:url="foaf/people/$person.id/translations" />
-  </browser:pages>
-
-  <browser:pages
-      for="canonical.launchpad.interfaces.IPerson"
-      permission="zope.Public"
-      class="canonical.launchpad.browser.GPGKeyView">
-      <browser:page
-          name="+gpg"
-          attribute="show"
-          lp:url="foaf/people/$person.id/+gpg" />
+          lp:url="foaf/people/$person.id/+translations" />
   </browser:pages>
 
   <browser:pages
@@ -131,17 +124,58 @@
       <browser:page
           name="+edit"
           template="../templates/person-edit.pt"
-          lp:url="foaf/people/$person.id/edit" />
+          lp:url="foaf/people/$person.id/+edit" />
   </browser:pages>
 
+
+  <!-- Team Views -->
   <browser:pages
-      for="canonical.launchpad.interfaces.IPerson"
-      permission="launchpad.Edit"
-      class="canonical.launchpad.browser.PersonEditView">
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonView">
       <browser:page
-          name="+emails"
-          template="../templates/person-emails.pt"
-          lp:url="foaf/people/$person.id/emails" />
+          name="+index"
+          template="../templates/team-index.pt"
+          lp:url="foaf/person/$person.id/index" />
+      <browser:page
+          name="+members"
+          template="../templates/team-members.pt"
+          lp:url="foaf/person/$person.id/+members" />
   </browser:pages>
+
+  <!-- XXX: salgado, 2005-01-12: The following code, together with
+  templates and view classes are not yet ready. I'm working on then right
+  now. -->
+  <browser:pages
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.TeamMembersEditView">
+      <browser:page
+          name="+editmembers"
+          template="../templates/team-editmembers.pt"
+          lp:url="foaf/person/$person.id/+editmembers" />
+  </browser:pages>
+
+  <!-- 
+  <browser:editform
+      name="+edit"
+      template="../templates/team-edit.pt"
+      lp:url="foaf/person/$person.id/+edit">
+  </browser:editform
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.TeamView">
+      <browser:page
+          name="+join"
+          template="../templates/team-join.pt"
+          lp:url="foaf/person/$person.id/+join" />
+      <browser:page
+          name="+unjoin"
+          template="../templates/team-unjoin.pt"
+          lp:url="foaf/person/$person.id/+unjoin" />
+  </browser:pages>
+  -->
 
 </configure>

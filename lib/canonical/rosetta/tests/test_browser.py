@@ -294,6 +294,8 @@ def test_escape_unescape_msgid():
     'foo\nbar'
     >>> unescape_msgid('foo\\tbar')
     'foo\tbar'
+    >>> unescape_msgid('foo\\\\n')
+    'foo\\n'
     '''
 
 def test_parse_translation_form():

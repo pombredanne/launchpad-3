@@ -175,6 +175,9 @@
                 <a tal:attributes="href string:${template/name}"
                    i18n:translate="">See template details...</a>
             </div>
+
+            <div tal:replace="structure view/statusLegend" tal:omit-tag />
+
         </div>
     </tal:block> <!-- condition="view/templates -->
 </div>

@@ -1,12 +1,18 @@
 # Copyright 2004 Canonical Ltd
+from datetime import datetime
+
 # sqlobject/sqlos
 from sqlobject import LIKE, AND, SQLObjectNotFound
 from canonical.database.sqlbase import quote
 
 # lp imports
-from canonical.lp import dbschema
+from canonical.lp.dbschema import EmailAddressStatus, SSHKeyType, \
+                                  LoginTokenType
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+
+from canonical.auth.browser import well_formed_email
+from canonical.foaf.nickname import generate_nick
 
 # database imports
 from canonical.launchpad.database import WikiName
@@ -16,13 +22,16 @@ from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID
 from canonical.launchpad.database import createPerson
 from canonical.launchpad.database import createTeam
-from canonical.launchpad.database import Project
+from canonical.launchpad.database import newLoginToken
 from canonical.launchpad.database import Person
 from canonical.launchpad.database import SSHKey
 
 # interface import
-from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.interfaces import IPerson, IPersonSet
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.interfaces import IPasswordEncryptor
+
+from canonical.launchpad.mail.sendmail import simple_sendmail
 
 # zope imports
 import zope
@@ -85,8 +94,8 @@ class FOAFSearchView(object):
         self.results = []
 
     def searchPeopleBatchNavigator(self):
-        name = self.request.get("name", "")
-        searchfor = self.request.get("searchfor", "")
+        name = self.request.get("name")
+        searchfor = self.request.get("searchfor")
 
         if not name:
             return None
@@ -126,103 +135,134 @@ class BaseAddView(AddView):
         return self._nextURL
 
 
+class NewAccountView(BaseAddView):
+
+    def __init__(self, context, request):
+        BaseAddView.__init__(self, context, request)
+
+    def createAndAdd(self, data):
+        kw = {}
+        for key, value in data.items():
+            kw[str(key)] = value
+
+        password = kw['password']
+        # We don't want to pass password2 to PersonSet.new().
+        password2 = kw.pop('password2')
+        if password2 != password:
+            # Do not display the password in the form when an error
+            # occurs.
+            kw.pop('password')
+            # XXX: salgado: 2005-07-01: I must find a way to tell the user
+            # that the password didn't match.
+            self._nextURL = '+newaccount'
+            return False
+
+        nick = generate_nick(self.context.email)
+        kw['name'] = nick
+        person = getUtility(IPersonSet).new(**kw)
+        email = EmailAddress(person=person.id, email=self.context.email,
+                             status=int(EmailAddressStatus.PREFERRED))
+        self._nextURL = '/foaf/people/%s' % person.name
+        return True
+
+
 class TeamAddView(BaseAddView):
 
     def createAndAdd(self, data):
-        person = IPerson(self.request.principal, None)
-        if not person:
-            raise zope.security.interfaces.Unauthorized, "Need an authenticated owner"
-
         kw = {}
         for key, value in data.items():
             kw[str(key)] = value
 
+        person = IPerson(self.request.principal, None)
         team = createTeam(kw['displayname'], person.id,
                           kw['teamdescription'], kw['email'])
         notify(ObjectCreatedEvent(team))
-        self._nextURL = team.name
+        self._nextURL = '/foaf/people/%s' % team.name
         return team
 
 
-class PeopleAddView(BaseAddView):
-
-    def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-        if kw['password'] != kw['password2']:
-            self._nextURL = '+new'
-            return None
-        person = createPerson(kw['displayname'], kw['givenname'],
-                              kw['familyname'], kw['password'], kw['email'])
-        if person:
-            notify(ObjectCreatedEvent(person))
-            self._nextURL = person.name
-        return person
-
-
-class PersonView(object):
-    """ A Base class for views of a specific person/team. """
-
-    leftMenu = ViewPageTemplateFile('../templates/foaf-menu.pt')
-    packagesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-person-packages.pt')
+class JoinLaunchpadView(object):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.person = IPerson(self.request.principal, None)
+        self.errormessage = None
+        self.email = None
 
-    def is_member(self):
-        if self.person and self.context.teamowner:
-            membership = Membership.selectBy(personID=self.person.id,
-                                             teamID=self.context.id)
-            if membership.count() > 0:
-                return True
+    def formSubmitted(self):
+        if self.request.method != "POST":
+            return False
 
-        return False
+        self.email = self.request.form.get("email", "").strip()
+        if not well_formed_email(self.email):
+            self.errormessage = ("The email address you provided isn't "
+                                 "valid.  Please check it.")
+            return False
 
-    def unjoin_action(self):
-        if self.person:
-            teampart = TeamParticipation.selectBy(personID=self.person.id,
-                                                  teamID=self.context.id)[0]
-
-            membership = Membership.selectBy(personID=self.person.id,
-                                             teamID=self.context.id)[0]
-            teampart.destroySelf()
-            membership.destroySelf()
-            return True
-
-        return False
+        # New user: requester and requesteremail are None.
+        token = newLoginToken(None, None, self.email,
+                              LoginTokenType.NEWACCOUNT)
+        sendNewUserEmail(token)
+        return True
 
 
-class PersonEditView(PersonView):
+def sendNewUserEmail(token):
+    template = open('lib/canonical/foaf/newuser-email.txt').read()
+    fromaddress = "Launchpad <noreply@canonical.com>"
+
+    replacements = {'longstring': token.token, 'toaddress': token.email }
+    message = template % replacements
+
+    subject = "Launchpad: Complete your registration process"
+    simple_sendmail(fromaddress, token.email, subject, message)
+
+
+class PersonView(object):
+    """A simple View class to be used in Person's pages where we don't have
+    actions and all we need is the context/request."""
 
     def __init__(self, context, request):
-        PersonView.__init__(self, context, request)
-        self.results = []
+        self.context = context
+        self.request = request
+
+
+class TeamView(object):
+    """A simple View class to be used in Team's pages where we don't have
+    actions and all we need is the context/request."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+
+class PersonEditView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
         self.errormessage = None
+        self.user = getUtility(ILaunchBag).user
 
     def edit_action(self):
-        if self.request.get("REQUEST_METHOD") != "POST":
+        if self.request.method != "POST":
             # Nothing to do
             return False
 
         person = self.context
+        request = self.request
 
-        password = self.request.get("password", "")
-        newpassword = self.request.get("newpassword", "")
-        newpassword2 = self.request.get("newpassword2", "")
-        displayname = self.request.get("displayname", "")
+        password = request.form.get("password")
+        newpassword = request.form.get("newpassword")
+        newpassword2 = request.form.get("newpassword2")
+        displayname = request.form.get("displayname")
 
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(password, person.password):
             self.errormessage = "Wrong password. Please try again."
             return False
 
-        ##XXX: (uniques) cprov 20041003
         if not displayname:
-            self.errormessage = "Wrong password. Please try again."
+            self.errormessage = "Your display name cannot be emtpy."
             return False
 
         if newpassword:
@@ -233,120 +273,202 @@ class PersonEditView(PersonView):
                 newpassword = encryptor.encrypt(newpassword)
                 person.password = newpassword
 
-        givenname = self.request.get("givenname", "")
-        familyname = self.request.get("familyname", "")
-        teamdescription = self.request.get("teamdescription", "")
-
-        wiki = self.request.get("wiki", "")
-        wikiname = self.request.get("wikiname", "")
-        network = self.request.get("network", "")
-        nickname = self.request.get("nickname", "")
-        jabberid = self.request.get("jabberid", "")
-        archuserid = self.request.get("archuserid", "")
-        #gpgid = self.request.get("gpgid", "")
-
         person.displayname = displayname
-        person.givenname = givenname
-        person.familyname = familyname
-        person.teamdescription = teamdescription
+        person.givenname = request.form.get("givenname")
+        person.familyname = request.form.get("familyname")
+
+        wiki = request.form.get("wiki")
+        wikiname = request.form.get("wikiname")
+        network = request.form.get("network")
+        nickname = request.form.get("nickname")
+        jabberid = request.form.get("jabberid")
+        archuserid = request.form.get("archuserid")
 
         #WikiName
-        if self.context.wiki:
-            self.context.wiki.wiki = wiki
-            self.context.wiki.wikiname = wikiname
-        else:
-            if wiki or wikiname:
-                self.context.wiki = WikiName(personID=person.id, wiki=wiki,
-                                             wikiname=wikiname)
-            else:
-                self.context.wiki = None
+        if person.wiki:
+            person.wiki.wiki = wiki
+            person.wiki.wikiname = wikiname
+        elif wiki and wikiname:
+            WikiName(personID=person.id, wiki=wiki, wikiname=wikiname)
 
         #IrcID
-        if self.context.irc:
-            self.context.irc.network = network
-            self.context.irc.nickname = nickname
-        else:
-            if network or nickname:
-                self.context.irc = IrcID(personID=person.id, network=network,
-                                         nickname=nickname)
-            else:
-                self.context.irc = None
+        if person.irc:
+            person.irc.network = network
+            person.irc.nickname = nickname
+        elif network and nickname:
+            IrcID(personID=person.id, network=network, nickname=nickname)
 
         #JabberID
-        if self.context.jabber:
-            self.context.jabber.jabberid = jabberid
-        else:
-            if jabberid:
-                self.context.jabber = JabberID(personID=person.id,
-                                               jabberid=jabberid)
-            else:
-                self.context.jabber = None
+        if person.jabber:
+            person.jabber.jabberid = jabberid
+        elif jabberid:
+            JabberID(personID=person.id, jabberid=jabberid)
 
         #ArchUserID
-        if self.context.archuser:
-            self.context.archuser.archuserid = archuserid
-        else:
-            if archuserid:
-                self.context.archuser = ArchUserID(personID=person.id, archuserid=archuserid)
-            else:
-                self.context.archuser = None
-##TODO: (gpg+portlet) cprov 20041003
-## GPG key handling requires a specific Portlet to handle key imports and
-##  validation
-#             #GPGKey
-#             if self.context.gpg:
-#                 self.context.gpg.keyid = gpgid
-#                 self.context.gpg.fingerprint = fingerprint
-#                 self.enable_edited = True
-#             else:
-#                 if gpgid:
-#                     pubkey = 'sample%d'%self.context.id
-#                     person = self.context.person.id
-#                     self.context.gpg = GPGKey(personID=person,
-#                                               keyid=gpgid,
-#                                               fingerprint=fingerprint,
-#                                               pubkey=pubkey,
-#                                               revoked=False)
-#                 else:
-#                     self.context.gpg = None
+        if person.archuser:
+            person.archuser.archuserid = archuserid
+        elif archuserid:
+            ArchUserID(personID=person.id, archuserid=archuserid)
 
         return True
 
 
-class EmailAddressEditView(PersonView):
+class EmailAddressEditView(object):
 
-    def email_action(self):
-        if self.request.get("REQUEST_METHOD") != "POST":
-            # Nothing to do
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.message = "Your changes have been saved."
+        self.user = getUtility(ILaunchBag).user
+
+    def formSubmitted(self):
+        if "SUBMIT_CHANGES" in self.request.form:
+            self.processEmailChanges()
+            return True
+        elif "VALIDATE_EMAIL" in self.request.form:
+            self.processValidationRequest()
+            return True
+        else:
             return False
 
-        email = self.request.get("email", "")
-        new_email = self.request.get("new_email", "")
-        operation = self.request.get("operation", "")
-        # XXX: We must create a framework to validate a new email address.
-        # Until we create it, let's set the new email status as VALIDATED.
-        valid = int(dbschema.EmailAddressStatus.VALIDATED)
-        person = self.context.id
+    def processEmailChanges(self):
+        user = self.user
+        password = self.request.form.get("password")
+        encryptor = getUtility(IPasswordEncryptor)
+        if not encryptor.validate(password, user.password):
+            self.message = "Wrong password. Please try again."
+            return
 
-        if operation == 'add' and new_email:
-            res = EmailAddress(email=new_email,
-                               personID=person,
-                               status=valid)
-            return res
+        newemail = self.request.form.get("newemail", "").strip()
+        if not well_formed_email(newemail):
+            self.message = "'%s' is not a valid email address." % newemail
+            return
 
-        elif operation == 'replace' and new_email:
-            results = EmailAddress.selectBy(email=email)
-            assert results.count() == 1
-            emailaddress = results[0]
-            emailaddress.email = new_email
-            return emailaddress
+        results = EmailAddress.selectBy(email=newemail)
+        if results.count() > 0:
+            email = results[0]
+            self.message = ("The email address '%s' was already registered "
+                            "by user '%s'. If you think this is your email "
+                            "address, you can hijack it by clicking here.") % \
+                           (email.email, email.person.browsername())
+            return
 
-        elif operation == 'delete':
-            results = EmailAddress.selectBy(email=email)
-            assert results.count() == 1
-            emailaddress = results[0]
-            emailaddress.destroySelf()
+        login = getUtility(ILaunchBag).login
+        token = newLoginToken(user, login, newemail, 
+                              LoginTokenType.VALIDATEEMAIL)
+        sendEmailValidationRequest(token)
+        self.message = ("A new message was sent to '%s', please follow "
+                        "the instructions on that message to validate "
+                        "your email address.") % newemail
+
+        # XXX: salgado 2005-01-12: If we change the preferred email address,
+        # the view is displaying the old preferred one, even that the change
+        # is stored in the DB, as one can see by Reloading/Opening the page
+        # again.
+        id = self.request.form.get("PREFERRED_EMAIL")
+        if id is not None:
+            # XXX: salgado 2005-01-06: Ideally, any person that is able to
+            # login *must* have a PREFERRED email, and this will not be
+            # needed anymore. But for now we need this cause id may be "".
+            id = int(id)
+            if getattr(user.preferredemail, 'id', None) != id:
+                email = EmailAddress.get(id)
+                assert email.person == user
+                assert email.status == int(EmailAddressStatus.VALIDATED)
+                user.preferredemail = email
+
+        ids = self.request.form.get("REMOVE_EMAIL")
+        if ids is not None:
+            # We can have multiple email adressess marked for deletion, and in
+            # this case ids will be a list. Otherwise ids will be str or int
+            # and we need to make a list with that value to use in the for 
+            # loop.
+            if not isinstance(ids, list):
+                ids = [ids]
+
+            for id in ids:
+                email = EmailAddress.get(id)
+                assert email.person == user
+                if user.preferredemail != email:
+                    email.destroySelf()
+
+    def processValidationRequest(self):
+        id = self.request.form.get("NOT_VALIDATED_EMAIL")
+        email = EmailAddress.get(id)
+        self.message = ("A new email was sent to '%s' with instructions "
+                        "on how to validate it.") % email.email
+        login = getUtility(ILaunchBag).login
+        token = newLoginToken(self.user, login, email.email,
+                              LoginTokenType.VALIDATEEMAIL)
+        sendEmailValidationRequest(token)
+
+
+def sendEmailValidationRequest(token):
+    template = open('lib/canonical/foaf/validate-email.txt').read()
+    fromaddress = "Launchpad Email Validator <noreply@canonical.com>"
+
+    replacements = {'longstring': token.token,
+                    'requester': token.requester.browsername(),
+                    'requesteremail': token.requesteremail,
+                    'toaddress': token.email
+                    }
+
+    message = template % replacements
+
+    subject = "Launchpad: Validate your email address"
+    simple_sendmail(fromaddress, [token.email], subject, message)
+
+
+class ValidateEmailView(object):
+
+    def __init__(self, context, request):
+        self.request = request
+        self.context = context
+        self.errormessage = ""
+
+    def formSubmitted(self):
+        if self.request.method == "POST":
+            self.validate()
             return True
+        return False
+
+    def validate(self):
+        # Email validation requests must have a registered requester.
+        assert self.context.requester is not None
+        assert self.context.requesteremail is not None
+        requester = self.context.requester
+        password = self.request.form.get("password")
+        encryptor = getUtility(IPasswordEncryptor)
+        if not encryptor.validate(password, requester.password):
+            self.errormessage = "Wrong password. Please try again."
+            return 
+
+        results = EmailAddress.selectBy(email=self.context.requesteremail)
+        assert results.count() == 1
+        reqemail = results[0]
+        assert reqemail.person == requester
+
+        status = int(EmailAddressStatus.VALIDATED)
+        if not requester.preferredemail and not requester.validatedemails:
+            # This is the first VALIDATED email for this Person, and we
+            # need it to be the preferred one, to be able to communicate
+            # with the user.
+            status = int(EmailAddressStatus.PREFERRED)
+
+        results = EmailAddress.selectBy(email=self.context.email)
+        if results.count() > 0:
+            # This email was obtained via gina or lucille and have been
+            # marked as NEW on the DB. In this case all we have to do is
+            # set that email status to VALIDATED.
+            assert results.count() == 1
+            email = results[0]
+            email.status = status
+            return
+
+        # New email validated by the user. We must add it to our emailaddress
+        # table.
+        email = EmailAddress(email=self.context.email, status=status,
+                             person=requester.id)
 
 
 class GPGKeyView(object):
@@ -356,49 +478,60 @@ class GPGKeyView(object):
         self.context = context
 
     def show(self):
-        request = self.request
-        if request is not None:
-            request.response.setHeader('Content-Type', 'text/plain')
-
+        self.request.response.setHeader('Content-Type', 'text/plain')
         return self.context.gpg.pubkey
 
 
-class SSHKeyView(PersonView):
+class SSHKeyView(object):
+
+    def __init__(self, context, request):
+        self.request = request
+        self.context = context
+
+    def show(self):
+        self.request.response.setHeader('Content-Type', 'text/plain')
+        return "\n".join([key.keytext for key in self.context.sshkeys])
+
+
+class SSHKeyEditView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+
     def form_action(self):
-        if self.request.get("REQUEST_METHOD") != "POST":
+        if self.request.method != "POST":
             # Nothing to do
             return ''
 
-        if not self.permission:
-            return ''
-
-        action = self.request.get('action', '')
+        action = self.request.form.get('action')
         if action == 'add':
             return self.add_action()
         elif action == 'remove':
             return self.remove_action()
 
     def add_action(self):
-        sshkey = self.request.get('sshkey', '')
+        sshkey = self.request.form.get('sshkey')
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
         except ValueError:
             return 'Invalid public key'
         
         if kind == 'ssh-rsa':
-            keytype = int(dbschema.SSHKeyType.RSA)
+            keytype = int(SSHKeyType.RSA)
         elif kind == 'ssh-dss':
-            keytype = int(dbschema.SSHKeyType.DSA)
+            keytype = int(SSHKeyType.DSA)
         else:
             return 'Invalid public key'
         
-        SSHKey(personID=self.person.id, keytype=keytype, keytext=keytext,
+        SSHKey(personID=self.user.id, keytype=keytype, keytext=keytext,
                comment=comment)
         return 'SSH public key added.'
 
     def remove_action(self):
         try:
-            id = self.request.get('key', '')
+            id = self.request.form.get('key')
         except ValueError:
             return "Can't remove key that doesn't exist"
 
@@ -407,10 +540,20 @@ class SSHKeyView(PersonView):
         except SQLObjectNotFound:
             return "Can't remove key that doesn't exist"
 
-        if sshkey.person != self.person:
+        if sshkey.person != self.user:
             return "Cannot remove someone else's key"
 
         comment = sshkey.comment
         sshkey.destroySelf()
         return 'Key "%s" removed' % comment
+
+
+class TeamMembersEditView:
+
+    # XXX: salgado, 2005-01-12: Not yet ready for review. I'm working on
+    # this.
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
 

@@ -3,15 +3,16 @@
   <form action="" method="GET"
      tal:define="listing_columns view/assignment_columns;
                  logged_in request/lp:person;
-                 is_maintainer python:logged_in and logged_in.id == context.owner.id">
-  <!--
-  <small tal:content="python:'displaying matching bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42 </small> <small> :: 
+                 is_maintainer python:logged_in and logged_in.id == context.owner.id;
+                 ass_batch view/batch">
+
+  <small> 
       <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackagename=all&search=Search&advanced=0">unassigned</a> .
       <span tal:omit-tag="" tal:condition="logged_in"><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=${request/lp:person/name}&product=all&sourcepackagename=all&search=Search&advanced=0">my todo list</a> .
       </span><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&product=all&sourcepackagename=all&severity=50&search=Search">critical</a>
       <span tal:omit-tag="" tal:condition="logged_in">.
           <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackagename=all&search=Search&advanced=0">submitted by me</a></span>
-      :: --><small>bug id or text
+      :: bug id or text
       <input style="border-style: solid; border-width: 1px; border-color: grey;" type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/>
       <input type="submit" style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; " name="search" value="Search" />
     <input
@@ -24,7 +25,8 @@
         type="submit" name="simple_submit" value="Simple" />
     <input type="hidden"
         name="advanced" tal:attributes="value request/advanced|nothing" />
-  </small>
+  </small><br /><br />
+  <small tal:content="python:'displaying matching bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42 </small>
   <table id="ass_listing"
          class="listing rowNavigation">
     <tr>
@@ -42,7 +44,7 @@
       <th tal:condition="python:'assignedto' in listing_columns">Assigned To</th>
       <th tal:condition="python:'actions' in listing_columns and logged_in">Take Action</th>
     </tr>
-    <tr tal:repeat="assignment view/bugassignment_search">
+    <tr tal:repeat="assignment ass_batch">
       <span tal:omit-tag=""
             tal:define="bugid assignment/bug/id;
                         assid assignment/id;
@@ -134,6 +136,22 @@
             </a>
           </td>
       </span>
+    </tr>
+    <tr class="batchnav">
+      <td class="batchnav" colspan="11" 
+          tal:define="prev_page_url view/batchnav/prevBatchURL;
+                      next_page_url view/batchnav/nextBatchURL">
+          <a tal:condition="prev_page_url"
+             tal:attributes="href prev_page_url">&laquo; previous</a>
+          <span tal:omit-tag=""
+                tal:repeat="page_url view/batchnav/batchPageURLs">
+            <a href=""
+               tal:content="python:page_url.keys()[0]"
+               tal:attributes="href python:page_url.values()[0]">[1]</a>
+          </span>
+          <a tal:condition="next_page_url"
+             tal:attributes="href next_page_url">next &raquo;</a>
+      </td>
     </tr>
   </table>
 

@@ -4,7 +4,7 @@ from sqlobject.sqlbuilder import sqlrepr
 from sqlobject.styles import Style
 from datetime import datetime, date, time
 from sqlobject import connectionForURI
-import thread
+import thread, warnings
 
 __all__ = ['SQLBase', 'quote', 'quote_like', 'ZopelessTransactionManager']
 
@@ -85,16 +85,21 @@ class _ZopelessConnectionDescriptor(object):
         return self.transactions[tid]
 
     def __set__(self, inst, value):
-        # FIXME: Write a better warning
-        import warnings
-        warnings.warn("Something tried to set a _connection.  Ignored.")
+        '''Do nothing
+        
+        This used to issue a warning but it seems to be spurious.
+
+        '''
+        pass
+        #import warnings
+        #warnings.warn("Something tried to set a _connection.  Ignored.")
 
     def install(cls, connectionURI, sqlClass=SQLBase, debug=False):
         if isinstance(sqlClass.__dict__.get('_connection'),
                 _ZopelessConnectionDescriptor):
-            import warnings
-            warnings.warn("Already installed a _connection descriptor!  Overriding!")
-            #raise RuntimeError, "Already installed _connection descriptor."
+            # ZopelessTransactionManager.__new__ should now prevent this from
+            # happening, so raise an error if it somehow does anyway.
+            raise RuntimeError, "Already installed _connection descriptor."
         cls.sqlClass = sqlClass
         sqlClass._connection = cls(connectionURI, debug=debug)
     install = classmethod(install)
@@ -112,6 +117,10 @@ class _ZopelessConnectionDescriptor(object):
         del cls.sqlClass._connection
     uninstall = classmethod(uninstall)
         
+
+alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
+"already installed.  This is probably caused by calling initZopeless twice.")
+
 
 class ZopelessTransactionManager(object):
     """Object to use in scripts and tests if you want transactions.
@@ -197,7 +206,34 @@ class ZopelessTransactionManager(object):
 
     """
 
+    _installed = None
+    alreadyInited = False
+
+    def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False):
+        if cls._installed is not None:
+            if (cls._installed.connectionURI != connectionURI or
+                cls._installed.sqlClass != sqlClass or
+                cls._installed.debug != debug):
+                    raise ConflictingTransactionManagerError(
+                            "A ZopelessTransactionManager with different "
+                            "settings is already installed"
+                    )
+            # There's an identical ZopelessTransactionManager already installed,
+            # so return that one, but also emit a warning.
+            warnings.warn(alreadyInstalledMsg, stacklevel=2)
+            return cls._installed
+        cls._installed = object.__new__(cls, connectionURI, sqlClass, debug)
+        return cls._installed
+
     def __init__(self, connectionURI, sqlClass=SQLBase, debug=False):
+        # For some reason, Python insists on calling __init__ on anything
+        # returned from __new__, even if it's not a newly constructed object
+        # (i.e. type.__call__ calls __init__, rather than object.__new__ like
+        # you'd expect).
+        if self.alreadyInited:
+            return
+        self.alreadyInited = True
+        
         # XXX: Importing a module-global and assigning it as an instance
         #      attribute smells funny.  Why not just use transaction.manager
         #      instead of self.manager?
@@ -205,6 +241,9 @@ class ZopelessTransactionManager(object):
         self.manager = manager
         _ZopelessConnectionDescriptor.install(connectionURI, debug=debug)
         self.sqlClass = sqlClass
+        # The next two instance variables are used for the check in __new__
+        self.connectionURI = connectionURI
+        self.debug = debug
         #self.cls._connection = adapter(self.connection.makeConnection())
         #self.dm = self.cls._connection._dm
         #self.begin()
@@ -215,6 +254,7 @@ class ZopelessTransactionManager(object):
         # used after uninstall was called, which is a little bit of a hack.
         self.manager.free(self.manager.get())
         del self.sqlClass 
+        self.__class__._installed = None
 
     def _dm(self):
         return self.sqlClass._connection._dm

@@ -29,6 +29,12 @@
         <allow interface="canonical.launchpad.interfaces.ISourcePackageName" />
     </content>
 
+    <securedutility
+        class="canonical.launchpad.database.SourcePackageNameSet"
+        provides="canonical.launchpad.interfaces.ISourcePackageNameSet">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageNameSet" />
+    </securedutility>
+
     <!-- SourcePackageSet -->
     <content class="canonical.launchpad.database.SourcePackageSet">
         <allow
@@ -54,7 +60,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackageInDistroSet"
         permission="zope.Public"
-	class="canonical.launchpad.browser.SourcePackageInDistroSetView">
+        class="canonical.launchpad.browser.SourcePackageInDistroSetView">
         <browser:page
             name="+index"
             template="../templates/sourcepackage-index.pt"

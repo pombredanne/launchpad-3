@@ -3,18 +3,15 @@
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote
-
+from canonical.database.sqlbase import SQLBase
 
 # canonical imports
 from canonical.launchpad.interfaces import IPackagePublishing, \
-                                           ISourcePackagePublishing, \
-                                           ISourcePackagePublishingView, \
-                                           IBinaryPackagePublishingView, \
-                                           ISourcePackageFilePublishing, \
-                                           IBinaryPackageFilePublishing
+    ISourcePackagePublishing, ISourcePackagePublishingView, \
+    IBinaryPackagePublishingView, ISourcePackageFilePublishing, \
+    IBinaryPackageFilePublishing
 
 class PackagePublishing(SQLBase):
     """A binary package publishing record."""

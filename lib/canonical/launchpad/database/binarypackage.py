@@ -1,4 +1,3 @@
-
 from sets import Set
 
 # Zope imports
@@ -6,7 +5,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import MultipleJoin
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
 
@@ -15,14 +14,8 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IBinaryPackage, \
-                                           IBinaryPackageUtility, \
-                                           ISourcePackageUtility, \
-                                           IBinaryPackageName,\
-                                           IBinaryPackageNameSet
+    IBinaryPackageUtility, IBinaryPackageName, IBinaryPackageNameSet
 from canonical.launchpad.database.publishing import PackagePublishing
-
-# The import is done inside BinaryPackage.maintainer to avoid circular import
-##from canonical.launchpad.database.sourcepackage import SourcePackageRelease
 
 class BinaryPackage(SQLBase):
     implements(IBinaryPackage)
@@ -62,10 +55,6 @@ class BinaryPackage(SQLBase):
     name = property(name)
 
     def maintainer(self):
-        # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.sourcepackage import \
-             SourcePackageRelease
-
         return self.sourcepackagerelease.sourcepackage.maintainer
     maintainer = property(maintainer)
 
@@ -74,10 +63,6 @@ class BinaryPackage(SQLBase):
         
         :returns: iterable of SourcePackageReleases
         """
-        # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.sourcepackage import \
-             SourcePackageRelease
-
         return self.build.sourcepackagerelease.sourcepackage.current(distroRelease)
 
     def lastversions(self):
