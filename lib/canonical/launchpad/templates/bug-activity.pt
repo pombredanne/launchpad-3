@@ -46,7 +46,7 @@
       <td tal:content="python:log.datechanged.strftime('%d %b %y %H:%M')">
         13 Sep 04 14:15
       </td>
-      <td tal:content="log/whatchanged/capitalize">description</td>
+      <td tal:content="log/whatchanged">description</td>
       <td tal:content="log/oldvalue">this</td>
       <td tal:content="log/newvalue">that</td>
       <td tal:content="log/message">message</td>

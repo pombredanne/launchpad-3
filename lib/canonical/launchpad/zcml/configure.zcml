@@ -14,6 +14,7 @@
     <include file="sourcesource.zcml" />
     <include file="productrelease.zcml" />
     <include file="bugpackageinfestation.zcml" />
+    <include file="bugactivity.zcml" />
     <include file="bugsubscription.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="bug.zcml" />
@@ -45,5 +46,6 @@
 
     <!-- Event configuration -->
     <include file="bug-events.zcml" />
+    <include file="bugactivity-subscriptions.zcml" />
 
 </configure>

@@ -1,0 +1,5 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+    <content class="canonical.launchpad.database.BugActivity">
+        <allow interface="canonical.launchpad.interfaces.IBugActivity" />
+    </content>
+</configure>

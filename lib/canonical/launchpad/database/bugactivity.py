@@ -20,8 +20,8 @@ class BugActivity(SQLBase):
     datechanged = DateTimeCol(notNull=True)
     person = IntCol(notNull=True)
     whatchanged = StringCol(notNull=True)
-    oldvalue = StringCol(notNull=True)
-    newvalue = StringCol(notNull=True)
+    oldvalue = StringCol(default=None)
+    newvalue = StringCol(default=None)
     message = StringCol(default=None)
 
         
