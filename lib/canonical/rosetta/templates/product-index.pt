@@ -62,7 +62,7 @@
                         XXX: Assumption that a PO file exists for this
                         language.
                         CarlosPerelloMarin: Fixed for the statistics, we
-                        should implement the export.po in a way we get
+                        should implement the export code in a way we get
                         an empty .po file from the .pot one
                         -->
                         <td><a tal:attributes="href
@@ -97,7 +97,7 @@
                                                 title string: Untranslated: ${template/poUntranslatedPercent}%" />
                         </td>
                         <td><a tal:attributes="href
-                            string:${template/name}/export.po">
+                            string:${template/name}/${LT/language/code}/po">
                             <img src="++resource++download.png" alt="Download PO file" />Download .po</a></td>
                     </tr>
                 </tbody>
