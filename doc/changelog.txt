@@ -2,6 +2,37 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-23 23:24:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1487
+
+    Summary:
+      fix https://dogfood.ubuntu.com/malone/bugs/249
+    Revision:
+      launchpad--devel--0--patch-1487
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-443
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-444
+       fix https://dogfood.ubuntu.com/malone/bugs/249
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/15-upstream-product-main-page-viewed-by-maintainer.txt.id
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/16-upstream-product-main-page-viewed-by-non-maintainer.txt.id
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/15-upstream-product-main-page-viewed-by-maintainer.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/16-upstream-product-main-page-viewed-by-non-maintainer.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/templates/portlet-latest-bugs.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-443
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-444
+
+
 2005-03-23 21:54:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1486
 
     Summary:

@@ -1,5 +1,7 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+"""Browser views and traversal functions for products."""
+
 __metaclass__ = type
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -20,17 +22,15 @@ from canonical.database.sqlbase import quote
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      MilestoneVocabulary
-from canonical.launchpad.database import Product, ProductSeriesSet, Bug, \
+from canonical.launchpad.database import Product, ProductSeriesSet, \
      BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
      IPersonSet, IBugTaskSet, IAging, ITeamParticipationSet, ILaunchBag
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.helpers import is_maintainer
 
-#
 # Traversal functions that help us look up something
 # about a project or product
-#
 def traverseProduct(product, request, name):
     if name == '+sources':
         return SourceSourceSet()
@@ -41,9 +41,8 @@ def traverseProduct(product, request, name):
     else:
         return product.getRelease(name)
 
-#
+
 # A View Class for Product
-#
 class ProductView:
 
     __used_for__ = IProduct
@@ -158,12 +157,10 @@ class ProductView:
 
     def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this product."""
-        tasklist = self.context.bugtasks
-        # Sort the bugs by datecreated and return the last <quantity> bugs.
-        bugsdated = [(task.datecreated, task) for task in tasklist]
-        bugsdated.sort()
-        last_few_tasks = bugsdated[-quantity:]
-        return [task for sortkey, task in last_few_tasks]
+        bugtaskset = getUtility(IBugTaskSet)
+        tasklist = bugtaskset.search(product = self.context, orderby = "-datecreated")
+        return tasklist[:quantity]
+
 
 class ProductBugsView:
     DEFAULT_STATUS = (
@@ -278,12 +275,6 @@ class ProductFileBugView(AddView):
 
     __used_for__ = IProduct
 
-    #XXX cprov 20050107
-    # Can we use the IBug instead of the content class ?
-    ow = CustomWidgetFactory(ObjectWidget, Bug)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
-
     def __init__(self, context, request):
         self.request = request
         self.context = context
@@ -352,14 +343,9 @@ class ProductSetView:
         return self.results
 
 
-
 class ProductSetAddView(AddView):
 
     __used_for__ = IProductSet
-
-    ow = CustomWidgetFactory(ObjectWidget, Bug)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
 
     def __init__(self, context, request):
         self.context = context
