@@ -111,6 +111,21 @@ class FileDownloadClient(object):
         return [('http://%s:%d/%s' % (self.host, self.port, path))
                 for path in self._findByDigest(hexdigest)]
 
+    def getURIForAlias(self, aliasID):
+        """Returns the url for talking to the librarian about the given
+        alias.
+
+        :param aliasID: A unique ID for the alias
+
+        :returns: String URL
+        """
+        url = ('http://%s:%d/byalias?alias=%s'
+               % (self.host, self.port, aliasID))
+        f = urllib2.urlopen(url)
+        l = f.read()[:-1] # Trim the newline
+        f.close()
+        return l
+
     def getFileByAlias(self, aliasID):
         """Returns a fd to read the file from
 
@@ -118,12 +133,7 @@ class FileDownloadClient(object):
 
         :returns: file-like object
         """
-
-        url = ('http://%s:%d/byalias?alias=%s'
-               % (self.host, self.port, aliasID))
-        f = urllib2.urlopen(url)
-        l = f.read()[:-1] # Trim the newline
-        f.close()
+        l = self.getURIForAlias(aliasID)
         url = ('http://%s:%d%s' % (self.host, self.port, l))
         return urllib2.urlopen(url)
     
