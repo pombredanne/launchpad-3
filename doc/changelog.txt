@@ -2,6 +2,46 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-10 10:24:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1300
+
+    Summary:
+      Rename buildd-master back again, create cronscripts dir for everyone
+    Revision:
+      launchpad--devel--0--patch-1300
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-5
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-6
+       Re-rename master.py -> buildd-master.py
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-7
+       Add cronscripts directory for everyone to use
+    
+
+    new files:
+     cronscripts/.arch-ids/=id
+
+    modified files:
+     doc/changelog.txt
+
+    renamed files:
+     scripts/.arch-ids/master.py.id
+       ==> scripts/.arch-ids/buildd-master.py.id
+     scripts/master.py
+       ==> scripts/buildd-master.py
+
+    new directories:
+     cronscripts cronscripts/.arch-ids
+
+    new patches:
+     daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-5
+     daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-6
+     daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-7
+
+
 2005-02-09 22:32:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1299
 
     Summary:
