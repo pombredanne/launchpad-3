@@ -1,12 +1,14 @@
 <div class="portlet">
-    <h6>External References</h6>
+    <h4>External References</h4>
 
     <div class="portletBody">
         <div class="portletContent odd"
              tal:repeat="ref context/externalrefs">
-            <strong tal:content="ref/bugreftype/lp:BugExternalReferenceType">CVE reference</strong>
-            <br />
-            <a tal:attributes="href ref/url" tal:content="ref/description">CVE:Data</a>
+            <h5 tal:content="ref/bugreftype/lp:BugExternalReferenceType">CVE reference</h5>
+            <a tal:attributes="href ref/url">
+            <img src="++resource++link_icon.gif" alt="" />
+            <span tal:replace="ref/description">CVE:Data</span>
+            </a>
         </div>
 
 <!--

@@ -140,7 +140,9 @@ table.rowNavigation tr:hover {
     background-color: #8fb3d9;
     cursor:pointer;
 }
-
+table.rowNavigation th:hover {
+    cursor: default;
+}
 
 /* Bug status markers */
 
@@ -247,5 +249,22 @@ table.rowNavigation tr:hover {
 /* used to mark dummy data with div entity */
 .dummy{
    background-color: #cccccc;
+}
+
+/* Various custom list formats */
+
+ul.people {
+    list-style-image: none;
+    list-style: none;
+    margin: 0;
+}
+
+ul.people li {
+    line-height: 1.5em;
+    padding: 0;
+    background-image: url(++resource++user.gif);
+    background-color: transparent;
+    background-repeat: no-repeat;
+    padding-left: 18px
 }
 

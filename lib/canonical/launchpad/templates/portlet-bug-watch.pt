@@ -1,13 +1,14 @@
 <div class="portlet">
-    <h6 title="Bug watches keep track of this bug in external bug trackers.">
+    <h4 title="Bug watches keep track of this bug in external bug trackers.">
     Bug Watches
-    </h6>
+    </h4>
     
     <div class="portletBody">
         <div class="portletContent odd"
              tal:repeat="watch context/watches">
             
             <a tal:attributes="href string:watches/${watch/id}/+edit">
+                <img src="++resource++search_icon.gif" alt="" />
                 #<span tal:replace="watch/remotebug" />,
                  <span tal:replace="watch/bugtracker/title" />
                 <div class="portletDetails"

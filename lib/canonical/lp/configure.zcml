@@ -26,9 +26,6 @@
 
   </browser:pages>
 
-  <!-- <include file="pages.zcml"/> -->
-  <include file="resources.zcml" />
-
   <adapter
       for="zope.publisher.interfaces.IApplicationRequest"
       provides="zope.app.traversing.interfaces.IPathAdapter"
