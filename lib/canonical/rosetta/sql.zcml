@@ -23,7 +23,9 @@
   </content>
 
   <content class="canonical.launchpad.database.POMsgSet">
-    <allow interface="canonical.launchpad.interfaces.IEditPOMsgSet"/>
+    <require permission="zope.Public"
+        interface="canonical.launchpad.interfaces.IEditPOMsgSet"
+        set_attributes="fuzzy" />
   </content>
 
   <content class="canonical.launchpad.database.POTranslationSighting">

@@ -481,7 +481,8 @@ class POTMsgSet(SQLBase):
             pofile = None
             pluralforms = languages[language].pluralForms
 
-        # XXX: Carlos Perello Marin 15/10/04 WHY??
+        # If we only have a msgid, we change pluralforms to 1, if it's a
+        # plural form, it will be the number defined in the pofile header.
         if self.messageIDs().count() == 1:
             pluralforms = 1
 
@@ -908,6 +909,10 @@ class POMsgSet(SQLBase):
             pomsgsetID=self.id)
 
     # IEditPOMsgSet
+
+    # XXX: Carlos Perello Marin 17/11/2004: I'm not sure this method is 
+    def setFuzzy(self, value):
+        self.fuzzy = value
 
     def makeTranslationSighting(self, person, text, pluralForm,
                               update=False, fromPOFile=False):

@@ -799,11 +799,18 @@ class TranslatePOTemplate:
         isPlural = len(list(messageIDs)) > 1
         messageID = self._messageID(messageIDs[0], set.flags())
         translations = {}
+        fuzzy = {}
 
         for language in self.languages:
             # XXX: missing exception handling
             translations[language] = \
                 set.translationsForLanguage(language.code)
+            try:
+                fuzzy[language] = set.potemplate.poFile(language.code)[messageIDs[0].msgid].fuzzy
+            except KeyError:
+                # We don't have a translation for this language, so it cannot
+                # be fuzzy.
+                fuzzy[language] = False
 
         if isPlural:
             messageIDPlural = self._messageID(messageIDs[1], set.flags())
@@ -820,6 +827,7 @@ class TranslatePOTemplate:
             'commentText' : set.commenttext,
             'sourceComment' : set.sourcecomment,
             'translations' : translations,
+            'fuzzy' : fuzzy,
         }
 
     def messageSets(self):
@@ -860,6 +868,7 @@ class TranslatePOTemplate:
                 sets[id] = {}
                 sets[id]['msgid'] = self.request.form[key].replace('\r', '')
                 sets[id]['translations'] = {}
+                sets[id]['fuzzy'] = {}
 
         # Extract translations from form.
 
@@ -887,6 +896,14 @@ class TranslatePOTemplate:
                     sets[id]['translations'][code] = {}
 
                 sets[id]['translations'][code][pluralform] = self.request.form[key]
+
+            # We check if the msgset is fuzzy or not for this language.
+            match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
+
+            if match:
+                id = int(match.group(1))
+                code = match.group(2)
+                sets[id]['fuzzy'][code] = True
 
         # Get/create a PO file for each language.
         # XXX: This should probably be done more lazily.
@@ -953,6 +970,13 @@ class TranslatePOTemplate:
                             pluralForm = index,
                             update = True,
                             fromPOFile = False)
+
+                # We set the fuzzy flag as needed:
+                if code in set['fuzzy'] and po_set.fuzzy == False:
+                    po_set.fuzzy = True
+                elif code not in set['fuzzy'] and po_set.fuzzy == True:
+                    po_set.fuzzy = False
+                
 
         self.submitted = True
 

@@ -386,6 +386,9 @@ class IPOMsgSet(Interface):
 class IEditPOMsgSet(IPOMsgSet):
     """Interface for editing a POMsgSet."""
 
+    fuzzy = Attribute("""Whether this set was marked as fuzzy in the PO file 
+        it came from.""")
+
     def makeTranslationSighting(person, text, pluralForm, update=False, fromPOFile=False):
         """Return a new translation sighting that points back to us.
         If one already exists, behaviour depends on 'update'; if update

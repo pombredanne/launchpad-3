@@ -68,7 +68,6 @@ def adaptPrincipalToPerson(principal):
 def adaptPrincipalToNoLanguagePerson(principal):
     return DummyPerson([])
 
-
 class DummyPOFile:
     pluralforms = 4
 
@@ -77,6 +76,9 @@ class DummyPOFile:
 
     def translatedCount(self):
         return 3
+
+    def __getitem__(self, msgid_text):
+        raise KeyError, msgid_text
 
 
 class DummyMsgID:
@@ -89,6 +91,9 @@ class DummyPOTMsgSet:
     filereferences = 'fileReferences'
     commenttext = 'commentText'
     sourcecomment = 'sourceComment'
+
+    def __init__(self):
+        self.potemplate = DummyPOTemplate()
 
     def flags(self):
         return []
