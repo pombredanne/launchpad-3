@@ -15,61 +15,61 @@
 	</tal:block>
         
         <tal:block condition="product_view">
-          <tal:block condition="not:product_view/thereAreTemplates">
+	  <tal:block condition="not: product_view/templates">
 	    No translations.
 	  </tal:block>
 
-	<tal:block condition="product_view/thereAreTemplates">
+	<tal:block condition="product_view/templates">
 
-        <div tal:condition="product_view/languages" tal:repeat="LT product_view/languageTemplates">
+        <div tal:condition="product_view/languages" tal:repeat="LT product_view/templates">
 
             <table>
                 <tbody>
+		    <tal:block tal:repeat="language LT/languages">
                     <tr>
-		        <td tal:content="LT/language/englishName" />
+		        <td tal:content="language/name" />
 		    </tr>
-		    <tal:block  tal:repeat="template LT/templates">
 		    <tr>
                         <td>
                             <img src="/++resource++green-bar.png"
                                 height="15"
                                 alt="Translated &amp; non updated graph"
-                                tal:condition="template/poNonUpdatesCount"
-                                tal:attributes="width template/poNonUpdatesPercent;
-                                                title string: Translated: ${template/poNonUpdatesPercent}%"
+                                tal:condition="language/poNonUpdatesCount"
+                                tal:attributes="width language/poNonUpdatesPercent;
+                                                title string: Translated: ${language/poNonUpdatesPercent}%"
                             /><img src="/++resource++blue-bar.png"
                                 height="15"
                                 alt="Updated graph"
-                                tal:condition="template/poUpdatesCount"
-                                tal:attributes="width template/poUpdatesPercent;
-                                                title string: Updates: ${template/poUpdatesPercent}%"
+                                tal:condition="language/poUpdatesCount"
+                                tal:attributes="width language/poUpdatesPercent;
+                                                title string: Updates: ${language/poUpdatesPercent}%"
                             /><img src="/++resource++dwelled-bar.png"
                                 height="15"
                                 alt="Rosetta additions graph"
-                                tal:condition="template/poRosettaCount"
-                                tal:attributes="width template/poRosettaPercent;
-                                                title string: Rosetta additions: ${template/poRosettaPercent}%"
+                                tal:condition="language/poRosettaCount"
+                                tal:attributes="width language/poRosettaPercent;
+                                                title string: Rosetta additions: ${language/poRosettaPercent}%"
                             /><img src="/++resource++red-bar.png"
                                 height="15"
                                 alt="Fuzzy graph"
-                                tal:condition="template/poUntranslated"
-                                tal:attributes="width template/poUntranslatedPercent;
-                                                title string: Untranslated: ${template/poUntranslatedPercent}%" />
+                                tal:condition="language/poUntranslated"
+                                tal:attributes="width language/poUntranslatedPercent;
+                                                title string: Untranslated: ${language/poUntranslatedPercent}%" />
                         </td>
 		    </tr>
 		    <tr>
 		        <td>
-				<div tal:condition="template/poNonUpdatesCount"
-				     tal:content="string: Translated: ${template/poNonUpdatesPercent}%"/>
+				<div tal:condition="language/poNonUpdatesCount"
+				     tal:content="string: Translated: ${language/poNonUpdatesPercent}%"/>
 
-				<div tal:condition="template/poUpdatesCount"
-				     tal:content="string: Updates: ${template/poUpdatesPercent}%"/>
+				<div tal:condition="language/poUpdatesCount"
+				     tal:content="string: Updates: ${language/poUpdatesPercent}%"/>
 
-				<div tal:condition="template/poRosettaCount"
-				     tal:content="string: Rosetta additions: ${template/poRosettaPercent}%"/>
+				<div tal:condition="language/poRosettaCount"
+				     tal:content="string: Rosetta additions: ${language/poRosettaPercent}%"/>
 			      
-				<div tal:condition="template/poUntranslated"
-				     tal:content="string: Untranslated: ${template/poUntranslatedPercent}%"/>
+				<div tal:condition="language/poUntranslated"
+				     tal:content="string: Untranslated: ${language/poUntranslatedPercent}%"/>
 			</td>
                     </tr>
 		    </tal:block>
