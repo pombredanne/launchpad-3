@@ -46,7 +46,8 @@
          <table width="100%">
          <tr><td>Owner</td>
          <th align="right"> 
-           <span tal:content="context/release/owner/displayname">OWNER</span>
+           <a tal:attributes="href string:../../../../people/${context/release/owner/id}"
+	      tal:content="context/release/owner/displayname">OWNER</a>
          </th></tr> 
          <tr><td>State</td>
          <th align="right">
@@ -113,15 +114,20 @@
       tal:content="context/release/title"/> Translations</a> 
    </th></tr>
    <tr><td>
-     <div class="dummy">
+     <div>
       <table width="100%">
-      <legend><h4>Release Teams(XXX)</h4></legend>
+      <legend><h4>Release Roles</h4></legend>
       <tr><td>
         <fieldset>
         <div>
 	<table>
-	<tr><th>Security Team</th></tr>
-	<tr><th>Release Team</th></tr>
+	<tr tal:repeat="role context/roles">
+	 <td>
+	  <a tal:attributes="href string:../../../../people/${role/person/id}"
+	     tal:content="role/person/displayname">TEAM</a>
+         </td>
+	 <td tal:content="role/rolename">ROLE</td>
+        </tr>	
 	</table>
 	</div>
       </td></tr>
@@ -161,13 +167,13 @@
 	    <tr><th><a 
 	    tal:attributes="href string:../../src/${context/release/name}">
 	    View Source Packages List</a></th>
-	    <th>( <spam tal:content="context/release/sourcecount"/> 
+	    <th>( <span tal:content="context/release/sourcecount"/> 
 	    Packages)</th>
 	    </tr><tr>
 	    <th><a
 	    tal:attributes="href string:../../bin/${context/release/name}">
 	    View Binary Packages List</a></th>
-	    <th>( <spam tal:content="context/release/binarycount"/> 
+	    <th>( <span tal:content="context/release/binarycount"/> 
 	    Packages)</th>
 	    </tr>
 	    </table>

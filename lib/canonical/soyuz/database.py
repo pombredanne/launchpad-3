@@ -34,7 +34,7 @@ class DistributionRole(SQLBase):
         for role in dbschema.DistributionRole.items:
             if role.value == self.role:
                 return role.title
-        return 'Unknown'
+        return 'Unknown (%d)' %self.role
     
     rolename = property(_rolename)
         
@@ -58,7 +58,7 @@ class DistroReleaseRole(SQLBase):
         for role in dbschema.DistributionRole.items:
             if role.value == self.role:
                 return role.title
-        return 'Unknown'
+        return 'Unknown (%d)' %self.role
 
     rolename = property(_rolename)
 
@@ -548,7 +548,7 @@ class Membership(SQLBase):
         for role in dbschema.MembershipRole.items:
             if role.value == self.role:
                 return role.title
-        return 'Unknown'
+        return 'Unknown (%d)' %self.role
     
     rolename = property(_rolename)
 
@@ -556,7 +556,7 @@ class Membership(SQLBase):
         for status in dbschema.MembershipStatus.items:
             if status.value == self.status:
                 return status.title
-        return 'Unknown'
+        return 'Unknown (%d)' %self.status
     
     statusname = property(_statusname)
 

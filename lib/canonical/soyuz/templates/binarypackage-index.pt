@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
- <h1><spam tal:content="context/binarypackage/shortdesc">TITLE</spam></h1>
+ <h1><span tal:content="context/binarypackage/shortdesc">TITLE</span></h1>
 
    <table width="100%">
      <tr>

@@ -15,10 +15,10 @@
 <div metal:fill-slot="main">
 
   <h1>
-    <spam tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
+    <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
       TITLE
-    </spam>
-    (<spam tal:content="context/sourcepackagerelease/version" />)
+    </span>
+    (<span tal:content="context/sourcepackagerelease/version" />)
   </h1>
 
  <fieldset>

@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1><spam tal:content="context/sourcepackage/shortdesc"/></h1>
+    <h1><span tal:content="context/sourcepackage/shortdesc"/></h1>
 
     <table width="100%">
        <tr>

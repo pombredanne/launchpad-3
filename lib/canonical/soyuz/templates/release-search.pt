@@ -14,7 +14,7 @@
 <body>
 
 <div metal:fill-slot="main">
-<h1><spam tal:content="context/release/displayname"/> Packages</h1>
+<h1><span tal:content="context/release/displayname"/> Packages</h1>
 
 
 <table>
@@ -44,13 +44,13 @@
 	 <tr><th><a 
 	 tal:attributes="href string:../../src/${context/release/name}">
 	 View Source Packages List</a></th>
-	 <th>( <spam tal:content="context/release/sourcecount"/> 
+	 <th>( <span tal:content="context/release/sourcecount"/> 
 	 Packages)</th>
 	 </tr><tr>
 	 <th><a
 	 tal:attributes="href string:../../bin/${context/release/name}">
 	 View Binary Packages List</a></th>
-	 <th>( <spam tal:content="context/release/binarycount"/> 
+	 <th>( <span tal:content="context/release/binarycount"/> 
 	 Packages)</th>
 	 </tr>
 	 </table>
@@ -69,7 +69,7 @@
 <ul>
   <li tal:repeat="source view/sources">
     <a tal:attributes="href string: ../../src/${context/release/name}/${source/name}">
-    <spam tal:content="source/title"/></a>
+    <span tal:content="source/title"/></a>
   </li> 
 </ul>
 </div>
@@ -82,7 +82,7 @@
 <ul>
   <li tal:repeat="binary view/binaries">
     <a tal:attributes="href string: ../../bin/${context/release/name}/${binary/name}">
-    <spam tal:content="binary/shortdesc"/></a>
+    <span tal:content="binary/shortdesc"/></a>
   </li> 
 </ul>
 </div>
@@ -90,7 +90,7 @@
 
 
 <h3><a tal:attributes="href string: ../${context/release/name}">Back
-to <spam tal:content="context/release/title"/> 
+to <span tal:content="context/release/title"/> 
 Page</a></h3>
 
 

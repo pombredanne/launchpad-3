@@ -14,9 +14,9 @@
 
 <div metal:fill-slot="main">
 
-<h1><spam
-tal:content="context/binarypackagerelease/shortdesc">TITLE</spam> 
-(<spam tal:content="context/version" />)
+<h1><span
+tal:content="context/binarypackagerelease/shortdesc">TITLE</span> 
+(<span tal:content="context/version" />)
 </h1>
 
  <fieldset>

@@ -23,7 +23,7 @@
 
   <legend>
     <a tal:content="release/title" tal:attributes="href release/name"> RELEASENAME </a>
-    (Status: <spam tal:content="release/state"> STATUS </spam>)
+    (Status: <span tal:content="release/state"> STATUS </span>)
   </legend>
 
  <div class="field"> 

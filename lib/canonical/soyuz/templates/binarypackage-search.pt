@@ -16,7 +16,7 @@
 <div metal:fill-slot="main">
 
     <h1>Search Packages in
-    <spam tal:content="context/release/title"> TITLE </spam>
+    <span tal:content="context/release/title"> TITLE </span>
     </h1>
 
     <form name="search" action="" method="POST">
@@ -32,7 +32,7 @@
         PACKAGE
       </a>
        - 
-      <spam tal:content="package/shortdesc"> TITLE </spam>
+      <span tal:content="package/shortdesc"> TITLE </span>
     </li>
     </ul>
 

@@ -43,9 +43,10 @@
        </tr>
 
        <tr tal:condition="context/wiki">
-       <td>Wiki</td><td> <span tal:content="context/wiki/wiki"/>
-       <span tal:content="context/wiki/wikiname"/></td>
-       </tr>
+       <td>Wiki</td><td> 
+        <a tal:attributes="href string:${context/wiki/wiki}${context/wiki/wikiname}" 
+           tal:content="string:${context/wiki/wiki}${context/wiki/wikiname}"/>        
+	</td></tr>
 
        <tr tal:condition="context/irc">
        <td>IRC</td><td><span tal:content="context/irc/nickname"/> at 
@@ -66,18 +67,47 @@
    </table>
    </div> 
    <!--Roles distro and distrorelease -->
-    </td><td valign="top" tal:condition="not:context/person/teamowner"> 
+    </td><td valign="top"> 
     <div>
       <table>
         <legend><h3>Roles</h3></legend>
-        <tr tal:repeat="role context/distroroles">
-	<td><span tal:content="role/rolename">ROLENAME</span> on 
-	<span tal:content="role/distribution/title">DISTRO</span></td>
-	</tr>
-	<tr tal:repeat="role context/distroreleaseroles">
-	<td><span tal:content="role/rolename">ROLENAME</span> on 
-	<span tal:content="role/distrorelease/displayname">RELEASE</span></td>
-	</tr>
+        <tr><td>
+	  <div>
+	  <table>
+	  <legend>Distribution Role</legend>
+          
+          <tr tal:condition="not:context/distroroles">
+	    <td>No Distribution Roles</td>
+          </tr>
+
+          <tr tal:condition="context/distroroles"
+	      tal:repeat="role context/distroroles">
+	    <td><span tal:content="role/rolename">ROLENAME</span> on 
+	      <a tal:attributes="href string:../../distros/${role/distribution/name}"
+                 tal:content="role/distribution/title">DISTRO</a></td>
+	  </tr>
+          </table>
+	  </div>
+	</td></tr>
+	<tr><td>
+	  <div>
+	  <table>
+	  <legend>Release Roles</legend>
+	
+          <tr tal:condition="not:context/distroreleaseroles">
+	      <td>No Release Roles</td>
+          </tr>
+
+	  <tr tal:condition="context/distroreleaseroles"
+              tal:repeat="role context/distroreleaseroles">
+	      <td><span tal:content="role/rolename">ROLENAME</span> on 
+	          <a tal:attributes="href string:../../distros/${role/distrorelease/distribution/name}/releases/${role/distrorelease/name}"
+	             tal:content="role/distrorelease/displayname">RELEASE</a>
+              </td>
+	  </tr>
+	  </table>
+          </div>
+	</td></tr>
       </table>
     </div>
   </td></tr>

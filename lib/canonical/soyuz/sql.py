@@ -97,7 +97,8 @@ class DistroApp(object):
 class DistroReleaseApp(object):
     def __init__(self, release):
         self.release = release
-        
+        self.roles=DistroReleaseRole.selectBy(distroreleaseID=self.release.id) 
+
     def getPackageContainer(self, name):
         if name == 'source':
             return SourcePackages(self.release)
@@ -330,7 +331,7 @@ class DistroSourcesApp(object):
 
     def __getitem__(self, name):
         return DistroReleaseSourcesApp(Release.selectBy(distributionID=\
-                                                            self.distribution.id,
+                                                        self.distribution.id,
                                                         name=name)[0])
 
     def __iter__(self):
@@ -341,8 +342,6 @@ class DistroSourcesApp(object):
 ###########################################################
 
 # Team app component (team)
-#FIXME: I shouls be moved to database.py !! and work for instance 
-
 class DistroReleaseTeamApp(object):
     def __init__(self, release):
         self.release = release
@@ -422,11 +421,17 @@ class PersonApp(object):
 
         try:
             self.distroroles = DistributionRole.selectBy(personID=self.id)
+            if self.distroroles.count() == 0:
+                self.distroroles = None
+                
         except IndexError:
             self.distroroles = None
 
         try:
-            self.distroreleaseroles = DistroReleaseRole.selectBy(personID=self.id)
+            self.distroreleaseroles = DistroReleaseRole.selectBy(personID=\
+                                                                 self.id)
+            if self.distroreleaseroles.count() == 0:
+                self.distroreleaseroles = None
         except IndexError:
             self.distroreleaseroles = None
             

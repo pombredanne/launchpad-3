@@ -14,10 +14,10 @@
 
 <div metal:fill-slot="main">
 
-<h1><spam tal:content="context/binarypackagerelease/shortdesc">
-     TITLE </spam>
-    <spam tal:content="context/version">Version</spam>-
-    <spam tal:content="context/arch">Arch</tal:block>
+<h1><span tal:content="context/binarypackagerelease/shortdesc">
+     TITLE </span>
+    <span tal:content="context/version">Version</span>-
+    <span tal:content="context/arch">Arch</tal:block>
 </h1>
     
 

@@ -14,10 +14,10 @@
 
 <div metal:fill-slot="main">
 
-    <h1> <spam tal:content="context/sourcepackagerelease/sourcepackage/shortdesc" /> ChangeLog </h1>
+    <h1> <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc" /> ChangeLog </h1>
     
     <pre>
-      <spam tal:content="context/sourcepackagerelease/changelog" />
+      <span tal:content="context/sourcepackagerelease/changelog" />
     </pre>
 
 </div>

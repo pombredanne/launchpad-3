@@ -111,10 +111,7 @@ class IbuilddepsContainer(Interface):
 class IDistroReleaseApp(Interface):
     """A Release Proxy """
     release = Attribute("Release")
-    name = Attribute("Release name")
-    title = Attribute("Release title")
-    description = Attribute("Release description")
-    version = Attribute("Release version")
+    roles = Attribute("Release Roles")
 
     def getPackageContainer(name):
         """ Returns the associated IPackageSet """
