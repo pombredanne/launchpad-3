@@ -51,35 +51,27 @@ class ViewProject:
     def thereAreProducts(self):
         return len(list(self.context.products)) > 0
 
-    def languageProducts(self):
-        person = IPerson(self.request.principal, None)
-        if person is not None:
-            for language in person.languages():
-                yield LanguageProducts(language, self.context.rosettaProducts())
-        else:
-            # XXX: Temporal hack, to be removed as soon as we have the login
-            # template working. The code duplication is just to be easier to
-            # remove this hack when is not needed anymore.
-            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
-            for language in person.languages():
-                yield LanguageProducts(language, self.context.rosettaProducts())
-
-
-class LanguageProducts:
-    def __init__(self, language, products):
-        self.language = language
-        self._products = products
-
     def products(self):
-        for product in self._products:
-            total = product.messageCount()
-            currentCount = product.currentCount(self.language.code)
-            rosettaCount = product.rosettaCount(self.language.code)
-            updatesCount = product.updatesCount(self.language.code)
+        person = IPerson(self.request.principal, None)
+        if person is None:
+            # XXX: Temporal hack, to be removed as soon as we have the login
+            # template working.
+            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+        
+        for product in self.context.rosettaProducts():
+            total = 0
+            currentCount = 0
+            rosettaCount = 0
+            updatesCount = 0
+            for language in person.languages():
+                total += product.messageCount()
+                currentCount += product.currentCount(language.code)
+                rosettaCount += product.rosettaCount(language.code)
+                updatesCount += product.updatesCount(language.code)
+
             nonUpdatesCount = currentCount - updatesCount
             translated = currentCount  + rosettaCount
             untranslated = total - translated
-
             try:
                 currentPercent = float(currentCount) / total * 100
                 rosettaPercent = float(rosettaCount) / total * 100
@@ -323,8 +315,8 @@ class TranslatorDashboard:
 #                        if language.englishName == englishName:
 #                            if language.code not in self.interest:
 #                                self.interest.append(language)
-        else:
-            raise RuntimeError("must post this form!")
+#            else:
+#                 raise RuntimeError("must post this form!")
 
 
 class ViewSearchResults:
