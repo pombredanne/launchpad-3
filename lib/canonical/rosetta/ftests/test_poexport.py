@@ -126,7 +126,7 @@ msgstr[0] "%d contacto"
 msgstr[1] "%d contactos"
 
 #~ msgid "_Add Group"
-#~ msgstr "_Añadir grupo"
+#~ msgstr "_A\xc3\xb1adir grupo"
 '''
 
 class POExportTestCase(PlacelessSetup, unittest.TestCase):
