@@ -92,12 +92,10 @@
                         this sourcepackagename
                     </span>.
                 </tal:block>
-                <tal:block condition="python: view/isDistroReleaseSubset">
-                    <span tal:replace="context/distrorelease/displayname"
-                          i18n:name="distrorelease_displayname">
-                        this distrorelease
-                    </span>
-                </tal:block>
+                <span tal:replace="context/distrorelease/displayname"
+                      i18n:name="distrorelease_displayname">
+                    this distrorelease
+                </span>
             </p>
 
             <div tal:condition="not: view/languages">
@@ -206,9 +204,9 @@
                        i18n:translate="">More...</a> ]
                 </div>
 
-                <div tal:replace="structure view/statusLegend" tal:omit-tag />
-
             </div>
+
+            <div tal:replace="structure view/statusLegend" tal:omit-tag />
 
         </tal:block> <!-- condition: non-distrorelease-only stuff -->
 

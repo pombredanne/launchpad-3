@@ -23,7 +23,7 @@ from canonical.launchpad.interfaces import IPOTMsgSet, \
     IEditPOTemplate, IPOMsgID, IPOMsgIDSighting, IPOFileSet, \
     IEditPOFile, IPOTranslation, IEditPOMsgSet, IPOTemplateSet, \
     IPOTemplateSubset, IPOTranslationSighting, IPersonSet, IRosettaStats, \
-    IRawFileData
+    IRawFileData, ITeam
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
 from canonical.lp.dbschema import EnumCol
@@ -674,6 +674,17 @@ class POTemplate(SQLBase, RosettaStats):
             data['origin'] = self.productrelease.product.name
         else:
             data['origin'] = self.sourcepackagename.name
+
+        if owner is None:
+            # All POFiles should have an owner, by default, the Rosetta Admin
+            # team.
+            # The import is here to prevent circular dependencies
+            from canonical.launchpad.database.person import PersonSet
+
+            # XXX Carlos Perello Marin 2005-03-28
+            # This should be done with a celebrity.
+            personset = PersonSet()
+            owner = personset.getByName('rosetta-admins')
 
         return POFile(potemplate=self,
                       language=language,

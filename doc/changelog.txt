@@ -2,6 +2,55 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-28 21:07:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1508
+
+    Summary:
+      Some fixes, added some pagetests and restricted the access to POFile and POTemplate's +edit pages
+    Revision:
+      launchpad--devel--0--patch-1508
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-8
+       Added a default value for POFile.owner (rosetta-admins), fixed the multiple potemplate listing, improved the potemplate titles and show only *once* the colour legend
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-9
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-10
+       Added restrictions to the +edit pages of the POFile and POTemplate so not all people can change them for Hoary
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-11
+       Added pagetests for the POTemplate and POFile's edit pages
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-pofile-edit-allowed.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-pofile-edit-not-allowed.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-potemplate-edit-allowed.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-potemplate-edit-not-allowed.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-edit-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-edit-not-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-edit-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-edit-not-allowed.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/potemplate.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/scripts/rosetta.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/templates/potemplatesubset-index.pt
+     lib/canonical/launchpad/zcml/pofile.zcml
+     lib/canonical/launchpad/zcml/potemplate.zcml
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-8
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-9
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-10
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-11
+
+
 2005-03-28 20:17:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1507
 
     Summary:

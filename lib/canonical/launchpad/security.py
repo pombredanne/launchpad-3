@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import IHasProduct, IHasProductAndAssignee
 from canonical.launchpad.interfaces import IReadOnlyUpstreamBugTask
 from canonical.launchpad.interfaces import IEditableUpstreamBugTask, IProduct
 from canonical.launchpad.interfaces import ITeamParticipationSet
+from canonical.launchpad.interfaces import IPOTemplate, IPOFile
 from canonical.lp.dbschema import BugSubscription
 
 
@@ -268,4 +269,51 @@ class UseApiDoc(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return True
+
+class EditPOTemplateDetails(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPOTemplate
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of the POTemplate if it's not in a product release.
+        """
+        if self.obj.productrelease is not None:
+            # It's a PO file from a product, it has no restrictions.
+            return True
+        elif ITeam.providedBy(self.obj.owner):
+            # The PO file is owned by a team.
+            if user.inTeam(self.obj.owner):
+                # The user is member of that team.
+                return True
+            else:
+                return False
+        elif self.obj.owner.id == user.id:
+            # The user is directly the owner of the PO file.
+            return True
+        else:
+            return False
+
+
+class EditPOFileDetails(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPOFile
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of the POFile if it's not in a product release.
+        """
+        if self.obj.potemplate.productrelease is not None:
+            # It's a PO file from a product, it has no restrictions.
+            return True
+        elif ITeam.providedBy(self.obj.owner):
+            # The PO file is owned by a team.
+            if user.inTeam(self.obj.owner):
+                # The user is member of that team.
+                return True
+            else:
+                return False
+        elif self.obj.owner.id == user.id:
+            # The user is directly the owner of the PO file.
+            return True
+        else:
+            return False
 

@@ -213,7 +213,7 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
     # Prefix and suffix are used when we need to generate a name for a PO
     # template (the fallback case).
 
-    prefix = 'review-potemplate-%s-%s-' % (
+    prefix = 'review-%s-%s-' % (
         distrorelease_name, sourcepackage_name)
     suffix = 1
 
@@ -410,7 +410,9 @@ class AttachTranslationCatalog:
         # XXX
         # This should be done with a celebrity.
         #  -- Dafydd Harries, 2005/03/16
-        admins = PersonSet().getByName('rosetta-admins')
+        personset = PersonSet()
+        admins = personset.getByName('rosetta-admins')
+        ubuntu_translators = personset.getByName('ubuntu-translators')
 
         for domain in domains:
             try:
@@ -430,11 +432,13 @@ class AttachTranslationCatalog:
                 self.logger.warning(
                     "Creating new PO template '%s' for %s/%s" % (
                     domain.domainname, release.name, sourcepackagename.name))
-                template = potemplatesubset.new(
-                    potemplatename=potemplatename,
-                    title='%s template for %s in %s' % (
+                # E.g. "gtk20 for gtk+ in hoary"
+                potemplate_title= '%s for %s in %s' % (
                         potemplatename.name, sourcepackagename.name,
                         release.displayname),
+                template = potemplatesubset.new(
+                    potemplatename=potemplatename,
+                    title=potemplate_title,
                     contents=domain.pot_contents,
                     owner=admins)
             else:
@@ -474,7 +478,8 @@ class AttachTranslationCatalog:
                     code, variant = language_code, None
 
                 try:
-                    pofile = template.getOrCreatePOFile(code, variant)
+                    pofile = template.getOrCreatePOFile(code, variant,
+                                                        ubuntu_translators)
                 except LanguageNotFound:
                     # The language code does not exist in our database.
                     # Usually, it's a translator error.

@@ -42,7 +42,7 @@
     <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IPOTemplate"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
         class="canonical.rosetta.browser.ViewPOTemplate"
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"

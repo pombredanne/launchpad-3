@@ -54,7 +54,7 @@ class POTemplateSubsetView(object):
             if self.context.sourcepackagename:
                 package_name = self.context.sourcepackagename.name
 
-                return "%s from %s" % (release_name, package_name)
+                return "%s in %s" % (package_name, release_name)
             else:
                 return release_name
         else:
