@@ -1,0 +1,12 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+  <content class="canonical.launchpad.database.SSHKey">
+    <allow interface="canonical.launchpad.interfaces.ISSHKey"/>
+	<!--
+    <require
+     permission="zope.Public"
+     set_attributes="keytext comment"
+     />
+	 -->
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+</configure>

@@ -16,8 +16,8 @@
     <h1>Team Joined</h1>
     
      <div tal:condition="view/join_action">
-        <p><a tal:attributes="href string:../${context/person/name}"
-              tal:content="context/person/displayname">
+        <p><a tal:attributes="href string:../${context/name}"
+              tal:content="context/displayname">
               TEAM</a> was Joined by 
 	      <a tal:attributes="href string:../${view/person/name}"
                  tal:content="view/person/displayname"></a>

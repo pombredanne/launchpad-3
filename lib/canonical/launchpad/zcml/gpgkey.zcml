@@ -1,0 +1,11 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+  <content class="canonical.launchpad.database.GPGKey">
+    <allow interface="canonical.launchpad.interfaces.IGPGKey"/>
+    <!--
+    <require permission="zope.Public"
+             set_attributes="keyid fingerprint pubkey revoked"
+     />
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    -->
+  </content>
+</configure>

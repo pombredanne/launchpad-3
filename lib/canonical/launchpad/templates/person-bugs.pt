@@ -4,7 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
-    <title metal:fill-slot="title">Packages Maintained By
+  <title metal:fill-slot="title">Bugs Reported By
       <span tal:replace="context/displayname">Name</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -31,14 +31,14 @@
       <li tal:condition="context/packages" id="contentview-packages"
       -->
       <li id="contentview-packages"
-          class="selected">
+          class="plain">
         <a href="+packages">Packages</a>
       </li>
 
       <!--
       <li tal:condition="context/bugs" id="contentview-bugs" class="plain">
       -->
-      <li id="contentview-bugs" class="plain">
+      <li id="contentview-bugs" class="selected">
         <a href="+bugs">Bugs</a>
       </li>
 
@@ -60,15 +60,32 @@
     </ul>
     <div class="documentContent" id="region-content">
 
-      <h1>Packages maintained By 
-      <span tal:content="context/displayname">context</span></h1>
+    <h1>Bugs for <span tal:content="context/displayname">context</span></h1>
 
-      <div tal:replace="structure view/packagesPortlet" />
+    <!-- XXX: salgado: Must show all bugs, not only bugs reported by
+      this person.  -->
+    <div tal:define="bugs context/bugs"
+         tal:condition="bugs">
+      <h4>Bugs reported by <span tal:replace="context/displayname"></span></h4>
+      <table id="ass_listing" class="listing rowNavigation">
+        <tr>
+          <th>Bug #</th>
+          <th>Bug Title</th>
+        </tr>
+        <tr tal:repeat="bug bugs">
+          <td><a tal:attributes="href string:/malone/bugs/${bug/id}">
+            <span tal:content="bug/id"></span></a>
+          </td>
+          <td><a tal:attributes="href string:/malone/bugs/${bug/id}">
+            <span tal:content="bug/title"></span></a>
+          </td>
+        </tr>
+      </table>
+    </div>
+    </div>
 
 </div>
 </div>
-</div>
-
 
 </body>
 </html>

@@ -5,94 +5,132 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+  <content class="canonical.launchpad.database.PersonSet">
+      <allow interface="canonical.launchpad.interfaces.IPersonSet" />
+  </content>
+
+  <utility provides="canonical.launchpad.interfaces.IPersonSet"
+           factory="canonical.launchpad.database.PersonSet"
+           permission="zope.Public" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPersonSet"
+      name="+index" />
+
+  <browser:traverse
+      for="canonical.launchpad.interfaces.IPersonSet"
+      getter="getByName" />
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPersonSet"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PeopleListView">
+      <browser:page
+          name="+peoplelist"
+          template="../templates/people-list.pt"
+          lp:url="foaf/people/+peoplelist" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPersonSet"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.TeamListView">
+      <browser:page
+          name="+teamlist"
+          template="../templates/people-list.pt"
+          lp:url="foaf/people/+teamlist" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPersonSet"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.FOAFSearchView">
+      <browser:page
+          name="+index"
+          template="../templates/people-index.pt"
+          lp:url="foaf/people/+index" />
+  </browser:pages>
+
+  <browser:addform
+      name="+new"
+      for="canonical.launchpad.interfaces.IPersonSet"
+      schema="canonical.launchpad.interfaces.IPerson"
+      label="Create a new Person"
+      fields="displayname givenname familyname email password password2"
+      content_factory="canonical.launchpad.database.Person"
+      class="canonical.launchpad.browser.PeopleAddView"
+      permission="zope.Public"
+      template="../templates/launchpad-addform.pt"
+      lp:url="foaf/people/+new">
+  </browser:addform>
+
+  <browser:addform
+      name="+newteam"
+      for="canonical.launchpad.interfaces.IPersonSet"
+      schema="canonical.launchpad.interfaces.ITeam"
+      label="Create a new Team"
+      fields="displayname teamdescription email"
+      content_factory="canonical.launchpad.database.Person"
+      class="canonical.launchpad.browser.TeamAddView"
+      permission="zope.Public"
+      template="../templates/launchpad-addform.pt"
+      lp:url="foaf/people/+newteam">
+  </browser:addform>
+
   <content class="canonical.launchpad.database.Person">
-    <allow interface="canonical.launchpad.interfaces.IPerson"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-    <require
-     permission="zope.Public"
-     set_attributes="displayname givenname familyname teamowner
-     teamdescription password karma karmatimestamp"
-    />
+      <allow interface="canonical.launchpad.interfaces.IPerson" />
+      <require permission="zope.Public"
+               set_schema="canonical.launchpad.interfaces.IPerson" />
   </content>
 
-  <content class="canonical.launchpad.database.EmailAddress">
-    <allow interface="canonical.launchpad.interfaces.IEmailAddress"/>
-    <require
-     permission="zope.Public"
-     set_attributes="email status"
-     />	
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+index" />
 
-  <content class="canonical.launchpad.database.GPGKey">
-    <allow interface="canonical.launchpad.interfaces.IGPGKey"/>
-    <require
-     permission="zope.Public"
-     set_attributes="keyid fingerprint pubkey revoked"
-     />
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.PersonView">
+      <browser:page
+          name="+index"
+          template="../templates/person-index.pt"
+          lp:url="foaf/people/$person.id/index" />
+      <browser:page
+          name="+packages"
+          template="../templates/person-packages.pt"
+          lp:url="foaf/people/$person.id/packages" />
+      <browser:page
+          name="+bugs"
+          template="../templates/person-bugs.pt"
+          lp:url="foaf/people/$person.id/bugs" />
+      <browser:page
+          name="+karma"
+          template="../templates/person-karma.pt"
+          lp:url="foaf/people/$person.id/karma" />
+      <browser:page
+          name="+translations"
+          template="../templates/person-translations.pt"
+          lp:url="foaf/people/$person.id/translations" />
+  </browser:pages>
 
-  <content class="canonical.launchpad.database.ArchUserID">
-    <allow interface="canonical.launchpad.interfaces.IArchUserID"/>
-    <require
-     permission="zope.Public"
-     set_attributes="archuserid"
-     />
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.PersonEditView">
+      <browser:page
+          name="+edit"
+          template="../templates/person-edit.pt"
+          lp:url="foaf/people/$person.id/edit" />
+  </browser:pages>
 
-  <content class="canonical.launchpad.database.WikiName">
-    <allow interface="canonical.launchpad.interfaces.IWikiName"/>
-    <require
-     permission="zope.Public"
-     set_attributes="wiki wikiname"
-     />
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.launchpad.database.JabberID">
-    <allow interface="canonical.launchpad.interfaces.IJabberID"/>
-    <require
-     permission="zope.Public"
-     set_attributes="jabberid"
-     />
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.launchpad.database.IrcID">
-    <allow interface="canonical.launchpad.interfaces.IIrcID"/>
-    <require
-     permission="zope.Public"
-     set_attributes="network nickname"
-     />
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.launchpad.database.Membership">
-    <allow interface="canonical.launchpad.interfaces.IMembership"/>
-    <require
-     permission="zope.Public"
-     set_attributes="role status"
-     />
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.launchpad.database.TeamParticipation">
-    <allow interface="canonical.launchpad.interfaces.ITeamParticipation"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.launchpad.database.TeamParticipationSet">
-    <allow interface="canonical.launchpad.interfaces.ITeamParticipationSet"/>
-  </content>
-
-  <securedutility
-      class="canonical.launchpad.database.TeamParticipationSet"
-      provides="canonical.launchpad.interfaces.ITeamParticipationSet">
-      <allow
-        interface="canonical.launchpad.interfaces.ITeamParticipationSet" />
-  </securedutility>
-
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPerson"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.PersonEditView">
+      <browser:page
+          name="+emails"
+          template="../templates/person-emails.pt"
+          lp:url="foaf/people/$person.id/emails" />
+  </browser:pages>
 
 </configure>

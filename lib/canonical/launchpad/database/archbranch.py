@@ -17,10 +17,9 @@ from canonical.launchpad.interfaces import CategoryAlreadyRegistered
 from zope.interface import implements
 from canonical.launchpad.interfaces import IBranch
 
-# XXX: This import is somewhat circular, but launchpad/database/__init__.py
-# imports archarchive before archbranch, so it should be ok...
-#  - Andrew Bennetts, 2004-10-20
-from canonical.launchpad.database import ArchiveMapper, ArchNamespace, ArchArchive
+from canonical.launchpad.database.archarchive import ArchiveMapper,\
+                                                     ArchNamespace,\
+                                                     ArchArchive
 
 from arch import arch
 

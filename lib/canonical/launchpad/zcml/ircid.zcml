@@ -1,0 +1,13 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+  <content class="canonical.launchpad.database.IrcID">
+    <allow interface="canonical.launchpad.interfaces.IIrcID"/>
+    <!--
+    <require
+     permission="zope.Public"
+     set_attributes="network nickname"
+     />
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    -->
+  </content>
+
+</configure>

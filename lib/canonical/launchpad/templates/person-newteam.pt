@@ -13,51 +13,26 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+<div tal:replace="structure view/leftMenu" />
+</metal:leftportlets>
 
 <div metal:fill-slot="main">
 
-    <div id="content" class="documentEditable">
-        <ul class="contentViews">
-            <li id="contentview-view" class="plain">
-                <a href=".">View</a>
-            </li>
+<div id="content" class="documentEditable">
 
-	    <li id="contentview-packages" class="plain">
-                <a href="+packages">Packages</a>
-            </li>
+    <div class="documentContent" id="region-content">
 
-            <li tal:condition="view/permission"
-	        id="contentview-edit" class="plain">
-                <a href="+edit">Edit</a>
-            </li>
-
-	    <li tal:condition="view/permission"
-	        id="contentview-add" class="selected">
-                <a href="+add">Add</a>
-            </li>
-
-        </ul>
-
-        <div class="documentContent" id="region-content">
-
-      <div class="portalMessage" 
-           tal:condition="not:view/permission">
-	   <p>Warning: You are not authorized to change this page. If you
-	      change something your changes will be lost.
-	   <div align="right"><a href="index.html"><i>back</i></a></div>
-      </div>
-
-    <div tal:condition="view/permission">
     <h1>Create a New Team</h1>
 
     <div class="documentDescription">	
-    <p> Here you can create a new Team
+      <p> Here you can create a new Team</p>
     </div>
     
-    <div tal:condition="view/add_action">
-         <p> <a tal:attributes="href string:../${view/results/name}"
+    <div tal:condition="view/add_action" class="portalMessage">
+         <p> Team <a tal:attributes="href string:${view/results/name}"
                 tal:content="view/results/displayname">NAME</a> 
-                Team added
+             Succesfully Created.</p>
     </div>
 
     <div>
@@ -99,33 +74,12 @@
 	</div>
 	</td></tr>
 	<tr><td>
-	<div class="field">
-	    <label>Password</label>
-	    <span class="fieldRequired" title="Required">(Required)</span>
-	    <div class="formHelp">
-	    Enter a Password.
-            </div>
-	    <input type="password" name="password"/>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="field">
-	    <label>Retype Password</label>
-	    <span class="fieldRequired" title="Required">(Required)</span>
-	    <div class="formHelp">
-	    Enter the same Password Again.
-            </div>
-	    <input type="password" name="retype"/> 
-	</div>
-	</td></tr>
-	<tr><td>
 	<div class="formControls">
 	  <input type="submit" value="Create"/>
 	</div>
 	</td></tr>
 	</table>
   </form>
-  </div>
   </div>
 
   </div>

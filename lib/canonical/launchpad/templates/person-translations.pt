@@ -4,7 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
-    <title metal:fill-slot="title">Packages Maintained By
+    <title metal:fill-slot="title">Translations Made By
       <span tal:replace="context/displayname">Name</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -30,8 +30,7 @@
       <!--
       <li tal:condition="context/packages" id="contentview-packages"
       -->
-      <li id="contentview-packages"
-          class="selected">
+      <li id="contentview-packages" class="plain">
         <a href="+packages">Packages</a>
       </li>
 
@@ -45,25 +44,21 @@
       <!--
       <li tal:condition="context/translations" id="contentview-translations"
       -->
-      <li id="contentview-translations"
-          class="plain">
+      <li id="contentview-translations" class="selected">
         <a href="+translations">Translations</a>
       </li>
 
       <!--
       <li tal:condition="context/activities" id="contentview-karma"
       -->
-      <li id="contentview-karma"
-          class="plain">
+      <li id="contentview-karma" class="plain">
         <a href="+karma">Karma</a>
       </li>
     </ul>
     <div class="documentContent" id="region-content">
 
-      <h1>Packages maintained By 
+      <h1>Translations Made by
       <span tal:content="context/displayname">context</span></h1>
-
-      <div tal:replace="structure view/packagesPortlet" />
 
 </div>
 </div>

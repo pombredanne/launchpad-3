@@ -1,0 +1,5 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+  <content class="canonical.launchpad.database.ArchUserID">
+    <allow interface="canonical.launchpad.interfaces.IArchUserID"/>
+  </content>
+</configure>

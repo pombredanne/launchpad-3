@@ -108,7 +108,8 @@
 
         <span tal:condition="request/lp:person">
             Logged in as
-            <span tal:replace="request/lp:person/displayname">Foo Bar</span>
+            <a tal:attributes="href string:/foaf/people/${request/lp:person/name}">
+            <span tal:replace="request/lp:person/displayname">Foo Bar</span></a>
             &mdash;
             <a href="/+logout">Log Out</a>
         </span>

@@ -14,10 +14,17 @@ from canonical.database.constants import UTC_NOW
 
 # canonical imports
 from canonical.launchpad.interfaces import IPerson, IPersonSet, IEmailAddress
+from canonical.launchpad.interfaces import IObjectAuthorization
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.interfaces import ITeamParticipationSet
+from canonical.launchpad.interfaces import ISourcePackageSet
+
+from canonical.launchpad.database.translation_effort import TranslationEffort
+from canonical.launchpad.database.soyuz import DistributionRole
+from canonical.launchpad.database.soyuz import DistroReleaseRole
+from canonical.launchpad.database.bug import Bug
+
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
-from canonical.launchpad.database.pofile import POTemplate
 from canonical.lp.dbschema import KarmaField
 from canonical.lp import dbschema
 from canonical.foaf import nickname
@@ -29,31 +36,36 @@ from datetime import datetime
 class Person(SQLBase):
     """A Person."""
 
-    implements(IPerson)
+    implements(IPerson, IObjectAuthorization)
 
-    _columns = [
-        StringCol('name', alternateID=True),
-        StringCol('displayname', default=None),
-        StringCol('givenname', default=None),
-        StringCol('familyname', default=None),
-        StringCol('password', default=None),
-        ForeignKey(name='teamowner', foreignKey='Person', dbName='teamowner',
-            default=None),
-        StringCol('teamdescription', default=None),
-        IntCol('karma', default=0),
-        DateTimeCol('karmatimestamp', default=UTC_NOW)
-    ]
+    name = StringCol(dbName='name', alternateID=True)
+    password = StringCol(dbName='password', default=None)
+    givenname = StringCol(dbName='givenname', default=None)
+    familyname = StringCol(dbName='familyname', default=None)
+    displayname = StringCol(dbName='displayname', default=None)
+    teamdescription = StringCol(dbName='teamdescription', default=None)
+
+    teamowner = ForeignKey(dbName='teamowner', foreignKey='Person', 
+                           default=None)
+
+    sshkeys = MultipleJoin('SSHKey', joinColumn='person')
+
+    karma = IntCol(dbName='karma', default=0)
+    karmatimestamp = DateTimeCol(dbName='karmatimestamp', default=UTC_NOW)
 
     # RelatedJoin gives us also an addLanguage and removeLanguage for free
-    languages = RelatedJoin('Language', joinColumn='person',
-        otherColumn='language', intermediateTable='PersonLanguage')
+    languages = RelatedJoin('Language', joinColumn='person', 
+                            otherColumn='language', 
+                            intermediateTable='PersonLanguage')
 
-    # XXX Steve Alexander, 2004-11-15.
-    #     The rosetta team need to clean this up.
-    _emailsJoin = MultipleJoin('RosettaEmailAddress', joinColumn='person')
-
-    def emails(self):
-        return iter(self._emailsJoin)
+    def checkPermission(self, principal, permission):
+        if permission == "launchpad.Edit":
+            teamowner = getattr(self.teamowner, 'id', None)
+            if principal.id == teamowner:
+                # I'm the team owner and want to change the team
+                # information.
+                return True
+            return self.id == principal.id
 
     def browsername(self):
         """Returns a name suitable for display on a web page.
@@ -151,10 +163,6 @@ class Person(SQLBase):
                     origin = 2
                 ORDER BY datefirstseen DESC))
         '''
-        # XXX: Dafydd Harries, 2004/10/13.
-        # Import done here as putting it at the top seems to break it and
-        # right now I'd rather have this working than spend time on working
-        # out the Right solution.
         return POTemplate.select('''
             id IN (
                 SELECT potemplate FROM potmsgset WHERE id IN (
@@ -189,9 +197,140 @@ class Person(SQLBase):
         else:
             return False
 
+    #
+    # Properties
+    #
+
+    def _roleset(self):
+        return [item.title for item in dbschema.MembershipRole.items]
+
+    roleset = property(_roleset)
+
+    def _statusset(self):
+        return [item.title for item in dbschema.MembershipStatus.items]
+
+    statusset = property(_statusset)
+
+    def _members(self): 
+        members = Membership.selectBy(teamID=self.id)
+        if members.count() == 0:
+            members = None                
+        return members
+
+    members = property(_members)
+
+    def _teams(self):
+        # FIXME: (my_team) Daniel Debonzi 2004-10-13
+        # My Teams should be:
+        # -> the Teams owned by me
+        # OR
+        # -> the Teams which I'm member (as It is)
+        teams = Membership.selectBy(personID=self.id)
+        if teams.count() == 0:
+            teams = None                
+        return teams
+
+    teams = property(_teams)
+
+    def _subteams(self):
+        teampart = getUtility(ITeamParticipationSet)
+        subteams = teampart.getSubTeams(self.id)
+        if subteams.count() == 0:
+            subteams = None                
+        return subteams
+
+    subteams = property(_subteams)
+
+    def _distroroles(self):
+        distroroles = DistributionRole.selectBy(personID=self.id)
+        if distroroles.count() == 0:
+            distroroles = None
+        return distroroles
+
+    distroroles = property(_distroroles)
+
+    def _distroreleaseroles(self):
+        distroreleaseroles = DistroReleaseRole.selectBy(personID=self.id)
+        if distroreleaseroles.count() == 0:
+            distroreleaseroles = None
+        return distroreleaseroles
+
+    distroreleaseroles = property(_distroreleaseroles)
+
+    def _emails(self):
+        return EmailAddress.selectBy(personID=self.id)
+
+    emails = property(_emails)
+
+    def _bugs(self):
+        return Bug.selectBy(ownerID=self.id)
+
+    bugs= property(_bugs)
+
+    def _translations(self):
+        return TranslationEffort.selectBy(ownerID=self.id)
+
+    translations = property(_translations)
+
+    def _activities(self):
+        return Karma.selectBy(personID=self.id)
+
+    activities = property(_activities)
+
+    def _wiki(self):
+        wiki = WikiName.selectBy(personID=self.id)
+        count = wiki.count()
+        if count:
+            assert count == 1
+            return wiki[0]
+
+    wiki = property(_wiki)
+
+    def _jabber(self):
+        jabber = JabberID.selectBy(personID=self.id)
+        if jabber.count() == 0:
+            return None
+        return jabber[0]
+
+    jabber = property(_jabber)
+
+    def _archuser(self):
+        archuser = ArchUserID.selectBy(personID=self.id)
+        if archuser.count() == 0:
+            return None
+        return archuser[0]
+
+    archuser = property(_archuser)
+
+    def _irc(self):
+        irc = IrcID.selectBy(personID=self.id)
+        if irc.count() == 0:
+            return None
+        return irc[0]
+
+    irc = property(_irc)
+
+    def _gpg(self):
+        gpg = GPGKey.selectBy(personID=self.id)
+        if gpg.count() == 0:
+            return None
+        return gpg[0]
+
+    gpg = property(_gpg)
+
+    def _getSourcesByPerson(self):
+        sputil = getUtility(ISourcePackageSet)
+        return sputil.getByPersonID(self.id)
+
+    packages = property(_getSourcesByPerson)
+
+
 class PersonSet(object):
     """The set of persons."""
     implements(IPersonSet)
+
+    def __iter__(self):
+        return self.getall()
 
     def __getitem__(self, personid):
         """See IPersonSet."""
@@ -200,6 +339,11 @@ class PersonSet(object):
             raise KeyError, personid
         else:
             return person
+
+    def getByName(self, name):
+        results = Person.selectBy(name=name)
+        assert results.count() == 1
+        return results[0]
 
     def get(self, personid, default=None):
         """See IPersonSet."""
@@ -234,20 +378,7 @@ class PersonSet(object):
             distinct=True, orderBy='displayname')
 
 
-def PersonFactory(context, **kw):
-    now = datetime.utcnow()
-    person = Person(teamowner=1,
-                    teamdescription='',
-                    karma=0,
-                    karmatimestamp=now,
-                    **kw)
-    return person
-
-# XXX: Daniel Debonzi 2004-10-28
-# Shold not it and PersonFactory be only
-# one function?
-def createPerson(displayname, givenname, familyname,
-                 password, email):
+def createPerson(displayname, givenname, familyname, password, email):
     """Creates a new person"""
 
     nick = nickname.generate_nick(email)
@@ -274,8 +405,8 @@ def createPerson(displayname, givenname, familyname,
 
     return person
 
-def createTeam(displayname, teamowner, teamdescription,
-               password, email):
+
+def createTeam(displayname, teamowner, teamdescription, email):
     """Creates a new team"""
 
     nick = nickname.generate_nick(email)
@@ -284,16 +415,12 @@ def createTeam(displayname, teamowner, teamdescription,
     if Person.selectBy(name=nick).count() > 0:
         return
     
-    # XXX: I think Teams don't need or want passwords
-    password = getUtility(IPasswordEncryptor).encrypt(password)
-
     role = dbschema.MembershipRole.ADMIN.value
     status = dbschema.MembershipStatus.CURRENT.value
 
     team = Person(displayname=displayname,
                   givenname=None,
                   familyname=None,
-                  password=password,
                   teamownerID=teamowner,
                   teamdescription=teamdescription,
                   karma=0,
@@ -331,40 +458,15 @@ def personFromPrincipal(principal):
         ##return None
         raise ComponentLookupError
 
-def getPermission(user, context):
-    """
-    return True if the logged user has permission to add/edit the current
-    shown context (it might be the own person, or the teamowner)
-    """
-    permission = False
-    
-    if user:
-        pid = user.id
-
-        ## user is own person
-        if pid == context.person.id:
-            permission = True
-
-        ## person is team
-        if context.person.teamowner:
-            ## user is teamowner
-            if pid == context.person.teamowner.id:
-                permission = True
-                
-    return permission
-
 
 class EmailAddress(SQLBase):
     implements(IEmailAddress)
 
     _table = 'EmailAddress'
-    _columns = [
-        StringCol('email', notNull=True, unique=True),
-        IntCol('status', notNull=True),
-        ForeignKey(
-            name='person', dbName='person', foreignKey='Person',
-            )
-        ]
+
+    email = StringCol(dbName='email', notNull=True, unique=True)
+    status = IntCol(dbName='status', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
     def _statusname(self):
         for status in dbschema.EmailAddressStatus.items:
@@ -377,16 +479,17 @@ class EmailAddress(SQLBase):
 
 class GPGKey(SQLBase):
     _table = 'GPGKey'
-    _columns = [
-        ForeignKey(name='person', foreignKey='Person', dbName='person',
-                   notNull=True),
-        StringCol('keyid', dbName='keyid', notNull=True),
-        StringCol('fingerprint', dbName='fingerprint', notNull=True),
-        StringCol('pubkey', dbName='pubkey', notNull=True),
-        BoolCol('revoked', dbName='revoked', notNull=True),
-        IntCol('algorithm', dbName='algorithm', notNull=True),
-        IntCol('keysize', dbName='keysize', notNull=True),
-        ]
+
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+
+    keyid = StringCol(dbName='keyid', notNull=True)
+    pubkey = StringCol(dbName='pubkey', notNull=True)
+    fingerprint = StringCol(dbName='fingerprint', notNull=True)
+
+    keysize = IntCol(dbName='keysize', notNull=True)
+    algorithm = IntCol(dbName='algorithm', notNull=True)
+
+    revoked = BoolCol(dbName='revoked', notNull=True)
 
     def _algorithmname(self):
         for algorithm in dbschema.GPGKeyAlgorithms.items:
@@ -396,50 +499,52 @@ class GPGKey(SQLBase):
     
     algorithmname = property(_algorithmname)
 
+
+class SSHKey(SQLBase):
+    _table = 'SSHKey'
+    person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
+    keytype = StringCol(dbName='keytype', notNull=True)
+    keytext = StringCol(dbName='keytext', notNull=True)
+    comment = StringCol(dbName='comment', notNull=True)
+
+
 class ArchUserID(SQLBase):
     _table = 'ArchUserID'
-    _columns = [
-        ForeignKey(name='person', foreignKey='Person', dbName='person',
-                   notNull=True),
-        StringCol('archuserid', dbName='archuserid', notNull=True)
-        ]
+
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    archuserid = StringCol(dbName='archuserid', notNull=True)
     
+
 class WikiName(SQLBase):
     _table = 'WikiName'
-    _columns = [
-        ForeignKey(name='person', foreignKey='Person', dbName='person',
-                   notNull=True),
-        StringCol('wiki', dbName='wiki', notNull=True),
-        StringCol('wikiname', dbName='wikiname', notNull=True)
-        ]
+
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    wiki = StringCol(dbName='wiki', notNull=True)
+    wikiname = StringCol(dbName='wikiname', notNull=True)
+
 
 class JabberID(SQLBase):
     _table = 'JabberID'
-    _columns = [
-        ForeignKey(name='person', foreignKey='Person', dbName='person',
-                   notNull=True),
-        StringCol('jabberid', dbName='jabberid', notNull=True)
-        ]
+
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    jabberid = StringCol(dbName='jabberid', notNull=True)
+
 
 class IrcID(SQLBase):
     _table = 'IrcID'
-    _columns = [
-        ForeignKey(name='person', foreignKey='Person', dbName='person',
-                   notNull=True),
-        StringCol('network', dbName='network', notNull=True),
-        StringCol('nickname', dbName='nickname', notNull=True)
-        ]
+
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    network = StringCol(dbName='network', notNull=True)
+    nickname = StringCol(dbName='nickname', notNull=True)
+
 
 class Membership(SQLBase):
     _table = 'Membership'
-    _columns = [
-        ForeignKey(name='person', foreignKey='Person', dbName='person',
-                   notNull=True),
-        ForeignKey(name='team', foreignKey='Person', dbName='team',
-                   notNull=True),
-        IntCol('role', dbName='role', notNull=True),
-        IntCol('status', dbName='status', notNull=True)
-        ]
+
+    team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    role = IntCol(dbName='role', notNull=True)
+    status = IntCol(dbName='status', notNull=True)
 
     def _rolename(self):
         for role in dbschema.MembershipRole.items:
@@ -473,12 +578,9 @@ class TeamParticipationSet(object):
 
 class TeamParticipation(SQLBase):
     _table = 'TeamParticipation'
-    _columns = [
-        ForeignKey(name='person', foreignKey='Person', dbName='person',
-                   notNull=True),
-        ForeignKey(name='team', foreignKey='Person', dbName='team',
-                   notNull=True)
-        ]
+
+    team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
 
 class Karma(SQLBase):
