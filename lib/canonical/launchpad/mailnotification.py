@@ -5,8 +5,10 @@ from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
 from canonical.launchpad.interfaces import IBug
 from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.database import BugTracker
 from canonical.lp.dbschema import BugAssignmentStatus, BugPriority, \
      BugSeverity, BugInfestationStatus, BugExternalReferenceType
+from canonical.launchpad.vocabularies import BugTrackerVocabulary
 
 FROM_MAIL = "noreply@bbnet.ca"
 #FROM_MAIL = "stuart@stuartbishop.net"
@@ -38,6 +40,31 @@ Assigned: %(assigned)s
     simple_sendmail(
         FROM_MAIL, get_cc_list(product_assignment.bug),
         '"%s" product assignment' % product_assignment.bug.title, msg)
+
+def notify_bug_assigned_product_modified(modified_product_assignment, event):
+    """Notify CC'd list that this bug product assignment has been
+    modified, describing what the changes were."""
+    change = {}
+    for name in event.edited_fields:
+        old_val = getattr(event.object_before_modification, name)
+        new_val = getattr(event.object, name)
+
+        if old_val != new_val:
+            change[name] = {}
+            change[name]["old"] = old_val
+            change[name]["new"] = new_val
+
+    msg = """\
+The following changes were made:
+
+"""
+    for changed_field in change.keys():
+        msg += "%s: %s => %s\n" % (
+            changed_field, change[changed_field]["old"], change[changed_field]["new"])
+
+    simple_sendmail(
+        FROM_MAIL, get_cc_list(modified_product_assignment.bug),
+        '"%s" was modified' % modified_product_assignment.bug.title, msg)
 
 def notify_bug_assigned_package_added(package_assignment, event):
     """Notify CC'd list that this bug has been assigned to
@@ -138,3 +165,35 @@ Remote Bug: %(remote_bug)s
     simple_sendmail(
         FROM_MAIL, get_cc_list(watch.bug),
         '"%s" watch added' % watch.bug.title, msg)
+
+def notify_bug_watch_modified(modified_bug_watch, event):
+    orig = event.object_before_modification
+    new = event.object
+
+    btv = BugTrackerVocabulary(modified_bug_watch.bug)
+    change = {}
+    old_bt = getattr(orig, "bugtracker")
+    new_bt = getattr(new, "bugtracker")
+    if old_bt != new_bt:
+        change["bugtracker"] = {}
+        change["bugtracker"]["old"] = btv.getTermByToken(old_bt.id).title
+        change["bugtracker"]["new"] = btv.getTermByToken(new_bt.id).title
+
+    old_rb = getattr(orig, "remotebug")
+    new_rb = getattr(new, "remotebug")
+    if old_rb != new_rb:
+        change["remotebug"] = {}
+        change["remotebug"]["old"] = old_rb
+        change["remotebug"]["new"] = new_rb
+
+    msg = """The following changes were made:
+
+"""
+    for changed_field in change.keys():
+        msg += "%s: %s => %s\n" % (
+            changed_field, change[changed_field]["old"], change[changed_field]["new"])
+
+    simple_sendmail(
+        FROM_MAIL, get_cc_list(modified_bug_watch.bug),
+        '"%s" was modified' % modified_bug_watch.bug.title, msg)
+

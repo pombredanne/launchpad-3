@@ -13,6 +13,11 @@
    factory="canonical.launchpad.mailnotification.notify_bug_assigned_product_added" />
 
 <subscriber
+   for="canonical.launchpad.interfaces.IProductBugAssignment
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bug_assigned_product_modified" />
+
+<subscriber
    for="canonical.launchpad.interfaces.ISourcePackageBugAssignment
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_assigned_package_added" />
@@ -36,5 +41,10 @@
    for="canonical.launchpad.interfaces.IBugWatch
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_watch_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugWatch
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bug_watch_modified" />
 
 </configure>
