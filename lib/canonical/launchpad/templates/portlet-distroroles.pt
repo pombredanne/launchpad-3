@@ -1,0 +1,18 @@
+<div>
+  <h3>Roles</h3>
+
+  <div tal:condition="not:view/team">
+  <p>No Member Yet
+  </div>
+
+  <table class="listing" tal:condition="view/team">	
+    <tr> <th> Name</th> <th> Role</th> </tr>
+    <tr tal:repeat="team view/team">
+       <td><a tal:attributes="href string:/foaf/people/${team/person/name}"
+	   tal:content="team/person/displayname">Displayname</a></td>
+       <td><span tal:content="team/rolename">ROLENAME</span></td>
+    </tr>
+  </table>
+
+</div>
+

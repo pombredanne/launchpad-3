@@ -4,12 +4,19 @@ from sqlobject import LIKE, AND
 # lp imports
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+from canonical.lp import dbschema                       
+
+# zope imports
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 # interface import
-from canonical.launchpad.database import IPerson
+from canonical.launchpad.interfaces import IPerson
 
-# app components
 from canonical.launchpad.database import Distribution, DistroRelease
+from canonical.launchpad.database import Person
+from canonical.launchpad.database import DistributionRole
+from canonical.launchpad.database import DistroReleaseRole
+
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages 
@@ -236,3 +243,131 @@ class ReleaseSearchView(object):
         return enable_result
 
 
+class AddDistroRoleView(object):
+    addrolePortlet = ViewPageTemplateFile(
+        '../templates/portlet-addrole.pt')
+    rolesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-distroroles.pt')
+    
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.team = self.context.distribution.roles
+        self.people = Person.select(orderBy='displayname')
+        self.roles = dbschema.DistributionRole.items
+
+    def is_owner(self):
+        person = IPerson(self.request.principal, None)
+
+        ##XXX: cprov 20041202
+        ##verify also the DistributionRoles for persons with Admin Role
+        if person:
+            return self.context.distribution.owner.id == person.id
+
+        return False
+
+    def add_role(self):
+        self.person = self.request.get("person", "")
+        self.role = self.request.get("role", "")
+
+        if self.person and self.role:
+            res = DistributionRole(distribution=self.context.distribution.id,
+                                   personID=self.person,
+                                   role=self.role)
+
+            return res
+
+        return False
+
+
+class AddDistroReleaseRoleView(object):
+    addrolePortlet = ViewPageTemplateFile(
+        '../templates/portlet-addrole.pt')
+    rolesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-distroroles.pt')
+    
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.team = DistroReleaseRole.selectBy(distroreleaseID=\
+                                               self.context.release.id)        
+        self.people = Person.select(orderBy='displayname')
+        self.roles = dbschema.DistributionRole.items
+
+    def is_owner(self):
+        person = IPerson(self.request.principal, None)
+
+        ##XXX: cprov 20041202
+        ##verify also the DistributionRoles for persons with Admin Role
+        if person:
+            return self.context.release.owner.id == person.id
+
+        return False
+
+    def add_role(self):
+        self.person = self.request.get("person", "")
+        self.role = self.request.get("role", "")
+
+        if self.person and self.role:
+            res = DistroReleaseRole(distrorelease=self.context.release.id,
+                                    personID=self.person,
+                                    role=self.role)
+
+            return res
+
+        return False
+
+
+
+class DistroTeamAddView(object):
+    addrolePortlet = ViewPageTemplateFile(
+        '../templates/portlet-addrole.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        ##XXX: cprov 20041206
+        ## Missed Permission Check
+        self.permission = True
+        self.people = Person.select(orderBy='displayname')
+        self.roles = dbschema.DistributionRole.items
+
+    def add_role(self):
+        self.person = self.request.get("person", "")
+        self.role = self.request.get("role", "")
+
+        if self.person and self.role:
+            res = DistributionRole(distribution=self.context.distribution.id,
+                                   personID=self.person,
+                                   role=self.role)
+
+            return res
+
+        return False
+
+
+class DistroReleaseTeamAddView(object):
+    addrolePortlet = ViewPageTemplateFile(
+        '../templates/portlet-addrole.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        ##XXX: cprov 20041206
+        ## Missed Permission Check
+        self.permission = True
+        self.people = Person.select(orderBy='displayname')
+        self.roles = dbschema.DistributionRole.items
+
+    def add_role(self):
+        self.person = self.request.get("person", "")
+        self.role = self.request.get("role", "")
+
+        if self.person and self.role:
+            res = DistroReleaseRole(distrorelease=self.context.release.id,
+                                    personID=self.person,
+                                    role=self.role)
+
+            return res
+
+        return False

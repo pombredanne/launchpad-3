@@ -1,0 +1,49 @@
+<fieldset tal:condition="view/is_owner"> 
+ <div>
+  <tal:dummy tal:condition="view/add_role"/>
+
+    <div>
+    <form name="add" action="" method="POST">
+
+    <legend><h3>Submit a New Role</h3><legend>
+ 	<table>
+	<tr><td>
+	<div class="field">
+	    <label>Person</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Select a Person Name.
+            </div>
+	    <select class="listing" name="person">
+	      <option tal:repeat="person view/people"
+	              tal:content="person/displayname"
+	              tal:attributes="value person/id">DISPLAYNAME</option>
+            </select>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Role</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Select a Role
+            </div>
+	    <select class="listing" name="role">
+	      <option value="">None</option>
+	      <option tal:repeat="role view/roles"
+	              tal:content="role/title"
+	              tal:attributes="value role/value">ROLE</option>
+            </select>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="formControls">
+	  <input class="listing" type="submit" value="Submit"/>
+	</div>
+	</td></tr>
+	</table>
+  </form>
+  </div>
+
+ </div>
+</fieldset>

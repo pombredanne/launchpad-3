@@ -28,10 +28,8 @@ from canonical.launchpad.interfaces import IDistribution, \
                                            IDistroReleaseTeamApp, \
                                            IDistroTeamApp,\
                                            IAuthorization, IDistrosSet,\
-                                           ISourcePackageSet, \
-                                           IBinaryPackageSet
-                                           
-
+                                           ISourcePackageSet,\
+                                           IBinaryPackageSet   
 
 #
 # 
@@ -136,6 +134,9 @@ class DistroReleasesApp(object):
     def __iter__(self):
         return iter(self.distribution.releases)
 
+
+##XXX: cprov 20041207
+## Throw this Apps away soon (don't forget their templates and Zope Views)!!! 
 
 class DistroReleaseTeamApp(object):
     implements(IDistroReleaseTeamApp)

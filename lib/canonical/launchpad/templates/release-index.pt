@@ -12,6 +12,17 @@
 
 <body>
 
+
+<metal:leftportlets fill-slot="portlets_one">
+<div tal:replace="structure view/rolesPortlet" />
+</metal:leftportlets>
+
+
+<metal:rightportlets fill-slot="portlets_two">
+<div tal:replace="structure view/addrolePortlet" />
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
     <h1><span
@@ -76,7 +87,7 @@
          <tr tal:condition="context/release/parentrelease">
 	 <td>ParentRelease</td>
          <th align="right"><a 
-	 tal:attributes="href string:../${context/release/parentrelease/name}">
+	 tal:attributes="href string:/soyuz/distros/${context/release/parentrelease/distribution/name}/releases/${context/release/parentrelease/name}">
            <span tal:content="context/release/parentrelease/title">
 	   PARENTRELEASE</span></a>
          </th></tr>
@@ -91,31 +102,6 @@
    </th></tr>
    <tr><td>
      <div>
-     </div>   
-   </td></tr>
-<!--    <tr> -->
-<!--    <th align="right"> -->
-<!--    <a href="+bugs">More <span tal:content="context/release/title"/> Bugs</a> -->
-<!--    </th> -->
-   <tr><td>
-     <div>
-      <table width="100%">
-      <legend><h4>Release Team</h4></legend>
-      <tr><td>
-        <fieldset>
-        <div>
-	<table>
-	<tr tal:repeat="role context/roles">
-	 <td>
-     <a tal:attributes="href string:/foaf/people/${role/person/name}"
-	     tal:content="role/person/displayname">TEAM</a>
-         </td>
-	 <td tal:content="role/rolename">ROLE</td>
-        </tr>	
-	</table>
-	</div>
-      </td></tr>
-      </table> 
      </div>   
    </td></tr>
    <tr><th align="right">

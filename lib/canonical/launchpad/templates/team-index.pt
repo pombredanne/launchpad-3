@@ -46,27 +46,11 @@
 	</td>
     </tr>
    </table> 
+
    </div>    
   </table>
 
-  <div class="dummy">
-  <h3>Package Maintainers for 
-  <span tal:content="context/distribution/title"/></h3>
-
-    <form name="add" action="" method="POST">
-    	<table>
-	<tr><td>Maintainer</td> 
-	<td><input type="text" name="name"/></td>
-	<td> <input type="submit" value="Search"/></td>
-	<td> <table>
-	     <tr><td><a href="+list">View List</a></td></tr>
-	     <tr><td> (350 entries)</td></tr>
-	     </table>
-	</td> 
-	</tr>
-	</table>
-    </form>
-   </div>
+   <p> <a href="+new">Add New</a>
 
 </div>
 

@@ -38,6 +38,7 @@ class IDistributionRole(Interface):
 
 class IDistroRelease(Interface):
     """A Release Object"""
+    id = Attribute("The distrorelease's unique number.")
     distribution = Attribute("The release's reference.")
     name= Attribute("The release's name.")
     title = Attribute("The release's title.")

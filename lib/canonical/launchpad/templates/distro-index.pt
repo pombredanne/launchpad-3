@@ -4,6 +4,9 @@
       i18n:domain="launchpad">
 
 <head>
+  <title metal:fill-slot="title">
+    <span tal:replace="context/distribution/title">TITLE</span>
+    Page</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -11,6 +14,16 @@
 </head>
 
 <body>
+
+<metal:leftportlets fill-slot="portlets_one">
+<div tal:replace="structure view/rolesPortlet" />
+</metal:leftportlets>
+
+
+<metal:rightportlets fill-slot="portlets_two">
+<div tal:replace="structure view/addrolePortlet" />
+</metal:rightportlets>
+
 
 <div metal:fill-slot="main">
 

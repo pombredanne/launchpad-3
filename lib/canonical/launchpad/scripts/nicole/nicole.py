@@ -65,7 +65,7 @@ def get_current_packages(source):
                                   component, "source", "Sources.gz")
     srcfd, sources_tagfile = tempfile.mkstemp()
     os.system("gzip -dc %s > %s" % (sources_zipped,
-                                    sources_tagfile))
+                                    sources_tagfile)) 
     sources = ParseTagFile(os.fdopen(srcfd))
     while sources.Step():        
         packagenames.append(sources.Section['Package'])

@@ -46,10 +46,6 @@
 	  permission="zope.Public"
 	  allowed_attributes="results context">
 
-	<page  name="index.html"
-          template="../launchpad/templates/distro-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/index.html"
-	/>
 	<page  name="bugs"
           template="../launchpad/templates/distro-bugs.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/+bugs"
@@ -61,12 +57,21 @@
   </pages>
 
   <page for="canonical.soyuz.distroapp.DistroApp"
-         permission="launchpad.Edit"
-	 class="canonical.launchpad.browser.DistrosEditView"
-	 name="+edit"
-	 template="../launchpad/templates/distro-edit.pt"
-	 lp:url="Soyuz/distros/$Distribution.name/+edit"
-	/>
+        permission="zope.Public"
+	class="canonical.launchpad.browser.AddDistroRoleView"
+        name="index.html"
+        template="../launchpad/templates/distro-index.pt"
+	lp:url="Soyuz/distros/$Distribution.name/index.html"
+   />
+
+
+  <page for="canonical.soyuz.distroapp.DistroApp"
+        permission="launchpad.Edit"
+	class="canonical.launchpad.browser.DistrosEditView"
+	name="+edit"
+	template="../launchpad/templates/distro-edit.pt"
+	lp:url="Soyuz/distros/$Distribution.name/+edit"
+   />
 
 
   <traverse for="canonical.soyuz.distroapp.DistroReleasesApp" getter="__getitem__" />
@@ -74,12 +79,13 @@
    <pages for="canonical.soyuz.distroapp.DistroReleasesApp"
 	  allowed_attributes="results"
 	  permission="zope.Public">
+       	  <page  name="index.html"
+                 template="../launchpad/templates/releases-index.pt"
+	         lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/index.html"
+	   />
 
-	<page  name="index.html"
-          template="../launchpad/templates/releases-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/index.html"
-	/>
   </pages>
+
 
 	<page for="canonical.soyuz.distroapp.DistroReleasesApp"
 	  permission="launchpad.Admin"
@@ -96,10 +102,6 @@
 	  class="canonical.launchpad.browser.DistroReleaseView"
 	  permission="zope.Public">
 
-	<page  name="index.html"
-          template="../launchpad/templates/release-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/index.html"
-	/>
 	<page  name="+deliver"
           template="../launchpad/templates/release-deliver.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+deliver"
@@ -114,6 +116,15 @@
 	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+translations"
 	/>
   </pages>
+
+	<page for="canonical.soyuz.distroapp.DistroReleaseApp"
+	  permission="zope.Public"
+	  name="index.html"
+          template="../launchpad/templates/release-index.pt"
+	  class="canonical.launchpad.browser.AddDistroReleaseRoleView"
+	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/index.html"
+	/>
+
 
 	<page for="canonical.soyuz.distroapp.DistroReleaseApp"
 	  permission="launchpad.Edit"
@@ -240,9 +251,16 @@
 	<page  name="index.html"
           template="../launchpad/templates/team-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/team/index.html"
-	/>
+	/>	
    </pages>
-
+   
+   <page  for="canonical.soyuz.distroapp.DistroTeamApp"
+          permission="zope.Public"
+          name="+new"
+	  class="canonical.launchpad.browser.DistroTeamAddView"
+	  template="../launchpad/templates/team-newrole.pt"
+	  lp:url="Soyuz/distros/$Distribution.name/team/+new"
+	/>   
 
    <pages for="canonical.soyuz.distroapp.DistroReleaseTeamApp"
 	  allowed_attributes="results"
@@ -253,6 +271,15 @@
 	  lp:url="Soyuz/distros/$Distribution.name/team/$Release.name/index.html"
 	/>
    </pages>
+
+   <page  for="canonical.soyuz.distroapp.DistroReleaseTeamApp"
+          permission="zope.Public"
+          name="+new"
+	  class="canonical.launchpad.browser.DistroReleaseTeamAddView"
+	  template="../launchpad/templates/releaseteam-newrole.pt"
+	  lp:url="Soyuz/distros/$Distribution.name/team/$release/+new"
+	/>   
+
 
 <traverse for="canonical.soyuz.binarypackageapp.DistroBinariesApp" 
 	  getter="__getitem__" />
