@@ -26,7 +26,7 @@ try:
     from canonical.arch.infoImporter import SourceSource as infoSourceSource,\
          RCSTypeEnum
 except ImportError:
-    pass
+    raise
 
 
 from canonical.arch.sqlbase import quote

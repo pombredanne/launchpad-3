@@ -5,7 +5,7 @@ It will create ArchArchive and Branch entries as needed.
 
 #from canonical.arch.database import Archive
 from canonical.arch.sqlbase import SQLBase, quote
-from canonical.soyuz.database import Project, Product
+from canonical.soyuz.database import SoyuzProject, SoyuzProduct
 import canonical.lp
 
 from sqlobject import ForeignKey, IntCol, StringCol, DateTimeCol, BoolCol, \
@@ -28,7 +28,7 @@ class ArchArchive(SQLBase):
         StringCol('title', dbName='title', notNull=True),
         StringCol('description', dbName='description', notNull=True),
         BoolCol('visible', dbName='visible', notNull=True),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner'),
+        ForeignKey(name='owner', foreignKey='ArchPerson', dbName='owner'),
     ]
 
 
@@ -96,7 +96,7 @@ class SourceSource(SQLBase, importd.Job.Job):
         StringCol('package_files_collapsed', dbName='packagefiles_collapsed',
                 default=None),
 
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
+        ForeignKey(name='owner', foreignKey='ArchPerson', dbName='owner',
                    notNull=True),
     ]
 
@@ -164,7 +164,7 @@ class SourceSource(SQLBase, importd.Job.Job):
         return job
 
 
-class Person(SQLBase):
+class ArchPerson(SQLBase):
 
     _table = 'Person'
 
@@ -174,7 +174,7 @@ class Person(SQLBase):
 
 
 def make_lifeless():
-    query = Person.select(Person.q.name == 'Robert Collins')
+    query = ArchPerson.select(ArchPerson.q.name == 'Robert Collins')
     assert query.count() == 1
     return query[0]
 
