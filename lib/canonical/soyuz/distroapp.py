@@ -2,6 +2,8 @@
 
 (c) Canonical Software Ltd. 2004, all rights reserved.
 """
+#Python imports
+from sets import Set
 
 # Zope imports
 from zope.interface import implements
@@ -26,7 +28,8 @@ from canonical.launchpad.interfaces import IDistribution, \
                                            IDistroReleaseTeamApp, \
                                            IDistroTeamApp,\
                                            IAuthorization, IDistrosSet,\
-                                           ISourcePackageSet
+                                           ISourcePackageSet, \
+                                           IBinaryPackageSet
                                            
 
 
@@ -94,13 +97,25 @@ class DistroReleaseApp(object):
 
     def findSourcesByName(self, pattern):
         srcset = getUtility(ISourcePackageSet)
-        return self.srcset.findByName(self.release.id, pattern)
+        return srcset.findByName(self.release.id, pattern)
 
-    # FIXME: Daniel Debonzi 2004-12-02
-    # Go away with this classmethods when
-    # working with Binary Packages
     def findBinariesByName(self, pattern):
-        return BinaryPackage.findBinariesByName(self.release, pattern)
+        binariesutil = getUtility(IBinaryPackageSet)
+
+        selection = Set(binariesutil.findByName(self.release.id,
+                                                      pattern))
+
+        # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
+        # expensive routine
+        # Dummy solution to avoid a binarypackage to be shown more
+        # then once
+        present = []
+        result = []
+        for srcpkg in selection:
+            if srcpkg.binarypackagename not in present:
+                present.append(srcpkg.binarypackagename)
+                result.append(srcpkg)
+        return result
 
     def bugSourcePackages(self):
         return SourcePackageInDistro.getBugSourcePackages(self.release)
