@@ -168,15 +168,20 @@
                 </div>
 
                 <div class="field" tal:repeat="language view/languages">
+                    <span class="language-label">
                     <label class="language-code"
-                        tal:content="language/englishname">pt_BR</label>:
-                    <label>
+                        tal:content="language/englishname">Welsh</label>:
+                    </span>
+
+                    <label class="fuzzy-checkbox">
+                        Needs review
                         <input type="checkbox" value="fuzzy" tal:attributes="
                             checked python:set['fuzzy'][language];
-                            name string:set_${set/id}_fuzzy_${language/code};"
+                            name string:set_${set/id}_fuzzy_${language/code};
+                            tabindex: view/makeTabIndex"
                             />
-                        Needs review
                     </label>
+
                     <br/>
 
                     <input type="text"
@@ -270,7 +275,8 @@
         <input type="hidden" name="languages"
             tal:condition="view/codes"
             tal:attributes="value view/codes" />
-        <input type="submit" name="SUBMIT" value="Submit" />
+        <input type="submit" name="SUBMIT" value="Submit"
+            tal:attributes="tabindex: view/makeTabIndex" />
     </form>
 
     </div> <!-- tal:condition="not: view/error" -->

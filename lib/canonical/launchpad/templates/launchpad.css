@@ -284,3 +284,11 @@ ul.people li {
     padding-left: 18px
 }
 
+label.fuzzy-checkbox {
+    float: right;
+}
+
+.language-label {
+    float: left;
+}
+
