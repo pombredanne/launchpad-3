@@ -1310,7 +1310,87 @@ section, priority)
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))  
 	and version='0.9.1-1'),
 	(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
-	'0.8', 
+	'0.9.1-1', 
+	'Mozilla Firefox Web Browser', 
+        'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+	K-Meleon and Camino, but written using the XUL user interface language and 
+	designed to lightweight and cross-platform.',
+	1, -- hardcoded ?? use query instead
+	1, -- DEB ?
+	1, -- default component
+	1, -- default section
+	3); -- highest priority
+
+INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
+version, shortdesc, description, build, binpackageformat, component, 
+section, priority) 
+	VALUES (
+	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))  
+	and version='0.9.0-9'),
+	(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
+	'0.9.0-9', 
+	'Mozilla Firefox Web Browser', 
+        'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+	K-Meleon and Camino, but written using the XUL user interface language and 
+	designed to lightweight and cross-platform.',
+	1, -- hardcoded ?? use query instead
+	1, -- DEB ?
+	1, -- default component
+	1, -- default section
+	3); -- highest priority
+
+INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
+version, shortdesc, description, build, binpackageformat, component, 
+section, priority) 
+	VALUES (
+	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))  
+	and version='0.9.0-8'),
+	(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
+	'0.9.0-8', 
+	'Mozilla Firefox Web Browser', 
+        'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+	K-Meleon and Camino, but written using the XUL user interface language and 
+	designed to lightweight and cross-platform.',
+	1, -- hardcoded ?? use query instead
+	1, -- DEB ?
+	1, -- default component
+	1, -- default section
+	3); -- highest priority
+
+INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
+version, shortdesc, description, build, binpackageformat, component, 
+section, priority) 
+	VALUES (
+	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))  
+	and version='0.9.0-7'),
+	(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
+	'0.9.0-7', 
+	'Mozilla Firefox Web Browser', 
+        'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+	K-Meleon and Camino, but written using the XUL user interface language and 
+	designed to lightweight and cross-platform.',
+	1, -- hardcoded ?? use query instead
+	1, -- DEB ?
+	1, -- default component
+	1, -- default section
+	3); -- highest priority
+
+INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
+version, shortdesc, description, build, binpackageformat, component, 
+section, priority) 
+	VALUES (
+	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
+	(SELECT id from Sourcepackage where sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))  
+	and version='0.9.0-6'),
+	(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
+	'0.9.0-6', 
 	'Mozilla Firefox Web Browser', 
         'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
 	K-Meleon and Camino, but written using the XUL user interface language and 
@@ -1328,9 +1408,9 @@ section, priority)
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'))
-	),
+	and version='0.9.1-2'),
 	(SELECT id from Binarypackagename WHERE name = 'mozilla-thunderbird'), 
-	'1.5', 
+	'0.9.1-2', 
 	'Mozilla Thunderbird Mail Reader', 
         'Mozilla Thunderbird is a redesign of the Mozilla mail component. 
 	The goal is to produce a cross platform stand alone mail application 
@@ -1342,15 +1422,17 @@ section, priority)
 	1, -- default section
 	3); -- highest priority
 
+
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
 section, priority) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
-	(SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'))),
+	(SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'))
+	and version = '0.9.1-3'),
 	(SELECT id from Binarypackagename WHERE name = 'python-twisted'), 
-	'1.3', 
+	'0.9.1-3', 
 	'Python Twisted', 
         'It includes a web server, a telnet server, a multiplayer RPG engine, 
 	a generic client and server for remote object access, and APIs for 
@@ -1367,9 +1449,10 @@ section, priority)
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
-	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))),
+	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))
+	and version = '0.9.1-4'),
 	(SELECT id from Binarypackagename WHERE name = 'bugzilla'), 
-	'2.18', 
+	'0.9.1-4', 
 	'Bugzilla',
         'Bugzilla is a "Defect Tracking System" or "Bug-Tracking System". 
 	Defect Tracking Systems allow individual or groups of developers 
@@ -1386,9 +1469,10 @@ section, priority)
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
-	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))),
+	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))
+	and version = '0.9.1-5'),
 	(SELECT id from Binarypackagename WHERE name = 'arch'), 
-	'1.0', 
+	'0.9.1-5', 
 	'ARCH',
         'arch is a revision control system with features that are ideal for 
 	projects characterised by widely distributed development, concurrent 
@@ -1407,9 +1491,10 @@ section, priority)
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
-	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))),
+	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))
+	and version = '0.9.1-6'),
 	(SELECT id from Binarypackagename WHERE name = 'kiwi'), 
-	'2.0', 'Python Kiwi',
+	'0.9.1-6', 'Python Kiwi',
         ' Kiwi2 consists of a set of classes and wrappers for PyGTK-2 that were 
 	developed to provide a sort of framework for applications. Fully object-oriented, 
 	and roughly modeled after Smalltalk\'s MVC, Kiwi provides a simple, practical 
@@ -1428,9 +1513,10 @@ section, priority)
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
-	(SELECT id FROM Sourcepackagename WHERE name = 'plone'))),
+	(SELECT id FROM Sourcepackagename WHERE name = 'plone'))
+	and version = '0.9.1-7'),
 	(SELECT id from Binarypackagename WHERE name = 'plone'), 
-	'1.0', 'Plone', 
+	'0.9.1-7', 'Plone', 
         'Plone is powerful and flexible. It is ideal as an intranet and extranet 
 	server, as a document publishing system, a portal server and as a groupware
 	 tool for collaboration between separately located entities.',
@@ -1446,7 +1532,55 @@ INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component,
 	section, priority) 
 	VALUES
 	((SELECT id FROM Binarypackage where binarypackagename = 
-	  (SELECT id FROM Binarypackagename where name = 'mozilla-firefox')
+	  (SELECT id FROM Binarypackagename where name = 'mozilla-firefox' and version = '0.9.1-1')
+	),
+	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
+	   'warty--x86--devel--0'),
+	1, -- default_component
+	1, -- default_section
+	3); -- ???
+
+INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component, 
+	section, priority) 
+	VALUES
+	((SELECT id FROM Binarypackage where binarypackagename = 
+	  (SELECT id FROM Binarypackagename where name = 'mozilla-firefox' and version = '0.9.0-9')
+	),
+	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
+	   'warty--x86--devel--0'),
+	1, -- default_component
+	1, -- default_section
+	3); -- ???
+
+INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component, 
+	section, priority) 
+	VALUES
+	((SELECT id FROM Binarypackage where binarypackagename = 
+	  (SELECT id FROM Binarypackagename where name = 'mozilla-firefox' and version = '0.9.0-8')
+	),
+	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
+	   'warty--x86--devel--0'),
+	1, -- default_component
+	1, -- default_section
+	3); -- ???
+
+INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component, 
+	section, priority) 
+	VALUES
+	((SELECT id FROM Binarypackage where binarypackagename = 
+	  (SELECT id FROM Binarypackagename where name = 'mozilla-firefox' and version = '0.9.0-7')
+	),
+	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
+	   'warty--x86--devel--0'),
+	1, -- default_component
+	1, -- default_section
+	3); -- ???
+
+INSERT INTO Packagepublishing (binarypackage, distroarchrelease, component, 
+	section, priority) 
+	VALUES
+	((SELECT id FROM Binarypackage where binarypackagename = 
+	  (SELECT id FROM Binarypackagename where name = 'mozilla-firefox' and version = '0.9.0-6')
 	),
 	(SELECT id FROM Distroarchrelease WHERE architecturetag = 
 	   'warty--x86--devel--0'),

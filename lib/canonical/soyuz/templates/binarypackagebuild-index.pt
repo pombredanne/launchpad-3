@@ -17,7 +17,7 @@
 <h1><span tal:content="context/binarypackagerelease/shortdesc">
      TITLE </span>
     <span tal:content="context/version">Version</span>-
-    <span tal:content="context/arch">Arch</tal:block>
+    <span tal:content="context/arch">Arch</span>
 </h1>
     
 

@@ -38,8 +38,8 @@ Find Binary Package by Name:
   <tr>
     <th> Binary Package </th>
   </tr>
-   <tr tal:repeat="binpackageapp context">
-    <td tal:define="binpackage binpackageapp/binarypackage"> 
+   <tr tal:repeat="binpackage context">
+    <td> 
      <a tal:content="binpackage/shortdesc" tal:attributes="href binpackage/name">TITLE</a> 
     </td>
   </tr>
