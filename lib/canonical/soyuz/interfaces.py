@@ -38,7 +38,6 @@ class IDistribution(Interface):
     def getReleaseContainer(name):
         """Returns an associated IReleaseContainer"""
 
-
 class IDistroReleasesApp(Interface):
     """Root object for collection of Releases"""
     distribution = Attribute("distribution")
@@ -156,12 +155,12 @@ class IDistroSourcesApp(Interface):
 
     def __iter__():
         """retrieve an iterator"""
-
+     
 class IDistroPeopleApp(Interface):
     """A Distribution People Tag """
     distribution = Attribute("Distribution")
     people = Attribute("People")
-    role = Attribute("Role")
+
     def __getitem__(release):
         """retrieve people by release"""
 
@@ -172,7 +171,30 @@ class IDistroReleasePeopleApp(Interface):
     """A DistroRelease People Tag """
     release= Attribute("Release")
     people = Attribute("People")
+
+
+# it is deprecated BTW !!!
+class IPeople(Interface):
+     """auxiliar object to receive STUB persons"""
+     displayname = Attribute("name")
+     role = Attribute("role")
+
+
+# they didn't work as expected. spiv: help :)
+
+class IDistroReleaseRole(Interface):
+    """A DistroReleaseRole Object """
+    release= Attribute("Release")
+    person = Attribute("Person")
     role = Attribute("Role")
+
+class IDistributionRole(Interface):
+    """A Distribution Role Object"""
+    distribution = Attribute("Distribution")
+    person = Attribute("Person")
+    role = Attribute("Role")
+    
+###########################################        
 
 class IRelease(Interface):
     """A Release Object"""

@@ -21,6 +21,7 @@ from canonical.soyuz.interfaces import IBinaryPackageSet, ISourcePackageSet
 from canonical.soyuz.interfaces import ISourcePackage, ISoyuzPerson, IProject
 from canonical.soyuz.interfaces import IProjects, IProduct
 from canonical.soyuz.interfaces import ISync, IDistribution, IRelease
+from canonical.soyuz.interfaces import IDistributionRole, IDistroReleaseRole
 
 from canonical.soyuz.interfaces import IDistroBinariesApp
 
@@ -41,6 +42,7 @@ from canonical.soyuz.database import SoyuzProject as dbProject, SoyuzProduct \
 from canonical.arch.database import Branch, Changeset
 
 
+
 class DistrosApp(object):
     def __getitem__(self, name):
         return SoyuzDistribution.selectBy(name=name.encode("ascii"))[0]
@@ -48,6 +50,7 @@ class DistrosApp(object):
     def __iter__(self):
     	return iter(SoyuzDistribution.select())
 
+# Release app component Section (releases)
 class DistroReleaseApp(object):
     def __init__(self, release):
         self.release = release
@@ -59,7 +62,6 @@ class DistroReleaseApp(object):
             return BinaryPackages(self.release)
         else:
             raise KeyError, name
-
 
 class DistroReleasesApp(object):
     def __init__(self, distribution):
@@ -75,6 +77,9 @@ class DistroReleasesApp(object):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
 
 
+####### end of distroRelease app component
+
+# Source app component Section (src) 
 class DistroReleaseSourceReleaseBuildApp(object):
     def __init__(self, sourcepackagerelease, version, arch):
         self.sourcepackagerelease = sourcepackagerelease
@@ -173,28 +178,69 @@ class DistroSourcesApp(object):
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
 
+# end of distrosource app component
+###########################################################
+
+# People app component (people)
+class DistributionRole(SQLBase):
+
+    implements(IDistributionRole)
+
+    _table = 'Distributionrole'
+    _columns = [
+        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
+                   notNull=True),
+        ForeignKey(name='distribution', dbName='distribution',
+                   foreignKey='SoyuzDistribution',
+                   notNull=True),
+        IntCol('role', dbName='role')
+        ]
+
+
+class DistroReleaseRole(SQLBase):
+
+    implements(IDistroReleaseRole)
+
+    _table = 'Distroreleaserole'
+    _columns = [
+        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
+                   notNull=True),
+        ForeignKey(name='distrorelease', dbName='distrorelease',
+                   foreignKey='SoyuzDistribution',
+                   notNull=True),
+        IntCol('role', dbName='role')
+        ]
+
+class People(object):
+    def __init__(self, displayname, role):
+        self.displayname = displayname
+        self.role = role
+
+
 class DistroReleasePeopleApp(object):
     def __init__(self, release):
         self.release = release
-        self.people = ['Mark Shuttleworth',
-                       'James Blackwell',
-                       'Steve Alexander']
-        self.role = ['Maintainers',
-                     'Translator',
-                     'Contribuitors'
-                     ]
+
+#        self.people = DistroReleaseRole.selectBy(distrorelease=release.id)
+
+        self.people = [People('Matt Zimmerman', 'Maintainer'),
+                       People('Robert Collins', 'Translator'),
+                       People('Lalo Martins', 'Contribuitors')
+                       ]
         
 
 class DistroPeopleApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
-        self.people = ['Mark Shuttleworth',
-                       'James Blackwell',
-                       'Steve Alexander']
-        self.role = ['Maintainers',
-                     'Translator',
-                     'Contribuitors'
-                     ]
+
+#        self.people = DistributionRole.select(DistributionRole.q.\
+#                                                 distribution==self.\
+#                                                 distribution.id)
+
+        self.people = [People('Mark Shuttleworth', 'Maintainer'),
+                       People('James Blackwell', 'Translator'),
+                       People('Steve Alexander', 'Contribuitors')
+                       ]
 
     def __getitem__(self, name):
         return DistroReleasePeopleApp(Release.selectBy(distributionID=\
@@ -206,8 +252,11 @@ class DistroPeopleApp(object):
 
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
+#end of DistroPeople app component
 
+################################################################
 
+# deprecated, old DB layout (spiv: please help!!)
 class SoyuzBinaryPackageBuild(SQLBase):
     implements(IBinaryPackageBuild)
 
@@ -228,7 +277,10 @@ class SoyuzBinaryPackageBuild(SQLBase):
 
     def _get_sourcepackage(self):
         return self.sourcePackageRelease.sourcepackage
+##########################################################
 
+
+# Binary app component (bin) still using stubs ...
 class DistroReleaseBinaryReleaseBuildApp(object):
     def __init__(self, binarypackagerelease, version, arch):
         self.binarypackagerelease = binarypackagerelease
@@ -248,8 +300,6 @@ class DistroReleaseBinaryReleaseApp(object):
                                                   self.version,
                                                   arch)
     
-
-
 class DistroReleaseBinaryApp(object):
     def __init__(self, binarypackage):
         self.binarypackage = binarypackage
@@ -325,12 +375,14 @@ class BinaryPackage:
 #     releases = MultipleJoin('SoyuzBinaryPackageBuild', joinColumn=\
 #                             'binarypackage')
 
+# end of binary app component related data ....
 
+
+# SQL Objects .... should be moved !!!!
 class SoyuzPerson(SQLBase):
     """A person"""
 
     implements(ISoyuzPerson)
-    presentationname = 'XXX'
 
     _table = 'Person'
     _columns = [
@@ -349,7 +401,8 @@ class SoyuzDistribution(SQLBase):
         StringCol('title', dbName='title'),
         StringCol('description', dbName='description'),
         StringCol('domainname', dbName='domainname'),
-        StringCol('owner', dbName='owner'),
+        ForeignKey(name='owner', dbName='owner', foreignKey='SoyuzPerson',
+                   notNull=True),
         ]
 
     def getReleaseContainer(self, name):

@@ -16,17 +16,13 @@
 
   <h1><span tal:content="context/distribution/title" /> People Overview</h1>
 
-  <tal:block tal:repeat="role context/role">
-
-    <h4><span tal:replace="role">ROLE</span></h4>
-    
+  <table class="listing">	
+   <tr> <th> Name</th> <th> Role</th> </tr>
     <tal:block tal:repeat="people context/people">
-      <p><span tal:content="people">
-        PRESENTATIONNAME
-      </span>
+      <tr><td><span tal:content="people/displayname">Displayname</span></td>
+	<td><span tal:content="people/role">ROLE</span></td></tr>
     </tal:block>
-
-  </tal:block>
+  </table>
 
   <table class="listing">
     <tr>

@@ -9,6 +9,23 @@
  Sample data for Soyuz
 */
  
+-- Person
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Dave Miller', 'David', 'Miller' );                  -- 2
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Colin Watson', 'Colin', 'Watson' );                 -- 3
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Scott James Remnant', 'Scott James', 'Remnant' );   -- 4
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Jeff Waugh', 'Jeff', 'Waugh' );                     -- 6
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Andrew Bennetts', 'Andrew', 'Bennetts' );           -- 7
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'James Blackwell', 'James', 'Blackwell' );           -- 8
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Christian Reis', 'Christian', 'Reis' );             -- 9
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Alexander Limi', 'Alexander', 'Limi' );             -- 10
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );           -- 11
+
+
+--EmailAdress
+
+
+
+
 -- Component
 INSERT INTO Component (name) VALUES ('default_component');
 
@@ -21,6 +38,256 @@ INSERT INTO schema (name, title, description, owner, extensible) VALUES('Mark sc
 INSERT INTO Schema (name, title, description, owner, extensible) values('schema', 'SCHEMA', 'description', (Select id from Person where displayname = 'Mark Shuttleworth'), true);
 INSERT INTO Schema (name, title, description, owner, extensible) values('trema', 'XCHEMA', 'description', (Select id from Person where displayname = 'Mark Shuttleworth'), true);
 INSERT INTO Schema (name, title, description, owner, extensible) values('enema', 'ENHEMA', 'description', (Select id from Person where displayname = 'Mark Shuttleworth'), true);
+
+-- Sourcepackage
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+         'mozilla-firefox', 'Ubuntu Mozilla Firefox', 
+         'text');
+
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
+         'mozilla-thunderbird', 'Ubuntu Mozilla Thunderbird', 
+         'text');
+
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
+         'python-twisted', 'Python Twisted', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
+         'bugzilla', 'Bugzilla', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
+         'arch', 'Arch(TLA)', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
+         'kiwi2', 'Kiwi2', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
+         'plone', 'Plone', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
+        'evolution', 'Evolution', 
+        'text');
+
+
+--SourcepackageRelease
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+ 	1,
+        (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+        '0.9.1-1',
+        timestamp '2004-06-29 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-thunderbird'),
+ 	1,
+        (SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
+        '0.9.1-2',
+        timestamp '2004-06-30 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'python-twisted'),
+ 	1,
+        (SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
+        '0.9.1-3',
+        timestamp '2004-07-01 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'bugzilla'),
+ 	1,
+        (SELECT id FROM Person WHERE displayname = 'Dave Miller'),
+        '0.9.1-4',
+        timestamp '2004-07-02 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'arch'),
+ 	1,
+        (SELECT id FROM Person WHERE displayname = 'James Blackwell'),
+        '0.9.1-5',
+        timestamp '2004-07-03 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'kiwi2'),
+ 	1,
+        (SELECT id FROM Person WHERE displayname = 'Christian Reis'),
+        '0.9.1-6',
+        timestamp '2004-07-04 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'plone'),
+ 	1,
+        (SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
+        '0.9.1-7',
+        timestamp '2004-07-05 00:00',
+        1);
+
+--Manifest
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-06-29 00:00',  
+ (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-06-30 00:00',  
+ (SELECT id FROM Person WHERE displayname = 'Steve Alexander')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-01 00:00',  
+ (SELECT id FROM Person WHERE displayname = 'Andrew Bennetts')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-02 00:00',  
+ (SELECT id FROM Person WHERE displayname = 'Dave Miller')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-03 00:00',  
+ (SELECT id FROM Person WHERE displayname = 'James Blackwell')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-04 00:00',  
+ (SELECT id FROM Person WHERE displayname = 'Christian Reis')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-05 00:00',  
+ (SELECT id FROM Person WHERE displayname = 'Alexander Limi')
+ );
+
+
+--CodeRelease
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-29 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-30 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-30 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-01 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-01 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-02 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-02 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-03 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-03 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-04 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-04 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-05 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
+
+
+--ArchArchive
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('mozilla', 'Mozilla', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('thunderbird', 'Thunderbid', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('twisted', 'Twisted', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('bugzila', 'Bugzila', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('arch', 'Arch', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('kiwi2', 'Kiwi2', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('plone', 'Plone', 'text', false);
+
+
+--Archnamespace
+INSERT INTO Archnamespace (archarchive, category, visible) 
+VALUES (1, 'mozilla', true);
+
+INSERT INTO Archnamespace (archarchive, category, visible) 
+VALUES (2, 'tunderbird', true);
+
+INSERT INTO Archnamespace (archarchive, category, visible) 
+VALUES (3, 'twisted', true);
+
+INSERT INTO Archnamespace (archarchive, category, visible) 
+VALUES (4, 'bugzila', true);
+
+INSERT INTO Archnamespace (archarchive, category, visible) 
+VALUES (5, 'arch', true);
+
+INSERT INTO Archnamespace (archarchive, category, visible) 
+VALUES (6, 'kiwi2', true);
+
+INSERT INTO Archnamespace (archarchive, category, visible) 
+VALUES (7, 'plone', true);
+
+
+--Branch
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'mozilla'),
+        'Mozilla Firefox 0.9.1', 'text',
+ (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'thunderbird'),
+        'Mozilla Thunderbird 0.9.1', 'text',
+ (SELECT id FROM Person WHERE displayname = 'Steve Alexander')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'twisted'),
+        'Python Twisted 0.9.1', 'text',
+ (SELECT id FROM Person WHERE displayname = 'Andrew Bennetts')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'bugzila'),
+        'Bugzila 0.9.1', 'text',
+ (SELECT id FROM Person WHERE displayname = 'Dave Miller')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'arch'),
+        'Arch 0.9.1', 'text',
+ (SELECT id FROM Person WHERE displayname = 'James Blackwell')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'kiwi2'),
+        'Kiwi2 0.9.1', 'text',
+ (SELECT id FROM Person WHERE displayname = 'Christian Reis')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'plone'),
+        'Plone 0.9.1', 'text',
+ (SELECT id FROM Person WHERE displayname = 'Alexander Limi'));
 
 
  -- Label
@@ -39,18 +306,115 @@ VALUES ((SELECT id FROM ProcessorFamily WHERE name = 'x86'),
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'));
 
 -- Distribution
-INSERT INTO Distribution (name, title, description, domainname, owner) values ('ubuntu', 'Ubuntu Distribution', 'text ...', 'domain', 1);
-INSERT INTO Distribution (name, title, description, domainname, owner) values ('redhat', 'Redhat Advanced Server', 'some text', 'domain', 1);
-INSERT INTO Distribution (name, title, description, domainname, owner) values ('debian', 'Debian Crazy-Unstable', 'text ...', 'domain', 1);
-INSERT INTO Distribution (name, title, description, domainname, owner) values ('gentoo', 'The Gentoo bits', 'another ...', 'domain', 1);
-INSERT INTO Distribution (name, title, description, domainname, owner) values ('porkypigpolka', 'Porky Pig Polka Swine-oriented Distribution', 'blabla', 'domain', 1);
+INSERT INTO Distribution (name, title, description, domainname, owner) 
+	values ('ubuntu', 'Ubuntu Distribution', 'text ...', 'domain', 1);
 
-INSERT INTO Distrorelease (name, title, description, distribution, version, components, sections, releasestate, owner) values ('warty', 'Warty', 'text ...', 1, 'PONG', 1, 1, 0, 1);
-INSERT INTO Distrorelease (name, title, description, distribution, version, components, sections, releasestate, owner) values ('6.0', 'Six Six Six', 'some text', 2, '12321.XX', 1, 1, 0, 1);
-INSERT INTO Distrorelease (name, title, description, distribution, version, components, sections, releasestate, owner) values ('hoary', 'Hoary Crazy-Unstable', 'text ...', 1, 'EWEpp##', 1, 1, 0, 1);
-INSERT INTO Distrorelease (name, title, description, distribution, version, components, sections, releasestate, owner) values ('7.0', 'Seven', 'another ...', 2, 'ACK ACK', 1, 1, 0, 1);
-INSERT INTO Distrorelease (name, title, description, distribution, version, components, sections, releasestate, owner) values ('grumpy', 'G-R-U-M-P-Y', 'blabla', 1, 'PINKPY POLLY', 1, 1, 0, 1);
+INSERT INTO Distribution (name, title, description, domainname, owner) 
+	values ('redhat', 'Redhat Advanced Server', 'some text', 'domain', 1);
 
+INSERT INTO Distribution (name, title, description, domainname, owner) 
+	values ('debian', 'Debian Crazy-Unstable', 'text ...', 'domain', 1);
+
+INSERT INTO Distribution (name, title, description, domainname, owner) 
+	values ('gentoo', 'The Gentoo bits', 'another ...', 'domain', 1);
+
+INSERT INTO Distribution (name, title, description, domainname, owner) 
+	values ('porkypigpolka', 'Porky Pig Polka Distribution', 'blabla',
+	'domain', 1);
+
+
+
+-- Distrorelease
+INSERT INTO Distrorelease (name, title, description, distribution, version, 
+	components, sections, releasestate, owner) 
+	values 
+	('warty', 'Warty', 'text ...', 1, 'PONG', 1, 1, 0, 1);
+
+INSERT INTO Distrorelease (name, title, description, distribution, version, 
+	components, sections, releasestate, owner) 
+	values 
+	('6.0', 'Six Six Six', 'some text', 2, '12321.XX', 1, 1, 0, 1);
+
+INSERT INTO Distrorelease (name, title, description, distribution, version, 
+	components, sections, releasestate, owner) 
+	values ('hoary', 'Hoary Crazy-Unstable', 'text ...', 1, 'EWEpp##', 
+	1, 1, 0, 1);
+
+INSERT INTO Distrorelease (name, title, description, distribution, version, 
+	components, sections, releasestate, owner) 
+	values ('7.0', 'Seven', 'another ...', 2, 'ACK ACK', 1, 1, 0, 1);
+
+INSERT INTO Distrorelease (name, title, description, distribution, version, 
+	components, sections, releasestate, owner) 
+	values ('grumpy', 'G-R-U-M-P-Y', 'blabla', 1, 'PINKPY POLLY', 
+	1, 1, 0, 1);
+
+--Distroreleaserole
+
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Mark Shuttleworth'),
+	(SELECT id from Distrorelease WHERE name = 'warty'),
+	1);
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Mark Shuttleworth'),
+	(SELECT id from Distrorelease WHERE name = 'hoary'),
+	1);
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Mark Shuttleworth'),
+	(SELECT id from Distrorelease WHERE name = 'grumpy'),
+	1);
+
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Steve Alexander'),
+	(SELECT id from Distrorelease WHERE name = 'warty'),
+	2);
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Steve Alexander'),
+	(SELECT id from Distrorelease WHERE name = 'hoary'),
+	2);
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Steve Alexander'),
+	(SELECT id from Distrorelease WHERE name = 'grumpy'),
+	3);
+
+
+--Distributionrole
+
+INSERT INTO Distributionrole (person, distribution, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Mark Shuttleworth'),
+	(SELECT id from Distribution WHERE name = 'ubuntu'),
+	1);
+
+INSERT INTO Distributionrole (person, distribution, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Steve Alexander'),
+	(SELECT id from Distribution WHERE name = 'ubuntu'),
+	1);
+
+INSERT INTO Distributionrole (person, distribution, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Alexander Limi'),
+	(SELECT id from Distribution WHERE name = 'ubuntu'),
+	1);
+
+INSERT INTO Distributionrole (person, distribution, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Andrew Bennetts'),
+	(SELECT id from Distribution WHERE name = 'ubuntu'),
+	1);
+
+INSERT INTO Distributionrole (person, distribution, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Scott James Remnant'),
+	(SELECT id from Distribution WHERE name = 'ubuntu'),
+	1);
 
 --DistroArchrelease
 INSERT INTO Distroarchrelease(distrorelease, processorfamily, architecturetag, 
@@ -313,10 +677,12 @@ INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, descr
 VALUES ((SELECT id FROM Project WHERE name='gnome'),
 	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
 	'gnome-terminal', 'GNOME Terminal', 'The GNOME terminal emulator', 'foo', 'bar', 'http://www.gnome.org/' );
+/*
 INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Project WHERE name='gnome'),
 	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
 	'gnome-terminal', 'GNOME Terminal', 'The GNOME terminal emulator', 'foo', 'bar', 'http://www.gnome.org/' );
+*/
 INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Project WHERE name='iso-codes'),
 	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
@@ -1514,8 +1880,10 @@ VALUES (21, 7, 1, now(), now(), TRUE, 0,
 	0);
 
 /* Malone sample data */
+/* 
 INSERT INTO Person (displayname, givenname, familyname)
 VALUES  ('Dave Miller', 'David', 'Miller');
+*/
 
 INSERT INTO Person (displayname) VALUES ('Sample Person');
 
