@@ -23,36 +23,77 @@
       <th>Submitted By</th>
       <th>Assigned To</th>
     </tr>
-    <tal:bugassignments tal:repeat="bug context">
-      <tr tal:repeat="packageassignment bug/packageassignment"
-          tal:attributes="onclick string:window.location='${bug/id}';">
-        <td tal:content="bug/id">$Bug.title</td>
-        <td></td>
-        <td tal:content="packageassignment/sourcepackage/sourcepackagename/name">package</td>
-        <td><a tal:content="bug/title" tal:attributes="href bug/id">title</a></td>
-        <td tal:content="packageassignment/bugstatus/lp:BugAssignmentStatus">New</td>
-        <td tal:content="packageassignment/priority/lp:BugPriority">High</td>
-        <td tal:content="packageassignment/severity/lp:BugSeverity">Medium</td>
-        <td tal:content="python:packageassignment.datecreated.strftime('%d %b %y')">date</td>
-        <td tal:content="packageassignment/owner/displayname|string:-">name</td>
-        <td tal:content="packageassignment/assignee/displayname|string:-">somebody</td>
-      </tr>
-      <tr tal:repeat="productassignment bug/productassignment"
-          tal:attributes="onclick string:window.location='${bug/id}';">
-        <td tal:content="bug/id">$Bug.title</td>
-        <td tal:content="productassignment/product/displayname">product</td>
-        <td></td>
-        <td><a tal:content="bug/title" tal:attributes="href bug/id">title</a></td>
-        <td tal:content="productassignment/bugstatus/lp:BugAssignmentStatus">New</td>
-        <td tal:content="productassignment/priority/lp:BugPriority">High</td>
-        <td tal:content="productassignment/severity/lp:BugSeverity">Medium</td>
-        <td tal:content="python:productassignment.datecreated.strftime('%d %b %y')">date</td>
-        <td tal:content="productassignment/owner/displayname|string:-">name</td>
-        <td tal:content="productassignment/assignee/displayname|string:-">somebody</td>
-      </tr>
-    </tal:bugassignments>
+    <tr tal:repeat="assignment view/search"
+        tal:attributes="onclick string:window.location='${assignment/bug/id}';">
+      <td tal:content="assignment/bug/id">$Bug.title</td>
+      <td tal:content="assignment/product/name|nothing">product</td>
+      <td tal:content="assignment/sourcepackage/sourcepackagename/name|nothing">package</td>
+      <td><a tal:content="assignment/bug/title" tal:attributes="href assignment/bug/id">title</a></td>
+      <td tal:content="assignment/bugstatus/lp:BugAssignmentStatus">New</td>
+      <td tal:content="assignment/priority/lp:BugPriority">High</td>
+      <td tal:content="assignment/severity/lp:BugSeverity">Medium</td>
+      <td tal:content="python:assignment.datecreated.strftime('%d %b %y')">date</td>
+      <td tal:content="assignment/owner/displayname|string:-">name</td>
+      <td tal:content="assignment/assignee/displayname|string:-">somebody</td>
+    </tr>
   </table>
   <input type="submit" value="Add" onclick="window.open('+new','_top')" />
+
+  <form action="" method="POST">
+    <fieldset>
+        <legend>Filter Criteria</legend>
+
+        <div class="field">
+          <table>
+            <tr>
+              <th>Status</th>
+              <th>Assigned To</th>
+              <th>Product</th>
+              <th>Source Package</th>
+            </tr>
+            <tr>
+              <td>
+                <select name="status" size="4" multiple>
+                  <option value="all" selected>All</option>
+                  <option tal:repeat="term view/statuses"
+                          tal:content="term/title"
+                          tal:attributes="value repeat/term/number">New</option>
+                </select>
+              </td>
+              <td>
+                <select name="assignee" size="4" multiple>
+                  <option value="all" selected>All</option>
+                  <option tal:repeat="term view/people"
+                          tal:attributes="value term/token"
+                          tal:content="term/title">New</option>
+                </select>
+              </td>
+              <td>
+                <select name="product" size="4" multiple>
+                  <option value="all" selected>All</option>
+                  <option tal:repeat="term view/products"
+                          tal:attributes="value term/token"
+                          tal:content="term/title">apache</option>
+                </select>
+              </td>
+              <td>
+                <select name="sourcepackage" size="4" multiple>
+                  <option value="all" selected>All</option>
+                  <option tal:repeat="term view/packages"
+                          tal:attributes="value term/token"
+                          tal:content="term/title">apache</option>
+                </select>
+                </td>
+              </tr>
+            </table>
+        </div>
+
+        <div class="formControls">
+            <input type="submit" name="search" value="Search" />
+        </div>
+
+    </fieldset>
+  </form>
 </div>
 
 </body>

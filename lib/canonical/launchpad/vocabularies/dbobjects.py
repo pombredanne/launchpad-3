@@ -140,7 +140,6 @@ class SourcePackageVocabulary(SQLObjectVocabularyBase):
             ]
         return objs
 
-
 class BinaryPackageNameVocabulary(SQLObjectVocabularyBase):
     _table = BinaryPackageName
     _orderBy = 'name'
@@ -150,8 +149,6 @@ class BinaryPackageNameVocabulary(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         return self.getTerm(token)
-
-
 
 class ProductVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
@@ -164,23 +161,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             token = product
         else:
             token = '%s %s' % (project, product)
-        return SimpleTerm(obj, token, obj.title)
-
-    def getTermByToken(self, token):
-        try:
-            project, product = token.split(None,1)
-        except ValueError:
-            project = product = token # If no project, assume it eq product
-        tab = self._table
-        objs = list(tab.select('''
-            product.project = project.id
-            AND product.name = %s AND project.name = %s
-            ''' % (quote(product), quote(project)),
-            ['Product', 'Project']
-            ))
-        if len(objs) != 1:
-            raise LookupError, token
-        return self._toTerm(objs[0])
+        return SimpleTerm(obj, obj.id, obj.title)
 
     def search(self, query):
         '''Returns products where the product name starts with the given
@@ -252,9 +233,6 @@ class PersonVocabulary(SQLObjectVocabularyBase):
         except ValueError:
             pass
         return False
-
-
-
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     _table = ProductRelease
