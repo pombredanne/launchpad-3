@@ -2,6 +2,63 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-07 23:29:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1379
+
+    Summary:
+      various notification fixes, most notably that implicitness turns off
+ properly for private bugs now
+    Revision:
+      launchpad--devel--0--patch-1379
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-380
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-381
+       small doctest completeness fix for task edit notification
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-382
+       merge from stuart.bishop@canonical.com/launchpad--devel--1
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-383
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-384
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-385
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-386
+       an example of how to break the chunky diff test output. WARNING: this patch puts some things in a very broken state.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-387
+       HEH HEH spiv HEH HEH sqlobject bug
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-388
+       various notification fixes, most notably that implicitness turns off properly for private bugs now
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/components/bugsubscription.py
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/subscribers/bugprivacy.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-380
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-381
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-382
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-383
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-384
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-385
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-386
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-387
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-388
+
+
 2005-03-07 18:51:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1378
 
     Summary:

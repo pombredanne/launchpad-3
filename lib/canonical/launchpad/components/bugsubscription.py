@@ -9,7 +9,8 @@ from sqlobject.sqlbuilder import AND
 from zope.interface import implements
 
 from canonical.lp import dbschema
-from canonical.launchpad.database import BugSubscription, EmailAddress
+from canonical.launchpad.database import BugSubscription, EmailAddress, \
+     SourcePackage
 from canonical.launchpad.interfaces import IBugSubscriptionSet
 
 class BugSubscriptionSetAdapter:
@@ -29,21 +30,38 @@ class BugSubscriptionSetAdapter:
                 if best_email:
                     emails.add(best_email)
 
-        for task in self.bug.bugtasks:
-            best_email = _get_best_email_address(task.assignee)
-            if best_email:
-                emails.add(best_email)
+        if not self.bug.private:
+            # Collect implicit subscriptions. This only happens on
+            # public bugs.
+            for task in self.bug.bugtasks:
+                best_email = _get_best_email_address(task.assignee)
+                if best_email:
+                    emails.add(best_email)
 
-            if task.product:
-                best_email = _get_best_email_address(task.product.owner)
-            else:
-                # XXX: Brad Bollenbach, 2004-12-15: Get the proper maintainer
-                # here, after first smoothing out the bug reporting screens
-                # over the next day or two.
-                best_email = None
-                pass
-            if best_email:
-                emails.add(best_email)
+                if task.product:
+                    best_email = _get_best_email_address(task.product.owner)
+                else:
+                    if task.sourcepackagename:
+                        if task.distribution:
+                            distribution = task.distribution
+                        else:
+                            distribution = task.distrorelease.distribution
+                        # XXX: Brad Bollenbach, 2005-03-04: I'm not going
+                        # to bother implementing an ISourcePackage.get,
+                        # because whomever implements the
+                        # Nukesourcepackage spec is going to break this
+                        # code either way. Once Nukesourcepackage is
+                        # implemented, the code below should be replaced
+                        # with a proper implementation that uses something
+                        # like an IMaintainershipSet.get
+                        sourcepackages = SourcePackage.selectBy(
+                            sourcepackagenameID = task.sourcepackagename.id,
+                            distroID = distribution.id)
+                        if sourcepackages.count():
+                            best_email = _get_best_email_address(
+                                sourcepackages[0].maintainer)
+                if best_email:
+                    emails.add(best_email)
 
         best_owner_email = _get_best_email_address(self.bug.owner)
         if best_owner_email:

@@ -41,8 +41,13 @@ The following changes were made:
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug."""
     bugsubscriptions = zapi.getAdapter(bug, IBugSubscriptionSet, "")
-    return (list(GLOBAL_NOTIFICATION_EMAIL_ADDRS) +
-            bugsubscriptions.getCcEmailAddresses())
+    subscriptions = []
+    if not bug.private:
+        subscriptions = list(GLOBAL_NOTIFICATION_EMAIL_ADDRS)
+
+    subscriptions += bugsubscriptions.getCcEmailAddresses()
+
+    return subscriptions
 
 def get_changes(before, after, fields):
     """Return what changed from the object before to after for the

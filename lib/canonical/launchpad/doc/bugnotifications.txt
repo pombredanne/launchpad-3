@@ -12,30 +12,10 @@ When do bug notifications get sent?
 
 Not *every* change on a bug causes a notification to be sent. This section will
 give a rundown of the things that do cause notifications to be sent. To start
-with let's simulate an interaction with the system as a logged-in user:
+with, let's simulate an interaction with the system as a logged-in user:
 
-    >>> import zope.security.management
-    >>> from zope.interface import implements
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> from zope.app.tests import ztapi
-    >>> from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
-
-    >>> class Participation:
-    ...     interaction = None
-    >>> class MockLaunchBag(object):
-    ...     implements(ILaunchBag)
-    ...     def __init__(self, login=None, user=None):
-    ...         self.login = login
-    ...         self.user = user
-
-    >>> firefox_maintainer = LaunchpadPrincipal(
-    ...     12, "firefox maintainer",
-    ...     "i can't think of a description to write here")
-    >>> firefox_maintainer_participation = Participation()
-    >>> firefox_maintainer_participation.principal = firefox_maintainer
-    >>> zope.security.management.newInteraction(firefox_maintainer_participation)
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag, MockLaunchBag("test@canonical.com", firefox_maintainer))
+    >>> from canonical.launchpad.ftests import login
+    >>> login("test@canonical.com")
 
 Then, let's get a handle to our mailer. This is the thing we'll examine to show
 what email has been sent, to whom, and what the body of the message contains:
@@ -53,11 +33,11 @@ what those notifications look like:
     >>> from canonical.launchpad.database.bug import BugFactory
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IProductSet, IPersonSet, \
-    ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet
+    ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet, IBugSet
 
     >>> bug_submitter = getUtility(IPersonSet).get(12)
     >>> firefox = getUtility(IProductSet).get(4)
-    
+
     >>> firefox_crashes = BugFactory(
     ...     product = firefox, title = "firefox crashes all the time",
     ...     comment = "this is a comment", owner = bug_submitter)
@@ -81,7 +61,9 @@ what those notifications look like:
 
 2. Filing a new task on an existing bug
 
-There are three kinds of tasks that can be added to an existing bug.
+There are three kinds of tasks that can be added to an existing
+bug. Let's take a look at each type, demonstrating the implications
+they each have on notification recipients.
 
   2.1 Distro Task
 
@@ -99,12 +81,13 @@ There are three kinds of tasks that can be added to an existing bug.
     ...         self.context.bug = bug.id
     >>> view = StubView(firefox_crashes)
 
-    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> debian = getUtility(IDistributionSet).get(3)
     >>> firefox_source = getUtility(ISourcePackageNameSet).get(1)
-    >>> firefox_crashes_in_ubuntu = BugTaskFactory(
-    ...     view, distribution = ubuntu.id,
-    ...     sourcepackagename = firefox_source.id, owner = bug_submitter.id)
-    >>> notify(ObjectCreatedEvent(firefox_crashes_in_ubuntu))
+    >>> firefox_crashes_in_debian = BugTaskFactory(
+    ...     view, distribution = debian.id,
+    ...     sourcepackagename = firefox_source.id,
+    ...     owner = bug_submitter.id)
+    >>> notify(ObjectCreatedEvent(firefox_crashes_in_debian))
 
     >>> transaction.commit()
 
@@ -114,7 +97,7 @@ There are three kinds of tasks that can be added to an existing bug.
     >>> print from_addr
     Malone Bugtracker <noreply@canonical.com>
     >>> print to_addrs
-    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '...task added'
@@ -128,11 +111,11 @@ There are three kinds of tasks that can be added to an existing bug.
     loss or security bugs.) Tasks filed on specific distro releases are not
     listed in the more generic, distro-wide bug task listings.
 
-    >>> warty = getUtility(IDistroReleaseSet).get(1)
-    >>> firefox_crashes_in_warty = BugTaskFactory(
-    ...     view, distrorelease = warty.id,
+    >>> sid = getUtility(IDistroReleaseSet).get(8)
+    >>> firefox_crashes_in_sid = BugTaskFactory(
+    ...     view, distrorelease = sid.id,
     ...     sourcepackagename = firefox_source.id, owner = bug_submitter.id)
-    >>> notify(ObjectCreatedEvent(firefox_crashes_in_warty))
+    >>> notify(ObjectCreatedEvent(firefox_crashes_in_sid))
 
     >>> transaction.commit()
 
@@ -142,7 +125,7 @@ There are three kinds of tasks that can be added to an existing bug.
     >>> print from_addr
     Malone Bugtracker <noreply@canonical.com>
     >>> print to_addrs
-    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '...task added'
@@ -172,7 +155,7 @@ There are three kinds of tasks that can be added to an existing bug.
     >>> print from_addr
     Malone Bugtracker <noreply@canonical.com>
     >>> print to_addrs
-    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '...task added'
@@ -197,9 +180,9 @@ There are three kinds of tasks that can be added to an existing bug.
     ...         self.context.context = FakeContext()
     ...         self.context.context.id = bug.id
     >>> view2 = StubView2(firefox_crashes)
-    >>> comment_on_firefox_crashes_in_ubuntu = BugMessageFactory(
+    >>> comment_on_firefox_crashes_in_debian = BugMessageFactory(
     ...     view2, title = "some title", contents = "just a test comment")
-    >>> notify(ObjectCreatedEvent(comment_on_firefox_crashes_in_ubuntu))
+    >>> notify(ObjectCreatedEvent(comment_on_firefox_crashes_in_debian))
 
     >>> transaction.commit()
 
@@ -209,7 +192,7 @@ There are three kinds of tasks that can be added to an existing bug.
     >>> print from_addr
     Malone Bugtracker <noreply@canonical.com>
     >>> print to_addrs
-    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'test@canonical.com']
+    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
     >>> msg = email.message_from_string(raw_message)
     >>> msg["Subject"]
     '...comment added'
@@ -222,28 +205,103 @@ There are three kinds of tasks that can be added to an existing bug.
     >>> class MockObject(object):
     ...     pass
     >>> bugtask_before_modification = MockObject()
-    >>> bugtask_before_modification.status = firefox_crashes_in_ubuntu.status
-    >>> bugtask_before_modification.priority = firefox_crashes_in_ubuntu.priority
-    >>> bugtask_before_modification.severity = firefox_crashes_in_ubuntu.severity
+    >>> bugtask_before_modification.status = firefox_crashes_in_debian.status
+    >>> bugtask_before_modification.priority = firefox_crashes_in_debian.priority
+    >>> bugtask_before_modification.severity = firefox_crashes_in_debian.severity
     >>> bugtask_before_modification.sourcepackagename = None
     >>> bugtask_before_modification.product = None
-    >>> bugtask_before_modification.distribution = firefox_crashes_in_ubuntu.distribution
+    >>> bugtask_before_modification.distribution = firefox_crashes_in_debian.distribution
     >>> bugtask_before_modification.distrorelease = None
-    >>> firefox_crashes_in_ubuntu.status = BugTaskStatus.FIXED.value
-    >>> ubuntu_task_modified = SQLObjectModifiedEvent(
-    ...     firefox_crashes_in_ubuntu, bugtask_before_modification, ["status"],
-    ...     bug_submitter)
-    >>> notify(ubuntu_task_modified)
+    >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXED.value
+    >>> debian_task_modified = SQLObjectModifiedEvent(
+    ...     firefox_crashes_in_debian, bugtask_before_modification,
+    ...     ["status"], bug_submitter)
+    >>> notify(debian_task_modified)
 
     >>> transaction.commit()
 
     >>> len(stub.test_emails)
     1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['global@bbnet.ca', 'dilys@muse.19inch.net', 'mark@hbd.com', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '...task edited'
 
 Implications of Bug Privacy
 ---------------------------
 
-XXX: blah privacy blah
+Making a bug private changes notification semantics. When a bug is
+made private, the only users that will receive notifcations for that
+bug are those who are explicitly CC'd to the bug.
 
-    >>> ztapi.unprovideUtility(ILaunchBag)
+To learn more of the specifics of these semantics, consult the
+BugPrivacy spec:
+
+    https://wiki.launchpad.canonical.com/BugPrivacy
+
+and as well, the system document:
+
+    lib/canonical/launchpad/doc/bugsubscription.txt
+
+To demonstrate what we mean, let's make the firefox crashing bug
+report private:
+
+    >>> firefox_bug = getUtility(IBugSet).get(firefox_crashes.id)
+    >>> firefox_bug.private = True
+    >>> bug_before_modification = MockObject()
+    >>> bug_before_modification.title = firefox_bug.title
+    >>> bug_before_modification.id = firefox_bug.id
+    >>> bug_before_modification.private = False
+    >>> bug_before_modification.subscriptions = firefox_bug.subscriptions
+    >>> bug_before_modification.bugtasks = firefox_bug.bugtasks
+    >>> bug_modified = SQLObjectModifiedEvent(
+    ...     firefox_bug, bug_before_modification,
+    ...     ["private"], bug_submitter)
+    >>> notify(bug_modified)
+
+    >>> transaction.commit()
+    >>> stub.test_emails = []
+
+Now, when we add a new task to that bug, the maintainer of the task
+target will *not* get a notification (when a bug is marked private,
+implicit subscription is disabled):
+
+XXX: Brad Bollenbach, 2005-03-07: This is a totally CONTRIVED example!
+I should be adding this to another source package in another distro,
+but that would mean adding more sample sourcepackage data, which I
+don't want to do until after Nukesourcepackage is implemented, because
+the SourcePackage table is going to be blown away anyway.
+
+    >>> applets = getUtility(IProductSet).get(9)
+    >>> firefox_crashes_upstream = BugTaskFactory(
+    ...     view, product = applets.id, owner = bug_submitter.id)
+
+Normally, you might expect to see the maintainer of applets (Foo Bar,
+email foo.bar@canonical.com) now be included in the list of recipients
+that will get notified of changes on this bug. Because the bug is
+private, and Foo Bar is not an explicit subscriber to the bug, he will
+*not* be included in the list of recipients!
+
+    >>> notify(ObjectCreatedEvent(firefox_crashes_upstream))
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> print from_addr
+    Malone Bugtracker <noreply@canonical.com>
+    >>> print to_addrs
+    ['mark@hbd.com', 'test@canonical.com']
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    '...task added'
+
+    >>> stub.test_emails = []
+
+    >>> import zope.security.management
     >>> zope.security.management.endInteraction()
