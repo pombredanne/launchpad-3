@@ -68,7 +68,7 @@
             -->
       
             <div class="field">
-                <form action="comments/+new" method="post">
+                <form action="messages/+new" method="post">
                     <label>Comment</label>
                     <div class="formHelp">
                         If you have additional relevant information, 
@@ -115,7 +115,7 @@
             <!--
             <div class="boardCommentActions" >
                 <form method="post" tal:attributes="action
-                    string:comments/${message/id}/+reply">
+                    string:messages/${message/id}/+reply">
                     <input class="standalone" type="submit"
                         value="Reply to this" />
                 </form>

@@ -5,7 +5,15 @@
 
 
 --
--- Name: person; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: x; Type: TABLE DATA; Schema: public; Owner: stub
+--
+
+INSERT INTO x (x) VALUES ('2004-09-24 22:58:33.014648');
+INSERT INTO x (x) VALUES ('2004-09-24 12:58:50.099864');
+
+
+--
+-- Name: person; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', NULL, NULL, NULL, NULL, NULL);
@@ -29,10 +37,11 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (21, 'Hoary Gnome Team', NULL, NULL, NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (22, 'Stuart Bishop', 'Stuart', 'Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, NULL, NULL);
 
 
 --
--- Name: emailaddress; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: emailaddress; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO emailaddress (id, email, person, status) VALUES (1, 'mark@hbd.com', 1, 2);
@@ -54,10 +63,11 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (16, 'test@canonical
 INSERT INTO emailaddress (id, email, person, status) VALUES (17, 'testtest@canonical.com', 12, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (18, 'testtesttest@canonical.com', 12, 3);
 INSERT INTO emailaddress (id, email, person, status) VALUES (19, 'testing@canonical.com', 12, 2);
+INSERT INTO emailaddress (id, email, person, status) VALUES (20, 'stuart.bishop@canonical.com', 22, 1);
 
 
 --
--- Name: gpgkey; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: gpgkey; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO gpgkey (id, person, keyid, fingerprint, pubkey, revoked) VALUES (1, 1, '1024D/09F89725', 'XVHJ OU77 IYTD 0982 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false);
@@ -73,7 +83,7 @@ INSERT INTO gpgkey (id, person, keyid, fingerprint, pubkey, revoked) VALUES (10,
 
 
 --
--- Name: archuserid; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: archuserid; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO archuserid (id, person, archuserid) VALUES (1, 1, 'mark.shuttleworth');
@@ -89,7 +99,7 @@ INSERT INTO archuserid (id, person, archuserid) VALUES (10, 6, 'jeff.waugh');
 
 
 --
--- Name: wikiname; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: wikiname; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (1, 1, 'http://www.ubuntulinux.com/wiki/', 'MarkShuttleworth');
@@ -105,7 +115,7 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (10, 6, 'http://www.ubu
 
 
 --
--- Name: jabberid; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: jabberid; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO jabberid (id, person, jabberid) VALUES (1, 1, 'markshuttleworth@jabber.org');
@@ -121,7 +131,7 @@ INSERT INTO jabberid (id, person, jabberid) VALUES (10, 6, 'jeff@jabber.org');
 
 
 --
--- Name: ircid; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: ircid; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO ircid (id, person, network, nickname) VALUES (1, 1, 'irc.freenode.net', 'mark');
@@ -136,7 +146,7 @@ INSERT INTO ircid (id, person, network, nickname) VALUES (9, 6, 'irc.freenode.ne
 
 
 --
--- Name: membership; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: membership; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO membership (id, person, team, role, status) VALUES (1, 1, 17, 1, 2);
@@ -150,7 +160,7 @@ INSERT INTO membership (id, person, team, role, status) VALUES (8, 6, 18, 2, 2);
 
 
 --
--- Name: teamparticipation; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: teamparticipation; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO teamparticipation (id, team, person) VALUES (1, 17, 1);
@@ -167,7 +177,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (11, 18, 21);
 
 
 --
--- Name: schema; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: schema; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (1, 'Mark schema', 'TITLE', 'description', 1, true);
@@ -178,7 +188,7 @@ INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES 
 
 
 --
--- Name: label; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: label; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO label (id, "schema", name, title, description) VALUES (1, 1, 'blah', 'blah', 'blah');
@@ -650,7 +660,7 @@ INSERT INTO label (id, "schema", name, title, description) VALUES (466, 5, 'zun'
 
 
 --
--- Name: personlabel; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: personlabel; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO personlabel (person, label) VALUES (13, 388);
@@ -662,7 +672,7 @@ INSERT INTO personlabel (person, label) VALUES (15, 335);
 
 
 --
--- Name: project; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: project; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap) VALUES (1, 1, 'ubuntu', 'Ubuntu', 'The Ubuntu Project', 'A community Linux distribution building building a slick desktop for the global market.', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community. Ubuntu also includes work to unify the translation of common opens source desktop applications and the tracking of bugs across multiple distributions.', '2004-09-24 20:58:00.633513', 'http://www.no-name-yet.com/', NULL, NULL);
@@ -674,19 +684,19 @@ INSERT INTO project (id, "owner", name, displayname, title, shortdesc, descripti
 
 
 --
--- Name: projectrelationship; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: projectrelationship; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: projectrole; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: projectrole; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: product; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: product; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap) VALUES (1, 1, 1, 'ubuntu', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is avaialble everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL);
@@ -700,25 +710,25 @@ INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, 
 
 
 --
--- Name: productlabel; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: productlabel; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: productrole; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: productrole; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: productseries; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: productseries; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: productrelease; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: productrelease; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner") VALUES (1, 4, '2004-06-28 00:00:00', 'mozilla-firefox-0.9.1', NULL, NULL, NULL, 12);
@@ -726,25 +736,25 @@ INSERT INTO productrelease (id, product, datereleased, "version", title, descrip
 
 
 --
--- Name: productcvsmodule; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: productcvsmodule; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: productbkbranch; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: productbkbranch; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: productsvnmodule; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: productsvnmodule; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: archarchive; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: archarchive; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (1, 'mozilla', 'Mozilla', 'text', false, NULL);
@@ -759,19 +769,19 @@ INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES 
 
 
 --
--- Name: archarchivelocation; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: archarchivelocation; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: archarchivelocationsigner; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: archarchivelocationsigner; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: archnamespace; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: archnamespace; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (1, 1, 'mozilla', NULL, NULL, true);
@@ -786,7 +796,7 @@ INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible
 
 
 --
--- Name: branch; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: branch; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (1, 1, 'Mozilla Firefox 0.9.1', 'text', 1, NULL);
@@ -801,49 +811,49 @@ INSERT INTO branch (id, archnamespace, title, description, "owner", product) VAL
 
 
 --
--- Name: changeset; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: changeset; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: changesetfilename; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: changesetfilename; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: changesetfile; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: changesetfile; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: changesetfilehash; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: changesetfilehash; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: branchrelationship; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: branchrelationship; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: branchlabel; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: branchlabel; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: productbranchrelationship; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: productbranchrelationship; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: manifest; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: manifest; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO manifest (id, datecreated, "owner") VALUES (1, '2004-06-29 00:00:00', 1);
@@ -858,59 +868,59 @@ INSERT INTO manifest (id, datecreated, "owner") VALUES (9, '2004-06-29 00:00:00'
 
 
 --
--- Name: manifestentry; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: manifestentry; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: archconfig; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: archconfig; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: archconfigentry; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: archconfigentry; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: processorfamily; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: processorfamily; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO processorfamily (id, name, title, description, "owner") VALUES (1, 'x86', 'Intel 386 compatible chips', 'Bring back the 8086!', 1);
 
 
 --
--- Name: processor; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: processor; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO processor (id, family, name, title, description, "owner") VALUES (1, 1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family', 1);
 
 
 --
--- Name: builder; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: builder; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: component; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: component; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO component (id, name) VALUES (1, 'default_component');
 
 
 --
--- Name: section; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: section; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO section (id, name) VALUES (1, 'default_section');
 
 
 --
--- Name: distribution; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: distribution; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO distribution (id, name, title, description, domainname, "owner") VALUES (1, 'ubuntu', 'Ubuntu', 'Ubuntu is a new concept of GNU/Linux Distribution based on Debian GNU/Linux.', 'domain', 1);
@@ -921,7 +931,7 @@ INSERT INTO distribution (id, name, title, description, domainname, "owner") VAL
 
 
 --
--- Name: distributionrole; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: distributionrole; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO distributionrole (person, distribution, role, id) VALUES (1, 1, 1, 1);
@@ -934,7 +944,7 @@ INSERT INTO distributionrole (person, distribution, role, id) VALUES (18, 1, 3, 
 
 
 --
--- Name: distrorelease; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: distrorelease; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner") VALUES (1, 1, 'warty', 'Warty', 'This is the first stable release of Ubuntu', '1.0.0', 1, 1, 3, '2004-08-20 00:00:00', NULL, 1);
@@ -948,7 +958,7 @@ INSERT INTO distrorelease (id, distribution, name, title, description, "version"
 
 
 --
--- Name: distroreleaserole; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: distroreleaserole; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (1, 1, 1, 1);
@@ -963,32 +973,32 @@ INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (21, 3, 4
 
 
 --
--- Name: distroarchrelease; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: distroarchrelease; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner") VALUES (1, 1, 1, 'warty--x86--devel--0', 1);
 
 
 --
--- Name: libraryfilecontent; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: libraryfilecontent; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: libraryfilealias; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: libraryfilealias; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: productreleasefile; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: productreleasefile; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: sourcepackagename; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: sourcepackagename; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO sourcepackagename (id, name) VALUES (1, 'mozilla-firefox');
@@ -1002,7 +1012,7 @@ INSERT INTO sourcepackagename (id, name) VALUES (8, 'evolution');
 
 
 --
--- Name: sourcepackage; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: sourcepackage; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename) VALUES (1, 1, 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
@@ -1037,26 +1047,26 @@ INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, dis
 
 
 --
--- Name: sourcepackagerelationship; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: sourcepackagerelationship; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: sourcepackagelabel; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: sourcepackagelabel; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: packaging; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: packaging; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO packaging (sourcepackage, packaging, product) VALUES (1, 1, 4);
 
 
 --
--- Name: sourcepackagerelease; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: sourcepackagerelease; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO sourcepackagerelease (id, sourcepackage, srcpackageformat, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc) VALUES (7, 3, 1, 7, '0.9.1-3', '2004-07-01 00:00:00', 1, NULL, NULL, NULL, 'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch', 'kiwi (>= 2.0),python-twisted , bugzilla, plone', NULL, NULL);
@@ -1416,13 +1426,13 @@ INSERT INTO sourcepackagerelease (id, sourcepackage, srcpackageformat, creator, 
 
 
 --
--- Name: sourcepackagereleasefile; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: sourcepackagereleasefile; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: sourcepackageupload; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: sourcepackageupload; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO sourcepackageupload (distrorelease, sourcepackagerelease, uploadstatus) VALUES (1, 11, 1);
@@ -1441,14 +1451,14 @@ INSERT INTO sourcepackageupload (distrorelease, sourcepackagerelease, uploadstat
 
 
 --
--- Name: build; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: build; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes) VALUES (1, '2004-08-24 00:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
 --
--- Name: binarypackagename; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: binarypackagename; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO binarypackagename (id, name) VALUES (1, 'mozilla-firefox');
@@ -1461,7 +1471,7 @@ INSERT INTO binarypackagename (id, name) VALUES (7, 'plone');
 
 
 --
--- Name: binarypackage; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: binarypackage; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (1, 5, 1, '0.9.1-1', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
@@ -1506,13 +1516,13 @@ INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version
 
 
 --
--- Name: binarypackagefile; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: binarypackagefile; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: packagepublishing; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: packagepublishing; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO packagepublishing (id, binarypackage, distroarchrelease, component, section, priority) VALUES (1, 1, 1, 1, 1, 3);
@@ -1526,13 +1536,13 @@ INSERT INTO packagepublishing (id, binarypackage, distroarchrelease, component, 
 
 
 --
--- Name: packageselection; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: packageselection; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: coderelease; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: coderelease; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO coderelease (id, productrelease, sourcepackagerelease, manifest) VALUES (1, NULL, 5, 1);
@@ -1547,25 +1557,25 @@ INSERT INTO coderelease (id, productrelease, sourcepackagerelease, manifest) VAL
 
 
 --
--- Name: codereleaserelationship; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: codereleaserelationship; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: osfile; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: osfile; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: osfileinpackage; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: osfileinpackage; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: pomsgid; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: pomsgid; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO pomsgid (id, msgid) VALUES (1, 'evolution addressbook');
@@ -1679,7 +1689,7 @@ INSERT INTO pomsgid (id, msgid) VALUES (97, '_Add Group');
 
 
 --
--- Name: potranslation; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: potranslation; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO potranslation (id, translation) VALUES (1, 'libreta de direcciones de Evolution');
@@ -1698,13 +1708,13 @@ INSERT INTO potranslation (id, translation) VALUES (9, '_Añadir grupo');
 
 
 --
--- Name: language; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: language; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: country; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: country; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description) VALUES (1, 'AF', 'AFG', 'Afghanistan', 'The Transitional Islamic State of Afghanistan', NULL);
@@ -1950,20 +1960,20 @@ INSERT INTO country (id, iso3166code2, iso3166code3, name, title, description) V
 
 
 --
--- Name: spokenin; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: spokenin; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: license; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: license; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO license (id, legalese) VALUES (1, 'GPL-2');
 
 
 --
--- Name: potemplate; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: potemplate; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO potemplate (id, product, priority, branch, changeset, name, title, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner") VALUES (1, 5, 2, 8, NULL, 'evolution-2.0', 'Main POT file for the Evolution 2.0 development branch', 'I suppose we should create a long description here....', 'Copyright (C) 2003  Ximian Inc.', 1, '2004-08-17 09:10:00', 'po/', true, 3, 13);
@@ -1971,7 +1981,7 @@ INSERT INTO potemplate (id, product, priority, branch, changeset, name, title, d
 
 
 --
--- Name: pofile; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: pofile; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO pofile (id, potemplate, "language", title, description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename) VALUES (1, 1, 387, NULL, NULL, ' traducción de es.po al Spanish
@@ -2003,7 +2013,7 @@ Plural-Forms: nplurals=2; plural=(n != 1);
 
 
 --
--- Name: pomsgset; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: pomsgset; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO pomsgset (id, primemsgid, "sequence", potemplate, pofile, iscomplete, obsolete, fuzzy, commenttext, filereferences, sourcecomment, flagscomment) VALUES (1, 1, 1, 1, NULL, false, false, false, NULL, 'a11y/addressbook/ea-addressbook-view.c:94
@@ -2035,7 +2045,7 @@ INSERT INTO pomsgset (id, primemsgid, "sequence", potemplate, pofile, iscomplete
 
 
 --
--- Name: pomsgidsighting; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: pomsgidsighting; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO pomsgidsighting (id, pomsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (1, 1, 1, '2004-09-24 21:58:04.969875', '2004-09-24 21:58:04.969875', true, 0);
@@ -2068,7 +2078,7 @@ INSERT INTO pomsgidsighting (id, pomsgset, pomsgid, datefirstseen, datelastseen,
 
 
 --
--- Name: potranslationsighting; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: potranslationsighting; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (1, 17, 1, 1, '2004-09-24 21:58:05.989829', '2004-09-24 21:58:05.989829', true, 0, true, 0, 13);
@@ -2083,31 +2093,31 @@ INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefir
 
 
 --
--- Name: pocomment; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: pocomment; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: translationeffort; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: translationeffort; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: translationeffortpotemplate; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: translationeffortpotemplate; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: posubscription; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: posubscription; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: bug; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: bug; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc) VALUES (2, '2004-09-24 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 'Everything put into the folder "Trash" disappears!');
@@ -2115,19 +2125,19 @@ INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof
 
 
 --
--- Name: bugsubscription; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: bugsubscription; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: buginfestation; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: buginfestation; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: sourcepackagebugassignment; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: sourcepackagebugassignment; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackage, assignee) VALUES (1, 1, 1, 2, 4, 2, NULL, NULL);
@@ -2135,7 +2145,7 @@ INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, prior
 
 
 --
--- Name: productbugassignment; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: productbugassignment; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (1, 1, 4, 1, 2, 2, NULL);
@@ -2143,14 +2153,14 @@ INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severit
 
 
 --
--- Name: bugactivity; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: bugactivity; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (1, 1, '2004-09-24 00:00:00', 1, 'title', 'A silly problem', 'An odd problem', 'Decided problem wasn''t silly after all');
 
 
 --
--- Name: bugexternalref; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: bugexternalref; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated, "owner") VALUES (1, 2, 1, '45', 'Some junk has to go here because the field is NOT NULL', '2004-09-24 20:58:04.702498', 12);
@@ -2158,46 +2168,46 @@ INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated,
 
 
 --
--- Name: bugsystemtype; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: bugsystemtype; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO bugsystemtype (id, name, title, description, homepage, "owner") VALUES (1, 'bugzilla', 'BugZilla', 'Dave Miller''s Labour of Love, the Godfather of Open Source project issue tracking.', 'http://www.bugzilla.org/', 12);
 
 
 --
--- Name: bugsystem; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: bugsystem; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO bugsystem (id, bugsystemtype, name, title, shortdesc, baseurl, "owner", contactdetails) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker', 'http://www.example.com/bugtracker', 12, 'Carrier pidgeon only');
 
 
 --
--- Name: bugwatch; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: bugwatch; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO bugwatch (id, bug, bugsystem, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12);
 
 
 --
--- Name: projectbugsystem; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: projectbugsystem; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: buglabel; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: buglabel; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: bugrelationship; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: bugrelationship; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: bugmessage; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: bugmessage; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 INSERT INTO bugmessage (id, bug, datecreated, title, contents, "owner", parent, distribution, rfc822msgid) VALUES (1, 2, '2004-09-24 20:58:04.684057', 'PEBCAK', 'Problem exists between chair and keyboard', NULL, NULL, NULL, 'foo@example.com-332342--1231');
@@ -2208,612 +2218,612 @@ INSERT INTO bugmessage (id, bug, datecreated, title, contents, "owner", parent, 
 
 
 --
--- Name: bugattachment; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: bugattachment; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: sourcesource; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: sourcesource; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: componentselection; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: componentselection; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: sectionselection; Type: TABLE DATA; Schema: public; Owner: mark
+-- Name: sectionselection; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
 
 
 --
--- Name: person_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: person_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
-SELECT pg_catalog.setval('person_id_seq', 21, true);
-
-
---
--- Name: emailaddress_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
---
-
-SELECT pg_catalog.setval('emailaddress_id_seq', 19, true);
+SELECT pg_catalog.setval('person_id_seq', 22, true);
 
 
 --
--- Name: gpgkey_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: emailaddress_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
+--
+
+SELECT pg_catalog.setval('emailaddress_id_seq', 20, true);
+
+
+--
+-- Name: gpgkey_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('gpgkey_id_seq', 10, true);
 
 
 --
--- Name: archuserid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: archuserid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('archuserid_id_seq', 10, true);
 
 
 --
--- Name: wikiname_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: wikiname_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('wikiname_id_seq', 10, true);
 
 
 --
--- Name: jabberid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: jabberid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('jabberid_id_seq', 10, true);
 
 
 --
--- Name: ircid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: ircid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('ircid_id_seq', 9, true);
 
 
 --
--- Name: membership_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: membership_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('membership_id_seq', 8, true);
 
 
 --
--- Name: teamparticipation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: teamparticipation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('teamparticipation_id_seq', 11, true);
 
 
 --
--- Name: schema_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: schema_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('schema_id_seq', 5, true);
 
 
 --
--- Name: label_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: label_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('label_id_seq', 466, true);
 
 
 --
--- Name: project_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: project_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('project_id_seq', 6, true);
 
 
 --
--- Name: projectrelationship_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: projectrelationship_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('projectrelationship_id_seq', 1, false);
 
 
 --
--- Name: projectrole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: projectrole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('projectrole_id_seq', 1, false);
 
 
 --
--- Name: product_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: product_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('product_id_seq', 8, true);
 
 
 --
--- Name: productlabel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: productlabel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('productlabel_id_seq', 1, false);
 
 
 --
--- Name: productrole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: productrole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('productrole_id_seq', 1, false);
 
 
 --
--- Name: productseries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: productseries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('productseries_id_seq', 1, false);
 
 
 --
--- Name: productrelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: productrelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('productrelease_id_seq', 2, true);
 
 
 --
--- Name: productcvsmodule_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: productcvsmodule_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('productcvsmodule_id_seq', 1, false);
 
 
 --
--- Name: productbkbranch_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: productbkbranch_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('productbkbranch_id_seq', 1, false);
 
 
 --
--- Name: productsvnmodule_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: productsvnmodule_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('productsvnmodule_id_seq', 1, false);
 
 
 --
--- Name: archarchive_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: archarchive_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('archarchive_id_seq', 9, true);
 
 
 --
--- Name: archarchivelocation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: archarchivelocation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('archarchivelocation_id_seq', 1, false);
 
 
 --
--- Name: archnamespace_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: archnamespace_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('archnamespace_id_seq', 9, true);
 
 
 --
--- Name: branch_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: branch_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('branch_id_seq', 9, true);
 
 
 --
--- Name: changeset_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: changeset_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('changeset_id_seq', 1, false);
 
 
 --
--- Name: changesetfilename_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: changesetfilename_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('changesetfilename_id_seq', 1, false);
 
 
 --
--- Name: changesetfile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: changesetfile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('changesetfile_id_seq', 1, false);
 
 
 --
--- Name: changesetfilehash_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: changesetfilehash_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('changesetfilehash_id_seq', 1, false);
 
 
 --
--- Name: productbranchrelationship_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: productbranchrelationship_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('productbranchrelationship_id_seq', 1, false);
 
 
 --
--- Name: manifest_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: manifest_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('manifest_id_seq', 9, true);
 
 
 --
--- Name: manifestentry_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: manifestentry_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('manifestentry_id_seq', 1, false);
 
 
 --
--- Name: archconfig_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: archconfig_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('archconfig_id_seq', 1, false);
 
 
 --
--- Name: processorfamily_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: processorfamily_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('processorfamily_id_seq', 1, true);
 
 
 --
--- Name: processor_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: processor_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('processor_id_seq', 1, true);
 
 
 --
--- Name: builder_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: builder_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('builder_id_seq', 1, false);
 
 
 --
--- Name: component_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: component_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('component_id_seq', 1, true);
 
 
 --
--- Name: section_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: section_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('section_id_seq', 1, true);
 
 
 --
--- Name: distribution_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: distribution_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('distribution_id_seq', 5, true);
 
 
 --
--- Name: distrorelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: distrorelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('distrorelease_id_seq', 8, true);
 
 
 --
--- Name: distroarchrelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: distroarchrelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('distroarchrelease_id_seq', 1, true);
 
 
 --
--- Name: libraryfilecontent_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: libraryfilecontent_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('libraryfilecontent_id_seq', 1, false);
 
 
 --
--- Name: libraryfilealias_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: libraryfilealias_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('libraryfilealias_id_seq', 1, false);
 
 
 --
--- Name: sourcepackagename_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: sourcepackagename_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('sourcepackagename_id_seq', 8, true);
 
 
 --
--- Name: sourcepackage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: sourcepackage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('sourcepackage_id_seq', 8, true);
 
 
 --
--- Name: sourcepackagerelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: sourcepackagerelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('sourcepackagerelease_id_seq', 13, true);
 
 
 --
--- Name: build_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: build_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('build_id_seq', 1, true);
 
 
 --
--- Name: binarypackagename_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: binarypackagename_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('binarypackagename_id_seq', 7, true);
 
 
 --
--- Name: binarypackage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: binarypackage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('binarypackage_id_seq', 11, true);
 
 
 --
--- Name: packagepublishing_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: packagepublishing_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('packagepublishing_id_seq', 8, true);
 
 
 --
--- Name: packageselection_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: packageselection_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('packageselection_id_seq', 1, false);
 
 
 --
--- Name: coderelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: coderelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('coderelease_id_seq', 9, true);
 
 
 --
--- Name: osfile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: osfile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('osfile_id_seq', 1, false);
 
 
 --
--- Name: pomsgid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: pomsgid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('pomsgid_id_seq', 97, true);
 
 
 --
--- Name: potranslation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: potranslation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('potranslation_id_seq', 9, true);
 
 
 --
--- Name: language_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: language_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('language_id_seq', 632, true);
 
 
 --
--- Name: country_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: country_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('country_id_seq', 240, true);
 
 
 --
--- Name: license_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: license_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('license_id_seq', 1, true);
 
 
 --
--- Name: potemplate_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: potemplate_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('potemplate_id_seq', 2, true);
 
 
 --
--- Name: pofile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: pofile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('pofile_id_seq', 1, true);
 
 
 --
--- Name: pomsgset_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: pomsgset_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('pomsgset_id_seq', 23, true);
 
 
 --
--- Name: pomsgidsighting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: pomsgidsighting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('pomsgidsighting_id_seq', 27, true);
 
 
 --
--- Name: potranslationsighting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: potranslationsighting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('potranslationsighting_id_seq', 9, true);
 
 
 --
--- Name: pocomment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: pocomment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('pocomment_id_seq', 1, false);
 
 
 --
--- Name: translationeffort_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: translationeffort_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('translationeffort_id_seq', 1, false);
 
 
 --
--- Name: posubscription_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: posubscription_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('posubscription_id_seq', 1, false);
 
 
 --
--- Name: bug_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: bug_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('bug_id_seq', 2, true);
 
 
 --
--- Name: bugsubscription_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: bugsubscription_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('bugsubscription_id_seq', 1, false);
 
 
 --
--- Name: sourcepackagebugassignment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: sourcepackagebugassignment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('sourcepackagebugassignment_id_seq', 2, true);
 
 
 --
--- Name: productbugassignment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: productbugassignment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('productbugassignment_id_seq', 2, true);
 
 
 --
--- Name: bugactivity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: bugactivity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('bugactivity_id_seq', 1, true);
 
 
 --
--- Name: bugexternalref_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: bugexternalref_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('bugexternalref_id_seq', 2, true);
 
 
 --
--- Name: bugsystemtype_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: bugsystemtype_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('bugsystemtype_id_seq', 1, true);
 
 
 --
--- Name: bugsystem_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: bugsystem_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('bugsystem_id_seq', 1, true);
 
 
 --
--- Name: bugwatch_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: bugwatch_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('bugwatch_id_seq', 1, true);
 
 
 --
--- Name: bugmessage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: bugmessage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('bugmessage_id_seq', 6, true);
 
 
 --
--- Name: bugattachment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: bugattachment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('bugattachment_id_seq', 1, false);
 
 
 --
--- Name: sourcesource_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: sourcesource_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('sourcesource_id_seq', 1, false);
 
 
 --
--- Name: projectbugsystem_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: projectbugsystem_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('projectbugsystem_id_seq', 1, false);
 
 
 --
--- Name: distributionrole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: distributionrole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('distributionrole_id_seq', 7, true);
 
 
 --
--- Name: distroreleaserole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: distroreleaserole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('distroreleaserole_id_seq', 9, true);
 
 
 --
--- Name: componentselection_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: componentselection_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('componentselection_id_seq', 1, false);
 
 
 --
--- Name: sectionselection_id_seq; Type: SEQUENCE SET; Schema: public; Owner: mark
+-- Name: sectionselection_id_seq; Type: SEQUENCE SET; Schema: public; Owner: stub
 --
 
 SELECT pg_catalog.setval('sectionselection_id_seq', 1, false);

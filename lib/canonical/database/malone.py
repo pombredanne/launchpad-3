@@ -415,6 +415,7 @@ class IProductBugAssignment(Interface):
                       vocabulary=BugPriorityVocabulary)
     severity = Choice(title=_('Severity'),
                       vocabulary=BugSeverityVocabulary)
+    assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
 
 class ProductBugAssignment(SQLBase):
     """A relationship between a Product and a Bug."""
@@ -433,7 +434,8 @@ class ProductBugAssignment(SQLBase):
                 ),
         IntCol('severity', notNull=True,
                 default=int(dbschema.BugSeverity.NORMAL),
-                )
+                ),
+        ForeignKey(name='assignee', dbName='assignee', foreignKey='Person'),
     ]
 
 
@@ -462,6 +464,7 @@ class ISourcepackageBugAssignment(Interface):
             title=_('Binary Package'), required=False,
             vocabulary='Binarypackage'
             )
+    assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
 
 class SourcepackageBugAssignment(SQLBase):
     """A relationship between a Sourcepackage and a Bug."""
@@ -478,6 +481,7 @@ class SourcepackageBugAssignment(SQLBase):
         IntCol('severity', default=int(dbschema.BugSeverity.NORMAL)),
         ForeignKey(name='binarypackage', dbName='binarypackage',
                 foreignKey='Binarypackage'),
+        ForeignKey(name='assignee', dbName='assignee', foreignKey='Person'),
     ]
 
 class IBugInfestation(Interface):

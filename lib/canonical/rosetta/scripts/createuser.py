@@ -36,7 +36,7 @@ def createUser(givenName, familyName, displayName, email, password=None):
 
         password = pwgen()
 
-        encrypted_password = SSHADigestEncryptor().encrypt(password)
+    encrypted_password = SSHADigestEncryptor().encrypt(password)
 
     initZopeless()
 

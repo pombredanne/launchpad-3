@@ -31,7 +31,6 @@
         <table tal:condition="view/results" class="listing rowNavigation">
             <tr>
                 <th>Name</th>
-                <th>Title</th>
                 <th>Description</th>
                 <th>Distribution</th>
             </tr>
@@ -44,10 +43,9 @@
                         $SourcepackageName.name
                     </a>
                 </td>
-                <td tal:content="result/title">$Sourcepackage.title</td>
                 <td tal:content="result/description">
                     $Sourcepackage.description</td>
-                <td tal:content="result/distro">$Sourcepackage.distro</td>
+                <td tal:content="result/distro/name">$Distribution.name</td>
             </tr>
         </table>
     </div>

@@ -5,6 +5,7 @@
     xmlns:lp="http://launchpad.canonical.com">
 
     <!-- Registration form -->
+    <!--
     <addform
         name="register"
         for=".interfaces.IMaloneApplication"
@@ -17,11 +18,10 @@
         permission="zope.View"
         template="templates/default-addform.pt"
         lp:url="malone/register" />
+    -->
 
     <!-- Bug forms -->
 
-    <!-- XXX: permission="zope.Public" triggers a problem with our setup
-        and security proxies -->
     <addform
         name="+new"
         for=".interfaces.IBugContainer"
@@ -32,7 +32,7 @@
         arguments=""
         keyword_arguments="title shortdesc description 
             product sourcepackage binarypackage"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-addform.pt"
         lp:url="malone/bugs/+new"
         />
@@ -41,7 +41,7 @@
         name="+edit"
         schema="canonical.database.malone.IBug"
         label="Change Bug Information"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/bug-edit.pt"
         fields="name title shortdesc description"
         lp:url="malone/bugs/$Bug.id/+edit">
@@ -60,7 +60,7 @@
         content_factory=".browser.BugAttachmentFactory"
         arguments=""
         keyword_arguments="name description libraryfile"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-addform.pt"
         lp:url="malone/bugs/$Bug.id/attachments/+new"
         />
@@ -69,7 +69,7 @@
         schema=".interfaces.IMaloneBugAttachment"
         label="Change Bug Attachment Information"
         name="+edit"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         fields="name description"
         template="templates/default-editform.pt"
         lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+edit"
@@ -80,7 +80,7 @@
         for="canonical.database.malone.IBug"
         name="messages"
         class=".browser.BugMessagesView"
-        permission="zope.View"
+        permission="zope.Public"
         provides=".interfaces.IBugMessagesView"
         lp:url="malone/projects/$Bug.id/messages">
         <defaultPage name="index" />
@@ -102,7 +102,7 @@
         content_factory=".browser.BugMessageFactory"
         arguments=""
         keyword_arguments="title contents"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-addform.pt"
         lp:url="malone/bugs/$Bug.id/messages/+new"
         />
@@ -112,11 +112,11 @@
         schema="canonical.database.malone.IProductBugAssignment"
         for=".interfaces.IProductBugAssignmentContainer"
         label="Add Product Bug Assignment"
-        fields="product bugstatus priority severity"
+        fields="product bugstatus priority severity assignee"
         content_factory=".browser.ProductBugAssignmentFactory"
         arguments=""
         keyword_arguments="product bugstatus priority severity"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-addform.pt"
         lp:url="malone/bugs/$Bug.id/productassignments/+new" />
 
@@ -124,9 +124,9 @@
         name="+edit"
         for="canonical.database.malone.IProductBugAssignment"
         schema="canonical.database.malone.IProductBugAssignment"
-        fields="bugstatus priority severity"
+        fields="bugstatus priority severity assignee"
         label="Edit Product Bug Assignment"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-editform.pt"
         lp:url="malone/bugs/$Bug.id/productassignments/$ProductBugAssignment.id/+edit" />
 
@@ -135,11 +135,11 @@
         schema="canonical.database.malone.ISourcepackageBugAssignment"
         for=".interfaces.ISourcepackageBugAssignmentContainer"
         label="Add Sourcepackage Bug Assignment"
-        fields="sourcepackage bugstatus priority severity binarypackage"
+        fields="sourcepackage bugstatus priority severity binarypackage assignee"
         content_factory=".browser.SourcepackageBugAssignmentFactory"
         arguments=""
         keyword_arguments="sourcepackage bugstatus priority severity"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-addform.pt"
         lp:url="malone/bugs/$Bug.id/sourcepackageassignments/+new" />
 
@@ -147,9 +147,9 @@
         name="+edit"
         for="canonical.database.malone.ISourcepackageBugAssignment"
         schema="canonical.database.malone.ISourcepackageBugAssignment"
-        fields="bugstatus priority severity binarypackage"
+        fields="bugstatus priority severity binarypackage assignee"
         label="Edit Sourcepackage Bug Assignment"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-editform.pt"
         lp:url="malone/bugs/$Bug.id/sourcepackageassignments/$SourcepackageBugAssignment.id/+edit" />
 
@@ -162,7 +162,7 @@
         content_factory=".browser.BugExternalRefFactory"
         arguments=""
         keyword_arguments="bugreftype data description"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-addform.pt"
         lp:url="malone/bugs/$Bugs.id/references/+new" />
 
@@ -170,7 +170,7 @@
         name="+edit"
         schema="canonical.database.malone.IBugExternalRef"
         label="Change Bug External Reference"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-editform.pt"
         fields="bugreftype data description"
         lp:url="malone/bugs/$Bug.id/references/$Reference.id/+edit" />
@@ -184,7 +184,7 @@
         content_factory=".browser.BugWatchFactory"
         arguments=""
         keyword_arguments="bugsystem remotebug"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-addform.pt"
         lp:url="malone/bugs/$Bugs.id/watches/+new" />
 
@@ -192,7 +192,7 @@
         name="+edit"
         schema="canonical.database.malone.IBugWatch"
         label="Change Bug Watch"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-editform.pt"
         fields="bugsystem remotebug"
         lp:url="malone/bugs/$Bug.id/watches/$Watch.id/+edit" />
@@ -206,7 +206,7 @@
         content_factory=".browser.BugSubscriptionFactory"
         arguments=""
         keyword_arguments="subscription person"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-addform.pt"
         lp:url="malone/bugs/$Bug.id/people/+new" />
 
@@ -214,7 +214,7 @@
         name="+edit"
         schema="canonical.database.malone.IBugSubscription"
         label="Change Bug Subscription"
-        permission="zope.View"
+        permission="launchpad.AnyPerson"
         template="templates/default-editform.pt"
         fields="subscription"
         lp:url="malone/bugs/$Bug.id/people/$BugSubscription.id/+edit" />

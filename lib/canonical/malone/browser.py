@@ -10,7 +10,8 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
 from canonical.database.malone import BugWatch
 from canonical.database.doap import Product
-from canonical.database.soyuz import Sourcepackage, Binarypackage
+from canonical.database.soyuz import \
+        Sourcepackage, SourcepackageName, Binarypackage
 from canonical.database import sqlbase
 
 from zope.i18nmessageid import MessageIDFactory
@@ -73,15 +74,18 @@ class MaloneApplicationView(object):
     def update(self):
         '''Handle request and setup this view the way the templates expect it
         '''
+        from sqlobject import OR, LIKE, CONTAINSSTRING, AND
         if self.request.form.has_key('query'):
-            query = sqlbase.quote(self.request.form['query'].lower())
-            query = "'%%%%' || %s || '%%%%'" % query
-            q = (
-                r"lower(name) LIKE %(query)s "
-                r"OR lower(title) LIKE %(query)s "
-                #r"OR lower(description) LIKE %(query)s"
-                ) % vars()
-            self.results = Sourcepackage.select(q)
+            # TODO: Make this case insensitive
+            s = self.request.form['query']
+            self.results = Sourcepackage.select(AND(
+                Sourcepackage.q.sourcepackagenameID == SourcepackageName.q.id,
+                OR(
+                    CONTAINSSTRING(SourcepackageName.q.name, s),
+                    CONTAINSSTRING(Sourcepackage.q.shortdesc, s),
+                    CONTAINSSTRING(Sourcepackage.q.description, s)
+                    )
+                ))
             self.noresults = not self.results
         else:
             self.noresults = False
@@ -93,9 +97,9 @@ class BugContainerBase(object):
         self.bug = bug
 
     def __getitem__(self, id):
-       try:
+        try:
             return self.table.select(self.table.q.id == id)[0]
-       except IndexError:
+        except IndexError:
             # Convert IndexError to KeyErrors to get Zope's NotFound page
             raise KeyError, id
 
