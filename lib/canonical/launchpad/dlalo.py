@@ -130,9 +130,10 @@ class POTemplate(SQLBase):
     _columns = [
         ForeignKey(name='product', foreignKey='Product', dbName='product',
             notNull=True),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner'),
-        StringCol(name='name', dbName='name', notNull=True, unique=True),
-        StringCol(name='title', dbName='title', notNull=True, unique=True),
+        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
+            notNull=True),
+        StringCol(name='name', dbName='name', notNull=True),
+        StringCol(name='title', dbName='title', notNull=True),
         StringCol(name='description', dbName='description', notNull=True),
         StringCol(name='path', dbName='path', notNull=True),
         BoolCol(name='isCurrent', dbName='iscurrent', notNull=True),

@@ -39,7 +39,7 @@ class PODBBridge(PlacelessSetup):
     def rollback(self):
         self._transaction.rollback()
 
-    def imports(self, person, file, projectName, productName, poTemplateName,
+    def imports(self, person, fileHandle, projectName, productName, poTemplateName,
         languageCode=None):
         try:
             project = ProjectSet()[projectName]
@@ -62,7 +62,7 @@ class PODBBridge(PlacelessSetup):
                                            name=poTemplateName,
                                            title=poTemplateName, # will have to be edited
                                            description=poTemplateName, # will have to be edited
-                                           path=file.name,
+                                           path=fileHandle.name,
                                            isCurrent=True,
                                            dateCreated='NOW',
                                            copyright='XXX: FIXME',
@@ -81,7 +81,7 @@ class PODBBridge(PlacelessSetup):
             except KeyError:
                 poFile = poTemplate.newPOFile(person, languageCode)
             importer = POFileImporter(poFile, person)
-        importer.doImport(file)
+        importer.doImport(fileHandle)
 
     def update_stats(self, projectName, productName, poTemplateName, languageCode):
         try:
