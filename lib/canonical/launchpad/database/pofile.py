@@ -1533,7 +1533,7 @@ class POFile(SQLBase, RosettaStats):
             if logger:
                 logger.warning(
                     'We got an error importing %s language for %s template' % (
-                        self.language.code, self.potemplate.name),
+                        self.language.code, self.potemplate.title),
                         exc_info = 1)
 
 

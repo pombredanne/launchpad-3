@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-28 22:40:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1510
+
+    Summary:
+      Fixed a logger argument
+    Revision:
+      launchpad--devel--0--patch-1510
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-6
+       Fixed the log output
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-7
+       Merge from rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-6
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-7
+
+
 2005-03-28 21:57:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1509
 
     Summary:
