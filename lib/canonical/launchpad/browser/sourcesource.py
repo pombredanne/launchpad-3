@@ -69,6 +69,7 @@ class SourceSourceView(object):
     def products(self):
         """all the products that context can switch between"""
         """ugly"""
+        from canonical.soyuz.importd import ProjectMapper, ProductMapper
         projMapper=ProjectMapper()
         prodMapper=ProductMapper()
         for project in projMapper.findByName("%%"):
