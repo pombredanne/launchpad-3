@@ -10,6 +10,14 @@
 
 INSERT INTO x (x) VALUES ('2004-09-24 22:58:33.014648');
 INSERT INTO x (x) VALUES ('2004-09-24 12:58:50.099864');
+INSERT INTO x (x) VALUES ('2004-09-24 22:58:33.014648');
+INSERT INTO x (x) VALUES ('2004-09-24 12:58:50.099864');
+INSERT INTO x (x) VALUES ('2004-09-24 22:58:33.014648');
+INSERT INTO x (x) VALUES ('2004-09-24 12:58:50.099864');
+INSERT INTO x (x) VALUES ('2004-09-24 22:58:33.014648');
+INSERT INTO x (x) VALUES ('2004-09-24 12:58:50.099864');
+INSERT INTO x (x) VALUES ('2004-09-24 22:58:33.014648');
+INSERT INTO x (x) VALUES ('2004-09-24 12:58:50.099864');
 
 
 --
@@ -1454,7 +1462,7 @@ INSERT INTO sourcepackageupload (distrorelease, sourcepackagerelease, uploadstat
 -- Name: build; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
-INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes) VALUES (1, '2004-08-24 00:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (1, '2004-08-24 00:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, 5);
 
 
 --
@@ -1474,43 +1482,43 @@ INSERT INTO binarypackagename (id, name) VALUES (7, 'plone');
 -- Name: binarypackage; Type: TABLE DATA; Schema: public; Owner: stub
 --
 
-INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (1, 5, 1, '0.9.1-1', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (1, 1, '0.9.1-1', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
 	K-Meleon and Camino, but written using the XUL user interface language and 
 	designed to lightweight and cross-platform.', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (2, 4, 1, '0.9.0-9', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (2, 1, '0.9.0-9', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
 	K-Meleon and Camino, but written using the XUL user interface language and 
 	designed to lightweight and cross-platform.', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (3, 3, 1, '0.9.0-8', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (3, 1, '0.9.0-8', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
 	K-Meleon and Camino, but written using the XUL user interface language and 
 	designed to lightweight and cross-platform.', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (4, 2, 1, '0.9.0-7', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (4, 1, '0.9.0-7', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
 	K-Meleon and Camino, but written using the XUL user interface language and 
 	designed to lightweight and cross-platform.', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (5, 1, 1, '0.9.0-6', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (5, 1, '0.9.0-6', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
 	K-Meleon and Camino, but written using the XUL user interface language and 
 	designed to lightweight and cross-platform.', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (6, 6, 2, '0.9.1-2', 'Mozilla Thunderbird Mail Reader', 'Mozilla Thunderbird is a redesign of the Mozilla mail component. 
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (6, 2, '0.9.1-2', 'Mozilla Thunderbird Mail Reader', 'Mozilla Thunderbird is a redesign of the Mozilla mail component. 
 	The goal is to produce a cross platform stand alone mail application 
 	using the XUL user interface language. Mozilla Thunderbird leaves a 
 	somewhat smaller memory footprint than the Mozilla suite.', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (7, 7, 3, '0.9.1-3', 'Python Twisted', 'It includes a web server, a telnet server, a multiplayer RPG engine, 
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (7, 3, '0.9.1-3', 'Python Twisted', 'It includes a web server, a telnet server, a multiplayer RPG engine, 
 	a generic client and server for remote object access, and APIs for 
 	creating new protocols.', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (8, 8, 4, '0.9.1-4', 'Bugzilla', 'Bugzilla is a "Defect Tracking System" or "Bug-Tracking System". 
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (8, 4, '0.9.1-4', 'Bugzilla', 'Bugzilla is a "Defect Tracking System" or "Bug-Tracking System". 
 	Defect Tracking Systems allow individual or groups of developers 
 	to keep track of outstanding bugs in their product effectively.', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (9, 9, 5, '0.9.1-5', 'ARCH', 'arch is a revision control system with features that are ideal for 
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (9, 5, '0.9.1-5', 'ARCH', 'arch is a revision control system with features that are ideal for 
 	projects characterised by widely distributed development, concurrent 
 	support of multiple releases, and substantial amounts of development
 	on branches. It can be a replacement for CVS and corrects many 
 	mis-features of that system.', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (10, 10, 6, '0.9.1-6', 'Python Kiwi', ' Kiwi2 consists of a set of classes and wrappers for PyGTK-2 that were 
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (10, 6, '0.9.1-6', 'Python Kiwi', ' Kiwi2 consists of a set of classes and wrappers for PyGTK-2 that were 
 	developed to provide a sort of framework for applications. Fully object-oriented, 
 	and roughly modeled after Smalltalk''s MVC, Kiwi provides a simple, practical 
 	way to build forms, windows and widgets that transparently access and display
 	your object data. Kiwi was primarily designed to make implementing the UI for
 	 Stoq easier, and it is released under the LGPL', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO binarypackage (id, sourcepackagerelease, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (11, 11, 7, '0.9.1-7', 'Plone', 'Plone is powerful and flexible. It is ideal as an intranet and extranet 
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (11, 7, '0.9.1-7', 'Plone', 'Plone is powerful and flexible. It is ideal as an intranet and extranet 
 	server, as a document publishing system, a portal server and as a groupware
 	 tool for collaboration between separately located entities.', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
