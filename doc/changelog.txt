@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-30 22:28:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1525
+
+    Summary:
+      Removing flush_database_updates() from teamparticipation.txt as it shouldn't need that.
+    Revision:
+      launchpad--devel--0--patch-1525
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-233
+       Removing flush_database_updates() from teamparticipation.txt to see if it passes on rocketfuel.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/doc/teamparticipation.txt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-233
+
+
 2005-03-30 21:29:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1524
 
     Summary:

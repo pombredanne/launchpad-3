@@ -83,7 +83,6 @@ to addMember() it.
 
 Now let's remove some members to see what happens:
 
->>> flush_database_updates()
 >>> p.leave(t3)
 True
 >>> len(_getAllMembers(t3))
