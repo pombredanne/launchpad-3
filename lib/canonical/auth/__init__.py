@@ -16,6 +16,10 @@ from canonical.launchpad.interfaces import IAuthApplication
 from canonical.launchpad.interfaces import IPasswordResets
 from canonical.launchpad.interfaces import IPersonSet
 
+from canonical.launchpad.database import EmailAddress
+
+from canonical.zodb import zodbconnection
+
 from datetime import datetime, timedelta
 import random
 from smtplib import SMTP

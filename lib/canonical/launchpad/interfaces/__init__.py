@@ -54,6 +54,21 @@ class IAuthApplication(Interface):
     def __getitem__(name):
         """ The __getitem__ method used to traversing """
 
+    def sendPasswordChangeEmail(longurlsegment, toaddress):
+        """Send an Password change special link for a user."""
+
+    def getPersonFromDatabase(emailaddr):
+        """Returns the Person in the database who has the given email address.
+
+        If there is no Person for that email address, returns None.
+        """
+
+    def newLongURL(person):
+        """Creates a new long url for the given person.
+
+        Returns the long url segment.
+        """
+
 class IPasswordResets(IPersistent):
     """Interface for PasswordResets"""
 
