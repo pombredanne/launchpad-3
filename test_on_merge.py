@@ -5,7 +5,6 @@
 import sys
 import os
 
-
 def main():
     """Call test.py with whatever arguments this script was run with.
 
@@ -14,9 +13,11 @@ def main():
 
     Otherwise, print output and exit(1).
     """
-    stdin, out, err = os.popen3('python test.py %s' % ' '.join(sys.argv[1:]))
-    dataout = out.read()
+    here = os.path.dirname(os.path.realpath(__file__))
+    stdin, out, err = os.popen3('cd %s; python test.py %s' %
+        (here, ' '.join(sys.argv[1:])))
     errlines = err.readlines()
+    dataout = out.read()
     test_ok = errlines[-1] == 'OK\n'
 
     if test_ok:
@@ -27,7 +28,7 @@ def main():
         print '---- end test stdout ----'
 
         print '---- test stderr ----'
-        print '\n'.join(errlines)
+        print ''.join(errlines)
         print '---- end test stderr ----'
         return 1
 
