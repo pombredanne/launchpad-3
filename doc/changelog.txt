@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-06 01:54:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1154
+
+    Summary:
+      add some UI to allow assigning multiple bug tasks to a milestone
+    Revision:
+      launchpad--devel--0--patch-1154
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-01-06 01:02:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1153
 
     Summary:
