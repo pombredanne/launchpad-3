@@ -273,6 +273,15 @@
 	/>
    </pages>
 
+  <page for="canonical.soyuz.sql.DistroReleaseBinariesApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.DistrosReleaseBinariesSearchView"
+	 template="templates/binarypackage-search.pt"
+         lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/+search"
+	 name="+search"
+       />
+
+
 <traverse for="canonical.soyuz.sql.DistroReleaseBinaryApp" getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroReleaseBinaryApp"

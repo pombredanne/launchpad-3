@@ -130,6 +130,10 @@ class IDistroReleaseBinariesApp(Interface):
     def __iter__():
         """retrieve an iterator"""
 
+    def findPackagesByName():
+        """Find packages by name"""
+
+
 class IDistroReleaseBinaryReleaseBuildApp(Interface):
     binarypackagerelease = Attribute("Release")
     version = Attribute("Version")
@@ -294,6 +298,7 @@ class IRelease(Interface):
     parentrelease = Attribute("Parent Release")
     owner =Attribute("Owner")
     sourcecount = Attribute("Source Packages Counter")
+    binarycount = Attribute("Binary Packages Counter")
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
 

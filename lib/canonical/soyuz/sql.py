@@ -496,6 +496,14 @@ class DistroReleaseBinariesApp(object):
         )
     def __init__(self, release):
         self.release = release
+
+    def findPackagesByName(self, pattern):
+        query = self.where % self.release.id
+        pattern = pattern.replace('%', '%%')
+        query += 'AND  BinaryPackage.binarypackagename = BinarypackageName.id '
+        query += 'AND  BinarypackageName.name LIKE %s' % quote('%%' + pattern + '%%')
+        from sets import Set
+        return Set(SoyuzBinaryPackage.select(query))
         
     def __getitem__(self, name):
         try:
@@ -626,6 +634,14 @@ class Release(SQLBase):
 ###############        
     sourcecount = property(sourcecount)
 
+    def binarycount(self):
+        query = 'PackagePublishing.binarypackage = BinaryPackage.id AND '
+        query += 'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
+        query += 'DistroArchRelease.distrorelease = %d ' % self.id
+
+        return SoyuzBinaryPackage.select(query).count()
+
+    binarycount = property(binarycount)
 
 class SourcePackages(object):
     """Container of SourcePackage objects.

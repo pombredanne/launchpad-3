@@ -122,6 +122,17 @@ class DistrosReleaseSourcesSearchView(object):
         else:
             self.results = []
 
+class DistrosReleaseBinariesSearchView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        name = request.get("name", "")
+        if name:
+            self.results = list(context.findPackagesByName(name))
+        else:
+            self.results = []
+
 
 ################################################################
 
