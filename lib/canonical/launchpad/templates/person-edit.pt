@@ -31,6 +31,14 @@
 
     <div class="documentContent" id="region-content">
 
+      <div class="portalMessage" 
+           tal:condition="not:view/permission">
+	   Warning: You are not authorized to change this page. If you
+	   change something your changes will be lost.
+	   <div align="right"><a href="index.html"><i>back</i></a></div>
+      </div>
+
+
     <h1>Edit <span tal:content="context/person/displayname">DISPLAYNAME</span> 
 	Information</h1>
 

@@ -31,7 +31,7 @@
        />
 
   <page for="canonical.soyuz.sql.DistrosApp"
-         permission="zope.Public"
+         permission="launchpad.AnyPerson"
 	 class="canonical.soyuz.browser.DistrosAddView"
 	 template="../launchpad/templates/distro-add.pt"
          lp:url="Soyuz/distros/+add"
@@ -61,7 +61,7 @@
   </pages>
 
   <page for="canonical.soyuz.sql.DistroApp"
-         permission="zope.Public"
+         permission="launchpad.AnyPerson"
 	 class="canonical.soyuz.browser.DistrosEditView"
 	 name="+edit"
 	 template="../launchpad/templates/distro-edit.pt"
@@ -115,7 +115,7 @@
   </pages>
 
 	<page for="canonical.soyuz.sql.DistroReleaseApp"
-	  permission="zope.Public"
+	  permission="launchpad.AnyPerson"
 	  class="canonical.soyuz.browser.ReleaseEditView"
 	  name="+edit"
           template="../launchpad/templates/release-edit.pt"
@@ -279,7 +279,7 @@
        />
 
   <page for="canonical.soyuz.sql.PeopleApp"
-         permission="zope.Public"
+         permission="launchpad.AnyPerson"
 	 class="canonical.soyuz.browser.PeopleAddView"
 	 template="../launchpad/templates/people-add.pt"
          lp:url="Soyuz/people/+add"
@@ -317,7 +317,7 @@
 
 
   <page for="canonical.soyuz.sql.PersonApp"
-         permission="zope.Public"
+         permission="launchpad.AnyPerson"
 	 class="canonical.soyuz.browser.TeamAddView"
 	 template="../launchpad/templates/soyuz-person-add.pt"
          lp:url="Soyuz/people/$person.id/+add"
@@ -325,7 +325,7 @@
        />
 
   <page for="canonical.soyuz.sql.PersonApp"
-         permission="zope.Public"
+         permission="launchpad.AnyPerson"
 	 class="canonical.soyuz.browser.PersonEditView"
 	 template="../launchpad/templates/person-edit.pt"
          lp:url="Soyuz/people/$person.id/+edit"

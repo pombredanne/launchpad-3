@@ -21,6 +21,9 @@ from canonical.launchpad.database import GPGKey, ArchUserID
 from canonical.launchpad.database import createPerson
 from canonical.launchpad.database import createTeam
 
+# interface import
+from canonical.launchpad.database import IPerson
+
 # app components
 from canonical.soyuz.sql import Distribution, DistroRelease, Person
 from canonical.soyuz.importd import ProjectMapper, ProductMapper
@@ -280,9 +283,20 @@ class PersonEditView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.permission = False
+
+        try:
+            if IPerson(self.request.principal).id ==\
+                   self.context.person.id:
+                self.permission = True
+        except:
+            pass
+
 
     def edit_action(self):
         enable_edited = False
+        if not self.permission:
+            return False
 
         displayname = self.request.get("displayname", "")
         givenname = self.request.get("givenname", "")
@@ -434,14 +448,25 @@ class DistrosEditView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.permission = False
+
+        try:
+            if IPerson(self.request.principal).id ==\
+                   self.context.distribution.owner.id:
+                self.permission = True
+        except:
+            pass
 
     def edit_action(self):
         enable_edited = False
+        if not self.permission:
+            return False
+        
         name = self.request.get("name", "")
         title = self.request.get("title", "")
         description = self.request.get("description", "")
 
-        if name or title or description:
+        if (name or title or description):
             ##XXX: (uniques) cprov 20041003
             ## again :)
             self.context.distribution.name = name
@@ -534,9 +559,21 @@ class ReleaseEditView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.permission = False
+
+        try:
+            if IPerson(self.request.principal).id ==\
+                   self.context.release.owner.id:
+                self.permission = True
+        except:
+            pass
+
 
     def edit_action(self):
         enable_edited = False
+        if not self.permission:
+            return False
+        
         name = self.request.get("name", "")
         title = self.request.get("title", "")
         shortdesc = self.request.get("shortdesc", "")
