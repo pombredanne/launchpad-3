@@ -903,7 +903,7 @@ CREATE TABLE ManifestEntry (
      manifest, and a different sequence */
   FOREIGN KEY ( manifest, patchon ) REFERENCES ManifestEntry ( manifest, sequence ),
   CHECK ( patchon <> sequence ),
-  PRIMARY KEY ( manifest, sequence )
+  UNIQUE ( manifest, sequence )
 );
 
 

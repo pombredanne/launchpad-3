@@ -424,14 +424,25 @@ class Product(SQLOS):
     implements(IProduct)
 
     _columns = [
-        IntCol('project'),
-        IntCol('owner'),
-        StringCol('title'),
-        StringCol('description'),
-        DateTimeCol('datecreated'),
+        ForeignKey(
+                name='project', foreignKey="Project", dbName="project",
+                notNull=True
+                ),
+        ForeignKey(
+                name='owner', foreignKey="Product", dbName="owner",
+                notNull=True
+                ),
+        StringCol('name', notNull=True),
+        StringCol('title', notNull=True),
+        StringCol('description', notNull=True),
+        DateTimeCol('datecreated', notNull=True),
         StringCol('homepageurl'),
-        IntCol('manifest')
-    ]
+        StringCol('screenshotsurl'),
+        StringCol('wikiurl'),
+        StringCol('programminglang'),
+        StringCol('downloadurl'),
+        StringCol('lastdoap'),
+        ]
 
     bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
 
