@@ -2,6 +2,63 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-09 23:25:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1401
+
+    Summary:
+      move some foaf links to /people/
+    Revision:
+      launchpad--devel--0--patch-1401
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-812
+       merge rocketfuel, got phantom conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-813
+       merge rocketfuel, resolving phantom conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-814
+       remove obsolete templates and shift foaf links directly to /people/
+    
+
+    removed files:
+     lib/canonical/launchpad/templates/.arch-ids/foaf-menu.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/launchpad-display.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/lp-person-add.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/lp-project-add.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/lp-search-results.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/main-template-old.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/malone-projects-search.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/soyuz-project-add.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/soyuz-project-index.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/soyuz-projects-index.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/soyuz-search-results.pt.obsolete.id
+     lib/canonical/launchpad/templates/foaf-menu.pt.obsolete
+     lib/canonical/launchpad/templates/launchpad-display.pt.obsolete
+     lib/canonical/launchpad/templates/lp-person-add.pt.obsolete
+     lib/canonical/launchpad/templates/lp-project-add.pt.obsolete
+     lib/canonical/launchpad/templates/lp-search-results.pt.obsolete
+     lib/canonical/launchpad/templates/main-template-old.pt
+     lib/canonical/launchpad/templates/malone-projects-search.pt.obsolete
+     lib/canonical/launchpad/templates/soyuz-project-add.pt.obsolete
+     lib/canonical/launchpad/templates/soyuz-project-index.pt.obsolete
+     lib/canonical/launchpad/templates/soyuz-projects-index.pt.obsolete
+     lib/canonical/launchpad/templates/soyuz-search-results.pt.obsolete
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/portlet-bug-people.pt
+     lib/canonical/launchpad/templates/portlet-distro-details.pt
+     lib/canonical/launchpad/templates/portlet-distrorelease-details.pt
+     lib/canonical/launchpad/templates/portlet-distroroles.pt
+     lib/canonical/launchpad/templates/portlet-product-details.pt
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-812
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-813
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-814
+
+
 2005-03-09 22:34:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1400
 
     Summary:

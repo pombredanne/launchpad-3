@@ -13,7 +13,7 @@
 
         <b>Lead Maintainer:</b><br />
         <img src="/++resource++user.gif">
-        <a tal:attributes="href string:/foaf/people/${context/owner/name}"
+        <a tal:attributes="href string:/people/${context/owner/name}"
 	   tal:content="context/owner/browsername"
 	   class="link">ownername</a><br />
 

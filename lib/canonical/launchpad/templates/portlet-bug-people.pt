@@ -19,7 +19,7 @@
                 <li tal:condition="task/maintainer">
                 <a href=""
                    tal:content="task/maintainer/browsername"
-                   tal:attributes="href string:/foaf/people/${task/maintainer/name}" />
+                   tal:attributes="href string:/people/${task/maintainer/name}" />
                 </li>
             </ul>
 
