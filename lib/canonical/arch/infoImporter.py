@@ -71,7 +71,7 @@ class SourceSource(SQLBase):
         ForeignKey(name='branch', foreignKey='Branch',
                    dbName='branch', default=None),
         DateTimeCol('lastsynced', dbName='lastsynced', default=None),
-        IntCol('frequency', dbName='syncinterval', default=None),
+        DateTimeCol('frequency', dbName='syncinterval', default=None),
         # WARNING: syncinterval column type is "interval", not "integer"
         # WARNING: make sure the data is what buildbot expects
 

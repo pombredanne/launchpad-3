@@ -1037,6 +1037,15 @@ class Sync(object):
 #                    notNull=False, default=None),
 #        DateTimeCol('syncingapproved', dbName='syncingapproved', notNull=False,
 #                    default=None),
+    def enable(self):
+        """enable the sync for processing"""
+        import datetime
+        self._sync.processingapproved='NOW'
+        self._sync.frequency=datetime.timedelta(1)
+        print "enabled"
+    def enabled(self):
+        """is the sync enabled"""
+        return self._sync.processingapproved is not None
     def update(self, **kwargs):
         """update a Sync, possibly reparenting"""
         self._update('name', 'name', kwargs)

@@ -69,6 +69,12 @@
                 tal:attributes="value context/description"></textarea>
         </div>
 
+        <div class="field">
+            <label>Enabled</label>
+            <div class="formHelp">Is this sync enabled for running at all.</div>
+            <input type="checkbox" name="enabled" tal:attributes="checked context/enabled" />
+        </div>
+
 
     </fieldset>
 

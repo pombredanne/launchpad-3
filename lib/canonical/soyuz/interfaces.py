@@ -414,7 +414,10 @@ class ISync(Interface):
     def changeProduct(product):
         """change the product this sync belongs to to be 'product'"""
     product=Attribute ("a product backlink for this sync")
-
+    def enable():
+        """enable this sync"""
+    def enabled():
+        """is the sync enabled?"""
     def update(**kwargs):
         """update a Sync, possibly reparenting"""
 
