@@ -11,8 +11,8 @@
 
 ### Configuration ###
 
-if [ -z $TLA ] ; then
-    export TLA=baz
+if [ -z $BAZ ] ; then
+    export BAZ=baz
 fi
 
 # We have redundant configuration information (that is tested for
@@ -35,12 +35,13 @@ dest=/home/david/home/{archives}/rocketfuel@canonical.com
 
 # Check that the configuration is consistent with the archive registry.
 
-if test "`$TLA whereis-archive $archive`" != "$dest" ; then
-    echo "error: destination mismatch" >&2 ; return 1
+srcurl=sftp://"$srchost""$srcpath"
+if test "$($BAZ archive-meta-info $srcurl/name)" != "$archive" ; then
+    echo "error: source mismatch" >&2 ; exit 1
 fi
-if test "`$TLA whereis-archive $archive-SOURCE`" != \
-    sftp://"$srchost""$srcpath" ; then
-    echo "error: source mismatch" >&2 ; return 1
+
+if test "$($BAZ archive-meta-info $dest/name)" != "$archive" ; then
+    echo "error: destination mismatch" >&2 ; exit 1
 fi
 
 # Perform sync.

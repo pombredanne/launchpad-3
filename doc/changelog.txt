@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-02 15:15:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1547
+
+    Summary:
+      update utilities/rocketsync for baz-1.3
+    Revision:
+      launchpad--devel--0--patch-1547
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-72
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-73
+       update utilities/rocketsync for baz-1.3
+    
+
+    modified files:
+     doc/changelog.txt utilities/rocketsync
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-72
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-73
+
+
 2005-04-01 23:32:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1546
 
     Summary:
