@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-03 15:40:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1276
+
+    Summary:
+      Launchpad needed DELETE on PersonLanguage table
+    Revision:
+      launchpad--devel--0--patch-1276
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-116
+       Must pass a valid config name
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-117
+       Revert patch-116 - wrong, wrong, wrong
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-118
+       Launchpad needed DELETE on PersonLanguage table
+    
+
+    modified files:
+     database/schema/security.cfg doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-116
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-117
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-118
+
+
 2005-02-03 15:13:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1275
 
     Summary:
