@@ -28,9 +28,10 @@ default:
 	createdb $*
 	touch $@
 
-launchpad launchpad_test: %:
+launchpad launchpad_test: %: +%-db
 	@ echo '* create the $* database tables'
 	psql --file launchpad.sql $*
+	psql --file default.sql $*
 
 dropdb-launchpad dropdb-launchpad_test: dropdb-%: +%-db
 	@ echo '* remove the $* database'
