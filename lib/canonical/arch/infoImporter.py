@@ -22,6 +22,7 @@ import logging
 
 
 class ImporterSourceSource(SourceSource):
+    _table='SourceSource'
 
     def _get_repository(self):
         if self.rcstype == RCSTypeEnum.cvs:
