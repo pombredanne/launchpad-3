@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-22 01:04:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1336
+
+    Summary:
+      Make getSSHKeys allow access to archives named after validated email addresses.
+    Revision:
+      launchpad--devel--0--patch-1336
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-sftp-emailaddresses--0--patch-1
+       Make getSSHKeys allow access to archives named after validated email addresses.
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-sftp-emailaddresses--0--patch-3
+       Add some comments to _getSSHKeysInteraction
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-sftp-emailaddresses--1--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1335
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-sftp-emailaddresses--1--patch-1
+       Replay --skip-present from andrew.bennetts@canonical.com/launchpad--authserver-sftp-emailaddresses--0
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/authserver/database.py
+     lib/canonical/authserver/ftests/test_database.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--authserver-sftp-emailaddresses--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--authserver-sftp-emailaddresses--0--patch-3
+     andrew.bennetts@canonical.com/launchpad--authserver-sftp-emailaddresses--1--base-0
+     andrew.bennetts@canonical.com/launchpad--authserver-sftp-emailaddresses--1--patch-1
+
+
 2005-02-18 19:25:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1335
 
     Summary:
