@@ -1038,9 +1038,6 @@ class POFile(SQLBase, RosettaStats):
     def doRawImport(self):
         importer = POFileImporter(self, self.rawimporter)
 
-        import pdb
-        pdb.set_trace()
-    
         file = StringIO.StringIO(base64.decodestring(self.rawfile))
     
         try:
