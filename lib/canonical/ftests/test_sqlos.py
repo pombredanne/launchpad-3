@@ -9,9 +9,8 @@ import transaction
 from warnings import warn
 from threading import Thread
 from zope.app.rdb.interfaces import DatabaseException
-from zope.app.tests.functional import FunctionalTestCase
+from canonical.tests.functional import FunctionalTestCase
 from canonical.tests.pgsql import PgTestCase
-#from zope.app.tests.functional import BrowserTestCase
 
 class Beer(sqlos.SQLOS):
     _columns = [
@@ -98,6 +97,13 @@ class TestSQLOS(FunctionalTestCase, PgTestCase):
         Beer(name='Singa')
         transaction.commit()
 
+    def test_percent(self):
+        # Trying to reproduce a '%' bug
+        b = Beer(name='100%', rating=2)
+        id = b.id
+
+        b = Beer.get(id)
+        Beer.selectBy(name='100%')
 
 def test_suite():
     suite = unittest.TestSuite()
