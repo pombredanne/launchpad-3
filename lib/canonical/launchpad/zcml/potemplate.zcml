@@ -10,7 +10,8 @@
         <require permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOTemplate"
             set_attributes="name title description copyright path
-                            priority rawimportstatus"/>
+                            priority rawfile daterawimport rawimporter
+                            rawimportstatus"/>
     </content>
 
     <browser:traverse
@@ -36,10 +37,6 @@
             name="+edit"
             template="../templates/potemplate-edit.pt"
             lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/+edit" />
-        <browser:page
-            name="upload"
-            template="../templates/potemplate-upload.pt"
-            lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/upload" />
     </browser:pages>
 
     <browser:pages for="canonical.launchpad.interfaces.IPOTemplate"
@@ -51,5 +48,15 @@
             template="../templates/potemplate-translate.pt"
             lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/translate" />
     </browser:pages>
+
+    <browser:pages for="canonical.launchpad.interfaces.IPOTemplate"
+        permission="launchpad.AnyPerson"
+        class="canonical.rosetta.browser.TemplateUpload"
+        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
+        <browser:page name="upload"
+            template="../templates/potemplate-upload.pt"
+            lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/upload" />
+    </browser:pages>
+
 
 </configure>

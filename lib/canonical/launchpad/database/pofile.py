@@ -869,7 +869,8 @@ class POFile(SQLBase):
         '''
         sightings = POTranslationSighting.select('''
             POTranslationSighting.pomsgset = POMsgSet.id AND
-            POMsgSet.pofile = %d''' % self.id, orderBy='-datelastactive')
+            POMsgSet.pofile = %d''' % self.id, orderBy='-datelastactive',
+            clauseTables=('POMsgSet',))
 
         try:
             return sightings[0]

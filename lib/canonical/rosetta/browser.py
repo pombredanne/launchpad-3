@@ -3,12 +3,12 @@
 
 __metaclass__ = type
 
-import re, os, popen2
+import re, os, popen2, base64
 from math import ceil
 import smtplib
 import sys
 from xml.sax.saxutils import escape as xml_escape
-from cStringIO import StringIO
+from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
@@ -964,7 +964,6 @@ class ViewImportQueue:
 
     def submit(self):
         if self.request.method == "POST":
-            print self.request.form
 
             for key in self.request.form:
                 match = re.match('pot_(\d+)$', key)
@@ -980,7 +979,7 @@ class ViewImportQueue:
 
                     importer = TemplateImporter(potemplate, potemplate.rawimporter)
 
-                    file = StringIO(potemplate.rawfile)
+                    file = StringIO(base64.decodestring(potemplate.rawfile))
 
                     try:
                         importer.doImport(file)
@@ -1003,14 +1002,16 @@ class ViewImportQueue:
 
                     importer = POFileImporter(pofile, pofile.rawimporter)
 
-                    file = StringIO(pofile.rawfile)
+                    file = StringIO(base64.decodestring(pofile.rawfile))
 
                     try:
                         importer.doImport(file)
                     except:
-                        pofile.rawimportstatus = RosettaImportStatus.FAILED
+                        pofile.rawimportstatus = \
+                            RosettaImportStatus.FAILED.value
                     else:
-                        pofile.rawimportstatus = RosettaImportStatus.IMPORTED
+                        pofile.rawimportstatus = \
+                            RosettaImportStatus.IMPORTED.value
 
 
 # XXX: Implement class ViewTranslationEfforts: to create new Efforts
@@ -1094,4 +1095,86 @@ class ViewTranslationEffortCategory:
     def languageTemplates(self):
         for language in request_languages(self.request):
             yield LanguageTemplates(language, self.context.poTemplates())
+
+
+class TemplateUpload:
+    def languages(self):
+        return getUtility(ILanguageSet)
+        
+    def processUpload(self):
+        print self.request
+
+        if not (('SUBMIT' in self.request.form) and
+                (self.request.method == 'POST')):
+            return ''
+
+        file = self.request.form['file']
+
+        # I've seen this happen with Epiphany once, so it seemed worth it to
+        # put a check in. Restarting Epiphany fixed it, though.
+        # -- Dafydd, 2004/11/25
+
+        if file == u'':
+            return "Bad upload."
+
+        filename = file.filename
+
+        if filename.endswith('.pot'):
+            # XXX: Carlos Perello Marin 30/11/2004 Improve the error handlingTODO: Try parsing the file before putting it in the DB.
+
+            potfile = file.read()
+
+            from canonical.rosetta.pofile import POParser
+            
+            parser = POParser()
+
+            parser.write(potfile)
+            parser.finish()
+
+            self.context.rawfile = base64.encodestring(potfile)
+            self.context.daterawimport = UTC_NOW
+            self.context.rawimporter = IPerson(self.request.principal, None)
+            self.context.rawimportstatus = RosettaImportStatus.PENDING.value
+
+            return "Looks like a POT file."
+        elif filename.endswith('.po'):
+            if 'language' in self.request.form:
+                language_name = self.request.form['language']
+
+                # XXX: We should fix this, instead of get englishname list, we
+                # should get language's code
+                for language in self.languages():
+                    if language.englishname == language_name:
+                        if language in self.context.languages():
+                            pofile = self.context.poFile(language.code)
+                            pofile.rawfile = base64.encodestring(file.read())
+                            pofile.daterawimport = UTC_NOW
+                            pofile.rawimporter = IPerson(self.request.principal, None)
+                            pofile.rawimportstatus = RosettaImportStatus.PENDING.value
+                        else:
+                            base64_file = base64.encodestring(file.read())
+                            importer = IPerson(self.request.principal, None)
+
+                            pofile = POFile(potemplate=self.context,
+                                language=language,
+                                fuzzyheader=True,
+                                currentcount=0,
+                                updatescount=0,
+                                rosettacount=0,
+                                pluralforms=1,
+                                rawfile=base64_file,
+                                daterawimport=UTC_NOW,
+                                rawimporter = importer,
+                                rawimportstatus = RosettaImportStatus.PENDING.value)
+                        return "Looks like a PO file."
+            else:
+                return 'You should select a language with a po file!'
+        elif filename.endswith('.tar.gz'):
+            return "Uploads of Tar archives are not supported yet."
+        elif filename.endswith('.zip'):
+            return "Uploads of Zip archives are not supported yet."
+        else:
+            return "Dunno what this file is."
+
+        # FIXME: File bug(s) about zip and tar support.
 
