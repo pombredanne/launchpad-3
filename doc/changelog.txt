@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-25 19:38:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1251
+
+    Summary:
+      Remember selected value for Team/People searches. DB patch to rename Membership to TeamMembership.
+    Revision:
+      launchpad--devel--0--patch-1251
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-107
+       Remember selected value for people/team searches
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-108
+       Adding db patch to rename Membership table to TeamMembership.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-109
+       merge from rf
+    
+
+    new files:
+     database/schema/pending/.arch-ids/salgado-rename-membership.sql.id
+     database/schema/pending/salgado-rename-membership.sql
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/people-index.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-107
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-108
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-109
+
+
 2005-01-25 18:46:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1250
 
     Summary:
