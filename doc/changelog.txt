@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-08 22:25:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1295
+
+    Summary:
+      hook up most of the search page + bug results listing in the newlook
+ skin
+    Revision:
+      launchpad--devel--0--patch-1295
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-344
+       hook up most of the search page + bug results listing in the newlook skin
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/malone_skin/malone-index.pt
+     lib/canonical/launchpad/templates/malone_skin/malone-standard-page.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-344
+
+
 2005-02-08 21:47:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1294
 
     Summary:

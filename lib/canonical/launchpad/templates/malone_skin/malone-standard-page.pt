@@ -10,7 +10,8 @@
 	</head>
 	<body>
 		<div class="user" tal:condition="request/lp:person">
-			Welcome, <a href="prefs" tal:content="request/lp:person/name">$user.name</a> &bull;
+			Welcome,
+            <a href="prefs" tal:content="request/lp:person/displayname">$user.displayname</a> &bull;
 			<a href="/+logout">Log out</a>
 		</div>
 		<div class="user" tal:condition="not:request/lp:person">

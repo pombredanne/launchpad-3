@@ -2,8 +2,9 @@
 <metal:block fill-slot="main">
     <form class="central">
         <div>
-            <label for="searchtext">
-                Search Ubuntu bug reports:
+            <label for="searchtext"
+                   tal:content="string:Search ${context/displayname} bug reports:">
+                Search $context.displayname bug reports:
             </label>
         </div>
         <div>
@@ -72,23 +73,38 @@
 		<form id="changemultiple" tal:condition="bugtasks">
 			<table class="buglist data">
 				<tbody>
-					<tr>
-						<td><input type="checkbox" value="38"></td>
-						<td class="bugnumber">38.</td>
+					<tr tal:repeat="bugtask bugtasks">
+						<td><input type="checkbox" tal:attributes="value bugtask/bug/id"></td>
+						<td class="bugnumber" tal:content="string:${bugtask/bug/id}.">$bugtask.bug.id.</td>
 						<td>
 							<div>
-								<strong><a href="38">Pride and prejudice in About box</a></strong>
+								<strong>
+                                    <a href="#"
+                                       tal:attributes="href string:/malone/bugs/${bugtask/bug/id}"
+                                       tal:content="bugtask/bug/title">
+                                        Pride and prejudice in About box
+                                    </a>
+                                </strong>
 								<small>(7 months old)</small>
 							</div>
 							<div>
 								<small>
-									In
-									<code>ubuntu-filer</code>,
-									assigned to
-									<a class="doomed" href="?assignee=jdub&amp;milestone=1.1">jdub for 1.1</a>
-									<!-- class="doomed" because it's a future milestone -->
+                                    <tal:block condition="python:bugtask.assignee and not bugtask.milestone">
+                                        assigned to
+                                        <a class="doomed" href="#" tal:content="bugtask/assignee/displayname">jdub</a>
+                                    </tal:block>
+                                    <tal:block condition="python:bugtask.assignee and bugtask.milestone">
+                                        assigned to
+                                        <a class="doomed" href="#"
+                                           tal:content="string:${bugtask/assignee/displayname} for ${bugtask/milestone/name}">
+                                            jdub for 1.1
+                                        </a>
+                                    </tal:block>
+                                    <tal:block condition="not: bugtask/assignee">
+                                        unassigned
+                                    </tal:block>
 									&#8212;
-									<em>medium</em>
+									<em tal:content="bugtask/severity/lp:BugSeverity/title">medium</em>
 								</small>
 							</div>
 							<div>
