@@ -22,18 +22,17 @@ from time import time
 
 class Channel(FTPServerChannel):
 
-    jdub_sez = "yo yo pants off"
-
     def __init__(self, server, conn, addr, adj=None):
         # Work around a zope3 bug where the status messages dict is copied by
         # reference, not by value.
         self.status_messages = dict(self.status_messages)
         self.status_messages['SERVER_READY'] = (
-            '220 %%s FTP server (%s) ready.' % self.jdub_sez)
+            '220 %s Canonical FTP server ready.')
 
         FTPServerChannel.__init__(self, server, conn, addr, adj=None)
         self.peername = self.socket.getpeername()
         self.uploadfilesystem, self.fsroot = server.newClient(self)
+        self.hook = server.auth_verify_hook
 
     def close(self):
         FTPServerChannel.close(self)
@@ -60,9 +59,20 @@ class Channel(FTPServerChannel):
         self.authenticated = 0
         password = args
         credentials = (self.username, password)
-        self.credentials = credentials
-        self.authenticated = 1
-        self.reply('LOGIN_SUCCESS')
+        okay = True
+        if self.hook:
+            try:
+                if not self.hook(self.fsroot, self.username, password):
+                    okay = False
+            except:
+                okay = False
+        if not okay:
+            self.reply('LOGIN_MISMATCH')
+            self.close_when_done()
+        else:
+            self.credentials = credentials
+            self.authenticated = 1
+            self.reply('LOGIN_SUCCESS')
 
     def cmd_stor(self, args, write_mode='w'):
         'See IFTPCommandHandler'
@@ -98,13 +108,14 @@ class Server(ServerBase):
     channel_class = Channel
 
     def __init__(self, ip, port, root, startcount,
-                 new_client_hook, client_done_hook,
+                 new_client_hook, client_done_hook, auth_verify_hook,
                  *args, **kw):
         ServerBase.__init__(self, ip, port, *args, **kw)
         self.clientcount = startcount
         self.rootpath = root
         self.new_client_hook = new_client_hook
         self.client_done_hook = client_done_hook
+        self.auth_verify_hook = auth_verify_hook
 
     def newClient(self, channel):
         root = '/'  # sentinel
@@ -132,11 +143,11 @@ class Server(ServerBase):
 
 
 def run_server(rootdir, host, port, ident, numthreads,
-               new_client_hook, client_done_hook):
+               new_client_hook, client_done_hook, auth_verify_hook = None):
     task_dispatcher = ThreadedTaskDispatcher()
     task_dispatcher.setThreadCount(numthreads)
     server = Server(host, port, rootdir, 0,
-                    new_client_hook, client_done_hook,
+                    new_client_hook, client_done_hook, auth_verify_hook,
                     task_dispatcher=task_dispatcher)
     server.SERVER_IDENT = ident
     try:
@@ -169,9 +180,13 @@ def main():
     def client_done_hook(fsroot, host, port):
         print "client done:", fsroot, host, port
 
+    def auth_verify_hook(fsroot, user,passw):
+        print "Auth Verification hook:", fsroot, user, passw
+        return True
 
     run_server(root, host, int(port), ident, numthreads,
-               new_client_hook, client_done_hook)
+               new_client_hook, client_done_hook,
+               auth_verify_hook)
     return 0
 
 if __name__ == '__main__':

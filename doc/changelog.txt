@@ -2,6 +2,53 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-16 15:03:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1443
+
+    Summary:
+      GPGV movement, initial poppy-upload and clean up ftpserver signon
+    Revision:
+      launchpad--devel--0--patch-1443
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-2
+       manual merge of rocketfuel patches 1376-1420
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-3
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-4
+       Shift around the GPGV errors a bit and test that NoPublicKeyError gets a keyid
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-5
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-6
+       Initial poppy-upload.py daemon with Lucille integration
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-7
+       Tidy the ftpserver signon a little
+    
+
+    new files:
+     daemons/.arch-ids/poppy-upload.py.id daemons/poppy-upload.py
+     lib/canonical/lucille/.arch-ids/uploader.py.id
+     lib/canonical/lucille/uploader.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/lucille/GPGV.py
+     lib/canonical/lucille/tests/test_signedfiles.py
+     lib/canonical/poppy/server.py
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-2
+     daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-3
+     daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-4
+     daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-5
+     daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-6
+     daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-7
+
+
 2005-03-16 05:01:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1442
 
     Summary:

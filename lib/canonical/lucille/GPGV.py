@@ -114,7 +114,9 @@ class SignatureCheckError(VerificationError):
 
 class NoPublicKeyError(VerificationError):
     """The public key referred to was not found"""
-    pass
+    def __init__(self, msg, key):
+        VerificationError.__init__(self,msg)
+        self.key = key
 
 class BadArmorError(VerificationError):
     """The ascii armoring was damaged"""
@@ -218,14 +220,14 @@ def verify_signed_file(filename, keyrings, detached_sigfile = None):
         raise KeyRevokedError("%s: key has been revoked." % (filename))
     if keywords.has_key("BADSIG"):
         raise BadSignatureError("%s: bad signature" % (filename))
-    if keywords.has_key("ERRSIG") and not keywords.has_key("NO_PUBKEY"):
-        raise SignatureCheckError("%s: failed to check signature" % (filename))
     if keywords.has_key("NO_PUBKEY"):
         args = keywords["NO_PUBKEY"]
         key = "UNKNOWN"
         if len(args) >= 1:
             key = args[0]
-        raise NoPublicKeyError("%s: key (0x%s) wasn't found in the keyring(s)" % (filename, key))
+        raise NoPublicKeyError("%s: key (0x%s) wasn't found in the keyring(s)" % (filename, key), key)
+    if keywords.has_key("ERRSIG") and not keywords.has_key("NO_PUBKEY"):
+        raise SignatureCheckError("%s: failed to check signature" % (filename))
     if keywords.has_key("BADARMOR"):
         raise BadArmorError("%s: ASCII armour of signature was corrupt" % (filename))
     if keywords.has_key("NODATA"):
