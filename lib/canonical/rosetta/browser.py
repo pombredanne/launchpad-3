@@ -971,11 +971,8 @@ class TranslatePOTemplate:
         pofiles = {}
 
         for language in self.languages:
-            try:
-                pofiles[language.code] = self.context.getPOFileByLang(language.code)
-            except KeyError:
-                pofiles[language.code] = self.context.newPOFile(
-                    language.code, owner=self.person)
+            pofiles[language.code] = self.context.getOrCreatePOFile(
+                language.code, None, owner=self.person)
 
         # Put the translations in the database.
 
