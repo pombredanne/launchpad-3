@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-30 16:39:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1520
+
+    Summary:
+      gina fix after NukeSourcePackage
+    Revision:
+      launchpad--devel--0--patch-1520
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-495
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-496
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-497
+       merge from gina--0
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-14
+       merge from devel--0
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-15
+       Fix after NukeSourcePackage
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/gina/database.py
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-495
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-496
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-497
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-14
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-15
+
+
 2005-03-30 16:02:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1519
 
     Summary:

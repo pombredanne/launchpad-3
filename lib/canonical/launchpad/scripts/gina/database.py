@@ -9,7 +9,7 @@ from canonical.lp import initZopeless
 from canonical.foaf.nickname import generate_nick
 from canonical.launchpad.database import Distribution, DistroRelease, \
                                          DistroArchRelease,Processor, \
-                                         SourcePackageName, SourcePackage,\
+                                         SourcePackageName, \
                                          SourcePackageRelease, Build, \
                                          BinaryPackage, BinaryPackageName, \
                                          Person, EmailAddress, GPGKey, \
@@ -28,7 +28,8 @@ from canonical.lp.dbschema import PackagePublishingStatus,  \
                                   SourcePackageFileType, \
                                   BinaryPackageFileType, \
                                   BinaryPackageFormat, \
-                                  BuildStatus
+                                  BuildStatus, \
+                                  GPGKeyAlgorithms
 
 priomap = {
     "low": SourcePackageUrgency.LOW,
@@ -253,57 +254,19 @@ class Launchpad(SQLThingBase):
     # SourcePackageName
     #
     def ensureSourcePackageName(self, name):
-        if SourcePackageName.selectBy(name=name).count():
-            return
-        name = self.ensure_string_format(name)
-        SourcePackageName(name=name)
+        return SourcePackageName.ensure(name)
 
     def getSourcePackageName(self, name):
         return SourcePackageName.selectBy(name=name)
 
     #
-    # SourcePackage
-    #
-    def ensureSourcePackage(self, src):
-        if self.getSourcePackage(src.package).count():
-            return
-
-        self.ensureSourcePackageName(src.package)
-        name = self.getSourcePackageName(src.package)[0]
-
-        people = self.getPeople(*src.maintainer)[0]
-    
-        description = self.ensure_string_format(src.description)
-        short_desc = description.split("\n")[0]
-
-        SourcePackage(maintainer=people,
-                      shortdesc=short_desc,
-                      distro=self.distro.id,
-                      description=description,
-                      sourcepackagename=name.id,
-                      srcpackageformat=SourcePackageFormat.DPKG,
-                      manifest=None
-                      )
-
-    def getSourcePackage(self, name_name, distro = None):
-        if not distro:
-            distro = self.distro
-
-        self.ensureSourcePackageName(name_name)
-        name = self.getSourcePackageName(name_name)[0]
-
-        return SourcePackage.selectBy(distroID=distro.id,
-                                      sourcepackagenameID=name.id)
-        
-    #
     # SourcePackageRelease
     #
     def getSourcePackageRelease(self, name, version):
-        src = self.getSourcePackage(name)
-        if not src.count():
-            return None
 
-        spr = SourcePackageRelease.selectBy(sourcepackageID=src[0].id,
+        name = self.ensureSourcePackageName(name)
+
+        spr = SourcePackageRelease.selectBy(sourcepackagenameID=name.id,
                                             version=version)
 
         if not spr.count():
@@ -334,9 +297,7 @@ class Launchpad(SQLThingBase):
                                  filetype=self.getFileType(fname))
 
     def createSourcePackageRelease(self, src):
-        self.ensureSourcePackage(src)
 
-        srcpkgid = self.getSourcePackage(src.package)[0]
         maintid = self.getPeople(*src.maintainer)[0]
         if src.dsc_signing_key_owner:
             key = self.getGPGKey(src.dsc_signing_key, 
@@ -356,7 +317,6 @@ class Launchpad(SQLThingBase):
         name = self.getSourcePackageName(src.package)[0]
 
         SourcePackageRelease(sourcepackagename=name.id,
-                             sourcepackage=srcpkgid,
                              version=src.version,
                              maintainer=maintid,
                              dateuploaded=src.date_uploaded,
@@ -370,7 +330,8 @@ class Launchpad(SQLThingBase):
                              dsc=dsc,
                              dscsigningkey=key,
                              section=sectionID,
-                             manifest=None)
+                             manifest=None,
+                             uploaddistrorelease=self.distro.id)
 
     def publishSourcePackage(self, src):
         release = self.getSourcePackageRelease(src.package, src.version)[0].id
@@ -385,8 +346,6 @@ class Launchpad(SQLThingBase):
                                 section=sectionID)
                              
     def createFakeSourcePackageRelease(self, release, src):
-        self.ensureSourcePackage(src)
-        srcpkgid = self.getSourcePackage(src.package)[0]
         maintid = self.getPeople(*release["parsed_maintainer"])[0]
         # XXX these are hardcoded to the current package's value, which is not
         # really the truth
@@ -396,7 +355,6 @@ class Launchpad(SQLThingBase):
         changelog=self.ensure_string_format(release["changes"])
         
         SourcePackageRelease(sourcepackagename=name.id,
-                             sourcepackage=srcpkgid,
                              version=release["version"],
                              dateuploaded=release["parsed_date"],
                              component=componentID,
@@ -404,7 +362,14 @@ class Launchpad(SQLThingBase):
                              maintainer=maintid,
                              urgency=priomap[release["urgency"]],
                              changelog=changelog,
-                             section=sectionID)
+                             section=sectionID,
+                             builddepends=None,
+                             builddependsindep=None,
+                             architecturehintlist=None,
+                             dsc=None,
+                             dscsigningkey=None,
+                             manifest=None,
+                             uploaddistrorelease=self.distro.id)
 
     #
     # Build
@@ -720,8 +685,9 @@ class Launchpad(SQLThingBase):
         # revoked     | boolean | not null
         # algorith    | integer | not null
         # keysize     | integer | not null
+        algorithm = GPGKeyAlgorithms.items[algorithm]
         data = {
-            "person":       person,
+            "owner":       person,
             "keyid":        id,
             "fingerprint":  key,
             "pubkey":       armor,
