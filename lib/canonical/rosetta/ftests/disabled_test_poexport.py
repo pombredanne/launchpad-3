@@ -58,7 +58,7 @@ msgstr ""
 
 #: a11y/addressbook/ea-minicard-view.c:104
 msgid " cards"
-msgstr ""
+msgstr " tarjetas"
 
 #: a11y/addressbook/ea-minicard-view.c:104
 msgid " card"

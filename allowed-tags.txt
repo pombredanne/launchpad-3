@@ -34,7 +34,6 @@ lib/canonical/rosetta/scripts/plural-form-data 26f84e2a-1a75-48d5-bf0d-28672ebc6
 lib/canonical/rosetta/scripts/poimport.py 752bd71e-584e-416e-abff-a4eb6c82399c
 lib/canonical/rosetta/sql.zcml 28211a91-fd78-4f20-ae6a-63703792a48b_-->
 lib/canonical/rosetta/tests/test_browser.py 05d714d2-c14d-4f72-bfc3-f210d0ee052d
-lib/canonical/rosetta/tests/test_interfaces_stub.py 3945d8f8-637e-45ef-a8fc-1b142bea245f
 lib/canonical/sourcerer/ChangeLog automatic-ChangeLog--scott@canonical.com--2004/sourcerer--devel--0
 lib/canonical/sourcerer/Makefile 466ae877-4a82-4f7b-8361-6530b8100b6e
 lib/canonical/sourcerer/__init__.py 94fb5329-b775-4368-a26a-e6b1345a709a
