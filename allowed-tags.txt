@@ -1,4 +1,4 @@
-doc/changelog.txt automatic-ChangeLog--stuart.bishop@canonical.com/launchpad--devel--1
+doc/changelog.txt automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 lib/canonical/arch/Makefile a28009ff-8549-499e-ba4c-df39e069ff02
 lib/canonical/arch/__init__.py 968155c0-f32b-4ca1-a579-1722c98bb117
 lib/canonical/arch/broker.py 27f07153-69b6-4ddb-b704-eaabcca57e3e

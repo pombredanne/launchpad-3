@@ -28,7 +28,7 @@
   ... -----------------------------124775592710556272331137042681
   ... Content-Disposition: form-data; name="field.sourcepackagename"
   ... 
-  ... 1
+  ... mozilla-firefox-dummy
   ... -----------------------------124775592710556272331137042681
   ... Content-Disposition: form-data; name="field.title"
   ... 

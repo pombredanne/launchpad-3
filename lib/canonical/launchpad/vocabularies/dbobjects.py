@@ -120,11 +120,9 @@ class SourcePackageVocabulary(SQLObjectVocabularyBase):
         return self.getTerm(token)
 
     def search(self, query):
-        '''Returns products where the sourcepackage name contains the given
+        '''Returns products where the sourcepackage full text indexes
+        contain the given
         query. Returns an empty list if query is None or an empty string.
-
-        This won't use indexes. If this is too slow, we need full text
-        searching.
 
         '''
         if not query:
@@ -351,28 +349,37 @@ class PackageReleaseVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(
             obj, obj.id, obj.sourcepackage.name + " " + obj.version)
 
-class SourcePackageNameVocabulary(SQLObjectVocabularyBase):
+class SourcePackageNameVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
 
     _table = SourcePackageName
     _orderBy = 'name'
 
     def _toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.name)
+        return SimpleTerm(obj, obj.name, obj.name)
 
     def search(self, query):
-        """Return terms where query is a substring of the name"""
-        if query:
-            query = query.lower()
-            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
-            fti_query = quote(query)
-            kw = {}
-            if self._orderBy:
-                kw['orderBy'] = self._orderBy
-            objs = self._table.select("name LIKE %s" % like_query, **kw)
-            return [self._toTerm(obj) for obj in objs]
+        '''Returns names where the sourcepackage contains the given
+        query. Returns an empty list if query is None or an empty string.
 
-        return []
+        '''
+        if not query:
+            return []
+        query = query.lower()
+        t = self._table
+        objs = [self._toTerm(r)
+            for r in t.select('''
+                sourcepackage.sourcepackagename = sourcepackagename.id
+                AND (
+                    sourcepackagename.name like '%%' || %s || '%%'
+                    OR sourcepackage.fti @@ ftq(%s)
+                    )
+                ''' % (quote_like(query), quote(query)),
+                ['SourcePackage']
+                )
+            ]
+        return objs
+
 
 class DistributionVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
