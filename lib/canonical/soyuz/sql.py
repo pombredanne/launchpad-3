@@ -16,17 +16,20 @@ from canonical.lp import dbschema
 from canonical.database.sqlbase import quote
 
 # launchpad imports
-from canonical.launchpad.interfaces import IBinaryPackage,IBinaryPackageBuild,\
-                                           ISourcePackageRelease,\
-                                           IManifestEntry, IPackages,\
-                                           IBinaryPackageSet,\
-                                           ISourcePackageSet,\
-                                           IBranch, IChangeset 
+#XXX: salgado: who need these imports?
+# from canonical.launchpad.interfaces import IBinaryPackage,IBinaryPackageBuild,\
+#                                            ISourcePackageRelease,\
+#                                            ISourcePackageReleasePublishing,\
+#                                            IManifestEntry, IPackages,\
+#                                            IBinaryPackageSet,\
+#                                            ISourcePackageSet,\
+#                                            IBranch, IChangeset 
 
 from canonical.launchpad.database import BinaryPackage, Build, \
                                          SourcePackage, Manifest, \
                                          ManifestEntry, DistroRelease, \
                                          SourcePackageRelease, \
+                                         VSourcePackageReleasePublishing, \
                                          SourcePackageInDistro, \
                                          DistroArchRelease, \
                                          Distribution, Person, \
@@ -127,17 +130,20 @@ class DistroReleaseSourceReleaseApp(object):
     def __init__(self, sourcepackage, version, distrorelease):
         self.distroreleasename = distrorelease.name
 
-        results = SourcePackageRelease.selectBy(
-                sourcepackageID=sourcepackage.id, version=version)
+        results = VSourcePackageReleasePublishing.select(
+                "sourcepackage = %d AND version = %s" % \
+                (sourcepackage.id, quote(version)))
 
-        if results.count() == 0:
+        nresults = results.count()
+        if nresults == 0:
             raise ValueError, 'No such version ' + repr(version)
         else:
+            assert nresults == 1
             self.sourcepackagerelease = results[0]
 
         sourceReleases = sourcepackage.current(distrorelease)
-        sourceReleases = SourcePackageRelease.selectByVersion(sourceReleases,
-                                                              version)
+        sourceReleases = VSourcePackageReleasePublishing.selectByVersion(
+                sourceReleases, version)
         self.archs = None
 
         for release in sourceReleases:
@@ -485,7 +491,7 @@ class DistroReleaseBinaryReleaseApp(object):
         # status that comes from SourcePackageRelease
         sourceReleases = self.binarypackagerelease.current(distrorelease)
 
-        sourceReleases = SourcePackageRelease.\
+        sourceReleases = VSourcePackageReleasePublishing.\
                          selectByBinaryVersion(sourceReleases,
                                                version)
 

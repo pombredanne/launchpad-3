@@ -12,6 +12,16 @@
 
 <body>
 
+
+<metal:leftportlets fill-slot="portlets_one">
+<div tal:replace="structure view/emailPortlet" />  
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
 <div id="content" class="documentEditable">
@@ -75,8 +85,7 @@
 	    <input type="text" name="givenname"
 	    tal:attributes="value context/person/givenname|nothing"/>
 	</div>
-	</td></tr>
-	<tr><td>
+	</td><td>
 	<div class="field">
 	    <label>Familyname</label>
 	    <div class="formHelp">
@@ -112,9 +121,7 @@
 	    <input type="text" name="wiki" size="40"
 	    tal:attributes="value context/wiki/wiki|nothing"/>
 	</div>
-	</td></tr>
-
-	<tr><td>
+	</td><td>
 	<div class="field">
 	    <label>Wikiname</label>
 	    <div class="formHelp">
@@ -134,9 +141,7 @@
 	    <input type="text" name="network" size="40"
 	    tal:attributes="value context/irc/network|nothing"/>
 	</div>
-	</td></tr>
-
-	<tr><td>
+	</td><td>
 	<div class="field">
 	    <label>IRC Nickname</label>
 	    <div class="formHelp">
@@ -156,15 +161,13 @@
 	    <input type="text" name="archuserid" 
 	    tal:attributes="value context/archuser/archuserid|nothing"/>
 	</div>
-	</td></tr>
-
-	<tr><td>
+	</td><td>
 	<div class="field">
 	    <label>JABBER ID</label>
 	    <div class="formHelp">
 	    Enter the Jabber ID.
             </div>
-	    <input type="text" name="jabberid" size="40"
+	    <input type="text" name="jabberid" size="20"
 	    tal:attributes="value context/jabber/jabberid|nothing"/>
 	</div>
 	</td></tr>
@@ -174,9 +177,6 @@
 	PUB KEY IMPORT ENGINE ????
 	</td></tr>
 
-	<tr><td class="dummy">
-	MISSED EMAIL EDIT ENGINE
-	</td></tr>
 
 	<tr><td>
 	<div class="formControls">
@@ -187,13 +187,11 @@
   </form>
   </div>
   
-  <tla:block tal:condition="view/edit_action">
-  <div>
+  <div tal:condition="view/edit_action">
   <p> <a tal:attributes="href string:../${context/person/name}"
          tal:content="context/person/displayname">PERSON</a>
     Modified
   </div>
-  </tla:block>
   
   </div>
 </div>

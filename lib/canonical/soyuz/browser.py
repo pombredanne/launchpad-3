@@ -277,6 +277,8 @@ class PersonPackagesView(object):
         self.request = request
 
 class PersonEditView(object):
+    emailPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-email.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -293,6 +295,39 @@ class PersonEditView(object):
         except:
             pass
 
+    def email_action(self):
+
+        if not self.permission:
+            return False
+
+        email = self.request.get("email", "")
+        new_email = self.request.get("new_email", "")
+        operation = self.request.get("operation", "")
+        valid = int(dbschema.EmailAddressStatus.VALIDATED)
+        person = self.context.person.id
+
+        if operation == 'add' and new_email:
+
+            res = EmailAddress(email=new_email,
+                               personID=person,
+                               status=valid)                              
+            return res
+
+        elif operation == 'edit' and new_email:
+
+            result = EmailAddress.selectBy(email=email)[0]
+            result.email = new_email 
+            return result
+
+        elif operation == 'delete':
+            result = EmailAddress.selectBy(email=email)[0]
+            result.destroySelf()
+            return True
+        else:
+            return False
+        
+
+
     def edit_action(self):
         enable_edited = False
         if not self.permission:
@@ -303,7 +338,6 @@ class PersonEditView(object):
         familyname = self.request.get("familyname", "")
         teamdescription = self.request.get("teamdescription", "")
 
-        ##email = self.request.get("email", "")
         wiki = self.request.get("wiki", "")
         wikiname = self.request.get("wikiname", "")
         network = self.request.get("network", "")
@@ -320,22 +354,6 @@ class PersonEditView(object):
             self.context.person.teamdescription = teamdescription
             enable_edited = True            
 
-##TODO: (email+portlet) cprov 20041003
-## Email Adress requires a specific Portlet to handle edit single email
-## inside a set of found ones and validade them across the GPG key
-#             EmailAddress                
-#             if self.context.email:
-#                 self.context.email.email = email
-#                 self.enable_edited = True
-#             else:
-#                 if email:
-#                     status = int(dbschema.EmailAddressStatus.VALIDATED)
-#                     person = self.context.person.id
-#                     self.context.email = \
-#                          Soyuz.EmailAddress(personID=person,
-#                                             email=email, status=status)
-#                 else:
-#                     self.context.email = None
             #WikiName
             if self.context.wiki:
                 self.context.wiki.wiki = wiki

@@ -11,6 +11,11 @@
       <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
+    <!-- This is class VSourcePackageReleasePublishing -->
+    <content class="canonical.soyuz.sql.VSourcePackageReleasePublishing">
+      <allow interface="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"/>
+      <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
 
     <!-- SourcePackage -->
     <content class="canonical.launchpad.database.SourcePackage">

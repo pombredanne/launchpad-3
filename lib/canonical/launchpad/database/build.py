@@ -49,13 +49,14 @@ class Build(SQLBase):
     # Build Class Methods
     #
     def getSourceReleaseBuild(klass, sourcepackagereleaseID, archtag):
+        clauseTables = ('DistroArchRelease', )
         query = ('Build.sourcepackagerelease = %i '
                  'AND Build.distroarchrelease = DistroArchRelease.id '
                  'AND DistroArchRelease.architecturetag = %s'
                  % (sourcepackagereleaseID, quote(archtag))
                  )
 
-        return Build.select(query)
+        return Build.select(query, clauseTables=clauseTables)
 
     getSourceReleaseBuild = classmethod(getSourceReleaseBuild)
 

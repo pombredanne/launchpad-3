@@ -10,6 +10,5 @@
 	      tal:content="team/person/displayname">SUBTEAM</a></li>
    </ul>
 
-   <a href="+add">Create a New SubTeam</a>
  </div>
 </fieldset>

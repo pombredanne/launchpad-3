@@ -339,6 +339,7 @@
 	name="+join"
        />
 
+
 <traverse for="canonical.soyuz.sql.DistroBinariesApp" 
 	  getter="__getitem__" />
 

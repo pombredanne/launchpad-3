@@ -15,6 +15,7 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageRelease, \
+                                           ISourcePackageReleasePublishing, \
                                            ISourcePackage, \
                                            ISourcePackageName, \
                                            ISourcePackageContainer
@@ -44,8 +45,6 @@ class SourcePackage(SQLBase):
     releases              = MultipleJoin('SourcePackageRelease', 
                                          joinColumn='sourcepackage')
     bugs                  = MultipleJoin('SourcePackageBugAssignment', 
-                                         joinColumn='sourcepackage')
-    sourcepackagereleases = MultipleJoin('SourcePackageRelease', 
                                          joinColumn='sourcepackage')
 
     #
@@ -94,8 +93,8 @@ class SourcePackage(SQLBase):
         return ret
 
     def getRelease(self, version):
-        ret = list(SourcePackageRelease.selectBy(version=version))
-        assert len(ret) == 1
+        ret = VSourcePackageReleasePublishing.selectBy(version=version)
+        assert ret.count() == 1
         return ret[0]
 
     def uploadsByStatus(self, distroRelease, status, do_sort=False):
@@ -105,7 +104,7 @@ class SourcePackage(SQLBase):
                  % (distroRelease.id, self.id, status))
         if do_sort:
             query += ' ORDER BY dateuploaded DESC'
-        ret = SourcePackageRelease.select(query)
+        ret = VSourcePackageReleasePublishing.select(query)
         return ret
 
     def proposed(self, distroRelease):
@@ -144,9 +143,9 @@ class SourcePackageInDistro(SourcePackage):
     # Class Methods
     #
     def getByName(klass, distrorelease, name):
-        """Get A SourcePackageRelease in a distrorelease by its name"""
+        """Get A SourcePackageInDistro in a distrorelease by its name"""
         ret = klass.getReleases(distrorelease, name)
-        assert len(list(ret)) == 1
+        assert ret.count() == 1
         return ret[0]
 
     getByName = classmethod(getByName)
@@ -177,7 +176,7 @@ class SourcePackageInDistro(SourcePackage):
         query = ('distrorelease = %d AND '
                  '(name ILIKE %s OR shortdesc ILIKE %s)' %
                  (distroRelease.id, pattern, pattern))
-        return SourcePackageRelease.select(query, orderBy='name')
+        return VSourcePackageReleasePublishing.select(query, orderBy='name')
 
     findSourcesByName = classmethod(findSourcesByName)
 
@@ -198,7 +197,7 @@ class SourcePackageContainer(object):
         clauseTables = ('SourcePackageName', 'SourcePackage')
         return self.table.select("SourcePackage.sourcepackagename = \
         SourcePackageName.id AND SourcePackageName.name = %s" %     \
-        quote(name))[0]
+        quote(name), clauseTables=clauseTables)[0]
 
     def __iter__(self):
         for row in self.table.select():
@@ -224,20 +223,21 @@ class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)
     _table = 'SourcePackageRelease'
 
-    sourcepackage = ForeignKey(foreignKey='SourcePackage', dbName='sourcepackage')
-    creator = ForeignKey(foreignKey='Person', dbName='creator')
-    version = StringCol(dbName='version', notNull=True)
-    dateuploaded = DateTimeCol(
-        dbName='dateuploaded', notNull=True, default='NOW')
-    urgency = IntCol(dbName='urgency', notNull=True)
-    dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
-    component = ForeignKey(foreignKey='Component', dbName='component')
-    changelog = StringCol(dbName='changelog')
-    builddepends = StringCol(dbName='builddepends')
-    builddependsindep = StringCol(dbName='builddependsindep')
-    architecturehintlist = StringCol(dbName='architecturehintlist')
-    dsc = StringCol(dbName='dsc')
-    section = ForeignKey(foreignKey='Section', dbName='section')
+    _columns = [
+        ForeignKey(name='sourcepackage', foreignKey='SourcePackage', dbName='sourcepackage'),
+        ForeignKey(name='creator', foreignKey='Person', dbName='creator'),
+        ForeignKey(name='dscsigningkey', foreignKey='GPGKey', dbName='dscsigningkey'),
+        ForeignKey(name='component', foreignKey='Component', dbName='component'),
+        ForeignKey(name='section', foreignKey='Section', dbName='section'),
+        DateTimeCol(name='dateuploaded', dbName='dateuploaded', notNull=True, default='NOW'),
+        IntCol(name='urgency', dbName='urgency', notNull=True),
+        StringCol(name='version', dbName='version', notNull=True),
+        StringCol(name='changelog', dbName='changelog'),
+        StringCol(name='builddepends', dbName='builddepends'),
+        StringCol(name='builddependsindep', dbName='builddependsindep'),
+        StringCol(name='architecturehintlist', dbName='architecturehintlist'),
+        StringCol(name='dsc', dbName='dsc'),
+    ]
 
     #
     # Properties
@@ -295,15 +295,36 @@ class SourcePackageRelease(SQLBase):
     def selectByBinaryVersion(klass, sourcereleases, version):
         """Select from SourcePackageRelease.SelectResult that have
         BinaryPackage.version=version"""
+        clauseTables = ('Build', 'BinaryPackage')
         query = sourcereleases.clause + \
                 '''AND Build.id = BinaryPackage.build
                    AND Build.sourcepackagerelease = 
                        VSourcePackageReleasePublishing.id
                    AND BinaryPackage.version = %s''' % quote(version)
-        return klass.select(query)
+        return klass.select(query, clauseTables=clauseTables)
 
     selectByBinaryVersion = classmethod(selectByBinaryVersion)
 
+
+class VSourcePackageReleasePublishing(SourcePackageRelease):
+    implements(ISourcePackageReleasePublishing)
+    _table = 'VSourcePackageReleasePublishing'
+
+    # All columns of SourcePackageRelease are available here too.
+    # XXXkiko: IDs in this table are *NOT* unique!
+    # XXXkiko: clean up notNulls
+    _columns = SourcePackageRelease._columns + [
+        IntCol(name='publishingstatus', dbName='publishingstatus', notNull=True),
+        DateTimeCol(name='datepublished', dbName='datepublished'),
+        StringCol(name='name', dbName='name', notNull=True),
+        StringCol(name='shortdesc', dbName='shortdesc', notNull=True),
+        StringCol(name='description', dbName='description', notNull=True),
+        StringCol(name='componentname', dbName='componentname', notNull=True),
+        ForeignKey(name='distrorelease', foreignKey='DistroRelease', dbName='distrorelease'),
+        ForeignKey(name='maintainer', foreignKey='Person', dbName='maintainer'),
+        #XXX: salgado: wtf is this?
+        #MultipleJoin('Build', joinColumn='sourcepackagerelease'),
+    ]
 
 
 # XXX Mark Shuttleworth: this is somewhat misleading as there
