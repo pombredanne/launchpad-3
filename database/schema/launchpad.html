@@ -120,7 +120,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2005-03-23</p>
+Dumped on 2005-03-29</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -2436,6 +2436,9 @@ A lowercase name identifying one or more binarypackages</td>
 "#public.table.packageselection">public.packageselection</a></li>
 </ul>
 <ul>
+<li><a href="#public.table.potemplate">public.potemplate</a></li>
+</ul>
+<ul>
 <li><a href=
 "#public.table.sourcepackagebugassignment">public.sourcepackagebugassignment</a></li>
 </ul>
@@ -3088,6 +3091,58 @@ public.bountysubscription</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -6755,6 +6810,60 @@ and linked into the build table.</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -8165,6 +8274,16 @@ uploads and generating archives for this distribution</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
 </tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>members</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+Person or team with upload and commit priviledges relating to this
+distribution. Other rights may be assigned to this role in the
+future.</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p> </p>
@@ -8567,6 +8686,42 @@ page.</p>
 <th>
 <center>Trigger</center>
 </th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="tr0">
 <td>launchpad</td>
@@ -9508,6 +9663,24 @@ casesensitive way, but must be case insensitivly unique.</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -9553,7 +9726,7 @@ public</a></p>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
-<td>person</td>
+<td>owner</td>
 <td>integer</td>
 <td><i>UNIQUE#1 NOT NULL</i></td>
 </tr>
@@ -10032,12 +10205,12 @@ end-user support, wiki editting, etc.</p>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>karmafield</td>
+<td>karmatype</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-Type of the performed 'operation'. This is a foreign key to
-KarmaField.</td>
+Type of the performed 'operation'. Possible values are in
+dbschema.KarmaType.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -10061,7 +10234,7 @@ The Person for wich this Karma was assigned.</td>
 <td>integer</td>
 <td><i>NOT NULL</i><br />
 <br />
-The 'weight' of this Karma. Two Karmas of the same KarmaField may
+The 'weight' of this Karma. Two Karmas of the same KarmaType may
 have different Points, meaning that we may give higher weights for
 hard-to-fix bugs, for example.</td>
 </tr>
@@ -14616,7 +14789,7 @@ public</a></p>
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
-<td></td>
+<td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -15505,7 +15678,7 @@ public</a></p>
 <td></td>
 <td>path</td>
 <td>text</td>
-<td></td>
+<td><i>UNIQUE#3</i></td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -15564,7 +15737,7 @@ failed.</td>
 "#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
 <td>sourcepackagename</td>
 <td>integer</td>
-<td><i>UNIQUE#2</i><br />
+<td><i>UNIQUE#2 UNIQUE#3</i><br />
 <br />
 A reference to a sourcepackage name from where this POTemplate
 comes.</td>
@@ -15574,7 +15747,7 @@ comes.</td>
 "#public.table.distrorelease">public.distrorelease.id</a></td>
 <td>distrorelease</td>
 <td>integer</td>
-<td><i>UNIQUE#2</i><br />
+<td><i>UNIQUE#2 UNIQUE#3</i><br />
 <br />
 A reference to the distribution from where this POTemplate
 comes.</td>
@@ -15616,6 +15789,25 @@ for this POTemplate.</td>
 <br />
 A reference to a ProductRelease from where this POTemplate
 comes.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.binarypackagename">public.binarypackagename.id</a></td>
+<td>binarypackagename</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>languagepack</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>filename</td>
+<td>text</td>
+<td><i>UNIQUE#3</i></td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -15805,6 +15997,14 @@ this POTemplateName row.</td>
 <br />
 A brief text about this POTemplateName so the user could know more
 about it.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>translationdomain</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+The translation domain name for this POTemplateName</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -17416,6 +17616,42 @@ will be mentioned on the bounty web page.</p>
 <th>
 <center>Trigger</center>
 </th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="tr0">
 <td>launchpad</td>
@@ -19178,6 +19414,42 @@ will be mentioned on the bounty web page.</p>
 </th>
 </tr>
 <tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>launchpad</td>
 <td>
 <center>&diams;</center>
@@ -20501,8 +20773,9 @@ public</a></p>
 <td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.gpgkey">public.gpgkey.person#1</a></td>
-<td>person</td>
+<td><a href="#public.table.person">public.person.id</a> <a href=
+"#public.table.gpgkey">public.gpgkey.owner#1</a></td>
+<td>owner</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
@@ -20526,7 +20799,7 @@ public</a></p>
 <td></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
+<td></td>
 <td>recipient</td>
 <td>integer</td>
 <td></td>

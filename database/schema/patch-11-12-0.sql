@@ -29,5 +29,25 @@ UPDATE POFile SET owner=Person.id
     FROM Person WHERE Person.name='rosetta-admins' AND POFile.owner IS NULL;
 ALTER TABLE POFile ALTER COLUMN owner SET NOT NULL;
 
+/* Tidy some more constraints */
+ALTER TABLE POFile DROP CONSTRAINT "$1";
+ALTER TABLE POFile ADD CONSTRAINT pofile_potemplate_fk
+    FOREIGN KEY (potemplate) REFERENCES POTemplate;
+ALTER TABLE POFile DROP CONSTRAINT "$2";
+ALTER TABLE POFile ADD CONSTRAINT pofile_language_fk
+    FOREIGN KEY (language) REFERENCES Language;
+ALTER TABLE POFile DROP CONSTRAINT "$3";
+ALTER TABLE POFile ADD CONSTRAINT pofile_lasttranslator_fk
+    FOREIGN KEY (lasttranslator) REFERENCES Person;
+ALTER TABLE POFile DROP CONSTRAINT "$4";
+ALTER TABLE POFile ADD CONSTRAINT pofile_license_fk
+    FOREIGN KEY (license) REFERENCES License;
+ALTER TABLE POFile DROP CONSTRAINT "$5";
+ALTER TABLE POFile ADD CONSTRAINT pofile_owner_fk
+    FOREIGN KEY (owner) REFERENCES Person;
+ALTER TABLE POFile DROP CONSTRAINT "$6";
+ALTER TABLE POFile ADD CONSTRAINT pofile_rawimporter_fk
+    FOREIGN KEY (rawimporter) REFERENCES Person;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (11, 12, 0);
 

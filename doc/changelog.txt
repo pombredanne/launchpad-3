@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-29 04:24:42 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1511
+
+    Summary:
+      Fix patch-11-12-0.sql
+    Revision:
+      launchpad--devel--0--patch-1511
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-246
+       Fix typo in patch-11-12-0.sql and tidy more constraints
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-247
+       Update database documentation
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-248
+       Merge from Rocketfuel
+    
+
+    modified files:
+     database/schema/launchpad.html
+     database/schema/patch-11-12-0.sql doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-246
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-247
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-248
+
+
 2005-03-28 22:40:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1510
 
     Summary:
