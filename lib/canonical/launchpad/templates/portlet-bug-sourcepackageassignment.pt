@@ -1,42 +1,91 @@
-<div>
-    <table class="listing rowNavigation">
-        <tr>
-            <th>Package</th>
-            <th>Status</th>
-            <th>Priority</th>
-            <th>Severity</th>
-            <th>Binary</th>
-            <th>Assignee</th>
-        </tr>
-        <tr tal:repeat="bugass context/sourceassignment"
-            tal:attributes="onclick string:window.location='sourcepackageassignments/${bugass/id}/+edit';">
-        <td tal:content="bugass/sourcepackage/sourcepackagename/name">
-            $SourcePackageName.name
-        </td>
+<!-- Missing at the moment: an indicator for status integrated (should maybe
+    not be a separate header) 
+    Code:
             <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
                 $ProductBugAssignment.bugstatus
             </td>
-            <td tal:content="bugass/priority/lp:BugPriority">
-                $ProductBugAssignment.priority
-            </td>
-            <td tal:content="bugass/severity/lp:BugSeverity">
-                $ProductBugAssignment.severity
-            </td>
-            <td>
-                <span
-                    tal:omit-tag=""
-                    tal:condition="bugass/binarypackagename"
-                    tal:content="bugass/binarypackagename/name">
-                    $BinaryPackageName.name
-                </span>
-                <span
-                    tal:omit-tag=""
-                    tal:condition="not:bugass/binarypackagename">
-                    (none)
-                </span>
-            </td>
-        </tr>
-    </table>
-    [ <a href="sourcepackageassignments/+new">Assign Bug to Source Package</a> ]
-</div>
+    -->
 
+<table>
+    <col>
+    
+    
+</table>
+
+<table class="listing">
+    <thead>
+        <tr>
+            <th title="Source Package Assignment">Package / Upstream</th>
+            <th title="Severity">Sev</th>
+            <th title="Assignee">Assigned to</th>
+            <th title="Priority">Pri</th>
+        </tr>
+    </thead>
+
+
+    <tbody>
+        <tr tal:repeat="bugass context/sourceassignment">
+           
+            <td tal:attributes="class string:packageName severity${bugass/severity/lp:BugSeverity}Row">
+                <img src="++resource++product_icon.gif" 
+                     title="Package Assignment" />
+                <a href=""
+                   tal:attributes="href string:/malone/sourcepackage/${bugass/sourcepackage/sourcepackagename/name}"
+                   tal:content="bugass/sourcepackage/sourcepackagename/name">
+                $SourcePackageName.name
+                </a>
+            </td>
+            
+            <td>
+                <acronym title="Critical Severity.
+This bug is essential to fix as soon as possible. It affects system stability, data integrity and / or remote access security."
+                         tal:content="bugass/severity/lp:BugSeverity"
+                         tal:attributes="class string:severity${bugass/severity/lp:BugSeverity}"
+                >C</acronym>
+            </td>
+
+            <td title="Mr. FixMe">
+                <a tal:condition="bugass/assignee"
+                   tal:attributes="href string:/malone/bugs/assigned?name=${bugass/assignee/name}">
+                    <img src="++resource++user.gif" alt="" 
+                    /><span tal:replace="bugass/assignee/browsername">
+                    loginname
+                    </span>
+                </a>
+            </td>
+        
+            <td>
+                <acronym class="priorityMedium"
+                         title="Medium Priority. This is a medium priority bug for the maintainer."
+                         tal:content="bugass/priority/lp:BugPriority"
+                         tal:attributes="class string:priority${bugass/priority/lp:BugPriority}"
+                >=</acronym>
+            </td>
+            
+        </tr>
+
+        <tr>
+            <td>Mozilla Firefox</td>
+            <td>Minor</td>
+            <td>High</td>
+            <td>limi</td>
+        
+        </tr>
+        
+
+    </tbody>
+</table>
+
+                <a href="sourcepackageassignments/+new"
+                   style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+                   title="Add new reference to an existing Source Package that is affected.">
+                <img src="++resource++add.gif" alt="+" />
+                Add Package
+                </a>
+                
+                <a href="productassignments/+new"
+                   style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+                   title="Add new reference to a Product that is affected.">
+                <img src="++resource++add.gif" alt="+" />
+                Add Product
+                </a>

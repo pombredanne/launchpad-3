@@ -31,6 +31,8 @@
     <resource name="lock_icon.gif" file="../images/lock_icon.gif" />
     <resource name="link_icon.gif" file="../images/link_icon.gif" />
     <resource name="search_icon.gif" file="../images/search_icon.gif" />
+    <resource name="product_icon.gif" file="../images/product_icon.gif" />
+    <resource name="ubuntu.gif" file="../images/ubuntu.gif" />
 
 </configure>
 <!-- arch-tag: 0f9efb09-00d3-48dd-b5e7-711a9ed3ffff -->

@@ -40,8 +40,8 @@
     width: 40%;
     padding: 1em;
     margin: 1em;
-    background-color: #8fb3d9;
-    border: 1px solid #7A9EC6;
+    background-color: #93bee2;
+    border: 1px solid #364970;
     text-decoration: none;
 }
 
@@ -73,8 +73,8 @@ fieldset.message-strings input {
 
 .messageSourceString {
     padding: 0.5em 1em;
-    background-color: #8fb3d9;
-    border: 1px solid #7A9EC6;
+    background-color: #93bee2;
+    border: 1px solid #364970;
 }
 
 fieldset.two-column {
@@ -110,6 +110,7 @@ label {
 }
 
 
+
 /* XXX Just setting a fixed width until the rest of the layout is in place */
 
 #portal-column-content {
@@ -137,7 +138,7 @@ label {
 /* highlight on hover in table */
 
 table.rowNavigation tr:hover {
-    background-color: #8fb3d9;
+    background-color: #93bee2 !important;
     cursor:pointer;
 }
 table.rowNavigation th:hover {
@@ -179,25 +180,10 @@ table.rowNavigation th:hover {
 .priorityLow     { color: Black; }
 .priorityWontFix { color: Gray; }
 
-/* Portlet table definitions */
-
-.portletTable {    border-collapse: collapse;    border-left: 1px solid #7a9ec6;    border-bottom: 1px solid #7a9ec6;    margin: 0em 0em 1em 0em;}.portletTable th {    background-color: #8fb3d9;
-    color: White;    border-top: 1px solid #7a9ec6;    border-bottom: 1px solid #7a9ec6;    border-right: 1px solid #7a9ec6;    font-weight: normal;    padding: 0em 0.2em;
-    cursor: help;
-}
-
-.portletTable tr {
-    border-bottom: 1px solid #7a9ec6;
-}
-
-.portletTable td {    border-right: 1px solid #7a9ec6;    padding: 0.2em;    text-align: center;}.portletTable img {    vertical-align: middle;}
-
-
-
 /* Board-like comment CSS */
 
 .boardComment {
-    border: 1px solid #7A9EC6;
+    border: 1px solid #364970;
     margin-bottom: 1.5em;
     position: relative;
 }
@@ -210,9 +196,9 @@ table.rowNavigation th:hover {
 }
 
 .boardCommentDetails {
-    border: 1px solid #7A9EC6;
+    border: 1px solid #364970;
     border-style: none none solid none;
-    background-color: #8fb3d9;
+    background-color: #93bee2;
     padding: 0.5em 1em;
 }
 
@@ -225,9 +211,9 @@ table.rowNavigation th:hover {
 }
 
 .boardCommentActions {
-    border: 1px solid #7A9EC6;
+    border: 1px solid #364970;
     border-style: solid none none none;
-    background-color: #8fb3d9;
+    background-color: #93bee2;
     padding: 0.5em 1em 0 1em;
     text-align: right;
 }
