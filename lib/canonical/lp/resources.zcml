@@ -10,6 +10,7 @@
     <resource name="green-bar.png" file="images/green-bar.png" />
     <resource name="blue-bar.png" file="images/blue-bar.png" />
     <resource name="red-bar.png" file="images/red-bar.png" />
+    <resource name="dwelled-bar.png" file="images/dwelled-bar.png" />
 
     <resource name="info.gif" file="images/info.gif" />
     <resource name="info.png" file="images/info.png" />

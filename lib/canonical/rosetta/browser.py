@@ -62,24 +62,49 @@ class LanguageProducts:
     def products(self):
         for product in self._products:
             total = product.messageCount()
-            translated = product.currentCount(self.language.code) + \
-                product.rosettaCount(self.language.code)
+            currentCount = product.currentCount(self.language.code)
+            rosettaCount = product.rosettaCount(self.language.code)
+            updatesCount = product.updatesCount(self.language.code)
+            nonUpdatesCount = currentCount - updatesCount
+            translated = currentCount  + rosettaCount
             untranslated = total - translated
 
             try:
+                currentPercent = float(currentCount) / total * 100
+                rosettaPercent = float(rosettaCount) / total * 100
+                updatesPercent = float(updatesCount) / total * 100
+                nonUpdatesPercent = float (nonUpdatesCount) / total * 100
                 translatedPercent = float(translated) / total * 100
                 untranslatedPercent = float(untranslated) / total * 100
             except ZeroDivisionError:
                 # XXX: I think we will see only this case when we don't have
                 # anything to translate.
+                currentPercent = 0
+                rosettaPercent = 0
+                updatesPercent = 0
+                nonUpdatesPercent = 0
                 translatedPercent = 0
                 untranslatedPercent = 100
-            
+           
+            # NOTE: To get a 100% value:
+            # 1.- currentPercent + rosettaPercent + untranslatedPercent
+            # 2.- translatedPercent + untranslatedPercent 
+            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
+            # untranslatedPercent
             retdict = {
                 'name': product.name,
                 'title': product.title,
+                'poLen': total,
+                'poCurrentCount': currentCount,
+                'poRosettaCount': rosettaCount,
+                'poUpdatesCount' : updatesCount,
+                'poNonUpdatesCount' : nonUpdatesCount, 
                 'poTranslated': translated,
                 'poUntranslated': untranslated,
+                'poCurrentPercent': currentPercent,
+                'poRosettaPercent': rosettaPercent,
+                'poUpdatesPercent' : updatesPercent,
+                'poNonUpdatesPercent' : nonUpdatesPercent,
                 'poTranslatedPercent': translatedPercent,
                 'poUntranslatedPercent': untranslatedPercent,
             }
@@ -105,8 +130,17 @@ class LanguageTemplates:
             retdict = {
                 'name': template.name,
                 'title': template.title,
+                'poLen': len(template),
+                'poCurrentCount': 0,
+                'poRosettaCount': 0,
+                'poUpdatesCount' : 0,
+                'poNonUpdatesCount' : 0, 
                 'poTranslated': 0,
                 'poUntranslated': len(template),
+                'poCurrentPercent': 0,
+                'poRosettaPercent': 0,
+                'poUpdatesPercent' : 0,
+                'poNonUpdatesPercent' : 0,
                 'poTranslatedPercent': 0,
                 'poUntranslatedPercent': 100,
             }
@@ -116,19 +150,40 @@ class LanguageTemplates:
             except KeyError:
                 pass
             else:
-                poLength = len(poFile)
-                poTranslated = poFile.translatedCount()
-                poUntranslated = poFile.untranslatedCount()
+                total = len(template)
+                currentCount = poFile.currentCount
+                rosettaCount = poFile.rosettaCount
+                updatesCount = poFile.updatesCount
+                nonUpdatesCount = currentCount - updatesCount
+                translated = currentCount  + rosettaCount
+                untranslated = total - translated
 
-                # We use always len(template) because the POFile could have
-                # messagesets that are obsolete and they are not used to
-                # calculate the statistics
+                currentPercent = float(currentCount) / total * 100
+                rosettaPercent = float(rosettaCount) / total * 100
+                updatesPercent = float(updatesCount) / total * 100
+                nonUpdatesPercent = float (nonUpdatesCount) / total * 100
+                translatedPercent = float(translated) / total * 100
+                untranslatedPercent = float(untranslated) / total * 100
+
+                # NOTE: To get a 100% value:
+                # 1.- currentPercent + rosettaPercent + untranslatedPercent
+                # 2.- translatedPercent + untranslatedPercent 
+                # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
+                # untranslatedPercent
                 retdict.update({
-                    'poLength': poLength,
-                    'poTranslated' : poTranslated,
-                    'poUntranslated' : poUntranslated,
-                    'poTranslatedPercent' : float(poTranslated) / len(template) * 100,
-                    'poUntranslatedPercent' : float(poUntranslated) / len(template) * 100
+                    'poLen': total,
+                    'poCurrentCount': currentCount,
+                    'poRosettaCount': rosettaCount,
+                    'poUpdatesCount' : updatesCount,
+                    'poNonUpdatesCount' : nonUpdatesCount, 
+                    'poTranslated': translated,
+                    'poUntranslated': untranslated,
+                    'poCurrentPercent': currentPercent,
+                    'poRosettaPercent': rosettaPercent,
+                    'poUpdatesPercent' : updatesPercent,
+                    'poNonUpdatesPercent' : nonUpdatesPercent,
+                    'poTranslatedPercent': translatedPercent,
+                    'poUntranslatedPercent': untranslatedPercent,
                 })
 
             yield retdict
