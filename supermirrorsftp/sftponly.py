@@ -222,13 +222,64 @@ class Factory(factory.SSHFactory):
 
 
 class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
+    """Cred checker for getting public keys from launchpad.
+
+    It knows how to get the public keys from the authserver, and how to unmunge
+    usernames for baz.
+    """
     implements(ICredentialsChecker)
 
     def __init__(self, authserverURL):
         self.authserver = TwistedAuthServer(authserverURL)
 
+    def _unmungeUsername(username):
+        """Unmunge usernames, because baz doesn't work with @ in usernames.
+
+        Examples:
+
+        Usernames that aren't munged are unaffected.
+
+            >>> unmunge = PublicKeyFromLaunchpadChecker._unmungeUsername
+            >>> unmunge('foo@bar')
+            'foo@bar'
+            >>> unmunge('foo_bar@baz')
+            'foo_bar@baz'
+
+        Anything without an underscore is also not munged, and so unaffected
+        (even though they aren't valid usernames).
+
+            >>> unmunge('foo-bar')
+            'foo-bar'
+
+        Munged usernames have the last underscore converted.
+
+            >>> unmunge('foo_bar')
+            'foo@bar'
+            >>> unmunge('foo_bar_baz')
+            'foo_bar@baz'
+        """
+        
+        if '@' in username:
+            # Not munged, don't try to unmunge it.
+            return username
+
+        underscore = username.rfind('_')
+        if underscore == -1:
+            # No munging, return as-is.  (Although with an _ or a @, it won't
+            # auth, but let's keep it simple).
+            return username
+
+        # Replace the final underscore with an at sign.
+        unmunged = username[:underscore] + '@' + username[underscore+1:]
+        return unmunged
+    _unmungeUsername = staticmethod(_unmungeUsername)
+
     def checkKey(self, credentials):
-        authorizedKeys = self.authserver.getSSHKeys(credentials.username)
+        # Query the authserver with an unmunged username
+        username = self._unmungeUsername(credentials.username)
+        authorizedKeys = self.authserver.getSSHKeys(username)
+
+        # Add callback to try find the authorised key
         authorizedKeys.addCallback(self._cb_hasAuthorisedKey, credentials)
         return authorizedKeys
                 
@@ -242,3 +293,16 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
 
         return False
         
+    def requestAvatarId(self, credentials):
+        # Do everything the super class does, plus unmunge the username if the
+        # key works.
+        d = SSHPublicKeyDatabase.requestAvatarId(self, credentials)
+        d.addCallback(self._unmungeUsername)
+        return d
+
+
+if __name__ == "__main__":
+    # Run doctests.
+    import doctest
+    doctest.testmod()
+
