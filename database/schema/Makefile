@@ -48,11 +48,13 @@ create:
 	@if [ "$$((`psql -l | grep ${TEST_DBNAME} | wc -l`))" = '0' ]; \
 	    then createdb -E UNICODE ${TEST_DBNAME}; \
 	    else echo ${TEST_DBNAME} already exists; \
-         fi
-	@ echo
-	@ echo "* Installing PL/PythonU, or fall back to PL/pgSQL"
-	createlang -d ${TEST_DBNAME} plpythonu || \
-	    createlang -d ${TEST_DBNAME} plpgsql
+	fi
+	@ if ! `createlang -l ${TEST_DBNAME} | grep -qs plpythonu`; then \
+		echo "* Installing PL/PythonU, or fall back to PL/pgSQL"; \
+		createlang -d ${TEST_DBNAME} plpythonu || \
+	    	createlang -d ${TEST_DBNAME} plpgsql; \
+		echo; \
+	fi
 	@ echo
 	@ echo "* Creating functions"
 	psql -d ${TEST_DBNAME} -f trusted.sql
