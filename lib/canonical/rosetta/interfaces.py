@@ -138,7 +138,6 @@ class IPOFile(Interface):
 
     header = Attribute("The header of this .po file")
 
-    # XXX: not in the database
     headerFuzzy = Attribute("If the header is fuzzy or not")
 
     def __len__():

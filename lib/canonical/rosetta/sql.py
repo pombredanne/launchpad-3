@@ -203,7 +203,8 @@ class RosettaPOFile(SQLBase):
         ForeignKey(name='language', foreignKey='RosettaLanguage', dbName='language',
             notNull=True),
         StringCol(name='topComment', dbName='topcomment', notNull=True),
-        StringCol(name='header', dbName='header', notNull=True)
+        StringCol(name='header', dbName='header', notNull=True),
+        BoolCol(name='headerFuzzy', dbName='fuzzyheader', notNull=True)
         # XXX: missing fields
     ]
 

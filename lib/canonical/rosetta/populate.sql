@@ -107,8 +107,9 @@ VALUES ('cy',
         'Welsh');
 
 
-INSERT INTO POFile (potemplate, language, topcomment, header, lasttranslator,
-                    currentcount, updatescount, rosettacount, pluralforms)
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+		    lasttranslator, currentcount, updatescount, rosettacount,
+		    pluralforms)
 VALUES ((SELECT id FROM POTemplate WHERE name = 'evolution-1.5.90'),
         (SELECT id FROM Language WHERE code = 'cy'),
 	' traducción de es.po al Spanish\n'
@@ -136,6 +137,7 @@ VALUES ((SELECT id FROM POTemplate WHERE name = 'evolution-1.5.90'),
         'Report-Msgid-Bugs-To: serrador@hispalinux.es\n'
         'X-Generator: KBabel 1.3.1\n'
         'Plural-Forms:  nplurals=2; plural=(n != 1);\n',
+	FALSE,
 	(SELECT id FROM Person WHERE presentationname = 'Joe Example'),
 	2, 0, 1, 2);
 
