@@ -1198,7 +1198,8 @@ class TemplateUpload:
                             base64_file = base64.encodestring(file.read())
                             importer = IPerson(self.request.principal, None)
 
-                            pofile = POFile(potemplate=self.context,
+                            pofile = POFile(
+                                potemplateID=self.context.id,
                                 language=language,
                                 fuzzyheader=True,
                                 currentcount=0,
