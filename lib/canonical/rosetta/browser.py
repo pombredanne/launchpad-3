@@ -260,95 +260,105 @@ class ViewProduct:
 
         self.languages = request_languages(self.request)
 
-    def thereAreTemplates(self):
-        return len(list(self.context.poTemplates())) > 0
+    def templates(self):
+        templates = self.context.poTemplates()
 
-    def languageTemplates(self):
-        if self.languages:
-            for language in self.languages:
-                yield LanguageTemplates(language, self.context.poTemplates())
+        if templates:
+            for template in templates:
+                yield TemplateLanguages(template, self.languages)
         else:
             raise RuntimeError(
-                "Can't generate LanguageTemplates without languages.")
+                "Can't generate TemplateLanguages without templates.")
 
 
-class LanguageTemplates:
-    def __init__(self, language, templates):
-        self.language = language
-        self._templates = templates
+class TemplateLanguages:
+    """Support class for ViewProduct."""
 
-    def templates(self):
-        for template in self._templates:
-            retdict = {
-                'name': template.name,
-                'title': template.title,
-                'poLen': len(template),
-                'poCurrentCount': 0,
-                'poRosettaCount': 0,
-                'poUpdatesCount' : 0,
-                'poNonUpdatesCount' : 0,
-                'poTranslated': 0,
-                'poUntranslated': len(template),
-                'poCurrentPercent': 0,
-                'poRosettaPercent': 0,
-                'poUpdatesPercent' : 0,
-                'poNonUpdatesPercent' : 0,
-                'poTranslatedPercent': 0,
-                'poUntranslatedPercent': 100,
-            }
+    def __init__(self, template, languages):
+        self.template = template
+        self._languages = languages
 
-            try:
-                poFile = template.poFile(self.language.code)
-            except KeyError:
-                pass
-            else:
-                total = len(template)
-                currentCount = poFile.currentCount()
-                rosettaCount = poFile.rosettaCount()
-                updatesCount = poFile.updatesCount()
-                nonUpdatesCount = currentCount - updatesCount
-                translated = currentCount  + rosettaCount
-                untranslated = total - translated
+        self.name = self.template.name
+        self.title = self.template.title
 
-                try:
-                    currentPercent = float(currentCount) / total * 100
-                    rosettaPercent = float(rosettaCount) / total * 100
-                    updatesPercent = float(updatesCount) / total * 100
-                    nonUpdatesPercent = float (nonUpdatesCount) / total * 100
-                    translatedPercent = float(translated) / total * 100
-                    untranslatedPercent = float(untranslated) / total * 100
-                except ZeroDivisionError:
-                    # XXX: I think we will see only this case when we don't have
-                    # anything to translate.
-                    currentPercent = 0
-                    rosettaPercent = 0
-                    updatesPercent = 0
-                    nonUpdatesPercent = 0
-                    translatedPercent = 0
-                    untranslatedPercent = 100
+    def languages(self):
+        for language in self._languages:
+            yield self._language(language)
 
-                # NOTE: To get a 100% value:
-                # 1.- currentPercent + rosettaPercent + untranslatedPercent
-                # 2.- translatedPercent + untranslatedPercent
-                # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
-                # untranslatedPercent
-                retdict.update({
-                    'poLen': total,
-                    'poCurrentCount': currentCount,
-                    'poRosettaCount': rosettaCount,
-                    'poUpdatesCount' : updatesCount,
-                    'poNonUpdatesCount' : nonUpdatesCount,
-                    'poTranslated': translated,
-                    'poUntranslated': untranslated,
-                    'poCurrentPercent': currentPercent,
-                    'poRosettaPercent': rosettaPercent,
-                    'poUpdatesPercent' : updatesPercent,
-                    'poNonUpdatesPercent' : nonUpdatesPercent,
-                    'poTranslatedPercent': translatedPercent,
-                    'poUntranslatedPercent': untranslatedPercent,
-                })
+    def _language(self, language):
+        retdict = {
+            'name': language.englishName,
+            'title': self.title,
+            'code' : language.code,
+            'poLen': len(self.template),
+            'hasPOFile' : False,
+            'poCurrentCount': 0,
+            'poRosettaCount': 0,
+            'poUpdatesCount' : 0,
+            'poNonUpdatesCount' : 0,
+            'poTranslated': 0,
+            'poUntranslated': len(self.template),
+            'poCurrentPercent': 0,
+            'poRosettaPercent': 0,
+            'poUpdatesPercent' : 0,
+            'poNonUpdatesPercent' : 0,
+            'poTranslatedPercent': 0,
+            'poUntranslatedPercent': 100,
+        }
 
-            yield retdict
+        try:
+            poFile = self.template.poFile(language.code)
+        except KeyError:
+            return retdict
+
+        total = len(self.template)
+        currentCount = poFile.currentCount()
+        rosettaCount = poFile.rosettaCount()
+        updatesCount = poFile.updatesCount()
+        nonUpdatesCount = currentCount - updatesCount
+        translated = currentCount  + rosettaCount
+        untranslated = total - translated
+
+        try:
+            currentPercent = float(currentCount) / total * 100
+            rosettaPercent = float(rosettaCount) / total * 100
+            updatesPercent = float(updatesCount) / total * 100
+            nonUpdatesPercent = float (nonUpdatesCount) / total * 100
+            translatedPercent = float(translated) / total * 100
+            untranslatedPercent = float(untranslated) / total * 100
+        except ZeroDivisionError:
+            # XXX: I think we will see only this case when we don't have
+            # anything to translate.
+            currentPercent = 0
+            rosettaPercent = 0
+            updatesPercent = 0
+            nonUpdatesPercent = 0
+            translatedPercent = 0
+            untranslatedPercent = 100
+
+        # NOTE: To get a 100% value:
+        # 1.- currentPercent + rosettaPercent + untranslatedPercent
+        # 2.- translatedPercent + untranslatedPercent
+        # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
+        # untranslatedPercent
+        retdict.update({
+            'hasPOFile' : True,
+            'poLen': total,
+            'poCurrentCount': currentCount,
+            'poRosettaCount': rosettaCount,
+            'poUpdatesCount' : updatesCount,
+            'poNonUpdatesCount' : nonUpdatesCount,
+            'poTranslated': translated,
+            'poUntranslated': untranslated,
+            'poCurrentPercent': currentPercent,
+            'poRosettaPercent': rosettaPercent,
+            'poUpdatesPercent' : updatesPercent,
+            'poNonUpdatesPercent' : nonUpdatesPercent,
+            'poTranslatedPercent': translatedPercent,
+            'poUntranslatedPercent': untranslatedPercent,
+        })
+
+        return retdict
 
 
 class ViewPOTemplate:
