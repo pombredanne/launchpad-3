@@ -31,8 +31,6 @@ default:
 launchpad launchpad_test: %:
 	@ echo '* create the $* database tables'
 	psql --file launchpad.sql $*
-	@ echo '* populate database $* with the schema information'
-	psql --file schemas.sql $*
 
 dropdb-launchpad dropdb-launchpad_test: dropdb-%: +%-db
 	@ echo '* remove the $* database'

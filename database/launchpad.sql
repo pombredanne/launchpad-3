@@ -503,7 +503,8 @@ CREATE TABLE ArchNamespace (
   archarchive            integer NOT NULL REFERENCES ArchArchive,
   category               text NOT NULL,
   branch                 text,
-  version                text
+  version                text,
+  visible                boolean NOT NULL
 );
 
 
@@ -517,7 +518,6 @@ CREATE TABLE Branch (
   archnamespace          integer NOT NULL REFERENCES ArchNamespace,
   title                  text NOT NULL,
   description            text NOT NULL,
-  visible                boolean NOT NULL,
   owner                  integer REFERENCES Person
 );
 
