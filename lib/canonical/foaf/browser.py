@@ -100,10 +100,10 @@ class PeopleSearchView(object):
 
     def _findPeopleByName(self, name):
         name = name.replace('%', '%%')
-        query = quote('%%'+ name.upper() + '%%')
-        return Person.select("""UPPER(displayname) LIKE %s
-        OR UPPER(teamdescription) LIKE %s ORDER by displayname"""%(query,
-                                                                   query))
+        name = quote('%%'+ name.upper() + '%%')
+        query = '''displayname ILIKE %s OR 
+                   teamdescription ILIKE %s''' % (name, name)
+        return Person.select(query, orderBy='displayname')
 
 
 class PeopleAddView(object):
