@@ -90,26 +90,25 @@ class Distribution(SQLBase):
 
     def bugCounter(self):
         counts = []
-        
+
         clauseTables = ("VSourcePackageInDistro",
                         "SourcePackage")
         severities = [
             dbschema.BugAssignmentStatus.NEW,
-            dbschema.BugAssignmentStatus.CLOSED,
-            dbschema.BugAssignmentStatus.OPEN,
-        ]
-        
+            dbschema.BugAssignmentStatus.ACCEPTED,
+            dbschema.BugAssignmentStatus.REJECTED,
+            dbschema.BugAssignmentStatus.FIXED]
+
         query = ("sourcepackagebugassignment.sourcepackage = sourcepackage.id AND "
                  "sourcepackage.sourcepackagename = vsourcepackageindistro.sourcepackagename AND "
                  "vsourcepackageindistro.distro = %s AND "
-                 "sourcepackagebugassignment.bugstatus = %i"
-                 )
+                 "sourcepackagebugassignment.bugstatus = %i")
 
         for severity in severities:
             query = query %(quote(self.id), severity)
             count = SourcePackageBugAssignment.select(query, clauseTables=clauseTables).count()
             counts.append(count)
-            
+
         return counts
 
     bugCounter = property(bugCounter)
@@ -240,8 +239,9 @@ class DistroRelease(SQLBase):
                         "SourcePackage")
         severities = [
             dbschema.BugAssignmentStatus.NEW,
-            dbschema.BugAssignmentStatus.OPEN,
-            dbschema.BugAssignmentStatus.CLOSED,
+            dbschema.BugAssignmentStatus.ACCEPTED,
+            dbschema.BugAssignmentStatus.FIXED,
+            dbschema.BugAssignmentStatus.REJECTED
         ]
         
         _query = ("sourcepackagebugassignment.sourcepackage = sourcepackage.id AND "

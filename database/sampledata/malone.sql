@@ -112,7 +112,7 @@ VALUES (
     (SELECT id FROM Bug WHERE name='bob'),
     (SELECT id FROM SourcePackage WHERE sourcepackagename =
 	(SELECT id FROM SourcePackagename WHERE name = 'mozilla-firefox')),
-    2, 4, 2,
+    20, 4, 2,
     (SELECT id FROM BinaryPackage WHERE version='0.8' AND binarypackagename = (
         SELECT id FROM BinaryPackageName WHERE name='mozilla-firefox'
         )),
@@ -137,7 +137,7 @@ INSERT INTO ProductBugAssignment (
 VALUES (
     (SELECT id FROM Bug WHERE name='blackhole'),
     (SELECT id FROM Product WHERE name='thunderbird'),
-    1, 2, 2,
+    10, 2, 2,
     (SELECT id FROM Person WHERE displayname='Sample Person')
 );
 

@@ -53,19 +53,17 @@
             </tr>
             <tr>
               <td>
-                <select name="status" size="5" multiple
-                        tal:define="statuses python:list(view.statuses())">
+                <select name="status" size="5" multiple>
                   <option value="all"
                           tal:condition="python:request.has_key('search')"
                           tal:attributes="selected request/htmlform:status/selected/all">All</option>
                   <option value="all"
                           tal:condition="python:not request.has_key('search')"
                           selected>All</option>
-                  <span tal:omit-tag="" tal:repeat="i python:range(len(statuses))">
-                    <option tal:define="value python:i + 1;
-                                        strvalue python:str(i + 1)"
-                            tal:content="python:statuses[i].title"
-                            tal:attributes="value value;
+                  <span tal:omit-tag="" tal:repeat="status view/statuses">
+                    <option tal:define="strvalue python:str(status.value)"
+                            tal:content="status/title"
+                            tal:attributes="value status/value;
                                             selected request/htmlform:status/selected/?strvalue">New</option>
                   </span>
                 </select>

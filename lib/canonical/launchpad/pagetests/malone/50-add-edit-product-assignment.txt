@@ -30,7 +30,7 @@
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.bugstatus"
   ... 
-  ... Closed
+  ... Fixed
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.bugstatus-empty-marker"
   ... 
@@ -72,7 +72,8 @@
   <input type="text" name="field.product" value="3"
   ...
   <select name="field.bugstatus" size="1" >
-  <option selected="selected" value="Closed">Closed</option>
+  ...
+  <option selected="selected" value="Fixed">Fixed</option>
   ...
   <select name="field.priority" size="1" >
   <option selected="selected" value="High">High</option>

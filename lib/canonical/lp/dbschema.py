@@ -107,7 +107,7 @@ class ItemsDescriptor:
 
     def __get__(self, inst, cls=None):
         return OrderedMapping(cls._items)
-    
+
 
 class Item:
     """An item in an enumerated type.
@@ -193,24 +193,24 @@ class ManifestEntryType(DBSchema):
     that branch into the package.
     """
 
-    TAR = Item(1, '''
+    TAR = Item(1, """
         A Tar File
 
         This branch will be tarred up and installed in the source
         package as a tar file. Typically, the package build system
         will know how to untar that code and use it during the build.
-        ''')
+        """)
 
-    PATCH = Item(2, '''
+    PATCH = Item(2, """
         Patch File
 
         This branch will be brought into the source file as a patch
         against another branch. Usually, the patch is stored in the
         "patches" directory, then applied at build time by the source
         package build scripts.
-        ''')
+        """)
 
-    COPY = Item(3, '''
+    COPY = Item(3, """
         Copied Source code
 
         This branch will simply be copied into the source package at
@@ -218,23 +218,23 @@ class ManifestEntryType(DBSchema):
         package includes chunks of code such as libraries or reference
         implementation code, and builds it locally for static linking
         rather than depending on a system-installed shared library.
-        ''')
+        """)
 
-    DIR = Item(4, '''
+    DIR = Item(4, """
         A Directory
 
         This is a special case of Manifest Entry Type, and tells
         sourcerer simply to create an empty directory with the given name.
-        ''')
+        """)
 
-    IGNORE = Item(5, '''
+    IGNORE = Item(5, """
         An Item To Ignore
 
         This manifest entry type tells sourcerer to ignore something
         in the source package. For example, there might be a file which
         looks like a patch but isn't one (a shell script called xxx.patch
         is typical).
-        ''')
+        """)
 
 
 class Packaging(DBSchema):
@@ -246,22 +246,22 @@ class Packaging(DBSchema):
     schema is used in the Packaging table.
     """
 
-    PRIME = Item(1, '''
+    PRIME = Item(1, """
         Primary Product
 
         This is the primary product packaged in this source package. For
         example, a source package "apache2" would have a "prime" Packaging
         relationship with the "apache2" product from the Apache Project.
         The product and package don't have to have the same name.
-        ''')
+        """)
 
-    INCLUDES = Item(2, '''
+    INCLUDES = Item(2, """
         SourcePackage Includes Product
 
         This source package includes some part or all of the product. For
         example, the "cadaver" source package has an "includes" Packaging
         relationship with the libneon product.
-        ''')
+        """)
 
 ##XXX: (gpg+dbschema) cprov 20041004
 ## the data structure should be rearranged to support 4 field
@@ -281,25 +281,25 @@ class GPGKeyAlgorithms(DBSchema):
 
     """
 
-    R = Item(1, '''
+    R = Item(1, """
         R
 
-        RSA''')
+        RSA""")
 
-    g = Item(16, '''
+    g = Item(16, """
         g
 
-        ElGamal''')
+        ElGamal""")
 
-    D = Item(17, '''
+    D = Item(17, """
         D
 
-        DSA''')
+        DSA""")
 
-    G = Item(20, '''
+    G = Item(20, """
         G
 
-        ElGamal, compromised''')
+        ElGamal, compromised""")
 
 
 class BranchRelationships(DBSchema):
@@ -311,7 +311,7 @@ class BranchRelationships(DBSchema):
     relationships between those branches.
     """
 
-    TRACKS = Item(1, '''
+    TRACKS = Item(1, """
         Subject Branch Tracks Object Branch
 
         The source branch "tracks" the destination branch. This means that
@@ -320,16 +320,16 @@ class BranchRelationships(DBSchema):
         package, and there is an upstream for that fix-branch, then we will
         try to make our fix-branch "track" the upstream fix, so that our
         package inherits the latest fixes.
-        ''')
+        """)
 
-    CONTINUES = Item(2, '''
+    CONTINUES = Item(2, """
         Subject Branch is a continuation of Object Branch
 
         The term "continuation" is an Arch term meaning that the branch was
         tagged from another one.
-        ''')
+        """)
 
-    RELEASES = Item(3, '''
+    RELEASES = Item(3, """
         Subject Branch is a "Release Branch" of Object Branch
 
         A "release branch" is a branch that is designed to capture the extra
@@ -342,9 +342,9 @@ class BranchRelationships(DBSchema):
         example files created by the Gnu Automake and Autoconf system,
         before tarring up the directory and pushing that tarball out as the
         release. Those extra files are included in a release branch.
-        ''')
+        """)
 
-    FIXES = Item(4, '''
+    FIXES = Item(4, """
         Subject Branch is a fix for Object Branch
 
         This relationship indicates that Subject Branch includes a fix
@@ -354,18 +354,18 @@ class BranchRelationships(DBSchema):
         Subject will usually include information about the issue and the
         fix. Such fixes are usually merged when the fix is considered
         stable.
-        ''')
+        """)
 
-    PORTS = Item(5, '''
+    PORTS = Item(5, """
         Subject Branch is a porting branch of B
 
         This relationship indicates that Subject Branch is a port of
         Object Branch to a different architecture or operating system.
         Such changes will usually be merged back at a future date when
         they are considered stable.
-        ''')
+        """)
 
-    ENHANCES = Item(6, '''
+    ENHANCES = Item(6, """
         Subject Branch contains a new feature for Object Branch
 
         This relationship indicates that Subject Branch is a place
@@ -374,9 +374,9 @@ class BranchRelationships(DBSchema):
         at some future date when the code is considered stable.
         Subject The Branch.description will usually describe the
         feature being implemented.
-        ''')
+        """)
 
-    FORKS = Item(7, '''
+    FORKS = Item(7, """
         The Subject Branch is a For of the Object Branch
 
         Sometimes the members of an open source project cannot agree on
@@ -384,7 +384,7 @@ class BranchRelationships(DBSchema):
         this case, one group will "fork" the codebase and start work on a
         new version of the product which will likely not be merged. That
         new version is a "fork" of the original code.
-        ''')
+        """)
 
 
 class EmailAddressStatus(DBSchema):
@@ -396,7 +396,7 @@ class EmailAddressStatus(DBSchema):
     for example.
     """
 
-    NEW = Item(1, '''
+    NEW = Item(1, """
         New Email Address
 
         This email address has had no validation associated with it. It
@@ -404,25 +404,25 @@ class EmailAddressStatus(DBSchema):
         it as their own, or because we have stored an email message or
         arch changeset including that email address and have created
         a phantom person and email address to record it.
-        ''')
+        """)
 
-    VALIDATED = Item(2, '''
+    VALIDATED = Item(2, """
         Validated Email Address
 
         We have proven that the person associated with this email address
         can read email sent to this email address, by sending a token
         to that address and getting the appropriate response from that
         person.
-        ''')
+        """)
 
-    OLD = Item(3, '''
+    OLD = Item(3, """
         Old Email Address
 
         The email address was validated for this person, but is now no
         longer accessible or in use by them. We should not use this email
         address to login that person, nor should we associate new incoming
         content from that email address with that person.
-        ''')
+        """)
 
 class MembershipRole(DBSchema):
     """Membership Role
@@ -432,20 +432,20 @@ class MembershipRole(DBSchema):
     have a specific role. These are the kind of roles they could have.
     """
 
-    ADMIN = Item(1, '''
+    ADMIN = Item(1, """
         Administrator
 
         The person is an administrator of this team. Typically that means
         that they can do anything that the owner of the team can do, it is
         a way for the owner to delegate authority in the team.
-        ''')
+        """)
 
-    MEMBER = Item(2, '''
+    MEMBER = Item(2, """
         Member
 
         The person is a normal member of the team, and can view and edit
         objects associated with that team accordingly.
-        ''')
+        """)
 
 class MembershipStatus(DBSchema):
     """Membership Status
@@ -457,21 +457,21 @@ class MembershipStatus(DBSchema):
     member of the team, they do not need to have a membership record.
     """
 
-    PROPOSED = Item(1, '''
+    PROPOSED = Item(1, """
         Proposed Member
 
         The person has been proposed or has proposed themselves as a
         member of this team. This status conveys no access rights or
         privileges to the person.
-        ''')
+        """)
 
-    CURRENT = Item(2, '''
+    CURRENT = Item(2, """
         Current Member
 
         This person is currently a member of the team. This status means
         that the person will have full access as a member or admin, depending
         on their role.
-        ''')
+        """)
 
 
 class HashAlgorithms(DBSchema):
@@ -484,13 +484,13 @@ class HashAlgorithms(DBSchema):
     is no longer trusted at some time we will add other algorithms.
     """
 
-    SHA1 = Item(1, '''
+    SHA1 = Item(1, """
         The SHA-1 Digest Algorithm
 
         This algorithm is specified by the US-NIST and is used as part
         of TLS and other common cryptographic protocols. It is a 168-bit
         digest algorithm.
-        ''')
+        """)
 
 
 class ProjectRelationship(DBSchema):
@@ -501,22 +501,22 @@ class ProjectRelationship(DBSchema):
     two open source projects.
     """
 
-    AGGREGATES = Item(1, '''
+    AGGREGATES = Item(1, """
         Subject Project Aggregates Object Project
 
         Some open source projects are in fact an aggregation of several
         other projects. For example, the Gnome Project aggregates
         Gnumeric, Abiword, EOG, and many other open source projects.
-        ''')
+        """)
 
-    SIMILAR = Item(2, '''
+    SIMILAR = Item(2, """
         Subject Project is Similar to Object Project
 
         Often two different groups will start open source projects
         that are similar to one another. This relationship is used
         to describe projects that are similar to other projects in
         the system.
-        ''')
+        """)
 
 
 class DistributionReleaseState(DBSchema):
@@ -529,19 +529,19 @@ class DistributionReleaseState(DBSchema):
     frozen to current to supported to obsolete, in a linear fashion.
     """
 
-    EXPERIMENTAL = Item(1, '''
+    EXPERIMENTAL = Item(1, """
         Experimental
 
         This distrorelease contains code that is far from active
         release planning or management. Typically, distroreleases
         that are beyond the current "development" release will be
         marked as "experimental". We create those so that people
-        have a place to upload code which is expected to be part 
+        have a place to upload code which is expected to be part
         of that distant future release, but which we do not want
         to interfere with the current development release.
-        ''')
+        """)
 
-    DEVELOPMENT = Item(2, '''
+    DEVELOPMENT = Item(2, """
         Active Development
 
         The distrorelease that is under active current development
@@ -549,38 +549,38 @@ class DistributionReleaseState(DBSchema):
         one active development release at a time. When that freezes
         and releases, the next release along switches from "experimental"
         to "development".
-        ''')
+        """)
 
-    FROZEN = Item(3, '''
+    FROZEN = Item(3, """
         Pre-release Freeze
 
         When a distrorelease is near to release the administrators
         will freeze it, which typically means that new package uploads
-        require significant review before being accepted into the 
+        require significant review before being accepted into the
         release.
-        ''')
+        """)
 
-    CURRENT = Item(4, '''
+    CURRENT = Item(4, """
         Current Stable Release
 
         This is the latest stable release. Normally there will only
         be one of these for a given distribution.
-        ''')
+        """)
 
-    SUPPORTED = Item(5, '''
+    SUPPORTED = Item(5, """
         Supported
 
         This distrorelease is still supported, but it is no longer
         the current stable release. In Ubuntu we normally support
         a distrorelease for 2 years from release.
-        ''')
+        """)
 
-    OBSOLETE = Item(6, '''
+    OBSOLETE = Item(6, """
         Obsolete
 
         This distrorelease is no longer supported, it is considered
         obsolete and should not be used on production systems.
-        ''')
+        """)
 
 
 class UpstreamFileType(DBSchema):
@@ -592,37 +592,37 @@ class UpstreamFileType(DBSchema):
     gives the type of files that we know about.
     """
 
-    CODETARBALL = Item(1, '''
+    CODETARBALL = Item(1, """
         Code Release Tarball
 
         This file contains code in a compressed package like
         a tar.gz or tar.bz or .zip file.
-        ''')
+        """)
 
-    README = Item(2, '''
+    README = Item(2, """
         README File
 
         This is a README associated with the upstream
         release. It might be in .txt or .html format, the
         filename would be an indicator.
-        ''')
+        """)
 
-    RELEASENOTES = Item(3, '''
+    RELEASENOTES = Item(3, """
         Release Notes
 
         This file contains the release notes of the new
         upstream release. Again this could be in .txt or
         in .html format.
-        ''')
+        """)
 
-    CHANGELOG = Item(4, '''
+    CHANGELOG = Item(4, """
         ChangeLog File
 
         This file contains information about changes in this
         release from the previous release in the series. This
         is usually not a detailed changelog, but a high-level
         summary of major new features and fixes.
-        ''')
+        """)
 
 
 class SourcePackageFormat(DBSchema):
@@ -633,25 +633,25 @@ class SourcePackageFormat(DBSchema):
     package format that we understand.
     """
 
-    DPKG = Item(1, '''
+    DPKG = Item(1, """
         The DEB Format
 
         This is the source package format used by Ubuntu, Debian, Linspire
         and similar distributions.
-        ''')
+        """)
 
-    RPM = Item(2, '''
+    RPM = Item(2, """
         The RPM Format
 
         This is the format used by Red Hat, Mandrake, SUSE and other similar
         distributions.
-        ''')
+        """)
 
-    EBUILD = Item(3, '''
+    EBUILD = Item(3, """
         The Ebuild Format
 
         This is the source package format used by Gentoo.
-        ''')
+        """)
 
 
 class SourcePackageUrgency(DBSchema):
@@ -663,40 +663,40 @@ class SourcePackageUrgency(DBSchema):
     for source package urgency.
     """
 
-    LOW = Item(1, '''
+    LOW = Item(1, """
         Low Urgency
 
         This source package release does not contain any significant or
         important updates, it might be a cleanup or documentation update
         fixing typos and speling errors, or simply a minor upstream
         update.
-        ''')
+        """)
 
-    MEDIUM = Item(2, '''
+    MEDIUM = Item(2, """
         Medium Urgency
 
         This package contains updates that are worth considering, such
         as new upstream or packaging features, or significantly better
         documentation.
-        ''')
+        """)
 
-    HIGH = Item(3, '''
+    HIGH = Item(3, """
         Very Urgent
 
         This update contains updates that fix security problems or major
         system stability problems with previous releases of the package.
         Administrators should urgently evaluate the package for inclusion
         in their archives.
-        ''')
+        """)
 
-    EMERGENCY = Item(4, '''
+    EMERGENCY = Item(4, """
         Critically Urgent
 
         This release contains critical security or stability fixes that
         affect the integrity of systems using previous releases of the
         source package, and should be installed in the archive as soon
         as possible after appropriate review.
-        ''')
+        """)
 
 
 class SourcePackageFileType(DBSchema):
@@ -708,53 +708,53 @@ class SourcePackageFileType(DBSchema):
     documents the files we know about.
     """
 
-    EBUILD = Item(1, '''
+    EBUILD = Item(1, """
         Ebuild File
 
         This is a Gentoo Ebuild, the core file that Gentoo uses as a source
         package release. Typically this is a shell script that pulls in the
         upstream tarballs, configures them and builds them into the appropriate
         locations.
-        ''')
+        """)
 
-    SRPM = Item(2, '''
+    SRPM = Item(2, """
         Source RPM
 
         This is a Source RPM, a normal RPM containing the needed source code
         to build binary packages. It would include the Spec file as well as
         all control and source code files.
-        ''')
+        """)
 
-    DSC = Item(3, '''
+    DSC = Item(3, """
         DSC File
 
         This is a DSC file containing the Ubuntu source package description,
         which in turn lists the orig.tar.gz and diff.tar.gz files used to make
         up the package.
-        ''')
+        """)
 
-    ORIG = Item(4, '''
+    ORIG = Item(4, """
         Orig Tarball
 
         This file is an Ubuntu "orig" file, typically an upstream tarball or
         other lightly-modified upstreamish thing.
-        ''')
+        """)
 
-    DIFF = Item(5, '''
+    DIFF = Item(5, """
         Diff File
 
         This is an Ubuntu "diff" file, containing changes that need to be made
         to upstream code for the packaging on Ubuntu. Typically this diff
         creates additional directories with patches and documentation used
         to build the binary packages for Ubuntu.
-        ''')
+        """)
 
-    TARBALL = Item(6, '''
+    TARBALL = Item(6, """
         Tarball
 
         This is a tarball, usually of a mixture of Ubuntu and upstream code,
         used in the build process for this source package.
-        ''')
+        """)
 
 
 class TranslationPriority(DBSchema):
@@ -771,28 +771,28 @@ class TranslationPriority(DBSchema):
     subscription to a project, to determine where it shows up on his list.
     """
 
-    HIGH = Item(1, '''
+    HIGH = Item(1, """
         High
 
         This translation should be shown on any summary list of
         translations in the relevant context. For example, 'high' priority
         projects show up on the home page of a TranslationEffort or Project
         in Rosetta.
-        ''')
+        """)
 
-    MEDIUM = Item(2, '''
+    MEDIUM = Item(2, """
         Medium
 
         A medium priority POTemplate should be shown on longer lists and
         dropdowns lists of POTemplates in the relevant context.
-        ''')
+        """)
 
-    LOW = Item(3, '''
+    LOW = Item(3, """
         Low
 
         A low priority POTemplate should only show up if a comprehensive
         search or complete listing is requested by the user.
-        ''')
+        """)
 
 class DistroReleaseQueueStatus(DBSchema):
     """Distro Release Queue Status
@@ -804,15 +804,15 @@ class DistroReleaseQueueStatus(DBSchema):
     and SourcePackagePublishing tables.
     """
 
-    UNCHECKED = Item(1, '''
+    UNCHECKED = Item(1, """
         Unchecked
 
         This upload has been checked enough to get it into the database but
         has yet to be checked for new binary packages, mismatched overrides
         or similar.
-        ''')
+        """)
 
-    NEW = Item(2, '''
+    NEW = Item(2, """
         New
 
         This upload is either a brand-new source package or contains a binary
@@ -821,9 +821,9 @@ class DistroReleaseQueueStatus(DBSchema):
         accepts or rejects the upload. If the upload is accepted then
         entries will be made in the overrides tables and further uploads
         will bypass this state
-        ''')
+        """)
 
-    UNAPPROVED = Item(3, '''
+    UNAPPROVED = Item(3, """
         Unapproved
 
         If a DistroRelease is frozen or locked out of ordinary updates then
@@ -831,25 +831,25 @@ class DistroReleaseQueueStatus(DBSchema):
         technical point of view; it has yet to be approved for inclusion in
         this DistroRelease. One use of this state may be for security releases
         where you want the security team of a DistroRelease to approve uploads.
-        ''')
+        """)
 
-    BYHAND = Item(4, '''
+    BYHAND = Item(4, """
         ByHand
 
         If an upload contains files which are not stored directly into the
         pool tree (I.E. not .orig.tar.gz .tar.gz .diff.gz .dsc .deb or .udeb)
         then the package must be processed by hand. This may involve unpacking
         a tarball somewhere special or similar.
-        ''')
+        """)
 
-    ACCEPTED = Item(5, '''
+    ACCEPTED = Item(5, """
         Accepted
 
         An upload in this state has passed all the checks required of it and
         is ready to have its publishing records created.
-        ''')
+        """)
 
-    DONE = Item(7, '''
+    DONE = Item(7, """
         Done
 
         An upload in this state has had its publishing records created
@@ -857,9 +857,9 @@ class DistroReleaseQueueStatus(DBSchema):
         DistroRelease. This state exists so that a logging and/or
         auditing tool can pick up accepted uploads and create entries
         in a journal or similar before removing the queue item.
-        ''')
+        """)
 
-    REJECTED = Item(6, '''
+    REJECTED = Item(6, """
         Rejected
 
         An upload which reaches this state has, for some reason or another
@@ -867,7 +867,7 @@ class DistroReleaseQueueStatus(DBSchema):
         DistroRelease it was targetting. As for the 'done' state, this
         state is present to allow logging tools to record the rejection
         and then clean up any subsequently unnecessary records.
-        ''')
+        """)
 
 
 class PackagePublishingStatus(DBSchema):
@@ -881,30 +881,30 @@ class PackagePublishingStatus(DBSchema):
      DistroRelease the publishing record is also removed.
      """
 
-    PENDING = Item(1, '''
+    PENDING = Item(1, """
         Pending
 
         This [source] package has been accepted into the DistroRelease and
         is now pending the addition of the files to the published disk area.
-        ''')
-  
-    PUBLISHED = Item(2, '''
+        """)
+
+    PUBLISHED = Item(2, """
         Published
 
         This package is currently published as part of the archive for that
         distrorelease. In general there will only ever be one version of
         any source/binary package published at any one time. Once a newer
         version becomes published the older version is marked as superceded.
-        ''')
+        """)
 
-    SUPERCEDED = Item(3, '''
+    SUPERCEDED = Item(3, """
         Superceded
 
         When a newer version of a [source] package is published the existing
         one is marked as "superceded".
-        ''')
+        """)
 
-    PENDINGREMOVAL = Item(6, '''
+    PENDINGREMOVAL = Item(6, """
         PendingRemoval
 
         Once a package is ready to be removed from the archive is is put
@@ -913,7 +913,7 @@ class PackagePublishingStatus(DBSchema):
         scheduleddeletiondate column is filled out. When that date has passed
         the archive maintainance tools will remove the package from the on-disk
         archive and remove the publishing record.
-        ''')
+        """)
 
 
 class PackagePublishingPriority(DBSchema):
@@ -924,46 +924,46 @@ class PackagePublishingPriority(DBSchema):
     range from required to optional and various others are available.
     """
 
-    REQUIRED = Item( 50, '''
+    REQUIRED = Item( 50, """
         Required
 
         This priority indicates that the package is required. This priority
         is likely to be hard-coded into various package tools. Without all
         the packages at this priority it may become impossible to use dpkg.
-        ''')
-    
-    IMPORTANT = Item( 40, '''
+        """)
+
+    IMPORTANT = Item( 40, """
         Important
 
         If foo is in a package; and "What is going on?! Where on earth
         is foo?!?!" would be the reaction of an experienced UNIX
         hacker were the package not installed, then the package is
         important.
-        ''')
-    
-    STANDARD = Item( 30, '''
+        """)
+
+    STANDARD = Item( 30, """
         Standard
 
         Packages at this priority are standard ones you can rely on to be
         in a distribution. They will be installed by default and provide
         a basic character-interface userland.
-        ''')
-    
-    OPTIONAL = Item( 20, '''
+        """)
+
+    OPTIONAL = Item( 20, """
         Optional
 
         This is the software you might reasonably want to install if you
         did not know what it was or what your requiredments were. Systems
         such as X or TeX will live here.
-        ''')
-    
-    EXTRA = Item( 10, '''
+        """)
+
+    EXTRA = Item( 10, """
         Extra
 
         This contains all the packages which conflict with those at the other
         priority levels; or packages which are only useful to people who have
         very specialised needs.
-        ''')
+        """)
 
 class SourcePackageRelationships(DBSchema):
     """Source Package Relationships
@@ -974,46 +974,46 @@ class SourcePackageRelationships(DBSchema):
     defines the relationships that Launchpad understands.
     """
 
-    REPLACES = Item(1, '''
+    REPLACES = Item(1, """
         Replaces
 
         The subject source package was designed to replace the object
         source package.
-        ''')
+        """)
 
-    REIMPLEMENTS = Item(2, '''
+    REIMPLEMENTS = Item(2, """
         Reimplements
 
         The subject source package is a completely new packaging of
         the same underlying products as the object package.
-        ''')
+        """)
 
-    SIMILARTO = Item(3, '''
+    SIMILARTO = Item(3, """
         Similar To
 
         The subject source package is similar, in that it packages
         software that has similar functionality to the object package.
         For example, postfix and exim4 would be "similarto" one
         another.
-        ''')
+        """)
 
-    DERIVESFROM = Item(4, '''
+    DERIVESFROM = Item(4, """
         Derives From
 
         The subject source package derives from and tracks the object
         source package. This means that new uploads of the object package
         should trigger a notification to the maintainer of the subject
         source package.
-        ''')
+        """)
 
-    CORRESPONDSTO = Item(5, '''
+    CORRESPONDSTO = Item(5, """
         Corresponds To
 
         The subject source package includes the same products as th
         object source package, but for a different distribution. For
         example, the "apache2" Ubuntu package "correspondsto" the
         "httpd2" package in Red Hat.
-        ''')
+        """)
 
 
 class BinaryPackageFormat(DBSchema):
@@ -1024,38 +1024,38 @@ class BinaryPackageFormat(DBSchema):
     in Launchpad.
     """
 
-    DEB = Item(1, '''
+    DEB = Item(1, """
         Ubuntu Package
 
         This is the binary package format used by Ubuntu and all
         similar distributions. It includes dependency information
         to allow the system to ensure it always has all the software
         installed to make any new package work correctly.
-        ''')
+        """)
 
-    UDEB = Item(2, '''
+    UDEB = Item(2, """
         Ubuntu Installer Package
 
         This is the binary package format use by the installer
         in Ubuntu and similar distributions.
-        ''')
+        """)
 
-    EBUILD = Item(3, '''
+    EBUILD = Item(3, """
         Gentoo Ebuild Package
 
         This is the Gentoo binary package format. While Gentoo
         is primarily known for being a build-it-from-source-yourself
         kind of distribution, it is possible to exchange binary
         packages between Gentoo systems.
-        ''')
+        """)
 
-    RPM = Item(4, '''
+    RPM = Item(4, """
         RPM Package
 
         This is the format used by Mandrake and other similar
         distributions. It does not include dependency tracking
         information.
-        ''')
+        """)
 
 
 class BinaryPackagePriority(DBSchema):
@@ -1066,41 +1066,41 @@ class BinaryPackagePriority(DBSchema):
     knows about.
     """
 
-    REQUIRED = Item(1, '''
+    REQUIRED = Item(1, """
         Required Package
 
         This package is required for the distribution to operate normally.
         Usually these are critical core packages that are essential for the
         correct operation of the operating system.
-        ''')
+        """)
 
-    IMPORTANT = Item(2, '''
+    IMPORTANT = Item(2, """
         Important
 
         This package is important, and should be installed under normal
         circumstances.
-        ''')
+        """)
 
-    STANDARD = Item(3, '''
+    STANDARD = Item(3, """
         Standard
 
         The typical install of this distribution should include this
         package.
-        ''')
+        """)
 
-    OPTIONAL = Item(4, '''
+    OPTIONAL = Item(4, """
         Optional
 
         This is an optional package in this distribution.
-        ''')
+        """)
 
-    EXTRA = Item(5, '''
+    EXTRA = Item(5, """
         Extra
 
         This is an extra package in this distribution. An "extra" package
         might conflict with one of the standard or optional packages so
         it should be treated with some caution.
-        ''')
+        """)
 
 
 class BinaryPackageFileType(DBSchema):
@@ -1110,19 +1110,19 @@ class BinaryPackageFileType(DBSchema):
     formats. This schema documents the known binary package file types.
     """
 
-    DEB = Item(1, '''
+    DEB = Item(1, """
         DEB Format
 
         This format is the standard package format used on Ubuntu and other
         similar operating systems.
-        ''')
- 
-    RPM = Item(2, '''
+        """)
+
+    RPM = Item(2, """
         RPM Format
 
         This format is used on mandrake, Red Hat, Suse and other similar
         distributions.
-        ''')
+        """)
 
 
 class CodereleaseRelationships(DBSchema):
@@ -1133,23 +1133,23 @@ class CodereleaseRelationships(DBSchema):
     understands between these two.
     """
 
-    PACKAGES = Item(1, '''
+    PACKAGES = Item(1, """
         Packages
 
         The subject is a distribution packing of the object. For example,
         apache2-2.0.48-1 "packages" the upstream apache2.0.48.tar.gz.
-        ''')
+        """)
 
-    REPLACES = Item(2, '''
+    REPLACES = Item(2, """
         Replaces
 
         A subsequent release in the same product series typically
         "replaces" the prior release. For example, apache2.0.48
         "replaces" apache2.0.47. Similarly, within the distribution
         world, apache-2.0.48-3ubuntu2 "replaces" apache2-2.0.48-3ubuntu2.
-        ''')
+        """)
 
-    DERIVESFROM = Item(3, '''
+    DERIVESFROM = Item(3, """
         Derives From
 
         The subject package derives from the object package. It is common
@@ -1157,7 +1157,7 @@ class CodereleaseRelationships(DBSchema):
         source packages that are modified versions of the source package
         in a different distribution, and this relationship captures that
         concept.
-        ''')
+        """)
 
 
 class BugInfestationStatus(DBSchema):
@@ -1169,22 +1169,22 @@ class BugInfestationStatus(DBSchema):
     in a coderelease.
     """
 
-    AFFECTED = Item(60, '''
+    AFFECTED = Item(60, """
         Affected
 
         It is believed that this bug affects that coderelease. The
         verifiedby field will indicate whether that has been verified
         by a package maintainer.
-        ''')
+        """)
 
-    DORMANT = Item(50, '''
+    DORMANT = Item(50, """
         Dormant
 
         The bug exists in the code of this coderelease, but it is dormant
         because that codepath is unused in this release.
-        ''')
+        """)
 
-    VICTIMIZED = Item(40, '''
+    VICTIMIZED = Item(40, """
         Victimized
 
         This code release does not actually contain the buggy code, but
@@ -1192,27 +1192,27 @@ class BugInfestationStatus(DBSchema):
         interacts with the products or packages that are actually buggy.
         Often users will report a bug against the package which displays
         the symptoms when the bug itself lies elsewhere.
-        ''')
+        """)
 
-    FIXED = Item(30, '''
+    FIXED = Item(30, """
         Fixed
 
         It is believed that the bug is actually fixed in this release of code.
         Setting the "fixed" flag allows us to generate lists of bugs fixed
         in a release.
-        ''')
+        """)
 
-    UNAFFECTED = Item(20, '''
+    UNAFFECTED = Item(20, """
         Unaffected
 
         It is believed that this bug does not infest this release of code.
-        ''')
+        """)
 
-    UNKNOWN = Item(10, '''
+    UNKNOWN = Item(10, """
         Unknown
 
         We don't know if this bug infests that coderelease.
-        ''')
+        """)
 
 
 class BugAssignmentStatus(DBSchema):
@@ -1223,63 +1223,65 @@ class BugAssignmentStatus(DBSchema):
     documents those possible status values.
     """
 
-    NEW = Item(1, '''
+    NEW = Item(10, """
         New
 
         This is a new bug and has not yet been accepted by the maintainer
         of this product or source package.
-        ''')
+        """)
 
-    OPEN = Item(2, '''
-        Open
+    ACCEPTED = Item(20, """
+        Accepted
 
-        This bug has been reviewed and accepted by the maintainer, and
-        is still open.
-        ''')
+        This bug has been reviewed, perhaps verified, and accepted as
+        something needing fixing.
+        """)
 
-    CLOSED = Item(3, '''
-        Closed
+    FIXED = Item(30, """
+        Fixed
 
-        This bug has been closed by the maintainer.
-        ''')
+        This bug has been fixed.
+        """)
 
-""" stub -- Hmm... doesn't look like we need this. Nuke it later when I'm sure
+    REJECTED = Item(40, """
+        Rejected
+
+        This bug has been rejected, e.g. in cases of operator-error.
+        """)
 
 class RemoteBugStatus(DBSchema):
-    '''Bug Assignment Status
+    """Bug Assignment Status
 
     The status of a bug in a remote bug tracker. We map known statuses
     to one of these values, and use UNKNOWN if we are unable to map
     the remote status.
-    '''
+    """
 
-    NEW = Item(1, '''
+    NEW = Item(1, """
         New
 
         This is a new bug and has not yet been accepted by the maintainer
         of this product or source package.
-        ''')
+        """)
 
-    OPEN = Item(2, '''
+    OPEN = Item(2, """
         Open
 
         This bug has been reviewed and accepted by the maintainer, and
         is still open.
-        ''')
+        """)
 
-    CLOSED = Item(3, '''
+    CLOSED = Item(3, """
         Closed
 
         This bug has been closed by the maintainer.
-        ''')
+        """)
 
-    UNKNOWN = Item(99, '''
+    UNKNOWN = Item(99, """
         Unknown
 
         The remote bug status cannot be determined.
-        ''')
-"""
-
+        """)
 
 class BugPriority(DBSchema):
     """Bug Priority
@@ -1289,29 +1291,29 @@ class BugPriority(DBSchema):
     to fix the bug. This schema documents the priorities Malone allows.
     """
 
-    HIGH = Item(40, '''
+    HIGH = Item(40, """
         High
 
         This is a high priority bug for the maintainer.
-        ''')
+        """)
 
-    MEDIUM = Item(30, '''
+    MEDIUM = Item(30, """
         Medium
 
         This is a medium priority bug for the maintainer.
-        ''')
+        """)
 
-    LOW = Item(20, '''
+    LOW = Item(20, """
         Low
 
         This is a low priority bug for the maintainer.
-        ''')
+        """)
 
-    WONTFIX = Item(10, '''
+    WONTFIX = Item(10, """
         Wontfix
 
         The maintainer does not intend to fix this bug.
-        ''')
+        """)
 
 
 class BugSeverity(DBSchema):
@@ -1322,44 +1324,44 @@ class BugSeverity(DBSchema):
     the distribution.
     """
 
-    CRITICAL = Item(50, '''
+    CRITICAL = Item(50, """
         Critical
 
         This bug is essential to fix as soon as possible. It affects
         system stability, data integrity and / or remote access
         security.
-        ''')
+        """)
 
-    MAJOR = Item(40, '''
+    MAJOR = Item(40, """
         Major
 
         This bug needs urgent attention from the maintainer or
         upstream. It affects local system security or data integrity.
-        ''')
+        """)
 
-    NORMAL = Item(30, '''
+    NORMAL = Item(30, """
         Normal
 
         This bug warrants an upload just to fix it, but can be put
         off until other major or critical bugs have been fixed.
-        ''')
+        """)
 
-    MINOR = Item(20, '''
+    MINOR = Item(20, """
         Minor
 
-        This bug does not warrant an upload just to fix it, but 
+        This bug does not warrant an upload just to fix it, but
         should if possible be fixed when next the maintainer does an
         upload. For example, it might be a typo in a document.
-        ''')
+        """)
 
-    WISHLIST = Item(10, '''
+    WISHLIST = Item(10, """
         Wishlist
 
         This is not a bug, but is a request for an enhancement or
         new feature that does not yet exist in the package. It does
         not affect system stability, it might be a usability or
         documentation fix.
-        ''')
+        """)
 
 
 class BugExternalReferenceType(DBSchema):
@@ -1369,20 +1371,20 @@ class BugExternalReferenceType(DBSchema):
     a bug. This schema lists the known types of external references.
     """
 
-    CVE = Item(1, '''
+    CVE = Item(1, """
         CVE Reference
 
         This external reference is a CVE number, which means it
         exists in the CVE database of security bugs.
-        ''')
+        """)
 
-    URL = Item(2, '''
+    URL = Item(2, """
         URL
 
         This external reference is a URL. Typically that means it
         is a reference to a web page or other internet resource
         related to the bug.
-        ''')
+        """)
 
 
 class BugRelationship(DBSchema):
@@ -1392,13 +1394,13 @@ class BugRelationship(DBSchema):
     and this schema lists the types of relationships supported.
     """
 
-    RELATED = Item(1, '''
+    RELATED = Item(1, """
         Related Bug
 
-        This indicates that the subject and object bugs are related in 
+        This indicates that the subject and object bugs are related in
         some way. The order does not matter. When displaying one bug, it
         would be appropriate to list the other bugs which are related to it.
-        ''')
+        """)
 
 
 class UpstreamReleaseVersionStyle(DBSchema):
@@ -1410,11 +1412,11 @@ class UpstreamReleaseVersionStyle(DBSchema):
     in this schema. XXX andrew please fill in!
     """
 
-    GNU = Item(1, '''
+    GNU = Item(1, """
         GNU-style Version Numbers
 
         XXX Andrew need description here
-        ''')
+        """)
 
 
 class RevisionControlSystems(DBSchema):
@@ -1425,45 +1427,45 @@ class RevisionControlSystems(DBSchema):
     revision control systems.
     """
 
-    CVS = Item(1, '''
+    CVS = Item(1, """
         Concurrent Version System
 
         The Concurrent Version System is very widely used among
         older open source projects, it was the first widespread
         open source version control system in use.
-        ''')
+        """)
 
-    SVN = Item(2, '''
+    SVN = Item(2, """
         Subversion
 
         Subversion aims to address some of the shortcomings in
         CVS, but retains the central server bottleneck inherent
         in the CVS design.
-        ''')
+        """)
 
-    ARCH = Item(3, '''
+    ARCH = Item(3, """
         The Arch Revision Control System
 
         An open source revision control system that combines truly
         distributed branching with advanced merge algorithms. This
         removes the scalability problems of centralised revision
         control.
-        ''')
+        """)
 
-    PACKAGE = Item(4, '''
+    PACKAGE = Item(4, """
         Package
 
         XXX Provide a description.
-        ''')
+        """)
 
 
-    BITKEEPER = Item(5, '''
+    BITKEEPER = Item(5, """
         Bitkeeper
 
         A commercial revision control system that, like Arch, uses
         distributed branches to allow for faster distributed
         development.
-        ''')
+        """)
 
 
 class ArchArchiveType(DBSchema):
@@ -1475,7 +1477,7 @@ class ArchArchiveType(DBSchema):
     documents those states.
     """
 
-    READWRITE = Item(1, '''
+    READWRITE = Item(1, """
         ReadWrite Archive
 
         This archive can be written to with new changesets, it
@@ -1485,22 +1487,22 @@ class ArchArchiveType(DBSchema):
         be "readwrite" because we need to be able to create new
         changesets in it as we mirror the changes in the CVS
         repository.
-        ''')
+        """)
 
-    READONLY = Item(2, '''
+    READONLY = Item(2, """
         Read Only Archive
 
         An archive in the "readonly" state can only be published
         and read from, it cannot be written to.
-        ''')
+        """)
 
-    MIRRORTARGET = Item(3, '''
+    MIRRORTARGET = Item(3, """
         Mirror Target
 
-        We can write into this archive, but we can only write 
+        We can write into this archive, but we can only write
         changesets which have actually come from the upstream
         arch archive of which this is a mirror.
-        ''')
+        """)
 
 
 class BugSubscription(DBSchema):
@@ -1509,27 +1511,27 @@ class BugSubscription(DBSchema):
     This is a list of the type of relationships a person can have with a bug.
     """
 
-    WATCH = Item(1, '''
+    WATCH = Item(1, """
         Watch
 
         The person wishes to watch this bug through a web interface. Emails
         are not required.
-        ''')
+        """)
 
-    CC = Item(2, '''
+    CC = Item(2, """
         CC
 
         The person wishes to watch this bug through a web interface and in
         addition wishes to be notified by email whenever their is activity
         relating to this bug.
-        ''')
+        """)
 
-    IGNORE = Item(3, '''
+    IGNORE = Item(3, """
         Ignore
 
         The person has taken an active decision to ignore this bug. They do
         not wish to receive any communications about it.
-        ''')
+        """)
 
 
 class RosettaTranslationOrigin(DBSchema):
@@ -1541,19 +1543,19 @@ class RosettaTranslationOrigin(DBSchema):
      This schema documents those options.
      """
 
-     SCM = Item(1, '''
+     SCM = Item(1, """
          Source Control Management Source
 
          This translation sighting came from a PO File we
          analysed in a source control managements sytem first.
-         ''')
+         """)
 
-     ROSETTAWEB = Item(2, '''
+     ROSETTAWEB = Item(2, """
          Rosetta Web Source
 
          This translation was presented to Rosetta via
        the community web site.
-         ''')
+         """)
 
 
 class DistributionRole(DBSchema):
@@ -1563,10 +1565,10 @@ class DistributionRole(DBSchema):
     a distribution, other than being a package maintainer.
     """
 
-    RM = Item (1, '''
+    RM = Item (1, """
         Release Manager
 
-        Release Manager'''
+        Release Manager"""
     )
 
 
@@ -1578,21 +1580,21 @@ class DOAPRole(DBSchema):
     regard to the project as a whole or to a specific product
     of that project."""
 
-    MAINTAINER = Item(1, '''
+    MAINTAINER = Item(1, """
         Maintainer
 
         A project or product maintainer is a member of the core
         team of people who are responsible for that open source
         work. Maintainers have commit rights to the relevant code
-        repository, and are the ones who sign off on any release.''')
+        repository, and are the ones who sign off on any release.""")
 
-    ADMIN = Item(2, '''
+    ADMIN = Item(2, """
         Administrator
 
         The project or product administrators for a Launchpad
         project and product have the same privileges as the
         project or product owner, except that they cannot appoint
         more administrators. This allows the project owner to share
-        the load of administration with other individuals.''')
+        the load of administration with other individuals.""")
 
 

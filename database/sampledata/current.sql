@@ -1112,9 +1112,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagebugassignment'::pg_catalog.regclass;
 
-INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee, dateassigned, datecreated, "owner") VALUES (1, 1, 1, 2, 40, 20, NULL, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12);
-INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee, dateassigned, datecreated, "owner") VALUES (2, 2, 1, 2, 40, 20, NULL, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12);
-INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee, dateassigned, datecreated, "owner") VALUES (3, 3, 1, 1, 20, 30, NULL, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16);
+INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee, dateassigned, datecreated, "owner") VALUES (1, 1, 1, 20, 40, 20, NULL, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12);
+INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee, dateassigned, datecreated, "owner") VALUES (2, 2, 1, 20, 40, 20, NULL, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12);
+INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee, dateassigned, datecreated, "owner") VALUES (3, 3, 1, 10, 20, 30, NULL, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagebugassignment'::pg_catalog.regclass;
@@ -1122,9 +1122,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productbugassignment'::pg_catalog.regclass;
 
-INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee, dateassigned, datecreated, "owner") VALUES (1, 1, 1, 1, 30, 20, 5, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910183', 12);
-INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee, dateassigned, datecreated, "owner") VALUES (5, 1, 4, 1, 10, 20, 1, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910878', 12);
-INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee, dateassigned, datecreated, "owner") VALUES (2, 2, 1, 1, 20, 20, NULL, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.908491', 12);
+INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee, dateassigned, datecreated, "owner") VALUES (1, 1, 1, 10, 30, 20, 5, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910183', 12);
+INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee, dateassigned, datecreated, "owner") VALUES (5, 1, 4, 10, 10, 20, 1, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910878', 12);
+INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee, dateassigned, datecreated, "owner") VALUES (2, 2, 1, 10, 20, 20, NULL, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.908491', 12);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productbugassignment'::pg_catalog.regclass;

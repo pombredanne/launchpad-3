@@ -81,9 +81,10 @@
          cssclass="" id="field.sourcepackage" size="20" />
   ...
   <select name="field.bugstatus" size="1" >
-  <option value="Closed">Closed</option>
+  <option value="Accepted">Accepted</option>
+  <option value="Fixed">Fixed</option>
   <option selected="selected" value="New">New</option>
-  <option value="Open">Open</option>
+  <option value="Rejected">Rejected</option>
   </select>
   ...
   <select name="field.priority" size="1" >
