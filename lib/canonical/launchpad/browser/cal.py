@@ -14,8 +14,9 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
-from schoolbell.interfaces import IEditCalendar
+from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 from schoolbell.simple import SimpleCalendarEvent
+from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces import ICalendarView, ICalendarWeekView
 from canonical.launchpad.interfaces import ICalendarDayView, ICalendarMonthView
 from canonical.launchpad.interfaces import ICalendarYearView
@@ -319,3 +320,15 @@ class CalendarEventAddView(AddView):
 
 class CalendarEventEditView(SQLObjectEditView):
     pass
+
+class ViewCalendarEvent(object):
+    __used_for__ = ICalendarEvent
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+    def __call__(self):
+        hasowner = IHasOwner(self.context)
+        if hasowner and hasowner.owner.id == self.request.principal.id:
+            self.request.response.redirect('+edit')
+        else:
+            self.request.response.redirect('+display')
