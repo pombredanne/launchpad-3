@@ -9,9 +9,13 @@
 
 import unittest
 import sys
+import os
+import shutil
 from zope.interface.verify import verifyClass, verifyObject
 from canonical.arch.database import dbname, nuke
 import psycopg
+import tempfile
+import arch
 
 class DatabaseTestCase(unittest.TestCase):
 
@@ -106,7 +110,7 @@ class DatabaseTestCase(unittest.TestCase):
         """Insert a test revision into the db and return it"""
         from canonical.arch.database import RevisionMapper
         from canonical.arch.broker import Revision
-        revision = Revision("0", self.getTestVersion())
+        revision = Revision("base-0", self.getTestVersion())
         revisionMapper = RevisionMapper()
         revisionMapper.insert(revision)
         return revision
@@ -116,6 +120,47 @@ class DatabaseTestCase(unittest.TestCase):
         if self._revision is None:
             self._revision = self._getTestRevision()
         return self._revision
+
+
+class DatabaseAndArchiveTestCase(DatabaseTestCase):
+
+    # FIXME: A lot of stuff here should be factored out with PyArch
+    # test framework when the PyArch test suite will be reorganized.
+    
+    def setUp(self):
+        DatabaseTestCase.setUp(self)
+        self._saved_env_home = os.environ.get('HOME')
+        if os.environ.has_key('EDITOR'):
+            self._saved_env_editor = os.environ['EDITOR']
+            del(os.environ['EDITOR'])
+        else:
+            self._saved_env_editor = None
+        self._saved_working_directory = os.getcwd()
+        tmp_dir = arch.DirName(tempfile.mkdtemp(prefix='pyarch-')).realpath()
+        self._arch_tmp_home = tmp_dir
+        os.environ['HOME'] = self._arch_tmp_home
+        self._arch_dir = tmp_dir / arch.DirName(r'pyarch\(sp)tests')
+        os.mkdir(self._arch_dir)
+
+    def tearDown(self):
+        os.environ['HOME'] = self._saved_env_home
+        shutil.rmtree(self._arch_tmp_home, ignore_errors=True)
+        if self._saved_env_editor is not None:
+            os.environ['EDITOR'] = self._saved_env_editor
+        os.chdir(self._saved_working_directory)
+        DatabaseTestCase.tearDown(self)
+
+    def arch_set_user_id(self):
+        arch.set_my_id("John Doe <jdoe@example.com>")
+
+    def arch_make_archive(self, name):
+        return arch.make_archive(name, self._arch_dir/name)
+
+    def arch_make_tree(self, name, version):
+        path = self._arch_dir/name
+        os.mkdir(path)
+        return arch.init_tree(path, version)
+
 
 class TestFramework(unittest.TestCase):
 

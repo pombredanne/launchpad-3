@@ -13,6 +13,7 @@ import sys
 import unittest
 from zope.interface.verify import verifyClass, verifyObject
 from canonical.arch.tests.test_framework import DatabaseTestCase
+from canonical.arch.tests.test_framework import DatabaseAndArchiveTestCase
 
 
 class NamespaceObject(unittest.TestCase):
@@ -840,7 +841,58 @@ class Revision(NamespaceTestCase):
         self.assertEquals(current.previous,
                           "foo@bar/baz--bar--0--versionfix-33")
     # tests.append('test_previous')
- 
+
+class RevisionImport(DatabaseAndArchiveTestCase):
+    tests=[]
+
+    def test_clone_files(self):
+        "c.a.b.Revision.clone_files integrates with arch.Revision.iter_files"
+        import arch
+        db_rev = self.getTestRevision()
+        self.arch_set_user_id()
+        # arch_name = db_rev.archive.name
+        # arch_vsn = arch.Version(db_rev.version.fullname)
+        # FIXME: the former _should_ work but buttress is too borken
+        arch_name = arch.Revision(db_rev.fullname).archive.name
+        arch_vsn = arch.Revision(db_rev.fullname).version
+        # end of hack
+        archive = self.arch_make_archive(arch_name)
+        tree = self.arch_make_tree('wtree', arch_vsn)
+        arch_vsn.setup()
+        tree.tagging_method = 'names'
+        open(tree/'foo', 'w').write('Hello, World!\n')
+        tree.import_()
+        arch_rev = arch_vsn['base-0']
+        db_rev.clone_files(arch_rev.iter_files())
+        # Now, let's check that the data looks correct.
+        from canonical.arch.database import ChangesetFile
+        from canonical.arch.database import ChangesetFileName
+        from canonical.arch.database import ChangesetFileHash
+        db_cset = db_rev.changeset
+        db_files = list(ChangesetFile.select("changeset = '%s'" % db_cset.id))
+        db_names = [F.changesetfilename.filename for F in db_files]
+        db_names.sort()
+        expected = ['bah--meh--0--base-0.src.tar.gz', 'checksum', 'log']
+        self.assertEqual(expected, db_names)
+        for db_file in db_files:
+            db_hashes = list(ChangesetFileHash.select(
+                "changesetfile = '%s'" % db_file.id))
+            filename = db_file.changesetfilename.filename
+            if filename == 'checksum':
+                self.assertEqual(list(), db_hashes) # checksums have no hash
+            else:
+                for db_hash in db_hashes:
+                    def is_hexa(s):
+                        for C in s:
+                            if C not in '0123456789abcdef': return False
+                        return True
+                    if not db_hash.hash or not is_hexa(db_hash.hash):
+                        self.fail("hash %d for %s is not hexa: %r" %
+                                  (db_hash.hashalg, filename, db_hash.hash))
+            
+    tests.append('test_clone_files')
+
+
 def test_suite():
     return unittest.TestSuite()
 
@@ -857,6 +909,7 @@ def main(argv):
     addTests(Branch)
     addTests(Version)
     addTests(Revision)
+    addTests(RevisionImport)
     # addTests(NamespaceObject)
     runner = unittest.TextTestRunner(verbosity=2)
     if not runner.run(suite).wasSuccessful(): return 1

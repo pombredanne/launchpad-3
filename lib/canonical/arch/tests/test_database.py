@@ -678,7 +678,7 @@ class RevisionMapper(DatabaseTestCase):
         version = self.getTestVersion()
         revision = version.create_revision("base-0")
         print revision
-        revision.add_file("foo", "baaaz", [("md5", "1234")])
+        revision.add_file("foo", "baaaz", {"md5": "1234"})
         commit()
         c = self.cursor()
         c.execute("SELECT count(*) FROM changesetfile")
