@@ -10,4 +10,24 @@
    for="canonical.launchpad.interfaces.IBugAssignedProductAddedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_assigned_product_added" />
 
+<subscriber
+   for="canonical.launchpad.interfaces.IBugAssignedPackageAddedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bug_assigned_package_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugProductInfestationAddedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bug_product_infestation_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugPackageInfestationAddedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bug_package_infestation_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugExternalRefAddedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugWatchAdded"
+   factory="canonical.launchpad.mailnotification.notify_bug_watch_added" />
+
 </configure>

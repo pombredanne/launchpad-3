@@ -134,3 +134,27 @@ class IBugAssignedProductModifiedEvent(IBugEvent):
     """The event that occurs when a bug product assignment is
     edited."""
     pass
+
+class IBugAssignedPackageAddedEvent(IBugEvent):
+    """The event that occurs when a bug is assigned to a source
+    package."""
+    pass
+
+class IBugProductInfestationAddedEvent(IBugEvent):
+    """The event that occurs when a product release is marked
+    as being infested by a bug."""
+    pass
+
+class IBugPackageInfestationAddedEvent(IBugEvent):
+    """The event that occurs when a source package release is
+    marked as being infested by a bug."""
+    pass
+
+class IBugExternalRefAddedEvent(IBugEvent):
+    """The event that occurs when an external reference is
+    added to a bug."""
+    pass
+
+class IBugWatchAdded(IBugEvent):
+    """The event that occurs when a watch is added to a bug."""
+    pass

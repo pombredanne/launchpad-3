@@ -23,7 +23,10 @@ from canonical.launchpad.database import \
         ProductBugAssignment, SourcePackageBugAssignment, \
         BugProductInfestation, BugPackageInfestation
 from canonical.database import sqlbase
-from canonical.launchpad.events import BugCommentAddedEvent, BugAssignedProductAddedEvent
+from canonical.launchpad.events import BugCommentAddedEvent, \
+     BugAssignedProductAddedEvent, BugAssignedPackageAddedEvent, \
+     BugProductInfestationAddedEvent, BugPackageInfestationAddedEvent, \
+     BugExternalRefAddedEvent, BugWatchAddedEvent
 
 # I18N support for Malone
 from zope.i18nmessageid import MessageIDFactory
@@ -493,6 +496,10 @@ def BugProductInfestationFactory(context, **kw):
         lastmodified=now,
         lastmodifiedbyID=1,
         **kw)
+    product_infested = BugProductInfestationAddedEvent(
+        Bug.get(context.context.bug), bpi)
+    notify(product_infested)
+
     return bpi
 
 class BugPackageInfestationContainer(BugContainerBase):
@@ -523,6 +530,10 @@ def BugPackageInfestationFactory(context, **kw):
         lastmodified=now,
         lastmodifiedbyID=1,
         **kw)
+    package_infested = BugPackageInfestationAddedEvent(
+        Bug.get(context.context.bug), bpi)
+    notify(package_infested)
+
     return bpi
 
 class SourcePackageBugAssignmentContainer(BugContainerBase):
@@ -534,8 +545,12 @@ class SourcePackageBugAssignmentContainer(BugContainerBase):
 
 def SourcePackageBugAssignmentFactory(context, **kw):
     sa = SourcePackageBugAssignment(bug=context.context.bug,
-                                    binarypackage=None,
+                                    binarypackagename=None,
                                     **kw)
+    package_assignment = BugAssignedPackageAddedEvent(
+        Bug.get(context.context.bug), sa)
+    notify(package_assignment)
+
     return sa
 
 
@@ -550,7 +565,12 @@ def BugExternalRefFactory(context, **kw):
     bug = context.context.bug
     owner = 1 # Will be id of logged in user
     datecreated = datetime.utcnow()
-    return BugExternalRef(bug=bug, owner=owner, datecreated=datecreated, **kw)
+    ber = BugExternalRef(bug=bug, owner=owner, datecreated=datecreated, **kw)
+
+    ext_ref_added = BugExternalRefAddedEvent(Bug.get(bug), ber)
+    notify(ext_ref_added)
+
+    return ber
 
 
 class BugWatchContainer(BugContainerBase):
@@ -564,10 +584,13 @@ def BugWatchFactory(context, **kw):
     bug = context.context.bug
     owner = 1 # XXX: Will be id of logged in user
     now = datetime.utcnow()
-    return BugWatch(
+    bw = BugWatch(
             bug=bug, owner=owner, datecreated=now, lastchanged=now,
-            lastchecked=now, **kw
-            )
+            lastchecked=now, **kw)
+    watch_added = BugWatchAddedEvent(Bug.get(bug), bw)
+    notify(watch_added)
+
+    return bw
 
 
 class BugSubscriptionContainer(BugContainerBase):
