@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-28 15:11:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1506
+
+    Summary:
+      fix link on distribution translation list page
+    Revision:
+      launchpad--devel--0--patch-1506
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-11
+       fix link on distribution translation list page
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-distrorelease-list.txt
+     lib/canonical/launchpad/templates/potemplatesubset-index.pt
+
+    new patches:
+     daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-11
+
+
 2005-03-28 15:03:40 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1505
 
     Summary:

@@ -68,7 +68,7 @@
                     <tal:block repeat="template view/distroReleaseTemplates">
                         <tr>
                             <td><a tal:attributes="href string:
-                                ../+sources/${template/sourcepackagename}/+rosetta/${template/potemplatename}/+translate"
+                                ../+sources/${template/sourcepackagename}/+rosetta/${template/potemplatename}/"
                                 ><span tal:replace="template/title"
                                     >title</span></a>
                             <td><span tal:replace="template/description"
