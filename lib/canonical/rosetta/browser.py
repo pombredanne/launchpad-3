@@ -83,7 +83,6 @@ def request_languages(request):
         if lang not in languages:
             languages.append(lang)
     return languages
-    
 
 def parse_cformat_string(s):
     '''Parse a printf()-style format string into a sequence of interpolations
@@ -120,6 +119,66 @@ def parse_cformat_string(s):
     # Give up.
 
     raise ValueError(s)
+
+def parse_translation_form(form):
+    # Extract msgids from the form.
+
+    sets = {}
+
+    for key in form:
+        match = re.match('set_(\d+)_msgid$', key)
+
+        if match:
+            id = int(match.group(1))
+            sets[id] = {}
+            sets[id]['msgid'] = form[key].replace('\r', '')
+            sets[id]['translations'] = {}
+            sets[id]['fuzzy'] = {}
+
+    # Extract non-plural translations from the form.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_translation_([a-z]+)$', key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+
+            if not id in sets:
+                raise AssertionError("Orphaned translation in form.")
+
+            sets[id]['translations'][code] = {}
+            sets[id]['translations'][code][0] = form[key].replace('\r', '')
+
+    # Extract plural translations from the form.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_translation_([a-z]+)_(\d+)$', key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+            pluralform = int(match.group(3))
+
+            if not id in sets:
+                raise AssertionError("Orphaned translation in form.")
+
+            if not code in sets[id]['translations']:
+                sets[id]['translations'][code] = {}
+
+            sets[id]['translations'][code][pluralform] = form[key]
+
+    # Extract fuzzy statuses from the form.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+            sets[id]['fuzzy'][code] = True
+
+    return sets
 
 
 def escape_msgid(s):
@@ -180,32 +239,19 @@ class ProductView:
         # Extract the details from the form
         name = self.form['name']
         title = self.form['title']
-        description = self.form['description']
-        copyright = self.form['copyright']
-        path = self.form['path']
 
         # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
         # check to see if there is an existing product with
         # this name.
         # get the launchpad person who is creating this product
-        # XXX: Carlos Perello Marin 27/11/04 We should force this page to be
-        # used under authenticated users.
         owner = IPerson(self.request.principal)
 
         # Now create a new product in the db
         potemplate = POTemplate(
             product=self.context.id,
-            priority=1,
-            branch=1,
             name=name,
             title=title,
-            description=description,
-            copyright=copyright,
-            license=1,
-            datecreated=UTC_NOW,
-            path=path,
             iscurrent=False,
-            messagecount=0,
             owner=owner)
 
         self._templates.append(potemplate)
@@ -390,10 +436,6 @@ class ViewPOTemplate:
         # Extract details from the form and update the POTemplate
         self.context.name = self.form['name']
         self.context.title = self.form['title']
-        self.context.description = self.form['description']
-        self.context.copyright = self.form['copyright']
-        self.context.path = self.form['path']
-        self.context.priority = self.form['priority']
         
         # now redirect to view the potemplate. This lets us follow the
         # template in case the user changed the name
@@ -910,60 +952,7 @@ class TranslatePOTemplate:
         if not "SUBMIT" in self.request.form:
             return None
 
-        sets = {}
-
-        # Extract msgids from form.
-
-        for key in self.request.form:
-            match = re.match('set_(\d+)_msgid$', key)
-
-            if match:
-                id = int(match.group(1))
-                sets[id] = {}
-                sets[id]['msgid'] = self.request.form[key].replace('\r', '')
-                sets[id]['translations'] = {}
-                sets[id]['fuzzy'] = {}
-
-        # Extract translations from form.
-
-        for key in self.request.form:
-            match = re.match(r'set_(\d+)_translation_([a-z]+)$', key)
-
-            if match:
-                id = int(match.group(1))
-                code = match.group(2)
-
-                if not id in sets:
-                    raise AssertionError("Orphaned translation in form.")
-
-                sets[id]['translations'][code] = {}
-                sets[id]['translations'][code][0] = (
-                    self.request.form[key].replace('\r', ''))
-
-                continue
-
-            match = re.match(r'set_(\d+)_translation_([a-z]+)_(\d+)$', key)
-
-            if match:
-                id = int(match.group(1))
-                code = match.group(2)
-                pluralform = int(match.group(3))
-
-                if not id in sets:
-                    raise AssertionError("Orphaned translation in form.")
-
-                if not code in sets[id]['translations']:
-                    sets[id]['translations'][code] = {}
-
-                sets[id]['translations'][code][pluralform] = self.request.form[key]
-
-            # We check if the msgset is fuzzy or not for this language.
-            match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
-
-            if match:
-                id = int(match.group(1))
-                code = match.group(2)
-                sets[id]['fuzzy'][code] = True
+        sets = parse_translation_form(self.request.form)
 
         # Get/create a PO file for each language.
         # XXX: This should probably be done more lazily.
@@ -971,11 +960,8 @@ class TranslatePOTemplate:
         pofiles = {}
 
         for language in self.languages:
-            try:
-                pofiles[language.code] = self.context.getPOFileByLang(language.code)
-            except KeyError:
-                pofiles[language.code] = self.context.newPOFile(
-                    language.code, owner=self.person)
+            pofiles[language.code] = self.context.getOrCreatePOFile(
+                language.code, None, owner=self.person)
 
         # Put the translations in the database.
 

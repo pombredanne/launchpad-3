@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from string import split
 from time import sleep
+from sys import argv, exit
 from re import sub
 from sourceforge import getProjectSpec
 from database import Doap
@@ -144,6 +145,29 @@ def updater(doap, product_name):
         print '@\tNo Product Found for %s' % product_name
         append_list(product_name)                
 
+def inserter(doap, product_name):
+    global fm, sf, both
+
+    data_sf, data_fm = grab_web_info(product_name)
+
+    if data_sf and not data_fm:
+        ##present_data(data_sf)            
+        sf +=1            
+        doap.ensureProduct(None, data_sf,None)
+    elif data_fm and not data_sf:
+        ##present_data(data_fm)
+        fm += 1
+        doap.ensureProduct(None, data_fm, None)
+    elif data_sf and data_fm:
+        ##present_data(data_sf)
+        ##present_data(data_fm)
+        both += 1
+        ## Do we really preffer sourceforge ???
+        doap.ensureProduct(None, data_sf, None)
+    else:
+        print '@\tNo Product Found for %s' % product_name
+        append_list(product_name)                
+
     
 def grabber(package, name):
     ##for god sake again ...
@@ -192,13 +216,19 @@ if __name__ == "__main__":
     # get the DB abstractors
     doap = Doap(DOAPDB)
 
+    if len(argv) > 1:
+        mode = argv[1][1:]
+    else:
+        mode = 'h'
+
     print '\t\tWelcome to Nicole'
     print 'An Open Source Project Information Finder'
-
+        
     index = 0
     clean_list()
     
-    if INSERT:
+    if mode == 'o':
+        print 'Running OLD mode'
         tries, packages = get_current_packages()
     
         for package in packages:
@@ -220,10 +250,34 @@ if __name__ == "__main__":
             else:
                 print '@\tSkipping it, Already included'
                 skip += 1
-    if UPDATE:
 
+    elif mode == 'i':
+        print 'Running INSERT mode'        
+        if len(argv) < 3:
+            exit("Not enough Arguments")
+        else:
+            f = open(argv[2], 'r')
+            products = f.read().strip().split('\n')
+            print products
+            tries = len(products)
+ 
+        for product in products:
+            index += 1
+            print ' '
+            print '@ Grabbing Information About the %s (%d/%d)'% (product,
+                                                                  index,
+                                                                  tries)
+            updater(doap, product)
+            ## Partially Commit DB Product Info
+            doap.commit()            
+            ##It should prevent me to be blocked again by SF
+            sleep(SLEEP)
+           
+                
+    elif mode == 'u':
+        print 'Running UPDATE mode'        
         tries, products = doap.getProductsForUpdate()
-
+        
         for product in products:
             index += 1
             print ' '
@@ -233,9 +287,20 @@ if __name__ == "__main__":
             updater(doap, product[3])
             ## Partially Commit DB Product Info
             doap.commit()            
+            ##It should prevent me to be blocked again by SF
+            sleep(SLEEP)
 
+    elif mode == 'h':
+        print 'Usage:'
+        print 'nicole.py -o         OLD MODE, Fill DOAP from'
+        print '                     Package Archive'
+        print 'nicole.py -i <file>  INSERT MODE, insert products'
+        print '                     from a file list'
+        print 'nicole.py -u         UPDATE MODE, update products'
+        print '                     with autoupdate AND reviewed == True'
+        exit("See the Usage")
 
-
+        
     fail = tries - (sf + fm + both + skip)
 
     doap.close()

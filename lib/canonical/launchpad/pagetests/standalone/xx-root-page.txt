@@ -9,5 +9,5 @@ This test the root page of Launchpad, i.e. the page with the URL '/'.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <h1>Launchpad!</h1>
+      <h1>Welcome to Launchpad!</h1>
   ...

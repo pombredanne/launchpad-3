@@ -71,31 +71,36 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             # Remove security proxies from object to authorize.
             objecttoauthorize = removeSecurityProxy(objecttoauthorize)
 
-            # Get an IObjectAuthorization adapter.
+            # Look for an IObjectAuthorization adapter.  If there is one,
+            # use that for authorization.
             objectauthorization = IObjectAuthorization(objecttoauthorize, None)
             if objectauthorization is not None:
                 person = IPerson(user, None)
-                result = objectauthorization.checkPermission(person,
-                                                             permission)
-                if result is not True and result is not False:
+                result = objectauthorization.checkPermission(
+                    person, permission)
+                if type(result) is not bool:
                     warnings.warn(
                         'object authorization returning non-bool value: %r' %
                         objectauthorization)
                 return bool(result)
 
             # If there is no IObjectAuthorization adapter, we look for an
-            # IAuthorization adapter.  If there is no such adapter, then
-            # the permission is not granted.
-            # This is a named adapter from objecttoauthorize, providing
-            # IAuthorization, named after the permission.
+            # IAuthorization adapter, and use that.  If there is no
+            # IAuthorization adapter then the permission is not granted.
+            #
+            # The IAuthorization is a named adapter from # objecttoauthorize,
+            # providing IAuthorization, named after the permission.
             authorization = queryAdapter(
                 objecttoauthorize, IAuthorization, permission)
             if authorization is None:
                 return False
             else:
                 person = IPerson(user, None)
-                result = authorization.checkPermission(person)
-                if result is not True and result is not False:
+                if person is None:
+                    result = authorization.checkUnauthenticated()
+                else:
+                    result = authorization.checkPermission(person)
+                if type(result) is not bool:
                     warnings.warn(
                         'authorization returning non-bool value: %r' %
                         authorization)

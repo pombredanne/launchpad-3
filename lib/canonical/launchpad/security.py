@@ -9,62 +9,53 @@ from zope.interface import implements, Interface
 from canonical.launchpad.interfaces import IAuthorization, IHasOwner, IPerson
 from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin
 
-class AdminByAdminsTeam:
+class AuthorizationBase:
     implements(IAuthorization)
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def checkUnauthenticated(self):
+        return False
+
+    def checkPermission(self, person):
+        raise NotImplementedError
+
+
+class AdminByAdminsTeam(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = Interface
 
-    def __init__(self, obj):
-        self.obj = obj
-
     def checkPermission(self, person):
-        if person is None:
-            return False
-        else:
-            return person.inTeam('admins')
+        return person.inTeam('admins')
 
 
-class EditByOwners:
-    implements(IAuthorization)
+class EditByOwnersOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IHasOwner
 
-    def __init__(self, obj):
-        self.obj = obj
-
     def checkPermission(self, person):
-        if person is None:
-            return False
+        if person.id == self.obj.owner.id:
+            return True
+        elif person.inTeam('admins'):
+            return True
         else:
-            return person.id == self.obj.owner.id
+            return False
 
 
-class AdminSourceSourceByButtSource:
-    implements(IAuthorization)
+class AdminSourceSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = ISourceSourceAdmin
 
-    def __init__(self, obj):
-        self.obj = obj
-
     def checkPermission(self, person):
-        if person is None:
-            return False
-        else:
-            return person.inTeam('buttsource')
+        return person.inTeam('buttsource')
 
 
-class EditSourceSourceByButtSource:
-    implements(IAuthorization)
+class EditSourceSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ISourceSource
 
-    def __init__(self, obj):
-        self.obj = obj
-
     def checkPermission(self, person):
-        if person is None:
-            return False
         if person.inTeam('buttsource'):
             return True
         elif not self.obj.syncCertified():

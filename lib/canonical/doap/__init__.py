@@ -15,6 +15,7 @@ from zope.app.container.interfaces import IContained
 from canonical.launchpad.interfaces import IDOAPApplication
 from canonical.publication import rootObject
 
+from canonical.doap.fileimporter import ProductReleaseImporter
 
 #
 # This is the core DOAP application, it's what handles /doap/

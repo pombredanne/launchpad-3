@@ -137,16 +137,22 @@ prioritymap = {
 }
 
 class Launchpad(SQLThing):
-    def __init__(self, bar, dr, proc):
+    def __init__(self, bar, distro, dr, proc):
         SQLThing.__init__(self,bar)
         self.compcache = {}
         self.sectcache = {}
         try:
             ddr = self._query_single("""
-            SELECT id,distribution FROM distrorelease WHERE name=%s;
-            """, (dr,))
+            SELECT id FROM distribution WHERE name=%s
+            """, (distro,))
+            self.distro = ddr[0]
+        except:
+            raise ValueError, "Error finding distribution for %s" % distro
+        try:
+            ddr = self._query_single("""
+            SELECT id FROM distrorelease WHERE name=%s AND distribution=%s;
+            """, (dr,self.distro))
             self.distrorelease = ddr[0]
-            self.distro = ddr[1]
         except:
             raise ValueError, "Error finding distrorelease for %s" % dr
         try:
@@ -165,11 +171,6 @@ class Launchpad(SQLThing):
         except:
             raise ValueError, "Unable to find a processor from the processor family chosen from %s/%s" % (dr, proc)
         print "INFO: Chosen D(%d) DR(%d), PROC(%d), DAR(%d) from SUITE(%s), ARCH(%s)" % (self.distro, self.distrorelease, self.processor, self.distroarchrelease, dr, proc)
-        # Attempt to populate self._debiandistro
-        self._debiandistro = self._query_single("""
-        SELECT id FROM distribution WHERE name = 'debian'
-        """)[0]
-        print "INFO: Found Debian GNU/Linux at %d" % (self._debiandistro)
         
     #
     # SourcePackageName
@@ -210,18 +211,6 @@ class Launchpad(SQLThing):
             "srcpackageformat":     1 
         }
         self._insert("sourcepackage", data)
-        data["distro"] = self._debiandistro
-        self._insert("sourcepackage", data)
-
-        ubuntupackage = self.getSourcePackage(src.package)
-        debianpackage = self.getSourcePackage(src.package, self._debiandistro)
-        
-        data = {
-            "subject": ubuntupackage,
-            "label": 4, ## DERIVESFROM
-            "object": debianpackage
-            }
-        self._insert("sourcepackagerelationship", data)
 
     def getSourcePackage(self, name_name, distro = None):
         # Suckage because Python won't analyse default values in the context

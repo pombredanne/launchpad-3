@@ -292,6 +292,55 @@ def test_escape_unescape_msgid():
     'foo\nbar'
     '''
 
+def test_parse_translation_form():
+    r'''
+    >>> from canonical.rosetta.browser import parse_translation_form
+
+    An empty form has no translations.
+
+    >>> parse_translation_form({})
+    {}
+
+    A message ID with no translations.
+
+    >>> x = parse_translation_form({'set_3_msgid' : 'bar' })
+    >>> x[3]['msgid']
+    'bar'
+    >>> x[3]['translations']
+    {}
+    >>> x[3]['fuzzy']
+    {}
+
+    A translation with no message ID.
+
+    >>> parse_translation_form({'set_3_translation_cy' : None})
+    Traceback (most recent call last):
+    ...
+    AssertionError: Orphaned translation in form.
+
+    A message ID with some translations.
+
+    >>> x = parse_translation_form({
+    ...     'set_1_msgid' : 'foo',
+    ...     'set_1_translation_cy_0' : 'aaa',
+    ...     'set_1_translation_cy_1' : 'bbb',
+    ...     'set_1_translation_cy_2' : 'ccc',
+    ...     'set_1_translation_es_0' : 'xxx',
+    ...     'set_1_translation_es_1' : 'yyy',
+    ...     'set_1_fuzzy_es' : True
+    ...     })
+    >>> x[1]['msgid']
+    'foo'
+    >>> x[1]['translations']['cy'][2]
+    'ccc'
+    >>> x[1]['translations']['es'][0]
+    'xxx'
+    >>> x[1]['fuzzy'].has_key('cy')
+    False
+    >>> x[1]['fuzzy']['es']
+    True
+    '''
+
 def test_RosettaProjectView():
     '''
     >>> from canonical.launchpad.browser import ProjectView

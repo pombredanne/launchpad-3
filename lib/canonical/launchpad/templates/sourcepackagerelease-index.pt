@@ -27,11 +27,7 @@
       <p>
 
       <ul>
-        <li><b>Source Package:</b> 
-           <a tal:content="context/name"
-           tal:attributes="href
-           string:../../${context/name}" />
-	  
+
 	<li><b>Current Version:</b> <span tal:replace="context/version" />
 
         <li><b>Upload Date:</b> 
@@ -50,18 +46,15 @@
              (<a tal:condition="context/changelog"
             href="+changelog">View Changelog)</a>
            <tal:dummy tal:condition="not:context/changelog">
-               No Changelog for this Source Release
+               No Changelog for this Source Release )
            </tal:dummy>
 
         <ul>
             <li tal:repeat="binary context/binaries" >
-             <a tal:content="binary/name"
+             <a tal:content="string:${binary/name}-${binary/version}"
          tal:attributes="href
-         string:../../../../bin/${context/distrorelease/name}/${binary/name}"
-         /> (<a tal:content="binary/version"
-         tal:attributes="href
-         string:../../../../bin/${context/distrorelease/name}/${binary/name}/${binary/version}"
-         />): <span tal:content="binary/shortdesc"/></li>
+         string:../../i386/${binary/name}"
+         />: <span tal:content="binary/shortdesc"/></li>
         </ul>
 
 
@@ -75,7 +68,7 @@
         <tr tal:condition="not:view/builddepends"><td>No Dependencies</td></tr>
         <tr tal:repeat="dep view/builddepends">
 	 <td> <a tal:content="dep/name" tal:attributes="href
-           string:"/>
+           string:../../i386/${dep/name}"/>
 	   <span tal:condition="dep/signal"
 	         tal:content="string:(${dep/signal} ${dep/version})"/>
          </td>
@@ -83,13 +76,13 @@
       </table>
       </td><td valign="top">
 
-       <h5>Platform Independent</h5>
+       <h5>Platform Independent Dependencies</h5>
        <table>
         <tr tal:condition="not:view/builddependsindep"><td>No
        Platform Independent Dependencies</td></tr>
         <tr tal:repeat="dep view/builddependsindep">
 	 <td> <a tal:content="dep/name" tal:attributes="href
-           string:"/>
+           string:../../i386/${dep/name}"/>
 	   <span tal:condition="dep/signal"
 	         tal:content="string:(${dep/signal} ${dep/version})"/>
          </td>

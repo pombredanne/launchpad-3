@@ -220,6 +220,30 @@
         -->
 
 
+    <fieldset>
+        <legend>FTP Repository of Releases</legend>
+        
+        <div class="field">
+
+            <label>FTP Root</label>
+
+            <input type="text" name="releaseroot" size="30"
+                   tal:attributes="value context/releaseroot" />
+
+        </div>
+
+        <div class="field">
+
+            <label>FTP Glob</label>
+
+            <input type="text" name="releasefileglob" size="30"
+                   tal:attributes="value context/releasefileglob" />
+        
+        </div>
+
+    </fieldset>
+
+
     <fieldset tal:condition="context/canChangeProduct">
         <legend>Change Product</legend>
         <div class="field">

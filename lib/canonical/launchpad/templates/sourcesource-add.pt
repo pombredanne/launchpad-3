@@ -212,6 +212,30 @@
 
     </fieldset>
 
+    <fieldset>
+
+        <legend>FTP Repository of Releases</legend>
+        
+        <div class="field">
+
+            <label>FTP Root</label>
+
+            <input type="text" name="releaseroot" size="30"
+                   value=""/>
+
+        </div>
+
+        <div class="field">
+
+            <label>FTP Glob</label>
+
+            <input type="text" name="releasefileglob" size="30"
+                   value="" />
+        
+        </div>
+
+    </fieldset>
+
     <div class="formControls">
 
         <!--NB! DO NOT CHANGE THE VALUE OF THIS

@@ -65,11 +65,24 @@
     <!-- This is an index.html view on the root object.
         The root object is not ever published itself.  Only its views are.
         -->
+
     <browser:page
         for="canonical.publication.RootObject"
         name="index.html"
         template="launchpad/templates/root-index.pt"
         permission="zope.Public"
+        />
+
+    <!-- The root index for the debug view. This is a bit of a bodge, but it
+        lets us have a different page on the production server from the one on
+        the development server. -->
+
+    <browser:page
+        for="canonical.publication.RootObject"
+        name="index.html"
+        template="launchpad/templates/debug-root-index.pt"
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.DebugLayer"
         />
 
     <browser:page

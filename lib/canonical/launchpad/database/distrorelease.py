@@ -16,7 +16,8 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IDistroRelease, \
-                                           IBinaryPackageUtility
+                                           IBinaryPackageUtility, \
+                                           ISourcePackageUtility
 
 from canonical.launchpad.database import SourcePackageName, \
                                          BinaryPackageName,\
@@ -156,7 +157,7 @@ class DistroRelease(SQLBase):
         return SourcePackageInDistro.select(query, clauseTables=clauseTables)
 
     def findSourcesByName(self, pattern):
-        srcset = getUtility(ISourcePackageSet)
+        srcset = getUtility(ISourcePackageUtility)
         return srcset.findByNameInDistroRelease(self.id, pattern)
 
 ##    def getSourceByName(self, name):

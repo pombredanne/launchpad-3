@@ -87,6 +87,9 @@ class IBinaryPackageSet(Interface):
     distrorelease = Attribute("DistroRelease")
     arch = Attribute("Arch")
 
+    def findPackagesByName(pattern):
+        """Search BinaryPackages matching pattern"""
+
     def __getitem__(name):
         """Getter"""    
 

@@ -16,8 +16,10 @@ def stripseq(seq):
 
 class AbstractPackageRelease:
     def parse_person(self, val):
-        name, email = val.split("<", 2)
-        email = email.split(">")[0].lower()
+        first_left_angle = val.find("<")
+        first_right_angle = val.find(">")
+        name = val[:first_left_angle-1].replace(",","_")
+        email = val[first_left_angle+1:first_right_angle-1]
         return (name.strip(), email.strip())
 
     def process_package(self, kdb, package_root, keyrings):

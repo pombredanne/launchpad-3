@@ -21,20 +21,20 @@ class SourceSourceView(object):
         # Extract the form data
         #
 
-        fields = ["title"
-                  "description"
-                  "cvsroot"
-                  "cvsmodule"
-                  "cvstarfileurl"
-                  "cvsbranch"
-                  "svnrepository"
-                  "releaseroot"
-                  "releaseverstyle"
-                  "releasefileglob"
-                  "newarchive"
-                  "archversion"
-                  "newbranchcategory"
-                  "newbranchbranch"
+        fields = ["title",
+                  "description",
+                  "cvsroot",
+                  "cvsmodule",
+                  "cvstarfileurl",
+                  "cvsbranch",
+                  "svnrepository",
+                  "releaseroot",
+                  "releaseverstyle",
+                  "releasefileglob",
+                  "newarchive",
+                  "archversion",
+                  "newbranchcategory",
+                  "newbranchbranch",
                   "newbranchversion"]
         for f in fields:
             v = self.form.get(f, None)

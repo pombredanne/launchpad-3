@@ -8,7 +8,6 @@
     <!-- SourcePackage -->
     <content class="canonical.launchpad.database.SourcePackage">
         <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
-        <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
     <browser:defaultView
@@ -71,7 +70,7 @@
     <securedutility
         class="canonical.launchpad.database.SourcePackageUtility"
         provides="canonical.launchpad.interfaces.ISourcePackageUtility">
-        <allow interface="canonical.launchpad.interfaces.ISourcePackageSet" />
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageUtility" />
     </securedutility>
 
     <browser:traverse
@@ -96,20 +95,19 @@
     <!-- SourcePackageRelease -->
     <content class="canonical.launchpad.database.SourcePackageRelease">
       <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
-      <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
     <!-- This is class VSourcePackageReleasePublishing -->
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
-        name="+index" />
-
     <content
       class="canonical.launchpad.database.VSourcePackageReleasePublishing">
       <allow
         interface="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
         />
     </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
+        name="+index" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
@@ -119,12 +117,15 @@
             name="+index"
             template="../templates/sourcepackagerelease-index.pt"
             lp:url="soyuz/distros/$distro.name/$distrorelease.name/sources/+index" />
+        <browser:page
+            name="+changelog"
+            template="../templates/sourcechangelog-index.pt"
+            lp:url="soyuz/distros/$distro.name/$distrorelease.name/sources/+index" />
     </browser:pages>
 
     <!-- SourcePackageInDistro -->
     <content class="canonical.launchpad.database.SourcePackageInDistro">
         <allow interface="canonical.launchpad.interfaces.ISourcePackageinDistro" />
-        <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
 </configure>

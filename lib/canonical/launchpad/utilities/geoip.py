@@ -62,15 +62,20 @@ class RequestPreferredLanguages(object):
 
     def getPreferredLanguages(self):
         """See the IRequestPreferredLanguages interface"""
+
         codes = IUserPreferredLanguages(self.request).getPreferredLanguages()
-        langcodes = []
+        languageset = getUtility(ILanguageSet)
+        languages = []
+
         for code in codes:
             if '-' in code:
                 language, country = code.split('-', 1)
-                langcodes.append("%s_%s" % (language, country.upper()))
-            else:
-                langcodes.append(code)
-        languageset = getUtility(ILanguageSet)
-        return [languageset[code] for code in langcodes]
+                code = "%s_%s" % (language, country.upper())
 
+            try:
+                languages.append(languageset[code])
+            except KeyError:
+                pass
+
+        return languages
 
