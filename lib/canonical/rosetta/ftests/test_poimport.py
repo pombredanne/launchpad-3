@@ -9,7 +9,7 @@ from canonical.arch.sqlbase import SQLBase
 from canonical.rosetta.interfaces import ILanguages
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
     RosettaProject, RosettaProduct, RosettaLanguages
-from sqlobject import connectionForURI
+from sqlobject.dbconnection import TheURIOpener as connectionFactory
 from canonical.rosetta.pofile_adapters import MessageProxy, TemplateImporter
 import os
 
@@ -21,12 +21,22 @@ here = os.path.dirname(os.path.abspath(__file__))
 class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
     def setUp(self):
+        # these tests are going to be slow as hell...
+        os.system("make -C %s testdb > /dev/null 2>/dev/null" % os.path.dirname(here))
         super(POImportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
         utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+        self.connection = connectionFactory.connectionForURI('postgres:///launchpad_test')
+        SQLBase.initZopeless(self.connection)
         self.pot = file(os.path.join(here, 'gnome-terminal.pot'))
         self.po = file(os.path.join(here, 'gnome-terminal-cy.po'))
+
+    def tearDown(self):
+        c = self.connection.getConnection()
+        self.connection.releaseConnection(c)
+        c.close()
+        connectionFactory.cachedURIs.clear()
+        super(POImportTestCase, self).tearDown()
 
     def testTemplateImporter(self):
         try:
@@ -124,7 +134,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
 def test_suite():
     loader = unittest.TestLoader()
-    return loader.loadTestsFromTestCase(POImportTestCase)
+    return unittest.makeSuite(POImportTestCase)
 
 if __name__ == '__main__':
     unittest.main()
