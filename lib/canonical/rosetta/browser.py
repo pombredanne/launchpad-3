@@ -7,6 +7,7 @@ from zope.component import getUtility
 from canonical.rosetta.interfaces import IProjects, ILanguages, IPerson
 from canonical.rosetta.sql import RosettaLanguage
 from canonical.rosetta.poexport import POExport
+from canonical.rosetta.pofile import POHeader
 
 class ViewProjects:
     def newProjectSubmit(self):
@@ -103,12 +104,41 @@ def traverseIPOTemplate(potemplate, request, name):
 
 
 class ViewPOFile:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.header = POHeader(msgstr=context.header)
+        self.header.finish()
+
+    def pluralFormExpression(self):
+        plural = self.header['Plural-Forms']
+        return plural.split(';', 1)[1].split('=',1)[1].split(';', 1)[0].strip();
+
     def completeness(self):
         return "%d%%" % (
             float(len(self.context)) / len(self.context.poTemplate) * 100)
 
     def untranslated(self):
         return len(self.context.poTemplate) - len(self.context)
+
+    def editSubmit(self):
+        if "SUBMIT" in self.request.form:
+#            import pdb; pdb.set_trace()
+            if self.request.method == "POST":
+                self.header['Plural-Forms'] = 'nplurals=%s; plural=%s;' % (
+                    self.request.form['pluralforms'],
+                    self.request.form['expression'])
+                self.context.header = self.header.msgstr.encode('utf-8')
+                self.context.pluralForms = int(self.request.form['pluralforms'])
+            else:
+                raise RuntimeError("must post this form!")
+
+            self.submitted = True
+            return "Thank you for submitting the form."
+        else:
+            self.submitted = False
+            return ""
+ 
 
 class TranslatorDashboard:
     def projects(self):

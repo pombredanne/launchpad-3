@@ -1,0 +1,42 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <div tal:content="view/editSubmit" />
+
+    <div tal:condition="not: view/submitted">
+
+        <h1>Edit POFile Pluralforms</h1>
+
+        <p class="documentDescription">
+	blah, blah, blah.
+        </p>
+
+        <form action="+edit" method="POST">
+        <fieldset>
+            Number of Pluralforms: <input type="text" name="pluralforms" tal:attributes="value context/pluralForms"/>
+            <br/>
+	    Pluralform Expression: <input type="text" name="expression" tal:attributes="value view/pluralFormExpression"/>
+	    <br/>
+            <input type="submit" name="SUBMIT" value="Submit" />
+        </fieldset>
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

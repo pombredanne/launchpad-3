@@ -63,13 +63,16 @@
   <pages for="canonical.rosetta.interfaces.IPOFile"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewPOFile"
-         lp:url="Rosetta/projects/$Project/name/$POTemplate.name/$POFile.language">
+         lp:url="Rosetta/projects/$Project.name/$POTemplate.name/$POFile.language">
     <page name="index"
           template="templates/pofile-index.pt"
           lp:url="Rosetta/projects/$Project.name/$POTemplate.name/$POFile.language"/>
     <page name="resources"
           template="templates/project-language-resources.pt"
-          lp:url="Rosetta/projects/$Project/name/$POTemplate.name/$POFile.language/resources" />
+          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/$POFile.language/resources" />
+    <page name="+edit"
+          template="templates/pofile-edit.pt"
+          lp:url="Rosetta/projects/$Project.name/$POTemplate.name/$POFile.language/+edit" />
   </pages>
 
   <page name="export.po"
