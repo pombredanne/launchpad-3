@@ -10,10 +10,10 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 PENDING = PackagePublishingStatus.PENDING
 PUBLISHED = PackagePublishingStatus.PUBLISHED
-SUPERCEDED = PackagePublishingStatus.SUPERCEDED
+SUPERSEDED = PackagePublishingStatus.SUPERSEDED
 PENDINGREMOVAL = PackagePublishingStatus.PENDINGREMOVAL
 
-# For stayofexecution processing in judgeSuperceded
+# For stayofexecution processing in judgeSuperseded
 from datetime import datetime, timedelta
 
 def _compare_packages_by_version(p1, p2):
@@ -25,7 +25,7 @@ def _compare_packages_by_version(p1, p2):
 
 class Dominator(object):
     """
-    Manage the process of marking packages as superceded in the publishing
+    Manage the process of marking packages as superseded in the publishing
     tables as and when they become obsolete.
     """
 
@@ -47,11 +47,11 @@ class Dominator(object):
             # source is a list of versions ordered most-recent-first
             # basically skip the first entry because that is
             # never dominated by us, then just set subsequent entries
-            # to SUPERCEDED unless they're already there or pending
+            # to SUPERSEDED unless they're already there or pending
             # removal
             for pubrec in sourceinput[source][1:]:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
-                    pubrec.status = SUPERCEDED;
+                    pubrec.status = SUPERSEDED;
 
     def _dominateBinary(self, binaryinput):
         """
@@ -67,11 +67,11 @@ class Dominator(object):
             # binary is a list of versions ordered most-recent-first
             # basically skip the first entry because that is
             # never dominated by us, then just set subsequent entries
-            # to SUPERCEDED unless they're already there or pending
+            # to SUPERSEDED unless they're already there or pending
             # removal
             for pubrec in binaryinput[binary][1:]:
                 if pubrec.status == PUBLISHED or pubrec.status == PENDING:
-                    pubrec.status = SUPERCEDED;
+                    pubrec.status = SUPERSEDED;
 
 
     def _sortPackages(self, pkglist, isSource = True):
@@ -101,27 +101,27 @@ class Dominator(object):
     def dominate(self, sourcepackages, binarypackages):
         """Perform dominations across the source and binarypackages
         listed in the input. Dominated packages get their status set
-        to SUPERCEDED if appropriate"""
+        to SUPERSEDED if appropriate"""
         self._dominateSource( self._sortPackages(sourcepackages) )
         self._dominateBinary( self._sortPackages(binarypackages, False) )
 
-    def judgeSuperceded(self, sourcepackages, binarypackages):
-        """Judge whether or the supplied packages (superceded ones anyway)
+    def judgeSuperseded(self, sourcepackages, binarypackages):
+        """Judge whether or the supplied packages (superseded ones anyway)
         should be moved to death row or not"""
 
         # XXX dsilvers 2004-11-12 This needs work. Unfortunately I'm not
         # completely sure how to correct for this.
         # For now; binaries were dominated as per sources and we just
-        # treat everything as entirely separate. Nothing stays superceded
+        # treat everything as entirely separate. Nothing stays superseded
         # but we keep the separation for later correct implementation
 
         for p in sourcepackages:
-            if p.status == SUPERCEDED:
+            if p.status == SUPERSEDED:
                 p.status = PENDINGREMOVAL.value
                 p.scheduleddeletiondate = datetime.utcnow() + \
                                           timedelta(days=cnf.stayofexecution)
         for p in binarypackages:
-            if p.status == SUPERCEDED:
+            if p.status == SUPERSEDED:
                 p.status = PENDINGREMOVAL.value
                 p.scheduleddeletiondate = datetime.utcnow() + \
                                           timedelta(days=cnf.stayofexecution)

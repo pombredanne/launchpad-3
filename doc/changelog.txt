@@ -2,6 +2,48 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-15 14:51:17 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1317
+
+    Summary:
+      Correct the spelling of superceded to superseded as per Colin Watson's suggestion
+    Revision:
+      launchpad--devel--0--patch-1317
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-14
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-15
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-16
+       s/superceded/superseded/g
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-17
+       Oops, fix the tests too
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-18
+       Fix up the interfaces and sqlobjects for the ced->sed change
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/lp/dbschema.py
+     lib/canonical/lucille/domination.py
+     lib/canonical/lucille/tests/test_domination.py
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-14
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-15
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-16
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-17
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-18
+
+
 2005-02-15 14:47:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1316
 
     Summary:
