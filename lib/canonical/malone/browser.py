@@ -210,7 +210,9 @@ class MaloneBugAddForm(object):
 # the MaloneBugView class with its ViewPageTemplateFile attributes
 class MaloneBugView(object):
     # XXX fix these horrific relative paths
-    watchPortlet = ViewPageTemplateFile('../launchpad/templates/portlet-bug-watch.pt')
+    watchPortlet = ViewPageTemplateFile(
+            '../launchpad/templates/portlet-bug-watch.pt'
+            )
     productAssignmentPortlet = ViewPageTemplateFile(
             '../launchpad/templates/portlet-bug-productassignment.pt'
             )

@@ -2,9 +2,6 @@
 
 
 
-
-
-
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', NULL, NULL, NULL, NULL, NULL, 'name1');
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (2, 'Robert Collins', 'Robert', 'Collins', NULL, NULL, NULL, NULL, NULL, 'name2');
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, NULL, NULL, 'name3');
@@ -733,9 +730,9 @@ INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (5, 11, 2, 2)
 
 
 
-INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackage, assignee) VALUES (1, 1, 1, 2, 4, 2, NULL, NULL);
-INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackage, assignee) VALUES (2, 2, 1, 2, 4, 2, NULL, 12);
-INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackage, assignee) VALUES (3, 3, 1, 1, 2, 3, NULL, NULL);
+INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee) VALUES (1, 1, 1, 2, 4, 2, NULL, NULL);
+INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee) VALUES (2, 2, 1, 2, 4, 2, NULL, 12);
+INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee) VALUES (3, 3, 1, 1, 2, 3, NULL, NULL);
 
 
 
@@ -798,10 +795,6 @@ INSERT INTO bugmessage (id, bug, datecreated, title, contents, "owner", parent, 
 
 
 
-
-
-
-SELECT pg_catalog.setval('scrapedproject_id_seq', 1, false);
 
 
 
