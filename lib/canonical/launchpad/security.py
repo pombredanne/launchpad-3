@@ -6,8 +6,9 @@ __metaclass__ = type
 
 from zope.interface import implements, Interface
 
-from canonical.launchpad.interfaces import IAuthorization, IHasOwner, IPerson
-from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin
+from canonical.launchpad.interfaces import IAuthorization, IHasOwner, \
+    IPerson, ISourceSource, ISourceSourceAdmin, IMilestone, IHasProduct, \
+    IHasProductAndAssignee
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -16,9 +17,11 @@ class AuthorizationBase:
         self.obj = obj
 
     def checkUnauthenticated(self):
+        """Must return True or False. See IAuthorization.checkUnauthenticated."""
         return False
 
     def checkPermission(self, person):
+        """Must return True or False. See IAuthorization.checkPermission."""
         raise NotImplementedError
 
 
@@ -43,6 +46,16 @@ class EditByOwnersOrAdmins(AuthorizationBase):
             return False
 
 
+class EditByOwner(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IHasOwner
+
+    def checkPermission(self, person):
+        """Authorize the object owner."""
+        if person.id == self.obj.owner.id:
+            return True
+
+
 class AdminSourceSourceByButtSource(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = ISourceSourceAdmin
@@ -63,3 +76,21 @@ class EditSourceSourceByButtSource(AuthorizationBase):
         else:
             return False
 
+
+class EditByProductOwner(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IHasProduct
+
+    def checkPermission(self, person):
+        """Authorize the product maintainer."""
+        return self.obj.product.owner.id == person.id
+
+
+class EditByProductOwnerOrAssignee(EditByProductOwner):
+    permission = 'launchpad.Edit'
+    usedfor = IHasProductAndAssignee
+
+    def checkPermission(self, person):
+        return (
+            super(EditByProductOwnerOrAssignee, self).checkPermission(person) or
+            self.obj.assignee.id == person.id)

@@ -7,7 +7,7 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from canonical.launchpad.interfaces.launchpad import IHasOwner, IHasAssignee
 
 class IProduct(IHasOwner):
     """A DOAP Product. DOAP describes the open source world as Projects
@@ -100,6 +100,11 @@ class IProduct(IHasOwner):
     branches = Attribute(_("""An iterator over the Bazaar branches that are
     related to this product."""))
 
+    milestones = Attribute(_(
+        """The release milestones associated with this product, useful in
+        particular to the maintainer, for organizing which bugs will be fixed
+        when."""))
+
     def poTemplatesToImport():
         """Returns all PO templates from this product that have a rawfile 
         pending of import into Rosetta."""
@@ -151,6 +156,17 @@ class IProduct(IHasOwner):
 
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
+
+
+class IHasProduct(Interface):
+    """An object that has a product attribute that is an IProduct."""
+
+    product = Attribute("The object's product")
+
+
+class IHasProductAndAssignee(IHasProduct, IHasAssignee):
+    """An object that has a product attribute and an assigned attribute.
+    See IHasProduct and IHasAssignee."""
 
 
 class IProductSet(Interface):

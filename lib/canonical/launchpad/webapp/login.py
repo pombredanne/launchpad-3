@@ -8,7 +8,7 @@ from zope.component import getUtility
 from zope.app.session.interfaces import ISession
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from zope.event import notify
-from canonical.launchpad.webapp.interfaces import LoggedInEvent
+from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 
 
@@ -50,19 +50,20 @@ class CookieLoginPage:
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
-            self._logInPerson(principal)
+            self._logInPerson(principal, email)
             self.was_logged_in = True
         else:
             errortext = "The email address and password do not match."
         return ''
 
-    def _logInPerson(self, principal):
+    def _logInPerson(self, principal, email):
         session = ISession(self.request)
         authdata = session['launchpad.authenticateduser']
         previous_login = authdata.get('personid')
         authdata['personid'] = principal.id
         authdata['logintime'] = datetime.utcnow()
-        notify(LoggedInEvent(self.request))
+        authdata['login'] = email
+        notify(CookieAuthLoggedInEvent(self.request, email))
 
 
 class CookieLogoutPage:

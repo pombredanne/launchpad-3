@@ -46,7 +46,7 @@
 	<div>
 	 <table>
 	 <tr><th><a 
-	 tal:attributes="href string:sources/">
+	 tal:attributes="href string:+sources/">
 	 View Source Packages List</a></th>
 	 <th>( <span tal:content="context/sourcecount"/> 
 	 Packages)</th>
@@ -73,7 +73,7 @@
 <h3>Source Packages</h3>
 <ul>
  <li tal:repeat="source view/sources">
-  <a tal:attributes="href string:sources/${source/name}"
+  <a tal:attributes="href string:+sources/${source/name}"
      tal:content="source/name">SOURCE</a> : 
     <span tal:content="source/shortdesc"/>
   </li> 

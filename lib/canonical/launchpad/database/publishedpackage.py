@@ -37,7 +37,11 @@ class PublishedPackage(SQLBase):
     binarypackageshortdesc = StringCol(immutable=True)
     binarypackagedescription = StringCol(immutable=True)
     binarypackageversion = StringCol(immutable=True)
-    build = IntCol(immutable=True)
+    # Daniel Debonzi 20050105
+    # Why not ForeignKey?
+    ## build = IntCol(immutable=True)
+    build = ForeignKey(foreignKey='Build', 
+                       dbName='build')
     datebuilt = DateTimeCol(immutable=True)
     sourcepackagerelease = IntCol(immutable=True)
     sourcepackagereleaseversion = StringCol(immutable=True)

@@ -22,7 +22,11 @@ _ = MessageIDFactory('launchpad')
 dbname = os.environ.get('LP_DBNAME', 'launchpad_ftest')
 dbhost = os.environ.get('LP_DBHOST', '')
 
-def initZopeless(debug=False):
+def initZopeless(debug=False, dbname=None, dbhost=None):
+    if dbname is None:
+        dbname = globals()['dbname']
+    if dbhost is None:
+        dbhost = globals()['dbhost']
     return ZopelessTransactionManager('postgres://%s/%s' % (dbhost, dbname),
                                       debug=debug)
 

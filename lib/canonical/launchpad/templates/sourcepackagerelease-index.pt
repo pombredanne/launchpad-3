@@ -57,12 +57,18 @@
                No Changelog for this Source Release )
            </tal:dummy>
 
-        <ul>
-            <li tal:repeat="binary context/binaries" >
-             <a tal:content="string:${binary/name}-${binary/version}"
-         tal:attributes="href
-         string:../../i386/${binary/name}"
-         />: <span tal:content="binary/shortdesc"/></li>
+        <ul tal:define="binaries view/binaries">
+	    <li tal:condition="not:binaries">
+	      <i>No binaries generated for this
+	      SourcePackageRelease</i>
+	    </li>
+	    <li tal:repeat="bin binaries" >
+	      <span tal:replace="bin" /> 
+	        <span tal:repeat="archtag python:binaries[bin]">
+		  (<a tal:content="archtag" tal:attributes="href 
+		      string:../../${archtag}/${bin}" />) 
+		</span>
+	    </li>
         </ul>
 
 

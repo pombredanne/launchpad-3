@@ -102,6 +102,9 @@ class IBinaryPackageSet(Interface):
     def findPackagesByName(pattern):
         """Search BinaryPackages matching pattern"""
 
+    def findPackagesByArchtagName(archtag, pattern, fti=False):
+        """Search BinaryPackages matching pattern and archtag"""
+
     def __getitem__(name):
         """Getter"""    
 
@@ -114,7 +117,8 @@ class IBinaryPackageUtility(Interface):
     def getByNameInDistroRelease(distroreleaseID, name):
         """Get an BinaryPackage in a DistroRelease by its name"""
 
-    def findByNameInDistroRelease(distroreleaseID, pattern):
+    def findByNameInDistroRelease(distroreleaseID, pattern,
+                                  archtag=None, fti=False):
         """Returns a set of binarypackages that matchs pattern
         inside a distrorelease"""
 

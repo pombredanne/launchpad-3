@@ -919,6 +919,7 @@ class POFile(SQLBase, RosettaStats):
             POMsgSet.potmsgset = POTMsgSet.id AND
             POMsgSet.sequence <> 0 AND
             POTMsgSet.sequence = 0''' % self.id,
+            orderBy='sequence',
             clauseTables = [
                 'POTMsgSet',
                 ]))

@@ -22,6 +22,7 @@
     <include file="country.zcml" />
     <include file="project.zcml" />
     <include file="product.zcml" />
+    <include file="milestone.zcml" />
     <include file="productseries.zcml" />
     <include file="productrelease.zcml" />
     <include file="binarypackage.zcml" />

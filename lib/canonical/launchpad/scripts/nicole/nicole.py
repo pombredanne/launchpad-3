@@ -55,8 +55,13 @@ def merge_data(pref, sup):
 
 def grab_web_info(name):
     datas = {}
-    for short, desc in (('sf', 'Sourceforge'),
-                        ('fm', 'Freshmeat')):
+
+#     repositories = (('sf', 'Sourceforge'),
+#                     ('fm', 'Freshmeat'))
+
+    repositories = (('fm', 'Freshmeat'),)
+
+    for short, desc in repositories:
 
         print '@ Looking for %s on %s' % (name, desc)
         try:
@@ -67,7 +72,8 @@ def grab_web_info(name):
             print '@\tNot Found'
         datas[short] = data
 
-    return merge_data(datas['fm'], datas['sf'])
+    return datas['fm']
+#    return merge_data(datas['fm'], datas['sf'])
 
 def createorupdate(doap, product_name):
     data = grab_web_info(product_name)

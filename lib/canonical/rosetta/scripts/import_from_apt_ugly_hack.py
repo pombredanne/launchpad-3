@@ -52,6 +52,8 @@ mapping = {
     'lvm2': 'logicalvolumemanager',
 }
 
+extra_packages = [ 'synaptic', 'dbus' ]
+
 def download(local, uri, resume, md5sum=None):
     if resume:
         res = '-C -'
@@ -288,8 +290,9 @@ if __name__ == '__main__':
         print "Processing: %s" % parser.Section.get("Package")
 
         # We will work only with packages that work with cdbs
-        if parser.Section.get("Build-Depends") is not None and \
-           'cdbs' in parser.Section.get("Build-Depends").split():
+        if ((parser.Section.get("Build-Depends") is not None and 
+           'cdbs' in parser.Section.get("Build-Depends").split()) or 
+           parser.Section.get("Package") in extra_packages):
 
             for srcFile in parser.Section.get("Files").strip().split('\n'):
 
@@ -319,7 +322,9 @@ if __name__ == '__main__':
             print "Processing %s" % dscFile
             extractDeb(dscFile)
             try:
-                updateCDBS(dirName)
+                if (parser.Section.get("Build-Depends") is not None and 
+                   'cdbs' in parser.Section.get("Build-Depends").split()):
+                    updateCDBS(dirName)
             except RuntimeError, e:
                 print "***********************************"
                 print e

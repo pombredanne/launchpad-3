@@ -19,6 +19,8 @@
     <div tal:replace="structure view/latestBugPortlet" />
     <div tal:replace="structure view/branchesPortlet" />
     <div tal:replace="structure view/translationsPortlet" />
+    <div tal:condition="python:request.principal and request.principal.id == context.owner.id"
+         tal:replace="structure view/milestonePortlet" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">

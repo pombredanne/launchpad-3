@@ -199,9 +199,10 @@ class SourcePackageInDistroSet(object):
         """Take the distrorelease when it makes part of the context"""
         self.distrorelease = distrorelease
 
-    def findPackagesByName(self, pattern):
+    def findPackagesByName(self, pattern, fti=False):
         srcutil = getUtility(ISourcePackageUtility)
-        return srcutil.findByNameInDistroRelease(self.distrorelease.id, pattern)
+        return srcutil.findByNameInDistroRelease(self.distrorelease.id,
+                                                 pattern, fti)
 
     def __iter__(self):
         plublishing_status = dbschema.PackagePublishingStatus.PUBLISHED.value
@@ -229,15 +230,34 @@ class SourcePackageUtility(object):
     """A utility for sourcepackages"""
     implements(ISourcePackageUtility)
 
-    def findByNameInDistroRelease(self, distroreleaseID, pattern):
+    def findByNameInDistroRelease(self, distroreleaseID,
+                                  pattern, fti=False):
         """Returns a set o sourcepackage that matchs pattern
         inside a distrorelease"""
 
-        pattern = quote("%%" + pattern.replace('%', '%%') + "%%")
-        query = ('distrorelease = %d AND '
-                 '(name ILIKE %s OR shortdesc ILIKE %s)' %
-                 (distroreleaseID, pattern, pattern))
-        return VSourcePackageReleasePublishing.select(query, orderBy='name')
+        clauseTables = ()
+
+        pattern = pattern.replace('%', '%%')
+
+        if fti:
+            clauseTables = ('SourcePackage',)
+            query = ('VSourcePackageReleasePublishing.sourcepackage = '
+                     'SourcePackage.id AND '
+                     'distrorelease = %d AND '
+                     '(name ILIKE %s OR SourcePackage.fti @@ ftq(%s))'
+                     %(distroreleaseID,
+                       quote('%%'+pattern+'%%'),
+                       quote(pattern))
+                     )
+
+        else:
+            query = ('distrorelease = %d AND '
+                     'name ILIKE %s '
+                     % (distroreleaseID, quote('%%'+pattern+'%%'))
+                     )
+
+        return VSourcePackageReleasePublishing.select(query, orderBy='name',
+                                                      clauseTables=clauseTables)
 
     def getByNameInDistroRelease(self, distroreleaseID, name):
         """Returns a SourcePackage by its name"""

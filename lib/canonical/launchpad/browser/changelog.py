@@ -1,4 +1,5 @@
 import os, os.path
+from canonical.lp import encoding
 
 class ChangeLog(object):
     def __init__(self, context, request):
@@ -13,5 +14,6 @@ class ChangeLog(object):
                 'doc', 'changelog.txt',
                 )).readlines()
         lines = [l for l in lines if not l.startswith('#')]
-        return ''.join(lines)
+        log = ''.join(lines)
+        return encoding.guess(log)
     changelog = property(changelog)

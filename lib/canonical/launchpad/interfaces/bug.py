@@ -139,6 +139,8 @@ class IBugTask(Interface):
         title=_("Source Package Name"), required=False, vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    milestone = Choice(
+        title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Bug Status'), vocabulary='BugStatus',
         default=int(dbschema.BugAssignmentStatus.NEW))
@@ -157,3 +159,9 @@ class IBugTask(Interface):
     dateassigned = Datetime()
     datecreated  = Datetime()
     owner = Int() 
+    maintainer = TextLine(
+        title=_("Maintainer"), required=True, readonly=True)
+    bugtitle = TextLine(
+        title=_("Bug Title"), required=True, readonly=True)
+    bugdescription = Text(
+        title=_("Bug Description"), required=False, readonly=True)

@@ -213,8 +213,8 @@ class POMessage(object):
         u'msgid ""\n"abcdefghijklmnopqr"\nmsgstr "z"'
         >>> POMessage(msgid="abcdef hijklm", msgstr="z").__unicode__(20)
         u'msgid ""\n"abcdef hijklm"\nmsgstr "z"'
-        >>> POMessage(msgid="abcdefghijklmnopq rs", msgstr="z").__unicode__(20)
-        u'msgid ""\n"abcdefghijklmnopq "\n"rs"\nmsgstr "z"'
+        >>> POMessage(msgid="abcdefghijklmnopqr st", msgstr="z").__unicode__(20)
+        u'msgid ""\n"abcdefghijklmnopqr "\n"st"\nmsgstr "z"'
         >>> POMessage(msgid="abc\ndef", msgstr="z").__unicode__(20)
         u'msgid ""\n"abc\\n"\n"def"\nmsgstr "z"'
 
@@ -250,7 +250,20 @@ class POMessage(object):
                     break
             else:
                 paragraph += u'\\n'
-            wrapped = wrapper.wrap(paragraph)
+            # XXX: Carlos Perello Marin 05/01/2004 I'm not sure this is the
+            # best way to fix the bug #24 . The problem cames with the
+            # TextWrapper.wrap method. If you give it a string that ends with
+            # one or more white spaces it just removes it and that's really
+            # bad for us because that changes the msgid.
+            # With this if - else I just prevent to call the method if it's
+            # not needed but It will still fail with a really long line that
+            # ends with a white space... We need to move to other solution
+            # outside TextWrapper.wrap because I don't see a way to disable
+            # that behaviour.
+            if len(paragraph) <= wrapper.width + 1:
+                wrapped = [wrapper.subsequent_indent + paragraph]
+            else:
+                wrapped = wrapper.wrap(paragraph)
             for line in wrapped[:-1]:
                 r.append(line + u" " + wrapper.subsequent_indent)
             r.append(wrapped[-1] + wrapper.subsequent_indent)

@@ -1,17 +1,22 @@
-'''
+# Copyright 2004 Canonical Ltd.  All rights reserved.
+"""
 LaunchBag
 
-The collection of stuff we have traversed to.
-'''
+The collection of stuff we have traversed.
+"""
+__metaclass__ = type
 
 from zope.interface import Interface, implements
-from zope.app.zapi import getUtility
+from zope.component import getUtility
 import zope.security.management
+import zope.thread
+from zope.app.session.interfaces import ISession
+
 from canonical.launchpad.interfaces import \
         IOpenLaunchBag, ILaunchBag, \
         ILaunchpadApplication, IPerson, IProject, IProduct, IDistribution, \
         IDistroRelease, ISourcePackage, IBug, ISourcePackageReleasePublishing
-import zope.thread
+from canonical.launchpad.webapp.interfaces import ILoggedInEvent
 
 class LaunchBag(object):
 
@@ -31,6 +36,14 @@ class LaunchBag(object):
         }
 
     _store = zope.thread.local()
+
+    def setLogin(self, login):
+        '''See IOpenLaunchBag.'''
+        self._store.login = login
+
+    def login(self):
+        return getattr(self._store, 'login', None)
+    login = property(login)
 
     def user(self):
         interaction = zope.security.management.queryInteraction()
@@ -57,6 +70,7 @@ class LaunchBag(object):
         store = self._store
         for attribute in self._registry.values():
             setattr(store, attribute, None)
+        store.login = None
 
     def site(self):
         return self._store.site
@@ -100,9 +114,30 @@ class LaunchBag(object):
         return self._store.bug
     bug = property(bug)
 
+
 class LaunchBagView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.bag = getUtility(ILaunchBag)
 
+
+def set_login_in_launchbag_when_principal_identified(event):
+    """Subscriber for IPrincipalIdentifiedEvent that sets 'login' in launchbag.
+    """
+    launchbag = getUtility(IOpenLaunchBag)
+    loggedinevent = ILoggedInEvent(event, None)
+    if loggedinevent is None:
+        # We must be using session auth.
+        session = ISession(event.request)
+        authdata = session['launchpad.authenticateduser']
+        assert authdata['personid'] == event.principal.id
+        launchbag.setLogin(authdata['login'])
+    else:
+        launchbag.setLogin(loggedinevent.login)
+
+def reset_login_in_launchbag_on_logout(event):
+    """Subscriber for ILoggedOutEvent that sets 'login' in launchbag to None.
+    """
+    launchbag = getUtility(IOpenLaunchBag)
+    launchbag.setLogin(None)

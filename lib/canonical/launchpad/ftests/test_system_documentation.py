@@ -2,30 +2,25 @@
 lib/canonical/launchpad/doc."""
 
 import unittest
-from pprint import pprint
-from zope.testing.doctest import DocFileSuite, DocTestSuite
+import os
 from canonical.functional import FunctionalTestSetup
+from canonical.functional import FunctionalDocFileSuite
 
-def setUp(junk):
-    FunctionalTestSetup().setUp()
-
-def tearDown(junk):
-    FunctionalTestSetup().tearDown()
+here = os.path.dirname(os.path.realpath(__file__))
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.TestSuite([DocFileSuite(
-            '../doc/bugsubscription.txt', setUp=setUp, tearDown=tearDown
-            )]))
-    suite.addTest(unittest.TestSuite([DocFileSuite(
-        '../doc/vocabularies.txt', setUp=setUp, tearDown=tearDown
-        )]))
-    suite.addTest(unittest.TestSuite([DocFileSuite(
-        '../doc/bugactivity.txt', setUp=setUp, tearDown=tearDown
-        )]))
-    suite.addTest(unittest.TestSuite([DocFileSuite(
-        '../doc/person.txt', setUp=setUp, tearDown=tearDown
-        )]))
+    testsdir = os.path.abspath(
+            os.path.normpath(os.path.join(here, '..', 'doc'))
+            )
+
+    filenames = [filename
+                 for filename in os.listdir(testsdir)
+                 if filename.lower().endswith('.txt')
+                 ]
+    for filename in filenames:
+        path = os.path.join('../doc/', filename)
+        suite.addTest(FunctionalDocFileSuite(path))
     return suite
 
 if __name__ == '__main__':

@@ -1,9 +1,19 @@
-<configure xmlns="http://namespaces.zope.org/zope">
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser">
 
   <include package="canonical.launchpad.webapp" />
   <include package="canonical.launchpad.vocabularies" />
   <include package="canonical.launchpad.zcml" />
   <include file="security.zcml" />
   <include file="robots.zcml" />
+
+  <!-- legal link -->
+  <browser:page
+    for="canonical.publication.RootObject"
+    name="legal-temp"
+    template="templates/launchpad-legal.pt"
+    permission="zope.Public"
+    />
 
 </configure>

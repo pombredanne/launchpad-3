@@ -24,8 +24,16 @@ from canonical.launchpad.database import SourcePackageName, \
                                          SourcePackageInDistro,\
                                          BinaryPackageSet, \
                                          SourcePackageInDistroSet, \
-                                         PublishedPackageSet
+                                         PublishedPackageSet, \
+                                         PackagePublishing
+# XXX: Daniel Debonzi 20040401
+# It is been done inside DistroRelease.sourcecount to avoid
+# circular import
+## from canonical.launchpad.database import SourcePackagePublishing
 
+#
+#
+#
 
 class DistroRelease(SQLBase):
     """Distrorelease SQLObject"""
@@ -83,32 +91,28 @@ class DistroRelease(SQLBase):
     state = property(state)
 
     def sourcecount(self):
-        clauseTables = ['SourcePackageName', 'SourcePackage',
-            'SourcePackageRelease', 'SourcePackagePublishing']
-        query = """ sourcepackagename.id = sourcepackage.sourcepackagename
-                AND SourcePackagePublishing.sourcepackagerelease=
-                                                  SourcePackageRelease.id
-                AND SourcePackageRelease.sourcepackage = SourcePackage.id
-                AND SourcePackagePublishing.distrorelease = %s;""" % (self.id)
-        resultset = SourcePackageName.select(query, distinct=True,
-            clauseTables=clauseTables)
-        return resultset.count()
-
+        # XXX: Daniel Debonzi 20040104
+        # Import inside method to avoid circular import
+        # See the top of the file
+        from canonical.launchpad.database import SourcePackagePublishing
+        query = ('SourcePackagePublishing.status = %s '
+                 'AND SourcePackagePublishing.distrorelease = %s'
+                 % (dbschema.PackagePublishingStatus.PUBLISHED.value,
+                    self.id))
+        return SourcePackagePublishing.select(query).count()
 
     sourcecount = property(sourcecount)
 
     def binarycount(self):
-        clauseTables = ['BinaryPackageName', 'PackagePublishing',
-            'BinaryPackage', 'DistroArchRelease']
-        query = """
-               BinaryPackageName.id = BinaryPackage.binarypackagename AND
-               BinaryPackage.id = PackagePublishing.binarypackage AND
-               PackagePublishing.distroarchrelease = DistroArchRelease.id AND
-               DistroArchRelease.distrorelease = %s
-               """ % (self.id)
-        resultset = BinaryPackageName.select(query, distinct=True,
-            clauseTables=clauseTables)
-        return resultset.count()
+        clauseTables = ('DistroArchRelease',)
+        query = ('PackagePublishing.status = %s '
+                 'AND PackagePublishing.distroarchrelease = '
+                 'DistroArchRelease.id '
+                 'AND DistroArchRelease.distrorelease = %s'
+                 % (dbschema.PackagePublishingStatus.PUBLISHED.value,
+                    self.id))
+        return PackagePublishing.select(query,
+                                        clauseTables=clauseTables).count()
 
     binarycount = property(binarycount)
 

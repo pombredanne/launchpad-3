@@ -1,31 +1,42 @@
 __metaclass__ = type
 
-# Zope
-from zope.interface import implements, directlyProvides, directlyProvidedBy
+from sets import Set
 
-# SQL imports
-from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import nowUTC, DEFAULT
+# Zope
+from zope.component import getUtility
+from zope.interface import implements, directlyProvides, directlyProvidedBy
 
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
+from canonical.database.sqlbase import SQLBase
+from canonical.database.constants import nowUTC, DEFAULT
 from canonical.launchpad.interfaces import IBugsAssignedReport, \
-    IBugTaskSet, ISourcePackageBugTask, IUpstreamBugTask
-
+    IBugTaskSet, ISourcePackageBugTask, IEditableUpstreamBugTask, \
+    IReadOnlyUpstreamBugTask, ILaunchBag
+from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.bug import BugTask
-
 from canonical.lp import dbschema
-from sets import Set
+
+def _get_authenticated_principal():
+    # XXX, Brad Bollenbach, 2005-01-05: should possible move this into some api
+    # module that contains shortcut functions for getting at stuff in the
+    # launchbag
+    launchbag = getUtility(ILaunchBag)
+    if launchbag.login:
+        return launchbag.user
 
 def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))
 
-def mark_as_upstream_task(task):
-    mark_task(task, IUpstreamBugTask)
+def mark_as_editable_upstream_task(task):
+    mark_task(task, IEditableUpstreamBugTask)
+
+def mark_as_readonly_upstream_task(task):
+    mark_task(task, IReadOnlyUpstreamBugTask)
 
 def mark_as_sourcepackage_task(task):
     mark_task(task, ISourcePackageBugTask)
@@ -40,22 +51,38 @@ class BugTaskSet:
         self.bug = bug
 
     def __getitem__(self, id):
+        principal = _get_authenticated_principal()
         try:
             task = self.table.select(self.table.q.id == id)[0]
             if task.product:
-                mark_as_upstream_task(task)
+                # upstream task
+                if principal and (
+                    (principal.id == task.product.owner.id) or
+                    (task.assignee and principal.id == task.assignee.id)):
+                    mark_as_editable_upstream_task(task)
+                else:
+                    mark_as_readonly_upstream_task(task)
             else:
-                mark_as_sourcepackage_task(task)
+                # sourcepackage task
+                mark_as_upstream_task(task)
+
             return task
         except IndexError:
             # Convert IndexError to KeyErrors to get Zope's NotFound page
             raise KeyError, id
 
     def __iter__(self):
+        principal = _get_authenticated_principal()
+
         for row in self.table.select(self.table.q.bugID == self.bug):
             if row.product:
-                mark_as_upstream_task(row)
+                # upstream task
+                if principal and principal.id == row.product.owner.id:
+                    mark_as_editable_upstream_task(row)
+                else:
+                    mark_as_readonly_upstream_task(row)
             else:
+                # sourcepackage task
                 mark_as_sourcepackage_task(row)
 
             yield row

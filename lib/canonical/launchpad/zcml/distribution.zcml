@@ -32,8 +32,12 @@
             name="+index"
             template="../templates/distro-index.pt"
             lp:url="Soyuz/distros/$Distribution.name/" />
+
         <!-- XXX sabdfl moved this here, need to reactivate search tools -->
-	    <browser:page
+	<!-- XXX: Daniel Debonzi 20050105 -->
+	<!-- Does it still useful? don't we have enought and better -->
+	<!-- search places?	 -->
+	<browser:page
             name="+sources"
             template="../templates/distro-sources.pt"
 	        lp:url="Soyuz/distros/$Distribution.name/+sources"

@@ -135,13 +135,21 @@ class DistroReleaseBinariesView:
         self.context = context
         self.request = request
 
+        self.fti = self.request.get("fti", "")
+
     def binaryPackagesBatchNavigator(self):
         name = self.request.get("name", "")
-
+        
         if not name:
-            binary_packages = list(self.context)
+            binary_packages = []
+            # XXX: Daniel Debonzi 20050104
+            # Returns all binarypackage available.
+            # Do not work with more than 45000 binarypackage
+            # (Actual dogfood db)
+            #binary_packages = list(self.context)
         else:
-            binary_packages = list(self.context.findPackagesByName(name))
+            binary_packages = list(self.context.findPackagesByArchtagName(name,
+                                                                          self.fti))
 
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', BATCH_SIZE))
