@@ -28,6 +28,9 @@ class SubsystemOnlySession(session.SSHSession, object):
             raise AttributeError, name
         return object.__getattribute__(self, name)
 
+    def closeReceived(self):
+        self.loseConnection()
+
 
 class SFTPOnlyAvatar(avatar.ConchUser):
     def __init__(self, avatarId, homeDirsRoot):
