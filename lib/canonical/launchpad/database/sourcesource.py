@@ -123,7 +123,8 @@ class SourceSource(SQLBase):
         """change the product this sync belongs to to be 'product'"""
         assert (self.canChangeProduct())
         products = getUtility(IProductSet)
-        self.product=products[targetname]
+        self.product=products[targetname].id
+        assert (self.product is not None)
 
     def needsReview(self):
         if not self.syncapproved and self.autotested:
