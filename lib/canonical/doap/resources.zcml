@@ -1,6 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/browser">
-
-    <resource name="doap.png" file="images/doap.png" />
-
-</configure>
-<!-- arch-tag: dccf3dda-cdc7-4e48-9fd1-1ac2dcb58c7a-->

@@ -6,7 +6,7 @@
     i18n_domain="launchpad">
     
     <!-- BugAttachment -->
-    <content class="canonical.malone.browser.MaloneBugAttachment">
+    <content class="canonical.launchpad.database.MaloneBugAttachment">
         <allow interface="canonical.launchpad.interfaces.IMaloneBugAttachment" />
         <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IMaloneBug" />
     </content>
@@ -17,7 +17,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IMaloneBugAttachment"
-        function="canonical.malone.browser.traverseBugAttachment" />
+        function="canonical.launchpad.browser.traverseBugAttachment" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugAttachment"
@@ -33,7 +33,7 @@
         for="canonical.launchpad.interfaces.IBugAttachmentContainer"
         label="Add a Bug Attachment"
         fields="name description libraryfile"
-        content_factory="canonical.malone.browser.BugAttachmentFactory"
+        content_factory="canonical.launchpad.database.BugAttachmentFactory"
         arguments=""
         keyword_arguments="name description libraryfile"
         permission="launchpad.AnyPerson"
@@ -52,12 +52,12 @@
         />
 
     <!-- BugAttachmentContainer -->
-    <content class="canonical.malone.browser.BugAttachmentContainer">
+    <content class="canonical.launchpad.database.BugAttachmentContainer">
         <allow interface="canonical.launchpad.interfaces.IBugAttachmentContainer" />
     </content>
 
     <utility
-        factory="canonical.malone.browser.BugAttachmentContainer"
+        factory="canonical.launchpad.database.BugAttachmentContainer"
         provides="canonical.launchpad.interfaces.IBugAttachmentContainer" />
 
     <browser:defaultView

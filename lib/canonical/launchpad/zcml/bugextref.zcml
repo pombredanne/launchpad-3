@@ -21,10 +21,10 @@
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugExternalRef"
-        for="canonical.malone.browser.IBugExternalRefContainer"
+        for="canonical.launchpad.interfaces.IBugExternalRefContainer"
         label="Add External Reference"
         fields="bugreftype data description"
-        content_factory="canonical.malone.browser.BugExternalRefFactory"
+        content_factory="canonical.launchpad.database.BugExternalRefFactory"
         arguments=""
         keyword_arguments="bugreftype data description"
         permission="launchpad.AnyPerson"
@@ -45,13 +45,13 @@
         for="canonical.launchpad.interfaces.IBugExternalRefContainer"
         name="+index" />
 
-    <content class="canonical.malone.browser.BugExternalRefContainer">
+    <content class="canonical.launchpad.database.BugExternalRefContainer">
         <allow interface="canonical.launchpad.interfaces.IBugExternalRefContainer" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <utility
-        factory="canonical.malone.browser.BugExternalRefContainer"
+        factory="canonical.launchpad.database.BugExternalRefContainer"
         provides="canonical.launchpad.interfaces.IBugExternalRefContainer" />
 
     <browser:traverse

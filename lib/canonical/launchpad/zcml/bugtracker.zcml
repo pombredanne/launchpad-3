@@ -19,7 +19,7 @@
 
     <browser:pages for="canonical.launchpad.database.BugTracker"
         permission="launchpad.AnyPerson"
-        class="canonical.malone.browser.BugTrackerView">
+        class="canonical.launchpad.browser.BugTrackerView">
         <browser:page name="+edit"
             template="../templates/bugtracker-edit.pt"
             lp:url="malone/bugtrackers/$BugTracker.name/+edit" />
@@ -50,7 +50,7 @@
 
     <browser:pages for="canonical.launchpad.interfaces.IBugTrackerSet"
         permission="launchpad.AnyPerson"
-        class="canonical.malone.browser.BugTrackerSetView">
+        class="canonical.launchpad.browser.BugTrackerSetView">
         <browser:page name="+newbugtracker"
             template="../templates/bugtracker-new.pt"
             lp:url="malone/bugtrackers/+new" />

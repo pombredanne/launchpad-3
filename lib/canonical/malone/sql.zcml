@@ -1,9 +1,0 @@
-<configure
-  xmlns="http://namespaces.zope.org/zope"
-  xmlns:browser="http://namespaces.zope.org/browser">
-
-  <!-- Content directives.  We need to make sure SubURLs and other kinds of
-       traversal work properly.  We also need to make security declarations.
-  -->
-
-</configure>

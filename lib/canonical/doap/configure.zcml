@@ -1,28 +1,52 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    i18n_domain="doap"
-    xmlns:i18n="http://namespaces.zope.org/i18n">
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
 
-  <!-- This view registers 'doap' as a suburl of RootObject. -->
-  <browser:suburl
-      for="canonical.publication.RootObject"
-      class="canonical.doap.DOAPApplication"
-      name="doap" />
+    <browser:resource name="doap.png" file="images/doap.png" />
+    
+    <!-- This view registers 'doap' as a suburl of RootObject. -->
+    <browser:suburl
+        for="canonical.publication.RootObject"
+        class="canonical.doap.DOAPApplication"
+        name="doap" />
 
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IDOAPApplication"
-      name="+index" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDOAPApplication"
+        name="+index" />
 
-  <browser:suburl
-      for="canonical.launchpad.interfaces.IDOAPApplication"
-      utility="canonical.launchpad.interfaces.IProjectContainer"
-      permission="zope.Public"
-      name="projects" />
+    <browser:suburl
+        for="canonical.launchpad.interfaces.IDOAPApplication"
+        utility="canonical.launchpad.interfaces.IProjectContainer"
+        permission="zope.Public"
+        name="projects" />
 
-  <include file="pages.zcml" />
-  <include file="resources.zcml" />
-  <include file="vocabulary.zcml" />
-  <include file="sql.zcml" />
+    <!-- general template for everything in doap -->
+    <browser:pages for="*" permission="zope.Public">
+        <browser:page name="launchpad_template"
+            template="../launchpad/templates/main-template.pt" />
+    </browser:pages>
+
+    <!-- browser:pages for the doap application -->
+    <browser:pages 
+        for="canonical.launchpad.interfaces.IDOAPApplication"
+        permission="zope.Public"
+        class="canonical.doap.browser.DOAPApplicationView"
+        lp:url="doap">
+        <browser:page name="+index"
+            template="../launchpad/templates/doap-index.pt"
+            lp:url="doap/+index" />
+        <browser:page name="+about"
+            template="../launchpad/templates/doap-about.pt"
+            lp:url="doap/+about" />
+        <browser:page name="+dashboard"
+            template="../launchpad/templates/doap-dashboard.pt"
+            lp:url="doap/+dashboard" />
+        <browser:page name="+to-do"
+            template="../launchpad/templates/doap-to-do.pt"
+            lp:url="doap/+to-do" />
+    </browser:pages>
 
 </configure>

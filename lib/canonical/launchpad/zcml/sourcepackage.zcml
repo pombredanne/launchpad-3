@@ -34,7 +34,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackage"
         permission="zope.Public"
-        class="canonical.malone.browser.SourcePackageView">
+        class="canonical.launchpad.browser.SourcePackageView">
         <browser:page
             name="+index"
             template="../templates/malone-sourcepackage-index.pt"

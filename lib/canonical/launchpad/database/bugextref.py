@@ -6,9 +6,12 @@ from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces.bug import IBug
+from canonical.launchpad.interfaces.bugextref import IBugExternalRef
 from canonical.launchpad.interfaces import *
 
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.bugcontainer import BugContainerBase
+
 
 
 class BugExternalRef(SQLBase):
@@ -36,5 +39,23 @@ class BugExternalRef(SQLBase):
                                                                     self.data)
         else:
             return self.data
+
+
+class BugExternalRefContainer(BugContainerBase):
+    """A container for BugExternalRef."""
+
+    implements(IBugExternalRefContainer)
+    table = BugExternalRef
+
+
+def BugExternalRefFactory(context, **kw):
+    bug = context.context.bug
+    owner = 1 # Will be id of logged in user
+    datecreated = datetime.utcnow()
+    ber = BugExternalRef(bug=bug, owner=owner, datecreated=datecreated, **kw)
+
+    ext_ref_added = BugExternalRefAddedEvent(Bug.get(bug), ber)
+    notify(ext_ref_added)
+    return ber
 
 

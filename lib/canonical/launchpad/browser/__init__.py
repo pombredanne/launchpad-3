@@ -9,4 +9,9 @@ from canonical.launchpad.browser.product import *
 from canonical.launchpad.browser.productseries import *
 from canonical.launchpad.browser.productrelease import *
 from canonical.launchpad.browser.bug import *
+from canonical.launchpad.browser.bugmessage import *
+from canonical.launchpad.browser.bugattachment import *
+from canonical.launchpad.browser.bugtracker import *
+from canonical.launchpad.browser.bugextref import *
+from canonical.launchpad.browser.packages import *
 

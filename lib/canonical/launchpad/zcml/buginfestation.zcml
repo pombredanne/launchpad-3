@@ -6,7 +6,7 @@
     i18n_domain="launchpad">
 
     <!-- BugProductInfestation -->
-    <content class="canonical.malone.browser.BugProductInfestation">
+    <content class="canonical.launchpad.database.BugProductInfestation">
         <allow interface="canonical.launchpad.interfaces.IBugProductInfestation" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
         <require
@@ -20,7 +20,7 @@
         for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
         label="Add Infested Product Release"
         fields="productrelease infestationstatus"
-        content_factory="canonical.malone.browser.BugProductInfestationFactory"
+        content_factory="canonical.launchpad.database.BugProductInfestationFactory"
         arguments=""
         keyword_arguments="productrelease infestationstatus"
         permission="launchpad.AnyPerson"
@@ -38,13 +38,13 @@
         lp:url="malone/bugs/$Bug.id/productinfestations/$BugProductInfestation.id/+edit" />
 
     <!-- BugProductInfestationContainer -->
-    <content class="canonical.malone.browser.BugProductInfestationContainer">
+    <content class="canonical.launchpad.database.BugProductInfestationContainer">
         <allow interface="canonical.launchpad.interfaces.IBugProductInfestationContainer" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <utility
-        factory="canonical.malone.browser.BugProductInfestationContainer"
+        factory="canonical.launchpad.database.BugProductInfestationContainer"
         provides="canonical.launchpad.interfaces.IBugProductInfestationContainer" />
 
     <browser:defaultView

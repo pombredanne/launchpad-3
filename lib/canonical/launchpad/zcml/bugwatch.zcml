@@ -9,10 +9,10 @@
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugWatch"
-        for="canonical.malone.browser.IBugWatchContainer"
+        for="canonical.launchpad.interfaces.IBugWatchContainer"
         label="Add Watch"
         fields="bugtracker remotebug"
-        content_factory="canonical.malone.browser.BugWatchFactory"
+        content_factory="canonical.launchpad.database.BugWatchFactory"
         arguments=""
         keyword_arguments="bugtracker remotebug"
         permission="launchpad.AnyPerson"
@@ -29,13 +29,13 @@
         lp:url="malone/bugs/$Bug.id/watches/$Watch.id/+edit" />
 
     <!--BugWatchContainer -->
-    <content class="canonical.malone.browser.BugWatchContainer">
+    <content class="canonical.launchpad.database.BugWatchContainer">
         <allow interface="canonical.launchpad.interfaces.IBugWatchContainer" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <utility
-        factory="canonical.malone.browser.BugWatchContainer"
+        factory="canonical.launchpad.database.BugWatchContainer"
         provides="canonical.launchpad.interfaces.IBugWatchContainer" />
 
     <browser:defaultView

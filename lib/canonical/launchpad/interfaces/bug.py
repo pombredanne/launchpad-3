@@ -82,6 +82,25 @@ class IBug(Interface):
 class IMaloneBug(IBug, IAddFormCustomization):
     pass
 
+
+class IMaloneBugAddForm(IMaloneBug):
+    ''' Information we need to create a bug '''
+    #email = TextLine(title=_("Your Email Address"))
+    product = Choice(
+            title=_("Product"), required=False,
+            vocabulary="Product",
+            )
+    sourcepackage = Choice(
+            title=_("Source Package"), required=False,
+            vocabulary="SourcePackage",
+            )
+    binarypackage = Choice(
+            title=_("Binary Package"), required=False,
+            vocabulary="BinaryPackage"
+            )
+    owner = Int(title=_("Owner"), required=True)
+
+
 # Interfaces for containers
 
 class IBugContainer(IAddFormCustomization):

@@ -147,6 +147,16 @@ class PersonSet(object):
         return Person.get(personid)
 
 
+def PersonFactory(context, **kw):
+    now = datetime.utcnow()
+    person = Person(teamowner=1,
+                    teamdescription='',
+                    karma=0,
+                    karmatimestamp=now,
+                    **kw)
+    return person
+
+
 def personFromPrincipal(principal):
     """Adapt canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal 
        to IPerson

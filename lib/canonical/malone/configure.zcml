@@ -1,45 +1,73 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    i18n_domain="malone"
-    xmlns:i18n="http://namespaces.zope.org/i18n">
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
 
-  <!-- This view registers 'malone' as a suburl of RootObject. -->
-  <browser:suburl
-      for="canonical.publication.RootObject"
-      class="canonical.malone.MaloneApplication"
-      name="malone" />
+    <browser:resource
+        name="malone.png" file="images/malone.png" />
+  
+    <!-- This view registers 'malone' as a suburl of RootObject. -->
+    <browser:suburl
+        for="canonical.publication.RootObject"
+        class="canonical.malone.MaloneApplication"
+        name="malone" />
 
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IMaloneApplication"
-      name="index" />
+    <!-- general template for everything in malone -->
+    <browser:pages for="*" permission="zope.Public">
+        <browser:page name="malone_template"
+            template="../launchpad/templates/main-template.pt" />
+    </browser:pages>
 
-  <browser:suburl
-      for="canonical.malone.IMaloneApplication"
-      utility="canonical.launchpad.interfaces.IBugContainer"
-      permission="zope.Public"
-      name="bugs" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        name="index" />
 
-  <browser:suburl
-      for="canonical.malone.IMaloneApplication"
-      utility="canonical.launchpad.interfaces.IProjectContainer"
-      permission="zope.Public"
-      name="projects" />
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.IBugContainer"
+        permission="zope.Public"
+        name="bugs" />
 
-  <browser:suburl
-      for="canonical.malone.IMaloneApplication"
-      utility="canonical.launchpad.interfaces.ISourcePackageContainer"
-      permission="zope.Public"
-      name="sourcepackage" />
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.IProjectContainer"
+        permission="zope.Public"
+        name="projects" />
 
-  <browser:suburl
-      for="canonical.malone.IMaloneApplication"
-      utility="canonical.launchpad.interfaces.IBugTrackerSet"
-      permission="zope.Public"
-      name="bugtrackers" />
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.ISourcePackageContainer"
+        permission="zope.Public"
+        name="sourcepackage" />
 
-  <include file="pages.zcml" />
-  <include file="forms.zcml" />
-  <include file="resources.zcml" />
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.IBugTrackerSet"
+        permission="zope.Public"
+        name="bugtrackers" />
+
+
+    <!-- pages for the malone application -->
+    <browser:pages
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        permission="zope.Public"
+        class="canonical.malone.browser.MaloneApplicationView"
+        lp:url="malone">
+        <browser:page name="index"
+            template="../launchpad/templates/malone-index.pt"
+            lp:url="malone/index" />
+        <browser:page name="about"
+            template="../launchpad/templates/malone-about.pt"
+            lp:url="malone/+about" />
+        <browser:page name="dashboard"
+            template="../launchpad/templates/malone-dashboard.pt"
+            lp:url="malone/dashboard" />
+        <browser:page name="to-do"
+            template="../launchpad/templates/malone-to-do.pt"
+            lp:url="malone/to-do" />
+    </browser:pages>
+
 
 </configure>

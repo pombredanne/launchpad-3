@@ -6,13 +6,13 @@
     i18n_domain="launchpad">
 
     <!-- ProductBugAssignmentContainer -->
-    <content class="canonical.malone.browser.ProductBugAssignmentContainer">
+    <content class="canonical.launchpad.database.ProductBugAssignmentContainer">
         <allow interface="canonical.launchpad.interfaces.IProductBugAssignmentContainer" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <utility
-        factory="canonical.malone.browser.ProductBugAssignmentContainer"
+        factory="canonical.launchpad.database.ProductBugAssignmentContainer"
         provides="canonical.launchpad.interfaces.IProductBugAssignmentContainer" />
 
     <browser:defaultView
@@ -36,7 +36,7 @@
         for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
         label="Add Product Bug Assignment"
         fields="product bugstatus priority severity assignee"
-        content_factory="canonical.malone.browser.ProductBugAssignmentFactory"
+        content_factory="canonical.launchpad.database.ProductBugAssignmentFactory"
         arguments=""
         keyword_arguments="product bugstatus priority severity"
         permission="launchpad.AnyPerson"
@@ -54,13 +54,13 @@
         lp:url="malone/bugs/$Bug.id/productassignments/$ProductBugAssignment.id/+edit" />
 
     <!--SourcePackageBugAssignmentContainer -->
-    <content class="canonical.malone.browser.SourcePackageBugAssignmentContainer">
+    <content class="canonical.launchpad.database.SourcePackageBugAssignmentContainer">
         <allow interface="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <utility
-        factory="canonical.malone.browser.SourcePackageBugAssignmentContainer"
+        factory="canonical.launchpad.database.SourcePackageBugAssignmentContainer"
         provides="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer" />
 
     <browser:defaultView
@@ -85,7 +85,7 @@
         for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
         label="Add SourcePackage Bug Assignment"
         fields="sourcepackage bugstatus priority severity binarypackagename assignee"
-        content_factory="canonical.malone.browser.SourcePackageBugAssignmentFactory"
+        content_factory="canonical.launchpad.database.SourcePackageBugAssignmentFactory"
         arguments=""
         keyword_arguments="sourcepackage bugstatus priority severity"
         permission="launchpad.AnyPerson"
@@ -118,7 +118,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugsAssignedReport"
-        class="canonical.malone.browser.BugsAssignedReportView"
+        class="canonical.launchpad.browser.BugsAssignedReportView"
         permission="launchpad.AnyPerson">
         <browser:page name="+index"
               template="../templates/malone-bugsassigned.pt"
