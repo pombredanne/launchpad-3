@@ -61,10 +61,6 @@ import traceback
 from new import instancemethod
 
 
-class IHasSuburls(Interface):
-    """Marker interface for an object that supports suburls."""
-
-
 class ISubURLDispatch(Interface):
 
     def __call__():
@@ -102,7 +98,7 @@ class SubURLTraverser:
 
 
 class RootObject(Location):
-    implements(IContainmentRoot, IHasSuburls)
+    implements(IContainmentRoot)
 
 
 

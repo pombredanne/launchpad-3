@@ -20,9 +20,10 @@ from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
 import zope.app.publisher.browser.metadirectives
-from canonical.publication import ISubURLDispatch
+from canonical.publication import ISubURLDispatch, SubURLTraverser
 
 from zope.app import zapi
+import sets
 from zope.component.interfaces import IDefaultViewName
 
 from zope.app.component.metaconfigure import handler
@@ -125,12 +126,21 @@ class SubURLDispatcher:
     def __call__(self):
         raise NotImplementedError
 
+suburl_traversers = sets.Set()
+
 def suburl(_context, for_, name, permission=None, utility=None, class_=None,
            adaptwith=None, newlayer=None):
     if utility is None and class_ is None:
         raise TypeError("Cannot specify both utility and class.")
 
-    # XXX check that for_ implements IHasSuburls
+    type = IBrowserRequest  # So we can use "type" below, for documentation.
+
+    global suburl_traversers
+    if for_ not in suburl_traversers:
+        view(_context, [SubURLTraverser], type, '', [for_],
+             provides=IBrowserPublisher, permission=None)
+        suburl_traversers.add(for_)
+
 
     # TODO: Move layer-setting into a handler for the BeforeTraverse event
     #       because that's actually what we want to handle.
@@ -138,10 +148,11 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
     if class_ is not None:
         class Dispatcher(SubURLDispatcher):
             def __call__(self):
+                # Note that `newlayer`, `class_` and `adaptwith` are bound
+                # from the containing context.
                 val = class_()
                 if adaptwith is not None:
                     val = adaptwith(val)
-                # Note that `newlayer` is bound from the containing context.
                 if newlayer is not None:
                     setAdditionalLayer(self.request, newlayer)
                 return val
@@ -149,10 +160,11 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
     if utility is not None:
         class Dispatcher(SubURLDispatcher):
             def __call__(self):
+                # Note that `newlayer`, `utility` and `adaptwith` are bound
+                # from the containing context.
                 val = getUtility(utility)
                 if adaptwith is not None:
                     val = adaptwith(val)
-                # Note that `newlayer` is bound from the containing context.
                 if newlayer is not None:
                     setAdditionalLayer(self.request, newlayer)
                 return val
@@ -161,9 +173,7 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
     if permission == PublicPermission:
         permission = CheckerPublic
 
-    type = IBrowserRequest  # So we can use "type" below, for documentation.
-    return view(_context, factory, type, name, [for_], permission=permission,
-                provides=ISubURLDispatch)
+    view(_context, factory, type, name, [for_], permission=permission)
 
 class URLTraverse:
     """Use the operation named by _getter to traverse an app component."""

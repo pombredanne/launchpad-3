@@ -16,11 +16,7 @@
 
 
   <!-- UbuntuLinuxSite objects.
-       Within this site, the layer will be the UbuntuLinuxLayer.
     -->
-  <content class="canonical.auth.UbuntuLinuxSite">
-    <implements interface="canonical.publication.IHasSuburls"/>
-  </content>
 
   <browser:suburl
       for="canonical.publication.RootObject"
@@ -35,7 +31,6 @@
 
   <content class="canonical.auth.AuthApplication">
     <allow interface="canonical.launchpad.interfaces.IAuthApplication"/>
-    <implements interface="canonical.publication.IHasSuburls"/>
   </content>
 
   <browser:suburl

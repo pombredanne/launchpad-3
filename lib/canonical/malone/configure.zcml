@@ -4,13 +4,6 @@
     i18n_domain="malone"
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
-  <!-- Content directives.  We need to make sure SubURLs and other kinds of
-       traversal work properly.  We also need to make security declarations.
-    -->
-  <content class="canonical.malone.MaloneApplication">
-    <implements interface="canonical.publication.IHasSuburls" />
-  </content>
-
   <!-- This view registers 'malone' as a suburl of RootObject. -->
   <browser:suburl
       for="canonical.publication.RootObject"
