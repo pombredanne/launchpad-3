@@ -1,8 +1,8 @@
-import sys
-sys.path.append('../..')
 
 # Zope interfaces
 from zope.interface import implements
+from zope.component import ComponentLookupError
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
@@ -285,7 +285,7 @@ class RosettaLanguage(SQLBase):
 
 
 class RosettaPerson(SQLBase):
-    implements(interfaces.IPerson)
+    implements(IPerson)
 
     _table = 'Person'
 
@@ -1354,12 +1354,12 @@ class Person(SQLBase):
 def personFromPrincipal(principal):
     """Adapt canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal 
         to IPerson
-
     """
-    # Adapter shouldn't return None
-    #if IUnauthenticatedPrincipal.providedBy(principal):
-    #    return None
-
+    if IUnauthenticatedPrincipal.providedBy(principal):
+        # When Zope3 interfaces allow returning None for "cannot adapt"
+        # we can return None here.
+        ##return None
+        raise ComponentLookupError
     return Person.get(principal.id)
 
 

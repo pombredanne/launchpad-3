@@ -28,7 +28,7 @@ class DOAPApplicationView(object):
         self.context = context
         self.request = request
 
-    def search(self):
+    def update(self):
         '''Handle request and setup this view the way the templates expect it
         '''
         from sqlobject import OR, LIKE, CONTAINSSTRING, AND

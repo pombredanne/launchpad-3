@@ -10,6 +10,7 @@ _ = MessageIDFactory('canonical')
 
 # Web UI interfaces
 
+
 class IPackages(Interface):
     """Root object for web app."""
     binary = Attribute("Binary packages")
