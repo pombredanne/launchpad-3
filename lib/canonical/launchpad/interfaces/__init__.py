@@ -18,11 +18,9 @@ from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.sourcepackagename import *
-from canonical.launchpad.interfaces.sourcepackagenameset import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
 from canonical.launchpad.interfaces.sourcepackageutility import *
 from canonical.launchpad.interfaces.sourcepackageindistro import *
-from canonical.launchpad.interfaces.sourcepackageindistroset import *
 from canonical.launchpad.interfaces.general import *
 from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.milestone import *
@@ -44,9 +42,7 @@ from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.archuser import *
 from canonical.launchpad.interfaces.binarypackage import *
-from canonical.launchpad.interfaces.binarypackageset import *
 from canonical.launchpad.interfaces.binarypackagename import *
-from canonical.launchpad.interfaces.binarypackagenameset import *
 from canonical.launchpad.interfaces.binarypackageutility import *
 from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.build import *

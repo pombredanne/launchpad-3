@@ -32,4 +32,17 @@ class ISourcePackageInDistro(Interface):
     current = Attribute("Set of current versions")
     lastversions = Attribute("set of lastversions")
 
+class ISourcePackageInDistroSet(Interface):
+    """A Set of SourcePackages in a given DistroRelease"""
+
+    title = Attribute('Title')
+
+    def findPackagesByName(pattern):
+        """Find SourcePackages in a given DistroRelease matching pattern"""
+
+    def __iter__():
+        """Return the SourcePackageInDistroSet Iterator"""
+
+    def __getitem__(name):
+        """Return a SourcePackageRelease Published in a DistroRelease"""
 

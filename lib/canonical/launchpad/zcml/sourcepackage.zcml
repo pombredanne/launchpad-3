@@ -24,4 +24,12 @@
             lp:url="malone/sourcepackage/$SourcePackage.name/+malone-index" />
     </browser:pages>
 
+
+    <!-- SourcePackageSet -->
+    <content class="canonical.launchpad.database.SourcePackageSet">
+        <allow
+            interface="canonical.launchpad.interfaces.ISourcePackageSet"
+            />
+    </content>
+
 </configure>

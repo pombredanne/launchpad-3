@@ -50,31 +50,25 @@ class IBinaryPackage(Interface):
 
     def __getitem__(version):
         """Return the packagename that matches the given version"""
+
+
+class IBinaryPackageSet(Interface):
+    """A set of binary packages"""    
     
-    
-# XXX: Daniel Debonzi 20050309
-# I believe it is older tha I :)
-# Will remove if nothing breaks
+    distrorelease = Attribute("DistroRelease")
 
-## class IBinaryPackageBuild(Interface):
-##     """A binary package build, e.g apache-utils 2.0.48-4_i386"""
-##     # See the BinaryPackageBuild table
-    
-##     version = Attribute("A version string")
-##     maintainer = Attribute("Maintainer")
-##     sourcePackageRelease = Attribute("An ISourcePackageRelease")
-##     sourcepackage = Attribute("An ISourcePackage")
-##     binaryPackage = Attribute("An ISourcePackageRelease")
-##     processor = Attribute("An ISourcePackageRelease")
-##     binpackageformat = Attribute("An ISourcePackageRelease")
-##     datebuilt = Attribute("An ISourcePackageRelease")
+    arch = Attribute("Arch")
 
+    title = Attribute('Title')
 
-# XXX: Daniel Debonzi 20050309
-# Seems to be duplicated. We already have it in publishing.py
-# Will remove if nothing breaks
+    def findPackagesByName(pattern):
+        """Search BinaryPackages matching pattern"""
 
-## class IPackagePublishing(Interface):
-##     binarypackage = Attribute("BinaryPackage")
-##     distroarchrelease = Attribute("Distro Arch Relese")
-##     packages = Attribute("Set of Packages inside a DistroRelease")
+    def findPackagesByArchtagName(archtag, pattern, fti=False):
+        """Search BinaryPackages matching pattern and archtag"""
+
+    def __getitem__(name):
+        """Getter"""    
+
+    def __iter__():
+        """Iterator"""    

@@ -2,6 +2,84 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-10 15:21:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1408
+
+    Summary:
+      Some more file organization
+    Revision:
+      launchpad--devel--0--patch-1408
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-460
+       Some more file organization
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-461
+       merge from rocketfuel
+    
+
+    removed files:
+     lib/canonical/launchpad/database/.arch-ids/binarypackagenameset.py.id
+     lib/canonical/launchpad/database/.arch-ids/binarypackageset.py.id
+     lib/canonical/launchpad/database/.arch-ids/sourcepackageindistroset.py.id
+     lib/canonical/launchpad/database/.arch-ids/sourcepackagenameset.py.id
+     lib/canonical/launchpad/database/binarypackagenameset.py
+     lib/canonical/launchpad/database/binarypackageset.py
+     lib/canonical/launchpad/database/sourcepackageindistroset.py
+     lib/canonical/launchpad/database/sourcepackagenameset.py
+     lib/canonical/launchpad/interfaces/.arch-ids/binarypackagenameset.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/binarypackageset.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/sourcepackageindistroset.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/sourcepackagenameset.py.id
+     lib/canonical/launchpad/interfaces/binarypackagenameset.py
+     lib/canonical/launchpad/interfaces/binarypackageset.py
+     lib/canonical/launchpad/interfaces/sourcepackageindistroset.py
+     lib/canonical/launchpad/interfaces/sourcepackagenameset.py
+     lib/canonical/launchpad/zcml/.arch-ids/binarypackagenameset.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/binarypackageset.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/sourcepackagenameset.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/sourcepackagereleaseindistroset.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/sourcepackageset.zcml.id
+     lib/canonical/launchpad/zcml/binarypackagenameset.zcml
+     lib/canonical/launchpad/zcml/binarypackageset.zcml
+     lib/canonical/launchpad/zcml/sourcepackagenameset.zcml
+     lib/canonical/launchpad/zcml/sourcepackagereleaseindistroset.zcml
+     lib/canonical/launchpad/zcml/sourcepackageset.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/binarypackagename.py
+     lib/canonical/launchpad/database/sourcepackageindistro.py
+     lib/canonical/launchpad/database/sourcepackagename.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/launchpad/interfaces/binarypackagename.py
+     lib/canonical/launchpad/interfaces/sourcepackageindistro.py
+     lib/canonical/launchpad/interfaces/sourcepackagename.py
+     lib/canonical/launchpad/zcml/binarypackage.zcml
+     lib/canonical/launchpad/zcml/binarypackagename.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/sourcepackage.zcml
+     lib/canonical/launchpad/zcml/sourcepackagename.zcml
+     lib/canonical/launchpad/zcml/sourcepackagereleaseindistro.zcml
+
+    renamed files:
+     lib/canonical/launchpad/browser/.arch-ids/binarypackagenameset.py.id
+       ==> lib/canonical/launchpad/browser/.arch-ids/binarypackagename.py.id
+     lib/canonical/launchpad/browser/.arch-ids/sourcepackagenameset.py.id
+       ==> lib/canonical/launchpad/browser/.arch-ids/sourcepackagename.py.id
+     lib/canonical/launchpad/browser/binarypackagenameset.py
+       ==> lib/canonical/launchpad/browser/binarypackagename.py
+     lib/canonical/launchpad/browser/sourcepackagenameset.py
+       ==> lib/canonical/launchpad/browser/sourcepackagename.py
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-460
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-461
+
+
 2005-03-10 14:35:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1407
 
     Summary:

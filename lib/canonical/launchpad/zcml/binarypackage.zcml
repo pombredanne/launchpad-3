@@ -27,4 +27,11 @@
         template="../templates/binarypackage-index.pt"
         lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/$Bin/+index"/>
 
+    <!-- BinaryPackageSet -->
+    <content class="canonical.launchpad.database.BinaryPackageSet">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageSet" />
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+
 </configure>

@@ -22,8 +22,8 @@ from canonical.launchpad.browser.people import *
 from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.soyuz import *
 from canonical.launchpad.browser.sourcepackage import *
-from canonical.launchpad.browser.sourcepackagenameset import *
-from canonical.launchpad.browser.binarypackagenameset import *
+from canonical.launchpad.browser.sourcepackagename import *
+from canonical.launchpad.browser.binarypackagename import *
 from canonical.launchpad.browser.distribution import *
 from canonical.launchpad.browser.distrorelease import *
 from canonical.launchpad.browser.publishedpackage import *

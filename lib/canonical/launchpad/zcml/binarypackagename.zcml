@@ -10,4 +10,31 @@
         <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />
     </content>
 
+    <!-- BinaryPackageNameSet -->
+    <securedutility
+        class="canonical.launchpad.database.BinaryPackageNameSet"
+        provides="canonical.launchpad.interfaces.IBinaryPackageNameSet">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageNameSet" />
+    </securedutility>
+
+    <content class="canonical.launchpad.database.BinaryPackageNameSet">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageNameSet" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBinaryPackageNameSet"
+        name="+index" />
+
+    <browser:pages
+         for="canonical.launchpad.interfaces.IBinaryPackageNameSet"
+         permission="zope.Public"
+         class="canonical.launchpad.browser.BinaryPackageNameSetView">
+        <browser:page
+            name="+index"
+            template="../templates/binarypackagenames-index.pt"
+            lp:url="/binarypackagenames/+index" />
+
+     </browser:pages>
+
+
 </configure>
