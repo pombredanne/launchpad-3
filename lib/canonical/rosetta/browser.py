@@ -254,6 +254,24 @@ class TranslatorDashboard:
     def projects(self):
         return getUtility(IProjects)
 
+    def languages(self):
+        all_languages = getUtility(ILanguages)
+        interestedLanguages = list(IPerson(self.request.principal).languages())
+
+        for code in all_languages.keys():
+            if all_languages[code] in interestedLanguages:
+                selected = True
+            else:
+                selected = False
+
+            # XXX: We should let get the nativeName if present.
+            retdict = {
+                'selected': selected,
+                'code': code,
+                'name': unicode(all_languages[code].englishName, 'UTF-8'),
+            }
+
+            yield retdict
 
 class ViewSearchResults:
     def __init__(self, context, request):
