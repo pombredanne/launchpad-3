@@ -365,7 +365,12 @@ class PeopleApp(object):
 
     #YAPS: traverse by ID ?
     def __getitem__(self, id):
-        return PersonApp(id)
+        print 'PeopleApp, __getitem__,', id
+        try:
+            return PersonApp(int(id))
+        except Exception, e:
+            print e.__class__, e
+            raise
 
     def __iter__(self):
         return iter(SoyuzPerson.select('teamowner IS NULL'))
@@ -376,11 +381,26 @@ class PersonApp(object):
         # YAPS: I know it seems totally nasty ...
         # it should query By ID ... 
         self.person = SoyuzPerson.get(self.id)
-        self.email = SoyuzEmailAddress.get(self.id)
-        self.wiki = WikiName.get(self.id)
-        self.jabber = JabberID.get(self.id)
-        self.irc = IrcID.get(self.id)
-        self.gpg = GPGKey.get(self.id)
+        try:
+            self.email = SoyuzEmailAddress.selectBy(personID=self.id)[0]
+        except IndexError:
+            self.email = None
+        try:
+            self.wiki = WikiName.selectBy(personID=self.id)[0]
+        except IndexError:
+            self.wiki = None
+        try:
+            self.jabber = JabberID.selectBy(personID=self.id)[0]
+        except IndexError:
+            self.jabber = None
+        try:
+            self.irc = IrcID.selectBy(personID=self.id)[0]
+        except IndexError:
+            self.irc = None
+        try:
+            self.gpg = GPGKey.selectBy(personID=self.id)[0]
+        except IndexError:
+            self.gpg = None
 
 ################################################################
 

@@ -26,13 +26,23 @@
   <tr><td>
   <table>
    <tr><td>Name</td><td><span tal:content="context/person/displayname">context</span> </td></tr>
-   <tr><td>Email</td><td tal:content="context/email/email">EMAIL</td></tr>
-   <tr><td>Wiki</td><td> <span tal:content="context/wiki/wiki"/>
-   <span tal:content="context/wiki/wikiname"/></td></tr>
-   <tr><td>IRC</td><td><span tal:content="context/irc/nickname"/> at 
-   <span tal:content="context/irc/network"/></td></tr> 
-   <tr><td>Jabber</td><td tal:content="context/jabber/jabberid"></td></tr> 
-   <tr><td>GPG</td><td tal:content="context/gpg/keyid"></td></tr> 
+   <tr tal:condition="context/email">
+    <td>Email</td><td tal:content="context/email/email">EMAIL</td>
+   </tr>
+   <tr tal:condition="context/wiki">
+    <td>Wiki</td><td> <span tal:content="context/wiki/wiki"/>
+    <span tal:content="context/wiki/wikiname"/></td>
+   </tr>
+   <tr tal:condition="context/irc">
+    <td>IRC</td><td><span tal:content="context/irc/nickname"/> at 
+    <span tal:content="context/irc/network"/></td>
+   </tr> 
+   <tr tal:condition="context/jabber">
+    <td>Jabber</td><td tal:content="context/jabber/jabberid"></td>
+   </tr> 
+   <tr tal:condition="context/gpg">
+    <td>GPG</td><td tal:content="context/gpg/keyid"></td>
+   </tr> 
    <tr><td></td><td><a href="+edit">Edit Personal Information</a></td></tr>
    </table></td>
   <td> 
