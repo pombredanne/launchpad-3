@@ -234,6 +234,7 @@ class CalendarDayView(CalendarViewBase):
         end = start + timedelta(days=1)
 
         self.events = list(context.calendar.expand(start, end))
+        self.events.sort()
         self._setRange()
         self.visiblehours = self.endhour - self.starthour
 
@@ -343,9 +344,11 @@ class CalendarDayView(CalendarViewBase):
                     cols.append('')
                 else:
                     # Either None, or new event
-                    cols.append(ev)
+                    cols.append(ev and EventInfo(ev, self.user_timezone))
             yield { 'title': title, 'cols': tuple(cols),
                     'time': start.strftime("%H:%M"),
+                    'addURL': '../+add?field.dtstart=%s' %
+                              start.strftime('%Y-%m-%d%%20%H:%M'),
                     'duration': duration.seconds // 60 }
     def rowspan(self, event):
         """Calculate how many calendar rows the event will take today."""

@@ -55,7 +55,8 @@
                                      class python:oddrow and 'hour odd' or 'hour even'">
                   <a href="../+add"
                      tal:condition="view/canAddEvents"
-                     tal:content="hour/title">08:00</a>
+                     tal:content="hour/title"
+                     tal:attributes="href hour/addURL">08:00</a>
                   <span
                      tal:condition="not:view/canAddEvents"
                      tal:content="hour/title">08:00</span>
@@ -69,25 +70,25 @@
                       tal:define="height python:4">
               <metal:block tal:define="num repeat/hour/index;
                                      top python:num * height">
-                <tal:block repeat="ev hour/cols">
-                  <tal:if condition="ev">
+                <tal:block repeat="evinfo hour/cols">
+                  <tal:if condition="evinfo">
                     <div class="event"
                          onmouseover="this.style.zIndex=9;"
                          onmouseout="this.style.zIndex=1;"
-                         tal:define="num repeat/ev/index;
+                         tal:define="num repeat/evinfo/index;
                                      compress python:view.getColumns() > 2;
                                      unit python:compress and '%' or 'em';
                                      indent python:compress and 15 or 20.5;
-                                     evdate python:ev.dtstart.strftime('%Y-%m-%d');
-                                     colours python:view.eventColors(ev);
+                                     evdate python:evinfo.dtstart.strftime('%Y-%m-%d');
+                                     colours python:view.eventColors(evinfo.event);
                                      mine python:True"
-                         tal:attributes="style python:'background %s;; height: %sem !important;; margin-left: %s%s;; top: %sem' % (colours[0], view.eventHeight(ev), str(num * indent), unit, view.eventTop(ev));
+                         tal:attributes="style python:'background %s;; height: %sem !important;; margin-left: %s%s;; top: %sem' % (colours[0], view.eventHeight(evinfo.event), str(num * indent), unit, view.eventTop(evinfo.event));
                                          class python:mine and 'event' or 'event other';
                                          something compress">
-                      <a tal:attributes="href string:../events/${ev/id}/">
-                      <span replace="event/timestring">12:00</span>
+                      <a tal:attributes="href string:../events/${evinfo/event/id}/">
+                      <span tal:replace="evinfo/timestring">12:00</span>
                       -
-                      <span tal:replace="ev/title">Title</span>
+                      <span tal:replace="evinfo/event/title">Title</span>
                       </a>
                       
                     </div>
