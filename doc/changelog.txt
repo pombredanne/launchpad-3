@@ -2,6 +2,59 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-22 19:17:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1475
+
+    Summary:
+      convert fields in Rosetta to EnumCols, and add tests for database
+ code
+    Revision:
+      launchpad--devel--0--patch-1475
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-443
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-444
+       change POTemplate.rawimportstatus from IntCol to EnumCol, and fix usage accordingly
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-445
+       remove debug code
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-446
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-447
+       change POTranslationSighting from IntCol to EnumCol
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-448
+       add tests for some Rosetta database functionality
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-449
+       fix the POTranslationSighting.origin column, make POFile.rawimportstatus match POTemplate.rawimportstatus, and improve the DB test
+    
+
+    new files:
+     lib/canonical/launchpad/doc/.arch-ids/potemplate.txt.id
+     lib/canonical/launchpad/doc/potemplate.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+     lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/pofile_adapters.py
+     lib/canonical/rosetta/scripts/po_import.py
+     lib/canonical/rosetta/scripts/poattach.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-443
+     daf@canonical.com--2004/launchpad--devel--0--patch-444
+     daf@canonical.com--2004/launchpad--devel--0--patch-445
+     daf@canonical.com--2004/launchpad--devel--0--patch-446
+     daf@canonical.com--2004/launchpad--devel--0--patch-447
+     daf@canonical.com--2004/launchpad--devel--0--patch-448
+     daf@canonical.com--2004/launchpad--devel--0--patch-449
+
+
 2005-03-22 18:59:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1474
 
     Summary:

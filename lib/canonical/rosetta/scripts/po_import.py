@@ -26,7 +26,7 @@ def po_import(product_name, template_name, language_code, contents):
     potemplate_or_pofile.rawfile = base64.encodestring(contents)
     potemplate_or_pofile.daterawimport = UTC_NOW
     potemplate_or_pofile.rawimporter = None
-    potemplate_or_pofile.rawimportstatus = RosettaImportStatus.PENDING.value
+    potemplate_or_pofile.rawimportstatus = RosettaImportStatus.PENDING
     potemplate_or_pofile.doRawImport()
 
 def main(argv):

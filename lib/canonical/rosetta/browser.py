@@ -1253,7 +1253,7 @@ class ViewImportQueue:
         for template in potemplateset:
                 template_raw = IRawFileData(template)
                 if (template_raw.rawimportstatus == \
-                    RosettaImportStatus.PENDING.value):
+                    RosettaImportStatus.PENDING):
                     if template_raw.rawimporter is not None:
                         importer_name = template_raw.rawimporter.displayname
                     else:

@@ -76,14 +76,14 @@ class PODBBridge:
             poTemplate.rawfile = base64.encodestring(fileData)
             poTemplate.daterawimport = UTC_NOW
             poTemplate.rawimporter = person
-            poTemplate.rawimportstatus = RosettaImportStatus.PENDING.value
+            poTemplate.rawimportstatus = RosettaImportStatus.PENDING
         else:
             # We are importing a PO file.
             poFile = poTemplate.getOrCreatePOFile(languageCode)
             poFile.rawfile = base64.encodestring(fileData)
             poFile.daterawimport = UTC_NOW
             poFile.rawimporter = person
-            poFile.rawimportstatus = RosettaImportStatus.PENDING.value
+            poFile.rawimportstatus = RosettaImportStatus.PENDING
 
     def update_stats(self, productName, poTemplateName,
             languageCode):

@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import IPOTMsgSet, \
     IRawFileData
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
+from canonical.lp.dbschema import EnumCol
 from canonical.launchpad.database.potemplatename import POTemplateName
 from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.lp.dbschema import RosettaImportStatus
@@ -89,7 +90,7 @@ def _attachRawFileData(raw_file_data, contents, importer):
     raw_file_data.daterawimport = UTC_NOW
     if importer is not None:
         raw_file_data.rawimporter = importer
-    raw_file_data.rawimportstatus = RosettaImportStatus.PENDING.value
+    raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
 
 
 class RosettaStats(object):
@@ -489,7 +490,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def poFilesToImport(self):
         for pofile in iter(self.poFiles):
-            if pofile.rawimportstatus == RosettaImportStatus.PENDING.value:
+            if pofile.rawimportstatus == RosettaImportStatus.PENDING:
                 yield pofile
 
     def getPOFileByLang(self, language_code, variant=None):
@@ -677,8 +678,8 @@ class POTemplate(SQLBase, RosettaStats):
         notNull=False, default=None)
     daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
         default=None)
-    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=True,
-        default=RosettaImportStatus.IGNORE.value)
+    rawimportstatus = EnumCol(dbName='rawimportstatus', notNull=True,
+        schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)
 
     def doRawImport(self, logger=None):
         """See IRawFileData."""
@@ -699,7 +700,7 @@ class POTemplate(SQLBase, RosettaStats):
             importer.doImport(file)
 
             # The import has been done, we mark it that way.
-            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+            self.rawimportstatus = RosettaImportStatus.IMPORTED
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
@@ -718,7 +719,7 @@ class POTemplate(SQLBase, RosettaStats):
         except:
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
-            self.rawimportstatus = RosettaImportStatus.FAILED.value
+            self.rawimportstatus = RosettaImportStatus.FAILED
             if logger:
                 logger.warning('We got an error importing %s' , self.name,
                     exc_info = 1)
@@ -1269,8 +1270,8 @@ class POFile(SQLBase, RosettaStats):
                              notNull=False, default=None)
     daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
                                 default=None)
-    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False,
-                             default=RosettaImportStatus.IGNORE.value)
+    rawimportstatus = EnumCol(dbName='rawimportstatus', notNull=True,
+        schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)
 
     def doRawImport(self, logger=None):
         """See IRawFileData."""
@@ -1293,7 +1294,7 @@ class POFile(SQLBase, RosettaStats):
             # We should not get any exception here because we checked the file
             # before being imported, but this could help prevent programming
             # errors.
-            self.rawimportstatus = RosettaImportStatus.FAILED.value
+            self.rawimportstatus = RosettaImportStatus.FAILED
             return
 
         # Check now that the file we are trying to import is newer than the
@@ -1333,7 +1334,7 @@ class POFile(SQLBase, RosettaStats):
                     self.potemplate.product.name,
                     new_date_string,
                     old_date_string))
-            self.rawimportstatus = RosettaImportStatus.FAILED.value
+            self.rawimportstatus = RosettaImportStatus.FAILED
             return
 
         if self.rawimporter is not None:
@@ -1408,7 +1409,7 @@ class POFile(SQLBase, RosettaStats):
 
             importer.doImport(file)
 
-            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+            self.rawimportstatus = RosettaImportStatus.IMPORTED
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
@@ -1420,7 +1421,7 @@ class POFile(SQLBase, RosettaStats):
         except:
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
-            self.rawimportstatus = RosettaImportStatus.FAILED.value
+            self.rawimportstatus = RosettaImportStatus.FAILED
             if logger:
                 logger.warning(
                     'We got an error importing %s language for %s template' % (
@@ -1610,9 +1611,9 @@ class POMsgSet(SQLBase):
             # No sighting exists yet.
 
             if fromPOFile:
-                origin = int(RosettaTranslationOrigin.SCM)
+                origin = RosettaTranslationOrigin.SCM
             else:
-                origin = int(RosettaTranslationOrigin.ROSETTAWEB)
+                origin = RosettaTranslationOrigin.ROSETTAWEB
 
             sighting = POTranslationSighting(
                 pomsgsetID=self.id,
@@ -1655,7 +1656,7 @@ class POMsgSet(SQLBase):
                     sighting.datelastactive = UTC_NOW
                     sighting.inlastrevision = True
                     new_active = sighting
-                elif old_active.origin == int(RosettaTranslationOrigin.SCM):
+                elif old_active.origin == RosettaTranslationOrigin.SCM:
                     # The current active translation is from a previous
                     # .po import so we can override it directly.
                     sighting.datelastactive = UTC_NOW
@@ -1732,7 +1733,8 @@ class POTranslationSighting(SQLBase):
     pluralform = IntCol(dbName='pluralform', notNull=True)
     active = BoolCol(dbName='active', notNull=True, default=DEFAULT)
     # See canonical.lp.dbschema.RosettaTranslationOrigin.
-    origin = IntCol(dbName='origin', notNull=True)
+    origin = EnumCol(dbName='origin', notNull=True,
+        schema=RosettaTranslationOrigin)
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
 
 
