@@ -5,7 +5,7 @@ Note that these are not interfaces to application content objects.
 """
 __metaclass__ = type
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
@@ -104,3 +104,5 @@ class IAuthorization(Interface):
         The easiest way to return None is to allow the flow control to
         'fall off the end' of the method.
         """
+
+

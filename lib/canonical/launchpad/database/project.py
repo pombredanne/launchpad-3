@@ -147,12 +147,8 @@ class ProjectSet:
         clauseTables.add('Project')
         query = '1=1 '
         if text:
-            text = quote('%' + text + '%')
-            query += """ AND 
-                       ( Project.title ILIKE %s OR
-                         Project.shortdesc ILIKE %s OR
-                         Project.description ILIKE %s )""" % (text,
-                         text, text )
+            text = quote(text)
+            query += " AND Project.fti @@ ftq(%s) """ % (text,)
         if rosetta:
             clauseTables.add('Product')
             clauseTables.add('POTemplate')
@@ -164,11 +160,7 @@ class ProjectSet:
             clauseTables.add('SourceSource')
         if search_products and text:
             clauseTables.add('Product')
-            query += """ AND 
-                ( Product.title ILIKE %s OR 
-                  Product.shortdesc ILIKE %s OR 
-                  Product.description ILIKE %s )""" % (text,
-                text, text)
+            query += " AND Product.fti @@ ftq(%s) " % (text,)
         if 'Product' in clauseTables:
             query += ' AND Product.project=Project.id \n'
         if 'POTemplate' in clauseTables:
