@@ -2,6 +2,9 @@
 How to go about writing a web application
 =========================================
 
+-- Steve Alexander <steve@z3u.com>
+
+
 Introduction
 ------------
 
@@ -25,6 +28,8 @@ In summary, we write a web application by
 
 Of course, this isn't a completely linear process.  Steps may be carried out
 in parallel, and ongoing work in each step will feed into the other steps.
+
+
 
 
 Web application architecture
@@ -148,7 +153,7 @@ Here's an example of a table for the Rosetta project::
   ./                  index.html   app component   The rosetta application
 
   ./index.html                     page            Initial navigation page
-
+precious ^.*\.pyc$
   ./intro.html                     page            Introductory page
 
   ./signup.html                    form            Allows a new user to
@@ -196,27 +201,72 @@ the "rosetta" path segment at the root.
   The rosetta application
 
 
+Guidelines for URLs
+-------------------
+
+* Make your URLs from lower-case letters, numbers, '-' and '+'.
+
+* Avoid '_', capital letters, other symbols.
+  Using these things makes the URL harder to read out over the phone or
+  write down unambiguously.
+
+* When you have a collection of things, such as people or projects, use
+  a plural noun for that part of the URL.  For example, "./projects".
+
+* Consider using "+" as the last URL segment for the URL that adds things
+  to a collection.  For example, "./projects/+" to add a new project.
+
+* Where possible, use self-posting forms.  So, you would go to the URL
+  "./projects/+" to get a form asking you for the information needed to
+  add a new project.  When you submit the form, it POSTs to the same
+  URL.  If the provided informaiton is invalid, you'll get the form back
+  with an error message.  Otherwise, you'll get a "success" message, or be
+  redirected to the next page in the workflow.
+
+
+
 Development iterations
 ----------------------
 
-<SteveA> there's also the larger process:
-<SteveA> 1. list total functionality, divide it into iterations
-<SteveA> 2. pick next iteration, go through 5 step process
-<SteveA> 3. review / refactor spec for previous iterations, based on what we learned this iteration
-<SteveA> 4. refactor web app to match
+When you're developing a new system, don't try to write the whole table of
+URLs at once.  Instead, we can work in iterative cycles, designing pages
+and URLs, and making these work in software.  That way, we can learn earlier
+on if the URLs and pages we want will actually work in practice.
 
-- I want the teams to organise their URL tables into a number
-  of small milestones.  For each set of URLs and functionality,
-  I want the process to be
-  1. Write URLs into table
-  2. Document required functionality
-  3. Produce page template mock-ups
-  4. Implement functionality with stubs in soyuz
-  5. Connect functionality to the real database
+Here's the overall process of developing the application.
 
-  I need to produce a second document explaining all this in
-  detail, to avoid the "communicating the big picture"
-  problem.
+Overall Process
+~~~~~~~~~~~~~~~
+
+1. Lay out the total functionality of the system, and divide it into a number
+   of iterations.
+2. Pick the next iteration.  Go through the Iteration Process described below.
+3. Review / refactor the specification for previous iterations based on what
+   we learned during this iteration.
+4. Refactor the whole application implemented so far to match the refactored
+   specification.
+
+Each iteration (that is, step 2 above) looks like this.
+
+Iteration Process
+~~~~~~~~~~~~~~~~~
+
+1. Write the URLs required for this iteration into the URLs table.
+2. Document the functionality required for each page.
+3. Produce page template mockups.
+4. Implement the functionality, using stub application components rather
+   than real application components.
+5. Connect the functionality to the real database, by replacing the stubs
+   with real application components.
+
+
+I will note that these processes are just guidelines on how to go about writing
+the software.  You might choose to prototype the application in order to learn
+about what URLs are required for some tricky interaction. Or, you might decide
+to write two iterations' worth of URLs into the URLs table all at once, but
+then implement them in two iterations.  The important thing is to understand
+where you are in this process, and why you are doing what you are doing at any
+particular stage.
 
 
 
@@ -277,22 +327,19 @@ Non-published {view,resource}:
     A {view,resource} that is used by other presentation components, but
     that is not itself addressable by a URL.
 
+Page:
+    An HTML document returned to a browser in response to a GET or POST
+    request to some URL.
 
-Advice
-------
+Form:
+    A page that contains HTML form elements and at least one "submit"
+    button.
 
-Plan to have URLs in all lower-case letters and numbers, and -.
+Self-posting form:
+    A form that's "action URL" is the same address that it was loaded from.
+    So, a form that was loaded from "./projects/+" would start::
 
-Avoid _, capital letters, other symbols.
-
-Use "+" in a name if it really is part of a package name, like "gtk+"
-
-Consider using simply "+" to add new things.
-
-
-If you have a collection of things, such as people, use a plural noun for
-that part of the URL, not the singular.
-
+      <form action="http://example.com/rosetta/projects/+" method="POST">
 
 
 # arch-tag: cf2cb34d-52a5-4615-b135-439d70f43f36
