@@ -151,7 +151,7 @@ class SourcePackageRelease(AbstractPackageRelease):
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
         if getattr(self, 'section', sentinel) == sentinel:
-            print "Package %s lacks a section, looking it up..." % self.package
+            print "Source package %s lacks a section, looking it up..." % self.package
             try:
                 self.section = kdb.getSourceSection(self.package)
                 if '/' in self.section:

@@ -19,10 +19,10 @@ keyrings_root = "keyrings/"
 import sys
 
 distrorelease = sys.argv[1]
-arch = sys.argv[2]
+archs = sys.argv[2].split(",")
 components = sys.argv[3:]
 
-LPDB = "launchpad_dogfood"
+LPDB = "launchpad_dev_dsilvers"
 KTDB = "katie"
 
 LIBRHOST = "localhost"
@@ -48,7 +48,7 @@ def get_tagfiles(root, distrorelease, component, arch):
 
     return srcfile, sources_tagfile, binfile, binaries_tagfile
 
-def do_packages(source_map, bin_map, lp, kdb, keyrings, component):
+def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
     try:
         srcfile, src_tags, binfile, bin_tags = \
             get_tagfiles(package_root, distrorelease, component, arch)
@@ -77,36 +77,7 @@ def do_sections(lp, kdb):
     for section in sections:
         lp.addSection( section[0] )
 
-if __name__ == "__main__":
-    # get the DB abstractors
-    lp = Launchpad(LPDB, distrorelease, arch)
-    kdb = Katie(KTDB, distrorelease)
-
-    # Comment this out if you need to disable the librarian integration
-    # for a given run of gina. Note that without the librarian; lucille
-    # will be unable to publish any files imported into the database
-    attachLibrarian( LIBRHOST, LIBRPORT )
-
-    # Validate that the supplied components are available...
-    print "@ Validating components"
-    for comp in components:
-        lp.getComponentByName(comp)
-
-    keyrings = ""
-    for keyring in os.listdir(keyrings_root):
-          keyrings += " --keyring=./keyrings/%s" % keyring
-    if not keyrings:
-        raise AttributeError, "Keyrings not found in ./keyrings/"
-
-    # Build us dicts of all package releases
-    source_map = {}
-    bin_map = {}
-    for component in components:
-        print "@ Loading components for %s" % component
-        do_packages(source_map, bin_map, lp, kdb, keyrings, component)
-    print "@ Loading sections"
-    do_sections(lp, kdb)
-        
+def do_arch(lp, kdb, bin_map, source_map):
     # Loop through binaries and insert stuff in DB. We do this as a
     # separate loop mainly to ensure that all source packages get
     # preferentially the description relative to a homonymous binary
@@ -158,8 +129,51 @@ if __name__ == "__main__":
             count = 0
             print "* Committed"
 
-    lp.commit()
-    lp.close()
+
+if __name__ == "__main__":
+    # get the DB abstractors
+    lp = {}
+    for arch in archs:
+        lp[arch] = Launchpad(LPDB, distrorelease, arch)
+    kdb = Katie(KTDB, distrorelease)
+
+    # Comment this out if you need to disable the librarian integration
+    # for a given run of gina. Note that without the librarian; lucille
+    # will be unable to publish any files imported into the database
+    #attachLibrarian( LIBRHOST, LIBRPORT )
+
+    # Validate that the supplied components are available...
+    print "@ Validating components"
+    for arch in archs:
+        for comp in components:
+            lp[arch].getComponentByName(comp)
+
+    keyrings = ""
+    for keyring in os.listdir(keyrings_root):
+          keyrings += " --keyring=./keyrings/%s" % keyring
+    if not keyrings:
+        raise AttributeError, "Keyrings not found in ./keyrings/"
+
+    # Build us dicts of all package releases
+    source_map = {}
+    bin_map = {}
+    for arch in archs:
+        bin_map[arch] = {}
+        for component in components:
+            print "@ Loading components for %s/%s" % (arch,component)
+            do_packages(source_map, bin_map[arch], lp[arch], kdb,
+                        keyrings, component, arch)
+    print "@ Loading sections"
+    for arch in archs:
+        do_sections(lp[arch], kdb)
+    
+    #sys.exit(0);
+
+    for arch in archs:
+        do_arch(lp[arch],kdb,bin_map[arch],source_map)
+        lp[arch].commit()
+        lp[arch].close()
+
     kdb.commit()
     kdb.close()
 

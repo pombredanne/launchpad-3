@@ -279,7 +279,8 @@ class Launchpad(SQLThing):
 
     def getBuildBySourcePackage(self, srcid):
         return self._query("""SELECT id FROM build
-                              WHERE sourcepackagerelease = %s""", srcid)[0]
+                              WHERE sourcepackagerelease = %s
+                                AND processor=%s""", (srcid,self.processor))[0]
 
     def createBuild(self, bin):
         srcpkg = self.getSourcePackageRelease(bin.source, bin.source_version)
@@ -350,10 +351,12 @@ class Launchpad(SQLThing):
         bin_id = self.getBinaryPackageName(name)
         if not bin_id:
             return None
-        return self._query_single("""SELECT * from binarypackage
+        return self._query_single("""SELECT * from binarypackage, build
                                      WHERE  binarypackagename = %s AND 
-                                            version = %s;""", 
-                                  (bin_id[0][0], version))
+                                            version = %s AND
+                                            build.processor = %s AND
+                                            build.id = binarypackage.build""", 
+                                  (bin_id[0][0], version, self.processor))
 
     def createBinaryPackage(self, bin):
         if not self.getBinaryPackageName(bin.package):
@@ -554,6 +557,7 @@ class Launchpad(SQLThing):
         try:
             self.getSectionByName(section)
         except:
+            print "No good, need to add it"
             self._insert( "section", { "name": section } )
 
 
