@@ -169,12 +169,12 @@ def examine_tarfile(tf):
      2. Otherwise, a common path prefix is searched for and files ending in
         '.pot' and '.po' are searched for directly under that prefix.
 
-    >>> pot, po = examine_tar(string_to_tarfile(make_test_string_1()))
+    >>> pot, po = examine_tarfile(string_to_tarfile(make_test_string_1()))
     >>> pot
     ('uberfrob-0.1/po/uberfrob.pot',)
     >>> po
     ('uberfrob-0.1/po/cy.po', 'uberfrob-0.1/po/es.po')
-    >>> pot, po = examine_tar(string_to_tarfile(make_test_string_2()))
+    >>> pot, po = examine_tarfile(string_to_tarfile(make_test_string_2()))
     >>> pot
     ('test/test.pot',)
     >>> po

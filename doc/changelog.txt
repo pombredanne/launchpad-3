@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-11 18:07:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1175
+
+    Summary:
+      Rosetta unit test improvements
+    Revision:
+      launchpad--devel--0--patch-1175
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-412
+       fix canonical.rosetta.tar doctests
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/rosetta/tar.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-412
+
+
 2005-01-11 13:30:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1174
 
     Summary:
