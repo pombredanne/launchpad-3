@@ -408,7 +408,6 @@ class RevisionMapper(object):
 
     def update_log(self, revision, log):
         """Update a revision's log in the database"""
-        cursor = DBHandle.cursor()
         log = quote(log)
         revision.log_message = log
 
@@ -455,24 +454,6 @@ class RevisionMapper(object):
 def archive_present(archive_name):
     results = Archive.select('name = ' + quote(archive_name))
     return bool(results.count())
-
-def _archive_purge(archive_name):
-    """I purge an archive from the database. I AM ONLY for use during testing.
-    once in production the database fields are update-once."""
-    from canonical.arch import broker
-    c = DBHandle.cursor()
-    m = ArchiveMapper()
-    try:
-        archive_id = m._getId(broker.Archive(archive_name), c)
-    except ArchiveNotRegistered, e:
-        return
-    c.execute("SELECT archnamespace.id from archnamespace inner join archarchive on archnamespace.archarchive=archarchive.id where archarchive.name like '%s'" % archive_id)
-    namespaces=c.fetchall()
-    for namespace in namespaces:
-        c.execute("DELETE FROM Branch WHERE archnamespace = %d" % namespace[0])
-    c.execute("DELETE FROM ArchArchiveLocation WHERE archive like '%s'" % archive_id)
-    c.execute("DELETE FROM ArchArchive WHERE name like '%s'" % archive_name)
-
 
 class LibraryFileContent(SQLBase):
     """A pointer to file content in the librarian."""

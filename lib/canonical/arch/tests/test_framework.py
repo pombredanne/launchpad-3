@@ -12,15 +12,22 @@ import sys
 import os
 import shutil
 from zope.interface.verify import verifyClass, verifyObject
-from canonical.arch.database import dbname, nuke
 import psycopg
 import tempfile
 import arch
 
+def _connect():
+    from sqlobject import connectionForURI
+    from canonical.database.sqlbase import SQLBase
+    conn = connectionForURI('postgres:///launchpad_test')
+    SQLBase.initZopeless(conn)
+    return conn.getConnection()
+
 class DatabaseTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.__db_handle = psycopg.connect(dbname())
+        self.__db_handle = _connect()
+
         self.flushArchiveData(self.cursor())
         self._archive = None
         self._category = None
@@ -39,11 +46,19 @@ class DatabaseTestCase(unittest.TestCase):
 
     def flushArchiveData(self, cursor):
         """Remove all ArchArchive and ArchArchiveLocation entries"""
-        nuke()
-#         cursor.execute("DELETE FROM Changeset")
-#         cursor.execute("DELETE FROM ArchArchiveLocation")
-#         cursor.execute("DELETE FROM Branch")
-#         cursor.execute("DELETE FROM ArchArchive")
+        cursor.execute("DELETE FROM ChangesetFileHash")    
+        cursor.execute("DELETE FROM ChangesetFile")
+        cursor.execute("DELETE FROM ChangesetFileName")
+        cursor.execute("DELETE FROM Changeset")
+        cursor.execute("DELETE FROM POTranslationSighting")
+        cursor.execute("DELETE FROM POMsgIDSighting")
+        cursor.execute("DELETE FROM POMsgSet")
+        cursor.execute("DELETE FROM POFile")
+        cursor.execute("DELETE FROM POTemplate")
+        cursor.execute("DELETE FROM Branch")
+        cursor.execute("DELETE FROM ArchNamespace")
+        cursor.execute("DELETE FROM ArchArchiveLocation")
+        cursor.execute("DELETE FROM ArchArchive")
         self.commit()
 
     def _getTestArchive(self):
@@ -169,7 +184,7 @@ class TestFramework(unittest.TestCase):
     def test_flushArchiveData(self):
         """test that flushArchiveData works"""
 
-        DBHandle = psycopg.connect(dbname())
+        DBHandle = _connect()
         cursor = DBHandle.cursor()
         cursor.execute("INSERT INTO ArchArchive (name, title, description, visible) VALUES ('%s', 'a title', 'a description', true)" % "bah@bleh")
         DBHandle.commit()
@@ -180,7 +195,7 @@ class TestFramework(unittest.TestCase):
         framework = DatabaseTestCase("commit")
         framework.setUp() 
 
-        DBHandle = psycopg.connect(dbname())
+        DBHandle = _connect()
         cursor = DBHandle.cursor()
         
         cursor.execute("SELECT * FROM ArchArchive")
