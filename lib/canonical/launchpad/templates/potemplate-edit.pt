@@ -1,3 +1,4 @@
+<tal:do-this-first tal:content="view/submitForm" />
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -15,12 +16,10 @@
 
 <body>
 
-<tal:thing replace="view/submitForm"/>
-
 <div metal:fill-slot="main">
 
     <h1>Edit "<span
-    tal:content="context/name">$POTemplate.name</span>" POTemplate
+    tal:content="context/potemplatename/name">$POTemplate.name</span>" POTemplate
     Details</h1>
 
     <div class="portalMessage"
@@ -29,7 +28,7 @@
 
     <div class="documentDescription">
     Please edit the po template details below for <span
-    tal:content="context/name">$POTemplate.name</span>.
+    tal:content="context/potemplatename/name">$POTemplate.name</span>.
     </div>
 
     <fieldset>
@@ -54,7 +53,7 @@
 
                 <input type="text" name="name" size="15"
                        value="" style="text-transform: lowercase"
-                       tal:attributes="value context/name" />
+                       tal:attributes="value context/potemplatename/name" />
         </div>
 
         <div class="field">

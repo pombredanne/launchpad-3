@@ -8,6 +8,7 @@ from persistent import IPersistent
 #
 
 from canonical.launchpad.interfaces.idatetime import *
+from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.project import *
 from canonical.launchpad.interfaces.product import *

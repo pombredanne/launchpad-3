@@ -28,8 +28,7 @@
 
             <table class="listing">
                 <thead>
-                    <th>Project</th>
-                    <th>Product</th>
+                    <th>Description</th>
                     <th>Template</th>
                     <th>Language</th>
                     <th>Importer</th>
@@ -38,8 +37,7 @@
                 </thead>
                 <tbody>
                     <tr tal:repeat="import view/imports">
-                        <td tal:content="import/project">Project Name</td>
-                        <td tal:content="import/product">Product Name</td>
+                        <td tal:content="import/description">Description</td>
                         <td tal:content="import/template">Template Name</td>
                         <td tal:content="import/language">Language Name</td>
                         <td tal:content="import/importer">Importer Name</td>

@@ -71,16 +71,6 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
-        permission="launchpad.AnyPerson"
-        class="canonical.rosetta.browser.ProductView" >
-        <browser:page
-            name="+newpotemplate"
-            template="../templates/potemplate-new.pt"
-            lp:url="/rosetta/products/$Product.name/+newpotemplate" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductBugsView"
         permission="zope.Public" >
         <browser:page

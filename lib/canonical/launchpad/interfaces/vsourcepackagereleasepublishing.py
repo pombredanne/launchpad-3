@@ -34,3 +34,10 @@ class ISourcePackageReleasePublishing(ISourcePackageRelease):
     def __getitem__(version):
         """Get a SourcePackageRelease"""
 
+    def traverse(name):
+        """Traverse across a vsourcepakcagereleasepublishing in Launchpad.
+
+        This looks for special URL items, like +rosetta, then goes on to
+        traverse using __getitem__.
+        """
+

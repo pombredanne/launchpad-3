@@ -5,8 +5,8 @@
 
 <head>
     <title metal:fill-slot="title">Rosetta: Translating
-        <span tal:replace="context/product/displayname">product displayname</span>
-        Template <span tal:replace="context/title">template titleM</span></title>
+        Template <span tal:replace="context/title">template title</span>
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -52,19 +52,15 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Translating <span tal:replace="context/product/displayname">product
-        displayname</span>:  <span tal:replace="context/title">POT file
-        title</span></h1>
+    <h1>Translating: <span tal:replace="context/title">POT file title</span>
+    </h1>
 
     <p class="discreet">
-      You are translating <a href=".."><span
-      tal:replace="context/product/displayname">product
-      displayname</span></a> using the Rosetta Translation portal. You can
-      read <a href="/rosetta/+about">more about Rosetta</a> or start
-      translating <span
-      tal:replace="context/product/displayname">product</span> immediately.
-      This specific translation template is called "<span
-      tal:replace="context/title">template title</span>"
+      You are translating <a href="..">
+      <span tal:replace="context/title">potemplate title</span>
+      </a> using the Rosetta Translation portal. You can read
+      <a href="/rosetta/+about">more about Rosetta</a> or start translating
+      immediately.
     </p>
 
     <p tal:content="context/description">

@@ -85,20 +85,54 @@ class IRawFileData(Interface):
         """
 
 
+class IPOTemplateSubset(Interface):
+    """A subset of POTemplate."""
+
+    sourcepackagename = Attribute(
+        "The sourcepackagename associated with this subset of POTemplates.")
+
+    distrorelease = Attribute(
+        "The distrorelease associated with this subset of POTemplates.")
+
+    productrelease = Attribute(
+        "The productrelease associated with this subset of POTemplates.")
+
+    def __iter__():
+        """Returns an iterator over all POTemplate for this subset."""
+
+    def __getitem__(name):
+        """Get a POTemplate by its name."""
+
+
+class IPOTemplateSet(Interface):
+    """A set of POTemplate."""
+
+    def __iter__():
+        """Returns an iterator over all POTemplate."""
+
+    def __getitem__(name):
+        """Get a POTemplate by its name."""
+
+    def distrorelease_sourcepackagename_subset(distrorelease,
+                                               sourcepackagename):
+        """Return a POTemplateSubset object for a source package name and a
+        distro release.
+        """
+
+    def distrorelease_subset(distrorelease):
+        """Return a POTemplateSubset object for this distrorelease."""
+
+
 class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
     id = Attribute("The id of this POTemplate.")
 
-    product = Attribute("The PO template's product.")
+    productrelease = Attribute("The PO template's product release.")
 
     priority = Attribute("The PO template priority.")
 
-    branch = Attribute("The branch where this PO template is.")
-
-    changeset = Attribute("The changeset where this PO template is.")
-
-    name = Attribute("The PO template's name.  For example 'nautilus'.")
+    potemplatename = Attribute("The PO template name.")
 
     title = Attribute("The PO template's title.")
 

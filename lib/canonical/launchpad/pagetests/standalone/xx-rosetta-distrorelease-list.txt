@@ -1,0 +1,199 @@
+
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+rosetta HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <base href="http://localhost:9000/distros/ubuntu/hoary/+rosetta/+index" />
+  ...
+              <h2>Template for evolution in hoary</h2>
+  <BLANKLINE>
+              <p>Template for evolution in hoary</p>
+  <BLANKLINE>
+              <table class="listing rowNavigation" width="100%">
+                  <thead>
+                      <th>Language</th>
+                      <th>Done</th>
+                      <th>Todo</th>
+                      <th>Graph</th>
+                      <th>Latest Contributor</th>
+                      <th>Last Edited</th>
+                  </thead>
+  <BLANKLINE>
+                  <tbody>
+                      <tr onclick="window.location='evolution-2.2/+translate?languages=en'">
+                          <td>
+                              <a
+      href="../+sources/evolution/+rosetta/evolution-2.2/+translate?languages=en">English</a></td>
+                          <td>0</td>
+                          <td>21</td>
+                          <td>
+                              <!-- Show an mdash if there is no graph -->
+  <BLANKLINE>
+  <BLANKLINE>
+                              <img
+      src="/++resource++red-bar.png" height="10"
+      style="margin-top: 2px;" alt="Untranslated Messages"
+      width="100" title=" Untranslated: 100%" />
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                      </tr>
+                      <tr onclick="window.location='evolution-2.2/+translate?languages=en_ZA'">
+                          <td>
+                              <a
+      href="../+sources/evolution/+rosetta/evolution-2.2/+translate?languages=en_ZA">English (South Africa)</a></td>
+                          <td>0</td>
+                          <td>21</td>
+                          <td>
+                              <!-- Show an mdash if there is no graph -->
+  <BLANKLINE>
+  <BLANKLINE>
+                              <img
+      src="/++resource++red-bar.png" height="10"
+      style="margin-top: 2px;" alt="Untranslated Messages"
+      width="100" title=" Untranslated: 100%" />
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                      </tr>
+                      <tr onclick="window.location='evolution-2.2/+translate?languages=xh'">
+                          <td>
+                              <a
+      href="../+sources/evolution/+rosetta/evolution-2.2/+translate?languages=xh">Xhosa</a></td>
+                          <td>0</td>
+                          <td>21</td>
+                          <td>
+                              <!-- Show an mdash if there is no graph -->
+  <BLANKLINE>
+  <BLANKLINE>
+                              <img
+      src="/++resource++red-bar.png" height="10"
+      style="margin-top: 2px;" alt="Untranslated Messages"
+      width="100" title=" Untranslated: 100%" />
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                      </tr>
+                      <tr onclick="window.location='evolution-2.2/+translate?languages=af'">
+                          <td>
+                              <a
+      href="../+sources/evolution/+rosetta/evolution-2.2/+translate?languages=af">Afrikaans</a></td>
+                          <td>0</td>
+                          <td>21</td>
+                          <td>
+                              <!-- Show an mdash if there is no graph -->
+  <BLANKLINE>
+  <BLANKLINE>
+                              <img
+      src="/++resource++red-bar.png" height="10"
+      style="margin-top: 2px;" alt="Untranslated Messages"
+      width="100" title=" Untranslated: 100%" />
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                      </tr>
+                      <tr onclick="window.location='evolution-2.2/+translate?languages=zu'">
+                          <td>
+                              <a
+      href="../+sources/evolution/+rosetta/evolution-2.2/+translate?languages=zu">Zulu</a></td>
+                          <td>0</td>
+                          <td>21</td>
+                          <td>
+                              <!-- Show an mdash if there is no graph -->
+  <BLANKLINE>
+  <BLANKLINE>
+                              <img
+      src="/++resource++red-bar.png" height="10"
+      style="margin-top: 2px;" alt="Untranslated Messages"
+      width="100" title=" Untranslated: 100%" />
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                      </tr>
+                      <tr onclick="window.location='evolution-2.2/+translate?languages=st'">
+                          <td>
+                              <a
+      href="../+sources/evolution/+rosetta/evolution-2.2/+translate?languages=st">Sotho, Southern</a></td>
+                          <td>0</td>
+                          <td>21</td>
+                          <td>
+                              <!-- Show an mdash if there is no graph -->
+  <BLANKLINE>
+  <BLANKLINE>
+                              <img
+      src="/++resource++red-bar.png" height="10"
+      style="margin-top: 2px;" alt="Untranslated Messages"
+      width="100" title=" Untranslated: 100%" />
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                          <td>
+  <BLANKLINE>
+  <BLANKLINE>
+                                  &mdash;
+  <BLANKLINE>
+                          </td>
+                      </tr>
+                  </tbody>
+              </table>
+  <BLANKLINE>
+              <div align="right">
+                  [ <a href="../+sources/evolution/+rosetta/evolution-2.2/">More...</a> ]
+  ...
+

@@ -4,9 +4,7 @@
       i18n:domain="rosetta">
 
 <head>
-    <title metal:fill-slot="title">Rosetta:
-        <span tal:replace="context/product/displayname">product
-        displayname</span>:
+    <title metal:fill-slot="title">Rosetta
         <span tal:replace="context/title">template title</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -44,7 +42,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
 
-<div class="portlet">
+<div class="portlet" tal:condition="context/productrelease">
 
     <h4>Actions:</h4>
 
@@ -67,11 +65,8 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Translating <span tal:replace="context/product/title">Product
-        Title</span></h1>
-
-    <p class="documentDescription">Template: <span tal:replace="context/title">
-        Potemplate Title</span></p>
+    <h1>Template: <span tal:replace="context/title">Potemplate Title</span>
+    </h1>
 
     <h2>Translations</h2>
 
@@ -81,7 +76,7 @@
             <th>Done</th>
             <th>Todo</th>
             <th>Graph</th>
-            <th>Lastest Contributor</th>
+            <th>Latest Contributor</th>
             <th>Last Edited</th>
         </thead>
 

@@ -4,7 +4,7 @@ from zope.exceptions import NotFoundError
 
 # SQLObject/SQLBase
 from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
+from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase, quote
 
@@ -22,6 +22,8 @@ class SourcePackageName(SQLBase):
 
     name = StringCol(dbName='name', notNull=True, unique=True,
         alternateID=True)
+
+    potemplates = MultipleJoin('POTemplate', joinColumn='sourcepackagename')
 
     def __unicode__(self):
         return self.name

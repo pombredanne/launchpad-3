@@ -1,6 +1,6 @@
 # Imports from zope
 from zope.schema import Int, TextLine
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
@@ -18,6 +18,7 @@ class ISourcePackageName(Interface):
     id = Int(title=_("ID"), required=True)
     name = TextLine(title=_("Valid Source package name"),
                     required=True, constraint=valid_name)
+    potemplates = Attribute("The list of PO templates that this object has.")
 
     def __unicode__():
         """Return the name"""

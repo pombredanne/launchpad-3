@@ -1,5 +1,6 @@
 # Zope imports
 from zope.interface import implements
+from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
@@ -7,7 +8,8 @@ from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
 from canonical.database.sqlbase import quote
 
 # interfaces and database 
-from canonical.launchpad.interfaces import ISourcePackageReleasePublishing
+from canonical.launchpad.interfaces import ISourcePackageReleasePublishing, \
+    IPOTemplateSet
 
 from canonical.launchpad.database.sourcepackagerelease import \
      SourcePackageRelease
@@ -53,7 +55,17 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
                                 % (self.sourcepackage.id, quote(version)))[0]
         except IndexError:
             raise KeyError, 'Version Not Found'
-        
+
+    def traverse(self, name):
+        """See ISourcePackageReleasePublishing."""
+        if name == '+rosetta':
+            pts = getUtility(IPOTemplateSet)
+            return pts.distrorelease_sourcepackagename_subset(
+                self.distrorelease, self.sourcepackage.sourcepackagename)
+        else:
+            return self[name]
+
+
 def createSourcePackage(name, maintainer=0):
     # FIXME: maintainer=0 is a hack.  It should be required (or the DB shouldn't
     #        have NOT NULL on that column).

@@ -25,4 +25,6 @@ class IProductRelease(Interface):
     manifest = Attribute("Manifest")
 
     files = Attribute(_('Iterable of product release files'))
-    
+    potemplates = Attribute(
+        _("Returns an iterator over this productrelease's PO templates."))
+

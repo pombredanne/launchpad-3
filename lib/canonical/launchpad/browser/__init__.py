@@ -22,6 +22,7 @@ from canonical.launchpad.browser.message import *
 from canonical.launchpad.browser.packages import *
 from canonical.launchpad.browser.packaging import *
 from canonical.launchpad.browser.person import *
+from canonical.launchpad.browser.potemplate import *
 from canonical.launchpad.browser.product import *
 from canonical.launchpad.browser.productrelease import *
 from canonical.launchpad.browser.productseries import *
@@ -33,6 +34,5 @@ from canonical.launchpad.browser.sourcesource import *
 from canonical.launchpad.browser.soyuz import *
 from canonical.launchpad.browser.sshkey import *
 from canonical.launchpad.browser.team import *
-
 from canonical.launchpad.browser.widgets import *
 

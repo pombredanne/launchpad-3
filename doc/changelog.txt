@@ -2,6 +2,206 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-22 14:05:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1470
+
+    Summary:
+      First merge of POTemplateLinkages
+    Revision:
+      launchpad--devel--0--patch-1470
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--base-0
+       tag of carlos.perello@canonical.com--2004/launchpad--devel--0--patch-567
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-1
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-2
+       Added the POTemplateName interface and implementation
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-3
+       Lots of changes related to the spec. New fields added other ones removed and the distros URL starts working
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-4
+       Traversal from sourcepackages to potemplates as defined by the Linkages spec done
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-5
+       Applied changes for the POTemplateName, sourcepackagename/distrorelease migration
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-6
+       fixes to errors I did and moved from len() to .count for SQLObjects
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-7
+       Adapted to the linkages spec
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-8
+       Adapted to the linkages spec
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-9
+       POTemplateSet traversal + security utility
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-10
+       Updated to follow the linkages spec
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-11
+       product does not exists, it's a productrelease...
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-12
+       /s/+rosetta/+translation
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-13
+       Basic Linkages implementation done to be able to do Hoary translations and some tests added
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-14
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-15
+       Fixed the tests after the rocketfuel merge
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-16
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-17
+       POTemplate.potemplatename is not null
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-18
+       Fixed the traversal for sourcepackagereleasepublishing
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-19
+       Fixed the traversal of sourcepackagereleasepublishing after lose it with a rocketfuel merge + changes to POTemplateSet adding POTemplateSubset
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-20
+       All review changes applied
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-21
+       Fixed all tests
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-22
+       Pagetest fixed
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-23
+       Simplified Rosetta sample data so it's not so bigger and still usefull
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-24
+       Last review bits fixed
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-25
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-26
+       Enabled all changes because sample data is already migrated
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-27
+       Sample data fixed with latest schema
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-28
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-29
+       Readded Mark's change to sampledata
+    
+     * stuart.bishop@canonical.com/launchpad--carlos--0--base-0
+       tag of carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-29
+    
+     * stuart.bishop@canonical.com/launchpad--carlos--0--patch-1
+       Work in progress on db patch. Schema changes are good, but data migration still needs work. Committing to RF to unblock people.
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/potemplate.py.id
+     lib/canonical/launchpad/browser/potemplate.py
+     lib/canonical/launchpad/database/.arch-ids/potemplatename.py.id
+     lib/canonical/launchpad/database/potemplatename.py
+     lib/canonical/launchpad/interfaces/.arch-ids/potemplatename.py.id
+     lib/canonical/launchpad/interfaces/potemplatename.py
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-distrorelease-list.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-distrorelease-list.txt
+     lib/canonical/launchpad/templates/.arch-ids/potemplatesubset-index.pt.id
+     lib/canonical/launchpad/templates/potemplatesubset-index.pt
+     lib/canonical/launchpad/zcml/.arch-ids/potemplatename.zcml.id
+     lib/canonical/launchpad/zcml/potemplatename.zcml
+
+    removed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-pofile-upload.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-upload.txt
+     lib/canonical/launchpad/templates/.arch-ids/potemplate-new.pt.id
+     lib/canonical/launchpad/templates/potemplate-new.pt
+
+    modified files:
+     database/sampledata/current.sql
+     database/sampledata/rosetta.sql database/schema/comments.sql
+     database/schema/patch-11-08-0.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productrelease.py
+     lib/canonical/launchpad/database/sourcepackagename.py
+     lib/canonical/launchpad/database/vsourcepackagereleasepublishing.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/productrelease.py
+     lib/canonical/launchpad/interfaces/sourcepackagename.py
+     lib/canonical/launchpad/interfaces/vsourcepackagereleasepublishing.py
+     lib/canonical/launchpad/pagetests/standalone/xx-show-people-with-password-only.txt
+     lib/canonical/launchpad/templates/pofile-index.pt
+     lib/canonical/launchpad/templates/potemplate-edit.pt
+     lib/canonical/launchpad/templates/potemplate-index.pt
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+     lib/canonical/launchpad/templates/product-translations.pt
+     lib/canonical/launchpad/templates/rosetta-import-queue.pt
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/launchpad/zcml/vsourcepackagereleasepublishing.zcml
+     lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/tests/test_browser.py
+
+    renamed files:
+     database/schema/pending/.arch-ids/carlos-potemplate-linkages.sql.id
+       ==> database/schema/.arch-ids/patch-11-08-0.sql.id
+     database/schema/pending/carlos-potemplate-linkages.sql
+       ==> database/schema/patch-11-08-0.sql
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-2
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-3
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-4
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-5
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-6
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-7
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-8
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-9
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-10
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-11
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-12
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-13
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-14
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-15
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-16
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-17
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-18
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-19
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-20
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-21
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-22
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-23
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-24
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-25
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-26
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-27
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-28
+     carlos.perello@canonical.com--2004/launchpad--po-template-linkages--0--patch-29
+     stuart.bishop@canonical.com/launchpad--carlos--0--base-0
+     stuart.bishop@canonical.com/launchpad--carlos--0--patch-1
+
+
 2005-03-21 23:17:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1469
 
     Summary:

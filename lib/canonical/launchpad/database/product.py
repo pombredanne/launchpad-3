@@ -86,8 +86,6 @@ class Product(SQLBase):
     #
     # useful Joins
     #
-    potemplates = MultipleJoin('POTemplate', joinColumn='product')
-
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
 
     branches = MultipleJoin('Branch', joinColumn='product')
@@ -165,19 +163,33 @@ class Product(SQLBase):
                                 (quote(name), self._product.id)
                                 )[0])
 
+    def potemplates(self):
+        """See IProduct."""
+        templates = []
+        for series in self.serieslist:
+            for release in series.releases:
+                for potemplate in release.potemplates:
+                    templates.append(potemplate)
+
+        return templates
+
     def poTemplatesToImport(self):
         for template in iter(self.potemplates):
             if template.rawimportstatus == RosettaImportStatus.PENDING:
                 yield template
 
+    # XXX: Carlos Perello Marin 2005-03-17
+    # This method should be removed as soon as we have completely removed the old
+    # URL space.
     def poTemplate(self, name):
-        '''SELECT POTemplate.* FROM POTemplate WHERE
-              POTemplate.product = id AND
-              POTemplate.name = name;'''
-        results = POTemplate.select('''
-            POTemplate.product = %d AND
-            POTemplate.name = %s''' %
-            (self.id, quote(name)))
+        results = POTemplate.select(
+            "ProductSeries.product = %d AND"
+            " ProductSeries.id = ProductRelease.productseries AND"
+            " ProductRelease.id = POTemplate.productrelease AND"
+            " POTemplate.potemplatename = POTemplateName.id AND"
+            " POTemplateName.name = %s" % (self.id, quote(name)),
+            clauseTables=['ProductSeries', 'ProductRelease',
+                          'POTemplateName'])
 
         if results.count() == 0:
             raise KeyError, name
@@ -554,12 +566,13 @@ class ProductSet:
 
     def translatables(self, translationProject=None):
         """See canonical.launchpad.interfaces.product.IProductSet.
-        
+
         This will give a list of the translatables in the given Translation
         Project. For the moment it just returns every translatable product.
         """
-        clauseTables = ['Product', 'POTemplate']
-        query = """POTemplate.product=Product.id"""
+        clauseTables = ['Product', 'ProductRelease', 'POTemplate']
+        query = ("POTemplate.productrelease=ProductRelease.id AND"
+                 " ProductRelease.product = Product.id")
         return Product.select(query, distinct=True,
                               clauseTables=clauseTables)
 

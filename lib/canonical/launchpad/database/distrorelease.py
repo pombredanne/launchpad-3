@@ -15,12 +15,11 @@ from canonical.database.sqlbase import SQLBase
 from canonical.lp import dbschema
 
 # interfaces and database
-from canonical.launchpad.interfaces import IDistroRelease, \
+from canonical.launchpad.interfaces import IDistroRelease, IPOTemplateSet, \
     IBinaryPackageUtility, IDistroReleaseSet, ISourcePackageUtility
 
 from canonical.launchpad.database import SourcePackageInDistro, \
-    SourcePackageInDistroSet, PublishedPackageSet, \
-    PackagePublishing
+    SourcePackageInDistroSet, PublishedPackageSet, PackagePublishing
 
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 
@@ -141,9 +140,13 @@ class DistroRelease(SQLBase):
     def traverse(self, name):
         if name == '+sources':
             return SourcePackageInDistroSet(self)
-        if name  == '+packages':
+        elif name  == '+packages':
             return PublishedPackageSet()
-        return self.__getitem__(name)
+        elif name == '+rosetta':
+            pts = getUtility(IPOTemplateSet)
+            return pts.distrorelease_subset(distrorelease=self)
+        else:
+            return self.__getitem__(name)
 
     def __getitem__(self, arch):
         try:

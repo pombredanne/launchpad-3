@@ -9,6 +9,7 @@ from sets import Set
 # Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
     parseDatetimetz
 
@@ -20,10 +21,12 @@ from canonical.database.sqlbase import SQLBase, quote, flushUpdates
 # canonical imports
 from canonical.launchpad.interfaces import IPOTMsgSet, \
     IEditPOTemplate, IPOMsgID, IPOMsgIDSighting, \
-    IEditPOFile, IPOTranslation, IEditPOMsgSet, \
-    IPOTranslationSighting, IPersonSet, IRosettaStats, IRawFileData
+    IEditPOFile, IPOTranslation, IEditPOMsgSet, IPOTemplateSet, \
+    IPOTemplateSubset, IPOTranslationSighting, IPersonSet, IRosettaStats, \
+    IRawFileData
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
+from canonical.launchpad.database.potemplatename import POTemplateName
 from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.lp.dbschema import RosettaImportStatus
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -34,16 +37,16 @@ from canonical.rosetta.pofile import POParser, POHeader
 standardPOTemplateCopyright = 'Canonical Ltd'
 
 # XXX: in the four strings below, we should fill in owner information
-standardPOTemplateTopComment = ''' PO template for %(productname)s
+standardPOTemplateTopComment = ''' PO template for %(origin)s
  Copyright (c) %(copyright)s %(year)s
- This file is distributed under the same license as the %(productname)s package.
+ This file is distributed under the same license as %(origin)s.
  PROJECT MAINTAINER OR MAILING LIST <EMAIL@ADDRESS>, %(year)s.
 
 '''
 
 # XXX: project-id-version needs a version
 standardPOTemplateHeader = (
-"Project-Id-Version: %(productname)s\n"
+"Project-Id-Version: %(origin)s\n"
 "POT-Creation-Date: %(date)s\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
@@ -54,15 +57,15 @@ standardPOTemplateHeader = (
 "X-Rosetta-Version: 0.1\n"
 )
 
-standardPOFileTopComment = ''' %(languagename)s translation for %(productname)s
+standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
  Copyright (c) %(copyright)s %(year)s
- This file is distributed under the same license as the %(productname)s package.
+ This file is distributed under the same license as the %(origin)s package.
  FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
 
 '''
 
 standardPOFileHeader = (
-"Project-Id-Version: %(productname)s\n"
+"Project-Id-Version: %(origin)s\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: %(templatedate)s\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -191,18 +194,122 @@ class RosettaStats(object):
         return float(str(percent))
 
 
+class POTemplateSubset:
+    implements(IPOTemplateSubset)
+
+    def __init__(self, sourcepackagename=None,
+                 distrorelease=None, productrelease=None):
+        """Create a new POTemplateSubset object.
+
+        The set of POTemplate depends on the arguments you pass to this
+        constructor. The sourcepackagename, distrorelease and productrelease
+        are just filters for that set.
+        """
+
+        self.sourcepackagename = sourcepackagename
+        self.distrorelease = distrorelease
+        self.productrelease = productrelease
+
+        if (productrelease is not None and (distrorelease is not None or
+            sourcepackagename is not None)):
+            raise ValueError(
+                'A product release must not be used with a source package name'
+                ' or a distro release.')
+        elif productrelease is not None:
+            self.query = ('POTemplate.productrelease = %d' %
+                          productrelease.id)
+            self.orderby = None
+            self.clausetables = None
+        elif distrorelease is not None and sourcepackagename is not None:
+            self.query = ('POTemplate.sourcepackagename = %d AND'
+                          ' POTemplate.distrorelease = %d ' %
+                          (sourcepackagename.id, distrorelease.id))
+            self.orderby = None
+            self.clausetables = None
+        elif distrorelease is not None:
+            self.query = (
+                'POTemplate.distrorelease = DistroRelease.id AND'
+                ' DistroRelease.id = %d' % distrorelease.id)
+            self.orderby = 'DistroRelease.name'
+            self.clausetables = ['DistroRelease']
+        else:
+            raise ValueError(
+                'You need to specify the kind of subset you want.')
+
+    def __iter__(self):
+        """See IPOTemplateSubset."""
+        res = POTemplate.select(self.query, clauseTables=self.clausetables,
+                                orderBy=self.orderby)
+
+        for potemplate in res:
+            yield potemplate
+
+    def __getitem__(self, name):
+        """See IPOTemplateSubset."""
+        try:
+            ptn = POTemplateName.byName(name)
+        except SQLObjectNotFound:
+            raise NotFoundError, name
+
+        if self.query is None:
+            query = 'POTemplate.potemplatename = %d' % ptn.id
+        else:
+            query = '%s AND POTemplate.potemplatename = %d' % (
+                    self.query, ptn.id)
+
+        res = POTemplate.select(query, clauseTables=self.clausetables)
+
+        if res.count() == 0:
+            raise NotFoundError, name
+        else:
+            return res[0]
+
+
+class POTemplateSet:
+    implements(IPOTemplateSet)
+
+    def __iter__(self):
+        """See IPOTemplateSet."""
+        res = POTemplate.select()
+
+        for potemplate in res:
+            yield potemplate
+
+    def __getitem__(self, name):
+        """See IPOTemplateSet."""
+        try:
+            ptn = POTemplateName.byName(name)
+        except SQLObjectNotFound:
+            raise NotFoundError, name
+
+        res = POTemplate.select('POTemplate.potemplatename = %d' % ptn.id)
+
+        if res.count() == 0:
+            raise NotFoundError, name
+        else:
+            return res[0]
+
+    def distrorelease_sourcepackagename_subset(self, distrorelease,
+                                               sourcepackagename):
+        """See IPOTemplateSet."""
+        return POTemplateSubset(distrorelease=distrorelease,
+                                sourcepackagename=sourcepackagename)
+
+    def distrorelease_subset(self, distrorelease):
+        """See IPOTemplateSet."""
+        return POTemplateSubset(distrorelease=distrorelease)
+
+
 class POTemplate(SQLBase, RosettaStats):
     implements(IEditPOTemplate, IRawFileData)
 
     _table = 'POTemplate'
 
-    product = ForeignKey(foreignKey='Product', dbName='product', notNull=True)
+    productrelease = ForeignKey(foreignKey='ProductRelease',
+        dbName='productrelease', notNull=False)
     priority = IntCol(dbName='priority', notNull=False, default=None)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=False,
-        default=None)
-    changeset = ForeignKey(foreignKey='Changeset', dbName='changeset',
-        notNull=False, default=None)
-    name = StringCol(dbName='name', notNull=True)
+    potemplatename = ForeignKey(foreignKey='POTemplateName',
+        dbName='potemplatename', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=False, default=None)
     copyright = StringCol(dbName='copyright', notNull=False, default=None)
@@ -382,7 +489,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def poFilesToImport(self):
         for pofile in iter(self.poFiles):
-            if pofile.rawimportstatus == int(RosettaImportStatus.PENDING):
+            if pofile.rawimportstatus == RosettaImportStatus.PENDING.value:
                 yield pofile
 
     def getPOFileByLang(self, language_code, variant=None):
@@ -474,19 +581,21 @@ class POTemplate(SQLBase, RosettaStats):
             'year': now.year,
             'languagename': language.englishname,
             'languagecode': language_code,
-            'productname': self.product.title,
             'date': now.isoformat(' '),
-            # XXX: This is not working and I'm not able to fix it easily
-            #'templatedate': self.datecreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
             'templatedate': self.datecreated,
             'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors' % now.year,
             'nplurals': language.pluralforms or 1,
             'pluralexpr': language.pluralexpression or '0',
             }
 
+        if self.productrelease is not None:
+            data['origin'] = self.productrelease.product.name
+        else:
+            data['origin'] = self.sourcepackagename.name
+
         return POFile(potemplate=self,
                       language=language,
-                      title='Rosetta %(languagename)s translation of %(productname)s' % data,
+                      title='Rosetta %(languagename)s translation of %(origin)s' % data,
                       topcomment=standardPOFileTopComment % data,
                       header=standardPOFileHeader % data,
                       fuzzyheader=True,

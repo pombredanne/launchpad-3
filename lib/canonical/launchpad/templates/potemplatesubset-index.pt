@@ -6,7 +6,19 @@
 
 <head>
     <title metal:fill-slot="title" i18n:translate="">Rosetta Translations:
-        <span tal:replace="context/title" i18n:name="title">product title</span></title>
+        <tal:block condition="context/sourcepackagename">
+            <span tal:replace="context/sourcepackagename/name"
+                  i18n:name="sourcepackagetitle">
+                sourcepackagename title
+            </span>
+            from 
+        </tal:block>
+        <tal:block condition="context/distrorelease">
+            <span tal:replace="context/distrorelease/title"
+                  i18n:name="distrotitle"> distrorelease title
+            </span>
+        </tal:block>
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -15,62 +27,90 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-        <div tal:replace="structure view/detailsPortlet" />
-        <div tal:replace="structure view/summaryPortlet" />
-        <div tal:replace="structure view/projectPortlet" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-        <div tal:replace="structure view/prefLangsPortlet" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
     <h1 i18n:translate="">Rosetta Translation overview for
-        <span tal:replace="context/displayname" i18n:name="product_name">product
-        displayname</span></h1>
+        <tal:block condition="context/sourcepackagename">
+            <span tal:replace="context/sourcepackagename/name"
+                  i18n:name="sourcepackage_name">sourcepackage displayname
+            </span>
+            at
+        </tal:block>
+        <tal:block condition="context/distrorelease">
+            <span tal:replace="context/distrorelease/displayname"
+                  i18n:name="distrorelease_displayname">
+                distrorelease displayname
+            </span>
+        </tal:block>
+    </h1>
 
-    <!-- indicate if no templates are registered for this product that it is
-    possible to upload a po template -->
+    <p class="documentDescription">
+        The sourcepackagename summary.
+    </p>
+
+    <!-- indicate if no templates are registered for this sourcepackage and
+         distrorelease and redirect to the mailing lists in case it's an error
+    -->
     <tal:block condition="not: view/templates">
 
-        <h2 i18n:translate="">Translation Setup Required</h2>
-
-        <p class="portalMessage" i18n:translate="">Administrator help needed</p>
+        <h2 i18n:translate="">No Translatable strings available</h2>
 
         <p i18n:translate="">
-        <span tal:replace="context/displayname" i18n:name="product_name">
-        This product</span> has not yet been setup for translation through
-        Rosetta. If you have the latest PO Template for <span
-        tal:replace="context/displayname" i18n:name="product_name">this
-        product</span> then you should ask administrators to setup this
-        product sending an email to
-        <a href="mailto:rosetta-users@lists.ubuntu.com">Rosetta's mailing list
-        </a>. You should give them the URL to the .pot and .po files.
-        As soon as that has been done you will be able to start translating.
+            <tal:block condition="context/sourcepackagename">
+                <span tal:replace="context/sourcepackagename/name"
+                      i18n:name="sourcepackagename_name">
+                    This sourcepackagename
+                </span>
+            </tal:block>
+            <tal:block condition="python: not context/sourcepackagename and
+                                  context/distrorelease">
+                <span tal:replace="context/distrorelease/displayname"
+                      i18n:name="distrorelease_displayname">
+                    This distrorelease
+                </span>
+            </tal:block>
+        does not have any string to be translated through Rosetta. In case
+        you think it's an error, please send us an email to
+        <a href="mailto:rosetta-users@lists.ubuntu.com"> Rosetta's mailing
+        list</a> or file a bug in our
+        <a href="https://launchpad.ubuntu.com/malone/products/rosetta">bug
+        tracking system</a> so we can look into the problem. Thanks.
         </p>
-
     </tal:block>
 
     <tal:block condition="view/templates">
 
         <p tal:condition="view/has_multiple_templates" i18n:translate="">
-        Below is a list of translation templates for <span
-        tal:replace="context/displayname" i18n:name="product_name">this
-        product</span>. Each template has a different purpose: some
-        might be templates for specific releases, others might be
-        for different vendors. Select the template that you wish to
-        work on, and begin translating!</p>
+            Below is a list of translation templates for
+            <tal:block condition="context/sourcepackagename">
+                <span tal:replace="context/sourcepackagename/name"
+                      i18n:name="sourcepackagename_name">
+                    this sourcepackagename
+                </span>.
+            </tal:block>
+            <tal:block condition="python: not context/sourcepackagename and
+                                  context/distrorelease">
+                <span tal:replace="context/distrorelease/displayname"
+                      i18n:name="distrorelease_displayname">
+                    this distrorelease
+                </span>
+            </tal:block>
+        </p>
 
         <div tal:condition="not: view/languages">
 
             <ul>
-                <li tal:repeat="template context/potemplates">
-                    <a tal:attributes="href string:${template/name}/translate"
-                        tal:content="template/title">template</a></li>
+                <li tal:repeat="template view/templates">
+                    <a tal:attributes="href string:${template/baseurl}translate"
+                        tal:content="template/name">template</a>
+                </li>
             </ul>
         </div>
+
+        <p tal:condition="view/languages" i18n:translate="">We have determined
+        a short list of languages that you may be interested in translating,
+        and show the translation templates status in each of those languages
+        below:</p>
 
         <div tal:condition="view/languages" tal:repeat="template view/templates">
 
@@ -86,7 +126,7 @@
                     <th i18n:translate="">Done</th>
                     <th i18n:translate="">Todo</th>
                     <th i18n:translate="">Graph</th>
-                    <th i18n:translate="">Lastest Contributor</th>
+                    <th i18n:translate="">Latest Contributor</th>
                     <th i18n:translate="">Last Edited</th>
                 </thead>
 
@@ -96,7 +136,7 @@
                         string:window.location='${template/name}/${language/translateURL}'">
                         <td>
                             <a tal:attributes="href
-                            string:${template/name}/${language/translateURL}"
+                            string:${template/baseurl}${language/translateURL}"
                             tal:content="language/name">Language
                             Name</a></td>
                         <td tal:content="language/poTranslated">0</td>
@@ -157,17 +197,14 @@
             </table>
 
             <div align="right">
-                [ <a tal:attributes="href string:${template/name}"
-                   i18n:translate="">More languages...</a> ]
+                [ <a tal:attributes="href string:${template/baseurl}"
+                   i18n:translate="">More...</a> ]
             </div>
 
+            <div tal:replace="structure view/statusLegend" tal:omit-tag />
 
         </div>
-
-      <div tal:replace="structure view/statusLegend" tal:omit-tag />
-
     </tal:block> <!-- condition="view/templates -->
-
 </div>
 
 </body>

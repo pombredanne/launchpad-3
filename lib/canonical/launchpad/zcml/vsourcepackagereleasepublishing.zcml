@@ -16,7 +16,7 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
-        getter="__getitem__" />
+        getter="traverse" />
 
     <browser:pages
          for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"

@@ -53,17 +53,29 @@ class DummyProject:
     def products(self):
         return [DummyProduct(), DummyProduct()]
 
+class DummyProductRelease:
+
+    def __init__(self):
+        self.potemplates = [DummyPOTemplate()]
+
+class DummyProductSeries:
+    def __init__(self):
+        self.releases = [DummyProductRelease()]
 
 class DummyProduct:
     id = 1
 
     def __init__(self):
-        self.potemplates = []
+        self.serieslist = [DummyProductSeries()]
 
-    def newPOTemplate(self, name, title, person):
-        potemplate = DummyPOTemplate(name=name)
-        self.potemplates.append(potemplate)
-        return potemplate
+    def potemplates(self):
+        templates = []
+        for series in self.serieslist:
+            for release in series.releases:
+                for potemplate in release.potemplates:
+                    templates.append(potemplate)
+
+        return templates
 
 
 class DummyLanguage:
@@ -757,40 +769,6 @@ def test_TabIndexGenerator():
     1
     >>> tig.generate()
     2
-    '''
-
-def test_ProductView_newpotemplate():
-    '''
-    Test POTemplate creation from website.
-
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-    >>> from zope.publisher.browser import FileUpload
-    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
-    >>> from canonical.rosetta.browser import ProductView
-
-    >>> setUp()
-    >>> ztapi.provideUtility(IDistributionSet, DummyDistributionSet())
-    >>> ztapi.provideUtility(ISourcePackageNameSet, DummySourcePackageNameSet())
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
-
-    >>> context = DummyProduct()
-    >>> fui = DummyFileUploadItem(name='foo.pot', content=potfile)
-    >>> fu = FileUpload(fui)
-    >>> request = DummyRequest(file=fu, name='template_name',
-    ...     title='template_title', Register='Register POTemplate')
-    >>> request.method = 'POST'
-    >>> pv = ProductView(context, request)
-
-    >>> len(pv._templates)
-    1
-    >>> 'distrorelease' in dir(pv._templates[0])
-    False
-
-    >>> tearDown()
     '''
 
 def test_suite():

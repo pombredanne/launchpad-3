@@ -26,20 +26,20 @@ class ProductRelease(SQLBase):
     productseries = ForeignKey(dbName='productseries',
                                foreignKey='ProductSeries', default=None)
     manifest = ForeignKey(dbName='manifest', foreignKey='Manifest', default=None)
-    
+
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
-                         
+    potemplates = MultipleJoin('POTemplate', joinColumn='productrelease')
 
 
 class ProductReleaseFile(SQLBase):
     """A file of a product release."""
 
     _table = 'ProductReleaseFile'
-    
+
     productrelease = ForeignKey(dbName='productrelease',
                                 foreignKey='ProductRelease', notNull=True)
     libraryfile = ForeignKey(dbName='libraryfile',
                              foreignKey='LibraryFileAlias', notNull=True)
     filetype = IntCol(notNull=True)
-    
+
 
