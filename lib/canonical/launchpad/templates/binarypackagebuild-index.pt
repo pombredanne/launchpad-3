@@ -35,7 +35,7 @@ tal:content="context/binarypackagerelease/installedsize" /> Kbytes
 
 <fieldset>
   <legend>
-    Package Build Informations
+    Package Build Information
   <legend>
 <p><b>Build Created Date: </b> <span tal:content="context/binarypackagerelease/build/datecreated" />
 

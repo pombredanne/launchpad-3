@@ -3,16 +3,14 @@
 It will create ArchArchive and Branch entries as needed.
 """
 
-#from canonical.launchpad.database import Archive
-from canonical.database.sqlbase import SQLBase, quote
+import sys
+
+from canonical.database.sqlbase import quote
 from canonical.launchpad.database import Product, ArchArchive, Person, SourceSource
 import canonical.lp
 
 from sqlobject import ForeignKey, IntCol, StringCol, DateTimeCol, BoolCol, \
-                      EnumCol, connectionForURI
-#from sqlobject.sqlbuilder.func import NOW
-
-# import canonical.arch.broker as arch
+                      EnumCol
 
 import importd
 import importd.Job
@@ -119,7 +117,7 @@ def importInfoFile(infofile):
 
 
 def filterRunner(func, filelist):
-    SQLBase.initZopeless(connectionForURI('postgres://'+ canonical.lp.dbhost + '/' + canonical.lp.dbname))
+    txnManager = canonical.lp.initZopeless()
     ok = bad = 0
     for filename in filelist:
         try:
@@ -127,16 +125,18 @@ def filterRunner(func, filelist):
         except (SystemExit, KeyboardInterrupt):
             raise
         except Exception, e:
-            logging.warning('Failed to import %s: %s' % (filename, e))
+            sys.excepthook(*sys.exc_info())
+            sys.exc_clear()
+            logging.warning('Failure processing: %s' % filename)
             bad += 1
         else:
             ok += 1
-    return (ok, bad)
+    txnManager.commit()
+    print '%d ok, %d failed' % (ok, bad)
 
 
 def main(filelist):
-    ok, bad = filterRunner(importInfoFile, filelist)
-    print '%d imported ok, %d failed' % (ok, bad)
+    filterRunner(importInfoFile, filelist)
 
 
 if __name__ == '__main__':

@@ -52,9 +52,9 @@ class SQLObjectVocabularyBase(object):
     def __len__(self):
         return len(iter(self))
 
-    def __contains__(self, key):
+    def __contains__(self, obj):
         try:
-            objs = list(self._table.select(self._table.q.id == int(key)))
+            objs = list(self._table.select(self._table.q.id == obj.id))
             if len(objs) > 0:
                 return True
         except ValueError:
@@ -78,15 +78,13 @@ class SQLObjectVocabularyBase(object):
 
 
 class SourcePackageVocabulary(SQLObjectVocabularyBase):
-    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
-    # no test data for me to check yet. This'll be fixed by the end
-    # of the week (2004/10/08) as we get Malone into usable shape.
     _table = SourcePackage
     _orderBy = 'id'
 
     def _toTerm(self, obj):
         name = obj.sourcepackagename.name
-        return SimpleTerm(obj.id, str(obj.id), name)
+        return SimpleTerm(obj, str(obj.id), name)
+
     def getTermByToken(self, token):
         return self.getTerm(token)
 

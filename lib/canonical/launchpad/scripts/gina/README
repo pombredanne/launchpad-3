@@ -15,26 +15,26 @@ Steps to run this:
     7. rsync keyring.debian.org::keyrings/keyrings/* keyrings
     8. cp /srv/keyring/.no-name-yet.com/keyrings/*.gpg keyrings
     9. python grabber.py
-    10. Use the next 4 hours to work on another nice python code
+    10. Use the next 4 hours to work on some other code
 
-Using:
+Using the Gina output:
 
-    The current version of Soyuz support all data collected by Gina:
+    The current version of Soyuz supports all data collected by Gina:
     
-    1. dropdb launchpad_test
-    2. createdb launchpad_test
+    1. dropdb launchpad_dev
+    2. createdb launchpad_dev
     3. psql -f fresh_large_dump launchpad_test
         
     -> Tons of packages (13k binaries and 7k sources)*
-    -> Person information (name, multiple mails, gpgkey, etc)
+    -> Person-related information (name, multiple mails, gpgkey, etc)
     
     * the current implementation of Soyuz/SQLObject is quite slow to 
       fetch all information from DB, so don't forget to use "renice" 
-      to reduce the postgres and the zope priorityif you machine is
-      normal (!), otherwise it will CRASH (I'm serious). It will 
-      become better soon with PSQL VIEWS and Batched Pages.
-
+      to reduce the postgres and the zope priority if your machine is
+      `normal' (non-dual-Xeon), otherwise it will CRASH (I'm serious).
+      It should become better with PSQL VIEWS and Batched Pages.
 
 TODO:
     - Process GPG keys properly
     - Loop over components, releases, distros
+

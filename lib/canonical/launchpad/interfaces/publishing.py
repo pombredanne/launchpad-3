@@ -178,3 +178,52 @@ class IPublishedBinaryPackage(Interface):
     distribution = Int(
             title=_('Distribution ID'), required=True, readonly=True,
             )
+
+class IPublishedSourcePackageFile(Interface):
+    """Source package files published and thus due for inclusion in a release"""
+
+    distroreleasename = TextLine(
+            title=_('Distro Release Name'), required=True, readonly=True,
+            )
+    sourcepackagename = TextLine(
+            title=_('Source Package Name'), required=True, readonly=True,
+            )
+
+    libraryfilealiasfilename = TextLine(
+            title=_('File Name'), required=True, readonly=True,
+            )
+
+    componentname = TextLine(
+            title=_('Component Name'), required=True, readonly=True,
+            )
+
+    distribution = Int(
+            title=_('Distribution ID'), required=True, readonly=True,
+            )
+
+class IPublishedBinaryPackageFile(Interface):
+    """Binary package files published and thus due for inclusion in a release"""
+
+    distroreleasename = TextLine(
+            title=_('Distro Release Name'), required=True, readonly=True,
+            )
+    sourcepackagename = TextLine(
+            title=_('Source Package Name'), required=True, readonly=True,
+            )
+
+    libraryfilealiasfilename = TextLine(
+            title=_('File Name'), required=True, readonly=True,
+            )
+
+    componentname = TextLine(
+            title=_('Component Name'), required=True, readonly=True,
+            )
+
+    distribution = Int(
+            title=_('Distribution ID'), required=True, readonly=True,
+            )
+
+    architecturetag = TextLine(
+            title=_("Architecture tag. As per dpkg's use"), required=True,
+            readonly=True,
+            )

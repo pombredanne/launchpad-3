@@ -15,10 +15,10 @@
 <div metal:fill-slot="main">
 
   <h1>
-    <span tal:content="context/build/sourcepackagerelease/sourcepackage/name">
+    <span tal:content="context/sourcepackagerelease/sourcepackage/name">
       TITLE
     </span>
-    (<span tal:content="context/build/sourcepackagerelease/version" />)
+    (<span tal:content="context/sourcepackagerelease/version" />)
   </h1>
 
  <fieldset>
@@ -26,32 +26,32 @@
      Source Package Release Information
    </legend>
    <p><b>Package name:</b> 
-      <a tal:content="context/build/sourcepackagerelease/sourcepackage/name"
+      <a tal:content="context/sourcepackagerelease/sourcepackage/name"
       tal:attributes="href
-      string:../../${context/build/sourcepackagerelease/sourcepackage/name}" />
+      string:../../${context/sourcepackagerelease/sourcepackage/name}" />
 
     <p><b>Package Creator:</b> 
        <a
-       tal:content="context/build/sourcepackagerelease/creator/displayname" 
+       tal:content="context/sourcepackagerelease/creator/displayname" 
        tal:attributes="href 
-       string:../../../../../../people/${context/build/sourcepackagerelease/creator/id}"
+       string:../../../../../../people/${context/sourcepackagerelease/creator/id}"
        />
 
     <p><b>Upload Date (UTC):</b> 
-       <span tal:content="context/build/sourcepackagerelease/dateuploaded">
+       <span tal:content="context/sourcepackagerelease/dateuploaded">
        UPLOADDATE</span>
 
     <p><b>Urgency Level:</b>
-       <span tal:content="context/build/sourcepackagerelease/pkgurgency">
+       <span tal:content="context/sourcepackagerelease/pkgurgency">
        URGENCY</span>
 
     <p><b>Component:</b>
-       <span tal:content="context/build/sourcepackagerelease/component/name">
+       <span tal:content="context/sourcepackagerelease/component/name">
        Component</span>
 
     <p><b>Binary Packages:</b> 
        <ul>
-         <li tal:repeat="binary context/build/sourcepackagerelease/binaries" >
+         <li tal:repeat="binary context/sourcepackagerelease/binaries" >
           <a tal:content="binary/name"
 	  tal:attributes="href 
 	  string:../../../../bin/${context/distroreleasename}/${binary/name}"
@@ -65,12 +65,11 @@
 
     <div align="right">
       <i>
-      <tal:dummy tal:condition="context/build/sourcepackagerelease/changelog">
-        <a href="+changelog">
-	  Changelog
+        <a tal:condition="context/sourcepackagerelease/changelog"
+	   href="+changelog">
+	   Changelog
 	</a>
-      </tal:dummy>
-      <tal:dummy tal:condition="not:context/build/sourcepackagerelease/changelog">
+      <tal:dummy tal:condition="not:context/sourcepackagerelease/changelog">
       	  No Changelog for this Source Release
       </tal:dummy>
       </i> 
@@ -140,6 +139,7 @@
     </div>
 
   <p><h4>Builds:</h4> 
+
    <tal:dummy tal:condition="not:context/archs">
      <i> No Builds Available</i>
    </tal:dummy>
@@ -149,6 +149,18 @@
        <a tal:content="arch" tal:attributes="href arch">ARCH</a>
      ]    
    </tal:block>
+
+    <div align="right">
+      <i>
+        <a tal:condition="context/archs" href="+buildlog">
+	   BuildLogs
+	</a>
+
+      <tal:dummy tal:condition="not:context/archs">
+      	  <i>No Build for this Source Release</i>
+      </tal:dummy>
+      </i> 
+    </div>
 
 </div>
 </body>

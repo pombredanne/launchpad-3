@@ -15,14 +15,23 @@
         permission="zope.Public"
         />
 
-    <!-- Launchpad Add Form METAL
-        This template can be used by any of the add forms in Launchpad-->
+    <!-- Launchpad Add and Edit Form METAL
+        These templates can be used by any of the add or edit forms
+        in Launchpad -->
     <browser:page
         for="*"
         name="launchpad_addform"
         layer="canonical.launchpad.layers.LaunchpadLayer"
         permission="zope.Public"
         template="../templates/launchpad-addform.pt"
+        />
+
+    <browser:page
+        for="*"
+        name="launchpad_editform"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/launchpad-editform.pt"
         />
 
     <!-- Widget Macros
@@ -32,10 +41,10 @@
 
     <browser:page
         for="*"
-        name="widget_macros"
+        name="launchpad_widget_macros"
         layer="canonical.launchpad.layers.LaunchpadLayer"
         permission="zope.Public"
-        template="../templates/widget_macros.pt"
+        template="../templates/launchpad-widget-macros.pt"
         />
 
     <!-- MaloneBug (this must disappear!) -->
@@ -74,7 +83,7 @@
         label="Change Bug Information"
         permission="launchpad.AnyPerson"
         template="../templates/bug-edit.pt"
-        fields="name title shortdesc description"
+        fields="title shortdesc description name"
         lp:url="malone/bugs/$Bug.id/+edit">
     </browser:editform>
 
@@ -115,7 +124,7 @@
         arguments=""
         keyword_arguments="title shortdesc description sourcepackage owner"
         permission="launchpad.AnyPerson"
-        template="../templates/bug-addform.pt"
+        template="../templates/bug-add.pt"
         lp:url="malone/bugs/+new">
         <widget field="owner" class="canonical.widgets.OwnerWidget" />
     </browser:addform>

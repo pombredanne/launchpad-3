@@ -9,6 +9,7 @@ from zope.schema.interfaces import IText
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields.bug import BugSummary
+from canonical.launchpad.validators.name import valid_name
 
 # FIELDS
 
@@ -33,7 +34,10 @@ class IBug(Interface):
             description=_("""A short and unique name for this bug. Very few
                 bugs have a nickname, they are just bugs that are so
                 significant that people will actually remember the
-                name."""),
+                name. Please don't set a nickname for the bug unless you
+                are certain that this is the sort of bug that the entire
+                community, upstream and all distro's, will phear."""),
+            constraint=valid_name,
             )
     title = TextLine(
             title=_('Bug Title'), required=True,

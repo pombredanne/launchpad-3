@@ -44,6 +44,9 @@ def check_tags_dicts(allowed_tags, actual_tags):
         [tag for tag, value in
             sets.Set(allowed_tags.items()) - sets.Set(actual_tags.items())
         ]) - removed_tags
+    print
+    print "Total number of files with implicit ids: %s" % len(actual_tags)
+    print
     if added_tags:
         print "New tags have been added:"
         for tag in added_tags:

@@ -14,6 +14,13 @@ class IBugSubscription(Interface):
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
     subscription = Choice(
             title=_('Subscription'), required=True, readonly=False,
+            description=_("""Your subscription to a bug can be one of
+            "watch", "cc" or "ignore". If you "watch" a bug then it will
+            show up on your reports, but you won't normally receive bug
+            mail. If you "cc" yourself on a bug you will receive a copy of
+            all bug update notifications by email. If you "ignore" a bug
+            then you will not receive notifications from that bug even if
+            they are directly addressed to you as a maintainer or assignee."""),
             vocabulary='Subscription')
 
 

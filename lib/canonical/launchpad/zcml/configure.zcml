@@ -30,11 +30,4 @@
     <!-- Event configuration -->
     <include file="bug-events.zcml" />
 
-    <!-- Mail configuration -->
-    <!-- XXX: Brad Bollenbach, 2004/10/19: Include this when
-    we get our policy on using mail sorted out (for more, ask
-    Steve. :)
-    <include file="mail.zcml" />
-    -->
-
 </configure>

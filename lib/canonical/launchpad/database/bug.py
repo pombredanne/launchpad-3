@@ -190,21 +190,10 @@ class BugContainer(BugContainerBase):
             product = Product.get(productid)
             pba = ProductBugAssignment(bug=bug, product=product)
 
-        # If the user has specified a sourcepackage, create the
-        # SourcePackageBugAssignment. This might also link to the
-        # binary package if it was specified.
-        sourcepkgid = getattr(ob, 'sourcepackage', None)
-        binarypkgid = getattr(ob, 'binarypackage', None)
-        if sourcepkgid:
-            sourcepkg = SourcePackage.get(sourcepkgid)
-            if binarypkgid:
-                binarypkg = BinaryPackage.get(binarypkgid)
-            else:
-                binarypkg = None
+        sourcepkg = getattr(ob, 'sourcepackage', None)
+        if sourcepackage:
             sba = SourcePackageBugAssignment(
-                    bug=bug, sourcepackage=sourcepkg,
-                    binarypackagename=binarypkg,
-                    )
+                bug=bug, sourcepackage=sourcepkg, binarypackagename=None)
 
         return ob # Return this rather than the bug we created from it,
                   # as the return value must be adaptable to the interface

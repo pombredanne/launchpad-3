@@ -5,15 +5,15 @@ from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
 from canonical.launchpad.interfaces import IBug
 from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.database import BugTracker
 from canonical.lp.dbschema import BugAssignmentStatus, BugPriority, \
      BugSeverity, BugInfestationStatus, BugExternalReferenceType
+from canonical.launchpad.vocabularies import BugTrackerVocabulary
 
 FROM_MAIL = "noreply@bbnet.ca"
-#FROM_MAIL = "stuart@stuartbishop.net"
 
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug."""
-    #return ["stuart@stuartbishop.net"]
     return ['test@bbnet.ca']
 
 def notify_bug_assigned_product_added(product_assignment, event):
@@ -38,6 +38,31 @@ Assigned: %(assigned)s
     simple_sendmail(
         FROM_MAIL, get_cc_list(product_assignment.bug),
         '"%s" product assignment' % product_assignment.bug.title, msg)
+
+def notify_bug_assigned_product_modified(modified_product_assignment, event):
+    """Notify CC'd list that this bug product assignment has been
+    modified, describing what the changes were."""
+    change = {}
+    for name in event.edited_fields:
+        old_val = getattr(event.object_before_modification, name)
+        new_val = getattr(event.object, name)
+
+        if old_val != new_val:
+            change[name] = {}
+            change[name]["old"] = old_val
+            change[name]["new"] = new_val
+
+    msg = """\
+The following changes were made:
+
+"""
+    for changed_field in change.keys():
+        msg += "%s: %s => %s\n" % (
+            changed_field, change[changed_field]["old"], change[changed_field]["new"])
+
+    simple_sendmail(
+        FROM_MAIL, get_cc_list(modified_product_assignment.bug),
+        '"%s" was modified' % modified_product_assignment.bug.title, msg)
 
 def notify_bug_assigned_package_added(package_assignment, event):
     """Notify CC'd list that this bug has been assigned to
@@ -82,6 +107,34 @@ Infestation: %(infestation)s
         FROM_MAIL, get_cc_list(product_infestation.bug),
         '"%s" product infestation' % product_infestation.bug.title, msg)
 
+def notify_bug_product_infestation_modified(modified_product_infestation, event):
+    """Notify CC'd list that this product infestation has been edited."""
+    old_bpa = event.object_before_modification
+    new_bpa = event.object
+
+    change = {}
+
+    old_pr = old_bpa.productrelease
+    new_pr = new_bpa.productrelease
+    if old_pr != new_pr:
+        change['productrelease'] = {}
+        change['productrelease']['old'] = "%s %s" % (
+            old_pr.product.name, old_pr.version)
+        change['productrelease']['new'] = "%s %s" % (
+            new_pr.product.name, new_pr.version)
+
+    old_status = old_bpa.infestationstatus
+    new_status = new_bpa.infestationstatus
+    if old_status != new_status:
+        change['infestationstatus'] = {}
+        change['infestationstatus']['old'] = BugInfestationStatus.items[old_status].title
+        change['infestationstatus']['new'] = BugInfestationStatus.items[new_status].title
+
+    send_edit_notification(
+        FROM_MAIL, get_cc_list(modified_product_infestation.bug),
+        '"%s" product infestation edited' % modified_product_infestation.bug.title,
+        change)
+
 def notify_bug_package_infestation_added(package_infestation, event):
     """Notify CC'd list that this bug has infested a
     source package release."""
@@ -96,6 +149,33 @@ Infestation: %(infestation)s
     simple_sendmail(
         FROM_MAIL, get_cc_list(package_infestation.bug),
         '"%s" package infestation' % package_infestation.bug.title, msg)
+
+def notify_bug_package_infestation_modified(modified_package_infestation, event):
+    """Notify CC'd list that this package infestation has been modified."""
+    old_bpi = event.object_before_modification
+    new_bpi = event.object
+
+    change = {}
+    old_spr = old_bpi.sourcepackagerelease
+    new_spr = new_bpi.sourcepackagerelease
+    if  old_spr != new_spr:
+        change['sourcepackagerelease'] = {}
+        change['sourcepackagerelease']['old'] = "%s %s" % (
+            old_spr.name, old_spr.version)
+        change['sourcepackagerelease']['new'] = "%s %s" % (
+            new_spr.name, new_spr.version)
+
+    old_status = old_bpi.infestationstatus
+    new_status = new_bpi.infestationstatus
+    if old_status != new_status:
+        change['infestationstatus'] = {}
+        change['infestationstatus']['old'] = BugInfestationStatus.items[old_status].title
+        change['infestationstatus']['new'] = BugInfestationStatus.items[new_status].title
+
+    send_edit_notification(
+        FROM_MAIL, get_cc_list(modified_package_infestation.bug),
+        '"%s" package infestation edited' % modified_package_infestation.bug.title,
+        change)
 
 def notify_bug_comment_added(comment, event):
     """Notify CC'd list that a comment was added to this bug."""
@@ -138,3 +218,39 @@ Remote Bug: %(remote_bug)s
     simple_sendmail(
         FROM_MAIL, get_cc_list(watch.bug),
         '"%s" watch added' % watch.bug.title, msg)
+
+def notify_bug_watch_modified(modified_bug_watch, event):
+    orig = event.object_before_modification
+    new = event.object
+
+    btv = BugTrackerVocabulary(modified_bug_watch.bug)
+    change = {}
+    old_bt = getattr(orig, "bugtracker")
+    new_bt = getattr(new, "bugtracker")
+    if old_bt != new_bt:
+        change["bugtracker"] = {}
+        change["bugtracker"]["old"] = btv.getTermByToken(old_bt.id).title
+        change["bugtracker"]["new"] = btv.getTermByToken(new_bt.id).title
+
+    old_rb = getattr(orig, "remotebug")
+    new_rb = getattr(new, "remotebug")
+    if old_rb != new_rb:
+        change["remotebug"] = {}
+        change["remotebug"]["old"] = old_rb
+        change["remotebug"]["new"] = new_rb
+
+    send_edit_notification(
+        FROM_MAIL, get_cc_list(modified_bug_watch.bug),
+        '"%s" watch edited' % modified_bug_watch.bug.title,
+        change)
+
+def send_edit_notification(from_addr, to_addrs, subject, change):
+    if change:
+        msg = """The following changes were made:
+
+"""
+        for changed_field in change.keys():
+            msg += "%s: %s => %s\n" % (
+                changed_field, change[changed_field]["old"], change[changed_field]["new"])
+
+        simple_sendmail(from_addr, to_addrs, subject, msg)

@@ -1,0 +1,65 @@
+    <tal:block tal:define="product_view view/productTranslations">
+	<fieldset>
+	  <legend tal:define="product context/sourcepackage/product">
+	    <a tal:condition="product" 
+	       tal:attributes="href string:/rosetta/projects/${product/project/name}/${product/name}">
+	         Rosetta Translations
+	    </a>
+	    <tal:block tal:condition="not:product">
+	      Rosetta Translations
+	    </tal:block>
+	  </legend>
+
+        <tal:block condition="not:product_view">
+	   There is no associated product with this package.
+	</tal:block>
+        
+        <tal:block condition="product_view">
+          <tal:block condition="not:product_view/thereAreTemplates">
+	    No translations.
+	  </tal:block>
+
+	<tal:block condition="product_view/thereAreTemplates">
+
+        <div tal:condition="product_view/languages" tal:repeat="LT product_view/languageTemplates">
+
+            <table>
+                <tbody>
+                    <tr>
+		        <td tal:content="LT/language/englishName" />
+		    </tr>
+		    <tr tal:repeat="template LT/templates">
+                        <td>
+                            <img src="++resource++green-bar.png"
+                                height="15"
+                                alt="Translated &amp; non updated graph"
+                                tal:condition="template/poNonUpdatesCount"
+                                tal:attributes="width template/poNonUpdatesPercent;
+                                                title string: Translated: ${template/poNonUpdatesPercent}%"
+                            /><img src="++resource++blue-bar.png"
+                                height="15"
+                                alt="Updated graph"
+                                tal:condition="template/poUpdatesCount"
+                                tal:attributes="width template/poUpdatesPercent;
+                                                title string: Updates: ${template/poUpdatesPercent}%"
+                            /><img src="++resource++dwelled-bar.png"
+                                height="15"
+                                alt="Rosetta additions graph"
+                                tal:condition="template/poRosettaCount"
+                                tal:attributes="width template/poRosettaPercent;
+                                                title string: Rosetta additions: ${template/poRosettaPercent}%"
+                            /><img src="++resource++red-bar.png"
+                                height="15"
+                                alt="Fuzzy graph"
+                                tal:condition="template/poUntranslated"
+                                tal:attributes="width template/poUntranslatedPercent;
+                                                title string: Untranslated: ${template/poUntranslatedPercent}%" />
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </tal:block> <!-- <tal:block condition="product_view/thereAreTemplates"> -->
+    </tal:block> <!-- <tal:block condition="product_view"> -->
+    </fieldset>
+    </tal:block> 

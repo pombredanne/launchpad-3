@@ -116,10 +116,9 @@ class DistroReleaseSourceReleaseBuildApp(object):
     def __init__(self, sourcepackagerelease, arch):
         self.sourcepackagerelease = sourcepackagerelease
         self.arch = arch
-
-
+        
         build_results = Build.getSourceReleaseBuild(sourcepackagerelease.id,
-                                                             arch)
+                                                 arch)
         if build_results.count() > 0:
             self.build = build_results[0]
 
@@ -135,8 +134,10 @@ class builddepsContainer(object):
 class DistroReleaseSourceReleaseApp(object):
     def __init__(self, sourcepackage, version, distrorelease):
         self.distroreleasename = distrorelease.name
+
         results = SourcePackageRelease.selectBy(
                 sourcepackageID=sourcepackage.id, version=version)
+
         if results.count() == 0:
             raise ValueError, 'No such version ' + repr(version)
         else:
@@ -188,8 +189,18 @@ class DistroReleaseSourceApp(object):
     def __init__(self, release, sourcepackage):
         self.release = release
         self.sourcepackage = sourcepackage
-
+        
         self.bugsCounter = self._countBugs()
+
+        self.releases = self.sourcepackage.releases
+
+        self.archs = None
+
+        for release in self.releases:
+            # Find distroarchs for that release
+            archReleases = release.architecturesReleased(self.release)
+            self.archs = [a.architecturetag for a in archReleases]
+        
 
     def _countBugs(self):
         all, critical, important, \
@@ -235,11 +246,6 @@ class DistroReleaseSourceApp(object):
 
     lastversions = property(lastversions)
     
-    def builds(self):
-        return self.sourcepackage.builds
-
-    builds = property(builds)
-
     
 class DistroReleaseSourcesApp(object):
     """Container of SourcePackage objects.

@@ -67,6 +67,7 @@
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IBugPackageInfestation"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IBugPackageInfestation"
         fields="sourcepackagerelease infestationstatus"
         label="Edit Infested Package Release"

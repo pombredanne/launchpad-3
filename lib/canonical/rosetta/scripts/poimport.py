@@ -13,6 +13,8 @@ from canonical.launchpad.database import ProjectSet
 from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 
+from canonical.database.sqlbase import ZopelessTransactionManager
+
 stats_message = """
 Msgsets matched to the potemplate that have a non-fuzzy translation in
 the PO file when we last parsed it: %d
@@ -28,6 +30,7 @@ translation in the PO file when we last parsed it: %d
 class PODBBridge(PlacelessSetup):
 
     def __init__(self):
+        canonical.lp.dbname='launchpad_dev'
         self._tm = canonical.lp.initZopeless()
 
     def commit(self):
@@ -82,7 +85,7 @@ class PODBBridge(PlacelessSetup):
 
     def update_stats(self, projectName, productName, poTemplateName, languageCode):
         try:
-            project = DBProjects()[projectName]
+            project = ProjectSet()[projectName]
             product = Product.selectBy(projectID = project.id,
                                               name=productName)[0]
             poTemplate = POTemplate.selectBy(productID = product.id,

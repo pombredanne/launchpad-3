@@ -1,4 +1,4 @@
-
+from canonical.launchpad.database import BugTracker
 from canonical.launchpad.interfaces import IPerson
 
 def newBugTracker(form, owner):

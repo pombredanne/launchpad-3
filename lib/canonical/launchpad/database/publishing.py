@@ -14,7 +14,9 @@ from canonical.launchpad.interfaces import IPackagePublishing, \
                                            IPendingSourcePackageFile, \
                                            IPendingBinaryPackageFile, \
                                            IPublishedSourcePackage, \
-                                           IPublishedBinaryPackage
+                                           IPublishedBinaryPackage, \
+                                           IPublishedSourcePackageFile, \
+                                           IPublishedBinaryPackageFile
 
 from canonical.launchpad.database import DistroRelease, DistroArchRelease
 
@@ -139,3 +141,55 @@ class PublishedBinaryPackage(SQLBase):
                           notNull=True)
     priority = IntCol(dbName='priority', unique=False, default=None,
                       notNull=True)
+
+class PublishedSourcePackageFile(SQLBase):
+    """Source package files published and thus needing to be included in an archive"""
+
+    implements(IPublishedSourcePackageFile)
+
+    _idType = str
+
+    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
+                                  default=None, notNull=True)
+
+    componentname = StringCol(dbName='componentname', unique=False,
+                              default=None, notNull=False)
+
+    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
+                                  default=None, notNull=True)
+
+    libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
+                                         unique=False, default=None,
+                                         notNull=True)
+
+    distribution = IntCol(dbName='distribution', unique=False, default=None,
+                          notNull=True)
+
+
+class PublishedBinaryPackageFile(SQLBase):
+    """Binary package files published and thus needing to be included in an archive"""
+
+    implements(IPublishedBinaryPackageFile)
+
+    _idType = str
+
+    distroreleasename = StringCol(dbName='distroreleasename', unique=False,
+                                  default=None, notNull=True)
+
+    componentname = StringCol(dbName='componentname', unique=False,
+                              default=None, notNull=False)
+
+    sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
+                                  default=None, notNull=True)
+
+    libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
+                                         unique=False, default=None,
+                                         notNull=True)
+
+    distribution = IntCol(dbName='distribution', unique=False, default=None,
+                          notNull=True)
+
+
+    architecturetag = StringCol(dbName='architecturetag', unique=False,
+                                default=None, notNull=True)
+

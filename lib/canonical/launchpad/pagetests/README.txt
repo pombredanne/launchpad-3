@@ -1,7 +1,12 @@
 Page tests
 ==========
 
-All .txt files in this directory are run as "page tests".[1]
+Every subdirectory of this one is considered a 'story'. Each story
+is run against a fresh database instance, so we can easily avoid tests
+stomping on each other. A story might be a walkthrough of a particular use
+case, or a collection of tests based around some theme.
+
+In each story directory, all .txt files are run as "page tests".[1]
 
 A page test is a doctest that tests pages of the launchpad application.
 
@@ -14,8 +19,8 @@ are the same for several tests.  Typical names are:
   20-browse-projects.txt
   60-browse-users.txt
 
-The test runner will issue a warning if files are put into this directory
-that do not match the NN-text-stuff.txt pattern.
+The test runner will issue a warning if files are put into the story
+directory that do not match the NN-text-stuff.txt pattern.
 
 If your test does not depend on any other test, prefix it with "00".
 Then, it will be run first.

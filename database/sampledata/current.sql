@@ -636,6 +636,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagename'::pg_catalog.regclass;
 
 INSERT INTO sourcepackagename (id, name) VALUES (1, 'mozilla-firefox-dummy');
+INSERT INTO sourcepackagename (id, name) VALUES (9, 'evolution');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagename'::pg_catalog.regclass;
@@ -646,6 +647,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackage'::pg_c
 INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat) VALUES (1, 1, 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
 	K-Meleon and Camino, but written using the XUL user interface language and 
 	designed to lightweight and cross-platform.', NULL, 3, 1, 1);
+INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat) VALUES (9, 1, 'Evolution-Dummy', 'This is evolution sample data package', NULL, 1, 9, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackage'::pg_catalog.regclass;
@@ -668,6 +670,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packaging'::pg_catalog.regclass;
 
 INSERT INTO packaging (sourcepackage, packaging, product) VALUES (1, 1, 4);
+INSERT INTO packaging (sourcepackage, packaging, product) VALUES (9, 1, 5);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packaging'::pg_catalog.regclass;
@@ -676,6 +679,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagerelease'::pg_catalog.regclass;
 
 INSERT INTO sourcepackagerelease (id, sourcepackage, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section) VALUES (14, 1, 1, '0.9', '2004-09-27 11:57:13', 1, 1, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4)', NULL, NULL, 1);
+INSERT INTO sourcepackagerelease (id, sourcepackage, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section) VALUES (15, 9, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagerelease'::pg_catalog.regclass;
@@ -690,7 +694,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagepublishing'::pg_catalog.regclass;
 
-INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 14, 2, 1, 1, 1, '2004-09-27 11:57:13', NULL);
+INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 14, 1, 1, 1, 1, '2004-09-27 11:57:13', NULL);
+INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 15, 1, 2, 1, 1, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagepublishing'::pg_catalog.regclass;
@@ -1469,15 +1474,15 @@ SELECT pg_catalog.setval('libraryfilealias_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sourcepackagename_id_seq', 8, true);
+SELECT pg_catalog.setval('sourcepackagename_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackage_id_seq', 8, true);
+SELECT pg_catalog.setval('sourcepackage_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagerelease_id_seq', 14, true);
+SELECT pg_catalog.setval('sourcepackagerelease_id_seq', 15, true);
 
 
 
@@ -1627,7 +1632,7 @@ SELECT pg_catalog.setval('sectionselection_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sourcepackagepublishing_id_seq', 1, true);
+SELECT pg_catalog.setval('sourcepackagepublishing_id_seq', 2, true);
 
 
 

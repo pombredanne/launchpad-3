@@ -626,7 +626,9 @@ class POFile(SQLBase):
         else:
             assert results.count() == 1
 
-            poresults = POMsgSet.selectBy(potmsgsetID=results[0].id)
+            poresults = POMsgSet.selectBy(
+                potmsgsetID=results[0].id,
+                pofileID=self.id)
 
             if poresults.count() == 0:
                 raise KeyError, key
@@ -635,7 +637,6 @@ class POFile(SQLBase):
 
                 return poresults[0]
 
-    
     def __getitem__(self, msgid_text):
         return self.messageSet(msgid_text, onlyCurrent=True)
 
@@ -664,64 +665,69 @@ class POFile(SQLBase):
             '''UPDATE POMsgSet SET sequence = 0 WHERE pofile = %d'''
             % self.id)
     
-    def updateStatistics(self):
-        # XXX: Carlos Perello Marin 19/10/04 Disabled, we need to define the
-        # strategy to follow about the statistics and I don't want to expend
-        # too many time fixing this.
-        return (0, 0, 0)
-        # XXX: Carlos Perello Marin 05/10/04 This method should be reviewed
-        # harder after the final decission about how should we use active and
-        # inLastRevision fields.
-        # I'm not doing it now because the statistics works is not completed
-        # and I don't want to conflict with lalo's work.
-        # XXX: Carlos Perello Marin 15/10/04: After the potmsgset and pomsgset
-        # split, this review is more needed.
-        current = POMsgSet.select('''
-            POMsgSet.sequence > 0 AND
-            POMsgSet.fuzzy = FALSE AND
-            POTMsgSet.sequence > 0 AND
-            POTMsgSet.primeMsgID = POMsgSet.primeMsgID AND
-            POMsgSet.pofile = %d AND
-            POTMsgSet.potemplate = POMsgSet.potemplate
+    def updateStatistics(self, newImport=False):
+    
+        if newImport:
+            # The current value should change only with a new import, if not,
+            # it will be always the same.
+            current = POMsgSet.select('''
+                POMsgSet.pofile = %d AND
+                POMsgSet.sequence > 0 AND
+                POMsgSet.fuzzy = FALSE AND
+                POMsgSet.iscomplete = TRUE AND
+                POMsgSet.potmsgset = POTMsgSet.id AND
+                POTMsgSet.sequence > 0
             ''' % self.id, clauseTables=('POTMsgSet',)).count()
+        else:
+            current = self.currentcount
+        
+        # XXX: Carlos Perello Marin 27/10/04: We should fix the schema if we
+        # want that updates/rosetta is correctly calculated, if we have fuzzy msgset
+        # and then we fix it from Rosetta it will be counted as an update when
+        # it's not.
         updates = POMsgSet.select('''
+            POMsgSet.pofile = %d AND
             POMsgSet.sequence > 0 AND
             POMsgSet.fuzzy = FALSE AND
+            POMsgSet.iscomplete = TRUE AND
+            POMsgSet.potmsgset = POTMsgSet.id AND
             POTMsgSet.sequence > 0 AND
-            POTMsgSet.primeMsgID = POMsgSet.primeMsgID AND
-            POMsgSet.pofile = %d AND
-            POTMsgSet.potemplate = POMsgSet.potemplate AND
-            FileSighting.pomsgset = POMsgSet.id AND
-            RosettaSighting.pomsgset = POMsgSet.id AND
-            FileSighting.inLastRevision = TRUE AND
-            RosettaSighting.inLastRevision = FALSE AND
-            FileSighting.active = TRUE AND
-            RosettaSighting.active = TRUE AND
-            RosettaSighting.dateLastActive > FileSighting.dateLastActive
-            ''' % self.id, clauseTables=(
-                                         'POMsgSet PotSet',
-                                         'POTranslationSighting FileSighting',
-                                         'POTranslationSighting RosettaSighting',
-                                        )).count()
+            EXISTS (SELECT *
+                    FROM
+                        POTranslationSighting FileSight,
+                        POTranslationSighting RosettaSight
+                    WHERE
+                        FileSight.pomsgset = POMsgSet.id AND
+                        RosettaSight.pomsgset = POMsgSet.id AND
+                        FileSight.pluralform = RosettaSight.pluralform AND
+                        FileSight.inLastRevision = TRUE AND
+                        RosettaSight.inLastRevision = FALSE AND
+                        FileSight.active = FALSE AND
+                        RosettaSight.active = TRUE )
+            ''' % self.id, clauseTables=('POTMsgSet', )).count()
+        
         rosetta = POMsgSet.select('''
-            POMsgSet.fuzzy = FALSE AND
-            PotSet.sequence > 0 AND
-            PotSet.primeMsgID = POMsgSet.primeMsgID AND
             POMsgSet.pofile = %d AND
-            PotSet.potemplate = POMsgSet.potemplate AND
-            PotSet.pofile IS NULL AND
-            (SELECT COUNT(*) from
-              POTranslationSighting POSighting WHERE
-              POSighting.POMsgSet = POMsgSet.id AND
-              POSighting.active = TRUE AND
-              POSighting.inLastRevision = TRUE) = 0 AND
-            (SELECT COUNT(*) from
-              POTranslationSighting RosettaSighting WHERE
-              RosettaSighting.POMsgSet = POMsgSet.id AND
-              RosettaSighting.active = TRUE) > 0
-            ''' % self.id, clauseTables=(
-                                         'POMsgSet PotSet',
-                                        )).count()
+            POMsgSet.fuzzy = FALSE AND
+            POMsgSet.iscomplete = TRUE AND
+            POMsgSet.potmsgset = POTMsgSet.id AND
+            POTMsgSet.sequence > 0 AND
+            NOT EXISTS (
+                SELECT *
+                FROM
+                    POTranslationSighting FileSight
+                WHERE
+                    FileSight.pomsgset = POMsgSet.id AND
+                    FileSight.inLastRevision = TRUE) AND
+            EXISTS (
+                SELECT *
+                FROM
+                    POTranslationSighting RosettaSight
+                WHERE
+                    RosettaSight.pomsgset = POMsgSet.id AND
+                    RosettaSight.inlastrevision = FALSE AND
+                    RosettaSight.active = TRUE)
+            ''' % self.id, clauseTables=('POMsgSet PotSet',)).count()
         self.set(currentCount=current,
                  updateCount=updates,
                  rosettaCount=rosetta)

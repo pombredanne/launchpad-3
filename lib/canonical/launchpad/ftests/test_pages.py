@@ -14,10 +14,10 @@ from canonical.functional import FunctionalDocFileSuite
 
 here = os.path.dirname(os.path.realpath(__file__))
 
-class SetUpPTs(harness.LaunchpadTestCase):
+class StartStory(harness.LaunchpadTestCase):
     def setUp(self):
         """Setup the database"""
-        super(SetUpPTs, self).setUp()
+        super(StartStory, self).setUp()
 
     def tearDown(self):
         """But don't tear it down, so other tests in the suite can use it"""
@@ -28,7 +28,7 @@ class SetUpPTs(harness.LaunchpadTestCase):
         # working by accident.
         pass
 
-class TearDownPTs(harness.LaunchpadTestCase):
+class EndStory(harness.LaunchpadTestCase):
     def setUp(self):
         """Don't setup the database - it is already"""
         self._cons = []
@@ -36,63 +36,50 @@ class TearDownPTs(harness.LaunchpadTestCase):
 
     def tearDown(self):
         """Tear down the database"""
-        super(TearDownPTs, self).tearDown()
+        super(EndStory, self).tearDown()
 
     def test_tearDownDatabase(self):
         # Fake test to ensure tearDown is called.
         pass
-'''
-
-class SetUpPTs(unittest.TestCase):
-
-    def test_setUpDatabase(self):
-        # Not really a test
-
-        # Run make on the Makefile in launchpad/database/schema.
-        # `make -f` won't work, because it relies on being run it its own
-        # directory.
-        schemadir = os.path.normpath(os.path.join(
-            here, '..', '..', '..', '..', 'database', 'schema'))
-        result = os.system('cd %s; make > /dev/null 2>&1' % schemadir)
-        self.assertEquals(result, 0)
-
-
-class TearDownPTs(unittest.TestCase):
-
-    def test_tearDownDatabase(self):
-        pass
-'''
-
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(SetUpPTs))
     pagetestsdir = os.path.normpath(os.path.join(here, '..', 'pagetests'))
-    filenames = [filename
-                 for filename in os.listdir(pagetestsdir)
-                 if filename.lower().endswith('.txt')
-                 ]
-    filenames = sets.Set(filenames)
-    numberedfilenames = [filename for filename in filenames
-                         if len(filename) > 4
-                         and filename[:2].isdigit()
-                         and filename[2] == '-']
-    numberedfilenames = sets.Set(numberedfilenames)
-    unnumberedfilenames = filenames - numberedfilenames
 
-    # A predictable order is important, even if it remains officially
-    # undefined for un-numbered filenames.
-    numberedfilenames = list(numberedfilenames)
-    numberedfilenames.sort()
-    unnumberedfilenames = list(unnumberedfilenames)
-    unnumberedfilenames.sort()
+    stories = [
+        os.path.join(pagetestsdir, d) for d in os.listdir(pagetestsdir)
+        if not d.startswith('.')
+        ]
+    stories = [d for d in stories if os.path.isdir(d)]
 
-    for filename in unnumberedfilenames + numberedfilenames:
-        suite.addTest(
-            FunctionalDocFileSuite(
-                os.path.normpath(os.path.join('..', 'pagetests', filename)))
-            )
-    suite.addTest(unittest.makeSuite(TearDownPTs))
+    for storydir in stories:
+        suite.addTest(unittest.makeSuite(StartStory))
+        filenames = [filename
+                    for filename in os.listdir(storydir)
+                    if filename.lower().endswith('.txt')
+                    ]
+        filenames = sets.Set(filenames)
+        numberedfilenames = [filename for filename in filenames
+                            if len(filename) > 4
+                            and filename[:2].isdigit()
+                            and filename[2] == '-']
+        numberedfilenames = sets.Set(numberedfilenames)
+        unnumberedfilenames = filenames - numberedfilenames
+
+        # A predictable order is important, even if it remains officially
+        # undefined for un-numbered filenames.
+        numberedfilenames = list(numberedfilenames)
+        numberedfilenames.sort()
+        unnumberedfilenames = list(unnumberedfilenames)
+        unnumberedfilenames.sort()
+
+        for filename in unnumberedfilenames + numberedfilenames:
+            story = os.path.basename(storydir)
+            filename = os.path.join(
+                    os.pardir, 'pagetests', story, filename
+                    )
+            suite.addTest(FunctionalDocFileSuite(filename))
+        suite.addTest(unittest.makeSuite(EndStory))
     return suite
 
 if __name__ == '__main__':
