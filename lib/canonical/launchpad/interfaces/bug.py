@@ -118,6 +118,10 @@ class IBugEvent(Interface):
     """I'm an event that happened related to a bug."""
     pass
 
+class IBugAddedEvent(IBugEvent):
+    """The event that occurs when a bug is added."""
+    pass
+
 class IBugCommentAddedEvent(IBugEvent):
     """The event that occurs when someone makes a comment on a bug."""
     pass

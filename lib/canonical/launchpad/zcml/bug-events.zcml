@@ -6,4 +6,8 @@
    for="canonical.launchpad.interfaces.IBugCommentAddedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_comment_added" />
 
+<subscriber
+   for="canonical.launchpad.interfaces.IBugAssignedProductAddedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bug_assigned_product_added" />
+
 </configure>

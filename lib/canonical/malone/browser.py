@@ -23,7 +23,7 @@ from canonical.launchpad.database import \
         ProductBugAssignment, SourcePackageBugAssignment, \
         BugProductInfestation, BugPackageInfestation
 from canonical.database import sqlbase
-from canonical.launchpad.events import BugCommentAddedEvent
+from canonical.launchpad.events import BugCommentAddedEvent, BugAssignedProductAddedEvent
 
 # I18N support for Malone
 from zope.i18nmessageid import MessageIDFactory
@@ -459,6 +459,10 @@ class ProductBugAssignmentContainer(BugContainerBase):
 
 def ProductBugAssignmentFactory(context, **kw):
     pba = ProductBugAssignment(bug=context.context.bug, **kw)
+    product_assigned = BugAssignedProductAddedEvent(
+        Bug.get(context.context.bug), pba)
+    notify(product_assigned)
+
     return pba
 
 class BugProductInfestationContainer(BugContainerBase):
