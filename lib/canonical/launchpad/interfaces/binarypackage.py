@@ -125,57 +125,6 @@ class IBinaryPackageUtility(Interface):
         """Get a BinaryPackage in a DistroRelease by its name, version and archtag"""
 
 
-#
-# BinaryPackages related Applications Interface
-#
-class IDistroReleaseBinariesApp(Interface):
-    """A Release Binary Tag """
-    release = Attribute("Release")
-
-    def __getitem__(name):
-        """retrieve binarypackges by release"""
-
-    def __iter__():
-        """retrieve an iterator"""
-
-    def findPackagesByName():
-        """Find packages by name"""
-
-class IDistroReleaseBinaryApp(Interface):    
-    """A Binary Package Proxy """
-    binarypackage = Attribute("BinaryPackage")
-    lastversions = Attribute("Last Release Versions")
-    currentversions = Attribute("Current Release Versions")
-    release = Attribute("Distro Release")
-    bugsCounter = Attribute("BinaryPackages bugs counter")
-    
-    def __getitem__(name):
-        """Retrieve a package release by version."""
-
-class IDistroReleaseBinaryReleaseApp(Interface):
-    """A Binary Release Proxy """
-    binarypackagerelease = Attribute("BinaryPackageRelease")
-    version = Attribute("BinaryPackageRelease Version ?!?!")
-    distrorelease = Attribute("The DistroRelease from where the binary's SourcePackageRelease came from")
-    archs = Attribute("Builded archs")
-    
-    def __getitem__(name):
-        """retrieve binarypackagesbuild by version"""
-
-
-class IDistroReleaseBinaryReleaseBuildApp(Interface):
-    binarypackagerelease = Attribute("Release")
-    version = Attribute("Version")
-    arch = Attribute("Arch")
-
-    depends = Attribute("Package Dependencies")
-    recommends = Attribute("Package Recommends")
-    suggests = Attribute("Package Sugestions")
-    conflicts = Attribute("Package Conflicts")
-    replaces = Attribute("Package Replaces")
-    provides = Attribute("Package Provides")
-
-    pkgformat = Attribute("Package Format")
 
 
 

@@ -15,11 +15,15 @@ priomap = {
     }
 
 class SQLThing:
-    def __init__(self, dbname):
+    def __init__(self, dbname, dry_run):
         self.dbname = dbname
+        self.dry_run = dry_run
         self.db = PgSQL.connect(database=self.dbname)
 
     def commit(self):
+        if self.dry_run:
+            # Not committing -- we're on a dry run
+            return
         return self.db.commit()
     
     def close(self):
@@ -88,12 +92,12 @@ class SQLThing:
 
 class Katie(SQLThing):
 
-    def __init__(self, bar, suite):
-        SQLThing.__init__(self,bar)
+    def __init__(self, bar, suite, dry_run):
+        SQLThing.__init__(self, bar, dry_run)
         self.suite = suite
 
     def getSourcePackageRelease(self, name, version):
-        print "\t\t* Hunting for spr (%s,%s)" % (name,version)
+        print "\t\t* Hunting for release %s / %s" % (name,version)
         ret =  self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id
@@ -145,8 +149,8 @@ prioritymap = {
 }
 
 class Launchpad(SQLThing):
-    def __init__(self, bar, distro, dr, proc):
-        SQLThing.__init__(self,bar)
+    def __init__(self, bar, distro, dr, proc, dry_run):
+        SQLThing.__init__(self, bar, dry_run)
         self.compcache = {}
         self.sectcache = {}
         try:
@@ -322,7 +326,7 @@ class Launchpad(SQLThing):
             "component":               component,
             "creator":                 maintid,
             "urgency":                 priomap[release["urgency"]],
-            "changelog":               release["changes"],
+            "changelog":               self.ensure_string_format(release["changes"]),
             "section":                 section,
         }                                                          
         self._insert("sourcepackagerelease", data)
@@ -523,7 +527,7 @@ class Launchpad(SQLThing):
     #
     def getPeople(self, name, email):        
         name = self.ensure_string_format(name)
-        email = self.ensure_string_format(email)
+        email = self.ensure_string_format(email).lower()
         self.ensurePerson(name, email)
         return self.getPersonByEmail(email)
 
@@ -548,6 +552,11 @@ class Launchpad(SQLThing):
         items = name.split()
         if len(items) == 1:
             givenname = name
+            familyname = ""
+        elif not items:
+            # No name, just an email
+            print "\t\tGuessing name is stem of email %r" % email
+            givenname = email.split("@")[0]
             familyname = ""
         else:
             givenname = items[0]

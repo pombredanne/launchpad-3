@@ -2,8 +2,9 @@ import re, os, tempfile, shutil, sys, time, rfc822
 
 from library import getLibraryAlias
 from changelog import parse_changelog
+from nickname import NicknameGenerationError
 
-from mx.DateTime import DateTime
+from mx.DateTime import DateTime, RangeError
 
 # From zless /usr/share/doc/gnupg/DETAILS.gz 
 GPGALGOS = {
@@ -19,9 +20,13 @@ def stripseq(seq):
 
 class AbstractPackageRelease:
     def parse_ctime(self, date):
-        #print "Parsing %r" % date
         date = rfc822.parsedate(date)
-        return DateTime(*date[:5])
+        if not date:
+            return None
+        try:
+            return DateTime(*date[:5])
+        except RangeError:
+            return None
 
     def parse_person(self, val):
         first_left_angle = val.find("<")
@@ -161,13 +166,13 @@ class SourcePackageRelease(AbstractPackageRelease):
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
         if getattr(self, 'section', sentinel) == sentinel:
-            print "Source package %s lacks a section, looking it up..." % self.package
+            print "\tSource package %s lacks a section, looking it up..." % self.package
             try:
                 self.section = kdb.getSourceSection(self.package)
                 if '/' in self.section:
                     self.component, self.section = self.section.split("/")
             except:
-                print "I had to assume 'misc'"
+                print "\t\tDamn, I had to assume 'misc'"
                 self.section = 'misc'
 
     def do_package(self, dir, package_root):
@@ -247,18 +252,25 @@ class SourcePackageRelease(AbstractPackageRelease):
         for release in self.changelog[1:]:
             if not db.getSourcePackageRelease(release["package"],
                                               release["version"]):
-                print "\t%% Backpropogating %s / %s" % (release["package"],
+                print "\t%% Backpropagating %s / %s" % (release["package"],
                                                    release["version"])
                 # Need to create a "faked" sourcepackagerelease
                 try:
-                    release["parsed_maintainer"] = \
-                                                 self.parse_person(release["maintainer"])
-                    release["parsed_date"] = \
-                                           self.parse_ctime(release["date"])
-                
+                    parsed_maintainer = self.parse_person(release["maintainer"])
+                    release["parsed_maintainer"] = parsed_maintainer
+
+                    parsed_date = self.parse_ctime(release["date"])
+                    if not parsed_date:
+                        print "\t\tInvalid date %r, skipping" % release["date"]
+                        continue
+                    release["parsed_date"] = parsed_date
                     db.createFakeSourcePackageRelease(release, self)
+                except NicknameGenerationError:
+                    print "\t\tInvalid email for person %r, skipping" \
+                        % release["maintainer"]
                 except:
                     print "!! Fake Source Package Release failed"
+                    raise
                 
                 
 
