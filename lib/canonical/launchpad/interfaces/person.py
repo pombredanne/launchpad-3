@@ -40,9 +40,16 @@ class IPerson(Interface):
     karmatimestamp = Datetime(
             title=_('Karma Timestamp'), required=False, readonly=True,
             )
+    languages = Attribute(_('List of know languages by this person'))
 
     def browsername():
         """Return a textual name suitable for display in a browser."""
+
+    def addLanguage(language):
+        """Adds a new language to the list of know languages."""
+
+    def removeLanguage(language):
+        """Removed the language from the list of know languages."""
 
 
 class IPersonSet(Interface):

@@ -17,12 +17,8 @@ class ILanguage(Interface):
     pluralExpression = Attribute("""The expression that relates a number of
         items to the appropriate plural form.""")
 
-    # XXX: Review. Do you think this method is good for the interface?.
-    def translateLabel():
-        """The ILabel used to say that some is interested on ILanguage"""
-
-    def translators():
-        """The Persons that are interested on translate into this language."""
+    translators = Attribute("""A list of Persons that are interested on 
+        translate into this language.""")
 
 
 class ILanguageSet(Interface):

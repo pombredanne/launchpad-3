@@ -15,7 +15,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet,  \
                                                   IEmailAddress
 from canonical.launchpad.interfaces.language import ILanguageSet
-from canonical.launchpad.database.schema import Schema, Label
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.lp import dbschema
 
@@ -37,6 +36,10 @@ class Person(SQLBase):
         IntCol('karma', default=0),
         DateTimeCol('karmatimestamp', default=UTC_NOW)
     ]
+
+    # RelatedJoin gives us also an addLanguage and removeLanguage for free
+    languages = RelatedJoin('Language', joinColumn='person',
+        otherColumn='language', intermediateTable='PersonLanguage')
 
     _emailsJoin = MultipleJoin('RosettaEmailAddress', joinColumn='person')
 
@@ -89,53 +92,6 @@ class Person(SQLBase):
                     origin = 2
                 ORDER BY datefirstseen DESC))
             ''')
-
-    _labelsJoin = RelatedJoin('Label', joinColumn='person',
-        otherColumn='label', intermediateTable='PersonLabel')
-
-    def languages(self):
-        languages = getUtility(ILanguageSet)
-        try:
-            schema = Schema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-
-        for label in self._labelsJoin:
-            if label.schema == schema:
-                yield languages[label.name]
-
-    def addLanguage(self, language):
-        try:
-            schema = Schema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-        label = Label.selectBy(schemaID=schema.id, name=language.code)
-        if label.count() < 1:
-            # The label for this language does not exists yet into the
-            # database, we should create it.
-            label = Label(
-                        schemaID=schema.id,
-                        name=language.code,
-                        title='Translates into ' + language.englishName,
-                        description='A person with this label says that ' + \
-                                    'knows how to translate into ' + \
-                                    language.englishName)
-        else:
-            label = label[0]
-        # This method comes from the RelatedJoin
-        self.addLabel(label)
-
-    def removeLanguage(self, language):
-        try:
-            schema = Schema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-        label = Label.selectBy(schemaID=schema.id, name=language.code)[0]
-        # This method comes from the RelatedJoin
-        self.removeLabel(label)
 
 
 class PersonSet(object):

@@ -183,7 +183,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = '"schema"'::pg_catalo
 INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (2, 'schema', 'SCHEMA', 'description', 1, true);
 INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (3, 'trema', 'XCHEMA', 'description', 1, true);
 INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (4, 'enema', 'ENHEMA', 'description', 1, true);
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (5, 'translation-languages', 'Translation Languages', 'Languages that a person can translate into', 13, false);
 INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (1, 'mark', 'TITLE', 'description', 1, true);
 
 
@@ -193,13 +192,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'label'::pg_catalog.regclass;
 
 INSERT INTO label (id, "schema", name, title, description) VALUES (1, 1, 'blah', 'blah', 'blah');
-INSERT INTO label (id, "schema", name, title, description) VALUES (2, 5, 'ca', 'Translates into Catalan', 'A person with this label says that knows how to translate into Catalan');
-INSERT INTO label (id, "schema", name, title, description) VALUES (3, 5, 'en', 'Translates into English', 'A person with this label says that knows how to translate into English');
-INSERT INTO label (id, "schema", name, title, description) VALUES (4, 5, 'ja', 'Translates into Japanese', 'A person with this label says that knows how to translate into Japanese');
-INSERT INTO label (id, "schema", name, title, description) VALUES (5, 5, 'pt', 'Translates into Portuguese', 'A person with this label says that knows how to translate into Portuguese');
-INSERT INTO label (id, "schema", name, title, description) VALUES (6, 5, 'es', 'Translates into Spanish (Castilian)', 'A person with this label says that knows how to translate into Spanish (Castilian)');
-INSERT INTO label (id, "schema", name, title, description) VALUES (7, 5, 'cy', 'Translates into Welsh', 'A person with this label says that knows how to translate into Welsh');
-INSERT INTO label (id, "schema", name, title, description) VALUES (8, 5, 'zun', 'Translates into Zuni', 'A person with this label says that knows how to translate into Zuni');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'label'::pg_catalog.regclass;
@@ -207,12 +199,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'personlabel'::pg_catalog.regclass;
 
-INSERT INTO personlabel (person, label) VALUES (13, 2);
-INSERT INTO personlabel (person, label) VALUES (13, 6);
-INSERT INTO personlabel (person, label) VALUES (14, 3);
-INSERT INTO personlabel (person, label) VALUES (14, 4);
-INSERT INTO personlabel (person, label) VALUES (14, 7);
-INSERT INTO personlabel (person, label) VALUES (15, 5);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'personlabel'::pg_catalog.regclass;
@@ -1269,6 +1255,17 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleasequeuebu
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleasequeuebuild'::pg_catalog.regclass;
 
 
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'personlanguage'::pg_catalog.regclass;
+
+INSERT INTO personlanguage (id, person, "language") VALUES (1, 13, 387);
+INSERT INTO personlanguage (id, person, "language") VALUES (4, 14, 449);
+INSERT INTO personlanguage (id, person, "language") VALUES (3, 14, 196);
+INSERT INTO personlanguage (id, person, "language") VALUES (2, 13, 68);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'personlanguage'::pg_catalog.regclass;
+
+
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'potmsgset'::pg_catalog.regclass;
 
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (1, 1, 1, 1, NULL, 'a11y/addressbook/ea-addressbook-view.c:94
@@ -1332,11 +1329,11 @@ SELECT pg_catalog.setval('teamparticipation_id_seq', 11, true);
 
 
 
-SELECT pg_catalog.setval('schema_id_seq', 5, true);
+SELECT pg_catalog.setval('schema_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('label_id_seq', 8, true);
+SELECT pg_catalog.setval('label_id_seq', 1, true);
 
 
 
@@ -1659,6 +1656,10 @@ SELECT pg_catalog.setval('sourcepackagereleasefile_id_seq', 1, false);
 
 
 SELECT pg_catalog.setval('binarypackagefile_id_seq', 1, false);
+
+
+
+SELECT pg_catalog.setval('personlanguage_id_seq', 4, true);
 
 
 

@@ -66,7 +66,7 @@ def request_languages(request):
     # If the user is authenticated, try seeing if they have any languages set.
 
     if person is not None:
-        languages = list(person.languages())
+        languages = person.languages
 
         if languages:
             return languages
@@ -416,16 +416,15 @@ class ViewPreferences:
         return getUtility(ILanguageSet)
 
     def selectedLanguages(self):
-        return list(self.person.languages())
+        return self.person.languages
 
     def submit(self):
-        person = self.person
         self.submitted_personal = False
         self.error_msg = None
 
         if "SAVE-LANGS" in self.request.form:
             if self.request.method == "POST":
-                oldInterest = list(person.languages())
+                oldInterest = self.person.languages
 
                 if 'selectedlanguages' in self.request.form:
                     if isinstance(self.request.form['selectedlanguages'], list):
@@ -441,10 +440,10 @@ class ViewPreferences:
                     for language in self.languages():
                         if language.englishName == englishName:
                             if language not in oldInterest:
-                                person.addLanguage(language)
+                                self.person.addLanguage(language)
                 for language in oldInterest:
                     if language.englishName not in newInterest:
-                        person.removeLanguage(language)
+                        self.person.removeLanguage(language)
             else:
                 raise RuntimeError("This form must be posted!")
         elif "SAVE-PERSONAL" in self.request.form:
@@ -452,13 +451,13 @@ class ViewPreferences:
                 # First thing to do, check the password if it's wrong we stop.
                 currentPassword = self.request.form['currentPassword']
                 ssha = SSHADigestEncryptor()
-                if currentPassword and ssha.validate(currentPassword, person.password):
+                if currentPassword and ssha.validate(currentPassword, self.person.password):
                     # The password is valid
                     password1 = self.request.form['newPassword1']
                     password2 = self.request.form['newPassword2']
                     if password1 and password1 == password2:
                         try:
-                            person.password = ssha.encrypt(password1)
+                            self.person.password = ssha.encrypt(password1)
                         except UnicodeEncodeError:
                             self.error_msg = \
                                 "The password can only have ascii characters."
@@ -468,14 +467,14 @@ class ViewPreferences:
                             "The two passwords you entered did not match."
 
                     given = self.request.form['given']
-                    if given and person.givenname != given:
-                        person.givenname = given
+                    if given and self.person.givenname != given:
+                        self.person.givenname = given
                     family = self.request.form['family']
-                    if family and person.familyname != family:
-                        person.familyname = family
+                    if family and self.person.familyname != family:
+                        self.person.familyname = family
                     display = self.request.form['display']
-                    if display and person.displayname != display:
-                        person.displayname = display
+                    if display and self.person.displayname != display:
+                        self.person.displayname = display
                 else:
                     self.error_msg = "The username or password you entered is not valid."
             else:
