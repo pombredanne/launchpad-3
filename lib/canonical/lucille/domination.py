@@ -11,6 +11,10 @@ from canonical.lp.dbschema import PackagePublishingStatus
 PENDING = PackagePublishingStatus.PENDING
 PUBLISHED = PackagePublishingStatus.PUBLISHED
 SUPERCEDED = PackagePublishingStatus.SUPERCEDED
+PENDINGREMOVAL = PackagePublishingStatus.PENDINGREMOVAL
+
+# For stayofexecution processing in judgeSuperceded
+from datetime import datetime, timedelta
 
 def _compare_packages_by_version(p1, p2):
     """Compare packages p1 and p2 by their version; using Debian rules"""
@@ -113,5 +117,11 @@ class Dominator(object):
 
         for p in sourcepackages:
             if p.status == SUPERCEDED:
-                pass
-        
+                p.status = PENDINGREMOVAL.value
+                p.scheduleddeletiondate = datetime.utcnow() + \
+                                          timedelta(days=cnf.stayofexecution)
+        for p in binarypackages:
+            if p.status == SUPERCEDED:
+                p.status = PENDINGREMOVAL.value
+                p.scheduleddeletiondate = datetime.utcnow() + \
+                                          timedelta(days=cnf.stayofexecution)

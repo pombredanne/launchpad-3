@@ -9,6 +9,7 @@ from canonical.lp.dbschema import PackagePublishingStatus, \
                                   PackagePublishingPriority
 
 from StringIO import StringIO
+from sets import Set
 
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish
@@ -270,3 +271,47 @@ tree "dists/DISTRORELEASE"
 
         return s
 
+    def unpublishDeathRow(self, condemnedsources, condemnedbinaries,
+                          livesources, livebinaries):
+        """Take the list of publishing records provided and unpublish them.
+        You should only pass in entries you want to be unpublished because
+        this will result in the files being removed if they're not otherwise
+        in use"""
+        livefiles = Set()
+        condemnedfiles = Set()
+        for p in livesources:
+            fn = p.libraryfilealiasfilename.encode('utf-8')
+            sn = p.sourcepackagename.encode('utf-8')
+            cn = p.componentname.encode('utf-8')
+            filename = self._pathfor(sn, cn, fn)
+            livefiles.add(filename)
+        for p in livebinaries:
+            fn = p.libraryfilealiasfilename.encode('utf-8')
+            sn = p.sourcepackagename.encode('utf-8')
+            cn = p.componentname.encode('utf-8')
+            filename = self._pathfor(sn, cn, fn)
+            livefiles.add(filename)
+
+        for p in condemnedsources:
+            fn = p.libraryfilealiasfilename.encode('utf-8')
+            sn = p.sourcepackagename.encode('utf-8')
+            cn = p.componentname.encode('utf-8')
+            filename = self._pathfor(sn, cn, fn)
+            condemnedfiles.add(filename)
+
+        for p in condemnedbinaries:
+            fn = p.libraryfilealiasfilename.encode('utf-8')
+            sn = p.sourcepackagename.encode('utf-8')
+            cn = p.componentname.encode('utf-8')
+            filename = self._pathfor(sn, cn, fn)
+            condemnedfiles.add(filename)
+
+        for f in condemnedfiles - livefiles:
+            try:
+                os.remove(f)
+            except:
+                # XXX dsilvers 2004-11-16: This depends on a logging
+                # infrastructure. I need to decide on one...
+                # Do something to log the failure to remove
+                pass
+        
