@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-04 15:05:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1551
+
+    Summary:
+      Some improvements in person's memberhsip page and adding DELETE rights on SSHKey table.
+    Revision:
+      launchpad--devel--0--patch-1551
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-245
+       Adding DELETE rights on sshkey table.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-246
+       Some improvements in person's memberhsip page.
+    
+
+    modified files:
+     database/schema/security.cfg doc/changelog.txt
+     lib/canonical/launchpad/pagetests/foaf/23-promote-member.txt
+     lib/canonical/launchpad/pagetests/foaf/25-expire-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/26-renew-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/27-deactivate-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/28-reactivate-subscription.txt
+     lib/canonical/launchpad/templates/teammembership-index.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-245
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-246
+
+
 2005-04-04 03:09:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1550
 
     Summary:

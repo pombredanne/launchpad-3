@@ -5,8 +5,8 @@
       i18n:domain="launchpad">
 
 <head>
-  <title metal:fill-slot="title">Members of 
-    <span tal:replace="context/team/browsername" /></title>
+  <title metal:fill-slot="title"><span tal:replace="context/person/browsername" />: 
+    Member of <span tal:replace="context/team/browsername" /></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Launchpad style sheet -->
@@ -17,11 +17,15 @@
 
 <div metal:fill-slot="main">
 
-      <h1 tal:content="context/person/browsername" />
-
       <div tal:condition="view/isActive"> 
 
-        <p>This is an <em>Active Member</em> of 
+        <h1>Active Member</h1>
+
+        <p>
+          <a tal:attributes="href string:/people/${context/person/name}"
+            tal:content="string: ${context/person/browsername}
+                                 (${context/person/name})"></a>
+          is an <em>Active Member</em> of 
           <span tal:replace="context/team/browsername" />.
           In this page you can change the expiration date for this subscription,
           promote/demote the member to/from the Administrator status, and you
@@ -90,8 +94,13 @@
 
       <div tal:condition="view/isInactive"> 
 
+        <h1>Inactive Member</h1>
+
         <p tal:condition="view/isExpired">
-          This is an <em>Expired Member</em> of 
+          <a tal:attributes="href string:/people/${context/person/name}"
+            tal:content="string: ${context/person/browsername}
+                                 (${context/person/name})"></a>
+          is an <em>Expired Member</em> of 
           <span tal:replace="context/team/browsername" />. In this page you
           can renew its subscription, turning this user into an active
           member of this team. To do this, just select a new expiration date
@@ -100,7 +109,10 @@
         </p>
 
         <p tal:condition="view/isDeactivated">
-          This is a <em>Deactivated Member</em> of 
+          <a tal:attributes="href string:/people/${context/person/name}"
+            tal:content="string: ${context/person/browsername}
+                                 (${context/person/name})"></a>
+          is a <em>Deactivated Member</em> of 
           <span tal:replace="context/team/browsername" />. In this page you
           can reactivate its subscription, turning this user into an active
           member of this team. To do this, just select a expiration date
@@ -158,7 +170,13 @@
 
       <div tal:condition="view/isProposed"> 
 
-        <p>This user wants to join this team but its subscription must be
+        <h1>Proposed Member</h1>
+
+        <p>
+          <a tal:attributes="href string:/people/${context/person/name}"
+            tal:content="string: ${context/person/browsername}
+                                 (${context/person/name})"></a>
+        wants to join this team but its subscription must be
         approved first. Just select the date you want this subscription to
         expire (leave it blank if you don't want it to expire) and click on
         Approve if you want this user as a member of this team. Otherwise, if
