@@ -5,7 +5,10 @@
         <div class="portletContent even">
 
         <img src="/++resource++edit.gif">
-        <a href="+sign">Sign This Release</a>
+        <a href="+sign">Sign this Release</a><br>
+
+        <img src="/++resource++edit.gif">
+        <a href="+download">Download this Release</a>
 	
         </div>
     </div>

@@ -34,6 +34,14 @@
             lp:url="codeofconduct/$CoC.version/+index" />
     </browser:pages>
 
+    <browser:page 
+        name="+download"
+        for="canonical.launchpad.interfaces.ICodeOfConduct"
+        class="canonical.launchpad.browser.CodeOfConductDownloadView"
+	permission="zope.Public"
+	attribute="__call__"
+        lp:url="codeofconduct/$CoC.version/+download" />
+
     <browser:addform
         name="+sign"
         for="canonical.launchpad.interfaces.ICodeOfConduct"

@@ -45,6 +45,32 @@ class CodeOfConductView(object):
         self.context = context
         self.request = request
 
+
+
+class CodeOfConductDownloadView(object):
+    """Download view class for CoC page. It implements a
+    magic __call__ method.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def __call__(self):
+        """Build a special environment to return a text file content."""
+        # use the context.content, doesn't need to open file again
+        content = self.context.content
+
+        # build a fancy filename: use title with no spaces and append '.txt'
+        filename = self.context.title.replace(' ', '') + '.txt'
+        
+        self.request.response.setHeader('Content-Type', 'application/text')
+        self.request.response.setHeader('Content-Length', len(content))
+        self.request.response.setHeader('Content-Disposition',
+                'attachment; filename="%s"' % filename)
+        return content
+
+
 class CodeOfConductSetView(object):
     """Simple view class for CoCSet page."""
     

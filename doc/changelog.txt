@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-03 22:40:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1367
+
+    Summary:
+      Page for Dowload CoC Release as text file.
+    Revision:
+      launchpad--devel--0--patch-1367
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-528
+       Land page and class to download a CoC release as a text file.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/codeofconduct.py
+     lib/canonical/launchpad/templates/portlet-codeofconduct-actions.pt
+     lib/canonical/launchpad/zcml/codeofconduct.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-528
+
+
 2005-03-03 22:13:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1366
 
     Summary:
