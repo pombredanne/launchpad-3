@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 15:06:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1420
+
+    Summary:
+      Gina needs delete on PackagePublishing too
+    Revision:
+      launchpad--devel--0--patch-1420
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-190
+       Gina needs delete on PackagePublishing too
+    
+
+    modified files:
+     database/schema/security.cfg doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-190
+
+
 2005-03-11 14:54:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1419
 
     Summary:
