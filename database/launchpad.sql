@@ -90,95 +90,96 @@
 /*
   DESTROY ALL TABLES
 */
-DROP TABLE SourcepackageBugAssignment;
-DROP TABLE ArchArchiveLocationSigner;
-DROP TABLE BugSubscription;
-DROP TABLE SpokenIn;
-DROP TABLE Country;
-DROP TABLE TranslationEffortPOTFileRelationship;
-DROP TABLE POComment;
-DROP TABLE BranchRelationship;
-DROP TABLE ProjectBugsystem;
-DROP TABLE BugWatch;
-DROP TABLE BugSystem;
-DROP TABLE RosettaPOTranslationSighting;
-DROP TABLE BugattachmentContent;
-DROP TABLE BugAttachment;
-DROP TABLE POTranslationSighting;
-DROP TABLE POFile;
-DROP TABLE POTMsgIDSighting;
-DROP TABLE POTSubscription;
-DROP TABLE POTFile;
-DROP TABLE License;
-DROP TABLE BugRelationship;
-DROP TABLE BugMessage;
-DROP TABLE BugExternalref;
-DROP TABLE BugLabel;
-DROP TABLE BugInfestation;
-DROP TABLE ProductBugAssignment;
-DROP TABLE BugActivity;
-DROP TABLE BugSystemType;
-DROP TABLE Bug;
-DROP TABLE Packaging;
-DROP TABLE CodereleaseRelationship;
-DROP TABLE Coderelease;
-DROP TABLE OSFileInPackage;
-DROP TABLE OSFile;
-DROP TABLE BinarypackageBuildFile;
-DROP TABLE BinarypackageUpload;
-DROP TABLE BinarypackageBuild;
-DROP TABLE Binarypackage;
-DROP TABLE SourcepackageReleaseFile;
-DROP TABLE SourcepackageRelationship;
-DROP TABLE SourcepackageUpload;
-DROP TABLE SourcepackageRelease;
-DROP TABLE SourcepackageLabel;
-DROP TABLE Sourcepackage;
-DROP TABLE ArchConfigEntry;
-DROP TABLE ArchConfig;
-DROP TABLE UpstreamReleaseFile;
-DROP TABLE UpstreamRelease;
-DROP TABLE ChangesetFileHash;
-DROP TABLE ChangesetFile;
-DROP TABLE ChangesetFileName;
-DROP TABLE ManifestEntry;
-DROP TABLE ProductLabel;
-DROP TABLE Product;
-DROP TABLE Manifest;
-DROP TABLE Changeset;
-DROP TABLE BranchLabel;
-DROP TABLE Branch;
-DROP TABLE ArchArchiveLocation;
-DROP TABLE ArchArchive;
-DROP TABLE POTranslation;
-DROP TABLE POTInheritance;
-DROP TABLE ProjectRelationship;
-DROP TABLE POMsgID;
-DROP TABLE Language;
-DROP TABLE ProjectTranslationEffortRelationship;
-DROP TABLE TranslationEffort;
-DROP TABLE Project;
-DROP TABLE EmailAddress;
-DROP TABLE TranslationFilter;
-DROP TABLE GPGKey;
-DROP TABLE ArchUserID;
-DROP TABLE Membership;
-DROP TABLE WikiName;
-DROP TABLE JabberID;
-DROP TABLE IRCID;
-DROP TABLE PersonLabel;
-DROP TABLE TeamParticipation;
-DROP TABLE Builder;
-DROP TABLE DistroArchRelease;
-DROP TABLE Processor;
-DROP TABLE ProcessorFamily;
-DROP TABLE DistroRelease;
-DROP TABLE Distribution;
-DROP TABLE LaunchpadFileHash;
-DROP TABLE LaunchpadFile;
-DROP TABLE Label;
-DROP TABLE Schema;
-DROP TABLE Person;
+DROP TABLE SourcepackageBugAssignment CASCADE;
+DROP TABLE ArchArchiveLocationSigner CASCADE;
+DROP TABLE BugSubscription CASCADE;
+DROP TABLE SpokenIn CASCADE;
+DROP TABLE Country CASCADE;
+DROP TABLE TranslationEffortPOTFileRelationship CASCADE;
+DROP TABLE POComment CASCADE;
+DROP TABLE BranchRelationship CASCADE;
+DROP TABLE ProjectBugsystem CASCADE;
+DROP TABLE BugWatch CASCADE;
+DROP TABLE BugSystem CASCADE;
+DROP TABLE RosettaPOTranslationSighting CASCADE;
+DROP TABLE BugattachmentContent CASCADE;
+DROP TABLE BugAttachment CASCADE;
+DROP TABLE POTranslationSighting CASCADE;
+DROP TABLE POFile CASCADE;
+DROP TABLE POTMsgIDSighting CASCADE;
+DROP TABLE POTSubscription CASCADE;
+DROP TABLE POTFile CASCADE;
+DROP TABLE License CASCADE;
+DROP TABLE BugRelationship CASCADE;
+DROP TABLE BugMessage CASCADE;
+DROP TABLE BugExternalref CASCADE;
+DROP TABLE BugLabel CASCADE;
+DROP TABLE BugInfestation CASCADE;
+DROP TABLE ProductBugAssignment CASCADE;
+DROP TABLE BugActivity CASCADE;
+DROP TABLE BugSystemType CASCADE;
+DROP TABLE Bug CASCADE;
+DROP TABLE Packaging CASCADE;
+DROP TABLE CodereleaseRelationship CASCADE;
+DROP TABLE Coderelease CASCADE;
+DROP TABLE OSFileInPackage CASCADE;
+DROP TABLE OSFile CASCADE;
+DROP TABLE BinarypackageBuildFile CASCADE;
+DROP TABLE BinarypackageUpload CASCADE;
+DROP TABLE BinarypackageBuild CASCADE;
+DROP TABLE Binarypackage CASCADE;
+DROP TABLE SourcepackageReleaseFile CASCADE;
+DROP TABLE SourcepackageRelationship CASCADE;
+DROP TABLE SourcepackageUpload CASCADE;
+DROP TABLE SourcepackageRelease CASCADE;
+DROP TABLE SourcepackageLabel CASCADE;
+DROP TABLE Sourcepackage CASCADE;
+DROP TABLE ArchConfigEntry CASCADE;
+DROP TABLE ArchConfig CASCADE;
+DROP TABLE UpstreamReleaseFile CASCADE;
+DROP TABLE UpstreamRelease CASCADE;
+DROP TABLE ChangesetFileHash CASCADE;
+DROP TABLE ChangesetFile CASCADE;
+DROP TABLE ChangesetFileName CASCADE;
+DROP TABLE ManifestEntry CASCADE;
+DROP TABLE ProductLabel CASCADE;
+DROP TABLE Product CASCADE;
+DROP TABLE Manifest CASCADE;
+DROP TABLE Changeset CASCADE;
+DROP TABLE BranchLabel CASCADE;
+DROP TABLE Branch CASCADE;
+DROP TABLE ArchArchiveLocation CASCADE;
+DROP TABLE ArchArchive CASCADE;
+DROP TABLE POTranslation CASCADE;
+DROP TABLE POTInheritance CASCADE;
+DROP TABLE ProjectRelationship CASCADE;
+DROP TABLE POMsgID CASCADE;
+DROP TABLE Language CASCADE;
+DROP TABLE ProjectTranslationEffortRelationship CASCADE;
+DROP TABLE TranslationEffort CASCADE;
+DROP TABLE Project CASCADE;
+DROP TABLE EmailAddress CASCADE;
+DROP TABLE TranslationFilter CASCADE;
+DROP TABLE GPGKey CASCADE;
+DROP TABLE ArchUserID CASCADE;
+DROP TABLE Membership CASCADE;
+DROP TABLE WikiName CASCADE;
+DROP TABLE JabberID CASCADE;
+DROP TABLE IRCID CASCADE;
+DROP TABLE PersonLabel CASCADE;
+DROP TABLE TeamParticipation CASCADE;
+DROP TABLE Builder CASCADE;
+DROP TABLE DistroArchRelease CASCADE;
+DROP TABLE Processor CASCADE;
+DROP TABLE ProcessorFamily CASCADE;
+DROP TABLE DistroRelease CASCADE;
+DROP TABLE Distribution CASCADE;
+DROP TABLE LaunchpadFileHash CASCADE;
+DROP TABLE LaunchpadFile CASCADE;
+DROP TABLE Label CASCADE;
+DROP TABLE Schema CASCADE;
+DROP TABLE Person CASCADE;
+DROP TABLE SourceSource CASCADE;
 
 
 
@@ -1727,4 +1728,59 @@ CREATE TABLE BugMessage (
 
 
 
+
+/* SourceSource
+   A table of sources of source code from upstream locations.  This might be
+   CVS, SVN or Arch repositories, or even a tarball of a CVS repository.
+*/
+
+CREATE TABLE SourceSource (
+  id	                    serial PRIMARY KEY,
+  name                      text NOT NULL,
+  description               text NOT NULL,
+
+  cvsroot                   text,
+  cvsmodule                 text,
+  /* TODO: The dia file has this column: */
+  -- cvstarfile                integer REFERENCES FileAssociation,
+  cvstarfileurl             text,
+  cvsbranch                 text,
+
+  svnrepository             text,
+
+  releaseroot               text, -- The URL of the directory (usually FTP)
+                                  -- where they have releases
+  releaseverstyle           text, -- FIXME: Is this the best way to do an enum?
+  releasefileglob           text,
+  releaseparentarchbranch   integer REFERENCES Branch, -- The arch branch from
+                                                       -- which these release
+                                                       -- tarballs may have been
+                                                       -- derived
+  sourcepackage             integer REFERENCES Sourcepackage,
+  branch                    integer REFERENCES Branch, -- The arch branch this 
+                                                       -- source is imported to
+  lastsynced                timestamp, -- NULL means never, i.e. this is an
+                                       -- import job
+  syncinterval              interval,
+
+  /* FIXME: The following columns aren't in dia */
+  rcstype                   text NOT NULL,  -- Enum, see CHECK
+  
+  webpage                   text,
+  hosted                    text,
+  upstreamname              text,
+  
+  processingapproved        boolean NOT NULL DEFAULT false,
+  syncingapproved           boolean NOT NULL DEFAULT false,
+
+  /* These columns are used to create new archives/branches in the DB based on
+   * values imported from .info files */
+  newarchivename            text,
+  newbranchcategory         text,
+  newbranchbranch           text,
+  newbranchversion          text,
+  
+  /* TODO: Define constraints */
+  CHECK (rcstype in ('cvs', 'svn', 'package'))
+);
 
