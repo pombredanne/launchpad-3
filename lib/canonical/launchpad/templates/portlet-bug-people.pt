@@ -5,20 +5,19 @@
         <div class="portletContent even"
              tal:define="subscriptions context/subscriptions">
 
-          <tal:subscriptions tal:define="ccs python:[s for s in subscriptions if s.subscription == 1];
-                                         watches python:[s for s in subscriptions if s.subscription == 2]">
+          <tal:subscriptions tal:define="ccs python:[s for s in subscriptions if s.subscription == 2];
+                                         watches python:[s for s in subscriptions if s.subscription == 1]">
             <strong>CCed</strong><br />
             <li tal:repeat="cc ccs">
-              <a href="#" tal:content="cc/person/name">Dafydd</a>
+              <a href="#" tal:content="cc/person/displayname">Dafydd</a>
             </li>
             <i tal:condition="not: ccs">No subscribers CC'd</i>
 
             <br />
-            <br />
 
             <strong>Watching</strong><br />
             <li tal:repeat="watch watches">
-              <a href="#" tal:content="watch/person/name">Vincenzo</a>
+              <a href="#" tal:content="watch/person/displayname">Vincenzo</a>
             </li>
             <i tal:condition="not: watches">No subscribers watching</i>
           </tal:subscriptions>
