@@ -79,10 +79,11 @@ ftest_inplace: inplace
 	env PYTHONPATH=$(PYTHONPATH) \
 	$(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
-# XXX What should the default be?
-test: test_inplace
+### SteveA says these should be ripped
+#test: 
+#test_inplace
 
-ftest: ftest_inplace
+#ftest: ftest_inplace
 
 run: inplace
 	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) \
