@@ -1204,7 +1204,7 @@ def personFromPrincipal(principal):
         return None
     else:
         # XXX: Fill in real query.
-        ret = RosettaPerson.selectBy(displayName='Dafydd Harries')
+        ret = RosettaPerson.selectBy(displayName='Foo Bar')
 
         if ret.count() == 0:
             raise KeyError, principal
