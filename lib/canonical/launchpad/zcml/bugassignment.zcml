@@ -93,15 +93,26 @@
 
     <browser:editform
         name="+edit"
-        for="canonical.launchpad.interfaces.ISourcePackageBugTask"
+        for="canonical.launchpad.interfaces.IEditableDistroBugTask"
         class="canonical.launchpad.browser.bug.BugAssignmentEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename status priority severity assignee"
+        fields="sourcepackagename binarypackagename bugtitle bugdescription status priority severity assignee"
         label="Edit SourcePackage Bug Assignment"
         permission="launchpad.AnyPerson"
         template="../templates/bugassignment-editform.pt"
         lp:url="malone/bugs/$Bug.id/sourcepackageassignments/$SourcePackageBugAssignment.id/+edit">
     </browser:editform>
+
+    <browser:schemadisplay
+        name="+edit"
+        for="canonical.launchpad.interfaces.IReadOnlyDistroBugTask"
+        schema="canonical.launchpad.interfaces.IBugTask"
+        fields="sourcepackagename binarypackagename bugtitle bugdescription status priority severity assignee"
+        label="Source Package Bug Assignment"
+        permission="zope.Public"
+        template="../templates/bugassignment-display.pt"
+        lp:url="malone/tasks/$SourcePackageBugAssignment.id/+edit">
+    </browser:schemadisplay>
 
     <!-- BugsAssignedReport -->
     <!-- TODO: figure out why we need to give explicit attributes instead of

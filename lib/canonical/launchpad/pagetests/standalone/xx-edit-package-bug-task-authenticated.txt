@@ -1,0 +1,164 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/tasks/6/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <h3>Edit SourcePackage Bug Assignment</h3>
+  ...
+
+  >>> print http(r"""
+  ... POST /malone/tasks/6/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1316
+  ... Content-Type: multipart/form-data; boundary=---------------------------89019536856698512711194452
+  ... Cookie: launchpad=MWf3omoA.tZcStS.42dJXG6k9DMUqSqjgbGiffev9H-3CJuYweV0E0
+  ... Referer: http://localhost:9000/malone/tasks/6/+edit
+  ... 
+  ... -----------------------------89019536856698512711194452
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... mozilla-firefox-dummy
+  ... -----------------------------89019536856698512711194452
+  ... Content-Disposition: form-data; name="field.binarypackagename"
+  ... 
+  ... 
+  ... -----------------------------89019536856698512711194452
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... New
+  ... -----------------------------89019536856698512711194452
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------89019536856698512711194452
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... Medium
+  ... -----------------------------89019536856698512711194452
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------89019536856698512711194452
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Normal
+  ... -----------------------------89019536856698512711194452
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------89019536856698512711194452
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... 
+  ... -----------------------------89019536856698512711194452
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------89019536856698512711194452--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <p class="portalMessage">Updated on ...</p>
+  ...
+
+  >>> print http(r"""
+  ... GET /malone/tasks/6/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+              <label>Priority</label>
+  <BLANKLINE>
+              <span class="fieldRequired" title="Required">(Required)</span>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                  <div><div id="field.priority">
+  <div class="value">
+  <select name="field.priority" size="1" >
+  <option value="High">High</option>
+  <option value="Low">Low</option>
+  <option selected="selected" value="Medium">Medium</option>
+  <option value="Wontfix">Wontfix</option>
+  </select>
+  ...
+
+  >>> print http(r"""
+  ... POST /malone/tasks/6/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1346
+  ... Content-Type: multipart/form-data; boundary=---------------------------16131040782095479517127443199
+  ... Cookie: launchpad=MWf3omoA.tZcStS.42dJXG6k9DMUqSqjgbGiffev9H-3CJuYweV0E0
+  ... Referer: http://localhost:9000/malone/tasks/6/+edit
+  ... 
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... mozilla-firefox-dummy
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.binarypackagename"
+  ... 
+  ... 
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... New
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... Low
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Normal
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... 
+  ... -----------------------------16131040782095479517127443199
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------16131040782095479517127443199--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+            <p class="portalMessage">Updated on ...</p>
+  ...
+
+  >>> print http(r"""
+  ... GET /malone/tasks/6/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+              <label>Priority</label>
+  <BLANKLINE>
+              <span class="fieldRequired" title="Required">(Required)</span>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                  <div><div id="field.priority">
+  <div class="value">
+  <select name="field.priority" size="1" >
+  <option value="High">High</option>
+  <option selected="selected" value="Low">Low</option>
+  <option value="Medium">Medium</option>
+  <option value="Wontfix">Wontfix</option>
+  </select>
+  ...

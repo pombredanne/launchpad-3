@@ -1,0 +1,19 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/tasks/6/+edit HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+      <h3>Source Package Bug Assignment</h3>
+  ...
+  <BLANKLINE>
+              <label>Source Package Name</label>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                  <div>mozilla-firefox-dummy</div>
+  ...

@@ -164,7 +164,7 @@ class BugSet(BugSetBase):
 class BugTask(SQLBase):
     implements(IBugTask)
     _table = "BugTask"
-    _defaultOrder = "bug"
+    _defaultOrder = "-bug"
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug')
     product = ForeignKey(
@@ -212,7 +212,8 @@ class BugTask(SQLBase):
         return "(none)"
 
     def bugdescription(self):
-        return self.bug.messages[0].contents
+        if self.bug.messages:
+            return self.bug.messages[0].contents
 
     maintainer = property(maintainer)
     bugtitle = property(bugtitle)

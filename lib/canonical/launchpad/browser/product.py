@@ -14,6 +14,8 @@ import zope.security.interfaces
 from sqlobject.sqlbuilder import AND, IN, ISNULL
 
 from canonical.lp import dbschema
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
 from canonical.database.sqlbase import quote
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      MilestoneVocabulary
@@ -152,6 +154,13 @@ class ProductBugsView:
     DEFAULT_STATUS = (
         int(dbschema.BugAssignmentStatus.NEW),
         int(dbschema.BugAssignmentStatus.ACCEPTED))
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.batch = Batch(
+            self.bugassignment_search(), int(request.get('batch_start', 0)))
+        self.batchnav = BatchNavigator(self.batch, request)
 
     def bugassignment_search(self):
         ba_params = []

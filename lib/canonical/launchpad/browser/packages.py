@@ -181,6 +181,14 @@ class DistrosReleaseBinariesSearchView:
             return None
 
 class SourcePackageBugsView:
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.batch = Batch(
+            self.bugassignment_search(), int(request.get('batch_start', 0)))
+        self.batchnav = BatchNavigator(self.batch, request)
+
     def bugassignment_search(self):
         return self.context.bugs
 

@@ -12,8 +12,8 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
 from canonical.launchpad.interfaces import IBugsAssignedReport, \
-    IBugTaskSet, ISourcePackageBugTask, IEditableUpstreamBugTask, \
-    IReadOnlyUpstreamBugTask, ILaunchBag
+    IBugTaskSet, IEditableUpstreamBugTask, IReadOnlyUpstreamBugTask, \
+    IEditableDistroBugTask, IReadOnlyDistroBugTask, ILaunchBag
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
@@ -38,8 +38,11 @@ def mark_as_editable_upstream_task(task):
 def mark_as_readonly_upstream_task(task):
     mark_task(task, IReadOnlyUpstreamBugTask)
 
-def mark_as_sourcepackage_task(task):
-    mark_task(task, ISourcePackageBugTask)
+def mark_as_editable_sourcepackage_task(task):
+    mark_task(task, IEditableDistroBugTask)
+
+def mark_as_readonly_sourcepackage_task(task):
+    mark_task(task, IReadOnlyDistroBugTask)
 
 class BugTaskSet:
 
@@ -64,7 +67,10 @@ class BugTaskSet:
                     mark_as_readonly_upstream_task(task)
             else:
                 # sourcepackage task
-                mark_as_upstream_task(task)
+                if principal:
+                    mark_as_editable_sourcepackage_task(task)
+                else:
+                    mark_as_readonly_sourcepackage_task(task)
 
             return task
         except IndexError:
@@ -83,7 +89,10 @@ class BugTaskSet:
                     mark_as_readonly_upstream_task(row)
             else:
                 # sourcepackage task
-                mark_as_sourcepackage_task(row)
+                if principal:
+                    mark_as_editable_sourcepackage_task(task)
+                else:
+                    mark_as_readonly_sourcepackage_task(task)
 
             yield row
 

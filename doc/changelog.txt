@@ -2,6 +2,79 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-10 21:26:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1167
+
+    Summary:
+      fix a bug where an exception was getting raised when editing a distro
+ package task. make separate view and edit views for anon vs. authenticated
+ users. configure perms accordingly. add more bug context information to distro
+ bug task views. remove stingy old,
+ disabled page test for adding/editing package tasks and replace with two new
+ page tests for the improved views.
+    Revision:
+      launchpad--devel--0--patch-1167
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-272
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-273
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-274
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-275
+       ported the batching code to the upstream bugs page
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-276
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-277
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-278
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-279
+       fix a bug where an exception was getting raised when editing a distro package task. make separate view and edit views for anon vs. authenticated users. configure perms accordingly. add more bug context information to distro bug task views. remove stingy old, disabled page test for adding/editing package tasks and replace with two new page tests for the improved views.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-edit-package-bug-task-authenticated.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-view-package-bug-task-anonymous.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-edit-package-bug-task-authenticated.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-view-package-bug-task-anonymous.txt
+
+    removed files:
+     lib/canonical/launchpad/pagetests/malone/.arch-ids/40-add-edit-package-assignment.txt.fixme.id
+     lib/canonical/launchpad/pagetests/malone/40-add-edit-package-assignment.txt.fixme
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/packages.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugassignment.py
+     lib/canonical/launchpad/interfaces/bugassignment.py
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-unassigned.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-search-package-firefox.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-search-status-accepted.txt
+     lib/canonical/launchpad/templates/bugassignment-search-listing.pt
+     lib/canonical/launchpad/templates/product-bugs.pt
+     lib/canonical/launchpad/zcml/bugassignment.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-272
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-273
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-274
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-275
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-276
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-277
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-278
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-279
+
+
 2005-01-10 16:42:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1166
 
     Summary:
