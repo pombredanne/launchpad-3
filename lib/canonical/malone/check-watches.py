@@ -3,10 +3,8 @@
 Cron job to run daily to check all of the BugWatches
 """
 
-from sqlobject import connectionForURI
-from canonical.arch.sqlbase import SQLBase, quote
 from canonical.database.malone import BugWatch, BugSystem
-import sqlobject, externalsystem
+from externalsystem import ExternalSystem
 
 # This script probably doesn't work yet, it'll get cleaned up
 # after I get it tagged over to my desktop machine again. --dave
@@ -15,7 +13,8 @@ def check_one_watch(watch):
     bugsystem = watch.bugsystem
     try:
         remotesystem = ExternalSystem(bugsystem)
-    except UnkownBugSystemTypeError, val:
+    # XXX this name doesn't exist anywhere
+    except UnknownBugSystemTypeError, val:
         print "*** WARNING: Bugsystem Type '%s' is not known" % (
             val.bugsystemtypename, )
         print "    Skipping %s bug %s watch on bug %s" % (

@@ -29,11 +29,9 @@ from canonical.launchpad.database import SoyuzBinaryPackage, SoyuzBuild, \
                                          SoyuzEmailAddress, GPGKey, \
                                          ArchUserID, WikiName, JabberID, \
                                          IrcID, Membership, TeamParticipation, \
-                                         DistributionRole, DistroReleaseRole
-
-# XXX arch stuff 
-from canonical.arch.infoImporter import SourceSource as infoSourceSource, RCSTypeEnum
-from canonical.arch.database import Branch, Changeset
+                                         DistributionRole, DistroReleaseRole, \
+                                         SourceSource as infoSourceSource, \
+                                         RCSTypeEnum, Branch, Changeset
 
 #
 # 

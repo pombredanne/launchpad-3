@@ -5,6 +5,9 @@ from zope.schema import Password, Bool
 
 from zope.interface import Interface, Attribute
 
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('canonical')
+
 # Web UI interfaces
 
 class IPackages(Interface):

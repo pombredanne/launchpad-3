@@ -5,8 +5,6 @@ from datetime import datetime
 
 # Zope imports
 from zope.interface import implements
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('canonical')
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
@@ -15,7 +13,7 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
 from sqlobject.sqlbuilder import func
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.database.doap import Product, DBProject
+from canonical.launchpad.database import Product, DBProject
 from canonical.lp import dbschema
 
 # interfaces and database 

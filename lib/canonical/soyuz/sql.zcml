@@ -263,15 +263,15 @@
 
 
   <content class="canonical.soyuz.importd.Projects">
-    <allow interface="canonical.database.doap.IProjectSet"/>
+    <allow interface="canonical.launchpad.interfaces.IProjectSet"/>
   </content>
   
   <content class="canonical.soyuz.importd.SoyuzProject">
-    <allow interface="canonical.database.doap.IProject"/>
+    <allow interface="canonical.launchpad.interfaces.IProject"/>
   </content>
   
   <content class="canonical.soyuz.importd.SoyuzProduct">
-    <allow interface="canonical.database.doap.IProduct"/>
+    <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
   
   <content class="canonical.soyuz.importd.Sync">
