@@ -270,13 +270,13 @@ class SoyuzSourcePackage(SQLBase):
         
         :returns: iterable of SourcePackageReleases
         """
-        sourcepackagereleases = list(SoyuzSourcePackageRelease.select(
+        sourcepackagereleases = SoyuzSourcePackageRelease.select(
             'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackageUpload.distrorelease = %d'
             ' AND SourcepackageRelease.sourcepackage = %d'
             ' AND SourcePackageUpload.uploadstatus = %d'
             % (distroRelease.id, self.id, dbschema.SourceUploadStatus.PUBLISHED)
-        ))
+        )
 
         return sourcepackagereleases
 
@@ -340,6 +340,16 @@ class SoyuzSourcePackageRelease(SQLBase):
             if urgency.value == self.urgency:
                 return urgency.title
         return 'Unknown (%d)' %self.urgency
+
+    def binaries(self):
+        query = ('SourcePackageRelease.id = BinaryPackage.sourcepackagerelease'
+                 ' AND BinaryPackage.sourcepackagerelease = %i'
+                 %self.id
+                 )
+
+        return SoyuzBinaryPackage.select(query)
+        
+    binaries = property(binaries)
 
     pkgurgency = property(_urgency)
 

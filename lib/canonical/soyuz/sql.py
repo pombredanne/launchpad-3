@@ -174,18 +174,29 @@ class builddepsContainer(object):
             self.version = tmp[1][:-1]
 
 class DistroReleaseSourceReleaseApp(object):
-    def __init__(self, sourcepackage, version, distroreleasename):
-        self.distroreleasename = distroreleasename
+    def __init__(self, sourcepackage, version, distrorelease):
+        self.distroreleasename = distrorelease.name
         results = SoyuzSourcePackageRelease.selectBy(
                 sourcepackageID=sourcepackage.id, version=version)
         if results.count() == 0:
             raise ValueError, 'No such version ' + repr(version)
         else:
             self.sourcepackagerelease = results[0]
-        #self.sourcepackage = sourcepackage
-        # FIXME: stub
-        self.archs = ['i386','AMD64']
-        
+
+        sourceReleases = sourcepackage.current(distrorelease)
+
+        query = sourceReleases.clause + \
+                ' AND SourcePackageRelease.version = %s' %quote(version)
+
+        sourceReleases = SoyuzSourcePackageRelease.select(query)
+
+        self.archs = None
+
+        for release in sourceReleases:
+            # Find distroarchs for that release
+            archReleases = release.architecturesReleased(distrorelease)
+            self.archs = [a.architecturetag for a in archReleases]
+
         if self.sourcepackagerelease.builddepends:
             self.builddepends = []
             builddepends = split(self.sourcepackagerelease.builddepends, ',')
@@ -221,7 +232,7 @@ class DistroReleaseSourceApp(object):
         self.sourcepackage = sourcepackage
 
     def __getitem__(self, version):
-        return DistroReleaseSourceReleaseApp(self.sourcepackage, version, self.release.name)
+        return DistroReleaseSourceReleaseApp(self.sourcepackage, version, self.release)
 
     def proposed(self):
         return self.sourcepackage.proposed(self.release)
@@ -232,7 +243,7 @@ class DistroReleaseSourceApp(object):
         
         :returns: a dict of version -> list-of-architectures
         """
-        sourceReleases = self.sourcepackage.current(self.release)
+        sourceReleases = list(self.sourcepackage.current(self.release))
         current = {}
         from canonical.soyuz.database import SoyuzDistroArchRelease
         for release in sourceReleases:
@@ -242,23 +253,12 @@ class DistroReleaseSourceApp(object):
         return current
 
     def currentversions(self):
-        print [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
         return [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
 
         
         # FIXME: Probably should be more than just PUBLISHED uploads (e.g.
         # NEW + ACCEPTED + PUBLISHED?)
         #If true, it is defined inside database.py
-        currents = self.sourcepackage.current(self.release)
-        if currents:
-            currents_list = []
-            for crts in currents:
-                currents_list.append(CurrentVersion(crts.version,['i386', 'AMD64']))
-            return currents_list
-        else:
-            return None
-
-    #currentversions = property(currentversions)
 
     def lastversions(self):
         return self.sourcepackage.lastversions(self.release)
@@ -561,7 +561,7 @@ class DistroReleaseBinaryReleaseBuildApp(object):
 
 
 class DistroReleaseBinaryReleaseApp(object):
-    def __init__(self, binarypackagerelease, version):
+    def __init__(self, binarypackagerelease, version, distrorelease):
         self.version = version
         self.binarypackagerelease = binarypackagerelease
 
@@ -570,8 +570,22 @@ class DistroReleaseBinaryReleaseApp(object):
                  %(self.binarypackagerelease.sourcepackagerelease.id))
         self.sourcedistrorelease = Release.select(query)[0]
 
-        # FIXME: stub
-        self.archs = ['i386','AMD64']
+
+        binaryReleases = self.binarypackagerelease.current(distrorelease)
+
+        query = binaryReleases.clause + \
+                (' AND BinaryPackage.sourcepackagerelease = SourcepackageRelease.id'
+                 ' AND BinaryPackage.version = %s' %quote(version)
+                )
+
+        binaryReleases = SoyuzSourcePackageRelease.select(query)
+
+        self.archs = None
+
+        for release in binaryReleases:
+            # Find distroarchs for that release
+            archReleases = release.architecturesReleased(distrorelease)
+            self.archs = [a.architecturetag for a in archReleases]
 
     def __getitem__(self, arch):
         return DistroReleaseBinaryReleaseBuildApp(self.binarypackagerelease,
@@ -593,7 +607,7 @@ class DistroReleaseBinaryApp(object):
         
         :returns: a dict of version -> list-of-architectures
         """
-        binaryReleases = self.binarypackage.current(self.release)
+        binaryReleases = list(self.binarypackage.current(self.release))
         current = {}
         from canonical.soyuz.database import SoyuzDistroArchRelease
         for release in binaryReleases:
@@ -604,7 +618,6 @@ class DistroReleaseBinaryApp(object):
         return current
 
     def currentversions(self):
-        print [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
         return [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
 
     def lastversions(self):
@@ -616,7 +629,7 @@ class DistroReleaseBinaryApp(object):
         query = self.binselect.clause + \
                 ' AND BinaryPackage.version = %s' %quote(version)
         self.binarypackage = SoyuzBinaryPackage.select(query)
-        return DistroReleaseBinaryReleaseApp(self.binarypackage[0], version)
+        return DistroReleaseBinaryReleaseApp(self.binarypackage[0], version, self.release)
 
 class DistroReleaseBinariesApp(object):
     """Binarypackages from a Distro Release"""

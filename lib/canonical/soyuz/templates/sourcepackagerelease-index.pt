@@ -48,7 +48,17 @@
     <p><b>Component:</b>
        <span tal:content="context/sourcepackagerelease/component/name">
        Component</span>
-    
+
+    <p><b>Binary Packages:</b> 
+       <ul>
+         <li tal:repeat="binary context/sourcepackagerelease/binaries" >
+          <a tal:content="binary/shortdesc"
+	  tal:attributes="href 
+	  string:../../../../bin/${context/distroreleasename}/${binary/name}/${binary/version}"
+	  />
+         </li>
+       </ul>
+
     <div align="right">
       <i>
       <tal:dummy tal:condition="context/sourcepackagerelease/changelog">
@@ -126,9 +136,13 @@
     </div>
 
   <p><h4>Builds:</h4> 
+   <tal:dummy tal:condition="not:context/archs">
+     <i> No Builds Available</i>
+   </tal:dummy>
+
    <tal:block tal:repeat="arch context/archs">
      [
-       <a class="dummy" tal:content="arch" tal:attributes="href arch">ARCH</a>
+       <a tal:content="arch" tal:attributes="href arch">ARCH</a>
      ]    
    </tal:block>
 

@@ -60,9 +60,13 @@ tal:content="context/binarypackagerelease/shortdesc">TITLE</span>
  </div>
 
  <p><h4>Builds:</h4>
+   <tal:dummy tal:condition="not:context/archs">
+     <i> No Builds Available</i>
+   </tal:dummy>
+
  <tal:block tal:repeat="arch context/archs">
  [
- <a class="dummy" tal:content="arch" tal:attributes="href arch">
+ <a tal:content="arch" tal:attributes="href arch">
    ARCH
  </a>
  ]
