@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 13:21:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1183
+
+    Summary:
+      Removed useless Product.poTemplate method
+    Revision:
+      launchpad--devel--0--patch-1183
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-477
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-478
+       Removed useless Product.poTemplate method
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/interfaces/project.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-477
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-478
+
+
 2005-01-12 13:08:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1182
 
     Summary:

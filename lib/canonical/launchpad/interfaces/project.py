@@ -24,7 +24,7 @@ class IProject(Interface):
         at least one lowercase letters or number followed by one or more chars,
         numbers, plusses, dots or hyphens and will be part of the url to this
         project in the Launchpad."""))
-    
+
     displayname = TextLine(title=_('Display Name'), description=_("""The
         display name of the project is a short name, appropriately
         capitalised, for this product. For example, if you were referring to
@@ -73,11 +73,6 @@ class IProject(Interface):
 
     def getProduct(name):
         """Get a product with name `name`."""
-    
-    # XXX: This will go away once we move to project->product->potemplate
-    #      traversal rather than project->potemplate traversal.
-    def poTemplate(name):
-        """Returns the RosettaPOTemplate with the given name."""
 
     def shortDescription(aDesc=None):
         """return the projects shortdesc, setting it if aDesc is provided"""
@@ -88,8 +83,6 @@ class IProject(Interface):
     def product(name):
         """Return the product belonging to this project with the given
         name."""
-
-
 
 
 # Interfaces for set
@@ -135,6 +128,4 @@ class IProjectBugTracker(Interface):
     id = Int(title=_('ID'))
     project = Int(title=_('Owner'))
     bugtracker = Int(title=_('Bug Tracker'))
-    
-
 
