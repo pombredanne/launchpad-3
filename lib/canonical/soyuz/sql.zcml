@@ -71,12 +71,6 @@
   <content class="canonical.soyuz.sql.Projects">
     <allow interface="canonical.soyuz.interfaces.IProjects"/>
   </content>
-  <content class="canonical.soyuz.sql.Packages">
-    <allow interface="canonical.soyuz.interfaces.IPackages"/>
-    <!-- implementing IItemContainer allows automatic traversal by name
-         and __getitem__.-->
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
   
   <content class="canonical.soyuz.sql.SoyuzProject">
     <allow interface="canonical.soyuz.interfaces.IProject"/>
@@ -92,26 +86,6 @@
 
 
 	
-  <!-- This is the collection of packages, found by querying the database.
-
-       IPackages provides an interface to query, iterate over, and modify
-       packages.
-    -->
-  <utility
-      factory="canonical.soyuz.sql.Packages"
-      provides="canonical.soyuz.interfaces.IPackages"
-      />
-
-  <utility
-      factory="canonical.soyuz.sql.BinaryPackages"
-      provides="canonical.soyuz.interfaces.IBinaryPackageSet"
-      />
-
-  <utility
-      factory="canonical.soyuz.sql.SourcePackages"
-      provides="canonical.soyuz.interfaces.ISourcePackageSet"
-      />
-
   <utility
       factory="canonical.soyuz.sql.Projects"
       provides="canonical.soyuz.interfaces.IProjects"

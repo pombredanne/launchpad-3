@@ -48,12 +48,12 @@ class ReleaseContainer(object):
         self.distribution = distribution
 
     def __getitem__(self, name):
-        return Release.selectBy(distribution=self.distribution.id,
+        return Release.selectBy(distributionID=self.distribution.id,
                                 # XXX ascii bogus needs to be revisited
                                 name=name.encode("ascii"))[0]
 
     def __iter__(self):
-    	return iter(Release.selectBy(distribution=self.distribution.id))
+    	return iter(Release.selectBy(distributionID=self.distribution.id))
 
 
 class BinaryPackage(SQLBase):
@@ -120,64 +120,62 @@ class Release(SQLBase):
 
     implements(IRelease)
 
-    _table = 'Distrorelease'
+    _table = 'DistroRelease'
     _columns = [
-        StringCol('distribution', dbName='distribution'),
-        StringCol('name', dbName='name'),
-        StringCol('title', dbName='title'),
-        StringCol('description', dbName='description'),
-        StringCol('version', dbName='version'),
-        StringCol('components', dbName='components'),
-        StringCol('sections', dbName='sections'),
-        StringCol('releasestate', dbName='releasestate'),
-        StringCol('datereleased', dbName='datereleased'),
-        StringCol('owner', dbName='owner'),
-        ]
+        ForeignKey(name='distribution', dbName='distribution',
+                   foreignKey='Distribution', notNull=True),
+        StringCol('name', dbName='name', notNull=True),
+        StringCol('title', dbName='title', notNull=True),
+        StringCol('description', dbName='description', notNull=True),
+        StringCol('version', dbName='version', notNull=True),
+        ForeignKey(name='components', dbName='components', foreignKey='Schema',
+                   notNull=True),
+        ForeignKey(name='sections', dbName='sections', foreignKey='Schema',
+                   notNull=True),
+        IntCol('releasestate', dbName='releasestate', notNull=True),
+        DateTimeCol('datereleased', dbName='datereleased', notNull=True),
+        ForeignKey(name='owner', dbName='owner', foreignKey='Person',
+                   notNull=True),
+    ]
 
     def getPackageContainer(self, name):
         if name == 'source':
-            return SourcePackages()
+            return SourcePackages(self)
         if name == 'binary':
-            return BinaryPackages()
-        else:
-            raise KeyError, name
-
-
-
-class Packages:
-    """Container for BinaryPackages and SourcePackages.
-
-    Used for the web UI.
-    """
-
-    implements(IPackages)
-
-    def __getitem__(self, name):
-        """See IPackages."""
-        if name == 'binary':
-            return BinaryPackages()
-        elif name == 'source':
-            return SourcePackages()
+            return BinaryPackages(self)
         else:
             raise KeyError, name
 
 
 class GenericPackages:
+    # FIXME: This abstract base class probably doesn't need to exist anymore
 
+    def __init__(self, release):
+        self.release = release
+
+    def _query(self):
+        return (
+            'SourcePackageUpload.sourcepackagerelease = SourcePackage.id '
+            'AND %d = SourcePackageUpload.distrorelease'
+            % (self.release.id))
+        
     def __getitem__(self, name):
         # XXX: What about multiple results?
         #      (which shouldn't happen here...)
+
+        query = self._query()
+        # XXX ascii bogus needs to be revisited
+        query += ' AND name = %s' % quote(name.encode('ascii'))
         try:
-            return self.table.select(self.table.q.name == \
-                                     # XXX ascii bogus needs to be revisited
-                                     name.encode("ascii"))[0]
+            return self.table.select(query, clauseTables=self.clauseTables)[0]
         except IndexError:
             # Convert IndexErrors into KeyErrors so that Zope will give a
             # NotFound page.
             raise KeyError, name
 
     def __iter__(self):
-        for bp in self.table.select():
+        for bp in self.table.select(self._query(),
+                                    clauseTables=self.clauseTables):
             yield bp
 
 
@@ -198,6 +196,7 @@ class SourcePackages(GenericPackages):
     implements(ISourcePackageSet)
 
     table = SourcePackage
+    clauseTables = ('SourcePackageUpload',)
 
 ###########################################################################
 
