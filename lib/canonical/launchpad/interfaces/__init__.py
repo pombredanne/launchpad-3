@@ -10,6 +10,7 @@ from persistent import IPersistent
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.project import *
 from canonical.launchpad.interfaces.product import *
+from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.productseries import *
 from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.sourcesource import *

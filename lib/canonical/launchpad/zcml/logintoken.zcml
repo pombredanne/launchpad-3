@@ -21,8 +21,22 @@
 
 
     <content class="canonical.launchpad.database.LoginToken">
-        <allow interface="canonical.launchpad.interfaces.ILoginToken" />
+        <require 
+            permission="zope.Public" 
+            interface="canonical.launchpad.interfaces.ILoginToken" />
     </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ILoginToken"
+        name="+index" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILoginToken"
+        name="+index"
+        permission="zope.Public" 
+        class="canonical.launchpad.browser.LoginTokenView"
+        template="../templates/logintoken-index.pt"
+        lp:url="foaf/token/$token/+index" />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -30,7 +44,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
         template="../templates/foaf-validateemail.pt"
-        lp:url="foaf/logintoken/$token/+validate" />
+        lp:url="foaf/token/$token/+validate" />
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
@@ -38,7 +52,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ResetPasswordView"
         template="../templates/foaf-resetpassword.pt"
-        lp:url="foaf/logintoken/$token/+resetpassword" />
+        lp:url="foaf/token/$token/+resetpassword" />
 
     <browser:addform
         name="+newaccount"
@@ -49,6 +63,6 @@
         class="canonical.launchpad.browser.NewAccountView"
         permission="zope.Public"
         template="../templates/foaf-newaccount.pt"
-        lp:url="foaf/logintoken/$token/+newaccount" />
+        lp:url="foaf/token/$token/+newaccount" />
 
 </configure>

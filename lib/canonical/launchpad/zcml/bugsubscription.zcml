@@ -47,7 +47,7 @@
     <adapter
         for="canonical.launchpad.interfaces.IBug"
         provides="canonical.launchpad.interfaces.IBugSubscriptionSet"
-        factory="canonical.launchpad.components.bugsubscription.IBugSubscriptionSetAdapter"
+        factory="canonical.launchpad.components.bugsubscription.BugSubscriptionSetAdapter"
         />
 
     <browser:defaultView

@@ -1,4 +1,5 @@
 # Copyright 2004 Canonical Ltd
+import urllib
 
 from zope.component import getUtility
 from zope.event import notify
@@ -6,7 +7,7 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.interfaces import WidgetsError
 from zope.app.event.objectevent import ObjectCreatedEvent
 
-from canonical.lp.dbschema import EmailAddressStatus
+from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
 
 from canonical.foaf.nickname import generate_nick
 
@@ -17,6 +18,26 @@ from canonical.launchpad.webapp.login import logInPerson
 
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
+
+
+class LoginTokenView(object):
+    """The default view for LoginToken.
+
+    This view will check the token type and then redirect to the specific view
+    for that type of token. We use this view so we don't have to add
+    "+validate", "+newaccount", etc, on URLs we send by email.
+    """
+
+    PAGES = {LoginTokenType.PASSWORDRECOVERY: '+resetpassword',
+             LoginTokenType.ACCOUNTMERGE: '+accountmerge',
+             LoginTokenType.NEWACCOUNT: '+newaccount',
+             LoginTokenType.VALIDATEEMAIL: '+validate'}
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        url = urllib.basejoin(str(request.URL), self.PAGES[context.tokentype])
+        request.response.redirect(url)
 
 
 class ResetPasswordView(object):
@@ -163,9 +184,8 @@ class NewAccountView(AddView):
         if errors:
             raise WidgetsError(errors)
 
-        nick = generate_nick(self.context.email)
-        kw['name'] = nick
-        person = getUtility(IPersonSet).new(**kw)
+        kw['name'] = generate_nick(self.context.email)
+        person = getUtility(IPersonSet).newPerson(**kw)
         notify(ObjectCreatedEvent(person))
 
         email = EmailAddress(person=person.id, email=self.context.email,

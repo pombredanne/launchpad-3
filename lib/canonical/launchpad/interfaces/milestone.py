@@ -19,3 +19,15 @@ class IMilestoneSet(Interface):
 
     def __getitem__(name):
         """Get a milestone by its name."""
+
+    def get(milestoneid):
+        """Get a milestone by its id.
+
+        If the milestone with that ID is not found, a
+        zope.exceptions.NotFoundError will be raised.
+        """
+
+    def new(product, name, title):
+        """Create a new milestone for a product.
+
+        name and title are (currently) required."""

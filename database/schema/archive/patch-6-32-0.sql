@@ -1,3 +1,4 @@
+SET client_min_messages=ERROR;
 
 /*
   Renames the table Membership to TeamMembership, to be consistent with our
@@ -12,3 +13,6 @@ ALTER TABLE membership_person_key RENAME TO teammembership_person_pkey;
 
 ALTER TABLE TeamMembership
     ALTER COLUMN id SET DEFAULT nextval('teammembership_id_seq');
+
+UPDATE LaunchpadDatabaseRevision SET major=6, minor=32, patch=0;
+

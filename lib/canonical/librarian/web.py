@@ -7,6 +7,7 @@ from twisted.web import resource, static, error, util, server
 from twisted.internet.threads import deferToThread
 
 from canonical.librarian.client import quote
+from canonical.database.sqlbase import begin, rollback
 
 defaultResource = static.Data('Copyright 2004 Canonical Ltd.', type='text/plain')
 fourOhFour = error.NoResource('No such resource') 
@@ -53,23 +54,24 @@ class LibraryFileAliasResource(resource.Resource):
         return util.DeferredResource(deferred)
 
     def _getFileAlias(self, filename):
+        begin()
         try:
-            # XXX: What about resyncing the connection periodically?  These
-            # queries should be effectively transaction-less, but at the moment
-            # each thread gets its own indefinitely long transaction!
-            #   AndrewBennetts, 2005-01-17
-            return self.storage.getFileAlias(self.fileID, filename)
-        except IndexError:
-            raise NotFound
+            try:
+                alias = self.storage.getFileAlias(self.fileID, filename) 
+                return alias.id, alias.mimetype
+            except IndexError:
+                raise NotFound
+        finally:
+            rollback()
 
     def _eb_getFileAlias(self, failure):
         failure.trap(NotFound)
         return fourOhFour
         
-    def _cb_getFileAlias(self, alias, aliasID):
-        if alias.id != aliasID:
+    def _cb_getFileAlias(self, (dbAliasID, mimetype), aliasID):
+        if dbAliasID != aliasID:
             return fourOhFour
-        return File(alias.mimetype.encode('ascii'),
+        return File(mimetype.encode('ascii'),
                     self.storage._fileLocation(self.fileID))
 
     def render_GET(self, request):
@@ -100,11 +102,15 @@ class DigestSearchResource(resource.Resource):
         return server.NOT_DONE_YET
 
     def _matchingAliases(self, digest):
-        library = self.storage.library
-        matches = ['%s/%s/%s' % (fID, aID, quote(aName))
-                   for fID in library.lookupBySHA1(digest)
-                   for aID, aName, aType in library.getAliases(fID)]
-        return matches
+        begin()
+        try:
+            library = self.storage.library
+            matches = ['%s/%s/%s' % (fID, aID, quote(aName))
+                       for fID in library.lookupBySHA1(digest)
+                       for aID, aName, aType in library.getAliases(fID)]
+            return matches
+        finally:
+            rollback()
 
     def _cb_matchingAliases(self, matches, request):
         text = '\n'.join([str(len(matches))] + matches)
@@ -136,7 +142,14 @@ class AliasSearchResource(resource.Resource):
         return server.NOT_DONE_YET
 
     def _getByAlias(self, alias):
-        return self.storage.library.getByAlias(alias)
+        begin()
+        try:
+            alias = self.storage.library.getByAlias(alias)
+            contentID = alias.content.id
+            filename = alias.filename
+            return contentID, filename
+        finally:
+            rollback()
 
     def _eb_getByAlias(self, failure, request):
         failure.trap(sqlobject.SQLObjectNotFound)
@@ -145,9 +158,9 @@ class AliasSearchResource(resource.Resource):
         request.write(response)
         request.finish()
 
-    def _cb_getByAlias(self, row, alias, request):
+    def _cb_getByAlias(self, (contentID, filename), alias, request):
         # Desired format is fileid/aliasid/filename
-        ret = "/%s/%s/%s\n" % (row.content.id, alias, row.filename)
+        ret = "/%s/%s/%s\n" % (contentID, alias, quote(filename))
         response = static.Data(ret.encode('utf-8'), 
                                'text/plain; charset=utf-8').render(request)
         request.write(response)

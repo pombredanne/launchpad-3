@@ -265,7 +265,8 @@ if __name__ == "__main__":
 
     keyrings = ""
     for keyring in os.listdir(keyrings_root):
-          keyrings += " --keyring=./keyrings/%s" % keyring
+        path = os.path.join(keyrings_root, keyring)
+        keyrings += " --keyring=%s" % path
     if not keyrings:
         raise AttributeError, "Keyrings not found in ./keyrings/"
 

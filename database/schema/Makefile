@@ -18,17 +18,30 @@ DBNAME=launchpad_dev
 # to quickly build a populated database to run tests against.
 TEST_DBNAME=launchpad_ftest_template
 
+# The latest schema dump from production. Database patches are relative
+# to this baseline. This dump should be updated every production rollout
+# to ensure that the development database remains in sync with reality
+# on production. It is generated using:
+#     pg_dump --no-owner --schema-only --no-acl --schema=public \
+#             launchpad_prod | grep -v '^--'
+# Then, manually, the 'SET client_min_messages' line is added and
+# the first two CREATEs commented out (plpythonu stuff)
+REV=10
+BASELINE=launchpad-${REV}-00-0.sql
+MD5SUM=dbe572c767d824311cc7789ee5548cf8  launchpad-10-00-0.sql
+
 default: all
 
 # NB. Yes - we run fti.py twice. This should be fixed sometime, but
 # it is currently needed to get the fti columns populated correctly.
 test: create 
-	@ echo "* Loading base database schema"
-	@ psql -d ${TEST_DBNAME} -f launchpad-6-00-0.sql | grep : | cat
 	@ echo "* Installing tsearch2 into ts2 schema"
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py --setup-only
+	@ echo "* Loading base database schema"
+	@ psql -d ${TEST_DBNAME} -f ${BASELINE} | grep : | cat
 	@ echo "* Patching the database schema"
-	@ ls -1 patch*.sql |sort| xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
+	@ ls -1 patch-${REV}-*.sql | sort | \
+	    xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
 	@ echo "* Setting up full text indexes"
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
 	@ echo "* Loading language data"
@@ -39,16 +52,19 @@ test: create
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
 	@ echo "* Adding comments"
 	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
+	@ echo "* Security setup"
+	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} security.py
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 
 empty: create 
 	@ echo "* Loading base database schema"
-	@ psql -d ${TEST_DBNAME} -f launchpad-6-00-0.sql | grep : | cat
+	@ psql -d ${TEST_DBNAME} -f ${BASELINE} | grep : | cat
 	@ echo "* Installing tsearch2 into ts2 schema"
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py --setup-only
 	@ echo "* Patching the database schema"
-	@ ls -1 patch*.sql |sort| xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
+	@ ls -1 patch-${REV}-*.sql | sort | \
+	    xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
 	@ echo "* Setting up full text indexes"
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
 	@ echo "* Loading language data"
@@ -72,11 +88,7 @@ dev: test
 	fi
 	@ createdb -E UNICODE --template=${TEST_DBNAME} ${DBNAME} | grep : | cat
 
-#testdb: drop create devdb
-#	@ echo "* Creating ${TEST_DBNAME} for unittests"
-#	@ createdb -E UNICODE --template=${DBNAME} ${TEST_DBNAME} | grep : | cat
-
-create:
+create: check
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
@@ -101,10 +113,10 @@ create:
 	@ echo "* Creating functions"
 	@ psql -d ${TEST_DBNAME} -f trusted.sql | grep : | cat
 
-# Confirm that launchpad-6-00-0.sql hasn't been messed with - this file
+# Confirm that launchpad-XX-00-0.sql hasn't been messed with - this file
 # is our baseline telling us what was installed into production
 check: search_path
-	@if [ "`md5sum launchpad-6-00-0.sql`" != '5f7922451b4619c7d73a4d0cd5bcefaa  launchpad-6-00-0.sql' ]; then echo "* launchpad-6-00-0.sql is corrupt or has been modified"; exit 1; else echo "* Using launchpad-6-00-0 as baseline"; fi
+	@if [ "`md5sum ${BASELINE}`" != "${MD5SUM}" ]; then echo "* ${BASELINE} is corrupt or has been modified"; exit 1; else echo "* Using ${BASELINE} as baseline"; fi
 
 search_path:
 	@if [ "`(echo '\t'; echo 'show search_path') | psql -d template1 -q -A -f -`" != "\$$user,public,ts2" ]; then echo "* Add the following to /etc/postgresql/postgresql.conf:"; echo "*   search_path='\$$user,public,ts2'"; echo "* Then reload PostgreSQL:"; echo "*   sudo /etc/init.d/postgresql reload"; exit 1; fi
@@ -151,3 +163,9 @@ newsampledata:
 
 .PHONY: default base all
 
+tst:
+	postgresql_autodoc -d launchpad_dev -f tmp -l . -tdot
+	fdp -o tmp.ps -Tps -Gsplines=true -GK=4 -Gmaxiter=100000 -Nwidth=1.75 -Gsep=.1 < tmp.dot
+	gnome-open tmp.ps
+
+	#python hack.py | fdp -o tmp.ps -Tps -Gsplines=true -GK=4 -Gmaxiter=100000 -Nwidth=1.75 -Gsep=.1

@@ -114,7 +114,10 @@ class TranslationsList(object):
                 return
             # there is one in the DB; mark it as historic
             sighting.inlastrevision = False
-            sighting.active = False
+            # Mark the msgset as fuzzy only if the one in the DB came from
+            # the SCM.
+            if sighting.origin == int(RosettaTranslationOrigin.SCM):
+                self._msgset.fuzzy = True
             # we're done
             return
 

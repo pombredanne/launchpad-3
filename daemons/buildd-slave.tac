@@ -13,7 +13,7 @@ from ConfigParser import ConfigParser
 
 import os
 
-conffile = os.environ.get('BUILDD_SLAVE_CONFIG', 'example.conf')
+conffile = os.environ.get('BUILDD_SLAVE_CONFIG', 'buildd-slave-example.conf')
 
 c = ConfigParser()
 c.read(conffile)
@@ -29,6 +29,7 @@ slavesite = server.Site(slave)
 strports.service(slave.slave._config.get("slave","bindport"), slavesite).setServiceParent(builddslaveService)
 
 # You can interact with a running slave like this:
+# (assuming the slave is on localhost:8221)
 #
 # python
 # import xmlrpclib

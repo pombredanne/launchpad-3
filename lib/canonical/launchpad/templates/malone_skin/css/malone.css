@@ -1,0 +1,186 @@
+body {
+	background-color: #eeeeee;
+	color: black;
+	min-height: 100%;
+}
+:link {
+	background: transparent;
+	color: #3333cc;
+}
+:visited {
+	background: transparent;
+	color: #666699;
+}
+
+.behind, .behind:link {
+	background: transparent;
+	color: #3333cc;
+}
+.buglist {
+	clear: both;
+	width: 100%;
+}
+.buglist tr {
+	border: none;
+}
+.buglist td {
+	padding: 0.5em 0.25em;
+}
+.change {
+	float: left;
+	width: 50%;
+}
+.nav {
+	float: right;
+	text-align: right;
+	width: 50%;
+}
+.doomed, .doomed:link {
+	background: transparent;
+	color: green;
+}
+.id {
+	float: left;
+	width: 50%;
+}
+.user {
+	float: right;
+	text-align: right;
+}
+.manipulation {
+	margin: 0;
+	text-align: right;
+}
+.manipulation table {
+	margin-left: auto;
+}
+.search {
+	clear: right;
+	float: right;
+	margin-top: 0.5em;
+}
+
+address {
+	font-style: inherit;
+	margin: 0;
+}
+address.launchpad {
+	font-variant: small-caps;
+}
+address.app {
+	font-size: 2em;
+	font-family: sans-serif;
+	margin-left: 64px;
+}
+address.ubuntu:before {
+	content: "";
+	background: url(ubuntu.png);
+	float: left;
+	width: 64px;
+	height: 64px;
+}
+label {
+	font-family: caption;
+}
+th label {
+	font-weight: normal;
+	padding-left: 1em;
+}
+h1 {
+	background-color: black;
+	color: white;
+	font-size: 1em;
+	margin: 0;
+	padding: 0 0.5em;
+}
+small, small :link {
+	font-size: inherit;
+	background: transparent;
+	color: #999;
+}
+small code, small em {
+	color: black;
+}
+small code {
+	color: #663300;
+}
+small em {
+	font-style: inherit;
+}
+small .doomed {
+	color: 
+}
+table.data, table.data thead, table.data tfoot {
+	border: solid black;
+	border-collapse: collapse;
+	border-width: 1pt 0;
+}
+tbody tr {
+	border: dotted #999;
+	border-width: 1pt 0;
+}
+th {
+	text-align: right;
+}
+thead th {
+	text-align: center;
+}
+tr {
+	vertical-align: top;
+}
+ul.navigation {
+	display: table;
+	margin: 0 auto;
+	padding: 0;
+}
+ul.navigation li {
+	display: inline;
+	padding: 0.25em 0.5em;
+	margin: 
+}
+ul.navigation li:before {
+	content: '\2022';
+}
+ul.tabs {
+	border-spacing: 0.25em 0;
+	clear: both;
+	display: table;
+	font-family: "Lucida Grande", caption;
+	width: 100%;
+	text-align: center;
+	border-bottom: 2pt solid black;
+}
+ul.tabs li {
+	background-color: #cccccc;
+	border-width: 1pt 1pt 0 1pt;
+	border-color: white black black white;
+	display: table-cell;
+	margin: 0.25em;
+}
+ul.tabs li:before {
+	content: '';
+}
+ul.tabs li:after {
+	content: '';
+}
+ul.tabs li.current, ul.tabs li.current :link {
+	background-color: black;
+	color: white;
+}
+.central {
+	margin: 2em auto;
+	padding: 0.5em;
+	text-align: center;
+}
+.central ul {
+	font-size: smaller;
+}
+*.stats {
+	border: 1.5pt #000;
+	border-style: solid none;
+	font-family: sans-serif;
+	font-size: smaller;
+	margin-bottom: 1em;
+	padding: 0.5em;
+	text-align: center;
+}

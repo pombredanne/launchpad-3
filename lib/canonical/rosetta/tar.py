@@ -175,8 +175,7 @@ def examine_tarfile(tf):
         is exactly one non-empty such directory, it is searched for files
         ending in '.pot' and '.po'.
 
-     2. Otherwise, a common path prefix is searched for and files ending in
-        '.pot' and '.po' are searched for directly under that prefix.
+     2. Otherwise, files ending in '.pot' and '.po' are searched for directly.
 
     >>> pot, po = examine_tarfile(string_to_tarfile(make_test_string_1()))
     >>> pot
@@ -228,29 +227,13 @@ def examine_tarfile(tf):
 
             return (tuple(pot_files), tuple(po_files))
 
-    # Longest common prefix.
-
-    prefix = os.path.commonprefix(names)
-
-    # All files with the prefix removed, and with any file the name of which
-    # *is* the prefix (i.e. a common parent directory) excluded.
-
-    names = [ x[len(prefix):] for x in names if x != prefix ]
-
-    # All files which don't have subpaths.
-
-    names = [ x for x in names if '/' not in x ]
-
     # All files which look interesting.
 
-    pot_files = [ x for x in names if x.endswith('.pot') ]
+    pot_files = [name for name in names if name.endswith('.pot')]
 
-    po_files =  [ x for x in names if x.endswith('.po')  ]
+    po_files =  [name for name in names if name.endswith('.po')]
 
-    return (
-        tuple([ prefix + x for x in pot_files ]),
-        tuple([ prefix + x for x in po_files  ]),
-        )
+    return (tuple(pot_files), tuple(po_files))
 
 if __name__ == '__main__':
     import doctest

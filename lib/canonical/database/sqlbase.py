@@ -260,6 +260,7 @@ class ZopelessTransactionManager(object):
         return self.sqlClass._connection._dm
 
     def begin(self):
+        _clearCache()
         txn = self.manager.begin()
         txn.join(self._dm())
 
@@ -274,6 +275,20 @@ class ZopelessTransactionManager(object):
             obj.reset()
             obj.expire()
         self.begin()
+
+
+def _clearCache():
+    """Clear SQLObject's object cache for the current connection."""
+    # XXX: There is a different hack for (I think?) similar reasons in
+    #      canonical.publication.  This should probably share code with
+    #      that one.
+    #        - Andrew Bennetts, 2005-02-01
+
+    # Don't break if _connection is a FakeZopelessConnectionDescriptor
+    if getattr(SQLBase._connection, 'cache', None) is not None:
+        for c in SQLBase._connection.cache.allSubCaches():
+            c.clear()
+
 
 def quote(x):
     r"""Quote a variable ready for inclusion into an SQL statement.
@@ -347,4 +362,51 @@ def quote_like(x):
     if not isinstance(x, basestring):
         raise TypeError, 'Not a string (%s)' % type(x)
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
+
+
+# Some helpers intended for use with initZopeless.  These allow you to avoid
+# passing the transaction manager all through your code.  Also, this begin()
+# does an implicit rollback() for convenience. 
+# XXX: Make these use and work with Zope 3's transaction machinery instead!
+#        - Andrew Bennetts, 2005-02-11
+
+def begin():
+    """Begins a transaction, aborting the current one if necessary."""
+    transaction = SQLBase._connection
+    if not transaction._obsolete:
+        # XXX: This perhaps should raise a warning?
+        #        - Andrew Bennetts, 2005-02-11
+        transaction.rollback()
+    _clearCache()
+    transaction.begin()
+
+def rollback():
+    SQLBase._connection.rollback()
+
+def commit():
+    SQLBase._connection.commit()
+    
+
+class FakeZopelessConnectionDescriptor(_ZopelessConnectionDescriptor):
+    """A helper class for testing.
+    
+    Use this if you want to know if commit or rollback was called.
+    """
+    _obsolete = True
+    begun = False
+    rolledback = False
+    committed = False
+
+    def __get__(self, inst, cls=None):
+        return self
+
+    def begin(self):
+        self.begun = True
+
+    def rollback(self):
+        self.rolledback = True
+
+    def commit(self):
+        self.committed = True
+
 

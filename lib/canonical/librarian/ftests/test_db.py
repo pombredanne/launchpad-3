@@ -12,7 +12,7 @@ def sorted(l):
     return l
 
 class DBTestCase(LaunchpadZopelessTestSetup, unittest.TestCase):
-
+    dbuser = 'librarian'
     def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
         LaunchpadZopelessTestSetup.__init__(self)
@@ -25,23 +25,21 @@ class DBTestCase(LaunchpadZopelessTestSetup, unittest.TestCase):
         self.assertEqual([], library.lookupBySHA1('deadbeef'))
 
         # Add a file, check it is found by lookupBySHA1
-        txn = library.makeAddTransaction()
-        fileID = library.add('deadbeef', 1234, txn)
+        fileID = library.add('deadbeef', 1234)
         self.assertEqual([fileID], library.lookupBySHA1('deadbeef'))
 
         # Add a new file with the same digest
-        newFileID = library.add('deadbeef', 1234, txn)
+        newFileID = library.add('deadbeef', 1234)
         # Check it gets a new ID anyway
         self.assertNotEqual(fileID, newFileID)
         # Check it is found by lookupBySHA1
         self.assertEqual(sorted([fileID, newFileID]),
-                sorted(library.lookupBySHA1('deadbeef', txn)))
+                         sorted(library.lookupBySHA1('deadbeef')))
 
-        aliasID = library.addAlias(fileID, 'file1', 'text/unknown', txn)
-        alias = library.getAlias(fileID, 'file1', txn)
+        aliasID = library.addAlias(fileID, 'file1', 'text/unknown')
+        alias = library.getAlias(fileID, 'file1')
         self.assertEqual('file1', alias.filename)
         self.assertEqual('text/unknown', alias.mimetype)
-        txn.rollback()
         
 
 def test_suite():

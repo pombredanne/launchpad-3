@@ -10,10 +10,12 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner, IHasAssignee
 
 class IProduct(IHasOwner):
-    """A DOAP Product. DOAP describes the open source world as Projects
+    """
+    A DOAP Product. DOAP describes the open source world as Projects
     and Products. Each Project may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
-    Mozilla App Suite as Products, among others."""
+    Mozilla App Suite as Products, among others.
+    """
     
     # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
@@ -117,12 +119,13 @@ class IProduct(IHasOwner):
     def poTemplate(name):
         """Returns the PO template with the given name."""
 
-    def newPOTemplate(person, name, title):
-        """Creates a new PO template.
+    def newPOTemplate(name, title, person=None):
+        """Create a new PO template.
 
-        Returns the newly created template.
+        Return the newly created template. The person argument is optional,
+        the POTemplate can exist without an owner.
 
-        Raises an KeyError if a PO template with that name already exists.
+        Raise an KeyError if a PO template with that name already exists.
         """
 
     def fullname():
@@ -162,6 +165,23 @@ class IProduct(IHasOwner):
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
+    def attachTranslations(tarfile, prefix=None, sourcepackagename=None,
+                           distrorelease=None, version=None, logger=None):
+        """Attach all .pot and .po files inside tarfile into a product.
+
+        The .pot and .po files are attached to the POTemplate and POFile
+        objects of this product creating them first if needed.
+
+        Associates the POTemplates with the sourcepackagename and the
+        distrorelease (if not None) and its name will have the prefix
+        specified in case it's not None.
+
+        In case all files are imported correctly, set the potemplate's
+        sourcepackageversion field to version.
+
+        Log any error/warning into the logger object, if it's not None.
+        """
+
 
 class IHasProduct(Interface):
     """An object that has a product attribute that is an IProduct."""
@@ -182,6 +202,13 @@ class IProductSet(Interface):
 
     def __getitem__(name):
         """Get a product by its name."""
+
+    def get(productid):
+        """Get a product by its id.
+        
+        If the product can't be found a zope.exceptions.NotFoundError will be
+        raised.
+        """
 
     def createProduct(owner, name, displayname, title, shortdesc,
                       description, project=None, homepageurl=None,

@@ -1,0 +1,34 @@
+digraph g {
+graph [
+    pack = true, overlap = false, rankdir = "LR", concentrate = false,
+    ratio = auto, splines = true, sep = .4, dim = 2, maxiter = 60000,
+    K=1
+];
+node [
+fontsize = "10",
+shape = plaintext
+];
+edge [
+];
+<TMPL_LOOP name="schemas">
+    <TMPL_LOOP name="tables">
+        <TMPL_UNLESS name="view_definition">
+"<TMPL_IF name="number_of_schemas"><TMPL_VAR name="schema_dot">.</TMPL_IF name="number_of_schemas"><TMPL_VAR name="table_dot">" [shape = plaintext, label = <
+<TABLE BGCOLOR="azure3" BORDER="1" ALIGN="LEFT" PORT="col1">
+<TR BORDER="1"><TD BGCOLOR="white" COLSPAN="3" ALIGN="CENTER">\N</TD></TR>
+<TMPL_LOOP name="columns">
+    <TR BORDER="0" PORT="<TMPL_VAR name="column_dot">">
+        <TD ALIGN="LEFT" BORDER="0"><TMPL_VAR name="column_dot"></TD>
+        <TD ALIGN="LEFT" BORDER="0"><TMPL_VAR name="column_type"></TD>
+        <TD ALIGN="LEFT" BORDER="0"><TMPL_LOOP name="column_constraints">
+<TMPL_IF name="column_unique"> UNIQUE</TMPL_IF><TMPL_IF name="column_notnull"> NOT NULL</TMPL_IF><TMPL_IF name="column_primary_key"> PRIMARY KEY</TMPL_IF><TMPL_IF name="column_fk"> REFERENCES <TMPL_VAR name="column_fk_table"></TMPL_IF>
+</TMPL_LOOP></TD>
+    </TR>
+</TMPL_LOOP name="columns"></TABLE>> ];
+        </TMPL_UNLESS name="view_definition">
+    </TMPL_LOOP name="tables">
+</TMPL_LOOP name="schemas">
+
+<TMPL_LOOP name="fk_links">
+"<TMPL_IF name="number_of_schemas"><TMPL_VAR name="handle0_schema">.</TMPL_IF name="number_of_schemas"><TMPL_VAR name="handle0_name">" -> "<TMPL_IF name="number_of_schemas"><TMPL_VAR name="handle1_schema">.</TMPL_IF name="number_of_schemas"><TMPL_VAR name="handle1_name">" [label=""];</TMPL_LOOP name="fk_links">
+}

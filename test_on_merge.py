@@ -85,7 +85,7 @@ def main():
     # Build the template database. Tests duplicate this.
     here = os.path.dirname(os.path.realpath(__file__))
     schema_dir = os.path.join(here, 'database', 'schema')
-    if os.system('cd %s; make test PYTHON=%s > /dev/null 2>&1' % (
+    if os.system('cd %s; make test PYTHON=%s > /dev/null' % (
         schema_dir, sys.executable)) != 0:
         print 'Failed to create database'
         return 1

@@ -33,13 +33,13 @@
     <div>
       <h1 tal:content="context/displayname">Name</h1>
         <br />
-        <table width="100%">
+        <table width="80%">
           <tr tal:condition="context/teamdescription">
             <td>Description:</td>
             <td tal:content="context/teamdescription">DESCRIPTION</td>
           </tr>
 
-          <tr tal:condition="context/teamowner">
+          <tr>
             <td>Owner:</td>
             <td><a tal:attributes="href string:../${context/teamowner/name}"
                    tal:content="context/teamowner/browsername"></a></td>
@@ -47,24 +47,13 @@
 
           <tr>
             <td>Members:</td>
-            <td tal:content="python: len(context.members)">123</td>
+            <td tal:content="python: len(context.currentmembers)">123</td>
           </tr>
 
-          <tal:dummy tal:condition="context/preferredemail"
-                     tal:define="email context/preferredemail">
-          <tr>
+          <tr tal:condition="context/preferredemail">
             <td>Email:</td>
-            <td><span tal:replace="email/email"></span>
-              <a href="+emails">(Edit team emails)</a></td>
+            <td><span tal:replace="context/preferredemail/email"></span></td>
           </tr>
-          </tal:dummy>
-
-          <tal:dummy tal:condition="not: context/preferredemail">
-          <tr>
-            <td>Email:</td>
-            <td>Please <a href="+emails">set the preferred email for this team.</a></td>
-          </tr>
-          </tal:dummy>
 
           <tr>
             <td></td>

@@ -11,6 +11,8 @@ import sha
 from twisted.internet import protocol
 from twisted.internet import reactor
 from twisted.web import xmlrpc
+from base64 import standard_b64encode as base64encode
+from base64 import standard_b64decode as base64decode
 
 class RunCapture(protocol.ProcessProtocol):
     """Run a command and capture its output to a slave's log"""
@@ -204,6 +206,12 @@ class BuildDSlave(object):
         self._status = BuildDSlave.WAITING
         self._buildstatus = BuildDSlave.PACKAGEFAIL
 
+    def depFail(self):
+        if self._status != BuildDSlave.BUILDING:
+            raise ValueError, "Slave is not BUILDING when set to DEPFAIL"
+        self._status = BuildDSlave.WAITING
+        self._buildstatus = BuildDSlave.DEPFAIL
+
     def buildComplete(self):
         if self._status != BuildDSlave.BUILDING:
             raise ValueError, "Slave is not BUILDING when told build is complete"
@@ -266,10 +274,10 @@ class XMLRPCBuildDSlave(xmlrpc.XMLRPC):
         return self.slave.have(sha1sum)
 
     def xmlrpc_storefile(self, content):
-        return self.slave.give(content)
+        return self.slave.give(base64decode(content))
     
     def xmlrpc_fetchfile(self, sha1sum):
-        return self.slave.want(sha1sum)
+        return base64encode(self.slave.want(sha1sum))
 
     def xmlrpc_abort(self):
         self.slave.abort()

@@ -15,6 +15,13 @@
             set_attributes="name title" />
     </content>
 
+    <!-- UTILITIES -->
+    <securedutility
+        class="canonical.launchpad.database.MilestoneSet"
+        provides="canonical.launchpad.interfaces.IMilestoneSet">
+        <allow interface="canonical.launchpad.interfaces.IMilestoneSet" />
+    </securedutility>
+
     <!-- VOCABULARIES -->
 
     <!--TRAVERSALS-->

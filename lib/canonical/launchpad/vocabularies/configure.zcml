@@ -100,6 +100,11 @@
         factory="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
         />
 
+    <vocabulary
+        name="Packaging"
+        factory="canonical.launchpad.vocabularies.PackagingVocabulary"
+        />
+
     <!-- Define the widget used by Choice fields that use huge vocabularies -->
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"

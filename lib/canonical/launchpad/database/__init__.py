@@ -9,6 +9,7 @@ if getattr(sqlobject.main.SelectResults, '__len__', None) is None:
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.product import *
+from canonical.launchpad.database.packaging import *
 from canonical.launchpad.database.productseries import *
 from canonical.launchpad.database.productrelease import *
 from canonical.launchpad.database.project import *

@@ -27,8 +27,7 @@ class Launchpad:
     def ensure_person(self, displayname, email):
         person = PersonSet().getByEmail(email)
         if not person:
-            person = PersonSet().createPerson(displayname=displayname,
-                                              email=email)
+            person = createPerson(email, displayname=displayname)
         return person
 
     def ensure_sourcepackagename(self, name):

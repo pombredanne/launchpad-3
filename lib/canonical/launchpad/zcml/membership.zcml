@@ -1,6 +1,6 @@
 <configure xmlns="http://namespaces.zope.org/zope">
-  <content class="canonical.launchpad.database.Membership">
-    <allow interface="canonical.launchpad.interfaces.IMembership"/>
+  <content class="canonical.launchpad.database.TeamMembership">
+    <allow interface="canonical.launchpad.interfaces.ITeamMembership"/>
     <!--
     <require
      permission="zope.Public"

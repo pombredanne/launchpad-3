@@ -1,22 +1,27 @@
-import StringIO, base64, sha
+import StringIO
+import base64
+import sha
+import re
+import datetime
+import logging
+from sets import Set
 
 # Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
+from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
+    parseDatetimetz
 
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 
-from datetime import datetime
-from sets import Set
-
 # canonical imports
 from canonical.launchpad.interfaces import IPOTMsgSet, \
     IEditPOTemplate, IPOMsgID, IPOMsgIDSighting, \
     IEditPOFile, IPOTranslation, IEditPOMsgSet, \
-    IPOTranslationSighting, IPersonSet, IRosettaStats
+    IPOTranslationSighting, IPersonSet, IRosettaStats, IRawFileData
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
 from canonical.lp.dbschema import RosettaTranslationOrigin
@@ -24,7 +29,7 @@ from canonical.lp.dbschema import RosettaImportStatus
 from canonical.database.constants import DEFAULT, UTC_NOW
 
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
-from canonical.rosetta.pofile import POParser
+from canonical.rosetta.pofile import POParser, POHeader
 
 standardPOTemplateCopyright = 'Canonical Ltd'
 
@@ -69,6 +74,28 @@ standardPOFileHeader = (
 "X-Rosetta-Version: 0.1\n"
 "Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n"
 )
+
+def _sqlobject_sync_hack():
+    # XXX: Andrew Bennetts 2004-12-17: Really BIG AND UGLY fix to prevent
+    # a race condition that prevents the statistics to be calculated
+    # correctly. DON'T copy this, ask Andrew first.
+    # https://dogfood.ubuntu.com/malone/bugs/226/
+    for object in list(SQLBase._connection._dm.objects):
+        object.sync()
+
+def _attachRawFileData(raw_file_data, contents, importer):
+    # Initial check to be sure that the content is a valid .po/.pot file, if
+    # it fails an exception will be throw and the attachment will be rejected.
+    parser = POParser()
+    parser.write(contents)
+    parser.finish()
+
+    raw_file_data.rawfile = base64.encodestring(contents)
+    raw_file_data.daterawimport = UTC_NOW
+    if importer is not None:
+        raw_file_data.rawimporter = importer
+    raw_file_data.rawimportstatus = RosettaImportStatus.PENDING.value
+
 
 class RosettaStats(object):
     implements(IRosettaStats)
@@ -171,8 +198,9 @@ class RosettaStats(object):
             percent = 0
         return float(str(percent))
 
+
 class POTemplate(SQLBase, RosettaStats):
-    implements(IEditPOTemplate)
+    implements(IEditPOTemplate, IRawFileData)
 
     _table = 'POTemplate'
 
@@ -194,13 +222,6 @@ class POTemplate(SQLBase, RosettaStats):
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False,
         default=None)
-    rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
-    rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
-        notNull=False, default=None)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
-        default=None)
-    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=True,
-        default=RosettaImportStatus.IGNORE.value)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
     distrorelease = ForeignKey(foreignKey='DistroRelease',
@@ -452,7 +473,7 @@ class POTemplate(SQLBase, RosettaStats):
         except SQLObjectNotFound:
             raise ValueError, "Unknown language code '%s'" % language_code
 
-        now = datetime.now()
+        now = datetime.datetime.now()
         data = {
             'year': now.year,
             'languagename': language.englishname,
@@ -532,8 +553,40 @@ class POTemplate(SQLBase, RosettaStats):
 
         return self.createMessageSetFromMessageID(messageID)
 
+    # ICanAttachRawFileData implementation
+
+    def attachRawFileData(self, contents, importer=None):
+        """See ICanAttachRawFileData."""
+
+        # Internal function to reuse code. It's the same with POFile than
+        # POTemplate
+        _attachRawFileData(self, contents, importer)
+
+
+    # IRawFileData implementation
+
+    # Any use of this interface should adapt this object as an IRawFileData.
+
+    rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
+    rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
+        notNull=False, default=None)
+    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
+        default=None)
+    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=True,
+        default=RosettaImportStatus.IGNORE.value)
+
     def doRawImport(self, logger=None):
-        importer = TemplateImporter(self, self.rawimporter)
+        """See IRawFileData."""
+
+        if self.rawimporter is not None:
+            # By default the owner of the import is who imported it, if we
+            # have such information...
+            owner = self.rawimporter
+        else:
+            # As fallback, we get the product's owner.
+            owner = self.product.owner
+
+        importer = TemplateImporter(self, owner)
 
         file = StringIO.StringIO(base64.decodestring(self.rawfile))
 
@@ -543,11 +596,9 @@ class POTemplate(SQLBase, RosettaStats):
             # The import has been done, we mark it that way.
             self.rawimportstatus = RosettaImportStatus.IMPORTED.value
 
-            # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
-            # a race condition that prevents the statistics to be calculated
-            # correctly. DON'T copy this, ask Andrew first.
-            for object in list(SQLBase._connection._dm.objects):
-                object.sync()
+            # Ask for a sqlobject sync before reusing the data we just
+            # updated.
+            _sqlobject_sync_hack()
 
             # We update the cached value that tells us the number of msgsets this
             # .pot file has
@@ -787,9 +838,36 @@ class POMsgID(SQLBase):
     byMsgid = classmethod(byMsgid)
 
 
+def getPORevisionDate(poheader):
+    '''Gets the string and datetime object for the PO-Revision-Date entry.
+
+    poheader argument should be a valid POHeader object.
+    The function will return a tuple of a string and a datetime object
+    representing that string. If the date string is not found in the header
+    or the date format is not valid, the datetime object is None and
+    the string is set with the error.
+    '''
+
+    if not isinstance(poheader, POHeader):
+        raise TypeError, 'Expected a POHeader argument'
+
+    try:
+        date_string = poheader['PO-Revision-Date']
+        date = parseDatetimetz(date_string)
+    except KeyError:
+        # There is not PO-Revision-Date entry in poheader.
+        date = None
+        date_string = 'Missing header'
+    except (SyntaxError, DateError, DateTimeError), e:
+        # The date format is not valid.
+        date = None
+        date_string = str(e)
+
+    return (date_string, date)
+
 
 class POFile(SQLBase, RosettaStats):
-    implements(IEditPOFile)
+    implements(IEditPOFile, IRawFileData)
 
     _table = 'POFile'
 
@@ -844,19 +922,6 @@ class POFile(SQLBase, RosettaStats):
     filename = StringCol(dbName='filename',
                          notNull=False,
                          default=None)
-    rawfile = StringCol(dbName='rawfile',
-                        notNull=False,
-                        default=None)
-    rawimporter = ForeignKey(foreignKey='Person',
-                             dbName='rawimporter',
-                             notNull=False,
-                             default=None)
-    daterawimport = DateTimeCol(dbName='daterawimport',
-                                notNull=False,
-                                default=None)
-    rawimportstatus = IntCol(dbName='rawimportstatus',
-                             notNull=False,
-                             default=RosettaImportStatus.IGNORE.value)
 
 
     def currentMessageSets(self):
@@ -1082,7 +1147,30 @@ class POFile(SQLBase, RosettaStats):
         except IndexError:
             return None
 
+    # ICanAttachRawFileData implementation
+
+    def attachRawFileData(self, contents, importer=None):
+        """See ICanAttachRawFileData."""
+
+        # Internal function to reuse code. It's the same with POFile than
+        # POTemplate
+        _attachRawFileData(self, contents, importer)
+
+    # IRawFileData implementation
+
+    # Any use of this interface should adapt this object as an IRawFileData.
+
+    rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
+    rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
+                             notNull=False, default=None)
+    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
+                                default=None)
+    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False,
+                             default=RosettaImportStatus.IGNORE.value)
+
     def doRawImport(self, logger=None):
+        """See IRawFileData."""
+
         if self.rawfile is None:
             # We don't have anything to import.
             return
@@ -1101,12 +1189,59 @@ class POFile(SQLBase, RosettaStats):
             # We should not get any exception here because we checked the file
             # before being imported, but this could help prevent programming
             # errors.
+            self.rawimportstatus = RosettaImportStatus.FAILED.value
             return
+
+        # Check now that the file we are trying to import is newer than the
+        # one we already have in our database. That's done comparing the
+        # PO-Revision-Date field of the headers.
+        old_header = POHeader(msgstr = self.header)
+        old_header.finish()
+
+        # Get the old and new PO-Revision-Date entries as datetime objects.
+        (old_date_string, old_date) = getPORevisionDate(old_header)
+        (new_date_string, new_date) = getPORevisionDate(parser.header)
+
+        # Check if the import should or not be ignored.
+        if old_date is None or new_date is None:
+            # One or both headers had a missing or wrong PO-Revision-Date, in
+            # this case, the .po file is always imported but registering the
+            # problem in the logs.
+            if logger is not None:
+                logger.warning(
+                    'There is a problem with the dates importing %s language '
+                    'for %s template from %s product. New: %s, old %s' % (
+                    self.language.code,
+                    self.potemplate.name,
+                    self.potemplate.product.name,
+                    new_date_string,
+                    old_date_string))
+        elif old_date >= new_date:
+            # The new import is older or the same than the old import in the
+            # system, the import is rejected and logged.
+            if logger is not None:
+                logger.warning(
+                    'We got an older version importing %s language for %s '
+                    'template from %s product. New: %s, old: %s . Ignoring '
+                    'the import...' % (
+                    self.language.code,
+                    self.potemplate.name,
+                    self.potemplate.product.name,
+                    new_date_string,
+                    old_date_string))
+            self.rawimportstatus = RosettaImportStatus.FAILED.value
+            return
+
+        if self.rawimporter is not None:
+            # By default the owner of the import is who imported it, if we
+            # have such information...
+            default_owner = self.rawimporter
+        else:
+            # As fallback, we get the product's owner.
+            default_owner = self.potemplate.product.owner
 
         try:
             last_translator = parser.header['Last-Translator']
-            # XXX: Carlos Perello Marin 20/12/2004 All this code should be moved
-            # into person.py, most of it comes from gina.
 
             first_left_angle = last_translator.find("<")
             first_right_angle = last_translator.find(">")
@@ -1118,17 +1253,18 @@ class POFile(SQLBase, RosettaStats):
             # Usually we should only get a KeyError exception but if we get
             # any other exception we should do the same, use the importer name
             # as the person who owns the imported po file.
-            person = self.rawimporter
+            person = default_owner
         else:
             # If we didn't got any error getting the Last-Translator field
             # from the pofile.
             if email == 'EMAIL@ADDRESS':
                 # We don't have a real account, thus we just use the import person
                 # as the owner.
-                person = self.rawimporter
+                person = default_owner
             else:
                 # This import is here to prevent circular dependencies.
-                from canonical.launchpad.database.person import PersonSet
+                from canonical.launchpad.database.person import PersonSet, \
+                                                                createPerson
 
                 person_set = PersonSet()
 
@@ -1149,8 +1285,8 @@ class POFile(SQLBase, RosettaStats):
 
                     # We create a new user without a password.
                     try:
-                        person = person_set.createPerson(name, givenname,
-                            familyname, None, email)
+                        person = createPerson(email, name, givenname,
+                                              familyname, password=None)
                     except:
                         # We had a problem creating the person...
                         person = None
@@ -1158,8 +1294,8 @@ class POFile(SQLBase, RosettaStats):
                     if person is None:
                         # XXX: Carlos Perello Marin 20/12/2004 We have already
                         # that person in the database, we should get it instead of
-                        # use the importer one...
-                        person = self.rawimporter
+                        # use the default one...
+                        person = default_owner
 
         importer = POFileImporter(self, person)
 
@@ -1170,11 +1306,9 @@ class POFile(SQLBase, RosettaStats):
 
             self.rawimportstatus = RosettaImportStatus.IMPORTED.value
 
-            # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
-            # a race condition that prevents the statistics to be calculated
-            # correctly. DON'T copy this, ask Andrew first.
-            for object in list(SQLBase._connection._dm.objects):
-                object.sync()
+            # Ask for a sqlobject sync before reusing the data we just
+            # updated.
+            _sqlobject_sync_hack()
 
             # Now we update the statistics after this new import
             self.updateStatistics(newImport=True)
@@ -1308,11 +1442,11 @@ class POMsgSet(SQLBase):
         elif not fuzzy and self.fuzzy == True:
             self.fuzzy = False
             has_changes = True
-        
+
         if not has_changes:
             # We don't change the statistics if we didn't had any change.
             return
-            
+
         # We do now a live update of the statistics.
         if self.iscomplete and not self.fuzzy:
             # New msgset translation is ready to be used.
@@ -1346,8 +1480,7 @@ class POMsgSet(SQLBase):
             self.pofile.currentcount = 0
         if self.pofile.rosettacount < 0:
             self.pofile.rosettacount = 0
-                
-                
+
     def makeTranslationSighting(self, person, text, pluralForm,
         fromPOFile=False):
         """Create a new translation sighting for this message set."""
@@ -1368,16 +1501,7 @@ class POMsgSet(SQLBase):
 
         if results.count():
             # A sighting already exists.
-
-            assert results.count() == 1
-
             sighting = results[0]
-            sighting.set(
-                datelastactive = UTC_NOW,
-                active = True,
-                # XXX: Ugly!
-                # XXX: Carlos Perello Marin 05/10/04 Why is ugly?
-                inlastrevision = sighting.inlastrevision or fromPOFile)
         else:
             # No sighting exists yet.
 
@@ -1389,22 +1513,94 @@ class POMsgSet(SQLBase):
             sighting = POTranslationSighting(
                 pomsgsetID=self.id,
                 potranslationID=translation.id,
-                datefirstseen= UTC_NOW,
-                datelastactive= UTC_NOW,
+                datefirstseen=UTC_NOW,
+                datelastactive=UTC_NOW,
                 inlastrevision=fromPOFile,
                 pluralform=pluralForm,
-                active=True,
+                active=False,
                 personID=person.id,
                 origin=origin)
+
+        if not fromPOFile:
+            # The translation comes from Rosetta, it has preference always.
+            sighting.set(datelastactive=UTC_NOW, active=True)
+            new_active = sighting
+        else:
+            # The translation comes from a PO import.
+
+            # Look for the active TranslationSighting
+            active_results = POTranslationSighting.selectBy(
+                pomsgsetID=self.id,
+                pluralform=pluralForm,
+                active=True)
+            if active_results.count() < 1:
+                # Don't have yet an active translation, mark this one as
+                # active and present in last PO.
+                sighting.datelastactive = UTC_NOW
+                sighting.active = True
+                sighting.inlastrevision = True
+                new_active = sighting
+            else:
+                assert active_results.count() == 1
+
+                old_active = active_results[0]
+
+                if old_active is sighting:
+                    # Current sighting is already active, only update the
+                    # timestamp and mark it as present in last import.
+                    sighting.datelastactive = UTC_NOW
+                    sighting.inlastrevision = True
+                    new_active = sighting
+                elif old_active.origin == int(RosettaTranslationOrigin.SCM):
+                    # The current active translation is from a previous
+                    # .po import so we can override it directly.
+                    sighting.datelastactive = UTC_NOW
+                    sighting.inlastrevision = True
+                    sighting.active = True
+                    new_active = sighting
+                else:
+                    # The current active translation is from Rosetta, we don't
+                    # remove it, just mark this sighting as present in last
+                    # .po import.
+                    sighting.inlastrevision = True
+                    previous_active_results = POTranslationSighting.select(
+                        'pomsgset=%d AND pluralform=%d AND active=FALSE'
+                            % (self.id, pluralForm),
+                        orderBy='-datelastactive')
+                    if (previous_active_results.count() > 1 and
+                        previous_active_results[0] is not sighting):
+                        # As we have more than one active row, there is an
+                        # old translation that is not this one, and therefore,
+                        # we get it as an update done outside Rosetta that we
+                        # should accept.
+                        sighting.active = True
+                        sighting.datelastactive = UTC_NOW
+                        new_active = sighting
+                    else:
+                        # We don't have an old translation there or it's the
+                        # same we had so we should not kill Rosetta's one.
+                        new_active = old_active
 
         # Make all other sightings inactive.
 
         sightings = POTranslationSighting.select(
-            '''pomsgset=%d AND
-             pluralform = %d AND
-             id <> %d''' % (self.id, pluralForm, sighting.id))
-        for oldsighting in sightings:
-            oldsighting.active = False
+            'pomsgset=%d AND pluralform = %d AND id <> %d'
+                % (self.id, pluralForm, new_active.id))
+
+        # In theory we should only get one resultset.
+        if sightings.count() > 1:
+            logging.warning("Got more than one POTranslationSighting row"
+                            " for pomsgset = %d, pluralform = %d and"
+                            " id <> %d. It must be <= 1 always"
+                                % (self.id, pluralForm, new_active.id)
+                           )
+
+        for old_sighting in sightings:
+            old_sighting.active = False
+
+
+        # Ask for a sqlobject sync before reusing the data we just updated.
+        _sqlobject_sync_hack()
 
         # Implicit set of iscomplete. If we have all translations, it's 
         # complete, if we lack a translation, it's not complete.

@@ -76,12 +76,15 @@ class PgTestSetup(object):
 
     template = 'template1'
     dbname = 'unittest_tmp'
+    dbuser = None
 
-    def __init__(self, template=None, dbname=None):
+    def __init__(self, template=None, dbname=None, dbuser=None):
         if template is not None:
             self.template = template
         if dbname is not None:
             self.dbname = dbname
+        if dbuser is not None:
+            self.dbuser = dbuser
 
     def setUp(self):
         '''Create a fresh database (dropping the old if necessary)'''

@@ -6,6 +6,7 @@ files in this directory."""
 
 from canonical.launchpad.browser.project import *
 from canonical.launchpad.browser.product import *
+from canonical.launchpad.browser.packaging import *
 from canonical.launchpad.browser.productseries import *
 from canonical.launchpad.browser.productrelease import *
 from canonical.launchpad.browser.bug import *

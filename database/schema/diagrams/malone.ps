@@ -1,0 +1,7100 @@
+%!PS-Adobe-2.0
+%%Creator: fdp version 2.2 (Sat Feb  5 01:37:52 UTC 2005)
+%%For: (stub) Stuart Bishop,,,
+%%Title: g
+%%Pages: (atend)
+%%BoundingBox: 35 35 2789 2936
+%%EndComments
+save
+%%BeginProlog
+/DotDict 200 dict def
+DotDict begin
+
+/setupLatin1 {
+mark
+/EncodingVector 256 array def
+ EncodingVector 0
+
+ISOLatin1Encoding 0 255 getinterval putinterval
+
+EncodingVector
+  dup 306 /AE
+  dup 301 /Aacute
+  dup 302 /Acircumflex
+  dup 304 /Adieresis
+  dup 300 /Agrave
+  dup 305 /Aring
+  dup 303 /Atilde
+  dup 307 /Ccedilla
+  dup 311 /Eacute
+  dup 312 /Ecircumflex
+  dup 313 /Edieresis
+  dup 310 /Egrave
+  dup 315 /Iacute
+  dup 316 /Icircumflex
+  dup 317 /Idieresis
+  dup 314 /Igrave
+  dup 334 /Udieresis
+  dup 335 /Yacute
+  dup 376 /thorn
+  dup 337 /germandbls
+  dup 341 /aacute
+  dup 342 /acircumflex
+  dup 344 /adieresis
+  dup 346 /ae
+  dup 340 /agrave
+  dup 345 /aring
+  dup 347 /ccedilla
+  dup 351 /eacute
+  dup 352 /ecircumflex
+  dup 353 /edieresis
+  dup 350 /egrave
+  dup 355 /iacute
+  dup 356 /icircumflex
+  dup 357 /idieresis
+  dup 354 /igrave
+  dup 360 /dcroat
+  dup 361 /ntilde
+  dup 363 /oacute
+  dup 364 /ocircumflex
+  dup 366 /odieresis
+  dup 362 /ograve
+  dup 365 /otilde
+  dup 370 /oslash
+  dup 372 /uacute
+  dup 373 /ucircumflex
+  dup 374 /udieresis
+  dup 371 /ugrave
+  dup 375 /yacute
+  dup 377 /ydieresis  
+
+% Set up ISO Latin 1 character encoding
+/starnetISO {
+        dup dup findfont dup length dict begin
+        { 1 index /FID ne { def }{ pop pop } ifelse
+        } forall
+        /Encoding EncodingVector def
+        currentdict end definefont
+} def
+/Times-Roman starnetISO def
+/Times-Italic starnetISO def
+/Times-Bold starnetISO def
+/Times-BoldItalic starnetISO def
+/Helvetica starnetISO def
+/Helvetica-Oblique starnetISO def
+/Helvetica-Bold starnetISO def
+/Helvetica-BoldOblique starnetISO def
+/Courier starnetISO def
+/Courier-Oblique starnetISO def
+/Courier-Bold starnetISO def
+/Courier-BoldOblique starnetISO def
+cleartomark
+} bind def
+
+%%BeginResource: procset graphviz 0 0
+/coord-font-family /Times-Roman def
+/default-font-family /Times-Roman def
+/coordfont coord-font-family findfont 8 scalefont def
+
+/InvScaleFactor 1.0 def
+/set_scale {
+	dup 1 exch div /InvScaleFactor exch def
+	dup scale
+} bind def
+
+% styles
+/solid { [] 0 setdash } bind def
+/dashed { [9 InvScaleFactor mul dup ] 0 setdash } bind def
+/dotted { [1 InvScaleFactor mul 6 InvScaleFactor mul] 0 setdash } bind def
+/invis {/fill {newpath} def /stroke {newpath} def /show {pop newpath} def} bind def
+/bold { 2 setlinewidth } bind def
+/filled { } bind def
+/unfilled { } bind def
+/rounded { } bind def
+/diagonals { } bind def
+
+% hooks for setting color 
+/nodecolor { sethsbcolor } bind def
+/edgecolor { sethsbcolor } bind def
+/graphcolor { sethsbcolor } bind def
+/nopcolor {pop pop pop} bind def
+
+/beginpage {	% i j npages
+	/npages exch def
+	/j exch def
+	/i exch def
+	/str 10 string def
+	npages 1 gt {
+		gsave
+			coordfont setfont
+			0 0 moveto
+			(\() show i str cvs show (,) show j str cvs show (\)) show
+		grestore
+	} if
+} bind def
+
+/set_font {
+	findfont exch
+	scalefont setfont
+} def
+
+% draw aligned label in bounding box aligned to current point
+/alignedtext {			% width adj text
+	/text exch def
+	/adj exch def
+	/width exch def
+	gsave
+		width 0 gt {
+			text stringwidth pop adj mul 0 rmoveto
+		} if
+		[] 0 setdash
+		text show
+	grestore
+} def
+
+/boxprim {				% xcorner ycorner xsize ysize
+		4 2 roll
+		moveto
+		2 copy
+		exch 0 rlineto
+		0 exch rlineto
+		pop neg 0 rlineto
+		closepath
+} bind def
+
+/ellipse_path {
+	/ry exch def
+	/rx exch def
+	/y exch def
+	/x exch def
+	matrix currentmatrix
+	newpath
+	x y translate
+	rx ry scale
+	0 0 1 0 360 arc
+	setmatrix
+} bind def
+
+/endpage { showpage } bind def
+/showpage { } def
+
+/layercolorseq
+	[	% layer color sequence - darkest to lightest
+		[0 0 0]
+		[.2 .8 .8]
+		[.4 .8 .8]
+		[.6 .8 .8]
+		[.8 .8 .8]
+	]
+def
+
+/layerlen layercolorseq length def
+
+/setlayer {/maxlayer exch def /curlayer exch def
+	layercolorseq curlayer 1 sub layerlen mod get
+	aload pop sethsbcolor
+	/nodecolor {nopcolor} def
+	/edgecolor {nopcolor} def
+	/graphcolor {nopcolor} def
+} bind def
+
+/onlayer { curlayer ne {invis} if } def
+
+/onlayers {
+	/myupper exch def
+	/mylower exch def
+	curlayer mylower lt
+	curlayer myupper gt
+	or
+	{invis} if
+} def
+
+/curlayer 0 def
+
+%%EndResource
+%%EndProlog
+%%BeginSetup
+14 default-font-family set_font
+1 setmiterlimit
+% /arrowlength 10 def
+% /arrowwidth 5 def
+
+% make sure pdfmark is harmless for PS-interpreters other than Distiller
+/pdfmark where {pop} {userdict /pdfmark /cleartomark load put} ifelse
+% make '<<' and '>>' safe on PS Level 1 devices
+/languagelevel where {pop languagelevel}{1} ifelse
+2 lt {
+    userdict (<<) cvn ([) cvn load put
+    userdict (>>) cvn ([) cvn load put
+} if
+
+%%EndSetup
+%%Page: 1 1
+%%PageBoundingBox: 36 36 2789 2936
+%%PageOrientation: Portrait
+gsave
+35 35 2754 2901 boxprim clip newpath
+36 36 translate
+0 0 1 beginpage
+0 0 translate 0 rotate
+0.000 0.000 0.000 graphcolor
+10.00 /Times-Roman set_font
+gsave 10 dict begin
+14.00 /Times-Roman set_font
+1354 7 moveto
+(Malone)
+[12.48 6.24 3.84 6.96 6.96 6.24]
+xshow
+end grestore
+
+%	binarypackagename
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1773 950 moveto
+1773 1004 lineto
+1919 1004 lineto
+1919 950 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1773 950 moveto
+1773 1004 lineto
+1919 1004 lineto
+1919 950 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1776 985 moveto
+1776 1001 lineto
+1916 1001 lineto
+1916 985 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1776 985 moveto
+1776 1001 lineto
+1916 1001 lineto
+1916 985 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1804 990 moveto
+(binarypackagename)
+[5.04 2.88 5.04 4.56 3.36 5.04 5.04 4.56 4.56 5.04 4.56 5.04 4.56 5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1776 985 moveto
+1776 1001 lineto
+1916 1001 lineto
+1916 985 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1778 973 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1809 973 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1838 973 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1778 957 moveto
+(name)
+[5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1809 957 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1838 957 moveto
+( UNIQUE )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1773 950 moveto
+1773 1004 lineto
+1919 1004 lineto
+1919 950 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bug
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1457 1555 moveto
+1457 1833 lineto
+1701 1833 lineto
+1701 1555 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1457 1555 moveto
+1457 1833 lineto
+1701 1833 lineto
+1701 1555 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1460 1814 moveto
+1460 1830 lineto
+1698 1830 lineto
+1698 1814 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1460 1814 moveto
+1460 1830 lineto
+1698 1830 lineto
+1698 1814 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1570 1819 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1460 1814 moveto
+1460 1830 lineto
+1698 1830 lineto
+1698 1814 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1802 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1802 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1608 1802 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1786 moveto
+(datecreated)
+[5.04 4.56 2.88 4.56 4.56 3.36 4.56 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1786 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1770 moveto
+(name)
+[5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1770 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1608 1770 moveto
+( UNIQUE )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1754 moveto
+(title)
+[2.88 2.88 2.88 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1754 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1738 moveto
+(description)
+[5.04 4.56 3.84 4.56 3.36 2.88 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1738 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1722 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1722 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1706 moveto
+(duplicateof)
+[5.04 5.04 5.04 2.88 2.88 4.56 4.56 2.88 4.56 5.04 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1706 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1608 1706 moveto
+( REFERENCES bug )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1690 moveto
+(communityscore)
+[4.56 5.04 7.92 7.92 5.04 5.04 2.88 2.88 5.04 3.84 4.56 5.04 3.36 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1690 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1674 moveto
+(communitytimestamp)
+[4.56 5.04 7.92 7.92 5.04 5.04 2.88 2.88 5.04 2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1674 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1658 moveto
+(activityscore)
+[4.56 4.56 2.88 2.88 5.04 2.88 2.88 5.04 3.84 4.56 5.04 3.36 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1658 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1642 moveto
+(activitytimestamp)
+[4.56 4.56 2.88 2.88 5.04 2.88 2.88 5.04 2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1642 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1626 moveto
+(hits)
+[5.04 2.88 2.88 3.84]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1626 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1610 moveto
+(hitstimestamp)
+[5.04 2.88 2.88 3.84 2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1610 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1594 moveto
+(shortdesc)
+[3.84 5.04 5.04 3.36 2.88 5.04 4.56 3.84 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1594 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1578 moveto
+(fti)
+[3.36 2.88 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1578 moveto
+(tsvector)
+[2.88 3.84 5.04 4.56 4.56 2.88 5.04 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1462 1562 moveto
+(private)
+[5.04 3.36 2.88 5.04 4.56 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1558 1562 moveto
+(boolean)
+[5.04 5.04 5.04 2.88 4.56 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1457 1555 moveto
+1457 1833 lineto
+1701 1833 lineto
+1701 1555 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bug -> bug
+newpath 1709 1611 moveto
+1720 1629 1727 1656 1727 1694 curveto
+1727 1726 1722 1750 1714 1768 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1711 1767 moveto
+1709 1777 lineto
+1717 1770 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1711 1767 moveto
+1709 1777 lineto
+1717 1770 lineto
+closepath
+stroke
+end grestore
+
+%	bugactivity
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1347 1171 moveto
+1347 1321 lineto
+1557 1321 lineto
+1557 1171 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1347 1171 moveto
+1347 1321 lineto
+1557 1321 lineto
+1557 1171 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1350 1302 moveto
+1350 1318 lineto
+1554 1318 lineto
+1554 1302 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1350 1302 moveto
+1350 1318 lineto
+1554 1318 lineto
+1554 1302 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1428 1307 moveto
+(bugactivity)
+[5.04 5.04 5.04 4.56 4.56 2.88 2.88 5.04 2.88 2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1350 1302 moveto
+1350 1318 lineto
+1554 1318 lineto
+1554 1302 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1352 1290 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1414 1290 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1464 1290 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1352 1274 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1414 1274 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1464 1274 moveto
+( REFERENCES bug )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1352 1258 moveto
+(datechanged)
+[5.04 4.56 2.88 4.56 4.56 5.04 4.56 5.04 5.04 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1414 1258 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1352 1242 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1414 1242 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1352 1226 moveto
+(whatchanged)
+[7.2 5.04 4.56 2.88 4.56 5.04 4.56 5.04 5.04 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1414 1226 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1352 1210 moveto
+(oldvalue)
+[5.04 2.88 5.04 5.04 4.56 2.88 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1414 1210 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1352 1194 moveto
+(newvalue)
+[5.04 4.56 7.2 5.04 4.56 2.88 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1414 1194 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1352 1178 moveto
+(message)
+[7.92 4.56 3.84 3.84 4.56 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1414 1178 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1347 1171 moveto
+1347 1321 lineto
+1557 1321 lineto
+1557 1171 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugactivity -> bug
+newpath 1474 1325 moveto
+1491 1384 1515 1468 1535 1541 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1532 1542 moveto
+1538 1551 lineto
+1538 1540 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1532 1542 moveto
+1538 1551 lineto
+1538 1540 lineto
+closepath
+stroke
+end grestore
+
+%	bugattachment
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 2356 736 moveto
+2356 854 lineto
+2618 854 lineto
+2618 736 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 2356 736 moveto
+2356 854 lineto
+2618 854 lineto
+2618 736 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 2359 835 moveto
+2359 851 lineto
+2615 851 lineto
+2615 835 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 2359 835 moveto
+2359 851 lineto
+2615 851 lineto
+2615 835 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2456 840 moveto
+(bugattachment)
+[5.04 5.04 5.04 4.56 2.88 2.88 4.56 4.56 5.04 7.92 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 2359 835 moveto
+2359 851 lineto
+2615 851 lineto
+2615 835 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2361 823 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2431 823 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2481 823 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2361 807 moveto
+(bugmessage)
+[5.04 5.04 5.04 7.92 4.56 3.84 3.84 4.56 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2431 807 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2481 807 moveto
+( REFERENCES message )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 7.92 4.56 3.84 3.84 4.56 5.04 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2361 791 moveto
+(name)
+[5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2431 791 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2361 775 moveto
+(description)
+[5.04 4.56 3.84 4.56 3.36 2.88 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2431 775 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2361 759 moveto
+(libraryfile)
+[2.88 2.88 5.04 3.36 4.56 3.36 5.04 3.36 2.88 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2431 759 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2481 759 moveto
+( REFERENCES libraryfilealias )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 2.88 2.88 5.04 3.36 4.56 3.36 5.04 3.36 2.88 2.88 4.56 4.56 2.88 2.88 4.56 3.84 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2361 743 moveto
+(datedeactivated)
+[5.04 4.56 2.88 4.56 5.04 4.56 4.56 4.56 2.88 2.88 5.04 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2431 743 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 2356 736 moveto
+2356 854 lineto
+2618 854 lineto
+2618 736 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	message
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1950 700 moveto
+1950 866 lineto
+2190 866 lineto
+2190 700 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1950 700 moveto
+1950 866 lineto
+2190 866 lineto
+2190 700 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1953 847 moveto
+1953 863 lineto
+2187 863 lineto
+2187 847 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1953 847 moveto
+1953 863 lineto
+2187 863 lineto
+2187 847 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2052 852 moveto
+(message)
+[7.92 4.56 3.84 3.84 4.56 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1953 847 moveto
+1953 863 lineto
+2187 863 lineto
+2187 847 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1955 835 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2015 835 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2065 835 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1955 819 moveto
+(datecreated)
+[5.04 4.56 2.88 4.56 4.56 3.36 4.56 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2015 819 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1955 803 moveto
+(title)
+[2.88 2.88 2.88 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2015 803 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1955 787 moveto
+(contents)
+[4.56 5.04 5.04 2.88 4.56 5.04 2.88 3.84]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2015 787 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1955 771 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2015 771 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2065 771 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1955 755 moveto
+(parent)
+[5.04 4.56 3.36 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2015 755 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2065 755 moveto
+( REFERENCES message )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 7.92 4.56 3.84 3.84 4.56 5.04 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1955 739 moveto
+(distribution)
+[5.04 2.88 3.84 2.88 3.36 2.88 5.04 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2015 739 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2065 739 moveto
+( REFERENCES distribution )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 2.88 3.84 2.88 3.36 2.88 5.04 5.04 2.88 2.88 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1955 723 moveto
+(rfc822msgid)
+[3.36 3.36 4.56 5.04 5.04 5.04 7.92 3.84 5.04 2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2015 723 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2065 723 moveto
+( UNIQUE )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1955 707 moveto
+(fti)
+[3.36 2.88 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2015 707 moveto
+(tsvector)
+[2.88 3.84 5.04 4.56 4.56 2.88 5.04 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1950 700 moveto
+1950 866 lineto
+2190 866 lineto
+2190 700 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugattachment -> message
+newpath 2348 791 moveto
+2303 790 2254 788 2208 787 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2208 784 moveto
+2198 787 lineto
+2208 791 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2208 784 moveto
+2198 787 lineto
+2208 791 lineto
+closepath
+stroke
+end grestore
+
+%	fake_libraryfilealias_31
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2606 624 41 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2575 621 moveto
+(libraryfilealias)
+[2.88 2.88 5.04 3.36 4.56 3.36 5.04 3.36 2.88 2.88 4.56 4.56 2.88 2.88 4.56 3.84]
+xshow
+end grestore
+end grestore
+
+%	bugattachment -> fake_libraryfilealias_31
+newpath 2531 732 moveto
+2551 703 2573 671 2588 649 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2591 651 moveto
+2594 641 lineto
+2585 647 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2591 651 moveto
+2594 641 lineto
+2585 647 lineto
+closepath
+stroke
+end grestore
+
+%	bugexternalref
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1615 2156 moveto
+1615 2274 lineto
+1829 2274 lineto
+1829 2156 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1615 2156 moveto
+1615 2274 lineto
+1829 2274 lineto
+1829 2156 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1618 2255 moveto
+1618 2271 lineto
+1826 2271 lineto
+1826 2255 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1618 2255 moveto
+1618 2271 lineto
+1826 2271 lineto
+1826 2255 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1691 2260 moveto
+(bugexternalref)
+[5.04 5.04 5.04 4.56 5.04 2.88 4.56 3.36 5.04 4.56 2.88 3.36 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1618 2255 moveto
+1618 2271 lineto
+1826 2271 lineto
+1826 2255 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1620 2243 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1674 2243 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1724 2243 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1620 2227 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1674 2227 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1724 2227 moveto
+( REFERENCES bug )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1620 2211 moveto
+(url)
+[5.04 3.36 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1674 2211 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1620 2195 moveto
+(title)
+[2.88 2.88 2.88 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1674 2195 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1620 2179 moveto
+(datecreated)
+[5.04 4.56 2.88 4.56 4.56 3.36 4.56 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1674 2179 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1620 2163 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1674 2163 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1724 2163 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1615 2156 moveto
+1615 2274 lineto
+1829 2274 lineto
+1829 2156 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugexternalref -> bug
+newpath 1705 2152 moveto
+1685 2076 1649 1948 1621 1847 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1624 1846 moveto
+1618 1837 lineto
+1618 1848 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1624 1846 moveto
+1618 1837 lineto
+1618 1848 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_34
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+1822 2561 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1807 2558 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugexternalref -> fake_person_34
+newpath 1740 2278 moveto
+1763 2354 1798 2479 1814 2533 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1811 2534 moveto
+1817 2543 lineto
+1817 2532 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1811 2534 moveto
+1817 2543 lineto
+1817 2532 lineto
+closepath
+stroke
+end grestore
+
+%	buglabel
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1828 2070 moveto
+1828 2124 lineto
+2066 2124 lineto
+2066 2070 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1828 2070 moveto
+1828 2124 lineto
+2066 2124 lineto
+2066 2070 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1831 2105 moveto
+1831 2121 lineto
+2063 2121 lineto
+2063 2105 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1831 2105 moveto
+1831 2121 lineto
+2063 2121 lineto
+2063 2105 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1928 2110 moveto
+(buglabel)
+[5.04 5.04 5.04 2.88 4.56 5.04 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1831 2105 moveto
+1831 2121 lineto
+2063 2121 lineto
+2063 2105 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1833 2093 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1862 2093 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1897 2093 moveto
+( REFERENCES bug PRIMARY KEY )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1833 2077 moveto
+(label)
+[2.88 4.56 5.04 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1862 2077 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1897 2077 moveto
+( REFERENCES label PRIMARY KEY )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 2.88 4.56 5.04 4.56 2.88 2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1828 2070 moveto
+1828 2124 lineto
+2066 2124 lineto
+2066 2070 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	buglabel -> bug
+newpath 1918 2066 moveto
+1875 2019 1791 1926 1716 1845 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1718 1842 moveto
+1709 1837 lineto
+1713 1847 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1718 1842 moveto
+1709 1837 lineto
+1713 1847 lineto
+closepath
+stroke
+end grestore
+
+%	fake_label_37
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2119 2343 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2108 2340 moveto
+(label)
+[2.88 4.56 5.04 4.56 2.88]
+xshow
+end grestore
+end grestore
+
+%	buglabel -> fake_label_37
+newpath 1969 2128 moveto
+2004 2178 2070 2273 2101 2319 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2098 2321 moveto
+2107 2327 lineto
+2104 2317 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2098 2321 moveto
+2107 2327 lineto
+2104 2317 lineto
+closepath
+stroke
+end grestore
+
+%	bugmessage
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1772 1148 moveto
+1772 1218 lineto
+2006 1218 lineto
+2006 1148 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1772 1148 moveto
+1772 1218 lineto
+2006 1218 lineto
+2006 1148 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1775 1199 moveto
+1775 1215 lineto
+2003 1215 lineto
+2003 1199 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1775 1199 moveto
+1775 1215 lineto
+2003 1215 lineto
+2003 1199 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1863 1204 moveto
+(bugmessage)
+[5.04 5.04 5.04 7.92 4.56 3.84 3.84 4.56 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1775 1199 moveto
+1775 1215 lineto
+2003 1215 lineto
+2003 1199 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1777 1187 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1818 1187 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1853 1187 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1777 1171 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1818 1171 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1853 1171 moveto
+( REFERENCES bug UNIQUE )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1777 1155 moveto
+(message)
+[7.92 4.56 3.84 3.84 4.56 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1818 1155 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1853 1155 moveto
+( UNIQUE REFERENCES message )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 7.92 4.56 3.84 3.84 4.56 5.04 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1772 1148 moveto
+1772 1218 lineto
+2006 1218 lineto
+2006 1148 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugmessage -> bug
+newpath 1865 1222 moveto
+1824 1290 1738 1432 1671 1542 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1668 1541 moveto
+1666 1551 lineto
+1674 1544 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1668 1541 moveto
+1666 1551 lineto
+1674 1544 lineto
+closepath
+stroke
+end grestore
+
+%	bugmessage -> message
+newpath 1907 1144 moveto
+1934 1083 1988 964 2026 879 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2029 881 moveto
+2030 870 lineto
+2023 878 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2029 881 moveto
+2030 870 lineto
+2023 878 lineto
+closepath
+stroke
+end grestore
+
+%	bugpackageinfestation
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1198 2314 moveto
+1198 2512 lineto
+1556 2512 lineto
+1556 2314 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1198 2314 moveto
+1198 2512 lineto
+1556 2512 lineto
+1556 2314 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1201 2493 moveto
+1201 2509 lineto
+1553 2509 lineto
+1553 2493 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1201 2493 moveto
+1201 2509 lineto
+1553 2509 lineto
+1553 2493 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1330 2498 moveto
+(bugpackageinfestation)
+[5.04 5.04 5.04 5.04 4.56 4.56 5.04 4.56 5.04 4.56 2.88 5.04 3.36 4.56 3.84 2.88 4.56 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1201 2493 moveto
+1201 2509 lineto
+1553 2509 lineto
+1553 2493 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1203 2481 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1299 2481 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1349 2481 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1203 2465 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1299 2465 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1349 2465 moveto
+( REFERENCES bug UNIQUE )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1203 2449 moveto
+(sourcepackagerelease)
+[3.84 5.04 5.04 3.36 4.56 4.56 5.04 4.56 4.56 5.04 4.56 5.04 4.56 3.36 4.56 2.88 4.56 4.56 3.84 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1299 2449 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1349 2449 moveto
+( UNIQUE REFERENCES sourcepackagerelease )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 3.84 5.04 5.04 3.36 4.56 4.56 5.04 4.56 4.56 5.04 4.56 5.04 4.56 3.36 4.56 2.88 4.56 4.56 3.84 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1203 2433 moveto
+(explicit)
+[4.56 5.04 5.04 2.88 2.88 4.56 2.88 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1299 2433 moveto
+(boolean)
+[5.04 5.04 5.04 2.88 4.56 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1203 2417 moveto
+(infestationstatus)
+[2.88 5.04 3.36 4.56 3.84 2.88 4.56 2.88 2.88 5.04 5.04 3.84 2.88 4.56 2.88 5.04 3.84]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1299 2417 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1203 2401 moveto
+(datecreated)
+[5.04 4.56 2.88 4.56 4.56 3.36 4.56 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1299 2401 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1203 2385 moveto
+(creator)
+[4.56 3.36 4.56 4.56 2.88 5.04 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1299 2385 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1349 2385 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1203 2369 moveto
+(dateverified)
+[5.04 4.56 2.88 4.56 5.04 4.56 3.36 2.88 3.36 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1299 2369 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1203 2353 moveto
+(verifiedby)
+[5.04 4.56 3.36 2.88 3.36 2.88 4.56 5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1299 2353 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1349 2353 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1203 2337 moveto
+(lastmodified)
+[2.88 4.56 3.84 2.88 7.92 5.04 5.04 2.88 3.36 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1299 2337 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1203 2321 moveto
+(lastmodifiedby)
+[2.88 4.56 3.84 2.88 7.92 5.04 5.04 2.88 3.36 2.88 4.56 5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1299 2321 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1349 2321 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1198 2314 moveto
+1198 2512 lineto
+1556 2512 lineto
+1556 2314 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugpackageinfestation -> bug
+newpath 1406 2310 moveto
+1440 2189 1497 1987 1536 1847 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1539 1848 moveto
+1539 1837 lineto
+1533 1846 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1539 1848 moveto
+1539 1837 lineto
+1533 1846 lineto
+closepath
+stroke
+end grestore
+
+%	fake_sourcepackagerelease_42
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+1367 2880 55 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1322 2877 moveto
+(sourcepackagerelease)
+[3.84 5.04 5.04 3.36 4.56 4.56 5.04 4.56 4.56 5.04 4.56 5.04 4.56 3.36 4.56 2.88 4.56 4.56 3.84 4.56]
+xshow
+end grestore
+end grestore
+
+%	bugpackageinfestation -> fake_sourcepackagerelease_42
+newpath 1375 2516 moveto
+1373 2625 1369 2787 1367 2852 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1364 2852 moveto
+1367 2862 lineto
+1371 2852 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1364 2852 moveto
+1367 2862 lineto
+1371 2852 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_44
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+1080 2784 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1065 2781 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugpackageinfestation -> fake_person_44
+newpath 1294 2516 moveto
+1227 2600 1138 2712 1099 2760 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1096 2758 moveto
+1093 2768 lineto
+1102 2762 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1096 2758 moveto
+1093 2768 lineto
+1102 2762 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_46
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+1600 2758 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1585 2755 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugpackageinfestation -> fake_person_46
+newpath 1444 2516 moveto
+1492 2592 1554 2688 1583 2732 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1581 2735 moveto
+1589 2741 lineto
+1586 2731 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1581 2735 moveto
+1589 2741 lineto
+1586 2731 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_48
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+935 2606 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+920 2603 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugpackageinfestation -> fake_person_48
+newpath 1190 2495 moveto
+1105 2531 1014 2571 967 2592 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 966 2589 moveto
+958 2596 lineto
+969 2595 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 966 2589 moveto
+958 2596 lineto
+969 2595 lineto
+closepath
+stroke
+end grestore
+
+%	bugproductinfestation
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 2115 1989 moveto
+2115 2187 lineto
+2421 2187 lineto
+2421 1989 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 2115 1989 moveto
+2115 2187 lineto
+2421 2187 lineto
+2421 1989 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 2118 2168 moveto
+2118 2184 lineto
+2418 2184 lineto
+2418 2168 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 2118 2168 moveto
+2118 2184 lineto
+2418 2184 lineto
+2418 2168 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2222 2173 moveto
+(bugproductinfestation)
+[5.04 5.04 5.04 5.04 3.36 5.04 5.04 5.04 4.56 2.88 2.88 5.04 3.36 4.56 3.84 2.88 4.56 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 2118 2168 moveto
+2118 2184 lineto
+2418 2184 lineto
+2418 2168 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2120 2156 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2193 2156 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2243 2156 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2120 2140 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2193 2140 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2243 2140 moveto
+( REFERENCES bug UNIQUE )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2120 2124 moveto
+(productrelease)
+[5.04 3.36 5.04 5.04 5.04 4.56 2.88 3.36 4.56 2.88 4.56 4.56 3.84 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2193 2124 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2243 2124 moveto
+( UNIQUE REFERENCES productrelease )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 3.36 5.04 5.04 5.04 4.56 2.88 3.36 4.56 2.88 4.56 4.56 3.84 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2120 2108 moveto
+(explicit)
+[4.56 5.04 5.04 2.88 2.88 4.56 2.88 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2193 2108 moveto
+(boolean)
+[5.04 5.04 5.04 2.88 4.56 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2120 2092 moveto
+(infestationstatus)
+[2.88 5.04 3.36 4.56 3.84 2.88 4.56 2.88 2.88 5.04 5.04 3.84 2.88 4.56 2.88 5.04 3.84]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2193 2092 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2120 2076 moveto
+(datecreated)
+[5.04 4.56 2.88 4.56 4.56 3.36 4.56 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2193 2076 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2120 2060 moveto
+(creator)
+[4.56 3.36 4.56 4.56 2.88 5.04 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2193 2060 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2243 2060 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2120 2044 moveto
+(dateverified)
+[5.04 4.56 2.88 4.56 5.04 4.56 3.36 2.88 3.36 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2193 2044 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2120 2028 moveto
+(verifiedby)
+[5.04 4.56 3.36 2.88 3.36 2.88 4.56 5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2193 2028 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2243 2028 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2120 2012 moveto
+(lastmodified)
+[2.88 4.56 3.84 2.88 7.92 5.04 5.04 2.88 3.36 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2193 2012 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2120 1996 moveto
+(lastmodifiedby)
+[2.88 4.56 3.84 2.88 7.92 5.04 5.04 2.88 3.36 2.88 4.56 5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2193 1996 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2243 1996 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 2115 1989 moveto
+2115 2187 lineto
+2421 2187 lineto
+2421 1989 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugproductinfestation -> bug
+newpath 2107 1996 moveto
+1989 1928 1830 1838 1718 1773 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1719 1770 moveto
+1709 1768 lineto
+1716 1776 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1719 1770 moveto
+1709 1768 lineto
+1716 1776 lineto
+closepath
+stroke
+end grestore
+
+%	fake_productrelease_51
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2648 1956 41 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2617 1953 moveto
+(productrelease)
+[5.04 3.36 5.04 5.04 5.04 4.56 2.88 3.36 4.56 2.88 4.56 4.56 3.84 4.56]
+xshow
+end grestore
+end grestore
+
+%	bugproductinfestation -> fake_productrelease_51
+newpath 2429 2032 moveto
+2494 2010 2563 1986 2606 1970 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2607 1973 moveto
+2615 1967 lineto
+2604 1967 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2607 1973 moveto
+2615 1967 lineto
+2604 1967 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_53
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2463 2451 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2448 2448 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugproductinfestation -> fake_person_53
+newpath 2323 2191 moveto
+2366 2271 2423 2377 2449 2425 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2446 2427 moveto
+2454 2434 lineto
+2452 2424 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2446 2427 moveto
+2454 2434 lineto
+2452 2424 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_55
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2641 2217 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2626 2214 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugproductinfestation -> fake_person_55
+newpath 2429 2144 moveto
+2495 2167 2567 2192 2607 2206 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2606 2209 moveto
+2617 2209 lineto
+2608 2203 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2606 2209 moveto
+2617 2209 lineto
+2608 2203 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_57
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2227 2496 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2212 2493 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugproductinfestation -> fake_person_57
+newpath 2258 2191 moveto
+2248 2283 2236 2412 2230 2468 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2227 2468 moveto
+2229 2478 lineto
+2233 2468 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2227 2468 moveto
+2229 2478 lineto
+2233 2468 lineto
+closepath
+stroke
+end grestore
+
+%	bugrelationship
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1124 1672 moveto
+1124 1742 lineto
+1292 1742 lineto
+1292 1672 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1124 1672 moveto
+1124 1742 lineto
+1292 1742 lineto
+1292 1672 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1127 1723 moveto
+1127 1739 lineto
+1289 1739 lineto
+1289 1723 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1127 1723 moveto
+1127 1739 lineto
+1289 1739 lineto
+1289 1723 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1175 1728 moveto
+(bugrelationship)
+[5.04 5.04 5.04 3.36 4.56 2.88 4.56 2.88 2.88 5.04 5.04 3.84 5.04 2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1127 1723 moveto
+1127 1739 lineto
+1289 1739 lineto
+1289 1723 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1129 1711 moveto
+(subject)
+[3.84 5.04 5.04 2.88 4.56 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1164 1711 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1199 1711 moveto
+( REFERENCES bug )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1129 1695 moveto
+(label)
+[2.88 4.56 5.04 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1164 1695 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1129 1679 moveto
+(object)
+[5.04 5.04 2.88 4.56 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1164 1679 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1199 1679 moveto
+( REFERENCES bug )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1124 1672 moveto
+1124 1742 lineto
+1292 1742 lineto
+1292 1672 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugrelationship -> bug
+newpath 1300 1709 moveto
+1342 1708 1393 1706 1439 1704 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1439 1708 moveto
+1449 1704 lineto
+1439 1701 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1439 1708 moveto
+1449 1704 lineto
+1439 1701 lineto
+closepath
+stroke
+end grestore
+
+%	bugrelationship -> bug
+newpath 1300 1698 moveto
+1342 1696 1393 1693 1439 1692 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1439 1696 moveto
+1449 1692 lineto
+1439 1689 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1439 1696 moveto
+1449 1692 lineto
+1439 1689 lineto
+closepath
+stroke
+end grestore
+
+%	bugsubscription
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 2046 1689 moveto
+2046 1775 lineto
+2248 1775 lineto
+2248 1689 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 2046 1689 moveto
+2046 1775 lineto
+2248 1775 lineto
+2248 1689 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 2049 1756 moveto
+2049 1772 lineto
+2245 1772 lineto
+2245 1756 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 2049 1756 moveto
+2049 1772 lineto
+2245 1772 lineto
+2245 1756 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2114 1761 moveto
+(bugsubscription)
+[5.04 5.04 5.04 3.84 5.04 5.04 3.84 4.56 3.36 2.88 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 2049 1756 moveto
+2049 1772 lineto
+2245 1772 lineto
+2245 1756 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2051 1744 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2108 1744 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2143 1744 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2051 1728 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2108 1728 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2143 1728 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2051 1712 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2108 1712 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2143 1712 moveto
+( REFERENCES bug )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2051 1696 moveto
+(subscription)
+[3.84 5.04 5.04 3.84 4.56 3.36 2.88 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2108 1696 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 2046 1689 moveto
+2046 1775 lineto
+2248 1775 lineto
+2248 1689 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugsubscription -> bug
+newpath 2038 1725 moveto
+1947 1719 1818 1711 1719 1704 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1719 1701 moveto
+1709 1703 lineto
+1719 1707 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1719 1701 moveto
+1709 1703 lineto
+1719 1707 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_61
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2388 1770 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2373 1767 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugsubscription -> fake_person_61
+newpath 2256 1749 moveto
+2290 1754 2326 1760 2352 1764 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2352 1767 moveto
+2362 1766 lineto
+2353 1761 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2352 1767 moveto
+2362 1766 lineto
+2353 1761 lineto
+closepath
+stroke
+end grestore
+
+%	bugtask
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1173 692 moveto
+1173 954 lineto
+1477 954 lineto
+1477 692 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1173 692 moveto
+1173 954 lineto
+1477 954 lineto
+1477 692 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1176 935 moveto
+1176 951 lineto
+1474 951 lineto
+1474 935 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1176 935 moveto
+1176 951 lineto
+1474 951 lineto
+1474 935 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1308 940 moveto
+(bugtask)
+[5.04 5.04 5.04 2.88 4.56 3.84 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1176 935 moveto
+1176 951 lineto
+1474 951 lineto
+1474 935 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 923 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 923 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1317 923 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 907 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 907 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1317 907 moveto
+( REFERENCES bug )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 891 moveto
+(product)
+[5.04 3.36 5.04 5.04 5.04 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 891 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1317 891 moveto
+( REFERENCES product )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 3.36 5.04 5.04 5.04 4.56 2.88 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 875 moveto
+(distribution)
+[5.04 2.88 3.84 2.88 3.36 2.88 5.04 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 875 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1317 875 moveto
+( REFERENCES distribution )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 2.88 3.84 2.88 3.36 2.88 5.04 5.04 2.88 2.88 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 859 moveto
+(distrorelease)
+[5.04 2.88 3.84 2.88 3.36 5.04 3.36 4.56 2.88 4.56 4.56 3.84 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 859 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1317 859 moveto
+( REFERENCES distrorelease )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 2.88 3.84 2.88 3.36 5.04 3.36 4.56 2.88 4.56 4.56 3.84 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 843 moveto
+(sourcepackagename)
+[3.84 5.04 5.04 3.36 4.56 4.56 5.04 4.56 4.56 5.04 4.56 5.04 4.56 5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 843 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1317 843 moveto
+( REFERENCES sourcepackagename )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 3.84 5.04 5.04 3.36 4.56 4.56 5.04 4.56 4.56 5.04 4.56 5.04 4.56 5.04 4.56 7.92 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 827 moveto
+(binarypackagename)
+[5.04 2.88 5.04 4.56 3.36 5.04 5.04 4.56 4.56 5.04 4.56 5.04 4.56 5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 827 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1317 827 moveto
+( REFERENCES binarypackagename )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 2.88 5.04 4.56 3.36 5.04 5.04 4.56 4.56 5.04 4.56 5.04 4.56 5.04 4.56 7.92 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 811 moveto
+(status)
+[3.84 2.88 4.56 2.88 5.04 3.84]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 811 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 795 moveto
+(priority)
+[5.04 3.36 2.88 5.04 3.36 2.88 2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 795 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 779 moveto
+(severity)
+[3.84 4.56 5.04 4.56 3.36 2.88 2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 779 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 763 moveto
+(assignee)
+[4.56 3.84 3.84 2.88 5.04 5.04 4.56 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 763 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1317 763 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 747 moveto
+(dateassigned)
+[5.04 4.56 2.88 4.56 4.56 3.84 3.84 2.88 5.04 5.04 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 747 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 731 moveto
+(datecreated)
+[5.04 4.56 2.88 4.56 4.56 3.36 4.56 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 731 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 715 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 715 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1317 715 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1178 699 moveto
+(milestone)
+[7.92 2.88 2.88 4.56 3.84 2.88 5.04 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1267 699 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1317 699 moveto
+( REFERENCES milestone )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 7.92 2.88 2.88 4.56 3.84 2.88 5.04 5.04 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1173 692 moveto
+1173 954 lineto
+1477 954 lineto
+1477 692 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugtask -> binarypackagename
+newpath 1485 870 moveto
+1573 897 1680 928 1755 950 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1754 953 moveto
+1765 953 lineto
+1756 947 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1754 953 moveto
+1765 953 lineto
+1756 947 lineto
+closepath
+stroke
+end grestore
+
+%	bugtask -> bug
+newpath 1364 958 moveto
+1410 1116 1486 1377 1534 1541 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1531 1542 moveto
+1537 1551 lineto
+1537 1540 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1531 1542 moveto
+1537 1551 lineto
+1537 1540 lineto
+closepath
+stroke
+end grestore
+
+%	distribution
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1627 350 moveto
+1627 516 lineto
+1831 516 lineto
+1831 350 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1627 350 moveto
+1627 516 lineto
+1831 516 lineto
+1831 350 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1630 497 moveto
+1630 513 lineto
+1828 513 lineto
+1828 497 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1630 497 moveto
+1630 513 lineto
+1828 513 lineto
+1828 497 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1705 502 moveto
+(distribution)
+[5.04 2.88 3.84 2.88 3.36 2.88 5.04 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1630 497 moveto
+1630 513 lineto
+1828 513 lineto
+1828 497 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1632 485 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1691 485 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1726 485 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1632 469 moveto
+(name)
+[5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1691 469 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1726 469 moveto
+( UNIQUE )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1632 453 moveto
+(title)
+[2.88 2.88 2.88 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1691 453 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1632 437 moveto
+(description)
+[5.04 4.56 3.84 4.56 3.36 2.88 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1691 437 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1632 421 moveto
+(domainname)
+[5.04 5.04 7.92 4.56 2.88 5.04 5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1691 421 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1632 405 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1691 405 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1726 405 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1632 389 moveto
+(lucilleconfig)
+[2.88 5.04 4.56 2.88 2.88 2.88 4.56 4.56 5.04 5.04 3.36 2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1691 389 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1632 373 moveto
+(displayname)
+[5.04 2.88 3.84 5.04 2.88 4.56 5.04 5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1691 373 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1632 357 moveto
+(summary)
+[3.84 5.04 7.92 7.92 4.56 3.36 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1691 357 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1627 350 moveto
+1627 516 lineto
+1831 516 lineto
+1831 350 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugtask -> distribution
+newpath 1465 688 moveto
+1520 635 1582 575 1632 527 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1634 530 moveto
+1639 520 lineto
+1629 525 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1634 530 moveto
+1639 520 lineto
+1629 525 lineto
+closepath
+stroke
+end grestore
+
+%	distrorelease
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1272 93 moveto
+1272 355 lineto
+1554 355 lineto
+1554 93 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1272 93 moveto
+1272 355 lineto
+1554 355 lineto
+1554 93 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1275 336 moveto
+1275 352 lineto
+1551 352 lineto
+1551 336 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1275 336 moveto
+1275 352 lineto
+1551 352 lineto
+1551 336 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1387 341 moveto
+(distrorelease)
+[5.04 2.88 3.84 2.88 3.36 5.04 3.36 4.56 2.88 4.56 4.56 3.84 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1275 336 moveto
+1275 352 lineto
+1551 352 lineto
+1551 336 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 324 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 324 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1388 324 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 308 moveto
+(distribution)
+[5.04 2.88 3.84 2.88 3.36 2.88 5.04 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 308 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1388 308 moveto
+( REFERENCES distribution UNIQUE )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 2.88 3.84 2.88 3.36 2.88 5.04 5.04 2.88 2.88 5.04 5.04 2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 292 moveto
+(name)
+[5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 292 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1388 292 moveto
+( UNIQUE )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 276 moveto
+(title)
+[2.88 2.88 2.88 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 276 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 260 moveto
+(description)
+[5.04 4.56 3.84 4.56 3.36 2.88 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 260 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 244 moveto
+(version)
+[5.04 4.56 3.36 3.84 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 244 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 228 moveto
+(components)
+[4.56 5.04 7.92 5.04 5.04 5.04 4.56 5.04 2.88 3.84]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 228 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1388 228 moveto
+( REFERENCES schema )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 3.84 4.56 5.04 4.56 7.92 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 212 moveto
+(sections)
+[3.84 4.56 4.56 2.88 2.88 5.04 5.04 3.84]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 212 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1388 212 moveto
+( REFERENCES schema )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 3.84 4.56 5.04 4.56 7.92 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 196 moveto
+(releasestate)
+[3.36 4.56 2.88 4.56 4.56 3.84 4.56 3.84 2.88 4.56 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 196 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 180 moveto
+(datereleased)
+[5.04 4.56 2.88 4.56 3.36 4.56 2.88 4.56 4.56 3.84 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 180 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 164 moveto
+(parentrelease)
+[5.04 4.56 3.36 4.56 5.04 2.88 3.36 4.56 2.88 4.56 4.56 3.84 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 164 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1388 164 moveto
+( REFERENCES distrorelease )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 2.88 3.84 2.88 3.36 5.04 3.36 4.56 2.88 4.56 4.56 3.84 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 148 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 148 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1388 148 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 132 moveto
+(lucilleconfig)
+[2.88 5.04 4.56 2.88 2.88 2.88 4.56 4.56 5.04 5.04 3.36 2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 132 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 116 moveto
+(shortdesc)
+[3.84 5.04 5.04 3.36 2.88 5.04 4.56 3.84 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 116 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1277 100 moveto
+(displayname)
+[5.04 2.88 3.84 5.04 2.88 4.56 5.04 5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 100 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1272 93 moveto
+1272 355 lineto
+1554 355 lineto
+1554 93 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugtask -> distrorelease
+newpath 1345 688 moveto
+1359 593 1378 466 1392 369 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1395 369 moveto
+1393 359 lineto
+1389 369 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1395 369 moveto
+1393 359 lineto
+1389 369 lineto
+closepath
+stroke
+end grestore
+
+%	milestone
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 733 607 moveto
+733 693 lineto
+963 693 lineto
+963 607 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 733 607 moveto
+733 693 lineto
+963 693 lineto
+963 607 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 736 674 moveto
+736 690 lineto
+960 690 lineto
+960 674 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 736 674 moveto
+736 690 lineto
+960 690 lineto
+960 674 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+828 679 moveto
+(milestone)
+[7.92 2.88 2.88 4.56 3.84 2.88 5.04 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 736 674 moveto
+736 690 lineto
+960 690 lineto
+960 674 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+738 662 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+778 662 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+813 662 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+738 646 moveto
+(product)
+[5.04 3.36 5.04 5.04 5.04 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+778 646 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+813 646 moveto
+( REFERENCES product UNIQUE )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 3.36 5.04 5.04 5.04 4.56 2.88 2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+738 630 moveto
+(name)
+[5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+778 630 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+813 630 moveto
+( UNIQUE )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+738 614 moveto
+(title)
+[2.88 2.88 2.88 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+778 614 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 733 607 moveto
+733 693 lineto
+963 693 lineto
+963 607 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugtask -> milestone
+newpath 1165 765 moveto
+1105 743 1038 719 980 698 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 982 695 moveto
+971 695 lineto
+979 701 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 982 695 moveto
+971 695 lineto
+979 701 lineto
+closepath
+stroke
+end grestore
+
+%	product
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 544 720 moveto
+544 1094 lineto
+788 1094 lineto
+788 720 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 544 720 moveto
+544 1094 lineto
+788 1094 lineto
+788 720 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 547 1075 moveto
+547 1091 lineto
+785 1091 lineto
+785 1075 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 547 1075 moveto
+547 1091 lineto
+785 1091 lineto
+785 1075 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+649 1080 moveto
+(product)
+[5.04 3.36 5.04 5.04 5.04 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 547 1075 moveto
+547 1091 lineto
+785 1091 lineto
+785 1075 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 1063 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 1063 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+682 1063 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 1047 moveto
+(project)
+[5.04 3.36 5.04 2.88 4.56 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 1047 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+682 1047 moveto
+( REFERENCES project )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 3.36 5.04 2.88 4.56 4.56 2.88 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 1031 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 1031 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+682 1031 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 1015 moveto
+(name)
+[5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 1015 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+682 1015 moveto
+( UNIQUE )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 999 moveto
+(displayname)
+[5.04 2.88 3.84 5.04 2.88 4.56 5.04 5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 999 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 983 moveto
+(title)
+[2.88 2.88 2.88 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 983 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 967 moveto
+(shortdesc)
+[3.84 5.04 5.04 3.36 2.88 5.04 4.56 3.84 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 967 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 951 moveto
+(description)
+[5.04 4.56 3.84 4.56 3.36 2.88 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 951 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 935 moveto
+(datecreated)
+[5.04 4.56 2.88 4.56 4.56 3.36 4.56 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 935 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 919 moveto
+(homepageurl)
+[5.04 5.04 7.92 4.56 5.04 4.56 5.04 4.56 5.04 3.36 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 919 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 903 moveto
+(screenshotsurl)
+[3.84 4.56 3.36 4.56 4.56 5.04 3.84 5.04 5.04 2.88 3.84 5.04 3.36 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 903 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 887 moveto
+(wikiurl)
+[7.2 2.88 5.04 2.88 5.04 3.36 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 887 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 871 moveto
+(listurl)
+[2.88 2.88 3.84 2.88 5.04 3.36 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 871 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 855 moveto
+(programminglang)
+[5.04 3.36 5.04 5.04 3.36 4.56 7.92 7.92 2.88 5.04 5.04 2.88 4.56 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 855 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 839 moveto
+(downloadurl)
+[5.04 5.04 7.2 5.04 2.88 5.04 4.56 5.04 5.04 3.36 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 839 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 823 moveto
+(lastdoap)
+[2.88 4.56 3.84 2.88 5.04 5.04 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 823 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 807 moveto
+(sourceforgeproject)
+[3.84 5.04 5.04 3.36 4.56 4.56 3.36 5.04 3.36 5.04 4.56 5.04 3.36 5.04 2.88 4.56 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 807 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 791 moveto
+(freshmeatproject)
+[3.36 3.36 4.56 3.84 5.04 7.92 4.56 4.56 2.88 5.04 3.36 5.04 2.88 4.56 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 791 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 775 moveto
+(reviewed)
+[3.36 4.56 5.04 2.88 4.56 7.2 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 775 moveto
+(boolean)
+[5.04 5.04 5.04 2.88 4.56 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 759 moveto
+(active)
+[4.56 4.56 2.88 2.88 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 759 moveto
+(boolean)
+[5.04 5.04 5.04 2.88 4.56 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 743 moveto
+(fti)
+[3.36 2.88 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 743 moveto
+(tsvector)
+[2.88 3.84 5.04 4.56 4.56 2.88 5.04 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+549 727 moveto
+(autoupdate)
+[4.56 5.04 2.88 5.04 5.04 5.04 5.04 4.56 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+632 727 moveto
+(boolean)
+[5.04 5.04 5.04 2.88 4.56 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 544 720 moveto
+544 1094 lineto
+788 1094 lineto
+788 720 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugtask -> product
+newpath 1165 843 moveto
+1056 858 911 876 806 889 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 806 886 moveto
+796 890 lineto
+806 892 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 806 886 moveto
+796 890 lineto
+806 892 lineto
+closepath
+stroke
+end grestore
+
+%	sourcepackagename
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 897 438 moveto
+897 492 lineto
+1043 492 lineto
+1043 438 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 897 438 moveto
+897 492 lineto
+1043 492 lineto
+1043 438 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 900 473 moveto
+900 489 lineto
+1040 489 lineto
+1040 473 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 900 473 moveto
+900 489 lineto
+1040 489 lineto
+1040 473 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+929 478 moveto
+(sourcepackagename)
+[3.84 5.04 5.04 3.36 4.56 4.56 5.04 4.56 4.56 5.04 4.56 5.04 4.56 5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 900 473 moveto
+900 489 lineto
+1040 489 lineto
+1040 473 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+902 461 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+933 461 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+962 461 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+902 445 moveto
+(name)
+[5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+933 445 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+962 445 moveto
+( UNIQUE )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 897 438 moveto
+897 492 lineto
+1043 492 lineto
+1043 438 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugtask -> sourcepackagename
+newpath 1191 688 moveto
+1126 622 1052 548 1008 503 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1011 501 moveto
+1001 496 lineto
+1006 506 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1011 501 moveto
+1001 496 lineto
+1006 506 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_70
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+1095 561 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1080 558 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugtask -> fake_person_70
+newpath 1206 688 moveto
+1171 649 1137 608 1116 585 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1118 582 moveto
+1109 577 lineto
+1113 587 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1118 582 moveto
+1109 577 lineto
+1113 587 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_72
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+1305 462 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1290 459 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugtask -> fake_person_72
+newpath 1318 688 moveto
+1313 615 1309 532 1307 490 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1310 490 moveto
+1306 480 lineto
+1304 490 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1310 490 moveto
+1306 480 lineto
+1304 490 lineto
+closepath
+stroke
+end grestore
+
+%	bugtracker
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 334 1894 moveto
+334 2044 lineto
+582 2044 lineto
+582 1894 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 334 1894 moveto
+334 2044 lineto
+582 2044 lineto
+582 1894 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 337 2025 moveto
+337 2041 lineto
+579 2041 lineto
+579 2025 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 337 2025 moveto
+337 2041 lineto
+579 2041 lineto
+579 2025 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+435 2030 moveto
+(bugtracker)
+[5.04 5.04 5.04 2.88 3.36 4.56 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 337 2025 moveto
+337 2041 lineto
+579 2041 lineto
+579 2025 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+339 2013 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+408 2013 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+443 2013 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+339 1997 moveto
+(bugtrackertype)
+[5.04 5.04 5.04 2.88 3.36 4.56 4.56 5.04 4.56 3.36 2.88 5.04 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+408 1997 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+443 1997 moveto
+( REFERENCES bugtrackertype )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.88 3.36 4.56 4.56 5.04 4.56 3.36 2.88 5.04 5.04 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+339 1981 moveto
+(name)
+[5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+408 1981 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+339 1965 moveto
+(title)
+[2.88 2.88 2.88 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+408 1965 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+339 1949 moveto
+(shortdesc)
+[3.84 5.04 5.04 3.36 2.88 5.04 4.56 3.84 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+408 1949 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+339 1933 moveto
+(baseurl)
+[5.04 4.56 3.84 4.56 5.04 3.36 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+408 1933 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+339 1917 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+408 1917 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+443 1917 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+339 1901 moveto
+(contactdetails)
+[4.56 5.04 5.04 2.88 4.56 4.56 2.88 5.04 4.56 2.88 4.56 2.88 2.88 3.84]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+408 1901 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 334 1894 moveto
+334 2044 lineto
+582 2044 lineto
+582 1894 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugtrackertype
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 9 1768 moveto
+9 1886 lineto
+207 1886 lineto
+207 1768 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 9 1768 moveto
+9 1886 lineto
+207 1886 lineto
+207 1768 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 12 1867 moveto
+12 1883 lineto
+204 1883 lineto
+204 1867 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 12 1867 moveto
+12 1883 lineto
+204 1883 lineto
+204 1867 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+76 1872 moveto
+(bugtrackertype)
+[5.04 5.04 5.04 2.88 3.36 4.56 4.56 5.04 4.56 3.36 2.88 5.04 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 12 1867 moveto
+12 1883 lineto
+204 1883 lineto
+204 1867 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+14 1855 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+67 1855 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+102 1855 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+14 1839 moveto
+(name)
+[5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+67 1839 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+102 1839 moveto
+( UNIQUE )
+[2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+14 1823 moveto
+(title)
+[2.88 2.88 2.88 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+67 1823 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+14 1807 moveto
+(description)
+[5.04 4.56 3.84 4.56 3.36 2.88 5.04 2.88 2.88 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+67 1807 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+14 1791 moveto
+(homepage)
+[5.04 5.04 7.92 4.56 5.04 4.56 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+67 1791 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+14 1775 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+67 1775 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+102 1775 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 9 1768 moveto
+9 1886 lineto
+207 1886 lineto
+207 1768 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugtracker -> bugtrackertype
+newpath 326 1915 moveto
+292 1901 257 1887 225 1874 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 226 1870 moveto
+215 1870 lineto
+223 1877 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 226 1870 moveto
+215 1870 lineto
+223 1877 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_76
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+369 2284 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+354 2281 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugtracker -> fake_person_76
+newpath 436 2048 moveto
+417 2116 390 2210 377 2256 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 374 2255 moveto
+374 2266 lineto
+380 2257 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 374 2255 moveto
+374 2266 lineto
+380 2257 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_78
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+107 2047 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+92 2044 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugtrackertype -> fake_person_78
+newpath 108 1890 moveto
+107 1932 107 1987 107 2019 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 104 2019 moveto
+107 2029 lineto
+111 2019 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 104 2019 moveto
+107 2029 lineto
+111 2019 lineto
+closepath
+stroke
+end grestore
+
+%	bugwatch
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 923 1853 moveto
+923 2019 lineto
+1159 2019 lineto
+1159 1853 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 923 1853 moveto
+923 2019 lineto
+1159 2019 lineto
+1159 1853 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 926 2000 moveto
+926 2016 lineto
+1156 2016 lineto
+1156 2000 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 926 2000 moveto
+926 2016 lineto
+1156 2016 lineto
+1156 2000 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1020 2005 moveto
+(bugwatch)
+[5.04 5.04 5.04 7.2 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 926 2000 moveto
+926 2016 lineto
+1156 2016 lineto
+1156 2000 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+928 1988 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+988 1988 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1038 1988 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+928 1972 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+988 1972 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1038 1972 moveto
+( REFERENCES bug )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+928 1956 moveto
+(bugtracker)
+[5.04 5.04 5.04 2.88 3.36 4.56 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+988 1956 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1038 1956 moveto
+( REFERENCES bugtracker )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.88 3.36 4.56 4.56 5.04 4.56 3.36 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+928 1940 moveto
+(remotebug)
+[3.36 4.56 7.92 5.04 2.88 4.56 5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+988 1940 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+928 1924 moveto
+(remotestatus)
+[3.36 4.56 7.92 5.04 2.88 4.56 3.84 2.88 4.56 2.88 5.04 3.84]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+988 1924 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+928 1908 moveto
+(lastchanged)
+[2.88 4.56 3.84 2.88 4.56 5.04 4.56 5.04 5.04 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+988 1908 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+928 1892 moveto
+(lastchecked)
+[2.88 4.56 3.84 2.88 4.56 5.04 4.56 4.56 5.04 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+988 1892 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+928 1876 moveto
+(datecreated)
+[5.04 4.56 2.88 4.56 4.56 3.36 4.56 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+988 1876 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+928 1860 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+988 1860 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1038 1860 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 923 1853 moveto
+923 2019 lineto
+1159 2019 lineto
+1159 1853 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	bugwatch -> bug
+newpath 1167 1879 moveto
+1249 1842 1355 1795 1440 1757 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1441 1760 moveto
+1449 1753 lineto
+1438 1754 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1441 1760 moveto
+1449 1753 lineto
+1438 1754 lineto
+closepath
+stroke
+end grestore
+
+%	bugwatch -> bugtracker
+newpath 915 1943 moveto
+822 1949 696 1956 600 1961 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 600 1958 moveto
+590 1962 lineto
+600 1964 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 600 1958 moveto
+590 1962 lineto
+600 1964 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_82
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+728 2226 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+713 2223 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	bugwatch -> fake_person_82
+newpath 947 2023 moveto
+880 2086 793 2166 752 2204 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 749 2202 moveto
+744 2211 lineto
+754 2207 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 749 2202 moveto
+744 2211 lineto
+754 2207 lineto
+closepath
+stroke
+end grestore
+
+%	cveref
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 1229 2022 moveto
+1229 2140 lineto
+1443 2140 lineto
+1443 2022 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 1229 2022 moveto
+1229 2140 lineto
+1443 2140 lineto
+1443 2022 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 1232 2121 moveto
+1232 2137 lineto
+1440 2137 lineto
+1440 2121 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 1232 2121 moveto
+1232 2137 lineto
+1440 2137 lineto
+1440 2121 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1323 2126 moveto
+(cveref)
+[4.56 5.04 4.56 3.36 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1232 2121 moveto
+1232 2137 lineto
+1440 2137 lineto
+1440 2121 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1234 2109 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1288 2109 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 2109 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1234 2093 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1288 2093 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 2093 moveto
+( REFERENCES bug )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1234 2077 moveto
+(cveref)
+[4.56 5.04 4.56 3.36 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1288 2077 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1234 2061 moveto
+(title)
+[2.88 2.88 2.88 2.88 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1288 2061 moveto
+(text)
+[2.88 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1234 2045 moveto
+(datecreated)
+[5.04 4.56 2.88 4.56 4.56 3.36 4.56 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1288 2045 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1234 2029 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1288 2029 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1338 2029 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 1229 2022 moveto
+1229 2140 lineto
+1443 2140 lineto
+1443 2022 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	cveref -> bug
+newpath 1376 2018 moveto
+1405 1971 1446 1906 1483 1846 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1486 1847 moveto
+1489 1837 lineto
+1481 1843 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1486 1847 moveto
+1489 1837 lineto
+1481 1843 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_103
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+1100 2362 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1085 2359 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	cveref -> fake_person_103
+newpath 1283 2144 moveto
+1231 2206 1155 2296 1120 2338 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1117 2336 moveto
+1113 2346 lineto
+1122 2341 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1117 2336 moveto
+1113 2346 lineto
+1122 2341 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_105
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2007 239 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1992 236 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	distribution -> fake_person_105
+newpath 1839 356 moveto
+1890 320 1947 281 1980 258 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1982 261 moveto
+1988 252 lineto
+1978 255 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1982 261 moveto
+1988 252 lineto
+1978 255 lineto
+closepath
+stroke
+end grestore
+
+%	distrorelease -> distribution
+newpath 1562 323 moveto
+1578 334 1594 344 1611 355 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1609 358 moveto
+1619 360 lineto
+1612 352 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1609 358 moveto
+1619 360 lineto
+1612 352 lineto
+closepath
+stroke
+end grestore
+
+%	distrorelease -> distrorelease
+newpath 1562 149 moveto
+1573 166 1580 191 1580 224 curveto
+1580 252 1575 274 1567 290 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1564 289 moveto
+1562 299 lineto
+1570 292 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1564 289 moveto
+1562 299 lineto
+1570 292 lineto
+closepath
+stroke
+end grestore
+
+%	fake_schema_114
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+1712 84 26 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1696 81 moveto
+(schema)
+[3.84 4.56 5.04 4.56 7.92 4.56]
+xshow
+end grestore
+end grestore
+
+%	distrorelease -> fake_schema_114
+newpath 1562 154 moveto
+1607 133 1651 113 1680 99 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1681 102 moveto
+1689 95 lineto
+1678 96 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1681 102 moveto
+1689 95 lineto
+1678 96 lineto
+closepath
+stroke
+end grestore
+
+%	fake_schema_116
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+1216 43 26 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1200 40 moveto
+(schema)
+[3.84 4.56 5.04 4.56 7.92 4.56]
+xshow
+end grestore
+end grestore
+
+%	distrorelease -> fake_schema_116
+newpath 1266 89 moveto
+1256 80 1247 72 1240 65 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1242 62 moveto
+1232 58 lineto
+1237 67 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1242 62 moveto
+1232 58 lineto
+1237 67 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_119
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+1041 172 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+1026 169 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	distrorelease -> fake_person_119
+newpath 1264 203 moveto
+1196 194 1121 184 1078 177 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1078 174 moveto
+1068 176 lineto
+1078 180 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1078 174 moveto
+1068 176 lineto
+1078 180 lineto
+closepath
+stroke
+end grestore
+
+%	message -> distribution
+newpath 1985 696 moveto
+1935 644 1872 580 1821 527 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1824 525 moveto
+1814 520 lineto
+1819 530 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1824 525 moveto
+1814 520 lineto
+1819 530 lineto
+closepath
+stroke
+end grestore
+
+%	message -> message
+newpath 2198 732 moveto
+2209 743 2216 760 2216 783 curveto
+2216 801 2212 816 2204 826 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2201 824 moveto
+2198 834 lineto
+2207 828 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2201 824 moveto
+2198 834 lineto
+2207 828 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_140
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2198 443 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2183 440 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	message -> fake_person_140
+newpath 2103 696 moveto
+2131 621 2169 519 2187 470 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2190 472 moveto
+2191 461 lineto
+2184 469 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2190 472 moveto
+2191 461 lineto
+2184 469 lineto
+closepath
+stroke
+end grestore
+
+%	milestone -> product
+newpath 815 697 moveto
+811 703 807 708 802 715 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 799 713 moveto
+796 723 lineto
+805 717 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 799 713 moveto
+796 723 lineto
+805 717 lineto
+closepath
+stroke
+end grestore
+
+%	fake_project_200
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+520 582 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+505 579 moveto
+(project)
+[5.04 3.36 5.04 2.88 4.56 4.56 2.88]
+xshow
+end grestore
+end grestore
+
+%	product -> fake_project_200
+newpath 580 716 moveto
+561 674 543 634 532 609 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 535 608 moveto
+528 600 lineto
+529 611 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 535 608 moveto
+528 600 lineto
+529 611 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_202
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+285 973 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+270 970 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	product -> fake_person_202
+newpath 536 930 moveto
+461 943 370 959 321 967 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 320 964 moveto
+311 969 lineto
+321 970 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 320 964 moveto
+311 969 lineto
+321 970 lineto
+closepath
+stroke
+end grestore
+
+%	productbugassignment
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 852 1337 moveto
+852 1519 lineto
+1116 1519 lineto
+1116 1337 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 852 1337 moveto
+852 1519 lineto
+1116 1519 lineto
+1116 1337 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 855 1500 moveto
+855 1516 lineto
+1113 1516 lineto
+1113 1500 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 855 1500 moveto
+855 1516 lineto
+1113 1516 lineto
+1113 1500 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+937 1505 moveto
+(productbugassignment)
+[5.04 3.36 5.04 5.04 5.04 4.56 2.88 5.04 5.04 5.04 4.56 3.84 3.84 2.88 5.04 5.04 7.92 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 855 1500 moveto
+855 1516 lineto
+1113 1516 lineto
+1113 1500 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+857 1488 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+916 1488 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+966 1488 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+857 1472 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+916 1472 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+966 1472 moveto
+( REFERENCES bug UNIQUE )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+857 1456 moveto
+(product)
+[5.04 3.36 5.04 5.04 5.04 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+916 1456 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+966 1456 moveto
+( REFERENCES product UNIQUE )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 3.36 5.04 5.04 5.04 4.56 2.88 2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+857 1440 moveto
+(bugstatus)
+[5.04 5.04 5.04 3.84 2.88 4.56 2.88 5.04 3.84]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+916 1440 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+857 1424 moveto
+(priority)
+[5.04 3.36 2.88 5.04 3.36 2.88 2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+916 1424 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+857 1408 moveto
+(severity)
+[3.84 4.56 5.04 4.56 3.36 2.88 2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+916 1408 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+857 1392 moveto
+(assignee)
+[4.56 3.84 3.84 2.88 5.04 5.04 4.56 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+916 1392 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+966 1392 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+857 1376 moveto
+(dateassigned)
+[5.04 4.56 2.88 4.56 4.56 3.84 3.84 2.88 5.04 5.04 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+916 1376 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+857 1360 moveto
+(datecreated)
+[5.04 4.56 2.88 4.56 4.56 3.36 4.56 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+916 1360 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+857 1344 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+916 1344 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+966 1344 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 852 1337 moveto
+852 1519 lineto
+1116 1519 lineto
+1116 1337 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	productbugassignment -> bug
+newpath 1124 1491 moveto
+1219 1534 1345 1589 1440 1632 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1438 1635 moveto
+1449 1636 lineto
+1441 1629 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1438 1635 moveto
+1449 1636 lineto
+1441 1629 lineto
+closepath
+stroke
+end grestore
+
+%	productbugassignment -> product
+newpath 926 1333 moveto
+887 1269 835 1185 788 1107 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 791 1105 moveto
+783 1098 lineto
+785 1108 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 791 1105 moveto
+783 1098 lineto
+785 1108 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_209
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+596 1277 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+581 1274 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	productbugassignment -> fake_person_209
+newpath 844 1373 moveto
+767 1343 676 1308 628 1290 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 630 1287 moveto
+619 1286 lineto
+627 1293 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 630 1287 moveto
+619 1286 lineto
+627 1293 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_211
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+586 1506 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+571 1503 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	productbugassignment -> fake_person_211
+newpath 844 1455 moveto
+765 1471 671 1489 622 1499 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 621 1496 moveto
+612 1501 lineto
+622 1502 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 621 1496 moveto
+612 1501 lineto
+622 1502 lineto
+closepath
+stroke
+end grestore
+
+%	projectbugtracker
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 54 1561 moveto
+54 1631 lineto
+308 1631 lineto
+308 1561 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 54 1561 moveto
+54 1631 lineto
+308 1631 lineto
+308 1561 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 57 1612 moveto
+57 1628 lineto
+305 1628 lineto
+305 1612 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 57 1612 moveto
+57 1628 lineto
+305 1628 lineto
+305 1612 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+144 1617 moveto
+(projectbugtracker)
+[5.04 3.36 5.04 2.88 4.56 4.56 2.88 5.04 5.04 5.04 2.88 3.36 4.56 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 57 1612 moveto
+57 1628 lineto
+305 1628 lineto
+305 1612 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+59 1600 moveto
+(project)
+[5.04 3.36 5.04 2.88 4.56 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+111 1600 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+146 1600 moveto
+( REFERENCES project UNIQUE )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 3.36 5.04 2.88 4.56 4.56 2.88 2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+59 1584 moveto
+(bugtracker)
+[5.04 5.04 5.04 2.88 3.36 4.56 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+111 1584 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+146 1584 moveto
+( REFERENCES bugtracker UNIQUE )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.88 3.36 4.56 4.56 5.04 4.56 3.36 2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+59 1568 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+111 1568 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+146 1568 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 54 1561 moveto
+54 1631 lineto
+308 1631 lineto
+308 1561 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	projectbugtracker -> bugtracker
+newpath 210 1635 moveto
+253 1693 335 1804 393 1882 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 390 1884 moveto
+399 1890 lineto
+396 1880 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 390 1884 moveto
+399 1890 lineto
+396 1880 lineto
+closepath
+stroke
+end grestore
+
+%	fake_project_227
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+98 1312 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+83 1309 moveto
+(project)
+[5.04 3.36 5.04 2.88 4.56 4.56 2.88]
+xshow
+end grestore
+end grestore
+
+%	projectbugtracker -> fake_project_227
+newpath 170 1557 moveto
+153 1499 121 1391 106 1340 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 109 1339 moveto
+103 1330 lineto
+103 1341 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 109 1339 moveto
+103 1330 lineto
+103 1341 lineto
+closepath
+stroke
+end grestore
+
+%	sourcepackagebugassignment
+gsave 10 dict begin
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.498 0.055 0.804 nodecolor
+0.498 0.055 0.804 nodecolor
+newpath 2093 1181 moveto
+2093 1379 lineto
+2417 1379 lineto
+2417 1181 lineto
+closepath
+fill
+0.498 0.055 0.804 nodecolor
+newpath 2093 1181 moveto
+2093 1379 lineto
+2417 1379 lineto
+2417 1181 lineto
+closepath
+stroke
+0.000 0.000 1.000 nodecolor
+0.000 0.000 1.000 nodecolor
+newpath 2096 1360 moveto
+2096 1376 lineto
+2414 1376 lineto
+2414 1360 lineto
+closepath
+fill
+0.000 0.000 1.000 nodecolor
+newpath 2096 1360 moveto
+2096 1376 lineto
+2414 1376 lineto
+2414 1360 lineto
+closepath
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2194 1365 moveto
+(sourcepackagebugassignment)
+[3.84 5.04 5.04 3.36 4.56 4.56 5.04 4.56 4.56 5.04 4.56 5.04 4.56 5.04 5.04 5.04 4.56 3.84 3.84 2.88 5.04 5.04 7.92 4.56 5.04 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 2096 1360 moveto
+2096 1376 lineto
+2414 1376 lineto
+2414 1360 lineto
+closepath
+stroke
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2098 1348 moveto
+(id)
+[2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2188 1348 moveto
+(serial)
+[3.84 4.56 3.36 2.88 4.56 2.88]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2238 1348 moveto
+( PRIMARY KEY )
+[2.64 5.52 6.72 3.36 8.88 7.2 6.72 7.2 2.64 7.2 6.24 7.2 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2098 1332 moveto
+(bug)
+[5.04 5.04 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2188 1332 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2238 1332 moveto
+( REFERENCES bug UNIQUE )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 5.04 5.04 2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2098 1316 moveto
+(sourcepackage)
+[3.84 5.04 5.04 3.36 4.56 4.56 5.04 4.56 4.56 5.04 4.56 5.04 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2188 1316 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2238 1316 moveto
+( REFERENCES sourcepackage UNIQUE )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 3.84 5.04 5.04 3.36 4.56 4.56 5.04 4.56 4.56 5.04 4.56 5.04 4.56 2.64 7.2 7.2 3.36 7.2 7.2 6.24 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2098 1300 moveto
+(bugstatus)
+[5.04 5.04 5.04 3.84 2.88 4.56 2.88 5.04 3.84]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2188 1300 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2098 1284 moveto
+(priority)
+[5.04 3.36 2.88 5.04 3.36 2.88 2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2188 1284 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2098 1268 moveto
+(severity)
+[3.84 4.56 5.04 4.56 3.36 2.88 2.88 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2188 1268 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2098 1252 moveto
+(binarypackagename)
+[5.04 2.88 5.04 4.56 3.36 5.04 5.04 4.56 4.56 5.04 4.56 5.04 4.56 5.04 4.56 7.92 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2188 1252 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2238 1252 moveto
+( REFERENCES binarypackagename )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 2.88 5.04 4.56 3.36 5.04 5.04 4.56 4.56 5.04 4.56 5.04 4.56 5.04 4.56 7.92 4.56 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2098 1236 moveto
+(assignee)
+[4.56 3.84 3.84 2.88 5.04 5.04 4.56 4.56]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2188 1236 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2238 1236 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2098 1220 moveto
+(dateassigned)
+[5.04 4.56 2.88 4.56 4.56 3.84 3.84 2.88 5.04 5.04 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2188 1220 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2098 1204 moveto
+(datecreated)
+[5.04 4.56 2.88 4.56 4.56 3.36 4.56 4.56 2.88 4.56 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2188 1204 moveto
+(timestamp)
+[2.88 2.88 7.92 4.56 3.84 2.88 4.56 7.92 5.04]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2098 1188 moveto
+(owner)
+[5.04 7.2 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2188 1188 moveto
+(integer)
+[2.88 5.04 2.88 4.56 5.04 4.56 3.36]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2238 1188 moveto
+( REFERENCES person )
+[2.64 6.72 6.24 5.52 6.24 6.72 6.24 7.2 6.72 6.24 5.52 2.64 5.04 4.56 3.36 3.84 5.04 5.04 2.64]
+xshow
+end grestore
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+newpath 2093 1181 moveto
+2093 1379 lineto
+2417 1379 lineto
+2417 1181 lineto
+closepath
+stroke
+end grestore
+end grestore
+end grestore
+
+%	sourcepackagebugassignment -> binarypackagename
+newpath 2116 1177 moveto
+2040 1121 1950 1055 1896 1014 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1898 1011 moveto
+1888 1008 lineto
+1894 1017 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1898 1011 moveto
+1888 1008 lineto
+1894 1017 lineto
+closepath
+stroke
+end grestore
+
+%	sourcepackagebugassignment -> bug
+newpath 2087 1383 moveto
+1973 1453 1825 1544 1718 1609 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 1716 1606 moveto
+1709 1614 lineto
+1719 1612 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 1716 1606 moveto
+1709 1614 lineto
+1719 1612 lineto
+closepath
+stroke
+end grestore
+
+%	fake_sourcepackage_243
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2709 1230 41 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2679 1227 moveto
+(sourcepackage)
+[3.84 5.04 5.04 3.36 4.56 4.56 5.04 4.56 4.56 5.04 4.56 5.04 4.56]
+xshow
+end grestore
+end grestore
+
+%	sourcepackagebugassignment -> fake_sourcepackage_243
+newpath 2425 1261 moveto
+2508 1252 2602 1241 2658 1235 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2658 1238 moveto
+2668 1234 lineto
+2658 1232 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2658 1238 moveto
+2668 1234 lineto
+2658 1232 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_246
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2601 1088 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2586 1085 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	sourcepackagebugassignment -> fake_person_246
+newpath 2425 1186 moveto
+2481 1155 2538 1123 2571 1105 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2573 1108 moveto
+2580 1100 lineto
+2570 1102 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2573 1108 moveto
+2580 1100 lineto
+2570 1102 lineto
+closepath
+stroke
+end grestore
+
+%	fake_person_248
+gsave 10 dict begin
+0.000 1.000 1.000 nodecolor
+2682 1408 27 18 ellipse_path
+stroke
+gsave 10 dict begin
+0.000 0.000 0.000 nodecolor
+2667 1405 moveto
+(person)
+[5.04 4.56 3.36 3.84 5.04 5.04]
+xshow
+end grestore
+end grestore
+
+%	sourcepackagebugassignment -> fake_person_248
+newpath 2425 1331 moveto
+2507 1356 2599 1383 2647 1398 curveto
+stroke
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 2646 1401 moveto
+2657 1401 lineto
+2648 1395 lineto
+closepath
+fill
+0.000 0.000 0.000 edgecolor
+newpath 2646 1401 moveto
+2657 1401 lineto
+2648 1395 lineto
+closepath
+stroke
+end grestore
+endpage
+showpage
+grestore
+%%PageTrailer
+%%EndPage: 1
+%%Trailer
+%%Pages: 1
+end
+restore
+%%EOF

@@ -32,18 +32,21 @@ We can get connections to this database
 
 >>> connection = PgTestSetup().connect()
 >>> cursor = connection.cursor()
->>> cursor.execute("CREATE TABLE Beer (id serial PRIMARY KEY, name text)")
->>> cursor.execute("INSERT INTO Beer(name) VALUES ('Mountain Goat')")
+>>> cursor.execute("""CREATE TABLE Beer (
+...     id serial PRIMARY KEY, name text, stamp timestamp without time zone
+...     )""")
+>>> cursor.execute("""INSERT INTO Beer(name, stamp) VALUES (
+...     'Mountain Goat', '2005-12-29')""")
 
-Note that at this level, Unicode is not supported and we have to manually
-encode/decode to and from UTF-8
+Note that the type conversion methods have been loaded (as implemented
+by psycopgda), so our strings are Unicode and datetime instances returned.
 
 >>> cursor.execute("SHOW client_encoding")
 >>> cursor.fetchone()[0]
-'UNICODE'
->>> cursor.execute("SELECT * FROM Beer")
->>> cursor.fetchone()[1]
-'Mountain Goat'
+u'UNICODE'
+>>> cursor.execute("SELECT name, stamp FROM Beer")
+>>> tuple(cursor.fetchone())
+(u'Mountain Goat', datetime.datetime(2005, 12, 29, 0, 0))
 
 When we have finished, we need to call the tearDown method which closes
 all outstanding connections and destroys the database
@@ -74,10 +77,7 @@ Note that at this level, you cannot access any of the SQLBase objects
 >>> connection = LaunchpadTestSetup().connect()
 >>> cursor = connection.cursor()
 >>> cursor.execute("SELECT displayname FROM person WHERE name='carlos'")
->>> displayname = cursor.fetchone()[0]
->>> displayname
-'Carlos Perell\xc3\xb3 Mar\xc3\xadn'
->>> displayname.decode('utf8')
+>>> cursor.fetchone()[0]
 u'Carlos Perell\xf3 Mar\xedn'
 >>> LaunchpadTestSetup().tearDown()
 

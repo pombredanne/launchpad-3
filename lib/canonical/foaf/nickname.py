@@ -10,14 +10,19 @@ class NicknameGenerationError(Exception):
     a nickname."""
     pass
 
-def _nick_registered(nick):
-    """Answers the question: is this nick registered?"""
-    EXISTING_NICKS = [
-        'foop-example', 'spam', 'spam-example', 'turtle', 'taken',
-        'taken-example', 'taken-example-com', 'taken-example-com-1',
-        'bar-spam', 'bar-spam-long', 'bar-spam-long-example']
+EXISTING_NICKS = [
+    'foop-example', 'spam', 'spam-example', 'turtle', 'taken',
+    'taken-example', 'taken-example-com', 'taken-example-com-1',
+    'bar-spam', 'bar-spam-long', 'bar-spam-long-example']
 
-    return nick in EXISTING_NICKS
+def _nick_registered(nick):
+    """Answer the question: is this nick registered?"""
+    from canonical.launchpad.database import PersonSet
+    person = PersonSet().getByName(nick)
+    if person or nick in EXISTING_NICKS:
+        return True
+    else:
+        return False
 
 def sanitize(name):
     return name_sanity_pattern.sub('', name)
@@ -29,29 +34,6 @@ def generate_nick(email_addr, registered=_nick_registered,
     A valid nick can contain lower case letters, dashes, and numbers,
     must start with a letter or a number, and must be a minimum of
     four characters.
-
-    >>> generate_nick("foop@example@com")
-    Traceback (most recent call last):
-        ...
-    NicknameGenerationError: foop@example@com is not a valid email address
-    >>> generate_nick("foop@example.com")
-    'foop'
-    >>> generate_nick("bar@example.com")
-    'bar'
-    >>> generate_nick("spam@example.com")
-    'spam-example-com'
-    >>> generate_nick("foop.bar@example.com")
-    'foop-bar'
-    >>> generate_nick("bar.spam@long.example.com")
-    'bar-spam-long-example-com'
-    >>> generate_nick("taken@example.com")
-    'taken-example-com-2'
-    >>> generate_nick("taken@example")
-    'taken-example-1'
-    >>> generate_nick("i@tv")
-    'i-tv'
-    >>> generate_nick("foo+bar@example.com")
-    'foo+bar'
     """
 
     from canonical.auth.browser import well_formed_email
@@ -104,11 +86,4 @@ def generate_nick(email_addr, registered=_nick_registered,
             x += 1
 
     return generated_nick
-
-def _test():
-    import doctest, nickname
-    return doctest.testmod(nickname)
-
-if __name__ == '__main__':
-    _test()
 

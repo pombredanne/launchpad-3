@@ -9,9 +9,11 @@ import unittest
 from canonical.librarian.storage import FatSamStorage, DigestMismatchError
 from canonical.librarian import db
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.database.sqlbase import begin
 
 
 class FatSamStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
+    dbuser = 'librarian'
     def __init__(self, methodName='runTest'):
         # We can't use super here, because: the signatures of the two __init__
         # functions are different.  Note also that unittest.TestCase doesn't use
@@ -28,6 +30,8 @@ class FatSamStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
+        from canonical.database.sqlbase import begin
+        begin()
         super(FatSamStorageDBTests, self).tearDown()
 
     def test_addFile(self):

@@ -212,7 +212,7 @@ class ArchiveLocationRegistry(DatabaseTestCase):
     tests=[]
 
     def _create_mirror(self, name):
-        import arch
+        import pybaz as arch
         default_location = "/tmp/"
         archive = arch.Archive(name)
         archive.make_mirror(name + "-MIRROR",
@@ -773,7 +773,7 @@ class RevisionImport(DatabaseAndArchiveTestCase):
 
     def test_clone_files(self):
         "c.a.b.Revision.clone_files integrates with arch.Revision.iter_files"
-        import arch
+        import pybaz as arch
         db_rev = self.getTestRevision()
         self.arch_set_user_id()
         # arch_name = db_rev.archive.name

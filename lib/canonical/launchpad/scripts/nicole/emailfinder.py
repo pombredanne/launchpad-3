@@ -28,6 +28,7 @@ import pickle
 import urllib2
 from optparse import OptionParser
 
+from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
 from sourceforge import unobfuscate_fm_email
 
 # Globals
@@ -115,7 +116,7 @@ def extract_tag(rdf, tag):
         return None
 
 
-def extract_tags(rdf, tag, max_occurrences=0):
+def extract_tags(rdf, tag, max_occurrences=None):
     """Extract multiple tags from tag soup/RDF
 
     Given a piece of tag-soup, extract a list of items
@@ -126,23 +127,22 @@ def extract_tags(rdf, tag, max_occurrences=0):
 
     """
     
-    start = 0
-    end = 0
+    soup = BeautifulStoneSoup(rdf)
+    items = soup(tag)
+    if max_occurrences is not None:
+        items = items[:max_occurrences]
     result = []
-    occurrences = 0
-    while start > -1:
-        start = rdf.find('<'+tag+'>', end)
-        if start == -1:
-            break
-        start = start + len('<'+tag+'>')
-        end = rdf.find('</'+tag+'>', start)
-        if end == -1: break   # We don't handle unbalanced tags
-        result.append(rdf[start:end])
-        occurrences += 1
-        if max_occurrences and (occurrences == max_occurrences):
-            break
+    # Convert each item into a string, including nested tags
+    # XXX morgs 20050201: Check if this actually needs to be
+    #                     recursively nested?
+    for item in items:
+        item_str = ''
+        for i in item.contents:
+            if string.strip(str(i)):
+                item_str += str(i)
+        result.append(str(item_str))
     return result
-
+    
 
 def get_html(url):
     """Fetch HTML text of a web page from the given URL"""
@@ -171,7 +171,9 @@ def get_email(html):
     # Find the end of the </a> tag
     end = string.find(html, '</a>', start) + len('</a>')
     if end == -1: return None
-    email = extract_tag(html[start:end], 'a')
+    # Get the contents of the <a>...</a>
+    soup = BeautifulSoup(html[start:end])
+    email = soup('a')[0].contents[0].string
     # unobfuscate email address
     email = unobfuscate_fm_email(email)
     return email

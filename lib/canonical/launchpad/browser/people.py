@@ -6,20 +6,20 @@ from canonical.database.sqlbase import quote
 
 # lp imports
 from canonical.lp.dbschema import EmailAddressStatus, SSHKeyType
-from canonical.lp.dbschema import LoginTokenType, MembershipRole
-from canonical.lp.dbschema import MembershipStatus
+from canonical.lp.dbschema import LoginTokenType, TeamMembershipRole
+from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 from canonical.auth.browser import well_formed_email
+from canonical.foaf.nickname import generate_nick
 
 # database imports
 from canonical.launchpad.database import WikiName
 from canonical.launchpad.database import JabberID
-from canonical.launchpad.database import TeamParticipation, Membership
+from canonical.launchpad.database import TeamParticipation, TeamMembership
 from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID
-from canonical.launchpad.database import createTeam
 from canonical.launchpad.database import Person
 from canonical.launchpad.database import SSHKey
 
@@ -134,9 +134,13 @@ class TeamAddView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
 
-        person = IPerson(self.request.principal, None)
-        team = createTeam(kw['displayname'], person.id,
-                          kw['teamdescription'], kw['email'])
+        # XXX: salgado, 2005-02-04: For now, we're using the email only for 
+        # generating the nickname. We must decide if we need or not to 
+        # require an email address for each team.
+        email = kw.pop('email')
+        kw['name'] = generate_nick(email)
+        kw['teamownerID'] = getUtility(ILaunchBag).user.id
+        team = getUtility(IPersonSet).newTeam(**kw)
         notify(ObjectCreatedEvent(team))
         self._nextURL = '/foaf/people/%s' % team.name
         return team
@@ -328,7 +332,20 @@ class EmailAddressEditView(object):
                 email = EmailAddress.get(id)
                 assert email.person == user
                 if user.preferredemail != email:
-                    email.destroySelf()
+                    # The following lines are a *real* hack to make sure we
+                    # don't let the user with no validated email address.
+                    # Ideally, we wouldn't need this because all users would
+                    # have a preferred email address.
+                    if user.preferredemail is None and \
+                       len(user.validatedemails) > 1:
+                        # No preferred email set. We can only delete this
+                        # email if it's not the last validated one.
+                        email.destroySelf()
+                    elif user.preferredemail is not None:
+                        # This user have a preferred email and it's not this
+                        # one, so we can delete it.
+                        email.destroySelf()
+
 
     def processValidationRequest(self):
         id = self.request.form.get("NOT_VALIDATED_EMAIL")
@@ -477,14 +494,14 @@ class TeamMembersEditView:
             method(int(personID), self.context)
 
     def _getMembership(self, personID, teamID):
-        membership = Membership.selectBy(personID=personID, teamID=teamID)
+        membership = TeamMembership.selectBy(personID=personID, teamID=teamID)
         assert membership.count() == 1
         return membership[0]
 
     def authorizeProposed(self, personID, team):
         membership = self._getMembership(personID, team.id)
-        membership.status = int(MembershipStatus.CURRENT)
-        membership.role = int(MembershipRole.MEMBER)
+        membership.status = int(TeamMembershipStatus.CURRENT)
+        membership.role = int(TeamMembershipRole.MEMBER)
 
     def removeMember(self, personID, team):
         if personID == team.teamowner.id:
@@ -499,9 +516,9 @@ class TeamMembersEditView:
 
     def giveAdminRole(self, personID, team):
         membership = self._getMembership(personID, team.id)
-        membership.role = int(MembershipRole.ADMIN)
+        membership.role = int(TeamMembershipRole.ADMIN)
 
     def revokeAdminiRole(self, personID, team):
         membership = self._getMembership(personID, team.id)
-        membership.role = int(MembershipRole.MEMBER)
+        membership.role = int(TeamMembershipRole.MEMBER)
 

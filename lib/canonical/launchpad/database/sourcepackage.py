@@ -312,11 +312,12 @@ class SourcePackageRelease(SQLBase):
     _table = 'SourcePackageRelease'
 
     section = ForeignKey(foreignKey='Section', dbName='section')
-    creator = ForeignKey(foreignKey='Person', dbName='creator')
+    creator = ForeignKey(foreignKey='Person', dbName='creator', notNull=True)
     component = ForeignKey(foreignKey='Component', dbName='component')
     sourcepackage = ForeignKey(foreignKey='SourcePackage',
-                               dbName='sourcepackage')
+                               dbName='sourcepackage', notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
+    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
 
     urgency = IntCol(dbName='urgency', notNull=True)
     dateuploaded = DateTimeCol(dbName='dateuploaded', notNull=True,

@@ -9,7 +9,7 @@ from zope.interface import implements, Interface
 from canonical.lp.dbschema import BugSubscription
 from canonical.launchpad.interfaces import IAuthorization, IHasOwner, \
     IPerson, ISourceSource, ISourceSourceAdmin, IMilestone, IHasProduct, \
-    IHasProductAndAssignee, IBugTask
+    IHasProductAndAssignee, IBug, IBugTask
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -97,13 +97,13 @@ class EditByProductOwnerOrAssignee(EditByProductOwner):
             self.obj.assignee.id == person.id)
 
 
-class PublicToAllOrPrivateToExplicitSubscribers(AuthorizationBase):
+class TaskPublicToAllOrPrivateToExplicitSubscribers(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBugTask
 
     def checkPermission(self, person):
-        """Allow any user to see non-private bugs, but only explicit subscribers to
-        see private bugs.
+        """Allow any user to see non-private bugs, but only explicit
+        subscribers to see private bugs.
         """
         if not self.obj.bug.private:
             # public bug
@@ -122,3 +122,41 @@ class PublicToAllOrPrivateToExplicitSubscribers(AuthorizationBase):
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
         return not self.obj.bug.private
+
+
+class BugPublicToAllOrPrivateToExplicitSubscribers(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IBug
+
+    def checkPermission(self, person):
+        """Allow any user to see non-private bugs, but only explicit
+        subscribers to see private bugs.
+        """
+        if not self.obj.private:
+            # public bug
+            return True
+        else:
+            # private bug
+            watch_or_cc = (
+                BugSubscription.WATCH.value, BugSubscription.CC.value)
+            for subscription in self.obj.subscriptions:
+                if (subscription.person.id == person.id and 
+                    subscription.subscription in watch_or_cc):
+                    return True
+
+        return False
+
+    def checkUnauthenticated(self):
+        """Allow anonymous users to see non-private bugs only."""
+        return not self.obj.private
+
+
+class UseApiDoc(AuthorizationBase):
+    permission = 'zope.app.apidoc.UseAPIDoc'
+    usedfor = Interface
+
+    def checkPermission(self, person):
+        return True
+
+
+

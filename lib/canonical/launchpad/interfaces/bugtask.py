@@ -1,10 +1,10 @@
-
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
-
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
+
+from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
 from canonical.launchpad.interfaces import IHasProductAndAssignee
@@ -66,6 +66,15 @@ class IBugTask(Interface):
     bugdescription = Text(
         title=_("Bug Description"), required=False, readonly=True)
 
+# XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
+# when spiv pushes a fix upstream for the bug that makes this hackery
+# necessary:
+#
+#     https://launchpad.ubuntu.com/malone/bugs/121
+class ISelectResultsSlicable(ISelectResults):
+    def __getslice__(i, j):
+        """Called to implement evaluation of self[i:j]."""
+
 class IBugTaskSet(Interface):
     bug = Int(title=_("Bug id"), readonly=True)
 
@@ -83,9 +92,9 @@ class IBugTaskSet(Interface):
         if the user doesn't have the permission to view this bug.
         """
 
-    def search(bug=None, status=None, priority=None, severity=None,
-               product=None, milestone=None, assignee=None, submitter=None,
-               orderby=None):
+    def search(bug=None, searchtext=None, status=None, priority=None,
+               severity=None, product=None, milestone=None, assignee=None,
+               submitter=None, orderby=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         Keyword arguments should always be used. The argument passing

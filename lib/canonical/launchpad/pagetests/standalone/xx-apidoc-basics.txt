@@ -1,0 +1,33 @@
+
+Confirm the Zope3 apidoc online developers resource is *not* available -
+it is more important to test that is is being blocked correctly than that
+it renders correctly, and we can only test one case with the current
+Z3 functional test harnesses.
+
+  >>> try:
+  ...     http(r"""
+  ... GET /++apidoc++ HTTP/1.1
+  ... """)
+  ...     print "Access granted"
+  ... except AttributeError:
+  ...     print "Access denied"
+  Access denied
+
+
+Make sure that Z3 resources are available through the preferred Z3
+spelling, as used by apidoc.
+
+  >>> print http(r"""
+  ... GET /@@/favicon.png HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+And the resourceDirectives are available too
+
+  >>> print http(r"""
+  ... GET /@@/tree_images/minus_vline.png HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+

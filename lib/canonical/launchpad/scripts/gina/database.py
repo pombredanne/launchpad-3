@@ -272,7 +272,10 @@ class Launchpad(SQLThing):
             key = None
 
         dsc = self.ensure_string_format(src.dsc)
-        changelog = self.ensure_string_format(src.changelog[0]["changes"])
+        try:
+            changelog = self.ensure_string_format(src.changelog[0]["changes"])
+        except IndexError:
+            changelog = None
         component = self.getComponentByName(src.component)[0]
         section = self.getSectionByName(src.section)[0]
         if src.urgency not in priomap:
@@ -282,7 +285,7 @@ class Launchpad(SQLThing):
             "sourcepackagename":       name[0],
             "sourcepackage":           srcpkgid,
             "version":                 src.version,
-            "maintainer":              src.maintainer,
+            "maintainer":              maintid,
             "dateuploaded":            src.date_uploaded,
             "builddepends":            src.build_depends,
             "builddependsindep":       src.build_depends_indep,
@@ -587,17 +590,10 @@ class Launchpad(SQLThing):
         self._insert("emailaddress", data)
 
     def ensurePerson(self, name, email):
-        people = self.getPersonByEmail(email)
-        if people:
-            return people
-        # XXX this check isn't exactly right -- if there are name
-        # collisions, we just add addresses because there is no way to
-        # validate them. Bad bad kiko.
-        people = self.getPersonByDisplayName(name)
-        if people:
-            print "\tAdding address <%s> for %s" % (email, name)
-            self.createEmail(people[0], email)
-            return people
+        if self.getPersonByEmail(email):
+            return
+        # No person found and we can't rely on displayname to find the right
+        # person. Have to create a new person.
         self.createPeople(name, email)
     
     def getGPGKey(self, key, name, email, id, armor, is_revoked,

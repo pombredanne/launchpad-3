@@ -76,11 +76,15 @@ class IBug(Interface):
             default=0,
             )
     activitytimestamp = Datetime(
-            title=_('Activity Timestamp'), required=True, readonly=True,
+            title=_('Activity Timestamp'),
+            required=True, readonly=True,
             #default=datetime.utcnow,
             )
     private = Bool(
-            title=_("Is this bug security-related?"), required=False,
+            title=_("Is this bug security related?"), required=False,
+            description=_(
+                "Check the box if this bug exposes a security vulnerability. If "
+                "you're not sure, leave this unchecked."),
             default=False)
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
@@ -134,4 +138,5 @@ class IBugSet(IAddFormCustomization):
     def __iter__():
         """Iterate through Bugs."""
 
-
+    def get(bugid):
+        """Get a specific bug by its ID."""

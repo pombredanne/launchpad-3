@@ -8,11 +8,11 @@ from sqlobject.sqlbuilder import AND
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import BugSubscription, EmailAddressStatus
-from canonical.launchpad.database import EmailAddress
+from canonical.lp import dbschema
+from canonical.launchpad.database import BugSubscription, EmailAddress
 from canonical.launchpad.interfaces import IBugSubscriptionSet
 
-class IBugSubscriptionSetAdapter:
+class BugSubscriptionSetAdapter:
     """Adapter a bug into a set of subscriptions to the bug."""
 
     implements(IBugSubscriptionSet)
@@ -23,7 +23,8 @@ class IBugSubscriptionSetAdapter:
     def getCcEmailAddresses(self):
         emails = Set()
         for subscription in self.bug.subscriptions:
-            if BugSubscription.items[subscription.subscription].value == BugSubscription.CC.value:
+            if (dbschema.BugSubscription.items[subscription.subscription].value ==
+                dbschema.BugSubscription.CC.value):
                 best_email = _get_best_email_address(subscription.person)
                 if best_email:
                     emails.add(best_email)
@@ -51,12 +52,27 @@ class IBugSubscriptionSetAdapter:
         emails.sort()
         return emails
 
+    def subscribePerson(self, person):
+        """See canonical.launchpad.interfaces.bugsubscription.IBugSubscriptionSet."""
+        subscriber_ids = [
+            subscription.person.id for subscription in self.bug.subscriptions]
+        
+        if person.id not in subscriber_ids:
+            return BugSubscription(
+                bug = self.bug.id, person = person.id,
+                subscription = dbschema.BugSubscription.CC.value)
+
+    def unsubscribePerson(self, person):
+        """See canonical.launchpad.interfaces.bugsubscription.IBugSubscriptionSet."""
+        for subscription in BugSubscription.selectBy(bugID = self.bug.id, personID = person.id):
+            BugSubscription.delete(subscription)
+
 # XXX, Brad Bollenbach, 2004-12-07: move this into an adapter for IPerson
 def _get_best_email_address(person):
     if person:
         valid_email_addresses = EmailAddress.select(AND(
             EmailAddress.q.personID == person.id,
-            EmailAddress.q.status == EmailAddressStatus.VALIDATED.value))
+            EmailAddress.q.status == dbschema.EmailAddressStatus.VALIDATED.value))
 
         best_email = None
         if valid_email_addresses:
