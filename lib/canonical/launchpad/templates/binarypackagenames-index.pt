@@ -21,8 +21,7 @@
   <metal:rightportlets fill-slot="portlets_two">
   </metal:rightportlets>
 
-  <div metal:fill-slot="main" id="content" class="documentEditable">
-    <div class="documentContent" id="region-content">
+  <div metal:fill-slot="main">
 
       <h1>Binary Package Names</h1>
 
@@ -84,7 +83,6 @@
     </table>
     </tal:block>
 
-    </div>
   </div>
 </body>
 </html>

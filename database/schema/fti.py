@@ -25,7 +25,6 @@ ALL_FTI = [
     ('person', ['givenname', 'familyname', 'displayname']),
     ('product', ['name', 'displayname', 'title', 'shortdesc', 'description']),
     ('project', ['name', 'displayname', 'title', 'shortdesc', 'description']),
-    ('sourcepackage', ['shortdesc', 'description']),
     ('binarypackage', ['shortdesc', 'description']),
     ]
 

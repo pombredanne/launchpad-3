@@ -17,9 +17,6 @@
 
 <div metal:fill-slot="main">
 
-<div id="content" class="documentEditable">
-
-  <div class="documentContent" id="region-content">
     <div tal:condition="not: view/successfullyProcessed">
       <h1>Validate email: <span tal:replace="context/email"></span></h1>
 
@@ -47,10 +44,8 @@
 
     <div tal:condition="view/successfullyProcessed">
       <h1>Email validated successfully.</h1>
-
     </div>
-  </div>
-</div>
+
 </div>
 
 

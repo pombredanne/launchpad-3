@@ -7,22 +7,20 @@
   <title metal:fill-slot="title">Source Package Changelog</title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
 
 <div metal:fill-slot="main">
- <div id="content" class="documentEditable">
-  <div class="documentContent" id="region-content">
 
-    <h1><span tal:content="context/shortdesc" /> ChangeLog</h1>
+    <h1>ChangeLog</h1>
     
     <pre>
       <span tal:replace="structure view/linkified_changelog" />
     </pre>
 
-  </div>
- </div>
 </div>
 </body>
 </html>

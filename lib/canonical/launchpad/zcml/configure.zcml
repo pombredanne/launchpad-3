@@ -38,6 +38,7 @@
     <include file="karma.zcml" />
     <include file="language.zcml" />
     <include file="logintoken.zcml" />
+    <include file="maintainership.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
     <include file="package.zcml" />

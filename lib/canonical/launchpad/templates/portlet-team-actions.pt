@@ -1,0 +1,24 @@
+<div class="portlet">
+
+    <h4>Actions:</h4>
+
+    <div class="portletBody">
+
+        <div class="portletContent even">
+
+        <img src="/++resource++edit.gif">
+        <a href="+edit">Edit Team Details</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+members">Members</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+translations">Translations</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+packages">Packages</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+bounties">Bounties</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+emails">Email Addresses</a><br />
+
+        </div>
+    </div>
+</div>

@@ -368,7 +368,7 @@ tr.rowLinkified a {
 }
 
 /* used to mark dummy data with div entity */
-.dummy{
+.dummy {
    background-color: #cccccc;
 }
 
@@ -447,6 +447,15 @@ ul {
 li {
     margin-bottom: 0 !important;
 }
+
+li.edit, ul.edit li {
+    list-style-image: url(/++resource++edit.gif);
+}
+
+.portlet li a {
+    text-decoration: none
+}
+
 /* === New design === */
 
 /* -- Stuff browsers should do, but don't -- */

@@ -23,7 +23,7 @@ from canonical.launchpad.database.message import Message, MessageSet
 from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.bugsubscription import BugSubscription
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.maintainership import Maintainership
 
 from zope.i18n import MessageIDFactory
 _ = MessageIDFactory("launchpad")
@@ -136,19 +136,11 @@ class Bug(SQLBase):
                             distribution = task.distribution
                         else:
                             distribution = task.distrorelease.distribution
-                        # XXX: Brad Bollenbach, 2005-03-04: I'm not going
-                        # to bother implementing an ISourcePackage.get,
-                        # because whomever implements the
-                        # Nukesourcepackage spec is going to break this
-                        # code either way. Once Nukesourcepackage is
-                        # implemented, the code below should be replaced
-                        # with a proper implementation that uses something
-                        # like an IMaintainershipSet.get
-                        sourcepackages = SourcePackage.selectBy(
+                        maintainership = Maintainership.selectBy(
                             sourcepackagenameID = task.sourcepackagename.id,
-                            distroID = distribution.id)
-                        if sourcepackages.count():
-                            preferred_email = sourcepackages[0].maintainer.preferredemail
+                            distributionID = distribution.id)
+                        if maintainership.count():
+                            preferred_email = maintainership[0].maintainer.preferredemail
                             if preferred_email:
                                 emails.add(preferred_email.email)
 
@@ -208,11 +200,13 @@ def BugFactory(*args, **kw):
             spn = kw.get("sourcepackagename")
             distributionid = kw.get("distribution")
             if spn and distributionid:
-                sourcepackages = SourcePackage.selectBy(
-                    sourcepackagenameID = spn.id, distroID = distributionid)
-                if sourcepackages.count():
+                maintainerships = Maintainership.selectBy(
+                    sourcepackagenameID=spn.id,
+                    distributionID=distributionid)
+                if maintainerships.count():
                     BugSubscription(
-                        person = sourcepackages[0].maintainer.id, bug = bug.id,
+                        person = maintainerships[0].maintainer.id,
+                        bug = bug.id,
                         subscription = dbschema.BugSubscription.CC)
 
     BugSubscription(

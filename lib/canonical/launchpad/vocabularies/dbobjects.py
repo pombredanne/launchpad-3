@@ -108,43 +108,6 @@ class SQLObjectVocabularyBase(object):
     def getTermByToken(self, token):
         return self.getTerm(token)
 
-
-class SourcePackageVocabulary(SQLObjectVocabularyBase):
-    implements(IHugeVocabulary)
-
-    _table = SourcePackage
-    _orderBy = 'id'
-
-    def _toTerm(self, obj):
-        name = obj.sourcepackagename.name
-        return SimpleTerm(obj, str(obj.id), name)
-
-    def getTermByToken(self, token):
-        return self.getTerm(token)
-
-    def search(self, query):
-        """Returns products where the sourcepackage full text indexes
-        contain the given
-        query. Returns an empty list if query is None or an empty string.
-
-        """
-        if not query:
-            return []
-        query = query.lower()
-        t = self._table
-        objs = [self._toTerm(r)
-            for r in t.select("""
-                sourcepackage.sourcepackagename = sourcepackagename.id
-                AND (
-                    sourcepackagename.name like '%%' || %s || '%%'
-                    OR sourcepackage.fti @@ ftq(%s)
-                    )
-                """ % (quote_like(query), quote(query)),
-                ['SourcePackageName']
-                )
-            ]
-        return objs
-
 class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     """A SQLObjectVocabulary base for database tables that have a unique
         name column.
@@ -369,11 +332,11 @@ class MilestoneVocabulary(NamedSQLObjectVocabulary):
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     _table = SourcePackageRelease
-    _orderBy = 'sourcepackage'
+    _orderBy = 'id'
 
     def _toTerm(self, obj):
         return SimpleTerm(
-            obj, obj.id, obj.sourcepackage.name + " " + obj.version)
+            obj, obj.id, obj.name + " " + obj.version)
 
 class SourcePackageNameVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
@@ -394,16 +357,9 @@ class SourcePackageNameVocabulary(NamedSQLObjectVocabulary):
         query = query.lower()
         t = self._table
         objs = [self._toTerm(r)
-            for r in t.select("""
-                sourcepackage.sourcepackagename = sourcepackagename.id
-                AND (
-                    sourcepackagename.name like '%%' || %s || '%%'
-                    OR sourcepackage.fti @@ ftq(%s)
-                    )
-                """ % (quote_like(query), quote(query)),
-                ['SourcePackage']
-                )
-            ]
+                   for r in t.select("""
+                       sourcepackagename.name like '%%' || %s || '%%'
+                       """ % quote_like(query))]
         return objs
 
 

@@ -37,7 +37,7 @@ __all__ = (
 'BugSubscription',
 'BuildStatus',
 'CodereleaseRelationships',
-'DistributionReleaseState',
+'DistributionReleaseStatus',
 'EmailAddressStatus',
 'HashAlgorithms',
 'ImportTestStatus',
@@ -727,8 +727,8 @@ class ProjectRelationship(DBSchema):
         """)
 
 
-class DistributionReleaseState(DBSchema):
-    """Distribution Release State
+class DistributionReleaseStatus(DBSchema):
+    """Distribution Release Status
 
     A DistroRelease (warty, hoary, or grumpy for example) changes state
     throughout its development. This schema describes the level of

@@ -67,8 +67,9 @@ class IProduct(IHasOwner):
     freshmeatproject = TextLine(title=_('Freshmeat Project'),
         required=False)
 
-    autoupdate = Bool(title=_('Automatic update'), description=_("""Whether or not
-        this product's attributes are updated automatically."""))
+    autoupdate = Bool(title=_('Automatic update'),
+        description=_("""Whether or not this product's attributes are
+        updated automatically."""))
 
     manifest = Attribute(_('Manifest'))
 
@@ -183,17 +184,6 @@ class IProduct(IHasOwner):
 
         Log any error/warning into the logger object, if it's not None.
         """
-
-
-class IHasProduct(Interface):
-    """An object that has a product attribute that is an IProduct."""
-
-    product = Attribute("The object's product")
-
-
-class IHasProductAndAssignee(IHasProduct, IHasAssignee):
-    """An object that has a product attribute and an assigned attribute.
-    See IHasProduct and IHasAssignee."""
 
 
 class IProductSet(Interface):

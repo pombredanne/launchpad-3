@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.maintainership import MaintainershipSet
 from canonical.lp.dbschema import BugSubscription
 
 def make_subscriptions_explicit_on_private_bug(bug, event):
@@ -29,19 +29,10 @@ def make_subscriptions_explicit_on_private_bug(bug, event):
                         distribution = task.distribution
                     else:
                         distribution = task.distrorelease.distribution
-                    # XXX: Brad Bollenbach, 2005-03-04: I'm not going
-                    # to bother implementing an ISourcePackage.get,
-                    # because whomever implements the
-                    # Nukesourcepackage spec is going to break this
-                    # code either way. Once Nukesourcepackage is
-                    # implemented, the code below should be replaced
-                    # with a proper implementation that uses something
-                    # like an IMaintainershipSet.get
-                    sourcepackages = SourcePackage.selectBy(
-                        sourcepackagenameID = task.sourcepackagename.id,
-                        distroID = distribution.id)
-                    if sourcepackages.count():
-                        maintainer = sourcepackages[0].maintainer
+                    mshiputil = MaintainershipSet()
+                    maintainer = mshiputil.get(distribution,
+                                               task.sourcepackagename)
+                    if maintainer:
                         if not bug.isSubscribed(maintainer):
                             bug.subscribe(
                                 maintainer, BugSubscription.CC)

@@ -20,44 +20,119 @@ from canonical.lp.dbschema import SourcePackageFormat
 
 from canonical.launchpad.interfaces import ISourcePackage, ISourcePackageSet
 from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.vsourcepackagereleasepublishing import \
-     VSourcePackageReleasePublishing
+    VSourcePackageReleasePublishing
+from canonical.launchpad.database.sourcepackageindistro import \
+    SourcePackageInDistro
+from canonical.launchpad.database.sourcepackagerelease import \
+    SourcePackageRelease
+from canonical.launchpad.database.sourcepackagename import \
+    SourcePackageName
 
-class SourcePackage(SQLBase):
-    """A source package, e.g. apache2."""
+class SourcePackage(object):
+    """A source package, e.g. apache2, in a distribution or distrorelease.
+    This object implements the MagicSourcePackage specification. It is not a
+    true database object, but rather attempts to represent the concept of a
+    source package in a distribution, with links to the relevant dataase
+    objects.
+    
+    Note that the Magic SourcePackage can be initialised with EITHER a
+    distrorelease OR a distribution. This means you can specify either
+    "package foo in ubuntu" or "package foo in warty", and then methods
+    should work as expected.
+    """
+
     implements(ISourcePackage)
-    _table = 'SourcePackage'
 
-    shortdesc = StringCol(dbName='shortdesc', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
-    srcpackageformat = EnumCol(dbName='srcpackageformat', notNull=True,
-                               schema=SourcePackageFormat)
-    distro = ForeignKey(foreignKey='Distribution', dbName='distro')
-    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
-    maintainer = ForeignKey(
-        foreignKey='Person', dbName='maintainer', notNull=True)
-    sourcepackagename = ForeignKey(
-        foreignKey='SourcePackageName', dbName='sourcepackagename',
-        notNull=True)
-    releases = MultipleJoin('SourcePackageRelease', joinColumn='sourcepackage')
+    def __init__(self, sourcepackagename, distrorelease=None):
+        """SourcePackage requires a SourcePackageName and a
+        DistroRelease. These must be Launchpad database objects."""
+        self.sourcepackagename = sourcepackagename
+        self.distrorelease = distrorelease
+        # set self.currentrelease based on current published sourcepackage
+        # with this name in the distrorelease. if none is published, leave
+        # self.currentrelease as None
+        try:
+            r = SourcePackageInDistro.selectBy(
+                    sourcepackagenameID=sourcepackagename.id,
+                    distroreleaseID = self.distrorelease.id)[0]
+            self.currentrelease = SourcePackageRelease.get(r.id)
+        except IndexError:
+            # there is no published package in that distrorelease with this
+            # name
+            self.currentrelease = None
+
+    def title(self):
+        titlestr = self.sourcepackagename.name
+        titlestr += ' in ' + self.distribution.displayname
+        titlestr += ' ' + self.distrorelease.displayname
+        return titlestr
+    title = property(title)
+
+    shortdesc = "XXX this is a source package"
+
+    description = "XXX this is still a source package"
+
+    def distribution(self):
+        return self.distrorelease.distribution
+    distribution = property(distribution)
+
+    def distro(self):
+        return self.distribution
+    distro = property(distro)
+
+    def format(self):
+        return self.currentrelease.format
+    format = property(format)
+
+    def changelog(self):
+        return self.currentrelease.changelog
+    changelog = property(changelog)
+
+    def manifest(self):
+        """For the moment, the manifest of a SourcePackage is defined as the
+        manifest of the .currentrelease of that SourcePackage in the
+        distrorelease. In future, we might have a separate table for the
+        current working copy of the manifest for a source package."""
+        return self.currentrelease.manifest
+    manifest = property(manifest)
+
+    def maintainer(self):
+        querystr = "distribution = %i AND sourcepackagename = %i"
+        querystr %= (self.distribution, self.sourcepackagename)
+        return Maintainership.select(querystr)
+    maintainer = property(maintainer)
+
+    def releases(self):
+        """For the moment, we will return all releases with the same name.
+        Clearly, this is wrong, because it will mix different flavors of a
+        sourcepackage as well as releases of entirely different
+        sourcepackages (say, from RedHat and Ubuntu) that have the same
+        name. Later, we want to use the PublishingMorgue table to get a
+        proper set of sourcepackage releases specific to this
+        distrorelease."""
+        return SourcePackageRelease.selectBy(sourcepackagename=self.sourcepackagename)
 
     def name(self):
         return self.sourcepackagename.name
     name = property(name)
 
     def bugtasks(self):
-        querystr = ("BugTask.distribution = %i AND "
-                    "BugTask.sourcepackagename = %i")
-        querystr = querystr % (self.distro, self.sourcepackagename)
+        querystr = "distribution = %i AND sourcepackagename = %i"
+        querystr %= (self.distribution, self.sourcepackagename)
         return BugTask.select(querystr)
     bugtasks = property(bugtasks)
 
     def product(self):
         try:
             clauseTables = ('Packaging', 'Product')
-            return Product.select("Product.id = Packaging.product AND "
-                                  "Packaging.sourcepackage = %d"
-                                  % self.id, clauseTables=clauseTables)[0]
+            querystr = ( "Product.id = Packaging.product AND "
+                         "Packaging.sourcepackagename = %d AND "
+                         "Packaging.distrorelease = %d" )
+            querystr %= ( self.sourcepackagename.id,
+                          self.distrorelease.id )
+            return Product.select(querystr, clauseTables=clauseTables)[0]
         except IndexError:
             # No corresponding product
             return None
@@ -67,8 +142,6 @@ class SourcePackage(SQLBase):
         from canonical.launchpad.database.bugtask import BugTask
 
         ret = [len(self.bugs)]
-
-        get = BugTask.selectBy
         severities = [
             dbschema.BugSeverity.CRITICAL,
             dbschema.BugSeverity.MAJOR,
@@ -79,130 +152,101 @@ class SourcePackage(SQLBase):
             dbschema.BugTaskStatus.ACCEPTED,
         ]
         for severity in severities:
-            n = get(severity=int(severity), sourcepackagenameID=self.sourcepackagename.id).count()
+            n = BugTask.selectBy(severity=int(severity),
+                                 sourcepackagenameID=self.sourcepackagename.id,
+                                 distributionID=self.distribution.id).count()
             ret.append(n)
         return ret
 
-    def getRelease(self, version):
-        ret = VSourcePackageReleasePublishing.selectBy(version=version)
+    def getByVersion(self, version):
+        """This will look for a sourcepackage with the given version in the
+        distribution of this sourcepackage, NOT just the distrorelease of
+        the sourcepackage. NB - this assumes that a given
+        sourcepackagerelease version is UNIQUE in a distribution. This is
+        true of Ubuntu, RedHat and similar distros, but might not be
+        universally true."""
+        ret = VSourcePackageReleasePublishing.selectBy(
+                sourcepackagename=self.sourcepackagename,
+                distribution=self.distribution,
+                version=version)
+        # XXX sabdfl 24/03/05 this will fail poorly if there is no such
+        # source package release published in this distro, we need a clearer
+        # plan for how to handle that failure
         assert ret.count() == 1
         return ret[0]
 
-    def uploadsByStatus(self, distroRelease, status, do_sort=False):
-        query = (' distrorelease = %d '
-                 ' AND sourcepackage = %d'
-                 ' AND publishingstatus = %d'
-                 % (distroRelease.id, self.id, status.value))
+    def proposedrelease(self):
+        ret = VSourcePackageReleasePublishing.selectBy(
+                name=sourcepackagename,
+                publishingstatus=dbschema.PublishingStatus.PROPOSED,
+                distrorelease = self.distrorelease)
+        assert ret.count() < 2
+        if ret.count() == 0:
+            return None
+        return SourcePackageRelease.get(r.id)
 
-        if do_sort:
-            # XXX: Daniel Debonzi 2004-12-01
-            # Check if the orderBy is working properly
-            # as soon as we have enought data in db.
-            # Anyway, seems to be ok
-            return VSourcePackageReleasePublishing.select(query,
-                                                  orderBy='dateuploaded')
-
-        return VSourcePackageReleasePublishing.select(query)
-
-    def proposed(self, distroRelease):
-        return self.uploadsByStatus(distroRelease,
-                                    dbschema.PackagePublishingStatus.PROPOSED)
-
-    def current(self, distroRelease):
-        """Currently published releases of this package for a given distro.
-
-        :returns: iterable of SourcePackageReleases
-        """
-        return self.uploadsByStatus(distroRelease,
-                                    dbschema.PackagePublishingStatus.PUBLISHED)[0]
-
-    def lastversions(self, distroRelease):
-        return self.uploadsByStatus(distroRelease,
-                                    dbschema.PackagePublishingStatus.SUPERSEDED,
-                                    do_sort=True)
 
 
 class SourcePackageSet(object):
-    """A set for SourcePackage objects."""
+    """A set of Magic SourcePackage objects."""
 
     implements(ISourcePackageSet)
-    table = SourcePackage
 
-    #
-    # We need to return a SourcePackage given a name. For phase 1 (warty)
-    # we can assume that there is only one package with a given name, but
-    # later (XXX) we will have to deal with multiple source packages with
-    # the same name.
-    #
+    def __init__(self, distribution=None, distrorelease=None):
+        if distribution is not None and distrorelease is not None:
+            if distrorelease.distribution is not distribution:
+                raise TypeError, 'Must instantiate SourcePackageSet with distribution or distrorelease, not both'
+        if distribution:
+            self.distribution = distribution
+            self.distrorelease = distribution.currentrelease
+            self.title = distribution.title
+        elif distrorelease:
+            self.distribution = distrorelease.distribution
+            self.distrorelease = distrorelease
+            self.title = distrorelease.title
+        else:
+            self.title = ""
+        self.title += " Source Packages"
+
     def __getitem__(self, name):
-        clauseTables = ('SourcePackageName', 'SourcePackage')
-        return self.table.select("SourcePackage.sourcepackagename = \
-        SourcePackageName.id AND SourcePackageName.name = %s" %     \
-        quote(name), clauseTables=clauseTables)[0]
+        try:
+            spname = SourcePackageName.byName(name)
+        except IndexError:
+            raise KeyError, 'No source package name %s' % name
+        return SourcePackage(sourcepackagename=spname,
+                             distrorelease=self.distrorelease)
 
-    def __iter__(self):
-        for row in self.table.select():
+    def __iter__(self, text=None):
+        querystr = self._querystr(text)
+        for row in VSourcePackageReleasePublishing.select(querystr):
             yield row
+
+    def _querystr(self, text=None):
+        querystr = ''
+        if self.distrorelease:
+            querystr += 'distrorelease = %d' %  self.distrorelease 
+        if text:
+            if len(querystr):
+                querystr += ' AND '
+            querystr += "name ILIKE " + quote('%%' + text + '%%') 
+        return querystr
+
+    def query(self, text=None):
+        querystr = self._querystr(text)
+        for row in VSourcePackageReleasePublishing.select(querystr):
+            yield SourcePackage(sourcepackagename=row.sourcepackagename,
+                                distrorelease=row.distrorelease)
 
     def withBugs(self):
         pkgset = Set()
-        results = self.table.select(
-            "SourcePackage.sourcepackagename = BugTask.sourcepackagename AND"
-            "SourcePackage.distro = BugTask.distribution",
-            clauseTables=['SourcePackage', 'BugTask'])
-        for pkg in results:
-            pkgset.add(pkg)
-        return pkgset
+        results = BugTask.select(
+            "distribution = %d AND sourcepackagename IS NOT NULL" % (
+                self.distribution ) )
+        for task in results:
+            pkgset.add(task.sourcepackagename)
 
-    def getByPersonID(self, personID):
-        # XXXkiko: we should allow supplying a distrorelease here and
-        # get packages by distro
-        from canonical.launchpad.database.sourcepackageindistro import \
-             SourcePackageInDistro
+        return [SourcePackage(sourcepackagename=sourcepackagename,
+                              distribution=self.distribution)
+                    for sourcepackagename in pkgset]
 
-        return SourcePackageInDistro.select("maintainer = %d" % personID,
-                                            orderBy='name')
 
-    def findByNameInDistroRelease(self, distroreleaseID,
-                                  pattern, fti=False):
-        """Returns a set o sourcepackage that matchs pattern
-        inside a distrorelease"""
-
-        clauseTables = ()
-
-        pattern = pattern.replace('%', '%%')
-
-        if fti:
-            clauseTables = ('SourcePackage',)
-            query = ('VSourcePackageReleasePublishing.sourcepackage = '
-                     'SourcePackage.id AND '
-                     'distrorelease = %d AND '
-                     '(name ILIKE %s OR SourcePackage.fti @@ ftq(%s))'
-                     %(distroreleaseID,
-                       quote('%%'+pattern+'%%'),
-                       quote(pattern))
-                     )
-
-        else:
-            query = ('distrorelease = %d AND '
-                     'name ILIKE %s '
-                     % (distroreleaseID, quote('%%'+pattern+'%%'))
-                     )
-
-        return VSourcePackageReleasePublishing.select(query, orderBy='name',
-                                                      clauseTables=clauseTables)
-
-    def getByNameInDistroRelease(self, distroreleaseID, name):
-        """Returns a SourcePackage by its name"""
-
-        query = ('distrorelease = %d ' 
-                 ' AND name = %s'
-                 % (distroreleaseID, quote(name))
-                 )
-
-        return SourcePackageInDistro.select(query, orderBy='name')[0]
-
-    def getSourcePackageRelease(self, sourcepackageID, version):
-        table = VSourcePackageReleasePublishing 
-        return table.select("sourcepackage = %d AND version = %s"
-                            % (sourcepackageID, quote(version)))

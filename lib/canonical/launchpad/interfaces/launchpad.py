@@ -14,7 +14,10 @@ __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IFOAFApplication', 'IPasswordEncryptor',
            'IReadZODBAnnotation', 'IWriteZODBAnnotation',
            'IZODBAnnotation', 'IAuthorization',
-           'IHasOwner', 'IOpenLaunchBag', 'ILaunchBag')
+           'IHasOwner', 'IHasAssignee', 'IHasProduct', 
+           'IHasProductAndAssignee', 'IOpenLaunchBag',
+           'IAging', 'IHasDateCreated',
+           'ILaunchBag')
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -111,7 +114,6 @@ class IAuthorization(Interface):
         The argument `user` is the person who is authenticated.
         """
 
-
 class IHasOwner(Interface):
     """An object that has an owner."""
 
@@ -123,6 +125,31 @@ class IHasAssignee(Interface):
 
     assignee = Attribute("The object's assignee, which is an IPerson.")
 
+
+class IHasProduct(Interface):
+    """An object that has a product attribute that is an IProduct."""
+
+    product = Attribute("The object's product")
+
+
+class IHasProductAndAssignee(IHasProduct, IHasAssignee):
+    """An object that has a product attribute and an assigned attribute.
+    See IHasProduct and IHasAssignee."""
+
+
+class IAging(Interface):
+    """Something that gets older as time passes."""
+
+    def currentApproximateAge():
+        """Return a human-readable string of how old this thing is.
+
+        Values returned are things like '2 minutes', '3 hours', '1 month', etc.
+        """
+
+class IHasDateCreated(Interface):
+    """Something created on a certain date."""
+
+    datecreated = Attribute("The date on which I was created.")
 
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')

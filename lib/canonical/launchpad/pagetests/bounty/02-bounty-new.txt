@@ -86,6 +86,6 @@
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <h1>Test Bounty System</h1>
+      <h2>Test Bounty System</h2>
   ...
 

@@ -36,7 +36,7 @@ def traverseProduct(product, request, name):
         return SourceSourceSet()
     elif name == '+series':
         return ProductSeriesSet(product = product)
-    elif name == 'milestones':
+    elif name == '+milestones':
         return ProductMilestoneSet(product = product)
     else:
         return product.getRelease(name)

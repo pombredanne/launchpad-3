@@ -35,7 +35,9 @@ class IDistroRelease(IHasOwner):
     bugtasks = Attribute("The bug tasks filed specifically on this release.")
     componentes = Attribute("The release componentes.")
     sections = Attribute("The release section.")
-    releasestate = Attribute("The release's state.")
+    releasestatus = Attribute(
+        "The release's status, such as FROZEN or DEVELOPMENT, as "
+        "specified in the DistributionReleaseStatus enum.")
     datereleased = Attribute("The datereleased.")
     parentrelease = Attribute("Parent Release")
     owner =Attribute("Owner")
@@ -73,3 +75,5 @@ class IDistroReleaseSet(Interface):
 
     def get(distroreleaseid):
         """Retrieve the distro release with the given distroreleaseid."""
+
+

@@ -29,8 +29,9 @@ from canonical.launchpad.interfaces import IWikiNameSet
 from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
 from canonical.launchpad.interfaces import IKarmaPointsManager
 from canonical.launchpad.interfaces import IPasswordEncryptor
-from canonical.launchpad.interfaces import ISourcePackageSet, IEmailAddressSet
+from canonical.launchpad.interfaces import IMaintainershipSet, IEmailAddressSet
 from canonical.launchpad.interfaces import ICodeOfConductConf
+from canonical.launchpad.interfaces import ISourcePackageReleaseSet
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.bug import Bug
@@ -499,11 +500,15 @@ class Person(SQLBase):
         return gpg[0]
     gpg = property(gpg)
 
-    def _getSourcesByPerson(self):
-        sputil = getUtility(ISourcePackageSet)
-        return list(sputil.getByPersonID(self.id))
-    packages = property(_getSourcesByPerson)
+    def maintainerships(self):
+        maintainershipsutil = getUtility(IMaintainershipSet)
+        return list(maintainershipsutil.getByPersonID(self.id))
+    maintainerships = property(maintainerships)
 
+    def packages(self):
+        sprutil = getUtility(ISourcePackageReleaseSet)
+        return list(sprutil.getByCreatorID(self.id))
+    packages = property(packages)
 
     def isUbuntite(self):
         putil = getUtility(IPersonSet)

@@ -1,0 +1,25 @@
+
+
+  >>> print http(r"""
+  ... GET /products/firefox/+bounties/ HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Bounties for
+        Mozilla Firefox
+      </title>
+  ...
+      <table width="100%" class="listing rowNavigation">
+        <tr>
+          <th>Date Created</th>
+          <th>Title</th>
+          <th>USD Value<sup>*</sup></th>
+          <th>Est. Difficulty</th>
+          <th>Est. Duration</th>
+        </tr>
+  ...
+

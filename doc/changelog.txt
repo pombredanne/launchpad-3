@@ -2,6 +2,338 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-29 16:21:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1516
+
+    Summary:
+      NUKE SOURCE PACKAGE... and launch the MagicSourcePackage
+    Revision:
+      launchpad--devel--0--patch-1516
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-850
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-851
+       bounty force field
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-852
+       page tweaks and changes
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-853
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-854
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-855
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-856
+       nuke sourcepackage phase 1
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-857
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-858
+       nuke source package phase 2
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-859
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-860
+       nuke source package phase 3
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-861
+       nuke source package phase 4
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-862
+       merge rocketfuel, resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-863
+       firther nukesourcepackge work
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-864
+       nuke source package phase 6
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-865
+       nuke source package phase 7
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-866
+       nuke source package phase 8
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-867
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-868
+       nuke source package phase 9
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-869
+       nuke source package the saga continues
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-870
+       remove documentEditable divs from bug pages
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-871
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-872
+       sort out sampledata and make db patches semi-officialD
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-873
+       nuke source package - the jedi fight back
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-874
+       nuke source package the final frontier is visible
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-875
+       merge rocketfuel, resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-876
+       SOURCE PACKAGES NUKED
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-877
+       reduce horizontal waste from infestation portlets
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-878
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-879
+       remove sourcepackage vocabulary
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-880
+       final tweaks on sql script
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-881
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-882
+       nuke source package - fuel the missiles
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-883
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-884
+       allow for traversal to rosetta for source packages
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-885
+       merge rocketfuel, resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-886
+       merge rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/database/.arch-ids/maintainership.py.id
+     lib/canonical/launchpad/database/maintainership.py
+     lib/canonical/launchpad/interfaces/.arch-ids/maintainership.py.id
+     lib/canonical/launchpad/interfaces/maintainership.py
+     lib/canonical/launchpad/pagetests/bounty/.arch-ids/05-product-bounties.txt.id
+     lib/canonical/launchpad/pagetests/bounty/.arch-ids/06-project-bounties.txt.id
+     lib/canonical/launchpad/pagetests/bounty/.arch-ids/07-distro-bounties.txt.id
+     lib/canonical/launchpad/pagetests/bounty/.arch-ids/08-person-bounties.txt.id
+     lib/canonical/launchpad/pagetests/bounty/05-product-bounties.txt
+     lib/canonical/launchpad/pagetests/bounty/06-project-bounties.txt
+     lib/canonical/launchpad/pagetests/bounty/07-distro-bounties.txt
+     lib/canonical/launchpad/pagetests/bounty/08-person-bounties.txt
+     lib/canonical/launchpad/templates/.arch-ids/portlet-team-actions.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/sourcepackage.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/sourcepackages.pt.id
+     lib/canonical/launchpad/templates/portlet-team-actions.pt
+     lib/canonical/launchpad/templates/sourcepackage.pt
+     lib/canonical/launchpad/templates/sourcepackages.pt
+     lib/canonical/launchpad/zcml/.arch-ids/maintainership.zcml.id
+     lib/canonical/launchpad/zcml/maintainership.zcml
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     database/schema/fti.py database/schema/patch-11-13-0.sql
+     database/schema/security.cfg doc/changelog.txt
+     lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/browser/packages.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/README.txt
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/distrotool.py
+     lib/canonical/launchpad/database/packaging.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/publishedpackage.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/database/sourcepackageindistro.py
+     lib/canonical/launchpad/database/sourcepackagerelease.py
+     lib/canonical/launchpad/database/sourcesource.py
+     lib/canonical/launchpad/database/vsourcepackagereleasepublishing.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/distribution.py
+     lib/canonical/launchpad/interfaces/distrorelease.py
+     lib/canonical/launchpad/interfaces/idatetime.py
+     lib/canonical/launchpad/interfaces/launchpad.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/publishedpackage.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/interfaces/sourcepackagerelease.py
+     lib/canonical/launchpad/interfaces/vsourcepackagereleasepublishing.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/pagetests/bounty/02-bounty-new.txt
+     lib/canonical/launchpad/pagetests/foaf/17-add-member.txt
+     lib/canonical/launchpad/pagetests/foaf/22-approve-proposed-member.txt
+     lib/canonical/launchpad/pagetests/foaf/23-promote-member.txt
+     lib/canonical/launchpad/pagetests/foaf/24-demote-member.txt
+     lib/canonical/launchpad/pagetests/foaf/25-expire-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/26-renew-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/27-deactivate-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/28-reactivate-subscription.txt
+     lib/canonical/launchpad/pagetests/malone/10-add-subscription.txt
+     lib/canonical/launchpad/pagetests/malone/60-add-external-ref.txt
+     lib/canonical/launchpad/pagetests/malone/70-add-edit-watch.txt
+     lib/canonical/launchpad/pagetests/malone/80-add-comment.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-actions.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-team-members.txt
+     lib/canonical/launchpad/subscribers/bugactivity.py
+     lib/canonical/launchpad/subscribers/bugprivacy.py
+     lib/canonical/launchpad/templates/binary-index.pt
+     lib/canonical/launchpad/templates/binarypackage-index.pt
+     lib/canonical/launchpad/templates/binarypackagenames-index.pt
+     lib/canonical/launchpad/templates/bounty.pt
+     lib/canonical/launchpad/templates/bug-activity.pt
+     lib/canonical/launchpad/templates/bug-edit.pt
+     lib/canonical/launchpad/templates/bug-index.pt
+     lib/canonical/launchpad/templates/bugproductinfestations-index.pt
+     lib/canonical/launchpad/templates/distribution-bugs.pt
+     lib/canonical/launchpad/templates/distro-index.pt
+     lib/canonical/launchpad/templates/distro-sources.pt.OBSOLETE
+     lib/canonical/launchpad/templates/distroarchrelease-index.pt
+     lib/canonical/launchpad/templates/distroarchrelease-pkgsearch.pt
+     lib/canonical/launchpad/templates/distrorelease-bugs.pt
+     lib/canonical/launchpad/templates/distrorelease-index.pt
+     lib/canonical/launchpad/templates/distrorelease-sources.pt
+     lib/canonical/launchpad/templates/distroreleases-index.pt
+     lib/canonical/launchpad/templates/foaf-mergepeople.pt
+     lib/canonical/launchpad/templates/foaf-mergerequest-sent.pt
+     lib/canonical/launchpad/templates/foaf-requestmerge-multiple.pt
+     lib/canonical/launchpad/templates/foaf-resetpassword.pt
+     lib/canonical/launchpad/templates/foaf-validateemail.pt
+     lib/canonical/launchpad/templates/launchpad-join.pt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/main-template.pt
+     lib/canonical/launchpad/templates/malone-distro-index.pt
+     lib/canonical/launchpad/templates/person-karma.pt
+     lib/canonical/launchpad/templates/person-packages.pt
+     lib/canonical/launchpad/templates/portlet-bug-actions.pt
+     lib/canonical/launchpad/templates/portlet-bug-productinfestation.pt
+     lib/canonical/launchpad/templates/portlet-bug-sourcepackageinfestation.pt
+     lib/canonical/launchpad/templates/portlet-bug-tasks-headline.pt
+     lib/canonical/launchpad/templates/portlet-distrorelease-actions.pt
+     lib/canonical/launchpad/templates/portlet-distrorelease-details.pt
+     lib/canonical/launchpad/templates/portlet-person-actions.pt
+     lib/canonical/launchpad/templates/portlet-product-actions.pt
+     lib/canonical/launchpad/templates/portlet-product-milestones.pt
+     lib/canonical/launchpad/templates/product-index.pt
+     lib/canonical/launchpad/templates/sourcepackage-changelog.pt
+     lib/canonical/launchpad/templates/sourcepackage-index.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-changes.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-index.pt
+     lib/canonical/launchpad/templates/sourcepackagenames-index.pt
+     lib/canonical/launchpad/templates/sourcepackagerelease-buildlog.pt
+     lib/canonical/launchpad/templates/sourcepackagerelease-index.pt
+     lib/canonical/launchpad/templates/team-editproposed.pt
+     lib/canonical/launchpad/templates/team-index.pt
+     lib/canonical/launchpad/templates/team-join.pt
+     lib/canonical/launchpad/templates/team-leave.pt
+     lib/canonical/launchpad/templates/team-members.pt
+     lib/canonical/launchpad/templates/teammembership-index.pt
+     lib/canonical/launchpad/vocabularies/configure.zcml
+     lib/canonical/launchpad/vocabularies/dbobjects.py
+     lib/canonical/launchpad/zcml/buginfestation.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/datetime.zcml
+     lib/canonical/launchpad/zcml/logintoken.zcml
+     lib/canonical/launchpad/zcml/person.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/launchpad/zcml/sourcepackage.zcml
+     lib/canonical/launchpad/zcml/sourcepackagerelease.zcml
+     lib/canonical/launchpad/zcml/teammembership.zcml
+     lib/canonical/launchpad/zcml/vsourcepackagereleasepublishing.zcml
+     lib/canonical/lp/dbschema.py lib/canonical/publication.py
+
+    renamed files:
+     database/schema/pending/.arch-ids/celso-nukesourcepackage.sql.id
+       ==> database/schema/.arch-ids/patch-11-13-0.sql.id
+     database/schema/pending/celso-nukesourcepackage.sql
+       ==> database/schema/patch-11-13-0.sql
+     lib/canonical/launchpad/pagetests/bounty/.arch-ids/10-bounties.txt.id
+       ==> lib/canonical/launchpad/pagetests/bounty/.arch-ids/01-bounties.txt.id
+     lib/canonical/launchpad/pagetests/bounty/.arch-ids/15-bounty-new.txt.id
+       ==> lib/canonical/launchpad/pagetests/bounty/.arch-ids/02-bounty-new.txt.id
+     lib/canonical/launchpad/pagetests/bounty/.arch-ids/20-bounty-edit.txt.id
+       ==> lib/canonical/launchpad/pagetests/bounty/.arch-ids/03-bounty-edit.txt.id
+     lib/canonical/launchpad/pagetests/bounty/.arch-ids/25-bounty-subscriptions.txt.id
+       ==> lib/canonical/launchpad/pagetests/bounty/.arch-ids/04-bounty-subscriptions.txt.id
+     lib/canonical/launchpad/pagetests/bounty/10-bounties.txt
+       ==> lib/canonical/launchpad/pagetests/bounty/01-bounties.txt
+     lib/canonical/launchpad/pagetests/bounty/15-bounty-new.txt
+       ==> lib/canonical/launchpad/pagetests/bounty/02-bounty-new.txt
+     lib/canonical/launchpad/pagetests/bounty/20-bounty-edit.txt
+       ==> lib/canonical/launchpad/pagetests/bounty/03-bounty-edit.txt
+     lib/canonical/launchpad/pagetests/bounty/25-bounty-subscriptions.txt
+       ==> lib/canonical/launchpad/pagetests/bounty/04-bounty-subscriptions.txt
+     lib/canonical/launchpad/templates/.arch-ids/distro-sources.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/distro-sources.pt.OBSOLETE.id
+     lib/canonical/launchpad/templates/.arch-ids/sourcechangelog-index.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/sourcepackage-changelog.pt.id
+     lib/canonical/launchpad/templates/distro-sources.pt
+       ==> lib/canonical/launchpad/templates/distro-sources.pt.OBSOLETE
+     lib/canonical/launchpad/templates/sourcechangelog-index.pt
+       ==> lib/canonical/launchpad/templates/sourcepackage-changelog.pt
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-850
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-851
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-852
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-853
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-854
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-855
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-856
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-857
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-858
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-859
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-860
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-861
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-862
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-863
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-864
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-865
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-866
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-867
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-868
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-869
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-870
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-871
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-872
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-873
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-874
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-875
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-876
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-877
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-878
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-879
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-880
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-881
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-882
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-883
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-884
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-885
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-886
+
+
 2005-03-29 15:33:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1515
 
     Summary:

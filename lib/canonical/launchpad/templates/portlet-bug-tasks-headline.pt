@@ -5,7 +5,8 @@
     specialised tasks page.
 -->
 
-<div tal:omit-tag="" tal:define="bug_url string:/malone/bugs/${context/id}">
+<div tal:omit-tag
+     tal:define="bug_url string:/malone/bugs/${context/id}">
 <table class="listing rowNavigation" style="width: 100%;">
     <thead>
         <tr>
@@ -98,25 +99,4 @@
 
     </tbody>
 </table>
-
-<a href="+upstreamtask"
-    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-    title="Mark this bug as occurring upstream">
-    <img src="/++resource++add.gif" alt="+" />
-    Upstream Task...
-</a>
-
-<a href="+distrotask"
-    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-    title="Mark this bug as occurring in another package">
-    <img src="/++resource++add.gif" alt="+" />
-    Distro Task...
-</a>
-
-<a href="+distroreleasetask"
-    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-    title="Mark this bug as occurring in another package for a specific distro release">
-    <img src="/++resource++add.gif" alt="+" />
-    Distro Release Task...
-</a>
 </div>

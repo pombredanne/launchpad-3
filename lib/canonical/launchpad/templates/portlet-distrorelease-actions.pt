@@ -5,7 +5,7 @@
         <div class="portletContent even">
 
         <img src="/++resource++edit.gif">
-	<a href="+edit">Edit Release Information</a> <br />
+	<a href="+edit">Edit Details</a> <br />
         <img src="/++resource++add.gif">
         <a href="+sources">View Source Packages</a><br />
         <img src="/++resource++add.gif">

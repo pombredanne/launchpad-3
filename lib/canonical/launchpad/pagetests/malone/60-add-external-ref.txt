@@ -65,7 +65,5 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-          <h1>
-              Blackhole Trash folder
-          </h1>
+      <h1>Bug Description and Discussion</h1>
   ...

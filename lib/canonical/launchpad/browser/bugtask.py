@@ -11,7 +11,7 @@ from canonical.launchpad.interfaces import IPerson
 from canonical.launchpad.database import Bug, BugTask, Person
 from canonical.lp import dbschema
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
-     ProductVocabulary, SourcePackageVocabulary, SourcePackageNameVocabulary
+     ProductVocabulary, SourcePackageNameVocabulary
 from canonical.database.sqlbase import quote
 
 # Bug Reports

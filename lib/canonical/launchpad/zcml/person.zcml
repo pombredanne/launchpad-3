@@ -28,7 +28,7 @@
       class="canonical.launchpad.browser.TeamAddView"
       permission="launchpad.AnyPerson"
       template="../templates/foaf-newteam.pt"
-      lp:url="foaf/people/$person.id/+newteam">
+      lp:url="/people/$person.id/+newteam">
       <browser:widget
           field="teamdescription"
           class="zope.app.form.browser.TextAreaWidget"
@@ -117,7 +117,7 @@
       <browser:page
           name="+index"
           template="../templates/team-index.pt"
-          lp:url="foaf/person/$person.id/index" />
+          lp:url="/people/$person.id/index" />
   </browser:pages>
 
   <browser:editform
@@ -130,7 +130,7 @@
       label="Edit Team Information"
       permission="launchpad.Edit"
       template="../templates/team-edit.pt"
-      lp:url="foaf/person/$person.id/+edit">
+      lp:url="/people/$person.id/+edit">
   </browser:editform>
 
   <browser:pages
@@ -140,7 +140,7 @@
       <browser:page
           name="+join"
           template="../templates/team-join.pt"
-          lp:url="foaf/person/$person.id/+join" />
+          lp:url="/people/$person.id/+join" />
   </browser:pages>
 
   <browser:pages

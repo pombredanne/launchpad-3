@@ -6,7 +6,7 @@
 
         <table class="rowNavigation" border="0">
             <tr tal:repeat="milestone context/milestones"
-                tal:attributes="onclick string:window.location='milestones/${milestone/name}/+edit'">
+                tal:attributes="onclick string:window.location='+milestones/${milestone/name}/+edit'">
                 <td tal:content="milestone/name">milestone title</td>
             </tr>
         </table>

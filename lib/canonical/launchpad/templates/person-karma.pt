@@ -16,8 +16,6 @@
 
 <div metal:fill-slot="main">
 
-<div id="content" class="documentEditable">
-
     <ul class="contentViews">
       <li id="contentview-profile" class="plain">
         <a href=".">Profile</a>
@@ -42,13 +40,10 @@
         <a href="+karma">Karma</a>
       </li>
     </ul>
-    <div class="documentContent" id="region-content">
 
-      <h1>Karma For
-      <span tal:content="context/displayname">context</span></h1>
+    <h1>Karma For
+    <span tal:replace="context/displayname">context</span></h1>
 
-</div>
-</div>
 </div>
 
 

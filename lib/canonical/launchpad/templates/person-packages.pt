@@ -21,30 +21,31 @@
   <div metal:fill-slot="main">
 
       <h1>Package Maintenance Report</h1>
+
+      <p tal:condition="context/maintainerships"><span
+      tal:replace="context/displayname">Person DisplayName</span> is the
+      maintainer of the following distribution packages:</p>
       
-      <p tal:condition="not: context/packages"><span
+      <p tal:condition="not: context/maintainerships"><span
       tal:replace="context/displayname">Person DisplayName</span> is not
       currently recorded as the maintainer of any packages in the Launchpad
       system.</p>
 
-         <table>
-           <tr tal:repeat="package context/packages">
-             <td tal:define="name package/name; 
-                             distrorelease package/distrorelease/name;
-                             distro package/distrorelease/distribution/name;
-                             distro_path string:/distros/${distro};">
-      
-               <a tal:attributes="href distro_path"
-                  tal:content="package/distrorelease/distribution/title">DISTRO</a> ::
-               <a tal:attributes="href string:${distro_path}/${distrorelease}/"
-                  tal:content="package/distrorelease/title">DISTRORELASE</a> ::
-               <a tal:attributes="href string:${distro_path}/${distrorelease}/+sources/${name}"
-                  tal:content="string:${name}">PACKAGES</a> ::
-               <a tal:condition="package/product"
-                  tal:attributes="href string:/doap/products/${package/product/name}"
-                  tal:content="string:${package/product/displayname}">PRODUCT</a>
-	       <span tal:condition="not:package/product">No Product Available</span>
+         <table tal:condition="context/maintainerships">
+           <tr tal:repeat="maintainership context/maintainerships">
+             <span tal:define="spname maintainership/sourcepackagename/name; 
+                               distro maintainership/distribution;
+                               distrorelease distro/currentrelease;"
+                   tal:omit-tag>
+             <td>
+               <a tal:attributes="href string:/distros/${distro/name}"
+                  tal:content="distro/title">DISTRO</a>
              </td>
+             <td>
+               <a tal:attributes="href string:/distros/${distro/name}/${distrorelease/name}/+sources/${spname}"
+                  tal:content="spname">PACKAGE</a> ::
+             </td>
+             </span>
           </tr>
      </table>
 

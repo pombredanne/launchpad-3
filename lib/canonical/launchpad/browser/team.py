@@ -2,13 +2,12 @@
 
 from datetime import datetime, timedelta
 
-# lp imports
-from canonical.lp.dbschema import TeamMembershipStatus
-from canonical.lp.dbschema import TeamSubscriptionPolicy
-
-from canonical.database.sqlbase import flushUpdates
-
-from canonical.foaf.nickname import generate_nick
+# zope imports
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.app.form.browser.add import AddView
+from zope.component import getUtility
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 # interface import
 from canonical.launchpad.interfaces import IPersonSet, ILaunchBag
@@ -17,11 +16,13 @@ from canonical.launchpad.interfaces import ITeamMembershipSubset
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
-# zope imports
-from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
-from zope.app.form.browser.add import AddView
-from zope.component import getUtility
+# lp imports
+from canonical.lp.dbschema import TeamMembershipStatus
+from canonical.lp.dbschema import TeamSubscriptionPolicy
+
+from canonical.database.sqlbase import flushUpdates
+
+from canonical.foaf.nickname import generate_nick
 
 
 class TeamAddView(AddView):
@@ -57,6 +58,9 @@ class TeamView(object):
     """A simple View class to be used in Team's pages where we don't have
     actions to process.
     """
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-team-actions.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -521,6 +525,6 @@ class TeamMembershipEditView(object):
 
 
 def traverseTeam(team, request, name):
-    if name == 'members':
+    if name == '+members':
         return ITeamMembershipSubset(team)
 

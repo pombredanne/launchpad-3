@@ -15,23 +15,15 @@
 
 <body>
 
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
-  <div id="content" class="documentEditable">
-    <ul class="contentViews">
-      <li id="contentview-profile" class="selected">
-        <a href=".">Team Information</a>
-      </li>
-
-      <li id="contentview-members" class="plain">
-        <a href="members/">Members</a>
-      </li>
-    </ul>
-
-    <div class="documentContent" id="region-content">
-
     <div>
-      <h1 tal:content="context/browsername">Name</h1>
+      <h1>Team Overview</h1>
         <br />
         <table width="80%">
           <tr tal:condition="context/teamdescription">
@@ -72,10 +64,6 @@
             <td><span tal:replace="context/preferredemail/email"></span></td>
           </tr>
 
-          <tr>
-            <td></td>
-            <td class="listingNext"><a href="+edit">Edit Team Information</a></td>
-          </tr>
         </table>
     </div> 
 
@@ -114,8 +102,6 @@
     </td></tr>
     </table>
 
-    </div>
-  </div>
 </div> 
 
 </body>

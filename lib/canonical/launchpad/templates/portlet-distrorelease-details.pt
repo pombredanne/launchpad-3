@@ -15,7 +15,7 @@
                tal:content="context/owner/displayname">owner name</a><br /> 
 
             <b>Status:</b><br />
-            <span tal:replace="context/state">Status</span><br />
+            <span tal:replace="context/releasestatus/title">Status</span><br />
 
             <b>Release Date:</b><br />
             <span

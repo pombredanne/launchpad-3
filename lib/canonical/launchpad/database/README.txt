@@ -14,23 +14,20 @@ SQLObject's default naming "style" for translating Python names (such as
 class and attribute names) to SQL names (such as table and column names) doesn't
 match our SQL's naming scheme.  As a result, we can't simply say::
 
-    class SourcePackage(SQLOS):
-        """A source package."""
+    class SourcePackageRelease(SQLOS):
+        """A source package release."""
 
         _columns = [
-            StringCol('name')
+            StringCol('version')
         ]
 
 Instead, we need to say::
 
-    class SourcePackage(SQLOS):
-        """A source package."""
+    class SourcePackageRelease(SQLOS):
+        """A source package release."""
 
-        _table = 'SourcePackage'    # SQLObject guesses 'source_package'
-        _idName = 'sourcepackage'   # SQLObject guesses 'ID'
-        _columns = [
-            StringCol('name', dbName='name')
-        ]
+        _table = 'SourcePackageRelease'    # SQLObject guesses 'source_package'
+        name =  StringCol()
 
 TODO: This should be fixable by defining our own style (see the sqlobject.styles
 module).

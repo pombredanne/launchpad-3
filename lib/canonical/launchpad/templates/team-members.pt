@@ -16,19 +16,6 @@
 
 <div metal:fill-slot="main">
 
-  <div id="content" class="documentEditable">
-    <ul class="contentViews">
-      <li id="contentview-profile" class="plain">
-        <a href="../">Team Information</a>
-      </li>
-
-      <li id="contentview-members" class="selected">
-        <a href=".">Members</a>
-      </li>
-    </ul>
-
-    <div class="documentContent" id="region-content">
-
     <tal:block tal:define="activeMembersCount view/activeMembersCount;
                            inactiveMembersCount view/inactiveMembersCount;
                            proposedMembersCount view/proposedMembersCount">
@@ -181,8 +168,7 @@
       </fieldset>
 
     </tal:block>
-    </div>
-  </div>
+
 </div>
 
 </body>

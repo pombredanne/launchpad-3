@@ -56,7 +56,7 @@ class DistroTools(object):
                                 parentrelease=int(parent),
                                 datereleased=datetime.utcnow(),
                                 components=1,
-                                releasestate=1,
+                                releasestatus=1,
                                 sections=1,
                                 lucilleconfig='')
 

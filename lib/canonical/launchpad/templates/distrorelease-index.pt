@@ -6,13 +6,13 @@
 <head>
     <title metal:fill-slot="title">
         <span
-            tal:replace="context/distribution/title">Distro</span> Release:
-        <span tal:replace="context/title">Foo</span>
+            tal:replace="context/distribution/title">Distro</span>:
+        <span tal:replace="context/title">iDistroRelease</span>
     </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
-    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
@@ -28,17 +28,8 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main" tal:define="distro context/distribution">
-  <div id="content" class="documentEditable">
-    <div class="documentContent" id="region-content"/>    
-
     
-    <h1>
-      <span tal:replace="distro/title">
-        Distribution displayname
-      </span>: <span tal:replace="context/title">
-        title
-      </span>
-    </h1> 
+    <h1>Distribution Release Overview</h1> 
 
         <div class="documentDescription"
              tal:content="context/shortdesc">
@@ -97,8 +88,6 @@
           </div>
 
       </tal:block>
-
-  </div>
 
 </div>
 

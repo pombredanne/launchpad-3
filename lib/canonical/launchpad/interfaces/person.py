@@ -84,6 +84,7 @@ class IPerson(Interface):
     jabber = Attribute("Jabber")
     archuser = Attribute("Arch user")
     packages = Attribute("A Selection of SourcePackageReleases")
+    maintainerships = Attribute("This person's Maintainerships")
     activities = Attribute("Karma")
     memberships = Attribute(("List of TeamMembership objects for Teams this "
                              "Person is a member of. Either as a PROPOSED "

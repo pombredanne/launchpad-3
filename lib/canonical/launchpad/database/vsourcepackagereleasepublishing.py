@@ -14,65 +14,70 @@ from canonical.launchpad.interfaces import ISourcePackageReleasePublishing, \
 
 from canonical.launchpad.database.sourcepackagerelease import \
      SourcePackageRelease
+
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import PackagePublishingStatus
 
-#
-#
-#
 
 class VSourcePackageReleasePublishing(SourcePackageRelease):
+    """A SourcePackageRelease that is published in a distrorelease. Note
+    that there are two distrorelease fields: uploaddistrorelease and
+    distrorelease. The one you want is distrorelease which
+    is the distrorelease into which this sourcepackagerelease is published.
+    The other one is the original distrorelease into which this
+    SourcePackageRelease was first uploaded in the Launchpad."""
+
     implements(ISourcePackageReleasePublishing)
+
     _table = 'VSourcePackageReleasePublishing'
 
     # XXXkiko: IDs in this table are *NOT* unique!
+    # XXX sabdfl 24/03/05 why? sourcepackagerelease.id would be unique, I
+    # think.
+    
+    # These are the EXTRA fields in VSourcePackageReleasePublishing that are
+    # not in the underlying SourcePackageRelease
     name = StringCol(dbName='name')
-    shortdesc = StringCol(dbName='shortdesc')
-    #maintainer = ForeignKey(foreignKey='Person', dbName='maintainer')
-    description = StringCol(dbName='description')
+    maintainer = ForeignKey(foreignKey='Person', dbName='maintainer')
     publishingstatus = EnumCol(dbName='publishingstatus',
                                schema=PackagePublishingStatus)
     datepublished = DateTimeCol(dbName='datepublished')
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease')
     componentname = StringCol(dbName='componentname')
+    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+                                   dbName='sourcepackagename')
 
-
-    # XXX: Daniel Debonzi. Hack to do not query the sourcepackagename
-    # inherited from SourcePackageRelease but that is not available in
-    # VSourcePackageReleasePublishing
-    sourcepackagename = None
-
-    def _title(self):
+    def title(self):
         title = 'Source package '
         title += self.name
         title += ' in ' + self.distrorelease.distribution.name
         title += ' ' + self.distrorelease.name
         return title
-    title = property(_title)
+    title = property(title)
 
-    def __getitem__(self, version):
-        """Get a  SourcePackageRelease"""
-        results = VSourcePackageReleasePublishing.select(
-            "sourcepackage = %d AND version = %s"
-            % (self.sourcepackage.id, quote(version)))
-        if results.count() == 0:
-            raise NotFoundError, version
-        else:
-            return results[0]
+    # XXX sabdfl 24/03/05 this is the hack of the century, please remove
+    # asap
+    def sourcepackage(self):
+        from canonical.launchpad.database.sourcepackage import SourcePackage
+        return SourcePackage(sourcepackagename=self.sourcepackagename,
+                             distrorelease=self.distrorelease)
+    sourcepackage = property(sourcepackage)
 
     def traverse(self, name):
-        """See ISourcePackageReleasePublishing."""
         if name == '+rosetta':
             potemplateset = getUtility(IPOTemplateSet)
             return potemplateset.getSubset(
                 distrorelease=self.distrorelease,
                 sourcepackagename=self.sourcepackage.sourcepackagename)
         else:
-            return self[name]
+            raise KeyError, 'No such traversal: %s' % name
 
 
-def createSourcePackage(name, maintainer=0):
+# 24/03/05 sabdfl I've renamed this to XXXcreateSourcePackage because I
+# don't think it's used any longer, please remove if it's still here in a
+# few months.
+def XXXcreateSourcePackage(name, maintainer=0):
     # FIXME: maintainer=0 is a hack.  It should be required (or the DB shouldn't
     #        have NOT NULL on that column).
     return SourcePackage(
@@ -81,3 +86,4 @@ def createSourcePackage(name, maintainer=0):
         title='', # FIXME
         description='', # FIXME
     )
+

@@ -26,6 +26,7 @@ from canonical.launchpad.database.sourcesource import SourceSource
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.pofile import POTemplate
+from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.interfaces import IProduct, IProductSet
 
 class Product(SQLBase):
@@ -92,10 +93,6 @@ class Product(SQLBase):
 
     sourcesources = MultipleJoin('SourceSource', joinColumn='product')
 
-    sourcepackages = RelatedJoin('SourcePackage', joinColumn='product',
-                           otherColumn='sourcepackage',
-                           intermediateTable='Packaging')
-
     serieslist = MultipleJoin('ProductSeries', joinColumn='product')
 
     releases = MultipleJoin('ProductRelease', joinColumn='product',
@@ -106,6 +103,14 @@ class Product(SQLBase):
     bounties = RelatedJoin('Bounty', joinColumn='product',
                             otherColumn='bounty',
                             intermediateTable='ProductBounty')
+
+    def sourcepackages(self):
+        from canonical.launchpad.database.sourcepackage import SourcePackage
+        ret = Packaging.selectBy(productID=self.id)
+        return [SourcePackage(sourcepackagename=r.sourcepackagename,
+                              distrorelease=r.distrorelease)
+                    for r in ret]
+    sourcepackages = property(sourcepackages)
 
     def newseries(self, form):
         # Extract the details from the form
@@ -140,8 +145,6 @@ class Product(SQLBase):
             #          default=None),
             #ForeignKey(name='releaseparentbranch', foreignKey='Branch',
             #       dbName='releaseparentbranch', default=None),
-            #ForeignKey(name='sourcepackage', foreignKey='SourcePackage',
-            #       dbName='sourcepackage', default=None),
             #ForeignKey(name='branch', foreignKey='Branch',
             #       dbName='branch', default=None),
             #DateTimeCol('lastsynced', dbName='lastsynced', default=None),

@@ -20,7 +20,7 @@ from canonical.lp.dbschema import EnumCol
 from canonical.launchpad.interfaces import IBugTask
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import nowUTC
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.searchbuilder import any, NULL
 
 from canonical.launchpad.interfaces import IBugTasksReport, \
@@ -80,10 +80,10 @@ class BugTask(SQLBase):
         if self.product:
             return self.product.owner
         if self.distribution and self.sourcepackagename:
-            query = "distro = %d AND sourcepackagename = %d" % (
+            query = "distribution = %d AND sourcepackagename = %d" % (
                 self.distribution.id, self.sourcepackagename.id )
             try:
-                return SourcePackage.select(query)[0].maintainer
+                return Maintainership.select(query)[0].maintainer
             except IndexError:
                 return None
         return None
@@ -291,13 +291,13 @@ class BugTasksReport:
     # bugs assigned (i.e. tasks) to packages maintained by the user
     def maintainedPackageBugs(self):
         querystr = (
-            "BugTask.sourcepackagename = SourcePackage.sourcepackagename AND "
-            "BugTask.distribution = SourcePackage.distro AND "
-            "SourcePackage.maintainer = %s AND "
+            "BugTask.sourcepackagename = Maintainership.sourcepackagename AND "
+            "BugTask.distribution = Maintainership.distribution AND "
+            "Maintainership.maintainer = %s AND "
             "BugTask.severity >= %s AND "
             "BugTask.priority >= %s") % (
             self.user.id, self.minseverity, self.minpriority)
-        clauseTables = ('SourcePackage',)
+        clauseTables = ('Maintainership',)
 
         if not self.showclosed:
             querystr = querystr + ' AND BugTask.status < 30'

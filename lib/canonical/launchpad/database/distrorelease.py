@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import IDistroRelease, IPOTemplateSet, \
      IDistroReleaseSet
 
 from canonical.launchpad.database import SourcePackageInDistro, \
-    SourcePackageInDistroSet, PublishedPackageSet, PackagePublishing
+    SourcePackageSet, PublishedPackageSet, PackagePublishing
 
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 
@@ -46,8 +46,8 @@ class DistroRelease(SQLBase):
         dbName='components', foreignKey='Schema', notNull=True)
     sections = ForeignKey(
         dbName='sections', foreignKey='Schema', notNull=True)
-    releasestate = EnumCol(notNull=True,
-                           schema=dbschema.DistributionReleaseState)
+    releasestatus = EnumCol(notNull=True,
+                            schema=dbschema.DistributionReleaseStatus)
     datereleased = DateTimeCol(notNull=True)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
@@ -64,9 +64,9 @@ class DistroRelease(SQLBase):
         return ''
     parent = property(parent)
 
-    def state(self):
-        return self.releasestate.title
-    state = property(state)
+    def status(self):
+        return self.releasestatus.title
+    status = property(status)
 
     def sourcecount(self):
         """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
@@ -119,7 +119,7 @@ class DistroRelease(SQLBase):
     def traverse(self, name):
         """Get SourcePackages in a DistroRelease with BugTask"""
         if name == '+sources':
-            return SourcePackageInDistroSet(self)
+            return SourcePackageSet(distrorelease=self)
         elif name  == '+packages':
             return PublishedPackageSet()
         elif name == '+rosetta':

@@ -13,8 +13,6 @@
 
 <div metal:fill-slot="main">
 
-<div id="content" class="documentEditable">
-
   <div tal:condition="not: view/success">
     <h1>Join The Launchpad</h1>
 
@@ -62,7 +60,6 @@
     </div>
   </div>
 
-</div>
 </div>
 </body>
 
