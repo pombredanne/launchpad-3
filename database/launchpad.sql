@@ -11,16 +11,34 @@
         - re-evaluate the relationship table names, see if there isn't a better name for each of them
 	- add sample data for the schemas
 	- make sure names are only [a-z][0-9][-.+] and can only start with [a-z]
+	- set DEFAULT's for datestamps (now) and others
 	- present the database as a set of Interfaces
-
+        - add Series to products and projects
   CHANGES
 
+  v0.95:
+        - move bug priority from CodereleaseBug to SourcepackageBug
+	- remove wontfix since it is now a bug priority ("wontfix")
+	- add name to bugattachment
+	- refactor bug attachments:
+	  - don't have a relationship, each attachment on only one bug
+	  - allow for revisions to attachments
+	- rename BugRef to BugExternalref and remove bugref field
+	- create a link ProjectBugsystem between Project's and BugSystem's
+	- remove BugMessageSighting, each BugMessage now belongs to one and only one bug
+	- add a nickname (optional unique name) to the Bug table
+	- change the "summary" field of Bug to "title" for consistency
+	- rename some tables:
+	  - ReleaseBugStatus -> CodereleaseBug
+	  - SourcepackageBugStatus -> SourcepackageBug
+	  - ProductBugStatus -> ProductBug
+        - add a createdate to project and product
   v0.94:
         - rename soyuz.sql to launchpad.sql
 	- make Schema.extensible DEFAULT false (thanks spiv)
   v0.93:
         - add a manifest to Sourcepackage and Product, for the mutable HEAD manifest
-	- add a manifest to CodeRelease
+	- add a manifest to Coderelease
 	- rename includeas to entrytype in ManifestEntry
 	- remove "part" from ManifestEntry
 	- add hints in Manifest table so sourcerer knows how to name patch branches
@@ -37,7 +55,7 @@
         - add iscurrent (boolean) field to the POTFiles table, current POTFiles
 	    will be displayed in project summary pages.
         - add ChangesetFile, ChangesetFilename and ChangesetFileHash tables
-        - rename Release to CodeRelease (and all dependent tables)
+        - rename Release to Coderelease (and all dependent tables)
         - refactor Processor and ProcessorFamily:
 	  - the distroarchrelease now has a processorfamily field
 	  - the binarypackagebuild (deb) now records its processor
@@ -61,30 +79,31 @@
 /*
   DESTROY ALL TABLES
 */
+DROP TABLE PersonBug_Relationship;
 DROP TABLE SpokenIn CASCADE;
 DROP TABLE Country CASCADE;
-DROP TABLE BugMessageSighting CASCADE;
 DROP TABLE TranslationEffort_POTFile_Relationship CASCADE;
 DROP TABLE POComment CASCADE;
 DROP TABLE Branch_Relationship CASCADE;
+DROP TABLE ProjectBugsystem CASCADE;
 DROP TABLE BugSystem CASCADE;
 DROP TABLE BugWatch CASCADE;
 DROP TABLE RosettaPOTranslationSighting CASCADE;
 DROP TABLE BugAttachment CASCADE;
-DROP TABLE BugAttachment_Relationship CASCADE;
+DROP TABLE BugattachmentContent CASCADE;
 DROP TABLE License CASCADE;
 DROP TABLE Bug_Relationship CASCADE;
 DROP TABLE BugMessage CASCADE;
 DROP TABLE POTranslationSighting CASCADE;
-DROP TABLE BugRef CASCADE;
+DROP TABLE BugExternalref CASCADE;
 DROP TABLE Bug CASCADE;
 DROP TABLE Packaging CASCADE;
 DROP TABLE SourcepackageReleaseFile CASCADE;
 DROP TABLE Sourcepackage_Relationship CASCADE;
 DROP TABLE SourcepackageRelease CASCADE;
-DROP TABLE CodeReleaseBugStatus CASCADE;
+DROP TABLE CodereleaseBug CASCADE;
 DROP TABLE SourcepackageLabel CASCADE;
-DROP TABLE SourcepackageBugStatus CASCADE;
+DROP TABLE SourcepackageBug CASCADE;
 DROP TABLE Bug_Sourcepackage_Relationship CASCADE;
 DROP TABLE SourcepackageUpload CASCADE;
 DROP TABLE Sourcepackage CASCADE;
@@ -108,8 +127,8 @@ DROP TABLE Changeset CASCADE;
 DROP TABLE ArchArchive CASCADE;
 DROP TABLE UpstreamReleaseFile CASCADE;
 DROP TABLE UpstreamRelease CASCADE;
-DROP TABLE CodeRelease CASCADE;
-DROP TABLE CodeRelease_Relationship CASCADE;
+DROP TABLE Coderelease CASCADE;
+DROP TABLE Coderelease_Relationship CASCADE;
 DROP TABLE POTInheritance CASCADE;
 DROP TABLE POTMsgIDSighting CASCADE;
 DROP TABLE Manifest CASCADE;
@@ -538,7 +557,8 @@ CREATE TABLE Project (
     owner        integer NOT NULL REFERENCES Person,
     name         text NOT NULL UNIQUE,
     title        text NOT NULL,
-    description  text,
+    description  text NOT NULL,
+    createdate   timestamp NOT NULL,
     homepage     text
     );
 
@@ -573,6 +593,7 @@ CREATE TABLE Product (
   name          text NOT NULL,
   title         text NOT NULL,
   description   text NOT NULL,
+  createdate    timestamp NOT NULL,
   homepage      text,
   manifest      integer REFERENCES Manifest,
   UNIQUE ( project, name )
@@ -757,7 +778,7 @@ CREATE TABLE DistroArchRelease (
   SoyuzFile
   The Soyuz system keeps copies of all the files that are used to make
   up a distribution, such as deb's and tarballs and .dsc files and .spec
-  files and CodeRelease files... these are represented by this table.
+  files and Coderelease files... these are represented by this table.
 */
 CREATE TABLE SoyuzFile (
   soyuzfile        serial PRIMARY KEY,
@@ -789,7 +810,7 @@ CREATE TABLE SoyuzFileHash (
 
 /*
   UpstreamReleaseFile
-  A file from an Upstream CodeRelease. Usually this would be a tarball.
+  A file from an Upstream Coderelease. Usually this would be a tarball.
 */
 CREATE TABLE UpstreamReleaseFile (
   upstreamrelease integer NOT NULL REFERENCES UpstreamRelease,
@@ -951,7 +972,6 @@ CREATE TABLE BinarypackageBuild (
   gpgsigningkey          integer REFERENCES GPGKey,
   component              integer REFERENCES Label,
   section                integer REFERENCES Label,
-  priority               integer REFERENCES Label,
   shlibdeps              text,
   depends                text,
   recommends             text,
@@ -998,20 +1018,20 @@ CREATE TABLE BinarypackageUpload (
   This section is devoted to data that tracks upstream and distribution
   SOURCE PACKAGE releases. So, for example, Apache 2.0.48 is an
   UpstreamRelease. Apache 2.0.48-3 is a Debian SourcepackageRelease.
-  We have data tables for both of those, and the CodeRelease table is
-  the data that is common to any kind of CodeRelease. This subsystem also
-  keeps track of the actual files associated with CodeReleases, such as
+  We have data tables for both of those, and the Coderelease table is
+  the data that is common to any kind of Coderelease. This subsystem also
+  keeps track of the actual files associated with Codereleases, such as
   tarballs and deb's and .dsc files and changelog files...
 */
 
 
 
 /*
-  CodeRelease
+  Coderelease
   A release of software. Could be an Upstream release or
   a SourcepackageRelease.
 */
-CREATE TABLE CodeRelease (
+CREATE TABLE Coderelease (
   coderelease          serial PRIMARY KEY,
   upstreamrelease      integer REFERENCES UpstreamRelease,
   sourcepackagerelease integer REFERENCES SourcepackageRelease,
@@ -1023,13 +1043,13 @@ CREATE TABLE CodeRelease (
 
 
 /*
-  CodeRelease_Relationship
+  Coderelease_Relationship
   Maps the relationships between releases (upstream and
   sourcepackage).
 */
-CREATE TABLE CodeRelease_Relationship (
-  src       integer NOT NULL REFERENCES CodeRelease,
-  dst       integer NOT NULL REFERENCES CodeRelease,
+CREATE TABLE Coderelease_Relationship (
+  src       integer NOT NULL REFERENCES Coderelease,
+  dst       integer NOT NULL REFERENCES Coderelease,
   label     integer NOT NULL REFERENCES Label,
   PRIMARY KEY ( src, dst )
 );
@@ -1397,7 +1417,8 @@ CREATE TABLE POTSubscription (
 CREATE TABLE Bug (
   bug                     serial PRIMARY KEY,
   datecreated             timestamp NOT NULL,
-  summary                 text NOT NULL,
+  nickname                text UNIQUE,
+  title                   text NOT NULL,
   description             text NOT NULL,
   owner                   integer NOT NULL,
   duplicateof             integer REFERENCES Bug,
@@ -1412,18 +1433,30 @@ CREATE TABLE Bug (
 
 
 /*
-  CodeReleaseBugStatus
+  PersonBug_Relationship
+  The relationship between a person and a bug.
+*/
+CREATE TABLE PersonBug_Relationship (
+  person         integer NOT NULL REFERENCES Person,
+  bug            integer NOT NULL REFERENCES Bug,
+  label          integer NOT NULL REFERENCES Label
+);
+
+
+
+/*
+  CodereleaseBug
   This is a bug status scorecard. It's not a global status for the
   bug, this is usually attached to a release, or a sourcepackage in
   a distro. So these tell you the status of a bug SOMEWHERE. The
   pointer to this tells you which bug, and on what thing (the 
   SOMEWHERE) the status is being described.
 */
-CREATE TABLE CodeReleaseBugStatus (
+CREATE TABLE CodereleaseBug (
   bug              integer NOT NULL REFERENCES Bug,
-  coderelease      integer NOT NULL REFERENCES CodeRelease,
+  coderelease      integer NOT NULL REFERENCES Coderelease,
   explicit         boolean NOT NULL,
-  bugstatus        integer NOT NULL REFERENCES Label,
+  affected         integer NOT NULL REFERENCES Label,
   priority         integer NOT NULL REFERENCES Label,
   severity         integer NOT NULL REFERENCES Label,
   reportedby       integer NOT NULL REFERENCES Person,
@@ -1435,18 +1468,18 @@ CREATE TABLE CodeReleaseBugStatus (
 
 
 /*
-  SourcepackageBugStatus
+  SourcepackageBug
   The status of a bug with regard to a source package. This is different
   to the status on a specific release, because it includes the concept
   of workflow or prognosis ("what we intend to do with this bug") while
   the release bug status is static ("is the bug present or not").
 */
-CREATE TABLE SourcepackageBugStatus (
+CREATE TABLE SourcepackageBug (
   bug                integer NOT NULL REFERENCES Bug,
   sourcepackage      integer NOT NULL REFERENCES Sourcepackage,
   bugstatus          integer NOT NULL REFERENCES Label,
+  priority           integer NOT NULL REFERENCES Label,
   binarypackagename  text,
-  wontfix            boolean NOT NULL,
   PRIMARY KEY ( bug, sourcepackage )
 );
 
@@ -1455,7 +1488,7 @@ CREATE TABLE SourcepackageBugStatus (
 /*
   Bug_Sourcepackage_Relationship
   This is a mapping of the relationship between a bug and a source
-  package. Note that there is another similar table, the SourcepackageBugStatus,
+  package. Note that there is another similar table, the SourcepackageBug,
   that is dedicated to the status of a bug in a source package. This one is
   a bit more subtle. For example, you might put an intry in this table to
   indicate that a bug "victimises" a source package. In other words, the
@@ -1481,8 +1514,7 @@ CREATE TABLE ProductBugStatus (
   bug                integer NOT NULL REFERENCES Bug,
   product            integer NOT NULL REFERENCES Sourcepackage,
   bugstatus          integer NOT NULL REFERENCES Label,
-  binarypackagename  text,
-  wontfix            boolean NOT NULL,
+  priority           integer NOT NULL REFERENCES Label,
   PRIMARY KEY ( bug, product )
 );
 
@@ -1508,17 +1540,18 @@ CREATE TABLE BugActivity (
 
 
 /*
-  BugRef
+  BugExternalref
   A table of external references for a bug, that are NOT remote
   bug system references, except where the remote bug system is
   not supported by the BugWatch table.
+ XXX can we set the default timestamp to "now"
 */
-CREATE TABLE BugRef (
-  bugref      serial PRIMARY KEY,
+CREATE TABLE BugExternalref (
   bug         integer NOT NULL REFERENCES Bug,
   bugreftype  integer NOT NULL REFERENCES Label,
   data        text NOT NULL,
   description text NOT NULL,
+  createdate  timestamp NOT NULL,
   owner       integer NOT NULL REFERENCES Person
 );
 
@@ -1533,17 +1566,15 @@ CREATE TABLE BugRef (
 */
 CREATE TABLE BugSystemType (
   bugsystemtype   serial PRIMARY KEY,
+  name            text NOT NULL UNIQUE,
   title           text NOT NULL,
   description     text NOT NULL,
   homepage        text,
-  product         integer REFERENCES Product, -- A Soyuz Product if it exists
   owner           integer NOT NULL REFERENCES Person -- who knows most about these
 );
-/*
-INSERT INTO BugSystemType VALUES ( 1, "Bugzilla", "Dave Miller's Labour of Love, the Godfather of Open Source project issue tracking.", "http://www.bugzilla.org", NULL, 2 );
-INSERT INTO BugSystemType VALUES ( 2, "DebBugs", "The Debian bug tracking system, ugly as sin but fast and productive as a rabbit in high heels.", "http://bugs.debian.org", NULL, 3 );
-INSERT INTO BugSystemType VALUES ( 3, "RoundUp", "Python-based open source bug tracking system with an elegant design and reputation for cleanliness and usability.", NULL, 4 );
-*/
+INSERT INTO BugSystemType VALUES ( 1, 'bugzilla', 'BugZilla', 'Dave Miller\'s Labour of Love, the Godfather of Open Source project issue tracking.', 'http://www.bugzilla.org/', 2 );
+INSERT INTO BugSystemType VALUES ( 2, 'debbugs', 'DebBugs', 'The Debian bug tracking system, ugly as sin but fast and productive as a rabbit in high heels.', 'http://bugs.debian.org/', 3 );
+INSERT INTO BugSystemType VALUES ( 3, 'roundup', 'Round-Up', 'Python-based open source bug tracking system with an elegant design and reputation for cleanliness and usability.', 'http://www.roundup.org/', 4 );
 
 
 /*
@@ -1557,6 +1588,7 @@ CREATE TABLE BugSystem (
   bugsystem        serial PRIMARY KEY,
   bugsystemtype    integer NOT NULL REFERENCES BugSystemType,
   name             text NOT NULL,
+  title            text NOT NULL,
   description      text NOT NULL,
   baseurl          text NOT NULL,
   owner            integer NOT NULL REFERENCES Person
@@ -1584,32 +1616,47 @@ CREATE TABLE BugWatch (
 
 
 /*
+  ProjectBugsystem
+  A link between the Project table and the Bugsystem table. This allows
+  us to setup a bug system and then easily create watches once a bug
+  has been assigned to an upstream product.
+*/
+CREATE TABLE ProjectBugsystem (
+  project         integer NOT NULL REFERENCES Project,
+  bugsystem       integer NOT NULL REFERENCES BugSystem,
+  PRIMARY KEY ( project, bugsystem )
+);
+  
+
+
+/*
   BugAttachment
   A table of attachments to bugs. These are typically patches, screenshots,
   mockups, or other documents.
 */
 CREATE TABLE BugAttachment (
   bugattachment   serial PRIMARY KEY,
-  owner           integer NOT NULL REFERENCES Person,
-  content         text NOT NULL,
+  bug             integer NOT NULL REFERENCES Bug,
+  name            text NOT NULL,
   title           text NOT NULL,
-  description     text NOT NULL,
-  mimetype        text,
-  replaces        integer REFERENCES BugAttachment
+  description     text NOT NULL
 );
 
 
 
 /*
-  BugAttachment_Relationship
-  A link between bug and attachment that carries some type
-  of relationship.
+  BugattachmentRevision
+  The actual content of a bug attachment. There can be multiple
+  uploads over time, each revision gets a changecomment.
 */
-CREATE TABLE BugAttachment_Relationship (
-  bug            integer NOT NULL REFERENCES Bug,
+CREATE TABLE BugattachmentContent (
   bugattachment  integer NOT NULL REFERENCES BugAttachment,
-  label          integer NOT NULL REFERENCES Label,
-  PRIMARY KEY ( bug, bugattachment )
+  revisiondate   timestamp NOT NULL,
+  changecomment  text NOT NULL,
+  content        bytea NOT NULL,
+  owner          integer REFERENCES Person,
+  mimetype       text,
+  PRIMARY KEY ( bugattachment, revisiondate )
 );
 
 
@@ -1648,23 +1695,14 @@ CREATE TABLE Bug_Relationship (
 */
 CREATE TABLE BugMessage (
   bugmessage           serial PRIMARY KEY,
+  bug                  integer NOT NULL REFERENCES Bug,
   msgdate              timestamp NOT NULL,
-  message              text NOT NULL, -- the message or full email with headers
+  title                text NOT NULL, -- short title of comment
+  contents             text NOT NULL, -- the message or full email with headers
   person               int REFERENCES Person, -- NULL if we don't know it
-  senderemail          text, -- NULL if this came through the web
   parent               int REFERENCES BugMessage, -- gives us threading
   distribution         int REFERENCES Distribution,
   rfc822msgid          text
-);
-
-
-
-/*
-  BugMessageSighting
-*/
-CREATE TABLE BugMessageSighting (
-  bug        integer NOT NULL REFERENCES Bug,
-  bugmessage integer NOT NULL REFERENCES BugMessage
 );
 
 
