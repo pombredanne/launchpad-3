@@ -37,6 +37,13 @@
 	- add ArchNamespace and move attributes there from Branch
 	- Add BugActivity.id as a primary key for Andrew Veitch
 	- Fix typo BugInfestation.createor -> BugInfestation.creator
+	- major Rosetta changes:
+	  - remove Filters and Inheritance (don't need it for phase 1)
+	  - rename POTFile -> POTemplate
+	  - rename POTSubscription POSubscription
+	  - add POTemplate.product
+	  - add POMsgSet table
+	  - rename POTMsgIDSighting -> POMsgIDSighting
   v0.97:
         - rename Membership.label to Membership.role
 	- rename EmailAddress.label to EmailAddress.status
@@ -149,7 +156,7 @@ DROP TABLE ArchArchiveLocationSigner;
 DROP TABLE BugSubscription;
 DROP TABLE SpokenIn;
 DROP TABLE Country;
-DROP TABLE TranslationEffortPOTFileRelationship;
+DROP TABLE TranslationEffortPOTemplateRelationship;
 DROP TABLE POComment;
 DROP TABLE BranchRelationship;
 DROP TABLE ProjectBugsystem;
@@ -159,10 +166,11 @@ DROP TABLE RosettaPOTranslationSighting;
 DROP TABLE BugattachmentContent;
 DROP TABLE BugAttachment;
 DROP TABLE POTranslationSighting;
+DROP TABLE POMsgIDSighting;
+DROP TABLE POMsgSet;
 DROP TABLE POFile;
-DROP TABLE POTMsgIDSighting;
-DROP TABLE POTSubscription;
-DROP TABLE POTFile;
+DROP TABLE POSubscription;
+DROP TABLE POTemplate;
 DROP TABLE License;
 DROP TABLE BugRelationship;
 DROP TABLE BugMessage;
@@ -207,14 +215,12 @@ DROP TABLE ArchNamespace;
 DROP TABLE ArchArchiveLocation;
 DROP TABLE ArchArchive;
 DROP TABLE POTranslation;
-DROP TABLE POTInheritance;
 DROP TABLE ProjectRelationship;
 DROP TABLE POMsgID;
 DROP TABLE Language;
 DROP TABLE TranslationEffort;
 DROP TABLE Project;
 DROP TABLE EmailAddress;
-DROP TABLE TranslationFilter;
 DROP TABLE GPGKey;
 DROP TABLE ArchUserID;
 DROP TABLE Membership;
@@ -489,7 +495,7 @@ CREATE TABLE ArchArchiveLocationSigner (
 */
 CREATE TABLE ArchNamespace (
   id                     serial PRIMARY KEY,
-  archarchive            integer NOT NULL REFERENCE ArchArchive,
+  archarchive            integer NOT NULL REFERENCES ArchArchive,
   category               text NOT NULL,
   branch                 text,
   version                text
@@ -701,7 +707,9 @@ CREATE TABLE Product (
   datecreated   timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   homepageurl   text NOT NULL,
   manifest      integer REFERENCES Manifest,
-  UNIQUE ( project, name )
+  UNIQUE ( project, name ),
+  -- ( id, project ) must be unique so it can be a foreign key
+  UNIQUE ( id, project )
 );
 
 
@@ -1234,7 +1242,6 @@ CREATE TABLE OSFileInPackage (
   to see translations that are compatible with this filter in terms
   of licence, review and contribution criteria. This will not be
   implemented in Rosetta v1.0
-*/
 CREATE TABLE TranslationFilter (
   id                serial PRIMARY KEY,
   owner             integer NOT NULL REFERENCES Person,
@@ -1242,6 +1249,7 @@ CREATE TABLE TranslationFilter (
   title             text NOT NULL,
   description       text NOT NULL
 );
+*/
 
 
 
@@ -1259,8 +1267,7 @@ CREATE TABLE TranslationEffort (
   project               integer NOT NULL REFERENCES Project,
   name                  text NOT NULL UNIQUE,
   title                 text NOT NULL,
-  description           text NOT NULL,
-  translationfilter     integer REFERENCES TranslationFilter
+  description           text NOT NULL
 );
 
 
@@ -1270,12 +1277,12 @@ CREATE TABLE TranslationEffort (
 /*
   POTInheritance
   A handle on an inheritance sequence for POT files.
-*/
 CREATE TABLE POTInheritance (
   id                    serial PRIMARY KEY,
   title                 text,
   description           text
 );
+*/
 
 
 
@@ -1292,13 +1299,14 @@ CREATE TABLE License (
 
 
 /*
-  POTFile
+  POTemplate
   A PO Template File, which is the first thing that Rosetta will set
   about translating.
 */
-CREATE TABLE POTFile (
+CREATE TABLE POTemplate (
   id                    serial PRIMARY KEY,
   project               integer NOT NULL REFERENCES Project,
+  product               integer REFERENCES Product,
   branch                integer REFERENCES Branch,
   changeset             integer REFERENCES Changeset,
   name                  text NOT NULL UNIQUE,
@@ -1309,12 +1317,13 @@ CREATE TABLE POTFile (
   datecreated           timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   path                  text NOT NULL,
   iscurrent             boolean NOT NULL,
-  defaultinheritance    integer REFERENCES POTInheritance,
-  defaultfilter         integer REFERENCES TranslationFilter,
   owner                 integer REFERENCES Person,
   -- EITHER branch OR changeset:
   CHECK ( NOT ( branch IS NULL AND changeset IS NULL ) ),
-  CHECK ( NOT ( branch IS NOT NULL AND changeset IS NOT NULL ) )
+  CHECK ( NOT ( branch IS NOT NULL AND changeset IS NOT NULL ) ),
+  -- make sure, if we refer to a Product, that it is from
+  -- the same Project
+  FOREIGN KEY ( product, project ) REFERENCES Product ( id, project )
 );
 
 
@@ -1389,7 +1398,7 @@ CREATE TABLE SpokenIn (
 */
 CREATE TABLE POFile (
   id                   serial PRIMARY KEY,
-  potfile              integer NOT NULL REFERENCES POTFile,
+  potemplate              integer NOT NULL REFERENCES POTemplate,
   language             integer NOT NULL REFERENCES Language,
   title                text,
   description          text,
@@ -1403,19 +1412,40 @@ CREATE TABLE POFile (
 
 
 /*
-  POTMsgIDSighting
+  POMsgSet
+  Each POTemplate and POFile is made up of a set of POMsgSets
+  each of which has both msgid's and translations.
+*/
+CREATE TABLE POMsgSet (
+  id                  serial PRIMARY KEY,
+  primemsgid          integer NOT NULL REFERENCES POMsgID,
+  sequence            integer,
+  potemplate          integer REFERENCES POTemplate,
+  pofile              integer REFERENCES POFile,
+  commenttext         text,
+  fuzzy               boolean NOT NULL,
+  obsolete            boolean NOT NULL,
+  filereferences      text,
+  sourcecomment       text
+);
+
+
+
+/*
+  POMsgIDSighting
   Table that documents the sighting of a particular msgid in a pot file.
 */
-CREATE TABLE POTMsgIDSighting (
-  potfile             integer NOT NULL REFERENCES POTFile,
+CREATE TABLE POMsgIDSighting (
+  id                  serial PRIMARY KEY,
+  pomsgset            integer NOT NULL REFERENCES POMsgSet,
   pomsgid             integer NOT NULL REFERENCES POMsgID,
   firstseen           timestamp NOT NULL,
   lastseen            timestamp NOT NULL,
   iscurrent           boolean NOT NULL,
-  commenttext         text,
-  -- if this is not NULL then it's part of a tuple
-  singular            integer REFERENCES POMsgID,
-  PRIMARY KEY ( potfile, pomsgid )
+  -- 0 for English singular, 1 for English plural
+  pluralform          integer NOT NULL,
+  -- we only want one sighting of an id in a msgset
+  UNIQUE ( pomsgset, pomsgid )
 );
 
 
@@ -1424,21 +1454,19 @@ CREATE TABLE POTMsgIDSighting (
   POTranslationSighting
   A sighting of a translation in a PO file IN REVISION CONTROL. This
   is contrasted with a RosettaPOTranslationSighting, which is a
-  translation given to us for a potfile/language.
+  translation given to us for a potemplate/language.
 */
 CREATE TABLE POTranslationSighting (
   id                    serial PRIMARY KEY,
-  pofile                integer NOT NULL REFERENCES POFile,
-  pomsgid               integer NOT NULL REFERENCES POMsgID,
+  pomsgset              integer NOT NULL REFERENCES POMsgSet,
   potranslation         integer NOT NULL REFERENCES POTranslation,
   license               integer NOT NULL REFERENCES License,
-  fuzzy                 boolean NOT NULL,
   rosettaprovided       boolean NOT NULL,
   firstseen             timestamp NOT NULL,
   lastseen              timestamp NOT NULL,
   iscurrent             boolean NOT NULL,
-  commenttext           text,
-  pluralform            integer,
+  pluralform            integer NOT NULL,
+  person                integer REFERENCES Person,
   CHECK ( pluralform >= 0 )
 );
 
@@ -1452,7 +1480,7 @@ CREATE TABLE POTranslationSighting (
 CREATE TABLE RosettaPOTranslationSighting (
   id                   serial PRIMARY KEY,
   person               integer NOT NULL REFERENCES Person,
-  potfile              integer NOT NULL REFERENCES POTFile,
+  potemplate              integer NOT NULL REFERENCES POTemplate,
   pomsgid              integer NOT NULL REFERENCES POMsgID,
   language             integer NOT NULL REFERENCES Language,
   potranslation        integer NOT NULL REFERENCES POTranslation,
@@ -1473,7 +1501,7 @@ CREATE TABLE RosettaPOTranslationSighting (
 */
 CREATE TABLE POComment (
   id                  serial PRIMARY KEY,
-  potfile             integer NOT NULL REFERENCES POTFile,
+  potemplate             integer NOT NULL REFERENCES POTemplate,
   pomsgid             integer REFERENCES POMsgID,
   language            integer REFERENCES Language,
   potranslation       integer REFERENCES POTranslation,
@@ -1486,36 +1514,33 @@ CREATE TABLE POComment (
 
 
 /*
-  TranslationeffortPOTFileRelationship
+  TranslationeffortPOTemplateRelationship
   A translation project incorporates a POTfile that is under translation.
   The inheritance pointer allows this project to specify a custom
   translation inheritance sequence.
 */
-CREATE TABLE TranslationeffortPOTFileRelationship (
+CREATE TABLE TranslationeffortPOTemplateRelationship (
   translationeffort  integer NOT NULL REFERENCES TranslationEffort ON DELETE CASCADE,
-  potfile            integer NOT NULL REFERENCES POTFile,
-  potinheritance     integer REFERENCES POTInheritance,
-  UNIQUE (translationeffort , potfile)
+  potemplate            integer NOT NULL REFERENCES POTemplate,
+  UNIQUE (translationeffort , potemplate)
 );
 
 
 
 
 /*
-  POTSubscription
+  POSubscription
   Records the people who have subscribed to a POT File. They can
   subscribe to the POT file and get all the PO files, or just the PO
   files for a specific language.
 */
-CREATE TABLE POTSubscription (
+CREATE TABLE POSubscription (
   id                   serial PRIMARY KEY,
   person               integer NOT NULL REFERENCES Person,
-  potfile              integer NOT NULL REFERENCES POTFile,
+  potemplate              integer NOT NULL REFERENCES POTemplate,
   language             integer REFERENCES Language,
   notificationinterval interval NOT NULL,
-  lastnotified         timestamp,
-  potinheritance       integer REFERENCES POTInheritance,
-  translationfilter    integer REFERENCES TranslationFilter
+  lastnotified         timestamp
 );
 
 
