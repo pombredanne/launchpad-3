@@ -49,6 +49,10 @@
       name="index"
       />
   <browser:defaultView
+      for="canonical.rosetta.interfaces.IProduct"
+      name="index"
+      />
+  <browser:defaultView
       for="canonical.rosetta.interfaces.IPOTemplate"
       name="index"
       />

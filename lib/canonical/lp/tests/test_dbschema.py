@@ -70,12 +70,40 @@ def test_constructor():
 
     """
 
+def test_decorator():
+    """
+    >>> from canonical.lp.dbschema import BugSeverity, Item
+
+    We can iterate over the Items in a DBSchema class
+
+    >>> for s in BugSeverity.items:
+    ...     assert isinstance(s, Item)
+    ...     print s.name
+    ...
+    CRITICAL
+    MAJOR
+    NORMAL
+    MINOR
+    WISHLIST
+
+    We can retrieve an Item by value
+
+    >>> BugSeverity.items[1].name
+    'CRITICAL'
+
+    """
 
 def test_suite():
     suite = DocTestSuite()
     suite.addTest(DocTestSuite('canonical.lp.dbschema'))
     return suite
 
+def _test():
+    import doctest, test_dbschema
+    return doctest.testmod(test_dbschema)
+
+if __name__ == "__main__":
+    _test()
 
 if __name__ == '__main__':
     unittest.main()

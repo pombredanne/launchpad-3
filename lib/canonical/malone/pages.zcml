@@ -1,81 +1,81 @@
 <configure
-  xmlns="http://namespaces.zope.org/browser"
-  xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:zope="http://namespaces.zope.org/zope"
-  xmlns:lp="http://launchpad.canonical.com">
+    xmlns="http://namespaces.zope.org/browser"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:zope="http://namespaces.zope.org/zope"
+    xmlns:lp="http://launchpad.canonical.com">
 
 
-  <!-- general template for everything in malone -->
-  <pages for="*" permission="zope.Public">
-    <page name="malone_template"
-          template="../lp/templates/main_template.pt" />
-  </pages>
+    <!-- general template for everything in malone -->
+    <pages for="*" permission="zope.Public">
+        <page name="malone_template"
+            template="../lp/templates/main_template.pt" />
+    </pages>
 
-  <!-- pages for the malone application -->
-  <pages for="canonical.malone.interfaces.IMaloneApplication"
-         permission="zope.Public"
-         lp:url="malone">
-    <page name="index"
-          template="templates/malone-index.pt"
-          lp:url="malone/index" />
-    <page name="about"
-          template="templates/malone-about.pt"
-          lp:url="malone/+about" />
-    <page name="dashboard"
-          template="templates/malone-dashboard.pt"
-          lp:url="malone/dashboard" />
-    <page name="to-do"
-          template="templates/malone-to-do.pt"
-          lp:url="malone/to-do" />
-  </pages>
+    <!-- pages for the malone application -->
+    <pages 
+        for="canonical.malone.interfaces.IMaloneApplication"
+        permission="zope.Public"
+        class="canonical.malone.browser.MaloneApplicationView"
+        lp:url="malone">
+        <page name="index"
+            template="templates/malone-index.pt"
+            lp:url="malone/index" />
+        <page name="about"
+            template="templates/malone-about.pt"
+            lp:url="malone/+about" />
+        <page name="dashboard"
+            template="templates/malone-dashboard.pt"
+            lp:url="malone/dashboard" />
+        <page name="to-do"
+            template="templates/malone-to-do.pt"
+            lp:url="malone/to-do" />
+    </pages>
 
-  <pages for="canonical.malone.interfaces.IBugContainer"
-         permission="zope.Public"
-         lp:url="malone/bugs/$Bug.id">
-    <page name="index"
-          template="templates/bugs-index.pt"
-          lp:url="malone/bugs/$Bug.id/index" />
-  </pages>
+    <pages
+        for="canonical.malone.interfaces.IBugContainer"
+        permission="zope.Public"
+        lp:url="malone/bugs/$Bug.id">
+        <page name="index"
+            template="templates/bugs-index.pt"
+            lp:url="malone/bugs/$Bug.id/index" />
+    </pages>
 
-  <traverse for="canonical.malone.interfaces.IBugContainer"
-            getter="__getitem__" />
+    <traverse 
+        for="canonical.malone.interfaces.IBugContainer"
+        getter="__getitem__" />
 
-  <pages for=".interfaces.IMaloneBug"
-         permission="zope.Public"
-         lp:url="malone/bugs/$Bugs.id">
-    <page name="index"
-          template="templates/bug-index.pt"
-          lp:url="malone/bugs/$Bugs.id/index" />
-    <page name="activity"
-          template="templates/bug-activity.pt"
-          lp:url="malone/bugs/$Bugs.id/activity" />
-    <page name="assignments"
-          template="templates/bug-assignment.pt" />
-  </pages>
+    <pages
+        for=".interfaces.IMaloneBug"
+        permission="zope.Public"
+        class=".browser.MaloneBugView"
+        lp:url="malone/bugs/$Bugs.id">
+        <page name="index"
+            template="templates/bug-index.pt"
+            lp:url="malone/bugs/$Bugs.id/index" />
+        <page name="activity"
+            template="templates/bug-activity.pt"
+            lp:url="malone/bugs/$Bugs.id/activity" />
+        <!--<page name="assignments"
+            template="templates/bug-assignment.pt" />-->
+    </pages>
 
-  <pages for="canonical.malone.interfaces.IBugAttachmentContainer"
-         permission="zope.Public"
-         lp:url="malone/bugs/$Bugs.id/attachments">
-    <page name="index"
-          template="templates/attachments-index.pt"
-          lp:url="malone/bugs/$Bugs.id/attachments/index" />
-  </pages>
+    <traverse 
+        for="canonical.malone.interfaces.IBugAttachmentContainer"
+        getter="__getitem__" />
 
-  <traverse for="canonical.malone.interfaces.IBugAttachmentContainer"
-            getter="__getitem__" />
-
-  <pages for=".interfaces.IBugAttachment"
-         permission="zope.Public"
-         lp:url="malone/bugs/$Bugs.id/attachments/$Attachment.id">
-    <page name="index"
-          template="templates/attachment-index.pt" />
-  </pages>
+    <pages 
+        for=".interfaces.IBugAttachment"
+        permission="zope.Public"
+        lp:url="malone/bugs/$Bugs.id/attachments/$Attachment.id">
+        <page name="index"
+            template="templates/attachment-index.pt" />
+    </pages>
 
   <pages for="canonical.malone.interfaces.IProjectContainer"
          permission="zope.Public">
-    <page name="search"
+    <page name="+search"
           template="templates/projects-search.pt"
-          lp:url="malone/projects/search" />
+          lp:url="malone/projects/+search" />
   </pages>
 
   <traverse for="canonical.malone.interfaces.IProjectContainer"
@@ -85,34 +85,92 @@
          permission="zope.Public">
     <page name="index"
           template="templates/project-index.pt"
-          lp:url="malone/projects/$Project.name" />
+          lp:url="malone/projects/$Project.name/index" />
   </pages>
 
-  <pages for="canonical.malone.interfaces.IBugExternalRefContainer"
-         permission="zope.Public">
-    <page name="index"
-          template="templates/references-index.pt"
-          lp:url="malone/bugs/$Bug.id/references" />
+  <pages for="canonical.malone.interfaces.ISourcepackageContainer"
+      permission="zope.Public">
+      <page name="index" template="templates/sourcepackages-index.pt"
+          lp:url="malone/sourcepackages/index" />
   </pages>
 
-  <traverse for="canonical.malone.interfaces.IBugExternalRefContainer"
-            getter="__getitem__" />
+  <traverse for="canonical.malone.interfaces.ISourcepackageContainer"
+      getter="__getitem__" />
 
-  <pages for="canonical.malone.interfaces.IBugSubscriptionContainer"
-         permission="zope.Public">
-    <page name="index"
-          template="templates/bug-people.pt"
-          lp:url="malone/bugs/$Bug.id/people" />
+  <pages 
+      for="canonical.database.doap.ISourcepackage" 
+      permission="zope.Public"
+      class=".browser.SourcepackageView">
+      <page name="index" template="templates/sourcepackage-index.pt"
+          lp:url="malone/sourcepackage/$Sourcepackage.name/index" />
   </pages>
 
-  <traverse for="canonical.malone.interfaces.IBugSubscriptionContainer"
-            getter="__getitem__" />
+    <pages 
+        for="canonical.malone.interfaces.IBugExternalRefContainer"
+        permission="zope.Public">
+        <page name="index"
+            template="templates/references-index.pt"
+            lp:url="malone/bugs/$Bug.id/references" />
+    </pages>
 
-  <pages for="canonical.database.malone.IBugExternalRef"
-         permission="zope.Public">
-    <page name="index"
-          template="templates/reference-index.pt"
-          lp:url="malone/bugs/$Bug.id/reference/$Reference.id" />
-  </pages>
+    <traverse 
+        for="canonical.malone.interfaces.IBugExternalRefContainer"
+        getter="__getitem__" />
 
+    <pages for="canonical.malone.interfaces.IProductBugAssignmentContainer"
+        permission="zope.Public">
+        <page name="index"
+            template="templates/productbugassignments-index.pt"
+            lp:url="malone/bugs/$Bug.id/productassignments/index" />
+    </pages>
+
+    <traverse 
+        for="canonical.malone.interfaces.IProductBugAssignmentContainer"
+        getter="__getitem__" />
+
+    <pages 
+        for="canonical.malone.interfaces.ISourcepackageBugAssignmentContainer"
+        permission="zope.Public">
+        <page name="index"
+            template="templates/sourcepackagebugassignments-index.pt"
+            lp:url="malone/bugs/$Bug.id/sourcepackageassignments/index" />
+    </pages>
+
+    <traverse 
+        for="canonical.malone.interfaces.ISourcepackageBugAssignmentContainer"
+        getter="__getitem__" />
+
+    <pages 
+        for="canonical.malone.interfaces.IBugWatchContainer"
+        permission="zope.Public">
+        <page name="index"
+            template="templates/watches-index.pt"
+            lp:url="malone/bugs/$Bug.id/watches/index" />
+    </pages>
+
+    <traverse 
+        for="canonical.malone.interfaces.IBugWatchContainer"
+        getter="__getitem__" />
+
+    <pages
+        for="canonical.malone.interfaces.IBugSubscriptionContainer"
+        permission="zope.Public"
+        lp:url="malone/bugs/$Bug.id/people">
+        <page name="index"
+            template="templates/people-index.pt"
+            lp:url="malone/bugs/$Bug.id/people/index" />
+    </pages>
+
+    <traverse
+        for="canonical.malone.interfaces.IBugSubscriptionContainer"
+        getter="__getitem__" />
+
+    <pages 
+        for="canonical.database.malone.IBugExternalRef"
+        permission="zope.Public">
+        <page name="index"
+            template="templates/reference-index.pt"
+            lp:url="malone/bugs/$Bug.id/reference/$Reference.id" />
+    </pages>
+  
 </configure>

@@ -13,7 +13,7 @@ class IPOMessage(Interface):
         "The msgstr's of the message, if more than one (as a list of unicodes).")
     commentText = Attribute(
         "The human-written comments ('# foo') of the message (as an unicode).")
-    generatedComment = Attribute(
+    sourceComment = Attribute(
         "The parser-generated comments ('#. foo') of the message (as an unicode).")
     fileReferences = Attribute(
         "The references ('#: foo') of the message (as an unicode).")
@@ -21,6 +21,11 @@ class IPOMessage(Interface):
         "The flags of the message (a Set of strings).")
     obsolete = Attribute(
         """True if this message is obsolete (#~ msgid "foo"\\n#~ msgstr "bar").""")
+    nplurals = Attribute(
+        """The number of plural forms for this language, as used in this file.
+        None means the header does not have a Plural-Forms entry.""")
+    pluralExpr = Attribute(
+        """The expression used to get a plural form from a number.""")
 
     def flagsText(flags=None):
         """The flags of the message, as an unicode; or, if a sequence

@@ -4,6 +4,7 @@
       i18n:domain="rosetta">
 
 <head>
+    <title metal:fill-slot="title">Rosetta</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -12,6 +13,7 @@
 
 <body>
 
+
 <div metal:fill-slot="main">
 
     <h1>Welcome to Rosetta!</h1>
@@ -19,7 +21,7 @@
     <div class="documentDescription">
     Rosetta is a tool for translating applications into your language. You can
     also use it to find out whether a certain application or type of
-    application is available in your lanauge. Use the search form below to
+    application is available in your language. Use the search form below to
     find an application, or see the <a href="about" title="About
     Rosetta">about</a> page to find out more about Rosetta.
     </div>

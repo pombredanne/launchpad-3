@@ -22,8 +22,8 @@ class POExport:
         poFile = self.potfile.poFile(language)
 
         header = POHeader(
-            commentText = unicode(poFile.topComment, 'UTF-8'),
-            msgstr = unicode(poFile.header, 'UTF-8'))
+            commentText = poFile.topComment,
+            msgstr = poFile.header)
         
         if poFile.headerFuzzy:
             header.flags.add('fuzzy')
@@ -31,8 +31,23 @@ class POExport:
         header.finish()
 
         messages = []
-        for msgset in self.potfile:
-            messages.append(MessageProxy(msgset))
+        for potmsgset in self.potfile:
+            try:
+                msgset = poFile[potmsgset.primeMessageID_.msgid]
+            except KeyError:
+                # the pofile doesn't have that msgid; include the
+                # one from the template
+                msgset = potmsgset
+            messages.append(MessageProxy(msgset, potmsgset))
+        # export obsolete messages
+        for msgset in poFile.messageSetsNotInTemplate():
+            try:
+                potmsgset = self.potfile[msgset.primeMessageID_.msgid]
+            except KeyError:
+                # the potfile doesn't have that msgid; export it as
+                # obsolete
+                potmsgset = None
+            messages.append(MessageProxy(msgset, potmsgset))
 
         output = StringIO()
         writer = codecs.getwriter(header.charset)(output, 'strict')

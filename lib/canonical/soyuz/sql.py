@@ -11,16 +11,23 @@ from sqlos.interfaces import IConnectionName
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
 
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote
+from canonical.lp import dbschema
 
 # sibling import
 from canonical.soyuz.interfaces import IBinaryPackage, IBinaryPackageBuild
 from canonical.soyuz.interfaces import ISourcePackageRelease, IManifestEntry
 from canonical.soyuz.interfaces import IBranch, IChangeset, IPackages
 from canonical.soyuz.interfaces import IBinaryPackageSet, ISourcePackageSet
-from canonical.soyuz.interfaces import ISourcePackage, IPerson, IProject
+from canonical.soyuz.interfaces import ISourcePackage, ISoyuzPerson, IProject
 from canonical.soyuz.interfaces import IProjects, IProduct
 from canonical.soyuz.interfaces import ISync, IDistribution, IRelease
+from canonical.soyuz.interfaces import IDistributionRole, IDistroReleaseRole
+
+from canonical.soyuz.interfaces import IDistroBinariesApp
+
+from canonical.soyuz.database import SoyuzBinaryPackage
+
 
 try:
     from canonical.arch.infoImporter import SourceSource as infoSourceSource,\
@@ -29,17 +36,13 @@ except ImportError:
     raise
 
 
-from canonical.arch.sqlbase import quote
-from canonical.soyuz.database import SourcePackage, Manifest, ManifestEntry, \
-                                     SourcePackageRelease
+from canonical.database.sqlbase import quote
+from canonical.soyuz.database import SoyuzSourcePackage, Manifest, \
+                                     ManifestEntry, SoyuzSourcePackageRelease
 
 from canonical.soyuz.database import SoyuzProject as dbProject, SoyuzProduct \
      as dbProduct
 from canonical.arch.database import Branch, Changeset
-
-
-class DistroReleasesSourcesReleasesApp(object):
-    pass
 
 
 
@@ -50,6 +53,7 @@ class DistrosApp(object):
     def __iter__(self):
     	return iter(SoyuzDistribution.select())
 
+# Release app component Section (releases)
 class DistroReleaseApp(object):
     def __init__(self, release):
         self.release = release
@@ -61,7 +65,6 @@ class DistroReleaseApp(object):
             return BinaryPackages(self.release)
         else:
             raise KeyError, name
-
 
 class DistroReleasesApp(object):
     def __init__(self, distribution):
@@ -77,12 +80,146 @@ class DistroReleasesApp(object):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
 
 
+####### end of distroRelease app component
+
+# Source app component Section (src) 
+class DistroReleaseSourceReleaseBuildApp(object):
+    def __init__(self, sourcepackagerelease, version, arch):
+        self.sourcepackagerelease = sourcepackagerelease
+        self.version = version
+        self.arch = arch
+
+
+class DistroReleaseSourceReleaseApp(object):
+    def __init__(self, sourcepackage, version):
+        print 'DistroReleaseSourceReleaseApp', sourcepackage, version
+        results = SoyuzSourcePackageRelease.selectBy(
+                sourcepackageID=sourcepackage.id, version=version)
+        if results.count() == 0:
+            raise ValueError, 'No such version ' + repr(version)
+        else:
+            self.sourcepackagerelease = results[0]
+        #self.sourcepackage = sourcepackage
+        self.version = version
+        # FIXME: stub
+        self.archs = ['i386','AMD64']
+        
+    def __getitem__(self, arch):
+        return DistroReleaseSourceReleaseBuildApp(self.sourcepackagerelease,
+                                                  self.version,
+                                                  arch)
+
+class currentVersion(object):
+    def __init__(self, version, builds):
+        self.currentversion = version
+        self.currentbuilds = builds
+
+class DistroReleaseSourceApp(object):
+    def __init__(self, release, sourcepackage):
+        self.release = release
+        # FIXME: sourcepackage is currently a sourcepackagerelease!
+        self.sourcepackage = sourcepackage
+        # FIXME: stub
+        #         self.lastversions = ['1.2.3-4',
+        #                              '1.2.3-5',
+        #                              '1.2.3-6',
+        #                              '1.2.4-0',
+        #                              '1.2.4-1']
+
+        #self.currentversions = [currentVersion('1.2.4-0',['i386', 'AMD64']),
+        #                        currentVersion('1.2.3-6',['PPC'])
+        #                        ]
+                                
+
+    def __getitem__(self, version):
+        return DistroReleaseSourceReleaseApp(self.sourcepackage, version)
+
+    def proposed(self):
+        return self.sourcepackage.sourcepackage.proposed(self.release,
+                                                         self.sourcepackage)
+    proposed = property(proposed)
+
+    def currentversions(self):
+        # FIXME: Probably should be more than just PUBLISHED uploads (e.g.
+        # NEW + ACCEPTED + PUBLISHED?)
+        #If true, it is defined inside database.py
+        currents = self.sourcepackage.sourcepackage.current(self.release)
+        if currents:
+            currents_list = []
+            for crts in currents:
+                currents_list.append(currentVersion(crts.version,['i386', 'AMD64']))
+            return currents_list
+        else:
+            return None
+
+    currentversions = property(currentversions)
+
+    def lastversions(self):
+        return self.sourcepackage.sourcepackage.lastversions(self.release)
+
+    lastversions = property(lastversions)
+    
+
+    ##Does this relation SourcePackageRelease and Builds exists??
+    ##Is it missing in the database or shoult it be retrived using binarypackage table?
+    def builds(self):
+        return self.sourcepackage.builds
+    builds = property(builds)
+
+    
+class DistroReleaseSourcesApp(object):
+    """Container of SourcePackage objects.
+
+    Used for web UI.
+    """
+#    implements(ISourcePackageSet)
+
+    table = SoyuzSourcePackageRelease
+    clauseTables = ('SourcePackage', 'SourcePackageUpload',)
+
+    def __init__(self, release):
+        self.release = release
+        self.people = SoyuzPerson.select()
+        
+    def _query(self):
+        return (
+            'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
+            'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+            'AND SourcePackageUpload.distrorelease = %d '
+            % (self.release.id))
+        
+    def __getitem__(self, name):
+        # XXX: What about multiple results?
+        #      (which shouldn't happen here...)
+
+        query = self._query()
+        # XXX ascii bogus needs to be revisited
+        query += ' AND name = %s' % quote(name.encode('ascii'))
+        try:
+            return DistroReleaseSourceApp(self.release,
+                    self.table.select(query, clauseTables=self.clauseTables)[0])
+        except IndexError:
+            # Convert IndexErrors into KeyErrors so that Zope will give a
+            # NotFound page.
+            raise KeyError, name
+
+
+    def __iter__(self):
+        #FIXME: Dummy solution to avoid a sourcepackage to be shown more then once
+        present = []
+        for bp in self.table.select(self._query(),
+                                    clauseTables=self.clauseTables):
+            if bp.sourcepackage.name not in present:
+                present.append(bp.sourcepackage.name)
+                yield bp
+
+
 class DistroSourcesApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
 
     def __getitem__(self, name):
-        return SourcePackages(Release.selectBy(distributionID=\
+        return DistroReleaseSourcesApp(Release.selectBy(distributionID=\
                                                         self.distribution.id,
                                                         # XXX ascii bogus needs
                                                         # to be revisited
@@ -92,64 +229,94 @@ class DistroSourcesApp(object):
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
 
+# end of distrosource app component
+###########################################################
+
+# People app component (people)
+class DistributionRole(SQLBase):
+
+    implements(IDistributionRole)
+
+    _table = 'Distributionrole'
+    _columns = [
+        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
+                   notNull=True),
+        ForeignKey(name='distribution', dbName='distribution',
+                   foreignKey='SoyuzDistribution',
+                   notNull=True),
+        IntCol('role', dbName='role')
+        ]
+
+
+class DistroReleaseRole(SQLBase):
+
+    implements(IDistroReleaseRole)
+
+    _table = 'Distroreleaserole'
+    _columns = [
+        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
+                   notNull=True),
+        ForeignKey(name='distrorelease', dbName='distrorelease',
+                   foreignKey='SoyuzDistribution',
+                   notNull=True),
+        IntCol('role', dbName='role')
+        ]
+
+class People(object):
+    def __init__(self, displayname, role):
+        self.displayname = displayname
+        self.role = role
+
+
+class DistroReleasePeopleApp(object):
+    def __init__(self, release):
+        self.release = release
+
+        # FIXME: stub
+#        self.people = DistroReleaseRole.selectBy(distrorelease=release.id)
+
+        self.people = [People('Matt Zimmerman', 'Maintainer'),
+                       People('Robert Collins', 'Translator'),
+                       People('Lalo Martins', 'Contribuitors')
+                       ]
+        
+
 class DistroPeopleApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
-        self.people = SoyuzPerson.select()
+
+        # FIXME: stub
+#        self.people = DistributionRole.select(DistributionRole.q.\
+#                                                 distribution==self.\
+#                                                 distribution.id)
+
+        self.people = [People('Mark Shuttleworth', 'Maintainer'),
+                       People('James Blackwell', 'Translator'),
+                       People('Steve Alexander', 'Contribuitors')
+                       ]
 
     def __getitem__(self, name):
-        return SourcePackages(Release.selectBy(distributionID=\
-                                               self.distribution.id,
-                                               # XXX ascii bogus needs
-                                               # to be revisited
-                                               name=name.encode\
-                                               ("ascii"))[0])
+        return DistroReleasePeopleApp(Release.selectBy(distributionID=\
+                                                       self.distribution.id,
+                                                       # XXX ascii bogus needs
+                                                       # to be revisited
+                                                       name=name.encode\
+                                                       ("ascii"))[0])
 
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
+#end of DistroPeople app component
 
+################################################################
 
-
-class DistroReleaseSourceApp(object):
-    def __init__(self, release):
-        self.release = release
-        self.sourcepackages = SourcePackages(self)
-        
-    def getPackageContainer(self, name):
-        return SourcePackages(self)
-        
-
-class DistroReleaseSourcesApp(object):
-    def __init__(self, release):
-        self.release = release
-
-    def __getitem__(self, name):
-        return DistroReleaseSourceApp(self, name)
-    
-    def __iter__(self):
-        return [DistroReleaseSourceApp(self, sp.name) for sp in SourcePackage.select()]
-
-
-class BinaryPackage(SQLBase):
-    implements(IBinaryPackage)
-
-    _table = 'BinaryPackage'
-    _columns = [
-        StringCol('name', dbName='Name'),
-        StringCol('title', dbName='Title'),
-        StringCol('description', dbName='Description'),        
-    ]
-    releases = MultipleJoin('SoyuzBinaryPackageBuild', joinColumn=\
-                            'binarypackage')
-
-
+# FIXME: deprecated, old DB layout (spiv: please help!!)
 class SoyuzBinaryPackageBuild(SQLBase):
     implements(IBinaryPackageBuild)
 
     _table = 'BinarypackageBuild'
     _columns = [
         ForeignKey(name='sourcePackageRelease', 
-                   foreignKey='SourcePackageRelease', 
+                   foreignKey='SoyuzSourcePackageRelease', 
                    dbName='sourcepackagerelease', notNull=True),
         ForeignKey(name='binaryPackage', foreignKey='BinaryPackage', 
                    dbName='binarypackage', notNull=True),
@@ -164,16 +331,150 @@ class SoyuzBinaryPackageBuild(SQLBase):
     def _get_sourcepackage(self):
         return self.sourcePackageRelease.sourcepackage
 
+class SoyuzBuild(SQLBase):
+    _table = 'Build'
+    _columns = [
+        DateTimeCol('datecreated', dbName='datecreated', notNull=True),
+        ForeignKey(name='processor', dbName='Processor',
+                   foreignKey='SoyuzProcessor', notNull=True),
+        ForeignKey(name='distroarchrelease', dbName='distroarchrelease', 
+                   foreignKey='SoyuzDistroArchRelease', notNull=True),
+        IntCol('buildstate', dbName='buildstate', notNull=True),
+        DateTimeCol('datebuilt', dbName='datebuilt'),
+        DateTimeCol('buildduration', dbName='buildduration'),
+        ForeignKey(name='buildlog', dbName='buildlog',
+                   foreignKey='LibraryFileAlias'),
+        ForeignKey(name='builder', dbName='builder',
+                   foreignKey='Builder'),
+        ForeignKey(name='gpgsigningkey', dbName='gpgsigningkey',
+                   foreignKey='GPGKey'),
+    ]
+        
+##########################################################
 
+
+# Binary app component (bin) still using stubs ...
+class DistroReleaseBinaryReleaseBuildApp(object):
+    def __init__(self, binarypackagerelease, version, arch):
+        self.binarypackagerelease = binarypackagerelease
+        self.version = version
+        self.arch = arch
+
+
+
+class DistroReleaseBinaryReleaseApp(object):
+    def __init__(self, binarypackagerelease, version):
+        self.binarypackagerelease = binarypackagerelease
+        self.version = version
+        # FIXME: stub
+        self.archs = ['i386','AMD64']
+
+    def __getitem__(self, arch):
+        return DistroReleaseBinaryReleaseBuildApp(self.binarypackagerelease,
+                                                  self.version,
+                                                  arch)
+    
+class DistroReleaseBinaryApp(object):
+    def __init__(self, binarypackage):
+        # FIXME: stub
+        self.binarypackage = binarypackage
+        self.lastversions = ['1.2.3-4',
+                             '1.2.3-5',
+                             '1.2.3-6',
+                             '1.2.4-0',
+                             '1.2.4-1']
+
+
+        self.currentversions = [currentVersion('1.2.4-0',['i386', 'AMD64']),
+                                currentVersion('1.2.3-6',['PPC'])
+                                ]
+
+    def __getitem__(self, version):
+        return DistroReleaseBinaryReleaseApp(self.binarypackage, version)
+
+##SQLObjects for Binaries################
+from canonical.soyuz.interfaces import IPackagePublishing
+class PackagePublishing(SQLBase):
+    """A source package release, e.g. apache 2.0.48-3"""
+    
+    implements(IPackagePublishing)
+
+    _table = 'PackagePublishing'
+    _columns = [
+        ForeignKey(name='binarypackage', foreignKey='BinaryPackage', dbName='Binarypackage', notNull=True),
+        ForeignKey(name='distroarchrelease', foreignKey='DistroArchRelease', dbName='DistroArchRelease', notNull=True)
+    ]
+
+from canonical.soyuz.interfaces import IBinaryPackageName
+class BinaryPackageName(SQLBase):
+    implements(IBinaryPackageName)
+    
+    _table = 'BinaryPackageName'
+    _columns = [
+        StringCol('name', dbName='name', notNull=True),        
+        ]
+    
+class BinaryPackage(SQLBase):
+    implements(IBinaryPackage)
+
+    _table = 'BinaryPackage'
+    _columns = [
+        ForeignKey(name='binarypackagename', foreignKey='BinaryPackageName', dbName='binarypackagename', notNull=True),
+        StringCol('shortdesc', dbName='shortdesc', notNull=True),
+        StringCol('description', dbName='description', notNull=True),        
+    ]
+############################################
+    
+class DistroReleaseBinariesApp(object):
+    """Binarypackages from a Distro Release"""
+    where = (
+        'PackagePublishing.binarypackage = BinaryPackage.id AND '
+        'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
+        'DistroArchRelease.distrorelease = %d '
+        )
+    def __init__(self, release):
+        self.release = release
+        
+    def __getitem__(self, name):
+        try:
+            where = self.where % self.release.id
+            where += (
+                'AND Binarypackage.binarypackagename = BinarypackageName.id '
+                'AND BinarypackageName.name = ' + quote(name)
+                )
+            return DistroReleaseBinaryApp(SoyuzBinaryPackage.select(where)[0])
+        except IndexError:
+            raise KeyError, name
+         
+    def __iter__(self):
+        return iter([DistroReleaseBinaryApp(p) for p in 
+                     SoyuzBinaryPackage.select(self.where % self.release.id)])
+    
+class DistroBinariesApp(object):
+    def __init__(self, distribution):
+        self.distribution = distribution
+        
+    def __getitem__(self, name):
+        release = Release.selectBy(distributionID=self.distribution.id,
+                                   name=name)[0]
+        return DistroReleaseBinariesApp(release)
+    
+    def __iter__(self):
+      	return iter(Release.selectBy(distributionID=self.distribution.id))
+
+# end of binary app component related data ....
+  
+
+# SQL Objects .... should be moved !!!!
 class SoyuzPerson(SQLBase):
     """A person"""
 
-    implements(IPerson)
+    implements(ISoyuzPerson)
 
     _table = 'Person'
     _columns = [
-        StringCol('givenName', dbName='givenname'),
-        StringCol('familyName', dbName='familyname'),
+        StringCol('givenname', dbName='givenname'),
+        StringCol('familyname', dbName='familyname'),
         StringCol('displayname', dbName='displayname'),
     ]
 
@@ -187,7 +488,8 @@ class SoyuzDistribution(SQLBase):
         StringCol('title', dbName='title'),
         StringCol('description', dbName='description'),
         StringCol('domainname', dbName='domainname'),
-        StringCol('owner', dbName='owner'),
+        ForeignKey(name='owner', dbName='owner', foreignKey='SoyuzPerson',
+                   notNull=True),
         ]
 
     def getReleaseContainer(self, name):
@@ -195,6 +497,8 @@ class SoyuzDistribution(SQLBase):
             return DistroReleasesApp(self)
         if name == 'src':
             return DistroSourcesApp(self)
+        if name == 'bin':
+            return DistroBinariesApp(self)
         if name == 'people':
             return DistroPeopleApp(self)
         else:
@@ -219,10 +523,9 @@ class Release(SQLBase):
                    notNull=True),
         IntCol('releasestate', dbName='releasestate', notNull=True),
         DateTimeCol('datereleased', dbName='datereleased', notNull=True),
-        ForeignKey(name='owner', dbName='owner', foreignKey='Person',
+        ForeignKey(name='owner', dbName='owner', foreignKey='SoyuzPerson',
                    notNull=True),
     ]
-
 
 
 class SourcePackages(object):
@@ -232,7 +535,7 @@ class SourcePackages(object):
     """
     implements(ISourcePackageSet)
 
-    table = SourcePackageRelease
+    table = SoyuzSourcePackageRelease
     clauseTables = ('SourcePackage', 'SourcePackageUpload',)
 
     def __init__(self, release):
@@ -266,6 +569,8 @@ class SourcePackages(object):
             yield bp
 
 
+## Doesn't work as expected !!!!
+## 
 class BinaryPackages(object):
     """Container of BinaryPackage objects.
 
@@ -276,15 +581,15 @@ class BinaryPackages(object):
     table = SoyuzBinaryPackageBuild
     clauseTables = ('BinaryPackageUpload', 'DistroArchRelease')
 
-    def __init__(self, release_container):
-        self.release_container = release_container
+    def __init__(self, release):
+        self.release = release
 
     def _query(self):
         return (
             'BinaryPackageUpload.binarypackagebuild = BinaryPackageBuild.id '
             'AND BinaryPackageUpload.distroarchrelease = DistroArchRelease.id '
             'AND DistroArchRelease.distrorelease = %d '
-            % (self.release_container.release.id))
+            % (self.release.id))
         
     def __getitem__(self, name):
         # XXX: What about multiple results?

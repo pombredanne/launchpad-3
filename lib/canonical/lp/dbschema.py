@@ -29,7 +29,8 @@ __all__ = ('ManifestEntryType', 'Packaging', 'BranchRelationships',
 'CodereleaseRelationships', 'BugInfestationStatus', 'BugAssignmentStatus',
 'BugPriority', 'BugSeverity', 'BugExternalReferenceType', 'BugRelationship',
 'UpstreamReleaseVersionStyle', 'RevisionControlSystems', 'ArchArchiveType',
-'BugSubscription', 'RosettaTranslationOrigin', 'DistributionRole')
+'BugSubscription', 'RosettaTranslationOrigin', 'DistributionRole',
+'DOAPRole')
 
 from zope.interface.advice import addClassAdvisor
 from zope.schema.vocabulary import SimpleVocabulary
@@ -86,6 +87,26 @@ def docstring_to_title_descr(string):
     descr = '\n'.join([line[indent:] for line in descrlines])
     return title, descr
 
+class OrderedMapping:
+
+    def __init__(self, mapping):
+        self.mapping = mapping
+
+    def __getitem__(self, key):
+        return self.mapping[key]
+
+    def __iter__(self):
+        L = self.mapping.items()
+        L.sort()
+        for k, v in L:
+            yield v
+
+
+class ItemsDescriptor:
+
+    def __get__(self, inst, cls=None):
+        return OrderedMapping(cls._items)
+    
 
 class Item:
     """An item in an enumerated type.
@@ -119,7 +140,6 @@ class Item:
         if not hasattr(cls, '_items'):
             cls._items = {}
         cls._items[self.value] = self
-
         return cls
 
     def __int__(self):
@@ -160,6 +180,8 @@ class DBSchema:
     description = "See body of class's __doc__ docstring."
     title = "See first line of class's __doc__ docstring."
     name = "See lower-cased-spaces-inserted class name."
+    items = ItemsDescriptor()
+
 
 # TODO: Make DBSchema classes provide an interface, so we can adapt IDBSchema
 # to IVocabulary
@@ -1089,6 +1111,43 @@ class BugAssignmentStatus(DBSchema):
         This bug has been closed by the maintainer.
         ''')
 
+""" stub -- Hmm... doesn't look like we need this. Nuke it later when I'm sure
+
+class RemoteBugStatus(DBSchema):
+    '''Bug Assignment Status
+
+    The status of a bug in a remote bug tracker. We map known statuses
+    to one of these values, and use UNKNOWN if we are unable to map
+    the remote status.
+    '''
+
+    NEW = Item(1, '''
+        New
+
+        This is a new bug and has not yet been accepted by the maintainer
+        of this product or source package.
+        ''')
+
+    OPEN = Item(2, '''
+        Open
+
+        This bug has been reviewed and accepted by the maintainer, and
+        is still open.
+        ''')
+
+    CLOSED = Item(3, '''
+        Closed
+
+        This bug has been closed by the maintainer.
+        ''')
+
+    UNKNOWN = Item(99, '''
+        Unknown
+
+        The remote bug status cannot be determined.
+        ''')
+"""
+
 
 class BugPriority(DBSchema):
     """Bug Priority
@@ -1377,5 +1436,31 @@ class DistributionRole(DBSchema):
 
         Release Manager'''
     )
+
+
+class DOAPRole(DBSchema):
+    """DOAP Role
+
+    This schema documents the roles that a person can play in
+    a DOAP project. The person might have these roles with
+    regard to the project as a whole or to a specific product
+    of that project."""
+
+    MAINTAINER = Item(1, '''
+        Maintainer
+
+        A project or product maintainer is a member of the core
+        team of people who are responsible for that open source
+        work. Maintainers have commit rights to the relevant code
+        repository, and are the ones who sign off on any release.''')
+
+    ADMIN = Item(2, '''
+        Administrator
+
+        The project or product administrators for a Launchpad
+        project and product have the same privileges as the
+        project or product owner, except that they cannot appoint
+        more administrators. This allows the project owner to share
+        the load of administration with other individuals.''')
 
 

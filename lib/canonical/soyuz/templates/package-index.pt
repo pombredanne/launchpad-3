@@ -21,13 +21,13 @@
     <td>
     <p> <h4>Description:  </h4> <tal:block tal:replace="context/sourcepackage/description" />
     <p> <h4>Package name: </h4> <tal:block tal:replace="context/sourcepackage/name" />  
-    <p> <h4>Maintainer:   </h4> <tal:block tal:replace="context/sourcepackage/maintainer/presentationname" />
+    <p> <h4>Maintainer:   </h4> <tal:block tal:replace="context/sourcepackage/maintainer/displayname" />
 
-    <p> <h4>Proposal:</h4> 
-    <a tal:content="context/version" tal:attributes="href
+    <p> <h4>Proposed:</h4> 
+    <span tal:content="context/version" tal:attributes="href
     context/version">
       VERSION
-    </a>
+    </span>
 
     <p> <h4>Current:</h4> 
     <p> <span>0.9.1-0 (i386, AMD64)</span> <!--Take from Database or stub..Needs Binpkg -->

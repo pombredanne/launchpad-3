@@ -1,0 +1,31 @@
+launchpad.sql has been moved from launchpad/database/launchpad.sql
+to launchpad/database/schema/launchpad-1-0-0.sql. This file should
+never be altered (if someone can tell me how to make arch throw a hissy
+fit is someone tries, please let me know).
+
+Alterations to the launchpad database schema need to be done as
+patches - you can see the first one in
+launchpad/database/schema/patch-1-1-0.sql.
+
+I think a good process for changes to the schema is to email requested
+changes to this mailing list (launchpad@rince.africaninspace.com)
+and the acting DBA will approve the changes and put them in the
+correct place. This is me this week, and Robert Collins for a few
+weeks following that. I think the public forum is good for this so
+everyone knows who is pissing in the pool and why. After a change,
+I don't think I can fix any breakage caused in any areas I'm not
+directly responsible or semi-responsible for, as this might cause
+conflicts with work-in-progress I'm not aware of. Does this all
+sound sane?
+
+There is a Makefile in launchpad/database/schema that will
+create the launchpad_test database (if it doesn't already exist),
+drop all your tables and create the current schema with all patches
+applied. The process to do this will become cleverer in the future
+and not cause your sample data to be reset. A number of the targets
+in the old Makefile (launchpad/database/Makefile) are now broken.
+
+If you want to check anything into the launchpad/database/schema
+directory, please do not give it a .sql extension or you will confuse
+the simple Makefile.
+

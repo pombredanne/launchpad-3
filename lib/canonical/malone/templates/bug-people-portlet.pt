@@ -1,0 +1,31 @@
+<div>
+    <table class="listing rowNavigation">
+        <tr>
+            <th>Name</th>
+            <th>Mode</th>
+        </tr>
+        <tr tal:repeat="sub context/subscriptions"
+            tal:attributes="onclick 
+                string:window.location='people/${sub/id}/+edit';">
+            <td>
+                <span 
+                    tal:condition="sub/person/displayname" 
+                    tal:content="sub/person/displayname">
+                    $Person.displayname
+                </span>
+                <span
+                    tal:condition="not:sub/person/displayname"
+                    tal:content="string:
+                        ${sub/person/givenname} ${sub/person/familyname}">
+                    $Person.givenname $Person.familyname
+                </span>
+            </td>
+            <td tal:content="sub/subscription/lp:BugSubscription">
+                $BugSubscription.subscription
+            </td>
+        </tr>
+    </table>
+    <form action="people/+new" method="post">
+        <input type="submit" value="New" />
+    </form>
+</div>

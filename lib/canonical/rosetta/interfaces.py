@@ -1,5 +1,8 @@
 from zope.interface import Interface, Attribute
 
+# Note: When creating a new interface here, the test generation script
+# (scripts/generate_sql_tests.py) should also be updated.
+
 class IRosettaApplication(Interface):
     """Rosetta application class."""
 
@@ -17,6 +20,8 @@ class IProjects(Interface):
         """Creates a new project with the given name.
 
         Returns that project.
+
+        Raises an KeyError if a project with that name already exists.
         """
 
     def search(query):
@@ -28,6 +33,8 @@ class IProject(Interface):
 
     name = Attribute("The project's name. (unique within IProjects)")
 
+    displayName = Attribute("The Project's name that will be showed.")
+
     title = Attribute("The project's title.")
 
     url = Attribute("The URL of the project's website.")
@@ -36,11 +43,39 @@ class IProject(Interface):
 
     owner = Attribute("The Person who owns this project.")
 
+    # XXX: poTemplate() will go away once we move to
+    # project->product->potemplate traversal rather than project->potemplate
+    # traversal.
+
+    def poTemplate(name):
+        """Returns the PO template with the given name."""
+
     def poTemplates():
         """Returns an iterator over this project's PO templates."""
 
+    def product(name):
+        """Returns the product with the given name."""
     def products():
         """Returns an iterator over this projects products."""
+
+    def messageCount():
+        """Returns the number of Current IPOMessageSets in all templates
+        inside this project."""
+
+    def currentCount(language):
+        """Returns the number of msgsets matched to a potemplate for this
+        project that have a non-fuzzy translation in its PO file for this
+        language when we last parsed it."""
+
+    def updatesCount(language):
+        """Returns the number of msgsets for this project where we have a
+        newer translation in rosetta than the one in the PO file for this
+        language, when we last parsed it."""
+
+    def rosettaCount(language):
+        """Returns the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file for this language when we
+        last parsed it."""
 
 
 class IProduct(Interface):
@@ -60,11 +95,33 @@ class IProduct(Interface):
     def poTemplate(name):
         """Returns the PO template with the given name."""
 
-    def newPOTemplate(name, title):
+    # XXX: branch
+    def newPOTemplate(person, name, title):
         """Creates a new PO template.
 
         Returns the newly created template.
+
+        Raises an KeyError if a PO template with that name already exists.
         """
+
+    def messageCount():
+        """Returns the number of Current IPOMessageSets in all templates
+        inside this product."""
+
+    def currentCount(language):
+        """Returns the number of msgsets matched to a potemplate for this
+        product that have a non-fuzzy translation in its PO file for this
+        language when we last parsed it."""
+
+    def updatesCount(language):
+        """Returns the number of msgsets for this product where we have a
+        newer translation in rosetta than the one in the PO file for this
+        language, when we last parsed it."""
+
+    def rosettaCount(language):
+        """Returns the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file for this language when we
+        last parsed it."""
 
 
 class IPOTemplate(Interface):
@@ -84,6 +141,10 @@ class IPOTemplate(Interface):
 
     isCurrent = Attribute("Whether this template is current or not.")
 
+    dateCreated = Attribute("When this template was created.")
+
+    dateCreated = Attribute("When this template was created.")
+
     # XXX: branch, changeset
 
     # XXX: copyright, license: where do we get this information?
@@ -98,10 +159,16 @@ class IPOTemplate(Interface):
     def __iter__():
         """Return an iterator over Current IPOMessageSets in this template."""
 
-    def __getitem__(msgid):
-        """Get the IPOMessageSet for this template that has the
-        given primary message ID. Note that this will also find old
-        (not current) MessageSets"""
+    def __getitem__(key):
+        """Extract one or several POMessageSets from this template.
+
+        If the key is a string or a unicode object, returns the
+        IPOTemplateMessageSet in this template that has a primary message ID
+        with the given text.
+
+        If the key is a slice, returns the message IDs by sequence within the
+        given slice.
+        """
 
     def languages():
         """Return an iterator over languages that this template's messages are
@@ -118,6 +185,31 @@ class IPOTemplate(Interface):
 
         Raises KeyError if there is no such POFile."""
 
+    def newPOFile(language, person, variant=None):
+        """Creates a new PO file of the given language and (potentially)
+        variant.
+
+        Raises KeyError if there is already such POFile."""
+
+    def currentCount(language):
+        """Returns the number of msgsets matched to a this potemplate that have
+        a non-fuzzy translation in its PO file for this language when we last
+        parsed it."""
+
+    def updatesCount(language):
+        """Returns the number of msgsets where we have a newer translation in
+        rosetta than the one in the PO file for this language, when we last
+        parsed it."""
+
+    def rosettaCount(language):
+        """Returns the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file for this language when we
+        last parsed it."""
+
+    def hasMessageID(msgid):
+        """Check whether a message set with the given message ID exists within
+        this PO file."""
+
     # TODO provide a way to look through non-current message ids.
 
 
@@ -127,15 +219,34 @@ class IEditPOTemplate(IPOTemplate):
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
-    def newMessageSet(messageid_text):
-        """Add a message set to this template.  Primary message ID
-        is 'messageid_text'."""
+    #def makeMessageSet(messageid_text, pofile=None):
+    #    """Add a message set to this template.  Primary message ID
+    #    is 'messageid_text'.
+    #    If one already exists, a KeyError is raised."""
 
-    def createPOFile(language, variant=None):
+    def newPOFile(person, language_code, variant=None):
         """Create and return a new po file in the given language. The
         variant is optional.
 
         Raises an KeyError if a po file of that language already exists.
+        """
+
+    def createMessageSetFromMessageID(msgid):
+        """Creates in the database a new message set.
+
+        As a side-effect, creates a message ID sighting in the database for the
+        new set's prime message ID.
+
+        Returns the newly created message set.
+        """
+
+    def createMessageSetFromText(text):
+        """Creates in the database a new message set.
+
+        Similar to createMessageSetFromMessageID, but takes a text object
+        (unicode or string) rather than a message ID.
+
+        Returns the newly created message set.
         """
 
 class IPOFile(Interface):
@@ -149,11 +260,32 @@ class IPOFile(Interface):
 
     description = Attribute("PO file description.")
 
-    topComment = Attribute("The main comment for this .po file")
+    topComment = Attribute("The main comment for this .po file.")
 
-    header = Attribute("The header of this .po file")
+    header = Attribute("The header of this .po file.")
 
-    headerFuzzy = Attribute("If the header is fuzzy or not")
+    headerFuzzy = Attribute("Whether the header is fuzzy or not.")
+
+    pluralForms = Attribute("The number of plural forms this PO file has.")
+
+    variant = Attribute("The language variant for this PO file.")
+
+    variant = Attribute("The language variant for this PO file.")
+
+    currentCount = Attribute("""
+        The number of msgsets matched to the potemplate that have a
+        non-fuzzy translation in the PO file when we last parsed it
+        """)
+
+    updatesCount = Attribute("""
+        The number of msgsets where we have a newer translation in
+        rosetta than the one in the PO file when we last parsed it
+        """)
+
+    rosettaCount = Attribute("""
+        the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file when we last parsed it
+        """)
 
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
@@ -184,12 +316,23 @@ class IPOFile(Interface):
     # XXX: add a test for this
 
     def __iter__():
-        """Return an iterator over IPOMessageSets in this PO file."""
+        """Return an iterator over Current IPOMessageSets in this PO file."""
 
-    def __getitem__(IPOMessageSet):
-        """Returns the IPOMessageSet with the corresponding translations, if
-        it exists. The parameter should probably come from a template. We
-        think."""
+    def __getitem__(msgid):
+        """Get the IPOMessageSet for this template that has the
+        given primary message ID. Note that this will also find old
+        (not current) MessageSets"""
+
+    def messageSetsNotInTemplate():
+        """
+        Return an iterator over message sets in this PO file that do not
+        correspond to a message set in the template; eg, the template
+        message set is either absent or has sequence=0.
+        """
+
+    def hasMessageID(msgid):
+        """Check whether a message set with the given message ID exists within
+        this PO file."""
 
 
 class IEditPOFile(IPOFile):
@@ -198,31 +341,62 @@ class IEditPOFile(IPOFile):
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
 
+    def createMessageSetFromMessageID(messageID):
+        """See IEditPOTemplate."""
+
+    def createMessageSetFromText(text):
+        """See IEditPOTemplate."""
+
 class IPOMessageSet(Interface):
     """A collection of message IDs and possibly translations."""
-
-    id = Attribute("""A unique ID for the message set.""")
 
     id = Attribute("""An identifier for this POMessageSet""")
 
     poTemplate = Attribute("""The template this set is associated with.""")
 
-    poFile = Attribute("""The PO file this set is associated with, if it's
-        associated with a PO file. For sets from PO templates, this is
-        None.""")
-
-    # Invariant: poTemplate == None || poFile == None
-    # Invariant: poTemplate != None || poFile != None
-
-    # Rephrased:
-    # Invariant: ((poTemplate == None) && (poFile != None)) ||
-    #            ((poTemplate != None) && (poFile == None))
-
-    # XXX: test that
+    # The primary message ID is the same as the message ID with plural
+    # form 0 -- i.e. it's redundant. However, it acts as a cached value.
 
     primeMessageID_ = Attribute("The primary message ID of this set.")
 
     sequence = Attribute("The ordering of this set within its file.")
+
+    def messageIDs():
+        """Return an iterator over this set's message IDs."""
+
+    def getMessageIDSighting(plural_form):
+        """Return the message ID sighting that is current and has the
+        plural form provided."""
+
+
+class IEditPOMessageSet(IPOMessageSet):
+    """Interface for editing a MessageSet."""
+
+    def makeMessageIDSighting(text, plural_form, update=False):
+        """Return a new message ID sighting that points back to us.
+        If one already exists, behaviour depends on 'update'; if update
+        is allowed, the existing one is "touched" and returned.  If it
+        is not, then a KeyError is raised."""
+
+
+class IPOTemplateMessageSet(IPOMessageSet):
+    def translationsForLanguage(language):
+        """Return an iterator over translation strings for this set in the
+        given language.
+
+        This method is applicable to PO template sets only.
+
+        XXX: This is quite UI-oriented. Refactor?
+        """
+
+
+# No IEditPOTemplateMessageSet.
+
+
+class IPOFileMessageSet(IPOMessageSet):
+    poFile = Attribute("""The PO file this set is associated with, if it's
+        associated with a PO file. For sets from PO templates, this is
+        None.""")
 
     isComplete = Attribute("For PO file message sets, whether the "
         "translation is complete or not. (I.e. all message IDs have "
@@ -262,35 +436,37 @@ class IPOMessageSet(Interface):
         Flags for this set.
         """)
 
-    def messageIDs():
-        """Return an iterator over this set's message IDs."""
-
-    def getMessageIDSighting(plural_form):
-        """Return the message ID sighting that is current and has the
-        plural form provided."""
-
-    # The primary message ID is the same as the message ID with plural
-    # form 0 -- i.e. it's redundant. However, it acts as a cached value.
+    def nplurals():
+        """Number of message IDs that have to point to this message set
+        for it to be complete."""
 
     def translations():
         """Return an iterator over this set's translations."""
 
-    def getTranslationSighting(plural_form):
+    def getTranslationSighting(plural_form, allowOld=False):
         """Return the translation sighting that is current and has the
-        plural form provided."""
+        plural form provided.  If allowOld is True, include non-current."""
 
     def translationSightings():
         """Return an iterator over current translation sightings."""
 
 
-class IEditPOMessageSet(IPOMessageSet):
+class IEditPOFileMessageSet(IPOFileMessageSet):
     """Interface for editing a MessageSet."""
 
-    def makeMessageIDSighting(text, plural_form):
-        """Return a new message ID sighting that points back to us."""
+    def makeTranslationSighting(person, text, plural_form, update=False, fromPOFile=False):
+        """Return a new translation sighting that points back to us.
+        If one already exists, behaviour depends on 'update'; if update
+        is allowed, the existing one is "touched" and returned.  If it
+        is not, then a KeyError is raised.
+        fromPOFile should be true when the sighting is coming from a POFile
+        in the upstream source - so that the inLatestRevision field is
+        set accordingly."""
 
-    def makeTranslationSighting(text, plural_form):
-        """Return a new translation sighting that points back to us."""
+
+class IEditPOTemplateOrPOFileMessageSet(IPOTemplateMessageSet,
+        IEditPOFileMessageSet):
+    pass
 
 
 class IPOMessageIDSighting(Interface):
@@ -300,21 +476,14 @@ class IPOMessageIDSighting(Interface):
 
     poMessageID_ = Attribute("")
 
-    firstSeen = Attribute("")
+    dateFirstSeen = Attribute("")
 
-    lastSeen = Attribute("")
+    dateLastSeen = Attribute("")
 
-    inPOFile = Attribute("True if this sighting is currently in the PO file, "
-        "otherwise false.")
+    inLastRevision = Attribute("True if this sighting is currently in the "
+                               "upstream template or POFile, otherwise false.")
 
     pluralForm = Attribute("")
-
-
-class IEditPOMessageIDSighting(IPOMessageIDSighting):
-    """Interface for editing a MessageIDSighting."""
-
-    def touch():
-        """Update timestamp of this sighting and mark it as inPOFile."""
 
 
 class IPOMessageID(Interface):
@@ -322,6 +491,9 @@ class IPOMessageID(Interface):
 
     # this is called "msgid" in the DB
     msgid = Attribute("")
+
+
+# no IEditPOMessageID - message IDs are read-only
 
 
 class IPOTranslationSighting(Interface):
@@ -333,17 +505,18 @@ class IPOTranslationSighting(Interface):
 
     # XXX: license
 
-    firstSeen = Attribute("")
+    dateFirstSeen = Attribute("")
 
-    lastTouched = Attribute("")
+    dateLastActive = Attribute("")
 
-    inPOFile = Attribute("")
+    inLastRevision = Attribute("True if this sighting is currently in the "
+                               "upstream POFile, otherwise false.")
 
     origin = Attribute("Where the sighting originally came from.")
 
     pluralForm = Attribute("")
 
-    deprecated = Attribute("")
+    active = Attribute("")
 
     # XXX: rename this to 'owner'?
     person = Attribute("")
@@ -354,6 +527,9 @@ class IPOTranslation(Interface):
 
     # this is called "translation" in the DB
     translation = Attribute("")
+
+
+# no IEditPOTranslation - translations are read-only
 
 
 class IBranch(Interface):
@@ -369,7 +545,7 @@ class IBranch(Interface):
 class IPerson(Interface):
     """A person in the system."""
 
-    presentationName = Attribute("""The name of this person.""")
+    displayName = Attribute("""The name of this person.""")
 
     # XXX: These attributes disabled because there is no support for them in
     # the database schema.
@@ -400,13 +576,18 @@ class IPerson(Interface):
 
 
 class ILanguage(Interface):
-    """A lanaguage."""
+    """A Language."""
 
     code = Attribute("""The ISO 639 code for this language.""")
 
     englishName = Attribute("The English name of this language.")
 
     nativeName = Attribute("The name of this language in the language itself.")
+
+    pluralForms = Attribute("The number of plural forms this language has.")
+
+    pluralExpression = Attribute("""The expression that relates a number of
+        items to the appropriate plural form.""")
 
 
 class ILanguages(Interface):
@@ -425,3 +606,142 @@ class IPOExport(Interface):
     def export(language):
         """Exports the .po file for the specific language"""
 
+
+class ISchema(Interface):
+    """A Schema."""
+
+    owner = Attribute("The Person who owns this schema.")
+
+    name = Attribute("The name of this schema.")
+
+    title = Attribute("The title of this schema.")
+
+    description = Attribute("The description of this schema.")
+
+    def labels():
+        """Return an iterator over all labels associated with this schema."""
+
+    def label(name):
+        """Returns the label with the given name."""
+
+
+class ILabel(Interface):
+    """A Label."""
+
+    schema = Attribute("The Schema associated with this label.")
+
+    name = Attribute("The name of this schema.")
+
+    title = Attribute("The title of this schema.")
+
+    description = Attribute("The description of this schema.")
+
+
+class ICategory(ILabel):
+    """An Effort Category."""
+
+    def poTemplates():
+        """Returns an iterator over this category's PO templates."""
+
+    def poTemplate(name):
+        """Returns the PO template with the given name."""
+
+    def messageCount():
+        """Returns the number of Current IPOMessageSets in all templates
+        inside this category."""
+
+    def currentCount(language):
+        """Returns the number of msgsets matched to a potemplate for this
+        category that have a non-fuzzy translation in its PO file for this
+        language when we last parsed it."""
+
+    def updatesCount(language):
+        """Returns the number of msgsets for this category where we have a
+        newer translation in rosetta than the one in the PO file for this
+        language, when we last parsed it."""
+
+    def rosettaCount(language):
+        """Returns the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file for this language when we
+        last parsed it."""
+
+
+class ITranslationEfforts(Interface):
+    """The collection of translation efforts."""
+
+    def __iter__():
+        """Return an iterator over all translation efforts."""
+
+    def __getitem__(name):
+        """Get a translation effort by its name."""
+
+    def new(name, title, description, owner, project):
+        """Creates a new translation effort with the given name.
+
+        Returns that translation effort.
+
+        Raises an KeyError if a translation effort with that name already exists.
+        """
+
+    def search(query):
+        """Search for translation efforts matching a certain strings."""
+
+
+class ITranslationEffort(Interface):
+    """A translation effort.  For example 'gtp'."""
+
+    name = Attribute("""The translation effort's name. (unique within
+        ITranslationEfforts)""")
+
+    title = Attribute("The translation effort's title.")
+
+    shortDescription = Attribute("""The translation effort's short
+        description.""")
+
+    description = Attribute("The translation effort's description.")
+
+    owner = Attribute("The Person who owns this translation effort.")
+
+    project = Attribute("""The Project associated with this translation
+        effort.""")
+    
+    categoriesSchema = Attribute("""The schema that defines the valid
+        categories we have for this effort.""")
+
+    def category(name):
+        """Returns the category with the given name."""
+        
+    def categories():
+        """Returns an iterator over this translation effort's categories."""
+
+    def messageCount():
+        """Returns the number of Current IPOMessageSets in all templates
+        inside this translation effort."""
+
+    def currentCount(language):
+        """Returns the number of msgsets matched to a potemplate for this
+        translation effort that have a non-fuzzy translation in its PO file
+        for this language when we last parsed it."""
+
+    def updatesCount(language):
+        """Returns the number of msgsets for this translation effort where
+        we have a newer translation in rosetta than the one in the PO file
+        for this language, when we last parsed it."""
+
+    def rosettaCount(language):
+        """Returns the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file for this language when we
+        last parsed it."""
+
+
+# XXX: I think we could hide this object from the Interface
+class ITranslationEffortPOTemplate(Interface):
+    """The object that relations a POTemplate with a Translation Effort."""
+
+    poTemplate = Attribute("The POTemplate we are refering.")
+
+    category = Attribute("The Category where we have the poTemplate.")
+
+    priority = Attribute("The priority for this poTemplate")
+
+    translationEffort = Attribute("The category's translation effort.")

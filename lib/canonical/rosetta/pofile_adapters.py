@@ -1,15 +1,18 @@
-from ipofile import IPOHeader, IPOMessage
-from pofile import POHeader, POMessage, POParser
-from interfaces import IPOMessageSet
+from canonical.rosetta.ipofile import IPOHeader, IPOMessage
+from canonical.rosetta.pofile import POHeader, POMessage, POParser, POInvalidInputError
+from canonical.rosetta.interfaces import IPOTemplate, IPOFile
 from zope.interface import implements
 import sets
 
-# This file raises string exceptions.  These should be considered
-# "XXX FIXME" markings - as in, replace these with whatever real
-# exception should be raised in each case.
-
 class DatabaseConstraintError(Exception):
     pass
+class UnknownUserError(Exception):
+    pass
+
+
+# XXX: if you *modify* the adapted pofile "object", it assumes you're updating
+#      it from the latest revision (for the purposes of inLatestRevision fields).
+#      That should probably be optional.
 
 
 class WatchedSet(sets.Set):
@@ -66,8 +69,11 @@ class WatchedSet(sets.Set):
 
 
 class TranslationsList(object):
-    def __init__(self, messageset):
+    def __init__(self, messageset, person):
         self._msgset = messageset
+        self._who = person
+        # cache, as we use that value a lot
+        self._nplurals = messageset.nplurals()
 
     # FIXME: this list implementation is incomplete.  Dude, if you want to do
     # del foo.msgstrs[2]
@@ -76,29 +82,68 @@ class TranslationsList(object):
     # then you're probably on crack anyway.
 
     def __setitem__(self, index, value):
-        current = self._msgset.getTranslationSighting(index)
-        if current is not None:
-            if value == current.poTranslation.text:
+        if not value:
+            if self._msgset.poFile is None:
+                # template
                 return
-            current.inPOFile = False
-        if value:
-            self._msgset.makeTranslationSighting(value, index)
+            try:
+                sighting = self._msgset.getTranslationSighting(index, allowOld=True)
+            except IndexError:
+                # nothing passed, nothing in the DB, then it's ok
+                return
+            sighting.inLatestRevision = False
+        if index > self._nplurals:
+            raise IndexError, index
+        if self._msgset.poFile is None:
+            # template
+            raise pofile.POSyntaxError(msg="PO Template has translations!")
+        if self._who is None:
+            raise UnknownUserError, \
+                  "Tried to create objects but have no Person to associate it with"
+        self._msgset.makeTranslationSighting(self._who, value, index,
+                                             update=True, fromPOFile=True)
 
     def __getitem__(self, index):
-        return self._msgset.getTranslationSighting(index).poTranslation.text
+        try:
+            return self._msgset.getTranslationSighting(index, allowOld=True).poTranslation.translation
+        except KeyError:
+            if index < self._nplurals:
+                return ''
+            raise IndexError, index
 
     def __len__(self):
         return self._msgset.translations().count()
 
+    def append(self, value):
+        if len(self) >= self._nplurals:
+            raise ValueError, "Too many plural forms"
+        if self._who is None:
+            raise UnknownUserError, \
+                  "Tried to create objects but have no Person to associate it with"
+        self._msgset.makeTranslationSighting(self._who, value, len(self),
+                                             update=True, fromPOFile=True)
+
+
+_marker = []
 
 class MessageProxy(POMessage):
     implements(IPOMessage)
 
-    def __init__(self, msgset):
+    def __init__(self, msgset, master_msgset=_marker, person=None):
         self._msgset = msgset
+        self._override_obsolete = False
+        if master_msgset is _marker:
+            self._master_msgset = msgset
+        elif master_msgset is None:
+            self._master_msgset = msgset
+            self._override_obsolete = True
+        else:
+            self._master_msgset = master_msgset
+        self._who = person
+        self._translations = TranslationsList(msgset, person)
 
     def _get_msgid(self):
-        return self._msgset.primeMessageID_.text
+        return self._msgset.primeMessageID_.msgid
     def _set_msgid(self):
         raise DatabaseConstraintError("The primary message ID of a messageset can't be changed"
                                       " once it's in the database.  Create a new messageset"
@@ -106,9 +151,9 @@ class MessageProxy(POMessage):
     msgid = property(_get_msgid, _set_msgid)
 
     def _get_msgidPlural(self):
-        msgids = list(self._msgset.messageIDs())
-        if len(msgids) >= 2:
-            return msgids[1].text
+        msgids = self._master_msgset.messageIDs()
+        if msgids.count() >= 2:
+            return msgids[1].msgid
         return None
     def _set_msgidPlural(self, value):
         # do we already have one?
@@ -116,19 +161,16 @@ class MessageProxy(POMessage):
         if old_plural is not None:
             old_plural = self._msgset.getMessageIDSighting(1)
             old_plural.inPOFile = False
-        self._msgset.makeMessageIDSighting(value, 1)
+        self._msgset.makeMessageIDSighting(value, 1, update=True)
     msgidPlural = property(_get_msgidPlural, _set_msgidPlural)
 
     def _get_msgstr(self):
         translations = list(self._msgset.translations())
         if len(translations) == 1:
-            return translations[0].text
+            return translations[0].translation
     def _set_msgstr(self, value):
-        current = self._msgset.getTranslationSighting(0)
-        if value == current.poTranslation.text:
-            return
-        current.inPOFile = False
-        new = self._msgset.makeTranslationSighting(0, index)        
+        # let's avoid duplication of code
+        self._translations[0] = value
     msgstr = property(_get_msgstr, _set_msgstr)
 
     def _get_msgstrPlurals(self):
@@ -136,58 +178,77 @@ class MessageProxy(POMessage):
         if len(translations) > 1:
             # test is necessary because the interface says when
             # there are no plurals, msgstrPlurals is None
-            return TranslationsList(self._msgset)
+            return self._translations
     def _set_msgstrPlurals(self, value):
-        current = self.msgstrPlurals
-        if current is not None and len(value) != len(current):
-            raise ValueError("New list of message strings has different size as current one")
-        if current is None:
-            current = TranslationsList(self._msgset)
         for index, item in enumerate(value):
-            current[index] = item
+            self._translations[index] = item
     msgstrPlurals = property(_get_msgstrPlurals, _set_msgstrPlurals)
 
     def _get_commentText(self):
-        return self._msgset.commentText
+        if self._msgset.commentText is None:
+            return None
+        return self._msgset.commentText + '\n'
     def _set_commentText(self, value):
+        if value and value[-1] == '\n':
+            value = value[:-1]
         self._msgset.commentText = value
     commentText = property(_get_commentText, _set_commentText)
 
     def _get_sourceComment(self):
-        return self._msgset.sourceComment
+        if self._master_msgset.sourceComment is None:
+            return None
+        return self._master_msgset.sourceComment + '\n'
     def _set_sourceComment(self, value):
+        if value and value[-1] == '\n':
+            value = value[:-1]
         self._msgset.sourceComment = value
     sourceComment = property(_get_sourceComment, _set_sourceComment)
 
     def _get_fileReferences(self):
-        return self._msgset.fileReferences
+        return self._master_msgset.fileReferences
     def _set_fileReferences(self, value):
         self._msgset.fileReferences = value
     fileReferences = property(_get_fileReferences, _set_fileReferences)
 
     def _get_flags(self):
-        flags = self._msgset.flagsComment or ''
-        return WatchedSet(
-            self._set_flags,
-            [flag.strip() for flag in flags.split(',')]
-            )
+        flags = self._master_msgset.flagsComment or ''
+        if flags:
+            fl = [flag.strip() for flag in flags.split(',')]
+        else:
+            fl = []
+        if self._msgset.fuzzy:
+            fl.append('fuzzy')
+        return WatchedSet(self._set_flags, fl)
     def _set_flags(self, value):
+        value = list(value)
+        if 'fuzzy' in value:
+            value.remove('fuzzy')
+            self._msgset.fuzzy = True
+        else:
+            self._msgset.fuzzy = False
         self._msgset.flagsComment = self.flagsText(value, withHash=False)
     flags = property(_get_flags, _set_flags)
 
     def _get_obsolete(self):
-        return self._msgset.obsolete
+        if self._override_obsolete:
+            return True
+        elif self._msgset is self._master_msgset:
+            return self._msgset.obsolete
+        else:
+            return self._master_msgset.sequence == 0
     def _set_obsolete(self, value):
         self._msgset.obsolete = value
     obsolete = property(_get_obsolete, _set_obsolete)
 
 
 class TemplateImporter(object):
-    def __init__(self, potemplate, changeset):
+    __used_for__ = IPOTemplate
+
+    def __init__(self, potemplate, person):
         self.potemplate = potemplate
-        self.changeset = changeset # are we going to use this?
         self.len = 0
         self.parser = POParser(translation_factory=self)
+        self.person = person
 
     def doImport(self, filelike):
         "Import a file (or similar object)"
@@ -196,27 +257,26 @@ class TemplateImporter(object):
         self.parser.write(filelike.read())
         self.parser.finish()
         if not self.parser.header:
-            # bitch like crazy
-            raise 'something'
+            raise POInvalidInputError('PO template has no header', 0)
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
         try:
             msgset = self.potemplate[msgid]
         except KeyError:
-            msgset = self.potemplate.newMessageSet(msgid)
-        if msgset is None:
-            msgset = potemplate.newMessageSet(msgid)
+            msgset = self.potemplate.createMessageSetFromText(msgid)
         else:
-            msgset.getMessageIDSighting(0).touch()
+            try:
+                msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
+            except KeyError:
+                # If we don't have any MessageIDSighting, we shouldn't fail.
+                pass
         self.len += 1
         msgset.sequence = self.len
-        proxy = MessageProxy(msgset)
+        proxy = MessageProxy(msgset, person=self.person)
         proxy.msgidPlural = kw.get('msgidPlural', '')
         if kw.get('msgstr'):
-            # if not is_it_the_header:
-            raise "You're on crack. (%r) as msgstr" % kw['msgstr']
-            proxy.msgstr = kw['msgstr']
+            raise POInvalidInputError('PO template has msgstrs', 0)
         proxy.commentText = kw.get('commentText', '')
         proxy.sourceComment = kw.get('sourceComment', '')
         proxy.fileReferences = kw.get('fileReferences', '').strip()
@@ -224,7 +284,7 @@ class TemplateImporter(object):
         plurals = []
         for inp_plural in kw.get('msgstrPlurals', ()):
             if inp_plural:
-                raise "You're on crack (%r)." % kw.get('msgstrPlurals')
+                raise POInvalidInputError('PO template has msgstrs', 0)
             plurals.append(inp_plural)
         proxy.msgstrPlurals = plurals
         proxy.obsolete = kw.get('obsolete', False)
@@ -232,33 +292,39 @@ class TemplateImporter(object):
 
 
 class POFileImporter(object):
-    def __init__(self, potemplate, changeset):
-        raise NotImplementedError
-        self.potemplate = potemplate
-        self.changeset = changeset # are we going to use this?
+    __used_for__ = IPOFile
+
+    def __init__(self, pofile, person):
+        self.pofile = pofile
         self.len = 0
         self.parser = POParser(translation_factory=self)
+        self.person = person
 
     def doImport(self, filelike):
         "Import a file (or similar object)"
-        self.potemplate.expireAllMessages()
+        self.pofile.expireAllMessages()
         # what policy here? small bites? lines? how much memory do we want to eat?
-        parser.write(filelike.read())
-        parser.finish()
-        if not parser.header:
-            # bitch like crazy
-            raise 'something'
+        self.parser.write(filelike.read())
+        self.parser.finish()
+        if not self.parser.header:
+            raise POInvalidInputError('PO file has no header', 0)
+        self.pofile.set(
+            topComment=self.parser.header.commentText.encode('utf-8'),
+            header=self.parser.header.msgstr.encode('utf-8'),
+            headerFuzzy='fuzzy' in self.parser.header.flags,
+            pluralforms=self.parser.header.nplurals)
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
-        msgset = self.potemplate[msgid]
-        if msgset is None:
-            msgset = potemplate.newMessageSet(msgid)
+        try:
+            msgset = self.pofile[msgid]
+        except KeyError:
+            msgset = self.pofile.createMessageSetFromText(msgid)
         else:
-            msgset.getMessageIDSighting(0).touch()
+            msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
         self.len += 1
         msgset.sequence = self.len
-        proxy = MessageProxy(msgset)
+        proxy = MessageProxy(msgset, person=self.person)
         proxy.msgidPlural = kw.get('msgidPlural', '')
         if kw.get('msgstr'):
             proxy.msgstr = kw['msgstr']

@@ -1,11 +1,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@malone_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="malone">
 <body>
 
+    <h1>Deprecated - functionality migrated to portlet on main bug page</h1>
+
+    <p>Nuke this page sometime</p>
+
+    <!--
 <div metal:fill-slot="main">
-  <h1>Bug Assignment</h1>
+<h1>Bug Assignment</h1>
   <h3>Product Bug Assignment</h3>
   <table class="listing">
     <tr>
@@ -46,6 +51,7 @@
   </table>
   <input type="submit" value="New" onClick="window.open('new-sa', '_top')" />
 </div>
+-->
 
 </body>
 </html>

@@ -183,22 +183,17 @@ form {
 }
 textarea {
     font: 110% "Courier New", Courier, monospace; 
-    border: 1px solid #8cacbb;  
     color: Black;
     background-color: white;
     width: 100%;
 }
 input {
     font-family: "Lucida Grande", Verdana, Lucida, Helvetica, Arial, sans-serif;
-    visibility: visible;
-    border: 1px solid #8cacbb;  
     color: Black;
     background-color: white;
- 
     vertical-align: middle;
 }
 select {
-    border: 1px solid #8cacbb;  
     color: Black;
     vertical-align: top;
 }
@@ -893,8 +888,7 @@ input.searchButton {
     border: 1px solid black;
 }
 
-.listing,
-.stx table {
+.listing {
     /* The default table for document listings. Contains name, document types, modification times etc in a file-browser-like fashion */
     border-collapse: collapse;
     border-left: 1px solid #8cacbb;
@@ -902,8 +896,7 @@ input.searchButton {
     font-size: 85%;
     margin: 1em 0em 1em 0em;
 }
-.listing th,
-.stx table th {
+.listing th {
     background: #dee7ec;
     border-top: 1px solid #8cacbb;
     border-bottom: 1px solid #8cacbb;
@@ -929,8 +922,7 @@ input.searchButton {
 .listing .listingCheckbox {
     text-align: center;
 }
-.listing td,
-.stx table td {
+.listing td {
     border-right: 1px solid #8cacbb;
     padding: 0em 1em;
     text-align: left;
@@ -1297,12 +1289,6 @@ ol.visualNoMarker {
 }
 
 .portalNotLoggedIn {} /* Used on all descriptions relevant to those not logged in */
-
-#portal-column-content fieldset > * input:focus,
-#portal-column-content fieldset > * textarea:focus {
-    border-color: #ffa500; 
-    border-width: 1px;
-}
 
 .visualOverflow {
     overflow: auto;

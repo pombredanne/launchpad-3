@@ -20,7 +20,7 @@ from zope.schema import Password
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 # TODO: Move this wrapper here
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase
 
 
 class IPerson(Interface):
@@ -29,8 +29,8 @@ class IPerson(Interface):
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    presentationname = TextLine(
-            title=_('Presentation Name'), required=False, readonly=False,
+    displayname = TextLine(
+            title=_('Display Name'), required=False, readonly=False,
             )
     givenname = TextLine(
             title=_('Given Name'), required=False, readonly=False,
@@ -62,13 +62,38 @@ class Person(SQLBase):
     implements(IPerson)
 
     _columns = [
-        StringCol('presentationname'),
-        StringCol('givenname'),
-        StringCol('familyname'),
-        StringCol('password'),
+        StringCol('displayname', default=None),
+        StringCol('givenname', default=None),
+        StringCol('familyname', default=None),
+        StringCol('password', default=None),
         ForeignKey(name='teamowner', foreignKey='Person', dbName='teamowner'),
-        StringCol('teamdescription'),
+        StringCol('teamdescription', default=None),
         IntCol('karma'),
         DateTimeCol('karmatimestamp')
     ]
+
+class IEmailAddress(Interface):
+    id = Int(
+        title=_('ID'), required=True, readonly=True,
+        )
+    email = Text(
+        title=_('Email Address'), required=True,
+        )
+    status = Int(
+        title=_('Status'), required=True,
+        )
+    person = Int(
+        title=_('Person'), required=True,
+        )
+    
+class EmailAddress(SQLBase):
+    implements(IEmailAddress)
+
+    _columns = [
+        StringCol('email', notNull=True, unique=True),
+        IntCol('status', notNull=True),
+        ForeignKey(
+            name='person', dbName='person', foreignKey='Person',
+            )
+        ]
 

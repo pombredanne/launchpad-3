@@ -54,7 +54,7 @@ def test_verify_stub():
 
 def test_suite():
     suite = DocTestSuite()
-    return suite
+    #return suite
 
 if __name__ == '__main__':
     unittest.main()

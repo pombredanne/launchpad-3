@@ -26,11 +26,11 @@
   </content>
 
   <content class="canonical.rosetta.sql.RosettaPOFile">
-    <allow interface="canonical.rosetta.interfaces.IPOFile"/>
+    <require permission="zope.Public" interface="canonical.rosetta.interfaces.IPOFile" set_attributes="header pluralForms"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaPOMessageSet">
-    <allow interface="canonical.rosetta.interfaces.IPOMessageSet"/>
+    <allow interface="canonical.rosetta.interfaces.IEditPOTemplateOrPOFileMessageSet"/>
   </content>
 
   <content class="canonical.rosetta.sql.RosettaPOMessageID">
@@ -40,7 +40,7 @@
   <content class="canonical.rosetta.sql.RosettaLanguage">
     <allow interface="canonical.rosetta.interfaces.ILanguage"/>
   </content>
- 
+
   <content class="canonical.rosetta.stub.Languages">
     <allow interface="canonical.rosetta.interfaces.ILanguages"/>
   </content>

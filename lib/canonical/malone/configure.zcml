@@ -29,6 +29,12 @@
       permission="zope.Public"
       name="projects" />
 
+  <browser:suburl
+      for="canonical.malone.IMaloneApplication"
+      utility="canonical.malone.interfaces.ISourcepackageContainer"
+      permission="zope.Public"
+      name="sourcepackages" />
+
   <browser:defaultView
       for="canonical.malone.interfaces.IMaloneApplication"
       name="index" />
@@ -50,15 +56,19 @@
       name="index" />
 
   <browser:defaultView
-      for="canonical.database.malone.IBugAttachmentContent"
+      for="canonical.malone.interfaces.IProjectContainer"
+      name="+search" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.ISourcepackageContainer"
       name="index" />
 
   <browser:defaultView
-      for="canonical.malone.interfaces.IProjectContainer"
-      name="search" />
+      for="canonical.database.doap.IProject"
+      name="index" />
 
   <browser:defaultView
-      for="canonical.database.doap.IProject"
+      for="canonical.database.doap.ISourcepackage"
       name="index" />
 
   <browser:defaultView
@@ -67,6 +77,18 @@
 
   <browser:defaultView
       for="canonical.database.malone.IBugExternalRef"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IBugWatchContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IProductBugAssignmentContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.ISourcepackageBugAssignmentContainer"
       name="index" />
 
   <browser:defaultView
@@ -84,5 +106,6 @@
   <include file="pages.zcml" />
   <include file="forms.zcml" />
   <include file="resources.zcml" />
+  <include file="vocabulary.zcml" />
 
 </configure>

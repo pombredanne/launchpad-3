@@ -10,9 +10,9 @@
 #
 # arch-tag: 657212c5-95f4-422a-ada4-544bf2827ab5
 
-from xml.sax import saxutils, make_parser, saxlib, saxexts, ContentHandler
-from xml.sax.handler import feature_namespaces
-import sys, os, getopt, urllib2, locale, time, re, sets, psycopg
+from xml.sax import saxutils, make_parser, ContentHandler
+from optparse import OptionParser
+import locale, re, sets, psycopg, string
 
 class XMLHandler(saxutils.DefaultHandler):
     def __init__(self, elementname, attributes, cnx, dbhook, hook=None):
@@ -56,7 +56,7 @@ def insert_country(cnx, data):
     cr.execute(
         """SELECT name FROM Country WHERE iso3166code2='%s'""" % (
         data['iso3166code2'].encode('utf-8')))
-        
+
     # If it does not exists, it's inserted
     if cr.rowcount < 1:
         cr.execute(
@@ -109,16 +109,66 @@ def two_or_three_letters(data):
             return None
     return data
 
-def insert_language(cnx, data):
+def get_plural_form_data(path):
+    fh = file(path)
+    forms = {}
+    languages = []
+
+    for line in fh:
+        match = re.match('^languages: *(.*)$', line)
+
+        if match:
+            languages = match.group(1).split(',')
+            continue
+
+        match = re.match('^nplurals: *(.*)$', line)
+
+        if match:
+            for language in languages:
+                if not language in forms:
+                    forms[language] = {}
+
+                forms[language]['nplurals'] = string.atoi(match.group(1))
+
+            continue
+
+        match = re.match('^plural: *(.*)$', line)
+
+        if match:
+            for language in languages:
+                if not language in forms:
+                    forms[language] = {}
+
+                forms[language]['plural'] = match.group(1)
+
+            continue
+
+        if not ((line == "\n") or line.startswith('#')):
+            raise "error parsing plural form data: \"%s\"" % line[:-1]
+
+    return forms
+
+
+def insert_language(cnx, data, plural_forms):
+    # Ewwww!
+    data['code'] = data['code'].encode('ascii')
+
+    if data['code'] in plural_forms:
+        data['pluralforms'] = plural_forms[data['code']]['nplurals']
+        data['pluralexpression'] = plural_forms[data['code']]['plural']
+    else:
+        data['pluralforms'] = None
+        data['pluralexpression'] = None
+
     cr = cnx.cursor()
     rosetta_trans = cnx.cursor()
 
     # We check first if the entry already exists.
     # We assume that all countries have an iso3166code2 code
     cr.execute(
-        """SELECT englishname FROM Language WHERE code='%s'""" % (
-        data['code'].encode('utf-8')))
-    
+        """SELECT englishname, pluralforms, pluralexpression FROM Language WHERE code='%s'""" % (
+        data['code']))
+
     # We look for the native name for this language into Rosetta. We don't
     # care about the orig of the translation, we just get latest one and
     # assume that we never will have this msgid as a plural form (I don't
@@ -141,15 +191,15 @@ def insert_language(cnx, data):
                 POMsgSet.obsolete = FALSE AND
                 POMsgSet.fuzzy = FALSE AND
                 POMsgSet.id = POTranslationSighting.pomsgset AND
-                POTranslationSighting.deprecated = FALSE AND
+                POTranslationSighting.active = TRUE AND
                 POTranslationSighting.potranslation = POTranslation.id""",
-        { 'languagecode': data['code'].encode('utf-8'),
+        { 'languagecode': data['code'],
           'englishname': data['englishname'].encode('utf-8') })
     if rosetta_trans.rowcount > 0:
         data['nativename'] = rosetta_trans.fetchone()[0]
-    
+
     rosetta_trans.close()
-        
+
     # If it does not exists, it's inserted
     if cr.rowcount < 1:
         cr.execute(
@@ -190,20 +240,36 @@ def insert_language(cnx, data):
                         WHERE code='%s'""" %(
                     data['englishname'].encode('utf-8'),
                     rosetta_trans.fetchone()[0],
-                    data['code'].encode('utf-8')))
+                    data['code']))
             else:
                 # We need to update the name and remove the old nativename
                 cr.execute(
                     """UPDATE Language SET englishname='%s', nativename=NULL
                         WHERE code='%s'""" %(
                     data['englishname'].encode('utf-8'),
-                    data['code'].encode('utf-8')))
+                    data['code']))
             print ("%r has been updated" % data)
+        elif 'nativename' in data:
+            # We update all language names
+            # XXX: We should check if it has changed and only update it in
+            # that case.
+            cr.execute(
+                    """UPDATE Language SET nativename='%s'
+                        WHERE code='%s'""" %(
+                    data['nativename'],
+                    data['code']))
+            print ("%r has been updated" % data)
+
+        if (language_row[1] != data['pluralforms']) or (language_row[2] !=
+                data['pluralexpression']):
+            cr.execute(
+                """UPDATE Language SET pluralforms=%(pluralforms)d,
+                    pluralexpression=%(pluralexpression)s WHERE code=%(code)s""", data)
 
     cnx.commit()
     cr.close()
 
-def import_languages(cnx):
+def import_languages(cnx, plural_forms):
     print
     print 'importing languages...'
     fields = {
@@ -215,14 +281,15 @@ def import_languages(cnx):
     p = make_parser()
     p.setErrorHandler(saxutils.ErrorPrinter())
 
-    dh = XMLHandler('iso_639_entry', fields, cnx, insert_language, two_or_three_letters)
+    dh = XMLHandler('iso_639_entry', fields, cnx,
+        lambda x, y: insert_language(x, y, plural_forms), two_or_three_letters)
     p.setContentHandler(dh)
     p.parse(files['language'])
 
 
 spoken_re = re.compile('([a-z]*)_([A-Z]*).*')
 
-def import_spoken(cnx):
+def import_spoken(cnx, plural_forms):
     print
     print 'parsing spoken...'
     pairs = sets.Set()
@@ -260,7 +327,7 @@ def import_spoken(cnx):
                     spoken_row[2],
                     spoken_row[3]), 'utf-8')}
 
-            insert_language(cnx, data)
+            insert_language(cnx, data, plural_forms)
 
             cr.execute(
                 """SELECT Language.id, Country.id
@@ -278,24 +345,26 @@ def import_spoken(cnx):
                 cr.execute("""INSERT INTO Spokenin VALUES(%d, %d)""" % (
                     spoken_row[0], spoken_row[1]))
 
-       
-
     cnx.commit()
     cr.close()
 
-username = 'carlos'
-dbname = 'launchpad_test'
-
 if __name__ == '__main__':
-    (opts, trail)=getopt.getopt(sys.argv[1:], "u:d:",
-                                ["username=", "dbname"])
-    for opt, arg in opts:
-        if opt in ('-u', '--username'):
-            username = arg
-        elif opt in ('-d', '--dbname'):
-            dbname = arg
+    parser = OptionParser()
+    parser.add_option("-u", "--username", dest="username",
+                      help="Username to connecto to the database",
+                      default="carlos")
+    parser.add_option("-d", "--dbname",
+                      dest="dbname", default="launchpad_test",
+                      help="DB name to connect")
+    parser.add_option("-p", "--plural-data",
+                      dest="plural_data_file", default="plural-form-data",
+                      help="FILE where we have the plural forms data")
+                  
+    (options, args)=parser.parse_args()
+
     locale.setlocale(locale.LC_ALL, 'C')
-    cnx = psycopg.connect("user=%s dbname=%s" % (username, dbname))
+    cnx = psycopg.connect("user=%s dbname=%s" % (options.username, options.dbname))
     import_countries(cnx)
-    import_languages(cnx)
-    import_spoken(cnx)
+    plural_forms = get_plural_form_data(options.plural_data_file)
+    import_languages(cnx, plural_forms)
+    import_spoken(cnx, plural_forms)

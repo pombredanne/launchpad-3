@@ -1,0 +1,39 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="soyuz">
+
+<head>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Rosetta style sheet -->
+  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+<h1><span tal:content="context/release/title">DISTRORELEASE</span> Binary Packages</h1>
+<!-- <div tal:on-error="python: error.type, error.value.args"> -->
+<p> 
+
+<table class="listing">
+  <tr>
+    <th> Binary Package </th>
+  </tr>
+   <tr tal:repeat="binpackageapp context">
+    <td tal:define="binpackage binpackageapp/binarypackage"> 
+     <a tal:content="binpackage/shortdesc" tal:attributes="href binpackage/name">TITLE</a> 
+    </td>
+  </tr>
+</table>
+
+
+
+<!-- </div> -->
+</div>
+
+</body>
+
+</html>

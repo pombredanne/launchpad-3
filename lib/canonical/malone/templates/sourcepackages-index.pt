@@ -1,0 +1,59 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="malone">
+<body>
+
+<div metal:fill-slot="main">
+    <h1>Distribution bugs: Ubuntu</h1>
+    <div class="documentDescription">
+        These are the current open bugs for Ubuntu Linux.
+    </div>
+
+    <table class="listing rowNavigation">
+        <tr>
+            <th>Bug</th>
+            <th>Status</th>
+            <th>Severity</th>
+            <th>Priority</th>
+            <th>Source Package</th>
+            <th>Binary Package</th>
+        </tr> 
+        <tr tal:repeat="bugass context/bugassignments"
+            tal:attributes="onclick
+                string:window.location='../bugs/${bugass/bug/id}';">
+            <td>
+                <a href="#" 
+                    tal:attributes="href string:../bugs/${bugass/bug/id}"
+                    tal:content="bugass/bug/title">$Bug.title</a>
+            </td>
+            <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
+                $SourcepackageBugAssignment.bugstatus
+            </td>
+            <td tal:content="bugass/severity/lp:BugSeverity">
+                $SourcepackageBugAssignment.severity
+            </td>
+            <td tal:content="bugass/priority/lp:BugPriority">
+                $SourcepackageBugAssignment.priority
+            </td>
+            <td tal:content="bugass/sourcepackage/name">
+                $Sourcepackage.name
+            </td>
+            <td tal:condition="bugass/binarypackage">
+                <span tal:content="bugass/binarypackage/binarypackagename/name">
+                    $BinarypackageName.name
+                </span>&ndash;<span tal:content="bugass/binarypackage/version">
+                    $Binarypackage.version
+                </span>
+            </td>
+            <td tal:condition="not:bugass/binarypackage">
+                (none)
+            </td>
+        </tr>
+    </table>
+
+</div>
+
+</body>
+</html>
+

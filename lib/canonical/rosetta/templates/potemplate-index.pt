@@ -4,6 +4,8 @@
       i18n:domain="rosetta">
 
 <head>
+    <title metal:fill-slot="title">Rosetta:
+        <span tal:replace="context/title">Some PO template or other</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -14,7 +16,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>The <span tal:replace="context/name">NAME</span> POT file</h1>
+    <h1 tal:content="context/title">Some PO template or other</h1>
 
     <p>
     This file contains <i tal:content="view/num_messages">N messages</i>

@@ -1,0 +1,37 @@
+<div>
+    <table class="listing rowNavigation">
+        <tr>
+            <th>Package</th>
+            <th>Status</th>
+            <th>Priority</th>
+            <th>Severity</th>
+            <th>Binary</th>
+        </tr>
+        <tr tal:repeat="bugass context/sourceassignment"
+            tal:attributes="onclick string:window.location='sourcepackageassignments/${bugass/id}/+edit';">
+            <td tal:content="bugass/sourcepackage/title">$Sourcepackage.title</td>
+            <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
+                $ProductBugAssignment.bugstatus
+            </td>
+            <td tal:content="bugass/priority/lp:BugPriority">
+                $ProductBugAssignment.priority
+            </td>
+            <td tal:content="bugass/severity/lp:BugSeverity">
+                $ProductBugAssignment.severity
+            </td>
+            <td>
+                <span
+                    tal:omit-tag="" tal:condition="bugass/binarypackage"
+                    tal:content="bugass/binarypackage/title">
+                    $BinarypackageName.name-$Binarypackage.version
+                </span>
+                <span tal:omit-tag="" tal:condition="not:bugass/binarypackage">
+                    (none)
+                </span>
+            </td>
+        </tr>
+    </table>
+    <form action="sourcepackageassignments/+new" method="post">
+        <input type="submit" value="New" />
+    </form>
+</div>

@@ -72,6 +72,9 @@ class Projects:
         return Project(name = name, title = title, url = url,
             description = description, owner = owner)
 
+    def search():
+        return []
+
 
 class Product:
     """Stub product."""

@@ -4,6 +4,7 @@
       i18n:domain="rosetta">
 
 <head>
+    <title metal:fill-slot="title">Rosetta: Submit a project</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -32,6 +33,8 @@
         <fieldset>
             Name: <input type="text" name="name" />
             <br/>
+	    DisplayName: <input type="text" name="displayname" />
+	    <br/>
             Title: <input type="text" name="title" />
             <br/>
             Description:

@@ -5,13 +5,14 @@ from zope.interface import implements
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
 from sqlobject.sqlbuilder import func
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase
 from canonical.lp import dbschema
 
 # Soyuz interfaces
 from canonical.soyuz.interfaces import ISourcePackageRelease, IManifestEntry
 from canonical.soyuz.interfaces import IBranch, IChangeset
-from canonical.soyuz.interfaces import ISourcePackage, IPerson
+from canonical.soyuz.interfaces import ISourcePackage, ISoyuzPerson
+from canonical.soyuz.interfaces import IBinaryPackage
 
 
 class Distribution(SQLBase):
@@ -22,19 +23,102 @@ class Distribution(SQLBase):
         StringCol('name', dbName='name', notNull=True),
         StringCol('title', dbName='title', notNull=True),
         StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner', 
+        ForeignKey(name='owner', foreignKey='SoyuzPerson', dbName='owner', 
                    notNull=True),
     ]
 
 
-class SourcePackage(SQLBase):
+class SoyuzDistroArchRelease(SQLBase):
+    """A release of an architecture on a particular distro."""
+
+    _table = 'DistroArchRelease'
+
+    _columns = [
+        ForeignKey(name='distrorelease', dbName='distrorelease',
+                   foreignKey='SoyuzDistroRelease', notNull=True),
+        ForeignKey(name='processorfamily', dbName='processorfamily',
+                   foreignKey='SoyuzProcessorFamily', notNull=True),
+        StringCol('architecturetag', dbName='architecturetag', notNull=True),
+        ForeignKey(name='owner', dbName='owner', foreignKey='SoyuzPerson', 
+                   notNull=True),
+    ]
+
+
+class SoyuzPackagePublishing(SQLBase):
+
+    _table = 'PackagePublishing'
+    
+    _columns = [
+        ForeignKey(name='binaryPackage', foreignKey='SoyuzBinaryPackage', 
+                   dbName='binarypackage', notNull=True),
+        ForeignKey(name='distroArchrelease', dbName='distroArchrelease',
+                   foreignKey='SoyuzDistroArchRelease', notNull=True),
+        ForeignKey(name='component', dbName='component',
+                   foreignKey='SoyuzComponent', notNull=True),
+        ForeignKey(name='section', dbName='section', foreignKey='SoyuzSection',
+                   notNull=True),
+        IntCol('priority', dbName='priority', notNull=True),
+    ]
+
+class SoyuzBinaryPackage(SQLBase):
+    implements(IBinaryPackage)
+    _table = 'BinaryPackage'
+    _columns = [
+        ForeignKey(name='sourcepackagerelease', dbName='sourcepackagerelease',
+                   foreignKey='SoyuzSourcePackageRelease', notNull=True),
+        ForeignKey(name='binarypackagename', dbName='binarypackagename', 
+                   foreignKey='SoyuzBinaryPackageName', notNull=True),
+        StringCol('version', dbName='version', notNull=True),
+        StringCol('shortdesc', dbName='shortdesc', notNull=True, default=""),
+        StringCol('description', dbName='description', notNull=True),
+        ForeignKey(name='build', dbName='build', foreignKey='SoyuzBuild',
+                   notNull=True),
+        IntCol('binpackageformat', dbName='binpackageformat', notNull=True),
+        ForeignKey(name='component', dbName='component',
+                   foreignKey='SoyuzComponent', notNull=True),
+        ForeignKey(name='section', dbName='section', foreignKey='SoyuzSection',
+                   notNull=True),
+        IntCol('priority', dbName='priority'),
+        StringCol('shlibdeps', dbName='shlibdeps'),
+        StringCol('depends', dbName='depends'),
+        StringCol('recommends', dbName='recommends'),
+        StringCol('suggests', dbName='suggests'),
+        StringCol('conflicts', dbName='conflicts'),
+        StringCol('replaces', dbName='replaces'),
+        StringCol('provides', dbName='provides'),
+        BoolCol('essential', dbName='essential'),
+        IntCol('installedsize', dbName='installedsize'),
+        StringCol('copyright', dbName='copyright'),
+        StringCol('licence', dbName='licence'),
+    ]
+
+    # XXX: Why does Zope raise NotFound if name is a property?  A property would
+    #      be more appropriate.
+    #name = property(lambda self: self.binarypackagename.name)
+    def name(self):
+        return self.binarypackagename.name
+    name = property(name)
+
+    def maintainer(self):
+        return self.sourcepackagerelease.sourcepackage.maintainer
+    maintainer = property(maintainer)
+
+
+class SoyuzBinaryPackageName(SQLBase):
+    _table = 'BinaryPackageName'
+    _columns = [
+        StringCol('name', dbName='name', notNull=True),
+    ]
+        
+
+class SoyuzSourcePackage(SQLBase):
     """A source package, e.g. apache2."""
 
     implements(ISourcePackage)
 
     _table = 'SourcePackage'
     _columns = [
-        ForeignKey(name='maintainer', foreignKey='Person', dbName='maintainer',
+        ForeignKey(name='maintainer', foreignKey='SoyuzPerson', dbName='maintainer',
                    notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('title', dbName='title', notNull=True),
@@ -42,28 +126,81 @@ class SourcePackage(SQLBase):
         ForeignKey(name='manifest', foreignKey='Manifest', dbName='manifest', 
                    default=None),
     ]
-    releases = MultipleJoin('SourcePackageRelease',
+    releases = MultipleJoin('SoyuzSourcePackageRelease',
                             joinColumn='sourcepackage')
 
     def getManifest(self):
         return self.manifest
 
     def getRelease(self, version):
-        return SourcePackageRelease.selectBy(version=version)[0]
+        return SoyuzSourcePackageRelease.selectBy(version=version)[0]
 
+    def uploadsByStatus(self, distroRelease, sourcepackageRelease, status):
+        uploads = list(SoyuzSourcePackageRelease.select(
+            'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
+            ' AND SourcepackageUpload.distrorelease = %d'
+            ' AND SourcePackageUpload.sourcepackagerelease = %d'
+            ' AND SourcePackageUpload.uploadstatus = %d'
+            % (distroRelease.id, sourcepackageRelease.id, status)
+        ))
 
-class SourcePackageRelease(SQLBase):
+        if uploads:
+            return uploads[0]
+        else:
+            return None
+
+    def proposed(self, distroRelease, sourcepackageRelease):
+        return self.uploadsByStatus(distroRelease,
+                                    sourcepackageRelease,
+                                    dbschema.SourceUploadStatus.PROPOSED)
+
+    def current(self, distroRelease):
+        sourcepackagereleases = list(SoyuzSourcePackageRelease.select(
+            'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
+            ' AND SourcepackageUpload.distrorelease = %d'
+            ' AND SourcepackageRelease.sourcepackage = %d'
+            ' AND SourcePackageUpload.uploadstatus = %d'
+            % (distroRelease.id, self.id, dbschema.SourceUploadStatus.PUBLISHED)
+        ))
+
+        if sourcepackagereleases:
+            return sourcepackagereleases
+        else:
+            return None
+
+    def lastversions(self, distroRelease):
+        last = list(SoyuzSourcePackageRelease.select(
+            'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
+            ' AND SourcepackageUpload.distrorelease = %d'
+            ' AND SourcePackageRelease.sourcepackage = %d'
+            ' AND SourcePackageUpload.uploadstatus = %d'
+            ' ORDER BY sourcePackageRelease.dateuploaded DESC'
+            % (distroRelease.id, self.id,dbschema.SourceUploadStatus.SUPERCEDED)
+        ))
+
+        if last:
+            return last
+        else:
+            return None
+
+class SoyuzSourcePackageRelease(SQLBase):
     """A source package release, e.g. apache 2.0.48-3"""
     
     implements(ISourcePackageRelease)
 
     _table = 'SourcePackageRelease'
     _columns = [
-        StringCol('version', dbName='Version'),
-        ForeignKey(name='creator', foreignKey='Person', dbName='creator'),
-        ForeignKey(name='sourcepackage', foreignKey='SourcePackage',
+        ForeignKey(name='sourcepackage', foreignKey='SoyuzSourcePackage',
                    dbName='sourcepackage', notNull=True),
+        IntCol('srcpackageformat', dbName='srcpackageformat', notNull=True),
+        ForeignKey(name='creator', foreignKey='SoyuzPerson', dbName='creator'),
+        StringCol('version', dbName='version'),
+        DateTimeCol('dateuploaded', dbName='dateuploaded', notNull=True,
+                    default='NOW'),
+        IntCol('urgency', dbName='urgency', notNull=True),
     ]
+
+    builds = MultipleJoin('SoyuzBuild', joinColumn='sourcepackagerelease')
 
 
 def getSourcePackage(name):
@@ -192,7 +329,7 @@ class SoyuzProduct(SQLBase):
     _columns = [
         ForeignKey(name='project', foreignKey='Project', dbName='project',
                    notNull=True),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
+        ForeignKey(name='owner', foreignKey='SoyuzPerson', dbName='owner',
                    notNull=True),
         StringCol('name', dbName='name', notNull=True),
         # TODO: remove default on displayname and shortdesc
@@ -218,7 +355,7 @@ class SoyuzProject(SQLBase):
     _table = 'Project'
 
     _columns = [
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
+        ForeignKey(name='owner', foreignKey='SoyuzPerson', dbName='owner',
                    notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('displayname', dbName='displayname', notNull=True,

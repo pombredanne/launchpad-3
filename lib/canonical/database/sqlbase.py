@@ -1,6 +1,7 @@
-
 from sqlos import SQLOS
 from sqlobject.sqlbuilder import sqlrepr
+
+__all__ = ['SQLBase', 'quote']
 
 class SQLBase(SQLOS):
     """Base class to use instead of SQLObject/SQLOS.
@@ -10,9 +11,9 @@ class SQLBase(SQLOS):
     Architecture, i.e. the basic suite of services should be accessible via
     zope.component.getService)
 
-    By default, this will act just like SQLOS.  If the initZopeless class method is
-    called, it will use the connection you pass to it, and disable all the
-    tricksy per-thread connection stuff that SQLOS does.
+    By default, this will act just like SQLOS.  If the initZopeless class 
+    method is called, it will use the connection you pass to it, and disable 
+    all the tricksy per-thread connection stuff that SQLOS does.
     """
     
     zope = True     # Default to behaving like SQLOS

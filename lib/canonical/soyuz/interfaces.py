@@ -38,7 +38,6 @@ class IDistribution(Interface):
     def getReleaseContainer(name):
         """Returns an associated IReleaseContainer"""
 
-
 class IDistroReleasesApp(Interface):
     """Root object for collection of Releases"""
     distribution = Attribute("distribution")
@@ -59,31 +58,98 @@ class IDistroReleasesApp(Interface):
         """
 
 class IDistroReleaseSourcesApp(Interface):
-    """Root object for collection of sources"""
-    release = Attribute("release")
+    """A Release Sources Proxy """
+    release = Attribute("Release")
+    
+    def __getitem__(name):
+        """Retrieve a package by name."""
+    def __iter__():
+        """Iterate over names"""
+
+    
+class IDistroReleaseSourceApp(Interface):
+    """A SourcePackage Proxy """
+    sourcepackage = Attribute("SourcePackage")
+    proposed = Attribute("Proposed source package release")
+    lastversions = Attribute("Last Release Versions")
+    currentversions = Attribute("Current Release Versions")
+    
+    def __getitem__(name):
+        """Retrieve a package release by version."""
+
+class IDistroReleaseSourceReleaseBuildApp(Interface):
+        sourcepackagerelease = Attribute("SourcePackageRelease")
+        version = Attribute("SourcePackageRelease Version ?!?!")
+        arch = Attribute("Builded arch")
+
+class IDistroReleaseSourceReleaseApp(Interface):
+    """A SourcePackageRelease Proxy """
+    sourcepackagerelease = Attribute("SourcePackageRelease")
+    version = Attribute("SourcePackageRelease Version ?!?!")
+    archs = Attribute("Builded archs")
 
     def __getitem__(name):
-        """retrieve distribution by name"""
+        """Retrieve a package release build by arch."""
 
-    def sources():
-        """retrieve all projects"""
-
-    def __iter__():
-        """retrieve an iterator"""
-
-# proxy for sourcepackages
-class IDistroReleaseSourceApp(Interface):
-    """A Release Proxy """
-    release = Attribute("Release")
-    def getPackageContainer(name):
-        """ Returns the associated IPackageSet """
 
 class IDistroReleaseApp(Interface):
     """A Release Proxy """
     release = Attribute("Release")
+    name = Attribute("Release name")
+    title = Attribute("Release title")
+    description = Attribute("Release description")
+    version = Attribute("Release version")
+
     def getPackageContainer(name):
         """ Returns the associated IPackageSet """
-######
+
+
+class IDistroBinariesApp(Interface):
+    """A Binaries Source Tag """
+    distribution = Attribute("Distribution")
+
+    def __getitem__(name):
+        """retrieve binarypackges by distribution"""
+
+    def __iter__():
+        """retrieve an iterator"""
+
+class IDistroReleaseBinariesApp(Interface):
+    """A Release Binary Tag """
+    release = Attribute("Release")
+
+    def __getitem__(name):
+        """retrieve binarypackges by release"""
+
+    def __iter__():
+        """retrieve an iterator"""
+
+class IDistroReleaseBinaryReleaseBuildApp(Interface):
+    binarypackagerelease = Attribute("Release")
+    version = Attribute("Version")
+    arch = Attribute("Arch")
+
+
+
+class IDistroReleaseBinaryReleaseApp(Interface):
+    """A Binary Release Proxy """
+    binarypackagerelease = Attribute("BinaryPackageRelease")
+    version = Attribute("BinaryPackageRelease Version ?!?!")
+    archs = Attribute("Builded archs")
+
+    def __getitem__(name):
+        """retrieve binarypackagesbuild by version"""
+
+
+class IDistroReleaseBinaryApp(Interface):    
+    """A Binary Package Proxy """
+    binarypackage = Attribute("BinaryPackage")
+    lastversions = Attribute("Last Release Versions")
+    currentversions = Attribute("Current Release Versions")
+
+    def __getitem__(name):
+        """Retrieve a package release by version."""
+
 
 
 class IDistroSourcesApp(Interface):
@@ -95,16 +161,46 @@ class IDistroSourcesApp(Interface):
 
     def __iter__():
         """retrieve an iterator"""
-
+     
 class IDistroPeopleApp(Interface):
     """A Distribution People Tag """
     distribution = Attribute("Distribution")
     people = Attribute("People")
+
     def __getitem__(release):
         """retrieve people by release"""
 
     def __iter__():
         """retrieve an iterator"""
+
+class IDistroReleasePeopleApp(Interface):
+    """A DistroRelease People Tag """
+    release= Attribute("Release")
+    people = Attribute("People")
+
+
+# it is deprecated BTW !!!
+class IPeople(Interface):
+     """auxiliar object to receive STUB persons"""
+     displayname = Attribute("name")
+     role = Attribute("role")
+
+
+# they didn't work as expected. spiv: help :)
+
+class IDistroReleaseRole(Interface):
+    """A DistroReleaseRole Object """
+    release= Attribute("Release")
+    person = Attribute("Person")
+    role = Attribute("Role")
+
+class IDistributionRole(Interface):
+    """A Distribution Role Object"""
+    distribution = Attribute("Distribution")
+    person = Attribute("Person")
+    role = Attribute("Role")
+    
+###########################################        
 
 class IRelease(Interface):
     """A Release Object"""
@@ -238,15 +334,21 @@ class IBinaryPackageSet(IPackageSet):
 
 # Interfaces from the DB
 
+class IPackagePublishing(Interface):
+    binarypackage = Attribute("BinaryPackage")
+    distroarchrelease = Attribute("Distro Arch Relese")
+    packages = Attribute("XXX")
+
 class IBinaryPackage(Interface):
     """A binary package, e.g apache-utils"""
     # See the BinaryPackage table
+    binarypackagename = Attribute("Binary Package Name")
+    shortdesc = Attribute("Short Description")
+    description = Attribute("Full Description")
 
-    name = Attribute("A string")
-    title = Attribute("Package Title")
-    description = Attribute("Package Description")
-    ##releases = Attribute("List of IBinaryPackageRelease objects")
-
+class IBinaryPackageName(Interface):
+    """A binary package name"""
+    name = Attribute("Binary Package Name")
 
 class IBinaryPackageBuild(Interface):
     """A binary package build, e.g apache-utils 2.0.48-4_i386"""
@@ -261,7 +363,6 @@ class IBinaryPackageBuild(Interface):
     binpackageformat = Attribute("An ISourcePackageRelease")
     datebuilt = Attribute("An ISourcePackageRelease")
 
-
 class ISourcePackage(Interface):
     """A source package, e.g apache-utils"""
     # See the SourcePackage table
@@ -271,7 +372,8 @@ class ISourcePackage(Interface):
     title = Attribute("Package Title")
     description = Attribute("Package Description")
     ##releases = Attribute("List of ISourcePackageRelease objects")
-
+    proposed = Attribute("A source package release with upload status of "
+                         "PROPOSED, else None")
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
@@ -285,12 +387,11 @@ class ISourcePackageRelease(Interface):
         """Return the list of branches in a source package release"""
 
 
-class IPerson(Interface):
+class ISoyuzPerson(Interface):
     """A person"""
-
-    givenName = Attribute("Given name")
-    familyName = Attribute("Family name")
-    presentationName = Attribute("Presentation name")
+    givenname = Attribute("Given name")
+    familyname = Attribute("Family name")
+    displayname = Attribute("Display name")
 
 
 class IManifestEntry(Interface):
@@ -308,5 +409,11 @@ class IChangeset(Interface):
     """A changeset"""
 
     message = Attribute("The log message for this changeset")
+
+##Dummy Interfaces
+class IcurrentVersion(Interface):
+    currentversion = Attribute("DUMMY")
+    currentbuilds = Attribute("DUMMY")
+
 
 # arch-tag: 3f98fde9-9a5b-447b-93e7-e4a9c770ca63

@@ -4,6 +4,8 @@
       i18n:domain="rosetta">
 
 <head>
+    <title metal:fill-slot="title">Rosetta: <span
+        tal:replace="context/title">Project Title</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -14,7 +16,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Project overview: <span tal:replace="context/title">NAME</span></h1>
+    <h1>Translation overview: <span tal:replace="context/title">NAME</span></h1>
 
     <div style="float: right; clear: both; margin-top: 0.25em;">
     Project home page:
@@ -43,61 +45,67 @@
     browser/IP:
     </p>
 
-    <div tal:condition="view/thereAreTemplates">
+    <div tal:condition="view/thereAreProducts">
         <div class="documentDescription">
-        Here are the translation resources available, select language from the
-        pulldown, and click an entry to translate.
+        Here are the products available, select language from the
+        pulldown, and click a product.
         </div>
 
-        <div tal:repeat="LT view/languageTemplates">
+        <div tal:repeat="LT view/languageProducts">
 
             <h2 tal:content="LT/language/englishName">Language</h2>
 
             <table class="listing">
                 <thead>
-                    <th>Resource</th>
+                    <th>Product</th>
                     <th>Translated</th>
                     <th>Untranslated</th>
                     <th>Graph</th>
-                    <th>Message catalog</th>
                 </thead>
 
                 <tbody>
-                    <tr tal:repeat="template LT/templates">
-                        <!--
-                        XXX: Assumption that a PO file exists for this
-                        language.
-                        -->
+                    <tr tal:repeat="product LT/products">
                         <td><a tal:attributes="href
-                            string:${template/name}/translate"
-                            tal:content="template/title">Resource Name</a></td>
-                        <td><span tal:replace="template/poTranslated">0</span></td>
-                        <td><span tal:replace="template/poUntranslated">0</span></td>
+                            string:${product/name}/"
+                            tal:content="product/title">Product Name</a></td>
+                        <td><span tal:replace="product/poTranslated">0</span></td>
+                        <td><span tal:replace="product/poUntranslated">0</span></td>
                         <td>
-                            <img src="++resource++green-bar.png"
+			    <img src="++resource++green-bar.png"
                                 height="15"
-                                alt="Translated graph"
-                                tal:condition="template/poTranslated"
-                                tal:attributes="width template/poTranslatedPercent;
-                                                title string: Translated: ${template/poTranslatedPercent}%"
-                            /><img src="++resource++red-bar.png"
+                                alt="Translated & non updated graph"
+                                tal:condition="product/poNonUpdatesCount"
+                                tal:attributes="width product/poNonUpdatesPercent;
+                                                title string: Translated: ${product/poNonUpdatesPercent}%"
+                            /><img src="++resource++blue-bar.png"
+                                height="15"
+                                alt="Updated graph"
+                                tal:condition="product/poUpdatesCount"
+                                tal:attributes="width product/poUpdatesPercent;
+                                                title string: Updates: ${product/poUpdatesPercent}%"
+			    /><img src="++resource++dwelled-bar.png"
+                                height="15"
+                                alt="Rosetta additions graph"
+                                tal:condition="product/poRosettaCount"
+                                tal:attributes="width product/poRosettaPercent;
+                                                title string: Rosetta additions: ${product/poRosettaPercent}%"
+			    /><img src="++resource++red-bar.png"
                                 height="15"
                                 alt="Fuzzy graph"
-                                tal:condition="template/poUntranslated"
-                                tal:attributes="width template/poUntranslatedPercent;
-                                                title string: Untranslated: ${template/poUntranslatedPercent}%">
+                                tal:condition="product/poUntranslated"
+                                tal:attributes="width product/poUntranslatedPercent;
+                                                title string: Untranslated: ${product/poUntranslatedPercent}%" />
                         </td>
-                        <td><a href="no-url-yet"><img src="++resource++download.png" alt="Download PO file" />Download .po</a></td>
                     </tr>
                 </tbody>
             </table>
 
         </div>
-    </div> <!-- tal:condition="view/thereAreTemplates -->
+    </div> <!-- tal:condition="view/thereAreProducts -->
   
-    <div tal:condition="not: view/thereAreTemplates">
+    <div tal:condition="not: view/thereAreProducts">
         <p>
-        Rosetta doesn't currently know of any translatable resources for
+        Rosetta doesn't currently know of any product for
         <span tal:content="context/title">project title</span>.
         </p>
     </div>

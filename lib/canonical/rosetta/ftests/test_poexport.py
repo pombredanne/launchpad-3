@@ -8,7 +8,7 @@ import unittest
 
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.interfaces import ILanguages
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
     RosettaProject, RosettaProduct, RosettaLanguages
@@ -126,7 +126,7 @@ msgstr[0] "%d contacto"
 msgstr[1] "%d contactos"
 
 #~ msgid "_Add Group"
-#~ msgstr "_Añadir grupo"
+#~ msgstr "_A\xc3\xb1adir grupo"
 '''
 
 class POExportTestCase(PlacelessSetup, unittest.TestCase):
@@ -141,16 +141,16 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
         try:
             project = RosettaProject.selectBy(name = 'gnome')[0]
             product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
-            poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-1.5.90')[0]
+            poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-2.0')[0]
         except IndexError, e:
-            raise IndexError, "Couldn't find record in database, please import populate.sql to do the tests."
+            raise IndexError, "Couldn't find record in database, please import sampledata.sql to do the tests."
         export = POExport(poTemplate)
-        dump = export.export('cy')
-        print dump
+        dump = export.export('es')
+        #print dump
         import difflib, sys
         if dump != expected:
             for l in difflib.unified_diff(
-                dump.split('\n'), expected.split('\n'),
+                expected.split('\n'), dump.split('\n'),
                 'expected output', 'generated output'):
                 print l
             raise AssertionError, 'output was different from the expected'

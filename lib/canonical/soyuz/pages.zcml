@@ -137,15 +137,50 @@
    </pages>
 
 <traverse for="canonical.soyuz.sql.DistroReleaseSourcesApp" 
-                                          getter="getPackageContainer" />
+                                          getter="__getitem__" />
    <pages for="canonical.soyuz.sql.DistroReleaseSourcesApp"
 	  allowed_attributes="results"	 
 	  permission="zope.Public"> 
 	<page  name="index.html"
           template="templates/sourcepackage-list.pt"	
-	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/index.html"
+	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/index.html"
 	/>
    </pages>
+
+<traverse for="canonical.soyuz.sql.DistroReleaseSourceApp" 
+                                          getter="__getitem__" />
+   <pages for="canonical.soyuz.sql.DistroReleaseSourceApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	<page  name="index.html"
+          template="templates/sourcepackage-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/index.html"
+	/>
+   </pages>
+
+
+<traverse for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp" 
+					  getter="__getitem__" />
+
+   <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	<page  name="index.html"
+          template="templates/sourcepackagerelease-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/index.html"
+	/>
+   </pages>
+
+   <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseBuildApp"
+
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	<page  name="index.html"
+          template="templates/sourcepackagebuild-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/index.html"
+	/>
+   </pages>
+
 
 <traverse for="canonical.soyuz.sql.DistroPeopleApp" getter="__getitem__" />
 
@@ -160,7 +195,76 @@
    </pages>
 
 
+   <pages for="canonical.soyuz.sql.DistroReleasePeopleApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	
+	<page  name="index.html"
+          template="templates/releasepeople-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/people/$Release.name/index.html"
+	/>
+   </pages>
 
+
+
+<traverse for="canonical.soyuz.sql.DistroBinariesApp" getter="__getitem__" />
+
+   <pages for="canonical.soyuz.sql.DistroBinariesApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	
+	<page  name="index.html"
+          template="templates/binary-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/index.html"
+	/>
+   </pages>
+
+
+<traverse for="canonical.soyuz.sql.DistroReleaseBinariesApp" getter="__getitem__" />
+
+   <pages for="canonical.soyuz.sql.DistroReleaseBinariesApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	
+	<page  name="index.html"
+          template="templates/binarypackage-list.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/index.html"
+	/>
+   </pages>
+
+<traverse for="canonical.soyuz.sql.DistroReleaseBinaryApp" getter="__getitem__" />
+
+   <pages for="canonical.soyuz.sql.DistroReleaseBinaryApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	
+	<page  name="index.html"
+          template="templates/binarypackage-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/index.html"
+	/>
+   </pages>
+
+<traverse for="canonical.soyuz.sql.DistroReleaseBinaryReleaseApp" getter="__getitem__" />
+
+   <pages for="canonical.soyuz.sql.DistroReleaseBinaryReleaseApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	
+	<page  name="index.html"
+          template="templates/binarypackagerelease-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/index.html"
+	/>
+   </pages>
+
+   <pages for="canonical.soyuz.sql.DistroReleaseBinaryReleaseBuildApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	
+	<page  name="index.html"
+          template="templates/binarypackagebuild-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/index.html"
+	/>
+   </pages>
 
 
 <!--  packages stuff --> 

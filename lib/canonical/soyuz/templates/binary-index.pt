@@ -14,11 +14,20 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Test index</h1>
+  <h1><span tal:content="context/distribution/title" /> Binary Package 
+	Overview</h1>
 
-    <b>name:</b> <i tal:content="context/name">NAME</i>
-    <br/>
-    <b>description:</b> <i tal:content="context/description">DESCRIPTION</i>
+
+  <table class="listing">
+    <tr>
+    <th tal:repeat="release context">
+        <a tal:content="release/name"
+	   tal:attributes="href release/name">
+	  distribution title
+	</a>
+      </th>
+    </tr>
+  </table>    
 
 </div>
 

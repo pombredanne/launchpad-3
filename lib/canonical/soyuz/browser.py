@@ -91,10 +91,10 @@ class ReleasesEditView(object):
         version = self.request.get("version", "").encode("ascii")
 
         if name or title or description or version:
-            self.context.name = name
-            self.context.title = title
-            self.context.description = description
-            self.context.version = version
+            self.context.release.name = name
+            self.context.release.title = title
+            self.context.release.description = description
+            self.context.release.version = version
 
 ################################################################
 

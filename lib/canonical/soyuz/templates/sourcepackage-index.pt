@@ -1,0 +1,77 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="soyuz">
+
+<head>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Rosetta style sheet -->
+  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>
+       <tal:block
+       tal:replace="context/sourcepackage/sourcepackage/title">TITLE</tal:block>
+    </h1>
+    <h2>Sourcepackage-index (...ubuntu/src/warty/apache2/) </h2>
+    <table width="80%">
+    <tr>
+    <td>
+    <p> <h4>Description:  </h4> <tal:block tal:replace="context/sourcepackage/sourcepackage/description" />
+    <p> <h4>Package name: </h4> <tal:block tal:replace="context/sourcepackage/sourcepackage/name" />
+    <p> <h4>Maintainer:   </h4> <tal:block tal:replace="context/sourcepackage/sourcepackage/maintainer/displayname" />
+
+    <p> <h4>Proposed:</h4>
+    <a tal:content="context/proposed/version" tal:attributes="href context/proposed/version">
+      VERSION
+    </a>
+
+    <p> <h4>Current:</h4>
+
+    <tal:block tal:repeat="current context/currentversions">
+
+      <a tal:content="current/currentversion" 
+      tal:attributes="href current/currentversion">
+      CURRENTVERSION
+      </a>( 
+
+    <tal:block tal:repeat="currentbuild current/currentbuilds">
+      [
+      <a tal:content="currentbuild" tal:attributes="href
+      string:${current/currentversion}/${currentbuild}">
+      CURRENTBUILD
+      </a> 
+      ]
+
+    </tal:block>
+      )<br>
+    
+    </tal:block>
+
+    </td>
+    <td>
+    <b>Bugs:</b> #1, #2, #3
+    <br>
+    <br>
+    <b>Last Packages:</b>
+    <li tal:repeat="lastversion context/lastversions">
+    <a tal:content="lastversion/version" tal:attributes="href lastversion/version">
+    0.0.0-0
+    </a>
+    </li>
+    </td>
+    <tr>
+    </table>
+
+
+</div>
+
+    <li> <a href="packages">Packages</a></li>
+  </body>
+</html>
+ 

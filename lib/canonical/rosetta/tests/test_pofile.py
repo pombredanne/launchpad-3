@@ -1,7 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-__metaclass__ = type
-
 from canonical.rosetta import pofile
 import unittest, doctest
 import warnings
@@ -125,6 +123,8 @@ class POBasicTestCase(unittest.TestCase):
     #         self.fail("no exception on bad escape sequence")
 
     def testPlural(self):
+        self.parser.header = pofile.POHeader()
+        self.parser.header.nplurals = 2
         self.parser.write('''msgid "foo"\nmsgid_plural "foos"\n'''
             '''msgstr[0] "bar"\nmsgstr[1] "bars"\n''')
         self.parser.finish()
@@ -194,6 +194,7 @@ class POBasicTestCase(unittest.TestCase):
             pass
         else:
             self.fail("no error when duplicate msgid encountered")
+
     def testSquareBracketAndPlural(self):
         try:
             self.parser.write(
@@ -203,6 +204,17 @@ class POBasicTestCase(unittest.TestCase):
                 'msgstr[1] "foos translated[%d]"\n')
         except ValueError:
             self.fail("The SquareBracketAndPlural test failed")
+
+    def testUpdateHeader(self):
+        self.parser.write('msgid ""\nmsgstr "foo: bar\\n"\n')
+        self.parser.finish()
+        self.parser.header['plural-forms'] = 'nplurals=2; plural=random()'
+        self.assertEqual(unicode(self.parser.header),
+                         'msgid ""\n'
+                         'msgstr ""\n'
+                         '"foo: bar\\n"\n'
+                         '"Content-Type: text/plain; charset=us-ascii\\n"\n'
+                         '"plural-forms: nplurals=2; plural=random()\\n"')
 
 
 def test_suite():

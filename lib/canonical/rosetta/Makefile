@@ -1,20 +1,24 @@
-
+# The -u argument disables all functional tests
 check: tests/test_interfaces_sql.py
-	python ../../../test_on_merge.py canonical.rosetta
+	python ../../../test_on_merge.py -u canonical.rosetta
 
 noisycheck: tests/test_interfaces_sql.py
+	(cd ../../.. ; python test.py -u canonical.rosetta)
+
+fullcheck: tests/test_interfaces_sql.py
 	(cd ../../.. ; python test.py canonical.rosetta)
 
 testdb:
-	make -C ../../../database sampledata
+	dropdb launchpad_test
+	make -C ../../../database/schema launchpad_test
 
 url-table:
 	./scripts/extract-urls.py < pages.zcml
 
-tests/test_interfaces_sql.py: interfaces.py sql.py
+tests/test_interfaces_sql.py: interfaces.py scripts/generate_sql_tests.py
 	python scripts/generate_sql_tests.py -c > tests/test_interfaces_sql.py
 
-ftests/test_interfaces_sql.py: interfaces.py sql.py
+ftests/test_interfaces_sql.py: interfaces.py scripts/generate_sql_tests.py
 	python scripts/generate_sql_tests.py -o > ftests/test_interfaces_sql.py
 
 clean:
