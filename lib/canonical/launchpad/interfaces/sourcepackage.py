@@ -58,6 +58,22 @@ class ISourcePackageName(Interface):
 
 
 
+class ISourcePackageContainer(Interface):
+    """A container for ISourcePackage objects."""
+
+    def __getitem__(key):
+        """Get an ISourcePackage by name"""
+
+    def __iter__():
+        """Iterate through SourcePackages."""
+
+    def withBugs(self):
+        """Return a sequence of SourcePackage, that have bugs assigned to
+        them. In future, we might pass qualifiers to further limit the list
+        that is returned, such as a name filter, or a bug assignment status
+        filter."""
+
+
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
     # See the SourcePackageRelease table

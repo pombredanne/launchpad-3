@@ -13,5 +13,7 @@
     <include file="productrelease.zcml" />
     <include file="bugpackageinfestation.zcml" />
     <include file="sourcepackage.zcml" />
+    <include file="bug.zcml" />
+    <include file="bugattachment.zcml" />
 
 </configure>

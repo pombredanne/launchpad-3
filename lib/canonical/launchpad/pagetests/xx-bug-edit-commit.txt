@@ -1,0 +1,40 @@
+
+
+  >>> print http(r"""
+  ... POST /malone/bugs/3/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1740
+  ... Content-Type: multipart/form-data; boundary=---------------------------9007557518154646371082635117
+  ... Referer: http://localhost:9000/malone/bugs/3/+edit
+  ... 
+  ... -----------------------------9007557518154646371082635117
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... testbug
+  ... -----------------------------9007557518154646371082635117
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Bug Title Testing
+  ... -----------------------------9007557518154646371082635117
+  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... 
+  ... Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo xx ww
+  ... -----------------------------9007557518154646371082635117
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... y idu yifdxhfgffxShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
+  ... Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
+  ... 
+  ... Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xosssww
+  ... -----------------------------9007557518154646371082635117
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------9007557518154646371082635117--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <h...>...</h...>
+  ...

@@ -13,7 +13,15 @@ from canonical.launchpad.interfaces.productseries import *
 from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.sourcepackage import *
+from canonical.launchpad.interfaces.malone import *
 from canonical.launchpad.interfaces.bug import *
+from canonical.launchpad.interfaces.bugmessage import *
+from canonical.launchpad.interfaces.bugactivity import *
+from canonical.launchpad.interfaces.bugsubscription import *
+from canonical.launchpad.interfaces.bugwatch import *
+from canonical.launchpad.interfaces.bugextref import *
+from canonical.launchpad.interfaces.bugattachment import *
+from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugassignment import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.person import *

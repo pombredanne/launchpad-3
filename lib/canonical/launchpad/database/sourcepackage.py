@@ -20,10 +20,6 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, \
                                            ISourcePackageContainer
 
 from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.project import Project
-from canonical.launchpad.database.person import Person
-#from canonical.launchpad.database.bugassignment import \
-#        SourcePackageBugAssignment
 
 
 class SourcePackageRelease(SQLBase):
@@ -210,25 +206,20 @@ class SourcePackageContainer(object):
     def __getitem__(self, name):
         return self.table.select("SourcePackage.sourcepackagename = \
         SourcePackageName.id AND SourcePackageName.name = %s" %     \
-        sqlbase.quote(name))[0]
+        quote(name))[0]
 
     def __iter__(self):
         for row in self.table.select():
             yield row
 
-    #_bugassignments = SourcePackageBugAssignment
-
-    #def bugassignments(self, orderby='-id'):
-    #    # TODO: Ordering
-    #    return self._bugassignments.select(orderBy=orderby)
-
-    #
-    # return a result set of SourcePackages with bugs assigned to them
-    # which in future might be limited by distro, for example
-    #
     def withBugs(self):
-        return self.table.select("SourcePackage.id = \
-        SourcePackageBugAssignment.sourcepackage")
+        pkgset = Set()
+        results = self.table.select("SourcePackage.id = \
+                                     SourcePackageBugAssignment.sourcepackage")
+        for pkg in results:
+            pkgset.add(pkg)
+        return pkgset
+        
 
 
 

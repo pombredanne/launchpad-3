@@ -10,7 +10,7 @@ from canonical.launchpad.database.binarypackage import BinaryPackage, \
                                             BinaryPackageName
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productrelease import ProductRelease
-from canonical.launchpad.database.bug import BugTracker
+from canonical.launchpad.database.bugtracker import BugTracker
 
 __metaclass__ = type
 

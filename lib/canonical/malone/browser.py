@@ -15,9 +15,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
 
-#
 # Database access objects
-#
 from canonical.launchpad.database import \
         SourcePackage, SourcePackageName, BinaryPackage, \
         BugTracker, BugsAssignedReport, BugWatch, Product, Person, EmailAddress, \
@@ -26,26 +24,21 @@ from canonical.launchpad.database import \
         BugProductInfestation, BugPackageInfestation
 from canonical.database import sqlbase
 
-#
 # I18N support for Malone
-#
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('malone')
 
 from canonical.lp import dbschema
 
-#
 # Interface imports
-#
 from canonical.launchpad.interfaces import \
-        IBugMessagesView, IBugExternalRefsView, \
         IMaloneBug, IMaloneBugAttachment, \
         IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
         IBugSubscriptionContainer, ISourcePackageContainer, \
         IBugWatchContainer, IProductBugAssignmentContainer, \
         ISourcePackageBugAssignmentContainer, IBugProductInfestationContainer, \
-        IBugPackageInfestationContainer, IPerson
-
+        IBugPackageInfestationContainer, IPerson, \
+        IBugMessagesView, IBugExternalRefsView
 
 def traverseBug(bug, request, name):
     if name == 'attachments':
