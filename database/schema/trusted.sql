@@ -73,7 +73,7 @@ COMMENT ON FUNCTION valid_bug_name(text) IS 'validate a bug name
 CREATE OR REPLACE FUNCTION valid_version(text) RETURNS boolean AS '
     import re
     name = args[0]
-    pat = r"^[0-9][A-Za-z0-9\\+:\\.\\-]*$"
+    pat = r"^[A-Za-z0-9\\+:\\.\\-]+$"
     if name is None or re.match(pat, name):
         return True
     return False
@@ -87,7 +87,7 @@ CREATE OR REPLACE FUNCTION valid_version(text) RETURNS boolean AS '
 DECLARE
     name ALIAS FOR $1;
 BEGIN
-    IF name IS NULL OR name SIMILAR TO \'^[0-9][A-Za-z0-9\\+:\\.\\-]*$\' THEN
+    IF name IS NULL OR name SIMILAR TO \'^[A-Za-z0-9\\+:\\.\\-]+$\' THEN
         RETURN true;
     END IF;
     RETURN false;
@@ -98,13 +98,12 @@ SET client_min_messages TO notice;
 
 COMMENT ON FUNCTION valid_version(text) IS 'validate a version number
 
-    This specification should match the Debian naming policy, as it was
-    lifed source canonical/sourcerer/deb/version.py. Note that versions
+    Note that this is more flexible that the Debian naming policy,
+    as it states ''SHOULD'' rather than ''MUST'', and we have already
+    imported packages that don''t match it. Note that versions
     may contain both uppercase and lowercase letters so we can''t use them
     in URLs. Also note that both a product name and a version may contain
     hypens, so we cannot join the product name and the version with a hypen
     to form a unique string (we need to use a space or some other character
     disallowed in the product name spec instead';
     
-
- 
