@@ -794,9 +794,6 @@ class RosettaPOMessageSet(SQLBase):
             'pomsgset = %d AND active = TRUE' % self.id,
             orderBy='pluralForm'))
 
-        #print "----->", list(map(lambda x: (x.pluralForm,
-        #    x.poTranslation), list(results)))
-
         translations = []
 
         for form in range(pluralforms):

@@ -154,19 +154,22 @@ class ViewProject:
 
 
 class ViewProduct:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.person = IPerson(self.request.principal, None)
+
     def thereAreTemplates(self):
         return len(list(self.context.poTemplates())) > 0
 
     def languageTemplates(self):
-        person = IPerson(self.request.principal, None)
-        if person is not None:
-            for language in person.languages():
+        if self.person is not None:
+            for language in self.person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
         else:
-            # XXX
-            person = fake_person()
-            for language in person.languages():
-                yield LanguageTemplates(language, self.context.poTemplates())
+            raise RuntimeError(
+                "Can't generate LanguageTemplates unless authenticated.")
 
 
 class LanguageTemplates:
@@ -465,26 +468,34 @@ class TranslatePOTemplate:
     def __init__(self, context, request):
         # This sets up the following instance variables:
         #
-        # context:
-        #   The context PO template object.
-        # request:
-        #   The request from the browser.
-        # codes:
-        #   A list of codes for the langauges to translate into.
-        # languages:
-        #   A list of languages to translate into.
-        # pluralForms:
-        #   A dictionary by language code of plural form counts.
-        # badLanguages:
-        #   A list of languages for which no plural form information is
-        #   available.
-        # offset:
-        #   The offset into the template of the first message being
-        #   translated.
-        # count:
-        #   The number of messages being translated.
-        # error:
-        #   A flag indicating whether an error ocurred during initialisation.
+        #  context:
+        #    The context PO template object.
+        #  request:
+        #    The request from the browser.
+        #  codes:
+        #    A list of codes for the langauges to translate into.
+        #  languages:
+        #    A list of languages to translate into.
+        #  pluralForms:
+        #    A dictionary by language code of plural form counts.
+        #  badLanguages:
+        #    A list of languages for which no plural form information is
+        #    available.
+        #  offset:
+        #    The offset into the template of the first message being
+        #    translated.
+        #  count:
+        #    The number of messages being translated.
+        #  error:
+        #    A flag indicating whether an error ocurred during initialisation.
+        #
+        # No initialisation if performed if the request's principal is not
+        # authenticated.
+
+        person = IPerson(request.principal, None)
+
+        if person is None:
+            return
 
         self.context = context
         self.request = request
@@ -506,8 +517,6 @@ class TranslatePOTemplate:
                 except KeyError:
                     pass
         else:
-            person = IPerson(request.principal, None)
-
             self.languages = list(person.languages())
 
         # Get plural form information.
@@ -760,44 +769,38 @@ class TranslatePOTemplate:
                         "Got translation for msgid %s which is not in "
                         "the template." % repr(msgid_text))
 
-                # Get hold of an appropriate message set in the PO file.
+                # Get hold of an appropriate message set in the PO file,
+                # creating it if necessary.
                 # XXX: Message set creation should probably be lazier also.
 
                 try:
                     po_set = pofiles[code][msgid_text]
-                    print ">>> msgid found (%s, %s)" % (code, msgid_text)
                 except KeyError:
                     po_set = pofiles[code].createMessageSetFromText(msgid_text)
-                    print ">>> msgid created (%s, %s)" % (code, msgid_text)
+
+                # Get a hold of a list of existing translations for the
+                # message set.
 
                 old_translations = po_set.translations()
-                print ">>> old_translations:\n", old_translations
 
                 for index in new_translations:
+                    # For each translation, add it to the database if it is
+                    # non-null and different to the old one.
                     if (new_translations[index] is not None and
                             new_translations[index] != '' and
                             new_translations[index] !=
                             old_translations[index]):
-                        print "accepting translation:\n", (index, old_translations[index],
-                            new_translations[index])
                         po_set.makeTranslationSighting(
                             person = person,
                             text = new_translations[index],
                             pluralForm = index,
                             update = True,
-                            fromPOFile = False
-                            )
-                        new_translations = po_set.translations()
-                        print ">>> new_translations:\n", new_translations
-
-                print
-                print
+                            fromPOFile = False)
 
         self.submitted = True
 
-        from pprint import pformat
-        from xml.sax.saxutils import escape
-        return "<pre>" + escape(pformat(sets)) + "</pre>"
+        # XXX: Should return the number of new translations or something
+        # useful like that.
 
 # XXX: Implement class ViewTranslationEfforts: to create new Efforts
 
