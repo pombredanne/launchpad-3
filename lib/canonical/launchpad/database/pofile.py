@@ -170,12 +170,6 @@ class POTemplate(SQLBase):
         slice:
             The range of results to be selected, or None, for all results.
         '''
-        # XXX: Carlos Perello Marin 11/12/2004 Commented the code because it's
-        # not working and it's not needed.
-        #if __DEBUG__:
-        #    for l in languages:
-        #        assert l.__class__ == Language
-        #        assert ILanguage.providedBy(l)
 
         if current is not None:
             if current:
@@ -188,14 +182,13 @@ class POTemplate(SQLBase):
         # Assuming that for each language being checked, each POT mesage set
         # has a corresponding PO message set for that language:
         #
-        # A POT set is translated if all its PO message sets have
-        #   iscomplete = TRUE.
-        #  -- in other words, none of its PO message sets have
-        #   iscomplete = FALSE.
+        # A POT set is translated if all its PO message sets have iscomplete =
+        # TRUE. In other words, none of its PO message sets have iscomplete =
+        # FALSE.
+        #
         # A POT set is untranslated if any of its PO message set has
-        #   iscomplete = FALSE.
-        #  -- in other words, not all of its PO message sets have
-        #   iscomplete = TRUE.
+        # iscomplete = FALSE. In other words, not all of its PO message sets
+        # have iscomplete = TRUE.
         #
         # The possible non-existance of corresponding PO message sets
         # complicates matters a bit:
@@ -209,19 +202,26 @@ class POTemplate(SQLBase):
         # So, we get around this problem by checking the number of PO message
         # sets against the number of languages.
 
+        language_ids = ', '.join([ str(l.id) for l in languages ])
+
         if translated is not None:
+            # Search for PO message sets which aren't complete for this POT
+            # set.
             subquery1 = '''
-                SELECT 1 FROM POMsgSet poset, POFile pofile WHERE
+                SELECT poset.id FROM POMsgSet poset, POFile pofile WHERE
                     poset.potmsgset = POTMsgSet.id AND
                     poset.pofile = pofile.id AND
                     pofile.language IN (%s) AND
                     iscomplete = FALSE
-                ''' % (', '.join([ str(l.id) for l in languages ]))
+                ''' % language_ids
 
+            # Count PO message sets for this POT set.
             subquery2 = '''
-                SELECT COUNT(id) FROM POMsgSet WHERE
-                    POMsgSet.potmsgset = POTMsgSet.id
-                '''
+                SELECT COUNT(poset.id) FROM POMsgSet poset, POFile pofile WHERE
+                    poset.potmsgset = POTMsgSet.id AND
+                    poset.pofile = pofile.id AND
+                    pofile.language IN (%s)
+                ''' % language_ids
 
             if translated:
                 translated_condition = ('NOT EXISTS (%s) AND (%s) = %d' %
@@ -233,9 +233,9 @@ class POTemplate(SQLBase):
             translated_condition = 'TRUE'
 
         results = POTMsgSet.select(
-            'POTMsgSet.potemplate = %d AND %s AND %s '
-            'ORDER BY POTMsgSet.sequence' %
-                (self.id, translated_condition, current_condition))
+            'POTMsgSet.potemplate = %d AND (%s) AND (%s) '
+                % (self.id, translated_condition, current_condition),
+                orderBy = 'POTMsgSet.sequence')
 
         if slice is not None:
             return results[slice]

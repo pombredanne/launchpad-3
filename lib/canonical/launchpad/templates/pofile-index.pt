@@ -61,7 +61,7 @@
 
         <div class="portletContent even">
 
-            <p><img src="/++resource++add.gif"><a href="+upload">Upload a newer
+            <p><img src="/++resource++add.gif"><a href="../+upload">Upload a newer
             version of this PO file</a>.
             This is an advanced operation, limited to Rosetta
             administrators<span tal:condition="context/owner"> and 

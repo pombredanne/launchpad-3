@@ -35,7 +35,7 @@
                   <img src="/++resource++soyuz.png" alt="Soyuz" />
                </a>
       </div>
-      
+
           <ul id="portal-globalnav"
               tal:define="path_info request/PATH_INFO">
 
@@ -104,7 +104,8 @@
 
           </ul>
 
-      <div id="portal-personaltools">
+      <div id="portal-personaltools"
+           tal:define="path_info request/PATH_INFO">
 
         <span tal:condition="request/lp:person">
             Logged in as
@@ -159,10 +160,8 @@
                 metal:define-slot="column_one">
               <div class="visualPadding">
                 <metal:portlets define-slot="portlets_one">
-                
+
                 </metal:portlets>
-                <div tal:condition="nothing"
-                    tal:replace="structure view/@@bag" />
                 &nbsp;
               </div>
             </td>
@@ -181,7 +180,7 @@
                 metal:define-slot="column_two">
               <div class="visualPadding">
                 <metal:portlets define-slot="portlets_two">
-                
+
                 </metal:portlets>
                 &nbsp;
               </div>

@@ -5,7 +5,6 @@ __metaclass__ = type
 
 import re, os, popen2, base64
 from math import ceil
-import smtplib
 import sys
 from xml.sax.saxutils import escape as xml_escape
 from StringIO import StringIO
@@ -45,8 +44,10 @@ def count_lines(text):
 
 def canonicalise_code(code):
     '''Convert a language code to a standard xx_YY form.'''
+
     if '-' in code:
         language, country = code.split('-', 1)
+
         return "%s_%s" % (language, country.upper())
     else:
         return code
@@ -414,7 +415,7 @@ class ViewPOTemplate:
         languages = translated_languages + prefered_languages
         languages = list(Set(languages))
         languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
-        
+
         languages_info = TemplateLanguages(self.context, languages)
 
         return languages_info.languages()
@@ -955,7 +956,6 @@ class TranslatePOTemplate:
         sets = parse_translation_form(self.request.form)
 
         # Get/create a PO file for each language.
-        # XXX: This should probably be done more lazily.
 
         pofiles = {}
 
@@ -966,9 +966,6 @@ class TranslatePOTemplate:
         # Put the translations in the database.
 
         for set in sets.values():
-            # XXX: Handle the case where the set is not already in the PO
-            # file.
-
             msgid_text = unescape_msgid(set['msgid'])
 
             for code in set['translations'].keys():
@@ -991,15 +988,14 @@ class TranslatePOTemplate:
 
                 # Get hold of an appropriate message set in the PO file,
                 # creating it if necessary.
-                # XXX: Message set creation should probably be lazier also.
 
                 try:
                     po_set = pofiles[code][msgid_text]
                 except KeyError:
                     po_set = pofiles[code].createMessageSetFromText(msgid_text)
-                
+
                 fuzzy = code in set['fuzzy']
-                
+
                 po_set.updateTranslation(
                     person=self.person,
                     new_translations=new_translations,
@@ -1008,15 +1004,12 @@ class TranslatePOTemplate:
 
         self.submitted = True
 
-        # XXX: Should return the number of new translations or something
-        # useful like that.
-
 
 class ViewImportQueue:
     def imports(self):
 
         queue = []
-        
+
         id = 0
         for product in getUtility(IProductSet):
             if product.project is not None:
@@ -1064,16 +1057,14 @@ class ViewImportQueue:
                     potemplate.doRawImport()
 
                 match = re.match('po_(\d+)$', key)
-                    
+
                 if match:
                     id = int(match.group(1))
 
                     pofile = POFile.get(id)
-                    
+
                     pofile.doRawImport()
 
-
-# XXX: Implement class ViewTranslationEfforts: to create new Efforts
 
 class ViewTranslationEffort:
     def thereAreTranslationEffortCategories(self):
@@ -1159,7 +1150,7 @@ class ViewTranslationEffortCategory:
 class TemplateUpload:
     def languages(self):
         return getUtility(ILanguageSet)
-        
+
     def processUpload(self):
         if not (('SUBMIT' in self.request.form) and
                 (self.request.method == 'POST')):
@@ -1177,12 +1168,13 @@ class TemplateUpload:
         filename = file.filename
 
         if filename.endswith('.pot'):
-            # XXX: Carlos Perello Marin 30/11/2004 Improve the error handlingTODO: Try parsing the file before putting it in the DB.
+            # XXX: Carlos Perello Marin 30/11/2004 Improve the error handling
+            # TODO: Try parsing the file before putting it in the DB.
 
             potfile = file.read()
 
             from canonical.rosetta.pofile import POParser
-            
+
             parser = POParser()
 
             parser.write(potfile)
@@ -1233,6 +1225,4 @@ class TemplateUpload:
             return "Uploads of Zip archives are not supported yet."
         else:
             return "Dunno what this file is."
-
-        # FIXME: File bug(s) about zip and tar support.
 
