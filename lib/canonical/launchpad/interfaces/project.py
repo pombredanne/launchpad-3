@@ -4,6 +4,7 @@
 """
 
 from canonical.launchpad.fields import Title, Summary
+from canonical.launchpad.interfaces import IRosettaStats
 
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
@@ -128,4 +129,17 @@ class IProjectBugTracker(Interface):
     project = Int(title=_('Owner'))
     bugtracker = Int(title=_('Bug Tracker'))
     
+
+class IRosettaProject(IRosettaStats, IProject):
+    """The rosetta interface to a project."""
+
+    displayname = Attribute("The Project's name that will be showed.")
+
+    def poTemplates():
+        """Returns an iterator over this project's PO templates."""
+
+    def product(name):
+        """Return the product belonging to this project with the given
+        name."""
+
 

@@ -268,21 +268,24 @@ class POTemplate(SQLBase):
     # should be updated with a way that let's us query the database instead
     # of use the cached value
 
+    def messageCount(self):
+        return self.messagecount
+
     def currentCount(self, language):
         try:
-            return self.poFile(language).currentcount
+            return self.poFile(language).currentCount()
         except KeyError:
             return 0
 
     def updatesCount(self, language):
         try:
-            return self.poFile(language).updatescount
+            return self.poFile(language).updatesCount()
         except KeyError:
             return 0
 
     def rosettaCount(self, language):
         try:
-            return self.poFile(language).rosettacount
+            return self.poFile(language).rosettaCount()
         except KeyError:
             return 0
 
@@ -637,7 +640,7 @@ class POFile(SQLBase):
     def translatedCount(self):
         '''Returns the cached count of translated strings where translations
         exist in the files or in the database.'''
-        return self.currentcount + self.rosettacount
+        return self.currentCount() + self.rosettaCount()
 
     def translated(self):
         return iter(POMsgSet.select('''
@@ -726,6 +729,19 @@ class POFile(SQLBase):
             POTMsgSet.primemsgid = %d''' % (self.id, messageID.id))
 
         return results.count() > 0
+
+    def messageCount(self):
+        return self.potemplate.messageCount()
+
+    def currentCount(self):
+        return self.currentcount
+
+    def updatesCount(self):
+        return self.updatescount
+
+    def rosettaCount(self):
+        return self.rosettacount
+
 
     # IEditPOFile
 

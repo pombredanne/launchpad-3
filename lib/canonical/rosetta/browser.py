@@ -303,9 +303,9 @@ class LanguageTemplates:
                 pass
             else:
                 total = len(template)
-                currentCount = poFile.currentcount
-                rosettaCount = poFile.rosettacount
-                updatesCount = poFile.updatescount
+                currentCount = poFile.currentCount()
+                rosettaCount = poFile.rosettaCount()
+                updatesCount = poFile.updatesCount()
                 nonUpdatesCount = currentCount - updatesCount
                 translated = currentCount  + rosettaCount
                 untranslated = total - translated

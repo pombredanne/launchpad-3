@@ -1,7 +1,30 @@
 
 from zope.interface import Interface, Attribute
 
-class IPOTemplate(Interface):
+class IRosettaStats(Interface):
+    """Rosetta-related statistics."""
+
+    def messageCount():
+        """Returns the number of Current IPOMessageSets in all templates
+        inside this project."""
+
+    def currentCount(language=None):
+        """Returns the number of msgsets matched to a potemplate for this
+        project that have a non-fuzzy translation in its PO file for this
+        language when we last parsed it."""
+
+    def updatesCount(language=None):
+        """Returns the number of msgsets for this project where we have a
+        newer translation in rosetta than the one in the PO file for this
+        language, when we last parsed it."""
+
+    def rosettaCount(language=None):
+        """Returns the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file for this language when we
+        last parsed it."""
+
+
+class IPOTemplate(IRosettaStats):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
     product = Attribute("The PO template's product.")
@@ -27,8 +50,6 @@ class IPOTemplate(Interface):
     path = Attribute("The path to the template in the source.")
 
     iscurrent = Attribute("Whether this template is current or not.")
-
-    messagecount = Attribute("The number of msgids inside this PO template.")
 
     owner = Attribute("The owner of the template.")
 
@@ -89,21 +110,6 @@ class IPOTemplate(Interface):
         without a variant is given.
 
         Raises KeyError if there is no such POFile."""
-
-    def currentCount(language):
-        """Returns the number of msgsets matched to a this potemplate that have
-        a non-fuzzy translation in its PO file for this language when we last
-        parsed it."""
-
-    def updatesCount(language):
-        """Returns the number of msgsets where we have a newer translation in
-        rosetta than the one in the PO file for this language, when we last
-        parsed it."""
-
-    def rosettaCount(language):
-        """Returns the number of msgsets where we have a translation in rosetta
-        but there was no translation in the PO file for this language when we
-        last parsed it."""
 
     def hasMessageID(msgid):
         """Check whether a message set with the given message ID exists within
@@ -226,7 +232,7 @@ class IPOMsgID(Interface):
     msgid = Attribute("A msgid string.")
 
 
-class IPOFile(Interface):
+class IPOFile(IRosettaStats):
     """A PO File."""
 
     potemplate = Attribute("This PO file's template.")
@@ -246,21 +252,6 @@ class IPOFile(Interface):
     lasttranslator = Attribute("The las person that do a translation here.")
 
     license = Attribute("The license under this translation is done.")
-
-    currentcount = Attribute("""
-        The number of msgsets matched to the potemplate that have a
-        non-fuzzy translation in the PO file when we last parsed it
-        """)
-
-    updatescount = Attribute("""
-        The number of msgsets where we have a newer translation in
-        rosetta than the one in the PO file when we last parsed it
-        """)
-
-    rosettacount = Attribute("""
-        The number of msgsets where we have a translation in rosetta
-        but there was no translation in the PO file when we last parsed it
-        """)
 
     lastparsed = Attribute("Last time this pofile was parsed.")
 
@@ -435,3 +426,9 @@ class IPOTranslation(Interface):
 
     translation = Attribute("A translation string.")
 
+
+class IPOExport(Interface):
+    """Interface to export .po/.pot files"""
+
+    def export(language):
+        """Exports the .po file for the specific language"""

@@ -7,6 +7,7 @@ from persistent import IPersistent
 # file, one of person, project, bug, etc.
 #
 
+from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.project import *
 from canonical.launchpad.interfaces.product import *
 from canonical.launchpad.interfaces.productseries import *
@@ -38,7 +39,6 @@ from canonical.launchpad.interfaces.manifest import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.team import *
 from canonical.launchpad.interfaces.wikiname import *
-from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.bounty import *
@@ -46,8 +46,6 @@ from canonical.launchpad.interfaces.launchpad import *
 
 # these will go...
 from canonical.launchpad.iandrew import *
-from canonical.launchpad.idaf import *
-
 
 
 class IAuthApplication(Interface):
