@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-22 15:09:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1471
+
+    Summary:
+      Removed obsolete scripts
+    Revision:
+      launchpad--devel--0--patch-1471
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-570
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-571
+       Last changes I did to this ugly hack, commit done so it's stored in our archive before removing that file completely
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-572
+       Removed obsoleted scripts
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-573
+       Merge with rocketfuel
+    
+
+    removed files:
+     lib/canonical/rosetta/scripts/.arch-ids/import_from_apt_ugly_hack.py.id
+     lib/canonical/rosetta/scripts/import_from_apt.py
+     lib/canonical/rosetta/scripts/import_from_apt_ugly_hack.py
+
+    modified files:
+     allowed-tags.txt doc/changelog.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-570
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-571
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-572
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-573
+
+
 2005-03-22 14:05:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1470
 
     Summary:
