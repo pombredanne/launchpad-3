@@ -22,7 +22,7 @@
         <!-- Upstream Tasks -->
         <tr tal:repeat="bugtask context/bugtasks"
             tal:attributes="onclick string:window.location='/malone/tasks/${bugtask/id}/+edit';">
-           
+
             <td>
                 <a href=""
                     tal:condition="bugtask/product"
@@ -69,7 +69,7 @@
                         </span>
                 </a>
              </td>
-            
+
             <td tal:content="bugtask/status/title">
                 $BugTask.status
             </td>
@@ -83,37 +83,37 @@
                 tal:attributes="class string:priority${bugtask/priority/title}">
                 Medium
             </td>
-            
+
             <td>
                 <a tal:condition="bugtask/assignee"
                    tal:attributes="href string:/malone/bugs/assigned?name=${bugtask/assignee/name}">
-                   <img src="/++resource++user.gif" alt="" 
+                   <img src="/++resource++user.gif" alt=""
                     /><span tal:replace="bugtask/assignee/browsername">
                     assignee.browsername
                     </span>
                 </a>
             </td>
-        
+
         </tr>
 
     </tbody>
 </table>
 
-<a href="#" tal:attributes="href string:$bug_url/tasks/+upstreamtask"
+<a href="+upstreamtask"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring upstream">
     <img src="/++resource++add.gif" alt="+" />
     Upstream Task...
 </a>
 
-<a href="#" tal:attributes="href string:$bug_url/tasks/+distrotask"
+<a href="+distrotask"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring in another package">
     <img src="/++resource++add.gif" alt="+" />
     Distro Task...
 </a>
 
-<a href="#" tal:attributes="href string:$bug_url/tasks/+distroreleasetask"
+<a href="+distroreleasetask"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring in another package for a specific distro release">
     <img src="/++resource++add.gif" alt="+" />

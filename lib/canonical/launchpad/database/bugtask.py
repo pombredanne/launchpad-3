@@ -9,7 +9,6 @@ from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import table
 
-# Zope
 from zope.exceptions import NotFoundError
 from zope.security.interfaces import Unauthorized
 from zope.component import getUtility, getAdapter
@@ -273,7 +272,7 @@ def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))
 
 def BugTaskFactory(context, **kw):
-    return BugTask(bugID=context.context.bug, **kw)
+    return BugTask(bugID = getUtility(ILaunchBag).bug.id, **kw)
 
 # REPORTS
 class BugTasksReport:

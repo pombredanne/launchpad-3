@@ -36,17 +36,20 @@ def traverseBug(bug, request, name):
     elif name == 'packageinfestations':
         return BugPackageInfestationSet(bug=bug.id)
 
+
 def traverseBugs(bugcontainer, request, name):
     if name == 'assigned':
         return BugTasksReport()
     else:
         return getUtility(IBugSet).get(int(name))
 
+
 # TODO: Steve will be hacking on a more general portlet mechanism today
 # (2004-12-09)
 class BoundPortlet(BoundPageTemplate):
     def __call__(self, *args, **kw):
         return BoundPageTemplate.__call__(self, *args, **kw)
+
 
 class ViewWithBugContext:
     def __init__(self, view):
@@ -75,6 +78,7 @@ class BugPortlet:
 
     def __get__(self, instance, type=None):
         return BoundPortlet(self, instance)
+
 
 # TODO: It should be possible to specify all this via ZCML and not require
 # the BugView class with its ViewPageTemplateFile attributes
@@ -122,10 +126,12 @@ class BugEditView(BugView, SQLObjectEditView):
         BugView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
 
+
 class BugTaskEditView(BugView, SQLObjectEditView):
     def __init__(self, context, request):
         BugView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
+
 
 class BugAddView(AddView):
     def add(self, content):
@@ -135,6 +141,20 @@ class BugAddView(AddView):
 
     def nextURL(self):
         return ".?bugadded=" + str(self.bugadded.id)
+
+
+class BugAddingView:
+    """A hack for browser:addform's that use IBug as their context.
+
+    Use this class in the class="" of a browser:addform directive
+    for IBug.
+    """
+    def add(self, content):
+        return content
+
+    def nextURL(self):
+        return "."
+
 
 class BugsCreatedByView:
     def __init__(self, context, request):

@@ -2,6 +2,54 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-17 22:33:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1456
+
+    Summary:
+      fix task adding screens. make BugMessageFactory use the LaunchBag instead of relying on the context to figure out the 'current bug' on which to add the message. other bits of refactoring along the way.
+    Revision:
+      launchpad--devel--0--patch-1456
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-425
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-426
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-427
+       fix task adding screens. make BugMessageFactory use the LaunchBag instead of relying on the context to figure out the 'current bug' on which to add the message. other bits of refactoring along the way.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-428
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/bugtask-management/.arch-ids/=id
+
+    removed files:
+     lib/canonical/launchpad/pagetests/malone/.arch-ids/50-add-edit-product-assignment.txt.fixme.id
+     lib/canonical/launchpad/pagetests/malone/50-add-edit-product-assignment.txt.fixme
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bug.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/templates/portlet-bug-tasks-headline.pt
+     lib/canonical/launchpad/zcml/bugtask.zcml
+
+    new directories:
+     lib/canonical/launchpad/pagetests/bugtask-management
+     lib/canonical/launchpad/pagetests/bugtask-management/.arch-ids
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-425
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-426
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-427
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-428
+
+
 2005-03-17 22:07:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1455
 
     Summary:

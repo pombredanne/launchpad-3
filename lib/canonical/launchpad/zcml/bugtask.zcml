@@ -55,7 +55,8 @@
     <browser:addform
         name="+upstreamtask"
         schema="canonical.launchpad.interfaces.IBugTask"
-        for="canonical.launchpad.interfaces.IBugTaskSet"
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.bug.BugAddingView"
         label="Add Task to fix bug Upstream"
         fields="product status priority severity assignee owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
@@ -63,7 +64,7 @@
         keyword_arguments="product status priority severity owner"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/tasks/+upstreamtask">
+        lp:url="malone/bugs/$Bug.id/+upstreamtask">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
     </browser:addform>
 
@@ -95,7 +96,8 @@
     <browser:addform
         name="+distrotask"
         schema="canonical.launchpad.interfaces.IBugTask"
-        for="canonical.launchpad.interfaces.IBugTaskSet"
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.bug.BugAddingView"
         label="Add SourcePackage Bug Task"
         fields="distribution sourcepackagename owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
@@ -103,7 +105,7 @@
         keyword_arguments="distribution sourcepackagename owner"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/tasks/+distrotask">
+        lp:url="malone/bugs/$Bug.id/+distrotask">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
     </browser:addform>
 
@@ -135,7 +137,8 @@
     <browser:addform
         name="+distroreleasetask"
         schema="canonical.launchpad.interfaces.IBugTask"
-        for="canonical.launchpad.interfaces.IBugTaskSet"
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.bug.BugAddingView"
         label="Add Distro Release Bug Task"
         fields="distrorelease sourcepackagename owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
