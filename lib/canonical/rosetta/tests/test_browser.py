@@ -558,27 +558,27 @@ def test_TranslatePOemplate_mungeMessageID():
 
     First, do no harm.
 
-    >>> t._mungeMessageID(u'foo bar', [])
+    >>> t._mungeMessageID(u'foo bar', [], 'XXXA')
     u'foo bar'
 
     Test replacement of leading and trailing spaces.
 
-    >>> t._mungeMessageID(u' foo bar', [])
-    u'\u2423foo bar'
-    >>> t._mungeMessageID(u'foo bar ', [])
-    u'foo bar\u2423'
-    >>> t._mungeMessageID(u'  foo bar  ', [])
-    u'\u2423\u2423foo bar\u2423\u2423'
+    >>> t._mungeMessageID(u' foo bar', [], 'XXXA')
+    u'XXXAfoo bar'
+    >>> t._mungeMessageID(u'foo bar ', [], 'XXXA')
+    u'foo barXXXA'
+    >>> t._mungeMessageID(u'  foo bar  ', [], 'XXXA')
+    u'XXXAXXXAfoo barXXXAXXXA'
 
     Test replacement of newlines.
 
-    >>> t._mungeMessageID(u'foo\\nbar', [])
-    u'foo\u21b5<br/>\\nbar'
+    >>> t._mungeMessageID(u'foo\\nbar', [], newline='YYYA')
+    u'fooYYYAbar'
 
     And both together.
 
-    >>> t._mungeMessageID(u'foo \\nbar', [])
-    u'foo\u2423\u21b5<br/>\\nbar'
+    >>> t._mungeMessageID(u'foo \\nbar', [], 'XXXA', 'YYYA')
+    u'fooXXXAYYYAbar'
 
     >>> tearDown()
     '''

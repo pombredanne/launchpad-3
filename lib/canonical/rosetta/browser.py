@@ -540,6 +540,9 @@ class ViewMOExport:
 
 class TranslatePOTemplate:
     DEFAULT_COUNT = 5
+    SPACE_CHAR = u'<span style="color:white">\u2022</span>'
+    NEWLINE_CHAR = u'<span style="color:white">\u21b5</span><br/>\n'
+
 
     def __init__(self, context, request):
         # This sets up the following instance variables:
@@ -709,7 +712,8 @@ class TranslatePOTemplate:
         else:
             return self._makeURL(offset = self.offset + self.count)
 
-    def _mungeMessageID(self, text, flags):
+    def _mungeMessageID(self, text, flags, space=SPACE_CHAR,
+        newline=NEWLINE_CHAR):
         '''Convert leading and trailing spaces on each line to open boxes
         (U+2423).'''
 
@@ -726,9 +730,9 @@ class TranslatePOTemplate:
 
             if match:
                 lines.append(
-                    u'\u2423' * len(match.group(1)) +
+                    space * len(match.group(1)) +
                     match.group(2) +
-                    u'\u2423' * len(match.group(3)))
+                    space * len(match.group(3)))
             else:
                 raise AssertionError(
                     "A regular expression that should always match didn't.")
@@ -750,7 +754,7 @@ class TranslatePOTemplate:
 
         # Insert arrows and HTML line breaks at newlines.
 
-        return '\n'.join(lines).replace('\n', u'\u21b5<br/>\n')
+        return '\n'.join(lines).replace('\n', newline)
 
     def _messageID(self, messageID, flags):
         lines = count_lines(messageID.msgid)

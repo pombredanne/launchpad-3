@@ -98,7 +98,7 @@ class POTemplate(SQLBase):
     daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
         default=None)
     rawimportstatus = IntCol(dbName='rawimportstatus', notNull=True,
-        default=DEFAULT)
+        default=RosettaImportStatus.IGNORE)
 
 
     def currentMessageSets(self):
@@ -658,7 +658,7 @@ class POFile(SQLBase):
     daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
         default=None)
     rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False,
-        default=None)
+        default=RosettaImportStatus.IGNORE)
 
 
     def currentMessageSets(self):
