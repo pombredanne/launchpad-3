@@ -23,14 +23,3 @@ may change, but the convention may still remain.
     foaf.py FOAF (Friend of a Friend)
       Person, EmailAddress, WikiName, JabberID, IrcID,
       GPGKey
- 
- HOW TO TEST OUT YOUR DB ACCESS OBJECTS
-
- Try this for fun:
-
-   python -i harness.py
-
-   person = canonical.database.doap.Person.get(1)
-   spackage = canonical.database.soyuz.Sourcepackage.get(1)
-   ... etc
-   

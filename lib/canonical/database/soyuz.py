@@ -74,13 +74,9 @@ class Sourcepackage(SQLBase):
     bugs = MultipleJoin(
             'SourcepackageBugAssignment', joinColumn='sourcepackage'
             )
-
     sourcepackagereleases = MultipleJoin(
             'SourcepackageRelease', joinColumn='sourcepackage'
             )
-
-    def name(self):
-        return self.sourcepackagename.name
 
 
 #
