@@ -41,7 +41,7 @@
                     <a href="#" tal:content="result/name"
                         tal:attributes="href 
                         string:sourcepackages/${result/name}">
-                        $Sourcepackage.name
+                        $SourcepackageName.name
                     </a>
                 </td>
                 <td tal:content="result/title">$Sourcepackage.title</td>

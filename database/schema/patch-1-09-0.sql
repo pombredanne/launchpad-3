@@ -1,3 +1,5 @@
+SET client_min_messages TO error;
+
 CREATE TABLE ComponentSelection (
   id            serial PRIMARY KEY,
   distrorelease integer NOT NULL REFERENCES DistroRelease,
