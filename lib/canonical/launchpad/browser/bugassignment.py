@@ -80,16 +80,22 @@ class BugsAssignedReportView(object):
 # and it looks like a browser:form directive will be introduced early next week
 # in which case most of this hackishness can go away.
 class BugAssignmentsView(object):
+
+    DEFAULT_STATUS = (
+        int(dbschema.BugAssignmentStatus.NEW),
+        int(dbschema.BugAssignmentStatus.ACCEPTED))
+
     def search(self):
         """Find the bug assignments the user wants to see."""
         pba_params = []
         spba_params = []
-        if self.request.get('status', None) and self.request['status'] != 'all':
+        param_status = self.request.get('status', self.DEFAULT_STATUS)
+        if param_status and param_status != 'all':
             status = []
-            if isinstance(self.request['status'], (list, tuple)):
-                status = self.request['status']
+            if isinstance(param_status, (list, tuple)):
+                status = param_status
             else:
-                status = [self.request['status']]
+                status = [param_status]
             pba_params.append(
                 IN(ProductBugAssignment.q.bugstatus, status))
             spba_params.append(

@@ -55,23 +55,24 @@
               <td>
                 <select name="status" size="5" multiple>
                   <option value="all"
-                          tal:condition="python:request.has_key('search')"
                           tal:attributes="selected request/htmlform:status/selected/all">All</option>
-                  <option value="all"
-                          tal:condition="python:not request.has_key('search')"
-                          selected>All</option>
                   <span tal:omit-tag="" tal:repeat="status view/statuses">
-                    <option tal:define="strvalue python:str(status.value)"
+                    <option tal:condition="python:request.has_key('search')"
+                            tal:define="strvalue python:str(status.value)"
                             tal:content="status/title"
                             tal:attributes="value status/value;
                                             selected request/htmlform:status/selected/?strvalue">New</option>
+                    <option tal:condition="python:not request.has_key('search')"
+                            tal:define="strvalue python:str(status.value)"
+                            tal:content="status/title"
+                            tal:attributes="value status/value;
+                                            selected python:status.title in ('New', 'Accepted')">New</option>
                   </span>
                 </select>
               </td>
               <td>
                 <select name="assignee" size="5" multiple>
                   <option value="all"
-                          tal:condition="python:request.has_key('search')"
                           tal:attributes="selected request/htmlform:assignee/selected/all">All</option>
                   <option value="all"
                           tal:condition="python:not request.has_key('search')"
