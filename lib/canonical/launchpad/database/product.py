@@ -343,7 +343,7 @@ class Product(SQLBase):
                     added.append(pot_path)
 
                 try:
-                    potemplate.attachFile(tf.extractfile(pot_path).read())
+                    potemplate.attachRawFileData(tf.extractfile(pot_path).read())
                 except (POSyntaxError, POInvalidInputError):
                     # The file has an error detected by our parser.
                     errors.append(pot_path)
@@ -388,7 +388,7 @@ class Product(SQLBase):
                             errors.append(po_path)
                             continue
                         try:
-                            pofile.attachFile(tf.extractfile(po_path).read())
+                            pofile.attachRawFileData(tf.extractfile(po_path).read())
                         except (POSyntaxError, POInvalidInputError):
                             # The file has an error detected by our parser.
                             errors.append(po_path)

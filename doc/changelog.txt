@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-11 12:28:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1304
+
+    Summary:
+      Bug fixed that I applied to the wrong branch :-(
+    Revision:
+      launchpad--devel--0--patch-1304
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-566
+       Bug fixed that I applied to the wrong branch :-(
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/product.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-566
+
+
 2005-02-11 12:06:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1303
 
     Summary:
