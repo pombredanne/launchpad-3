@@ -2,6 +2,7 @@
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
 PYTHON=python2.3
+PYTHONPATH=$(shell pwd)/lib 
 CONFFILE=launchpad.conf
 STARTSCRIPT=runlaunchpad.py
 TESTFLAGS=-p -v
@@ -10,8 +11,8 @@ SETUPFLAGS=
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
 
-check:
-	$(MAKE) -C sourcecode check
+check: build
+	#$(MAKE) -C sourcecode check
 	PYTHONPATH=$(HERE)/lib ./test.py
 
 debugging-on:
@@ -58,9 +59,11 @@ test_inplace: inplace
 	$(PYTHON) test.py $(TESTFLAGS) $(TESTOPTS)
 
 ftest_build: build
+	env PYTHONPATH=$(PYTHONPATH) \
 	$(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
 ftest_inplace: inplace
+	env PYTHONPATH=$(PYTHONPATH) \
 	$(PYTHON) test.py -f $(TESTFLAGS) $(TESTOPTS)
 
 # XXX What should the default be?

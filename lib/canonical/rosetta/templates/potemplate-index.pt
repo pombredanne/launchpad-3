@@ -1,0 +1,47 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>The <span tal:replace="context/name">NAME</span> POT file</h1>
+
+    <p>
+    This file contains <i tal:content="view/num_messages">N messages</i>
+    </p>
+
+    <p><a href="translate?languages=cy,jp">Translate this POT file</a>.</p>
+
+    <p><a href="23">Go straight to message 23</a>.</p>
+
+    <p><a href="upload">Update this POT file's data</a>.</p>
+
+    <h2>Translations</h2>
+
+    <ul>
+        <li tal:repeat="language context/languages">
+            <a tal:attributes="href language/code"
+                tal:content="language/englishName">Language, in English</a>
+            <span tal:condition="python:
+                    language.englishName != language.nativeName">
+                (<span tal:content="language/nativeName">Language, in the
+                    language</span>)
+            </span>
+            <br/>
+        </li>
+    </ul>
+
+</div>
+
+</body>
+</html>

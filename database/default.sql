@@ -7,16 +7,23 @@ this is initial data for launchpad. unlike the sample data, this will be loaded 
 
 */
 
-
 -- Person
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Mark Shuttleworth', 'Mark', 'Shuttleworth' );     -- 1
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Dave Miller', 'David', 'Miller' );                -- 2
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Colin Watson', 'Colin', 'Watson' );               -- 3
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );         -- 4
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Scott James Remnant', 'Scott James', 'Remnant' ); -- 5
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Robert Collins', 'Robert', 'Collins' );           -- 6
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Jeff Waugh', 'Jeff', 'Waugh' );                   -- 7
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Andrew Bennetts', 'Andrew', 'Bennetts' );                   -- 8
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'James Blackwell', 'James', 'Blackwell' );                   -- 9
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Christian Reis', 'Christian', 'Reis' );                   -- 10
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Alexander Limi', 'Alexander', 'Limi' );                   -- 11
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );                   -- 11
 
+
+---
+
+---
 
 -- EmailAddress
 INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'mark@hbd.com', 1, 2 );
@@ -49,6 +56,15 @@ INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 3,
 
 
 -- Product
+INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 1, 1, 'ubuntu', 'Ubuntu', 'A desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is avaialble everywhere absolutely free of charge.', 'http://www.ubuntu.com/' );
+INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'gdm', 'Gnome Display Manager', 'The Gnome Display Manager is a login manager for the Gnome Desktop Environment. It allows for configurable login screens with face browsers and system actions such as shutdown and restart.', 'http://gdm.gnome.org' );
+INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'glib', 'Glib', 'Glib is one of the core Gnome libraries, used by most Gnome applications.', 'http://www.gnome.org/' );
+INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'gtk+', 'Gnome Toolkit GTK+', 'The GTK+ libaries are the foundation of Gnome application look and feel. They allow for strongly themed applications, hundreds of themes are available.', 'http://www.gnome.org/' );
+INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'themes', 'Gnome Themes', 'This package of standard themes is usually available on any Gnome installation.', 'http://themes.gnome.org/' );
+INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'app-suite', 'Mozilla App Suite', 'The Mozilla application suite is the modern-day descendent of the Netscape browser that launched a thousand dot-com ships. The browser code was open sourced and is now driven by The Mozilla Foundation. The Mozilla App Suite includes a mail reader, web browser, news reader, web page editor and an addressbook.', 'http:///www.mozilla.org/' );
+INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'firefox', 'Mozilla Firefox', 'Firefox is a web browser derived from the Mozilla App Suite. It is designed to be smaller and faster than app-suite since it includes just the web browser, but it comes with the same world-beating standards support and speed.', 'http://www.mozilla.org/' );
+INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'thunderbird', 'Mozilla Thunderbird', 'Thunderbird is email software derived from Mozilla App Suite in the same way that Firefox is. Thunderbird supports excellent spam filtering and has hundreds of extensions for such things as encryption, mouse gestures and offline work.', 'http://www.mozilla.org/' );
+INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'bugzilla', 'Bugzilla', 'Bugzilla is the big daddy of all open source bug tracking systems and is still used at several large open source projects. It\'s better known for scale than beauty.', 'http://www.bugzilla.org/' );
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 7, 3, 'apache', 'The Apache Web Server', 'The worlds most popular web server. Used on more than half of the worlds web servers, and most of the servers that carry heavy traffic, Apache is the undisputed champion of the web server business.', 'http://httpd.apache.org/' );
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 7, 3, 'tomcat', 'Tomcat Java Application Server', 'Tomcat description goes here. A good description has at least a full paragraph of text, explaining what\'s unique about that product, why and when you would use it.', 'http://tomcat.apache.org/' );
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 7, 3, 'spamassassin', 'Spamassassin Spam Filter Daemon', 'Spamassassin description goes here. A good description has at least a full paragraph of text, explaining what\'s unique about that product, why and when you would use it.', 'http://spamassassin.apache.org/' );
@@ -56,6 +72,260 @@ INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VA
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 7, 3, 'cocoon', 'XML Publishing Engine', 'Cocoon description goes here. A good description has at least a full paragraph of text, explaining what\'s unique about that product, why and when you would use it.', 'http://cocoon.apache.org/' );
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 5, 6, 'arch-mirrors', 'Arch archive mirrors', 'Arch archive full-archive mirror tasks', '????' );
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 6, 6, 'unassigned', 'unassigned syncs', 'unassigned syncs, will not be processed, to be moved to real proejcts ASAP.', '????' );
+
+
+-- Sourcepackage
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'),
+         'mozilla-firefox', 'Ubuntu Mozilla Firefox', 
+         'text');
+
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Steve Alexander'),
+         'mozilla-thunderbird', 'Ubuntu Mozilla Thunderbird', 
+         'text');
+
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts'),
+         'python-twisted', 'Python Twisted', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Dave Miller'),
+         'bugzilla', 'Bugzilla', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'James Blackwell'),
+         'arch', 'Arch(TLA)', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Christian Reis'),
+         'kiwi2', 'Kiwi2', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Alexander Limi'),
+         'plone', 'Plone', 
+         'text');
+
+
+--SourcepackageRelease
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'),
+        '0.9.1-1',
+        timestamp '2004-06-29 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-thunderbird'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Steve Alexander'),
+        '0.9.1-2',
+        timestamp '2004-06-30 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'python-twisted'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts'),
+        '0.9.1-3',
+        timestamp '2004-07-01 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'bugzilla'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Dave Miller'),
+        '0.9.1-4',
+        timestamp '2004-07-02 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'arch'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'James Blackwell'),
+        '0.9.1-5',
+        timestamp '2004-07-03 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'kiwi2'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Christian Reis'),
+        '0.9.1-6',
+        timestamp '2004-07-04 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'plone'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Alexander Limi'),
+        '0.9.1-7',
+        timestamp '2004-07-05 00:00',
+        1);
+
+
+--Manifest
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-06-29 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-06-30 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Steve Alexander')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-01 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-02 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Dave Miller')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-03 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'James Blackwell')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-04 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Christian Reis')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-05 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Alexander Limi')
+ );
+
+
+--CodeRelease
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-29 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-30 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-30 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-01 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-01 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-02 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-02 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-03 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-03 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-04 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-04 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-05 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
+
+
+--ArchArchive
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('mozilla', 'Mozilla', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('thunderbird', 'Thunderbid', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('twisted', 'Twisted', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('bugzila', 'Bugzila', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('arch', 'Arch', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('kiwi2', 'Kiwi2', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('plone', 'Plone', 'text', false);
+
+--Archnamespace
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (1, 'mozilla', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (2, 'tunderbird', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (3, 'twisted', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (4, 'bugzila', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (5, 'arch', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (6, 'kiwi2', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (7, 'plone', true);
+
+
+--Branch
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'mozilla'),
+        'Mozilla Firefox 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'thunderbird'),
+        'Mozilla Thunderbird 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Steve Alexander')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'twisted'),
+        'Python Twisted 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'bugzila'),
+        'Bugzila 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Dave Miller')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'arch'),
+        'Arch 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'James Blackwell')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'kiwi2'),
+        'Kiwi2 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Christian Reis')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'plone'),
+        'Plone 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Alexander Limi')); 
+
+
+/*
+--Manifest
+INSERT INTO Manifest (owner) 
+VALUES ((select id from Person where presentationname='Mark Shuttleworth'));
+*/
 
 
 

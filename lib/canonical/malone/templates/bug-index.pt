@@ -1,0 +1,58 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="rosetta">
+<body>
+
+<div metal:fill-slot="main">
+  <h1>
+    <span tal:replace="context/title" />
+    (<span tal:replace="context/nickname" />)
+  </h1>
+  <div class="documentDescription"
+       tal:content="context/description">Description</div>
+  <span tal:replace="python:context.datecreated.strftime('%d %b %y %H:%M')">
+        13 Sep 04 12:15
+  </span>
+  <br />
+  <input type="submit" value="Edit" onclick="window.open('+edit','_top')" />
+
+  <table class="listing">
+    <tr>
+      <th>Title</th>
+      <th>Message</th>
+      <th>Date</th>
+      <th>Author</th>
+    </tr>
+    <tr tal:repeat="message context/messages">
+      <td tal:content="message/title">title</td>
+      <td tal:content="message/contents">message</td>
+      <td tal:content="python:message.datecreated.strftime('%d %b %y %H:%M')">
+        13 Sep 04 12:15
+      </td>
+      <td tal:content="message/personmsg/presentationname|string:(none)">
+        name
+      </td>
+    </tr>
+  </table>
+  <input type="submit" value="New"
+         onclick="window.open('comments/+new', '_top')" />
+  <p>
+    <a href="assignments">Assignments</a>
+  </p>
+  <p>
+    <a href="attachments">Attachments</a> (probably put this in a portlet)
+  </p>
+  <p>
+    <a href="activity">Activity</a>
+  </p>
+  <p>
+    <a href="references">External References</a>
+  </p>
+  <p>
+    <a href="people">People</a>
+  </p>
+
+  </div>
+</body>
+</html>

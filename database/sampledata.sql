@@ -1,69 +1,149 @@
 /*
    LAUNCHPAD SAMPLE DATA
    
-   This is some sample data for the launchpad system.
+   This is some sample data for the launchpad system.  This requires the default
+   data to be inserted first.
 */
 
+/* 
+ Sample data for Soyuz
+*/
 
--- Person
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Mark Shuttleworth', 'Mark', 'Shuttleworth' );     -- 1
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Dave Miller', 'David', 'Miller' );                -- 2
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Colin Watson', 'Colin', 'Watson' );               -- 3
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );         -- 4
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Scott James Remnant', 'Scott James', 'Remnant' ); -- 5
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Robert Collins', 'Robert', 'Collins' );           -- 6
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Jeff Waugh', 'Jeff', 'Waugh' );                   -- 7
+-- Schema
+INSERT INTO schema (name, title, description, owner, extensible) VALUES('Mark schema', 'TITLE', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
+INSERT INTO Schema (name, title, description, owner, extensible) values('schema', 'SCHEMA', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
+INSERT INTO Schema (name, title, description, owner, extensible) values('trema', 'XCHEMA', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
+INSERT INTO Schema (name, title, description, owner, extensible) values('enema', 'ENHEMA', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
 
+-- Distribution
+INSERT INTO Distribution (name, title, description, domainname, owner) values ('ubuntu', 'Ubuntu Distribution', 'text ...', 'domain', 1);
+INSERT INTO Distribution (name, title, description, domainname, owner) values ('redhat', 'Redhat Advanced Server', 'some text', 'domain', 1);
+INSERT INTO Distribution (name, title, description, domainname, owner) values ('debian', 'Debian Crazy-Unstable', 'text ...', 'domain', 1);
+INSERT INTO Distribution (name, title, description, domainname, owner) values ('gentoo', 'The Gentoo bits', 'another ...', 'domain', 1);
+INSERT INTO Distribution (name, title, description, domainname, owner) values ('porkypigpolka', 'Porky Pig Polka Swine-oriented Distribution', 'blabla', 'domain', 1);
 
--- EmailAddress
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'mark@hbd.com', 1, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'marks@thawte.com', 1, 3 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'markshuttle@yahoo.co.uk', 1, 1 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'justdave@bugzilla.org', 2, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'colin.watson@canonical.com', 3, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'steve.alexander@canonical.com', 4, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'scott@netsplit.com', 5, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'robertc@cygwin.com', 6, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'robert.collins@canonical.com', 6, 2 );
-
-
--- BugSystemType
-INSERT INTO BugSystemType VALUES ( 1, 'bugzilla', 'BugZilla', 'Dave Miller\'s Labour of Love, the Godfather of Open Source project issue tracking.', 'http://www.bugzilla.org/', 2 );
-INSERT INTO BugSystemType VALUES ( 2, 'debbugs', 'DebBugs', 'The Debian bug tracking system, ugly as sin but fast and productive as a rabbit in high heels.', 'http://bugs.debian.org/', 3 );
-INSERT INTO BugSystemType VALUES ( 3, 'roundup', 'Round-Up', 'Python-based open source bug tracking system with an elegant design and reputation for cleanliness and usability.', 'http://www.roundup.org/', 4 );
+INSERT INTO Distrorelease (name, title, description, distribution, version, components, sections, releasestate, owner) values ('warty', 'Warty', 'text ...', 1, 'PONG', 1, 1, 0, 1);
+INSERT INTO Distrorelease (name, title, description, distribution, version, components, sections, releasestate, owner) values ('6.0', 'Six Six Six', 'some text', 2, '12321.XX', 1, 1, 0, 1);
+INSERT INTO Distrorelease (name, title, description, distribution, version, components, sections, releasestate, owner) values ('hoary', 'Hoary Crazy-Unstable', 'text ...', 1, 'EWEpp##', 1, 1, 0, 1);
+INSERT INTO Distrorelease (name, title, description, distribution, version, components, sections, releasestate, owner) values ('7.0', 'Seven', 'another ...', 2, 'ACK ACK', 1, 1, 0, 1);
+INSERT INTO Distrorelease (name, title, description, distribution, version, components, sections, releasestate, owner) values ('grumpy', 'G-R-U-M-P-Y', 'blabla', 1, 'PINKPY POLLY', 1, 1, 0, 1);
 
 
+-- Binarypackage
+INSERT INTO Binarypackage (name, title, description) values ('mozilla-firefox-0.8', 'Mozilla Firefox', 'some text');
+INSERT INTO Binarypackage (name, title, description) values ('mozilla-thunderbird-1.5', 'Mozilla Thunderbird', 'text');
+INSERT INTO Binarypackage (name, title, description) values ('mozilla-browser-1.4', 'Mozilla Browser', 'text and so');
+INSERT INTO Binarypackage (name, title, description) values ('emacs21-1.6', 'Emacs21 Programming Editor', 'fofofof');
+INSERT INTO Binarypackage (name, title, description) values ('bash-1.8', 'Bash', 'another data');
 
--- Project
-INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 1, 'ubuntu', 'The Ubuntu Project', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community. Ubuntu also includes work to unify the translation of common opens source desktop applications and the tracking of bugs across multiple distributions.', 'http://www.no-name-yet.com/' ); -- 1
-INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 2, 'mozilla', 'The Mozilla Project', 'The Mozilla Project is the largest open source web browser collaborative project. The Mozilla Project produces several internet applications that are very widely used, and is also a center for collaboration on internet standards work by open source groups.', 'http://www.mozilla.org/' ); -- 2
-INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 7, 'gnome', 'The Gnome Project', 'The Gnome project aims to create a desktop environment and core desktop applications that bring simplicity and ease of use to the open source desktop.', 'http://www.gnome.org/' ); -- 3
-INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 3, 'apache', 'The Apache Project', 'The Apache Project produces some of the worlds most widely used web and internet server software.', 'http://www.apache.org/' ); -- 4
+ 
+ -- ProcessorFamily
+INSERT INTO ProcessorFamily (name, title, description, owner) 
+VALUES ('x86', 'Intel 386 compatible chips', 'Bring back the 8086!', 
+         (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'));
+ 
+ -- Processor
+INSERT INTO Processor (family, name, title, description, owner)
+VALUES ((SELECT id FROM ProcessorFamily WHERE name = 'x86'),
+         '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family',
+        (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'));
+ 
+ -- BinarypackageBuild
+INSERT INTO BinarypackageBuild (sourcepackagerelease, binarypackage, processor,
+                                 binpackageformat, version, datebuilt)
+VALUES ((SELECT id FROM SourcepackageRelease WHERE version = '0.9.1-1'),
+         (SELECT id FROM Binarypackage WHERE name = 'mozilla-firefox-0.8'),
+ 	(SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- DEB
+ 	'0.9.1-1',
+        timestamp '2004-06-29 00:00');
+ 
+ -- DistroArchRelease
+INSERT INTO DistroArchRelease (distrorelease, processorfamily, architecturetag, owner)
+VALUES ((SELECT id FROM DistroRelease WHERE name = 'warty'),
+         (SELECT id FROM ProcessorFamily WHERE name = 'x86'),
+	'Foo',
+ 	(SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'));
+ 
+ -- Schema
+INSERT INTO Schema (name, title, description, owner)
+VALUES ('blah', 'blah', 'blah',
+         (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'));
+ 
+ -- Label
+INSERT INTO Label (schema, name, title, description)
+VALUES ((SELECT id FROM Schema WHERE name = 'blah'),
+         'blah', 'blah', 'blah');
+ 
+-- BinarypackageUpload
+INSERT INTO BinarypackageUpload (binarypackagebuild, distroarchrelease, uploadstatus, component, section, priority) 
+VALUES ((SELECT id FROM BinarypackageBuild WHERE version = '0.9.1-1'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'Foo'),
+ 	4, -- Published
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
+ 
+--SourcePackageUpload
+
+
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	 sourcepackage = (SELECT id from Sourcepackage where name = 'plone')),
+	1);
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	 sourcepackage = (SELECT id from Sourcepackage where name = 'kiwi2')),
+	1);
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox')),
+	1);
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-thunderbird')),
+	1);
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'hoary'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	 sourcepackage = (SELECT id from Sourcepackage where name = 'python-twisted')),
+	1);
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'hoary'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	 sourcepackage = (SELECT id from Sourcepackage where name = 'kiwi2')),
+	1);
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'hoary'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	sourcepackage = (SELECT id from Sourcepackage where name = 'bugzilla')),
+	1);
+
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'grumpy'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	sourcepackage = (SELECT id from Sourcepackage where name = 'bugzilla')),
+	1);
+
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'grumpy'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	sourcepackage = (SELECT id from Sourcepackage where name = 'arch')),
+	1);
 
 
 
--- Product
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 1, 1, 'ubuntu', 'Ubuntu', 'A desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is avaialble everywhere absolutely free of charge.', 'http://www.ubuntu.com/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'gdm', 'Gnome Display Manager', 'The Gnome Display Manager is a login manager for the Gnome Desktop Environment. It allows for configurable login screens with face browsers and system actions such as shutdown and restart.', 'http://gdm.gnome.org' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'glib', 'Glib', 'Glib is one of the core Gnome libraries, used by most Gnome applications.', 'http://www.gnome.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'gtk+', 'Gnome Toolkit GTK+', 'The GTK+ libaries are the foundation of Gnome application look and feel. They allow for strongly themed applications, hundreds of themes are available.', 'http://www.gnome.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'themes', 'Gnome Themes', 'This package of standard themes is usually available on any Gnome installation.', 'http://themes.gnome.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'app-suite', 'Mozilla App Suite', 'The Mozilla application suite is the modern-day descendent of the Netscape browser that launched a thousand dot-com ships. The browser code was open sourced and is now driven by The Mozilla Foundation. The Mozilla App Suite includes a mail reader, web browser, news reader, web page editor and an addressbook.', 'http:///www.mozilla.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'firefox', 'Mozilla Firefox', 'Firefox is a web browser derived from the Mozilla App Suite. It is designed to be smaller and faster than app-suite since it includes just the web browser, but it comes with the same world-beating standards support and speed.', 'http://www.mozilla.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'thunderbird', 'Mozilla Thunderbird', 'Thunderbird is email software derived from Mozilla App Suite in the same way that Firefox is. Thunderbird supports excellent spam filtering and has hundreds of extensions for such things as encryption, mouse gestures and offline work.', 'http://www.mozilla.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'bugzilla', 'Bugzilla', 'Bugzilla is the big daddy of all open source bug tracking systems and is still used at several large open source projects. It\'s better known for scale than beauty.', 'http://www.bugzilla.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 4, 3, 'apache', 'The Apache Web Server', 'The worlds most popular web server. Used on more than half of the worlds web servers, and most of the servers that carry heavy traffic, Apache is the undisputed champion of the web server business.', 'http://httpd.apache.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 4, 3, 'tomcat', 'Tomcat Java Application Server', 'Tomcat description goes here. A good description has at least a full paragraph of text, explaining what\'s unique about that product, why and when you would use it.', 'http://tomcat.apache.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 4, 3, 'spamassassin', 'Spamassassin Spam Filter Daemon', 'Spamassassin description goes here. A good description has at least a full paragraph of text, explaining what\'s unique about that product, why and when you would use it.', 'http://spamassassin.apache.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 4, 3, 'apr', 'Apache Portable Runtime Library', 'APR description goes here. A good description has at least a full paragraph of text, explaining what\'s unique about that product, why and when you would use it.', 'http://apr.apache.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 4, 3, 'cocoon', 'XML Publishing Engine', 'Cocoon description goes here. A good description has at least a full paragraph of text, explaining what\'s unique about that product, why and when you would use it.', 'http://cocoon.apache.org/' );
-
-
-
-
--- ProductRelease
-INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
-INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
-INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
-INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
-INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );

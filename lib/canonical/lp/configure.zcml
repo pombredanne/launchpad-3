@@ -1,0 +1,51 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
+
+  <browser:pages for="*" permission="zope.View" >
+      <!--  XXX yuck... registering a main template as a view for everything.
+            This should be a non-published resource.
+        -->
+      <browser:page
+          name="main_template"
+          template="templates/main_template.pt"
+          />
+      <browser:page
+          name="no-url-yet"
+          template="templates/no-url-yet.pt"
+          />
+      <browser:page
+          name="no-page-yet"
+          template="templates/no-page-yet.pt"
+          />
+      <browser:page
+          name="no-app-component-yet"
+          template="templates/no-app-component-yet.pt"
+          />
+
+
+  </browser:pages>
+
+  <!-- <include file="pages.zcml"/> -->
+  <include file="resources.zcml" />
+
+  <adapter
+      for="zope.publisher.interfaces.IApplicationRequest"
+      provides="zope.app.traversing.interfaces.IPathAdapter"
+      factory="canonical.lp.tales.RequestAPI"
+      name="lp"
+      />
+
+  <!-- XXX The next directive should be registered for 'int' only.
+       However, there's a bug in adapter registration that stops
+       this working.  To be fixed in ZopeX3 RSN.
+    -->
+  <adapter
+      for="*"
+      provides="zope.app.traversing.interfaces.IPathAdapter"
+      factory="canonical.lp.tales.DBSchemaAPI"
+      name="lp"
+      />
+
+</configure>
+<!-- arch-tag: 9139ef7c-314a-4ffe-b905-fdb59c075d1c -->

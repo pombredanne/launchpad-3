@@ -1,0 +1,97 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Notify me when application is translatable</h1>
+
+    <div class="documentDescription">
+    This application is unfortunately not translatable at this time, but you
+    can register your interest, and we will contact you when/if the application
+    becomes capable of being translated here.
+    </div>
+
+    <fieldset>
+
+        <legend>Personal Details</legend>
+
+        <div class="field">
+
+            <label>E-mail</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    Enter an email address where we can send the notification.
+                    We respect your privacy, and will not give the address
+                    away to any third parties or expose it anywhere.
+                  </div>
+
+                <input type="text" name="email" size="30"
+                       tabindex="3" value="Auto-filled in if we know" />
+        </div>
+
+        <div class="field">
+
+            <label>Translator interest</label>
+
+            <div class="formHelp">
+            Check this box if you're interested in translating the 
+            application when it becomes available.
+            </div>
+
+            <input type="checkbox" checked="checked" /> 
+            I'm interested in becoming a translator for this project.
+
+        </div>
+
+        <div class="field">
+
+            <label>Languages</label>
+
+            <div class="formHelp">
+            Select the languages you're interested in. Optional.
+            </div>
+
+                <select multiple="multiple">
+                    <option>English</option>
+                    <option>Spanish</option>
+                    <option>French</option>
+                    <option>German</option>
+                    <option>Norwegian</option>
+                    <option>Welsh</option>
+                </select>
+
+        </div>
+
+        <div class="formControls">
+
+            <input class="context" type="submit"
+                   tabindex="5"
+                   name="form.button.Register"
+                   value="Register" />
+
+            <div class="discreet">
+            We will send you a mail when the project becomes translatable.
+            </div>
+
+        </div>
+
+
+    </fieldset>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+<tal:Make_sure_we_process_the_authorization_challenge_first
+  condition="view/issueChallenge"
+  /><html xmetal:use-macro="context/@@standard_macros/page">
+<body>
+
+<div xmetal:fill-slot="body">
+
+<h1 i18n:translate="">Unauthorized</h1>
+<p tal:content="context"/>
+
+</div>
+</body>
+</html>

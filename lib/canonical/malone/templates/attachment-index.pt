@@ -1,0 +1,34 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="rosetta">
+<body>
+
+<div metal:fill-slot="main">
+  <h1 tal:content="context/title">Attachment Title</h1>
+  <div class="documentDescription"
+       tal:content="context/description">Description</div>
+  <input type="submit" value="Edit" onclick="window.open('+edit','_top')" />
+  <table class="listing">
+    <tr>
+      <th>Filename</th>
+      <th>Change Comment</th>
+      <th>Date Revised</th>
+    </tr>
+    <tr tal:repeat="ver context/versions">
+      <td>
+        <a href="$BugAttachmentContent.id" tal:attributes="href ver/id" 
+          tal:content="ver/filename">$BugAttachmentContent.filename</a>
+      </td>
+      <td tal:content="ver/changecomment">comment</td>
+      <td tal:content="python:ver.daterevised.strftime('%d %b %y %H:%M')">
+        12 Sep 04 13:15
+      </td>
+    </tr>
+  </table>
+  <input type="submit" value="Add" 
+          onclick="window.open('+new','_top')" />
+</div>
+
+</body>
+</html>

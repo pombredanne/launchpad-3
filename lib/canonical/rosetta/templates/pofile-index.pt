@@ -1,0 +1,32 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Translation of <span tal:replace="context/poTemplate/name">PO Template</span>
+        into <span tal:replace="context/language/englishName">Language</span></h1>
+
+    <p>
+    Completeness: <span tal:replace="view/completeness">N%</span>
+    <br/>
+    Messages in the POT file:
+        <span tal:replace="context/potTemplate/__len__">N</span>
+    <br/>
+    Untranslated messages: <span tal:replace="view/untranslated">N</span>
+    </p>
+
+</div>
+
+</body>
+</html>

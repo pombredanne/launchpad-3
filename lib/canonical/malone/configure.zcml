@@ -1,0 +1,89 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="malone"
+    xmlns:i18n="http://namespaces.zope.org/i18n">
+
+  <!-- Content directives.  We need to make sure SubURLs and other kinds of
+       traversal work properly.  We also need to make security declarations.
+    -->
+  <content class="canonical.malone.MaloneApplication">
+    <implements interface="canonical.publication.IHasSuburls" />
+    <allow interface=".interfaces.IUsesAddForm" />
+  </content>
+
+  <!-- This view registers 'malone' as a suburl of RootObject. -->
+  <browser:suburl
+      for="canonical.publication.RootObject"
+      class="canonical.malone.MaloneApplication"
+      name="malone" />
+
+  <browser:suburl
+      for="canonical.malone.IMaloneApplication"
+      utility="canonical.malone.interfaces.IBugContainer"
+      permission="zope.Public"
+      name="bugs" />
+
+  <browser:suburl
+      for="canonical.malone.IMaloneApplication"
+      utility="canonical.malone.interfaces.IProjectContainer"
+      permission="zope.Public"
+      name="projects" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IMaloneApplication"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IBugContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IBug"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IBugAttachmentContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IBugAttachment"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IBugAttachmentContent"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IProjectContainer"
+      name="search" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IProject"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IBugExternalRefContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IBugExternalRef"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.IBugSubscriptionContainer"
+      name="index" />
+
+  <browser:traverse
+      for="canonical.malone.interfaces.IBug"
+      function="canonical.malone.browser.traverseBug" />
+
+  <browser:traverse
+      for="canonical.malone.interfaces.IBugAttachment"
+      function="canonical.malone.browser.traverseBugAttachment" />
+
+  <include file="pages.zcml" />
+  <include file="forms.zcml" />
+  <include file="resources.zcml" />
+
+</configure>

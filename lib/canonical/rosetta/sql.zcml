@@ -1,0 +1,45 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:rdb="http://namespaces.zope.org/rdb"
+    >
+
+  <utility
+      factory="canonical.rosetta.sql.RosettaProjects"
+      provides="canonical.rosetta.interfaces.IProjects"
+      />
+
+  <content class="canonical.rosetta.sql.RosettaProjects">
+    <allow interface="canonical.rosetta.interfaces.IProjects"/>
+  </content>
+
+  <content class="canonical.rosetta.sql.RosettaProject">
+    <allow interface="canonical.rosetta.interfaces.IProject"/>
+  </content>
+
+  <content class="canonical.rosetta.sql.RosettaProduct">
+    <allow interface="canonical.rosetta.interfaces.IProduct"/>
+  </content>
+
+  <content class="canonical.rosetta.sql.RosettaPOTemplate">
+    <allow interface="canonical.rosetta.interfaces.IPOTemplate"/>
+  </content>
+
+  <content class="canonical.rosetta.sql.RosettaPOFile">
+    <allow interface="canonical.rosetta.interfaces.IPOFile"/>
+  </content>
+
+  <content class="canonical.rosetta.sql.RosettaPOMessageSet">
+    <allow interface="canonical.rosetta.interfaces.IPOMessageSet"/>
+  </content>
+
+  <content class="canonical.rosetta.sql.RosettaPOMessageID">
+    <allow interface="canonical.rosetta.interfaces.IPOMessageID"/>
+  </content>
+
+  <content class="canonical.rosetta.sql.RosettaLanguage">
+    <allow interface="canonical.rosetta.interfaces.ILanguage"/>
+  </content>
+</configure>
+
+<!-- arch-tag: 28211a91-fd78-4f20-ae6a-63703792a48b -->

@@ -1,0 +1,215 @@
+<configure xmlns="http://namespaces.zope.org/browser"
+           xmlns:lp="http://launchpad.canonical.com">
+
+
+  <pages for="canonical.soyuz.SoyuzApplication"
+         permission="zope.Public">
+    <page name="index.html"
+          template="templates/soyuz-index.pt"
+          lp:url="Soyuz/index.html"
+          />
+  </pages>
+
+  <!-- This view registers 'distros' RootObject/soyuz/distros/. -->
+
+  <traverse for="canonical.soyuz.browser.DistrosApplication" getter="__getitem__" />
+  <pages for="canonical.soyuz.browser.DistrosApplication"
+         permission="zope.Public"
+	 allowed_attributes="results">	 
+    <page name="index.html"
+          template="templates/distros-index.pt"
+          lp:url="Soyuz/distros/index.html" 
+          />
+  </pages>
+
+  <page for="canonical.soyuz.browser.DistrosApplication"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.DistrosSearchView"
+	 template="templates/distro-search.pt"
+         lp:url="Soyuz/distros/+search"
+	 name="+search"
+       />
+
+  <page for="canonical.soyuz.browser.DistrosApplication"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.DistrosAddView"
+	 template="templates/distro-add.pt"
+         lp:url="Soyuz/distros/+add"
+	 name="+add"
+       />
+
+	
+  <!-- This view registers 'releases' as 'traverse' of 
+	        	     RootObject/soyuz/distros/$Distribution.name/. -->
+  <traverse for="canonical.soyuz.sql.SoyuzDistribution" getter="getReleaseContainer" />	
+   <pages for="canonical.soyuz.sql.SoyuzDistribution"
+	  permission="zope.Public"
+	  allowed_attributes="results context">
+	
+	<page  name="index.html"
+          template="templates/distro-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/index.html"	
+	/>
+	<page  name="+bugs"
+          template="templates/distro-bugs.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/+bugs"	
+	/>
+	<page  name="+translations"
+          template="templates/distro-translations.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/+translations"	
+	/>
+  </pages>
+
+  <page for="canonical.soyuz.sql.SoyuzDistribution"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.DistrosEditView"
+	 name="+edit"
+	 template="templates/distro-edit.pt"	
+	 lp:url="Soyuz/distros/$Distribution.name/+edit"	
+	/>
+
+
+  <traverse for="canonical.soyuz.sql.ReleaseContainer" getter="__getitem__" />
+   <pages for="canonical.soyuz.sql.ReleaseContainer"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	
+	<page  name="index.html"
+          template="templates/releases-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/index.html"
+	/>
+  </pages>
+
+	<page for="canonical.soyuz.sql.ReleaseContainer"
+	  permission="zope.Public"
+	  class="canonical.soyuz.browser.ReleasesAddView"
+	  name="+new"
+          template="templates/releases-new.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+new"
+	/>
+
+<traverse for="canonical.soyuz.sql.Release" getter="getPackageContainer" />
+   <pages for="canonical.soyuz.sql.Release"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	
+	<page  name="index.html"
+          template="templates/release-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/index.html"
+	/>
+	<page  name="+edit"
+          template="templates/release-edit.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+edit"
+	/>
+	<page  name="+deliver"
+          template="templates/release-deliver.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+deliver"
+	/>
+	<page  name="+bugs"
+          template="templates/release-bugs.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+bugs"
+	/>
+	<page  name="+translations"
+          template="templates/release-translations.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+translations"
+	/>
+  </pages>
+
+
+<!--  packages stuff --> 
+	
+  <page for="canonical.soyuz.interfaces.IPackages"
+        permission="zope.Public"
+        name="index.html"
+        template="templates/packages-index.pt"
+        lp:url="Soyuz/packages/"
+        />
+
+  <page for="canonical.soyuz.interfaces.IPackageSet"
+        permission="zope.Public"
+        name="index.html"
+        template="templates/package-list.pt"
+        lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/$package_type/$Package.id/index.html"
+        />
+
+  <page for="canonical.soyuz.interfaces.IBinaryPackage"
+        permission="zope.Public"
+        name="index.html"
+        template="templates/package-index.pt"
+        lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/$packages_type/index.html"
+        />
+
+  <page for="canonical.soyuz.interfaces.ISourcePackage"
+        permission="zope.Public"
+        name="index.html"
+        template="templates/package-index.pt"
+        lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/$packages_type/source/index.html"
+        />
+
+
+
+<!-- UNUSED STUFF YET -->
+
+  <pages for="canonical.soyuz.interfaces.IProjects"
+         class="canonical.soyuz.browser.ViewProjects"
+         permission="zope.Public">
+    <page name="index.html"
+          template="templates/projects-index.pt"
+          lp:url="Soyuz/projects/index.html"
+          />
+    <page name="search-results"
+          template="templates/search-results.pt"
+          lp:url="Soyuz/projects/search-results"
+          />
+    <page name="+new"
+          template="templates/project-add.pt"
+          lp:url="Soyuz/projects/+new"
+          />
+  </pages>
+
+ <traverse for="canonical.soyuz.interfaces.IProjects" function="canonical.soyuz.browser.urlTraverseProjects" />
+
+
+  <pages for="canonical.soyuz.interfaces.IProject"
+         class="canonical.soyuz.browser.ViewProject"
+         permission="zope.Public">
+    <page name="index.html"
+          template="templates/project-index.pt"
+          lp:url="Soyuz/projects/$Project.name/index.html" 
+          />
+    <page name="products+new"
+          template="templates/product-add.pt"
+          lp:url="Soyuz/projects/$Project.name/products+new"
+          />
+    </pages>
+
+<traverse for="canonical.soyuz.interfaces.IProject" function="canonical.soyuz.browser.urlTraverseProducts" /> 
+  
+  <pages for="canonical.soyuz.interfaces.IProduct"
+         class="canonical.soyuz.browser.ViewProduct"
+         permission="zope.Public">
+    <page name="index.html"
+          template="templates/product-index.pt"
+          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/index.html" 
+          />
+    <page name="syncs+new"
+          template="templates/sourcesource-add.pt"
+          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/syncs+new"
+          /> 
+    </pages>
+
+  <traverse for="canonical.soyuz.interfaces.IProduct" function="canonical.soyuz.browser.urlTraverseSyncs" /> 
+ 
+  <pages for="canonical.soyuz.interfaces.ISync"
+         class="canonical.soyuz.browser.ViewSync"
+         permission="zope.Public">
+    <page name="index.html"
+          template="templates/sourcesource-index.pt"
+          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/?syncs?/$Sync.name/index.html" 
+          />
+  </pages>
+
+
+
+</configure>
+<!-- arch-tag: d60390fd-285e-4aa1-844e-24e11159e74c -->

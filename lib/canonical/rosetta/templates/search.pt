@@ -1,0 +1,116 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Search for applications and translations</h1>
+
+    <form metal:define-macro="searchform"
+          action="search-results"
+          method="get">
+    <fieldset>
+        <legend>Search details</legend>
+
+        <div class="field">
+            <label>Application name</label>
+            <div class="formHelp">
+            Leave blank if you aren't looking for a specific application.
+            </div>
+            <input type="text" />
+        </div>
+
+        <div class="field">
+            <label>Project category</label>
+            <div class="formHelp">
+            Select the type of application you are looking for. (This widget will be smarter ;)
+            </div>
+            <select>
+                <option>Any</option>
+                <option>Mail client</option>
+                <option selected="selected">Browser</option>
+            </select>
+        </div>
+        <div class="field">
+            <label>Language</label>
+            <div class="formHelp">
+            Select language if you are looking for applications in a specific language.
+            </div>
+            <select>
+                <option selected="selected">Any</option>
+                <option>English</option>
+                <option>Spanish</option>
+                <option>German</option>
+                <option>Portuguese</option>
+            </select>
+        </div>
+
+        <div class="formControls">
+            <input type="submit" value="Search" />
+        </div>
+
+    </fieldset>
+    </form>
+    
+    <h2>Search results</h2>
+
+    <p class="documentDescription">
+    The results of your search. Most complete translation first. (This will be
+    positioned differently, but I'm not tackling browser bugs just yet ;)
+    </p>
+
+    <table class="listing" style="float: left;">
+        <thead>
+            <tr>
+                <th>Project page</th>
+                <th>Category</th>
+                <th>Language</th>
+                <th>Translated strings</th>
+                <th>Status</th>
+                <th>&nbsp;</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <tr>
+                <td><a href="project-page.html">Mozilla</a></td>
+                <td>Web browser</td>
+                <td>pt</td>
+                <td>334/1000 (67%)</td>
+                <td>In progress</td>
+                <td><a href="rosetta-translation-overview.html">Join translation team</a></td>
+            </tr>
+            <tr>
+                <td><a href="project-page.html">Konqueror</a></td>
+                <td>Web browser</td>
+                <td>pt</td>
+                <td>0/32784 (0%)</td>
+                <td>Not translated</td>
+                <td><a href="rosetta-translation-overview.html">Start translation effort</a></td>
+            </tr>
+            <tr>
+                <td><a href="project-page.html">iBrowse</a></td>
+                <td>Web browser</td>
+                <td>pt</td>
+                <td>Not translatable</td>
+                <td>N/A</td>
+                <td><a href="interest">Register interest in making application translatable</a></td>
+            </tr>
+        </tbody>
+
+    </table>
+
+</div>
+
+</body>
+</html>

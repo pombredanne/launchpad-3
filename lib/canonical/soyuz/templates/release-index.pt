@@ -1,0 +1,48 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1><span tal:content="context/name">name</span> Release overview</h1>
+    <h3><span tal:content="context/title">TITLE</span> </h3>
+
+
+    <table class="listing">
+
+    <tr>
+       <th>
+         <a href="+edit">Edit this Release </a>
+       </th>
+       <th>
+         <a href="+bugs">Bugs of this Release</a>
+       </th>
+       <th>
+         <a href="+translations"> Translations of this Release</a>
+       </th>
+    </tr>
+    <tr>
+       <th>
+         <a href="+deliver"> Deliver this Release </a>
+       </th> 
+       <th>
+         <a href="source/"> Sources Packages of this Release</a>
+       </th> 
+       <th>
+         <a href="binary/"> Binaries Packages of this Release</a>
+       </th> 
+    </tr>
+</div>
+
+</body>
+</html>

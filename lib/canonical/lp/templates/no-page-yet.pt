@@ -1,0 +1,27 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>No Page Yet</h1>
+
+    <p>
+    This page no template. Contact our CO.
+    <a href="http://www.engrish.com/detail.php?imagename=Gun5.jpg&amp;category=Instructions&amp;date=2002-10-09">Please use quality batties</a>.
+    </p>
+
+</div>
+
+</body>
+</html>

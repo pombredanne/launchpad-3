@@ -1,0 +1,9 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+  <!-- Raise an exception, explaining what went wrong, if the PostgreSQL
+    database encoding is not UNICODE
+    -->
+  <subscriber
+    factory=".sql.confirmEncoding"
+    for="zope.app.appsetup.IProcessStartingEvent"
+    />
+</configure>

@@ -1,0 +1,47 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:rdb="http://namespaces.zope.org/rdb"
+    >
+  <!-- configuration for a simple database test.
+       see dbtest.py
+    -->
+  <!-- make a test object under rosetta -->
+  <browser:suburl
+      for="canonical.rosetta.interfaces.IRosettaApplication"
+      utility="canonical.rosetta.dbtest.ITests"
+      name="test"
+      />
+
+  <browser:pages for="canonical.rosetta.dbtest.ITests"
+                 permission="zope.Public">
+    <browser:page name="index.html"
+                  template="templates/tests-index.pt"
+                  />
+  </browser:pages>
+
+  <browser:pages for="canonical.rosetta.dbtest.ITest"
+                 permission="zope.Public">
+    <browser:page name="index.html"
+                  template="templates/test-index.pt"
+                  />
+  </browser:pages>
+
+  <!-- Content directives.  We need to make sure SubURLs and other kinds of
+       traversal work properly.  We also need to make security declarations.
+    -->
+  <content class="canonical.rosetta.dbtest.Test">
+    <allow interface="canonical.rosetta.dbtest.ITest"/>
+  </content>
+
+  <content class="canonical.rosetta.dbtest.Tests">
+    <allow interface="canonical.rosetta.dbtest.ITests"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <utility
+      factory="canonical.rosetta.dbtest.Tests"
+      provides="canonical.rosetta.dbtest.ITests"
+      />
+
+</configure>

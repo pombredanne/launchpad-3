@@ -1,0 +1,25 @@
+
+Guidelines
+
+- All pages to be discoverable from the front page, or other discoverable
+  pages.
+
+- No broken pages (404s).  Use the no-page-yet template instead.
+
+- For links that don't have a page in the URL table, use the no-url-yet page.
+
+- For links that depend on app components we don't have, use
+  the no-app-component-yet page.
+
+Process
+
+1. Convert no-page-yet pages into real pages.
+   Ensure that all links described on the wiki specification of the new
+   page link to something, even if it is a no-page-yet, no-url-yet or
+   no-app-component-yet page.
+
+2. Add URLs to the wiki URLs table for no-url-yet links.
+   When you've done this, change the no-url-yet into a no-page-yet.
+
+3. When an app component is implemented, some of the no-app-component-yet
+   pages can be replaced with no-page-yet pages.

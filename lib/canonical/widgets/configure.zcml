@@ -1,0 +1,17 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser">
+
+  <!-- The Zope3 WidgetInputError does not handle lists of validation
+    exceptions, despite what its documentation says. Fix this in launchpad
+    for now.
+    TODO: Feed back into Zope3
+    -->
+  <view
+    type="zope.publisher.interfaces.browser.IBrowserRequest"
+    for=".exception.WidgetInputError"
+    provides="zope.app.form.browser.interfaces.IWidgetInputErrorView"
+    factory=".exception.WidgetInputErrorView"
+    permission="zope.Public"
+    />
+</configure>

@@ -1,0 +1,47 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Project overview: <span tal:replace="context/title">NAME</span></h1>
+
+    <div style="float: right; clear: both; margin-top: 0.25em;">
+    Project home page:
+    <a href=""
+       tal:content="context/url|default"
+       tal:attributes="href context/url|nothing">(None supplied)</a>
+    </div>
+
+    <p class="documentDescription" tal:content="context/description">
+        Mozilla offers a full suite of integrated Internet applications 
+        including a web browser, e-mail client, address book, web page composer,
+        Internet chat software and calendar application.
+    </p>
+
+
+        <h2>Available Products</h2>
+
+        <form action="products+new">
+            <input type="submit" value="Add Product" />
+        </form>
+
+        <dl tal:repeat="product view/products">
+            <dt><a tal:attributes="href product/name">Product 1 title</a></dt>
+            <dd tal:content="product/description"></dd>
+        </dl>
+        
+</div>
+
+</body>
+</html>

@@ -1,0 +1,74 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    >
+
+  <!-- Content directives.  We need to make sure SubURLs and other kinds of
+       traversal work properly.  We also need to make security declarations.
+    -->
+  <content class="canonical.rosetta.RosettaApplication">
+    <allow interface=".interfaces.IRosettaApplication" />
+    <implements interface="canonical.publication.IHasSuburls"/>
+  </content>
+
+
+  <!-- This view registers 'rosetta' as a suburl of RootObject. -->
+  <browser:suburl
+      for="canonical.publication.RootObject"
+      class="canonical.rosetta.RosettaApplication"
+      name="rosetta"
+      />
+
+  <!-- This view registers 'projects' as a suburl of IRosettaApplication.
+
+       Note that this time, we specify a 'utility' instead of a class.
+
+       Using a utility here allows us to swap out stubs or real SQLObject
+       objects, just by changing configuration.
+    -->
+  <browser:suburl
+      for="canonical.rosetta.interfaces.IRosettaApplication"
+      utility="canonical.rosetta.interfaces.IProjects"
+      name="projects"
+      />
+
+
+  <!-- Set the default view for the rosetta application, for projects and
+       for project.
+    -->
+  <browser:defaultView
+      for="canonical.rosetta.interfaces.IRosettaApplication"
+      name="index"
+      />
+  <browser:defaultView
+      for="canonical.rosetta.interfaces.IProjects"
+      name="index"
+      />
+  <browser:defaultView
+      for="canonical.rosetta.interfaces.IProject"
+      name="index"
+      />
+  <browser:defaultView
+      for="canonical.rosetta.interfaces.IPOTemplate"
+      name="index"
+      />
+  <browser:defaultView
+      for="canonical.rosetta.interfaces.IPOFile"
+      name="index"
+      />
+
+<!--
+  <adapter
+      for="canonical.rosetta.poexport.POExporter"
+      provides="canonical.rosetta.interfaces.IPOExport"
+      />
+-->
+
+  <include file="pages.zcml"/>
+  <include file="resources.zcml" />
+
+<!--
+  <include file="dbtest.zcml" />
+  -->
+</configure>
+<!-- arch-tag: aa306648-cdb7-4165-8aed-cb36ced59e2f -->

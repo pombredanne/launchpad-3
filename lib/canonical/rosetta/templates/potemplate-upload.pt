@@ -1,0 +1,39 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Update POT or PO Files</h1>
+
+    <p>
+    Here you can upload:
+    </p>
+
+    <ul>
+        <li>a POT file</li>
+        <li>a PO file</li>
+        <li>a <code>.tar.gz</code> file containing POT or PO files</li>
+    </ul>
+
+    <form method="POST" tal:attributes="action request/URL">
+        File:
+        <input name="file" type="file"/>
+        <br/>
+        <input type="submit" value="Upload"/>
+    </form>
+
+</div>
+
+</body>
+</html>

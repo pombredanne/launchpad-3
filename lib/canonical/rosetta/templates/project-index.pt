@@ -1,0 +1,107 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Project overview: <span tal:replace="context/title">NAME</span></h1>
+
+    <div style="float: right; clear: both; margin-top: 0.25em;">
+    Project home page:
+    <a href=""
+       tal:content="context/url|default"
+       tal:attributes="href context/url|nothing">(None supplied)</a>
+    </div>
+
+    <p tal:content="context/description">
+        Mozilla offers a full suite of integrated Internet applications 
+        including a web browser, e-mail client, address book, web page composer,
+        Internet chat software and calendar application.
+    </p>
+
+    <div class="documentDescription">
+      Here are the translation resources available, select language from the
+      pulldown, and click an entry to translate.
+    </div>
+
+<!-- Temporary manual override
+        <select style="float: right; clear: both;">
+            <option>All projects</option>
+            <option selected="selected">Afrikaans</option>
+            <option>Cymraeg</option>
+            <option>Norsk</option>
+        </select>
+-->
+        <p class="discreet">
+        These language name headlines are based on the user preferences, if
+        the user hasn't set anything, it's the stuff we can extract from
+        browser/IP:
+        </p>
+
+        <div tal:repeat="LT view/languageTemplates">
+
+            <h2 tal:content="LT/language/englishName">Language</h2>
+
+            <table class="listing">
+                <thead>
+                    <th>Resource</th>
+                    <th>Translated</th>
+                    <th>Untranslated</th>
+                    <th>Graph</th>
+                    <th>Message catalog</th>
+                </thead>
+
+                <tbody>
+                    <tr tal:repeat="template LT/templates">
+                        <!--
+                        XXX: Assumption that a PO file exists for this
+                        language.
+                        -->
+                        <td><a tal:attributes="href
+                            string:${template/name}/translate"
+                            tal:content="template/title">Resource Name</a></td>
+                        <td><span tal:replace="template/poTranslated">0</span></td>
+                        <td><span tal:replace="template/poUntranslated">0</span></td>
+                        <td>
+                            <img src="++resource++green-bar.png"
+                                height="15"
+                                alt="Translated graph"
+                                tal:condition="template/poTranslated"
+                                tal:attributes="width template/poTranslatedPercent;
+                                                title string: Translated: ${template/poTranslatedPercent}%"
+                            /><img src="++resource++red-bar.png"
+                                height="15"
+                                alt="Fuzzy graph"
+                                tal:condition="template/poUntranslated"
+                                tal:attributes="width template/poUntranslatedPercent;
+                                                title string: Untranslated: ${template/poUntranslatedPercent}%">
+                        </td>
+                        <td><a href="no-url-yet"><img src="++resource++download.png" alt="Download PO file" />Download .po</a></td>
+                    </tr>
+                </tbody>
+            </table>
+
+        </div>
+
+        <h2>Japanese</h2>
+
+        <p class="discreet">
+        In the case that the project doesn't have any translations into this
+        language, the resources just show up as 0% translated. You become a
+        member of a team simply by participating.
+        </p>
+
+</div>
+
+</body>
+</html>

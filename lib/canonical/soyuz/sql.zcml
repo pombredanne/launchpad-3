@@ -1,0 +1,96 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:rdb="http://namespaces.zope.org/rdb"
+    >
+
+  <!-- Content directives.  We need to make sure SubURLs and other kinds of
+       traversal work properly.  We also need to make security declarations.-->
+
+  <content class="canonical.soyuz.sql.ReleaseContainer">
+    <allow interface="canonical.soyuz.interfaces.IReleaseContainer"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    <require
+     permission="zope.Public"
+     set_attributes="name title description"
+     />
+  </content>
+  
+  <content class="canonical.soyuz.sql.Release">
+    <allow interface="canonical.soyuz.interfaces.IRelease"/>
+    <require
+     permission="zope.Public"
+     set_attributes="distribution name title description version components sections releasestate datereleased owner"
+     />
+  </content>
+
+  <content class="canonical.soyuz.browser.DistrosApplication">
+    <allow interface="canonical.soyuz.interfaces.IDistributions"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+
+  </content>
+
+  <content class="canonical.soyuz.sql.SoyuzDistribution">
+    <allow interface="canonical.soyuz.interfaces.IDistribution"/>
+    <require
+     permission="zope.Public"
+     set_attributes="name title description"
+     />
+  </content>
+
+	
+  <content class="canonical.soyuz.sql.BinaryPackages">
+    <allow interface="canonical.soyuz.interfaces.IPackageSet"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.BinaryPackage">
+    <allow interface="canonical.soyuz.interfaces.IBinaryPackage"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.SourcePackages">
+    <allow interface="canonical.soyuz.interfaces.IPackageSet"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.SourcePackage">
+    <allow interface="canonical.soyuz.interfaces.ISourcePackage"/>
+  </content>
+
+
+  <content class="canonical.soyuz.sql.SourcePackageRelease">
+    <allow interface="canonical.soyuz.interfaces.ISourcePackageRelease"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.SoyuzPerson">
+    <allow interface="canonical.soyuz.interfaces.IPerson"/>
+  </content>
+
+  <!-- UNUSED STUFF YET -->
+
+  <content class="canonical.soyuz.sql.Projects">
+    <allow interface="canonical.soyuz.interfaces.IProjects"/>
+  </content>
+  
+  <content class="canonical.soyuz.sql.SoyuzProject">
+    <allow interface="canonical.soyuz.interfaces.IProject"/>
+  </content>
+  
+  <content class="canonical.soyuz.sql.SoyuzProduct">
+    <allow interface="canonical.soyuz.interfaces.IProduct"/>
+  </content>
+  
+  <content class="canonical.soyuz.sql.Sync">
+    <allow interface="canonical.soyuz.interfaces.ISync"/>
+  </content>
+
+
+	
+  <utility
+      factory="canonical.soyuz.sql.Projects"
+      provides="canonical.soyuz.interfaces.IProjects"
+      />
+
+</configure>
+
+<!-- arch-tag: 306ffdcc-7595-447f-bc43-9c6499f6f4ed -->

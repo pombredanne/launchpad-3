@@ -1,0 +1,17 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="rosetta">
+<body>
+
+<div metal:fill-slot="main">
+  <h1>Dashboard</h1>
+  (Until the login works this dashboard will always show the display for the
+   Person with id 1.)
+
+  <h3>My Projects</h3>
+  <span tal:replace="context/projects" />
+</div>
+
+</body>
+</html>
