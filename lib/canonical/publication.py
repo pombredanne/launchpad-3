@@ -5,7 +5,8 @@
 __metaclass__ = type
 
 from zope.interface import implements, Interface
-from zope.component import queryView, getDefaultViewName, queryMultiView
+from zope.component import \
+        queryView, getDefaultViewName, queryMultiView, getUtility
 
 from zope.publisher.http import HTTPRequest
 from zope.publisher.browser import BrowserRequest
@@ -30,7 +31,11 @@ from zope.server.http.publisherhttpserver import PublisherHTTPServer
 from zope.interface.common.interfaces import IException
 from zope.exceptions.exceptionformatter import format_exception
 
-import sys
+import transaction
+import sqlos.connection
+from sqlos.interfaces import IConnectionName
+
+import sys, thread
 import traceback
 
 
@@ -111,6 +116,29 @@ class BrowserPublication(BrowserPub):
     def __init__(self, db=None):
         # note, no ZODB
         pass
+
+    def beforeTraversal(self, request):
+        BrowserPub.beforeTraversal(self, request)
+
+        # Big boot for fixing SQLOS transaction issues - nuke the
+        # connection cache at the start of a transaction. This shouldn't
+        # affect performance much, as psycopg does connection pooling.
+        #
+        # XXX: Move this to SQLOS, in a method that is subscribed to the
+        # transaction begin event rather than hacking it into traversal.
+        name = getUtility(IConnectionName).name
+        key = (thread.get_ident(), name)
+        cache = sqlos.connection.connCache
+        if cache.has_key(key):
+            del cache[key]
+        # SQLOS Connection objects also only register themselves for
+        # the transaction in which they are instantiated - this is
+        # no longer a problem as we are nuking the connection cache,
+        # but it is still an issue in SQLOS that needs to be fixed.
+        #name = getUtility(IConnectionName).name
+        #con = sqlos.connection.getConnection(None, name)
+        #t = transaction.get_transaction()
+        #t.join(con._dm)
 
     def getApplication(self, request):
         # If the first name is '++etc++process', then we should
