@@ -171,12 +171,12 @@ class DatabaseUserDetailsStorage(object):
         query = (
             "SELECT Person.id, Person.displayname, Person.password "
             "FROM Person "
+            "INNER JOIN EmailAddress ON EmailAddress.person = Person.id "
         )
         transaction.execute(
             query + 
-            "WHERE EmailAddress.email = '%s' "
-            "AND EmailAddress.person = Person.id"
-            % (str(loginID).replace("'", "''"),)
+            "WHERE lower(EmailAddress.email) = '%s' "
+            % (str(loginID).lower().replace("'", "''"),)
         )
         
         row = transaction.fetchone()
