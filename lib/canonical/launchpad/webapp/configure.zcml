@@ -57,6 +57,13 @@
       />
 
   <adapter
+      for="datetime.datetime"
+      provides="zope.app.traversing.interfaces.IPathAdapter"
+      factory="canonical.launchpad.webapp.tales.DateTimeFormatterAPI"
+      name="fmt"
+      />
+
+  <adapter
       for="*"
       provides="zope.app.traversing.interfaces.IPathAdapter"
       factory="canonical.launchpad.webapp.tales.FormattersAPI"

@@ -54,24 +54,6 @@
                 tal:content="context/description"></textarea>
         </div>
 
-        <div class="field">
-            <label>Enabled</label>
-            <div class="formHelp">Is this source certified for syncronization?
-            </div>
-            <input type="checkbox" name="syncCertified"
-            tal:attributes="checked context/syncCertified" />
-        </div>
-
-        <div class="field">
-        
-            <label>Source Syncing Enabled</label>
-            
-            <div class="formHelp">Is this upstream source being syncronised
-            to Arch automatically?</div>
-
-            <input type="checkbox" name="autoSyncEnabled"
-                   tal:attributes="checked context/autoSyncEnabled" />
-        </div>
 
     </fieldset>
 
@@ -246,6 +228,52 @@
                     tal:attributes="value view/selectedProduct">
                     <option tal:repeat="product view/products" tal:attributes="value product" tal:content="product">a product</option>
             </select>
+        </div>
+
+    </fieldset>
+
+    <fieldset tal:define="ready python: (context.product.active and \
+    context.product.reviewed and context.product.project.active and \
+    context.product.project.reviewed)">
+        <legend>Product and Project Status</legend>
+
+        <p><b>Project: <span tal:replace="context/product/project/title">Project
+        Title</span></b></p>
+        <div tal:condition="python: not (context.product.project.reviewed and
+        context.product.project.active)" class="portalMessage">This project is
+        NOT YET APPROVED.</div>
+        <p><span tal:replace="context/product/project/shortdesc">product
+        summary</span></p>
+
+        <p><b>Product: <span tal:replace="context/product/title">Product
+        Title</span></b></p>
+        <div tal:condition="python: not (context.product.reviewed and
+        context.product.active)" class="portalMessage">This product is
+        NOT YET APPROVED.</div>
+        <p><span tal:replace="context/product/shortdesc">product
+        summary</span></p>
+
+        <div tal:condition="ready">
+        
+            <div class="field">
+                <label>Enabled</label>
+                <div class="formHelp">Is this source certified for syncronization?
+                </div>
+                <input type="checkbox" name="syncCertified"
+                tal:attributes="checked context/syncCertified" />
+            </div>
+
+            <div class="field">
+            
+                <label>Source Syncing Enabled</label>
+            
+                <div class="formHelp">Is this upstream source being syncronised
+                to Arch automatically?</div>
+    
+                <input type="checkbox" name="autoSyncEnabled"
+                       tal:attributes="checked context/autoSyncEnabled" />
+            </div>
+
         </div>
 
     </fieldset>

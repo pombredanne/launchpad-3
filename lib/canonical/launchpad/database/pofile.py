@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces import IPOTemplate, IPOTMsgSet, \
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
 from canonical.lp.dbschema import RosettaTranslationOrigin
+from canonical.lp.dbschema import RosettaImportStatus
 from canonical.database.constants import DEFAULT, UTC_NOW
 
 standardPOTemplateCopyright = 'Canonical Ltd'
@@ -247,6 +248,11 @@ class POTemplate(SQLBase):
     def poFiles(self):
         return iter(self._poFilesJoin)
 
+    def poFilesToImport(self):
+        for pofile in iter(self._poFilesJoin):
+            if pofile.rawimportstatus == RosettaImportStatus.PENDING:
+                yield pofile
+
     def poFile(self, language_code, variant=None):
         if variant is None:
             variantspec = 'IS NULL'
@@ -309,7 +315,6 @@ class POTemplate(SQLBase):
             ''' % self.id)
 
         return results.count() > 0
-
 
     # Methods defined in IEditPOTemplate
 
@@ -754,7 +759,6 @@ class POFile(SQLBase):
 
     def rosettaCount(self):
         return self.rosettacount
-
 
     # IEditPOFile
 

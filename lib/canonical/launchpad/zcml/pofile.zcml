@@ -6,7 +6,9 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.POTemplate">
-      <allow interface="canonical.launchpad.interfaces.IEditPOTemplate"/>
+      <require permission="zope.Public"
+          interface="canonical.launchpad.interfaces.IEditPOTemplate"
+          set_attributes="rawimportstatus"/>
     </content>
 
     <content class="canonical.launchpad.database.POTMsgSet">
@@ -20,7 +22,7 @@
     <content class="canonical.launchpad.database.POFile">
       <require permission="zope.Public"
           interface="canonical.launchpad.interfaces.IEditPOFile"
-          set_attributes="header pluralForms"/>
+          set_attributes="header pluralForms rawimportstatus"/>
     </content>
 
     <content class="canonical.launchpad.database.POMsgSet">

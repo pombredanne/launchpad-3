@@ -73,8 +73,10 @@ def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
             name = binpkg.package
             bin_map[name] = binpkg
             # source packages with the same name as binaries get descriptions
+            # The binarypackage also gets a convenient link
             if source_map.has_key(name):
                 source_map[name].description = binpkg.description
+                binpkg.sourcepackageref = source_map[name]
 
         dibins = apt_pkg.ParseTagFile(difile)
         while dibins.Step():
@@ -84,8 +86,10 @@ def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
             name = binpkg.package
             bin_map[name] = binpkg
             # source packages with the same name as binaries get descriptions
+            # The binarypackage also gets a convenient link
             if source_map.has_key(name):
                 source_map[name].description = binpkg.description
+                binpkg.sourcepackageref = source_map[name]
                 
     finally:
         os.unlink(bin_tags)
@@ -117,6 +121,9 @@ def do_arch(lp, kdb, bin_map, source_map):
             print "\t** No source package parsed for %s" % binpkg.package
             continue
 
+        if binpkg.is_created(lp):
+            continue
+
         srcpkg = source_map[binpkg.source]
         if not srcpkg.is_processed:
             if not srcpkg.description:
@@ -131,9 +138,8 @@ def do_arch(lp, kdb, bin_map, source_map):
                 srcpkg.ensure_created(lp)
             except Exception, e:
                 print "\t!! sourcepackage addition threw an error."
-
-        if binpkg.is_created(lp):
-            continue
+                print e
+                sys.exit(0)
 
         # we read the licence from the source package but it is
         # stored in the BinaryPackage table
@@ -142,9 +148,10 @@ def do_arch(lp, kdb, bin_map, source_map):
         try:
             binpkg.process_package(kdb, package_root, keyrings)
             binpkg.ensure_created(lp)
-        except:
+        except Exception, e:
             print "\t!! binarypackage addition threw an error."
-            sys.exit(0);
+            print e
+            sys.exit(0)
 
         count = count + 1
         if count == 10:
@@ -220,9 +227,12 @@ if __name__ == "__main__":
         print "@ Publishing %s binaries..." % arch
         do_publishing(bin_map[arch], lp[arch], False)
         lp[arch].commit()
+
+    print "@ Closing database connections..."
     
     for arch in archs:
         lp[arch].close()
     kdb.commit()
     kdb.close()
 
+    print "@ Gina completed."

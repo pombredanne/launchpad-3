@@ -1,3 +1,8 @@
+# Monkeypatch sqlobject to add __len__ to SelectResults.
+import sqlobject.main
+if getattr(sqlobject.main.SelectResults, '__len__', None) is None:
+    sqlobject.main.SelectResults.__len__ = lambda self: self.count()
+
 #
 # first the real ones
 #

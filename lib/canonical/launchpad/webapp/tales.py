@@ -109,6 +109,22 @@ class DBSchemaAPI:
             raise TraversalError, name
 
 
+class DateTimeFormatterAPI:
+    """Adapter from datetime objects to a formatted string."""
+
+    def __init__(self, datetimeobject):
+        self._datetime = datetimeobject
+
+    def time(self):
+        return self._datetime.strftime('%T')
+
+    def date(self):
+        return self._datetime.strftime('%Y-%m-%d')
+
+    def datetime(self):
+        return "%s %s" % (self.date(), self.time())
+
+
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""
 

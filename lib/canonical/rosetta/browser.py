@@ -8,16 +8,19 @@ from math import ceil
 import smtplib
 import sys
 from xml.sax.saxutils import escape as xml_escape
+from cStringIO import StringIO
 
 from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 
 from canonical.launchpad.interfaces import ILanguageSet, IPerson
 from canonical.launchpad.interfaces import IProjectSet, IPasswordEncryptor
-from canonical.launchpad.database import Language, Person
+from canonical.launchpad.database import Language, Person, POTemplate, POFile
 
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
+from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
+from canonical.lp.dbschema import RosettaImportStatus
 
 charactersPerLine = 50
 
@@ -997,6 +1000,92 @@ class TranslatePOTemplate:
 
         # XXX: Should return the number of new translations or something
         # useful like that.
+
+
+class ViewImportQueue:
+    def imports(self):
+
+        queue = []
+        
+        id = 0
+        for project in getUtility(IProjectSet):
+            for product in project.products():
+                for template in product.poTemplates():
+                    if template.rawimportstatus == RosettaImportStatus.PENDING:
+                        retdict = {
+                            'id': 'pot_%d' % template.id,
+                            'project': project.displayname,
+                            'product': product.displayname,
+                            'template': template.name,
+                            'language': '-',
+                            'importer': template.rawimporter.displayname,
+                            'importdate' : template.daterawimport,
+                        }
+                        queue.append(retdict)
+                        id += 1
+                    for pofile in template.poFilesToImport():
+                        retdict = {
+                            'id': 'po_%d' % pofile.id,
+                            'project': project.displayname,
+                            'product': product.displayname,
+                            'template': template.name,
+                            'language': pofile.language.englishname,
+                            'importer': pofile.rawimporter.displayname,
+                            'importdate' : pofile.daterawimport,
+                        }
+                        queue.append(retdict)
+                        id += 1
+        return queue
+
+    def submit(self):
+        if self.request.method == "POST":
+            print self.request.form
+
+            for key in self.request.form:
+                match = re.match('pot_(\d+)$', key)
+
+                if match:
+                    id = int(match.group(1))
+
+                    potemplate = POTemplate.get(id)
+
+                    # XXX: Carlos Perello Marin 26/11/2004 : Perhaps this code
+                    # should be moved inside a POTemplate.importFromRaw
+                    # method.
+
+                    importer = TemplateImporter(potemplate, potemplate.rawimporter)
+
+                    file = StringIO(potemplate.rawfile)
+
+                    try:
+                        importer.doImport(file)
+                    except:
+                        potemplate.rawimportstatus = \
+                            RosettaImportStatus.FAILED.value
+                    else:
+                        potemplate.rawimportstatus = \
+                            RosettaImportStatus.IMPORTED.value
+
+                match = re.match('po_(\d+)$', key)
+                    
+                if match:
+                    id = int(match.group(1))
+
+                    pofile = POFile.get(id)
+
+                    # XXX: Carlos Perello Marin 26/11/2004 : Perhaps this code
+                    # should be moved inside a POFile.importFromRaw method.
+
+                    importer = POFileImporter(pofile, pofile.rawimporter)
+
+                    file = StringIO(pofile.rawfile)
+
+                    try:
+                        importer.doImport(file)
+                    except:
+                        pofile.rawimportstatus = RosettaImportStatus.FAILED
+                    else:
+                        pofile.rawimportstatus = RosettaImportStatus.IMPORTED
 
 
 # XXX: Implement class ViewTranslationEfforts: to create new Efforts

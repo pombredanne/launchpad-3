@@ -114,6 +114,10 @@ class IPOTemplate(IRosettaStats):
     def poFiles():
         """Return an iterator over the PO files that exist for this language."""
 
+    def poFilesToImport():
+        """Returns all PO files from this POTemplate that have a rawfile 
+        pending of import into Rosetta."""
+
     def poFile(language_code, variant=None):
         """Get the PO file of the given language and (potentially)
         variant. If no variant is specified then the translation
@@ -134,6 +138,9 @@ class IPOTemplate(IRosettaStats):
 
 class IEditPOTemplate(IPOTemplate):
     """Edit interface for an IPOTemplate."""
+
+    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
+        imported, 2 failed.""")
 
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
@@ -341,9 +348,17 @@ class IPOFile(IRosettaStats):
         """Check whether a message set with the given message ID exists within
         this PO file."""
 
+    def pendingImport():
+        """Gives all pofiles that have a rawfile pending of import into
+        Rosetta."""
+
+
 
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
+
+    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
+        imported, 2 failed.""")
 
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""

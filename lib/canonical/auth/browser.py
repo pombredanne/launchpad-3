@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import re
 
+from zope.component import getUtility
 from canonical.launchpad.database import EmailAddress
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.auth import AuthApplication

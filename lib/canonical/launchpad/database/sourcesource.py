@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import ISourceSource, ISourceSourceSet, \
 
 # tools
 import datetime
+from sets import Set
 
 class SourceSource(SQLBase): 
     """SourceSource table"""
@@ -30,58 +31,60 @@ class SourceSource(SQLBase):
     implements (ISourceSource)
     
     _table = 'SourceSource'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        # Mark Shuttleworth 03/10/04 Robert Collins why is this default=1?
-        ForeignKey(name='product', foreignKey='Product', dbName='product',
-                   default=1),
-        StringCol('cvsroot', dbName='cvsroot', default=None),
-        StringCol('cvsmodule', dbName='cvsmodule', default=None),
-        ForeignKey(name='cvstarfile', foreignKey='LibraryFileAlias',
-                   dbName='cvstarfile', default=None),
-        StringCol('cvstarfileurl', dbName='cvstarfileurl', default=None),
-        StringCol('cvsbranch', dbName='cvsbranch', default=None),
-        StringCol('svnrepository', dbName='svnrepository', default=None),
-        StringCol('releaseroot', dbName='releaseroot', default=None),
-        StringCol('releaseverstyle', dbName='releaseverstyle', default=None),
-        StringCol('releasefileglob', dbName='releasefileglob', default=None),
-        ForeignKey(name='releaseparentbranch', foreignKey='Branch',
-                   dbName='releaseparentbranch', default=None),
-        ForeignKey(name='sourcepackage', foreignKey='SourcePackage',
-                   dbName='sourcepackage', default=None),
-        ForeignKey(name='branch', foreignKey='Branch',
-                   dbName='branch', default=None),
-        DateTimeCol('lastsynced', dbName='lastsynced', default=None),
-        DateTimeCol('syncinterval', dbName='syncinterval', default=None),
-        # WARNING: syncinterval column type is "interval", not "integer"
-        # WARNING: make sure the data is what buildbot expects
-        #IntCol('rcstype', dbName='rcstype', default=RCSTypeEnum.cvs,
-        #       notNull=True),
-        # FIXME: use 'RCSTypeEnum.cvs' rather than '1'
-        IntCol('rcstype', dbName='rcstype', default=1,
-               notNull=True),
-        StringCol('hosted', dbName='hosted', default=None),
-        StringCol('upstreamname', dbName='upstreamname', default=None),
-        DateTimeCol('processingapproved', dbName='processingapproved',
-                    notNull=False, default=None),
-        DateTimeCol('syncingapproved', dbName='syncingapproved', notNull=False,
-                    default=None),
-        # For when Rob approves it
-        StringCol('newarchive', dbName='newarchive'),
-        StringCol('newbranchcategory', dbName='newbranchcategory'),
-        StringCol('newbranchbranch', dbName='newbranchbranch'),
-        StringCol('newbranchversion', dbName='newbranchversion'),
-        # Temporary keybuk stuff
-        StringCol('packagedistro', dbName='packagedistro', default=None),
-        StringCol('packagefiles_collapsed', dbName='packagefiles_collapsed',
-                default=None),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
-                   notNull=True),
-        StringCol('currentgpgkey', dbName='currentgpgkey', default=None),
-        StringCol('fileidreference', dbName='fileidreference', default=None),
-    ]
+
+    name = StringCol(dbName='name', notNull=True)
+    title = StringCol(dbName='title', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
+    product = ForeignKey(foreignKey='Product', dbName='product',
+                         notNull=True)
+    cvsroot = StringCol(dbName='cvsroot', default=None)
+    cvsmodule = StringCol(dbName='cvsmodule', default=None)
+    cvstarfile = ForeignKey(foreignKey='LibraryFileAlias',
+                   dbName='cvstarfile', default=None)
+    cvstarfileurl = StringCol(dbName='cvstarfileurl', default=None)
+    cvsbranch = StringCol(dbName='cvsbranch', default=None)
+    svnrepository = StringCol(dbName='svnrepository', default=None)
+    releaseroot = StringCol(dbName='releaseroot', default=None)
+    releaseverstyle = StringCol(dbName='releaseverstyle', default=None)
+    releasefileglob = StringCol(dbName='releasefileglob', default=None)
+    releaseparentbranch = ForeignKey(foreignKey='Branch',
+                   dbName='releaseparentbranch', default=None)
+    sourcepackage = ForeignKey(foreignKey='SourcePackage',
+                   dbName='sourcepackage', default=None)
+    branch = ForeignKey(foreignKey='Branch', dbName='branch', default=None)
+    lastsynced = DateTimeCol(dbName='lastsynced', default=None)
+    syncinterval = DateTimeCol(dbName='syncinterval', default=None)
+    # WARNING: syncinterval column type is "interval", not "integer"
+    # WARNING: make sure the data is what buildbot expects
+    #IntCol('rcstype', dbName='rcstype', default=RCSTypeEnum.cvs,
+    #       notNull=True),
+    # FIXME: use 'RCSTypeEnum.cvs' rather than '1'
+    rcstype = IntCol(dbName='rcstype', default=1,
+               notNull=True)
+    hosted = StringCol(dbName='hosted', default=None)
+    upstreamname = StringCol(dbName='upstreamname', default=None)
+    processingapproved = DateTimeCol(dbName='processingapproved',
+                    notNull=False, default=None)
+    syncingapproved = DateTimeCol(dbName='syncingapproved', notNull=False,
+                    default=None)
+    # For when Rob approves it
+    newarchive = StringCol(dbName='newarchive')
+    newbranchcategory = StringCol(dbName='newbranchcategory')
+    newbranchbranch = StringCol(dbName='newbranchbranch')
+    newbranchversion = StringCol(dbName='newbranchversion')
+    # Temporary keybuk stuff
+    packagedistro = StringCol(dbName='packagedistro', default=None)
+    packagefiles_collapsed = StringCol(dbName='packagefiles_collapsed',
+                default=None)
+    owner = ForeignKey(foreignKey='Person', dbName='owner',
+                   notNull=True)
+    currentgpgkey = StringCol(dbName='currentgpgkey', default=None)
+    fileidreference = StringCol(dbName='fileidreference', default=None)
+    autotested = IntCol(dbName='autotested', notNull=True, default=0)
+    datestarted = DateTimeCol(dbName='datestarted', notNull=False,
+        default=None)
+    datefinished = DateTimeCol(dbName='datefinished', notNull=False,
+        default=None)
 
     def certifyForSync(self):
         """enable the sync for processing"""
@@ -192,6 +195,8 @@ class SourceSource(SQLBase):
         job.package_distro = self.packagedistro
         job.package_files = self.packagefiles_collapsed
         job.product_id = self.product.id
+
+        job.description = self.description
         return job
 
 
@@ -231,13 +236,6 @@ class SourceSourceSet(object):
     """The set of SourceSource's."""
     implements(ISourceSourceSet)
 
-    def __init__(self):
-        self.syncingapproved = None
-        self.processingapproved = None
-        self.autotested = None
-        self.projecttext = None
-        self._resultset = None
-
     def __getitem__(self, sourcesourcename):
         # XXX Strangely, the sourcesourcename appears to have been quoted
         # already. Quoting it again causes this query to break, though we
@@ -246,41 +244,63 @@ class SourceSourceSet(object):
                                     sourcesourcename)
         return ss[0]
 
-    def exec_query(self):
+    def filter(self, sync=None, process=None, 
+                     tested=None, projecttext=None,
+                     ready=None):
         query = ''
-        clauseTables = ['SourceSource', ]
-        if self.syncingapproved is not None:
+        clauseTables = Set()
+        clauseTables.add('SourceSource')
+        if ready is not None:
+            if len(query) > 0:
+                query = query + ' AND\n'
+            query = query + """SourceSource.product = Product.id AND
+                               Product.project = Project.id AND
+                               Project.active IS TRUE AND
+                               Project.reviewed IS TRUE AND
+                               Product.active IS TRUE AND
+                               Product.reviewed IS TRUE"""
+            clauseTables.add('Product')
+            clauseTables.add('Project')
+        if sync is not None:
             if len(query) > 0:
                 query = query + ' AND '
             query = query + 'SourceSource.syncingapproved IS NOT NULL'
-        if self.autotested is not None:
+        else:
             if len(query) > 0:
                 query = query + ' AND '
-            query = query + 'SourceSource.autotested IS TRUE'
-        if self.projecttext is not None:
+            query = query + 'SourceSource.syncingapproved IS NULL'
+        if process is not None:
             if len(query) > 0:
                 query = query + ' AND '
-            query = query + """SourceSource.product = Product.id AND
-                               Product.project = Project.id AND
-                               ( ( Project.title LIKE %%%s%% ) OR
-                                 ( Project.shortdesc LIKE %%%s%% ) OR
-                                 ( Project.description LIKE %%%s%% ) OR
-                                 ( Product.title LIKE %%%s%% ) OR
-                                 ( Product.shortdesc LIKE %%%s%% ) OR
-                                 ( Product.description LIKE %%%s%% ) )
-                                 """ % ( self.projecttext, self.projecttext,
-                                         self.projecttext, self.projecttext,
-                                         self.projecttext, self.projecttext )
-            clauseTables.append('Project')
-            clauseTables.append('Product')
+            query = query + 'SourceSource.processingapproved IS NOT NULL'
+        else:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.processingapproved IS NULL'
+        if tested is not None:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.autotested = 2'
+        if projecttext is not None:
+            if len(query) > 0:
+                query = query + ' AND '
+            if 'Project' not in clauseTables:
+                query = query + """SourceSource.product = Product.id AND
+                               Product.project = Project.id AND"""
+            projecttext = quote( '%' + projecttext + '%' )
+            query = query + """( ( Project.title ILIKE %s ) OR
+                                 ( Project.shortdesc ILIKE %s ) OR
+                                 ( Project.description ILIKE %s ) OR
+                                 ( Product.title ILIKE %s ) OR
+                                 ( Product.shortdesc ILIKE %s ) OR
+                                 ( Product.description ILIKE %s ) )
+                                 """ % ( projecttext, projecttext,
+                                         projecttext, projecttext,
+                                         projecttext, projecttext )
+            clauseTables.add('Project')
+            clauseTables.add('Product')
         if len(query)==0:
             query = None
-        self._resultset = SourceSource.select(query,
-                clauseTables=clauseTables)
+        return SourceSource.select(query, clauseTables=clauseTables)
 
-    def __iter__(self):
-        if self._resultset is None:
-            self.exec_query()
-        for source in self._resultset:
-            yield source
 

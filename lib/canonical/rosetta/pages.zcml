@@ -160,6 +160,15 @@
           lp:url="Rosetta/search-results" />
   </pages>
 
+  <pages for="canonical.launchpad.interfaces.IRosettaApplication"
+         permission="launchpad.AnyPerson"
+         class="canonical.rosetta.browser.ViewImportQueue"
+         >
+    <page name="+uploadqueue"
+          template="../launchpad/templates/rosetta-import-queue.pt"
+          lp:url="Rosetta/+uploadqueue" />
+  </pages>
+
 
 </configure>
 <!-- arch-tag: bd9952cf-5198-4ab5-a97f-8d2d9893b313 -->

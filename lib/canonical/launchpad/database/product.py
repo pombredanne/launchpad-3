@@ -12,6 +12,7 @@ from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
 from canonical.lp.dbschema import BugSeverity, BugAssignmentStatus
+from canonical.lp.dbschema import RosettaImportStatus
 
 from canonical.launchpad.database.sourcesource import SourceSource
 from canonical.launchpad.database.productseries import ProductSeries
@@ -143,6 +144,11 @@ class Product(SQLBase):
         
     def poTemplates(self):
         return iter(self._poTemplatesJoin)
+
+    def poTemplatesToImport(self):
+        for template in iter(self._poTemplatesJoin):
+            if template.rawimportstatus == RosettaImportStatus.PENDING:
+                yield template
 
     def poTemplate(self, name):
         '''SELECT POTemplate.* FROM POTemplate WHERE

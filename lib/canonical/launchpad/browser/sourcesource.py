@@ -85,12 +85,22 @@ class SourceSourceSetView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.context.syncingapproved = request.form.get('syncingapproved', None)
-        self.context.processingapproved = request.form.get('processingapproved', None)
-        self.context.autotested = request.form.get('autotested', None)
+        self.ready = request.form.get('ready', None)
+        self.sync = request.form.get('sync', None)
+        self.process = request.form.get('process', None)
+        self.tested = request.form.get('tested', None)
+        self.projecttext = request.form.get('projecttext', None)
+        # setup the initial values if there was no form submitted
+        if request.form.get('search', None) is None:
+            self.ready = 'on'
+            self.tested = 'on'
         self.batch = Batch(self.search(), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
 
     def search(self):
-        return list(self.context)
+        return list(self.context.filter(sync=self.sync, process=self.process,
+                                   tested=self.tested,
+                                   projecttext=self.projecttext))
+
+
 

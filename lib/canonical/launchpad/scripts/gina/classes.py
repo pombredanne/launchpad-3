@@ -223,6 +223,12 @@ class SourcePackageRelease(AbstractPackageRelease):
         else:
             print "\t= Source package already present?"
 
+    def is_created(self, db):
+        if db.getSourcePackageRelease(self.package,self.version):
+            return True
+        else:
+            return False
+
 class BinaryPackageRelease(AbstractPackageRelease):
     # package
     # priority
