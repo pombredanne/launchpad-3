@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-11 00:50:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1171
+
+    Summary:
+      tweaks
+    Revision:
+      launchpad--devel--0--patch-1171
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-66
+       Don't swallow exception if we fail to reconnect SQLOS
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-67
+       Use system default twistd, meaning 2.3 under warty and 2.4 under hoary
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/authserver/ftests/test_xmlrpc.py
+     lib/canonical/ftests/pgsql.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-66
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-67
+
+
 2005-01-11 00:42:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1170
 
     Summary:

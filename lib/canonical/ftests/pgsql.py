@@ -1,3 +1,11 @@
+'''
+This was a nice standalone test harness for tests needing a PostgreSQL backend.
+Unfortunatelly, it has been polluted by Zope3
+
+TODO: The 'reconnect' stuff should more into our version of functional.py,
+which should ensure the connection is valid in setUp and torn down in
+tearDown. StuartBishop 20050110
+'''
 import unittest
 import os, os.path
 import re
@@ -85,14 +93,10 @@ def PgTestCaseSetUp(template, dbname):
                     raise
             time.sleep(0.1)
     finally:
-        try:
-            if db_adapter and not db_adapter.isConnected():
-                # the dirty deed is done, time to reconnect
-                db_adapter.connect()
-
-            con.close()
-        except psycopg.Error:
-            pass
+        if db_adapter and not db_adapter.isConnected():
+            # the dirty deed is done, time to reconnect
+            db_adapter.connect()
+        con.close()
 
 def PgTestCaseTearDown(template, dbname):
     for i in range(0,100):
