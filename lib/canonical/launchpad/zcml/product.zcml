@@ -146,6 +146,18 @@
            displayWidth="55" />
     </browser:addform>
 
+    <browser:addform
+        name="+addpackage"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IPackaging"
+        label="Add New SourcePackage"
+        fields="sourcepackage packaging"
+        class="canonical.launchpad.browser.PackagingAddView"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-addform.pt"
+        lp:url="doap/product/$Project.name/+package">
+    </browser:addform>
+
     <!-- ProductSet-->
     <content class="canonical.launchpad.database.ProductSet">
         <allow interface="canonical.launchpad.interfaces.IProductSet" />

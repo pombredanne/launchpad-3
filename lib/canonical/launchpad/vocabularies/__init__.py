@@ -1,4 +1,4 @@
-'''
+"""
 Vocabularies. Note that you probably shouldn't be importing stuff from these
 modules, as it is better to have your Schemas fields look up the vocabularies
 by name. Some of these vocabularies will only work if looked up by name,
@@ -12,7 +12,7 @@ class IFoo(Interface):
 
 The binding of name -> class is done in the configure.zcml
 
-'''
+"""
 
 from canonical.launchpad.vocabularies.dbschema import *
 from canonical.launchpad.vocabularies.dbobjects import *

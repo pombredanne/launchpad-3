@@ -10,10 +10,12 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner, IHasAssignee
 
 class IProduct(IHasOwner):
-    """A DOAP Product. DOAP describes the open source world as Projects
+    """
+    A DOAP Product. DOAP describes the open source world as Projects
     and Products. Each Project may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
-    Mozilla App Suite as Products, among others."""
+    Mozilla App Suite as Products, among others.
+    """
     
     # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them

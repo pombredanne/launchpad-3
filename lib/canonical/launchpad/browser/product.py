@@ -339,7 +339,7 @@ class ProductSetAddView(AddView):
         owner = IPerson(self.request.principal, None)
         if not owner:
             raise zope.security.interfaces.Unauthorized(
-                "Need an authenticated bug owner")
+                "Need an authenticated Launchpad owner")
         kw = {}
         for key, value in data.items():
             kw[str(key)] = value

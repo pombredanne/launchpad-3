@@ -1,9 +1,9 @@
-'''
+"""
 Vocabularies pulling stuff from the database.
 
 You probably don't want to use these classes directly - see the
 docstring in __init__.py for details
-'''
+"""
 from zope.interface import implements, Interface
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
@@ -121,30 +121,30 @@ class SourcePackageVocabulary(SQLObjectVocabularyBase):
         return self.getTerm(token)
 
     def search(self, query):
-        '''Returns products where the sourcepackage full text indexes
+        """Returns products where the sourcepackage full text indexes
         contain the given
         query. Returns an empty list if query is None or an empty string.
 
-        '''
+        """
         if not query:
             return []
         query = query.lower()
         t = self._table
         objs = [self._toTerm(r)
-            for r in t.select('''
+            for r in t.select("""
                 sourcepackage.sourcepackagename = sourcepackagename.id
                 AND (
                     sourcepackagename.name like '%%' || %s || '%%'
                     OR sourcepackage.fti @@ ftq(%s)
                     )
-                ''' % (quote_like(query), quote(query)),
+                """ % (quote_like(query), quote(query)),
                 ['SourcePackageName']
                 )
             ]
         return objs
 
 class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
-    '''A SQLObjectVocabulary base for database tables that have a unique
+    """A SQLObjectVocabulary base for database tables that have a unique
         name column.
         
         Provides all methods required by IHugeVocabulary,
@@ -153,7 +153,7 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
 
         May still want to override _toTerm to provide a nicer title
         and search to search on titles or descriptions.
-    '''
+    """
     _orderBy = 'name'
 
     def _toTerm(self, obj):
@@ -166,7 +166,7 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
         return self._toTerm(objs[0])
 
     def search(self, query):
-        '''Return terms where query is a subtring of the name'''
+        """Return terms where query is a subtring of the name"""
         if not query:
             return []
         objs = self._table.select(
@@ -197,14 +197,14 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         return self._toTerm(objs[0])
 
     def search(self, query):
-        '''Returns products where the product name, displayname, title,
+        """Returns products where the product name, displayname, title,
         shortdesc, or description contain the given query. Returns an empty list
         if query is None or an empty string.
 
         Note that this cannot use an index - if it is too slow we need
         full text searching.
 
-        '''
+        """
         if query:
             query = query.lower()
             like_query = quote('%%%s%%' % quote_like(query)[1:-1])
@@ -229,14 +229,14 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
         return self._toTerm(objs[0])
 
     def search(self, query):
-        '''Returns projects where the project name, displayname, title,
+        """Returns projects where the project name, displayname, title,
         shortdesc, or description contain the given query. Returns an empty list
         if query is None or an empty string.
 
         Note that this cannot use an index - if it is too slow we need
         full text searching.
 
-        '''
+        """
         if query:
             query = query.lower()
             like_query = quote('%%%s%%' % quote_like(query)[1:-1])
@@ -281,7 +281,7 @@ class PersonVocabulary(NamedSQLObjectVocabulary):
                     obj.givenname, obj.familyname))
 
     def search(self, query):
-        '''Return terms where query is a subtring of the name'''
+        """Return terms where query is a subtring of the name"""
         # TODO: This may actually be fast enough, or perhaps we will
         # need to implement full text search inside PostgreSQL (tsearch or
         # similar) -- StuartBishop 2004/11/24
@@ -326,7 +326,7 @@ class ValidPersonVocabulary(PersonVocabulary):
         return len(objs) > 0
 
     def search(self, query):
-        '''Return terms where query is a subtring of the name'''
+        """Return terms where query is a subtring of the name"""
         # TODO: This may actually be fast enough, or perhaps we will
         # need to implement full text search inside PostgreSQL (tsearch or
         # similar) -- StuartBishop 2004/11/24
@@ -338,10 +338,10 @@ class ValidPersonVocabulary(PersonVocabulary):
         kw = {}
         if self._orderBy:
             kw['orderBy'] = self._orderBy
-        objs = self._table.select('''
+        objs = self._table.select("""
             password IS NOT NULL
             AND (name LIKE %s OR fti @@ ftq(%s))
-            ''' % (like_query, fti_query), **kw
+            """ % (like_query, fti_query), **kw
             )
         return [self._toTerm(obj) for obj in objs]
 
@@ -383,22 +383,22 @@ class SourcePackageNameVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.name)
 
     def search(self, query):
-        '''Returns names where the sourcepackage contains the given
+        """Returns names where the sourcepackage contains the given
         query. Returns an empty list if query is None or an empty string.
 
-        '''
+        """
         if not query:
             return []
         query = query.lower()
         t = self._table
         objs = [self._toTerm(r)
-            for r in t.select('''
+            for r in t.select("""
                 sourcepackage.sourcepackagename = sourcepackagename.id
                 AND (
                     sourcepackagename.name like '%%' || %s || '%%'
                     OR sourcepackage.fti @@ ftq(%s)
                     )
-                ''' % (quote_like(query), quote(query)),
+                """ % (quote_like(query), quote(query)),
                 ['SourcePackage']
                 )
             ]
