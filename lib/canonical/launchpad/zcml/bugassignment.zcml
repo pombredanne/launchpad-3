@@ -55,15 +55,26 @@
 
     <browser:editform
         name="+edit"
-        for="canonical.launchpad.interfaces.IUpstreamBugTask"
+        for="canonical.launchpad.interfaces.IEditableUpstreamBugTask"
         class="canonical.launchpad.browser.bug.BugAssignmentEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="product milestone status priority severity assignee"
         label="Edit Product Bug Assignment"
         permission="launchpad.AnyPerson"
         template="../templates/bugassignment-editform.pt"
-        lp:url="malone/bugs/$Bug.id/productassignments/$ProductBugAssignment.id/+edit">
+        lp:url="malone/tasks/$ProductBugAssignment.id/+edit">
     </browser:editform>
+
+    <browser:schemadisplay
+        name="+edit"
+        for="canonical.launchpad.interfaces.IReadOnlyUpstreamBugTask"
+        schema="canonical.launchpad.interfaces.IBugTask"
+        fields="product milestone status priority severity assignee"
+        label="Product Bug Assignment"
+        permission="zope.Public"
+        template="../templates/bugassignment-display.pt"
+        lp:url="malone/tasks/$ProductBugAssignment.id/+edit">
+    </browser:schemadisplay>
 
     <browser:addform
         name="+packagetask"

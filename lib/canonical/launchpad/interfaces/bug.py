@@ -140,7 +140,7 @@ class IBugTask(Interface):
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
     milestone = Choice(
-        title=_('Target'), vocabulary='Milestone')
+        title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Bug Status'), vocabulary='BugStatus',
         default=int(dbschema.BugAssignmentStatus.NEW))

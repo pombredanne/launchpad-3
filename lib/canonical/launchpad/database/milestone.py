@@ -13,7 +13,7 @@ class Milestone(SQLBase):
     implements(IMilestone)
 
     product = ForeignKey(dbName = "product", foreignKey = 'Product')
-    name = StringCol(notNull = True)
+    name = StringCol(notNull = True, alternateID=True)
     title = StringCol(notNull = True)
 
 class ProductMilestoneSet:

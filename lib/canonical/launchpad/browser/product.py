@@ -17,7 +17,7 @@ import zope.security.interfaces
 
 from canonical.launchpad.database import Project, Product, SourceSource, \
         SourceSourceSet, ProductSeries, ProductSeriesSet, Bug, \
-        BugFactory, ProductMilestoneSet
+        BugFactory, ProductMilestoneSet, Milestone, BugTask
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet
 from canonical.launchpad.browser.productrelease import newProductRelease
 
@@ -143,7 +143,23 @@ class ProductBugsView:
         return [
             "id", "title", "milestone", "status", "priority", "severity",
             "submittedon", "submittedby", "assignedto", "actions"]
-   
+
+    def assign_to_milestones(self):
+        if self.request.principal:
+            if self.context.owner.id == self.request.principal.id:
+                milestone_name = self.request.get('milestone', None)
+                if milestone_name:
+                    milestone = Milestone.byName(milestone_name)
+                    if milestone:
+                        taskids = self.request.get('task', None)
+                        if taskids:
+                            if not isinstance(taskids, (list, tuple)):
+                                taskids = [taskids]
+
+                            tasks = [BugTask.get(taskid) for taskid in taskids]
+                            for task in tasks:
+                                task.milestone = milestone
+       
 
 class ProductFileBugView(AddView):
 

@@ -1,10 +1,13 @@
 <metal:page define-macro="buglisting">
-  <form action="" method="GET">
+  <tal:tag condition="view/assign_to_milestones"/>
+  <form action="" method="GET"
+     tal:define="listing_columns view/assignment_columns;
+                 logged_in request/lp:person;
+                 is_maintainer python:logged_in and logged_in.id == context.owner.id">
   <table id="ass_listing"
-         class="listing rowNavigation"
-         tal:define="listing_columns view/assignment_columns;
-                     logged_in request/lp:person;">
+         class="listing rowNavigation">
     <tr>
+      <th tal:condition="is_maintainer">Select</th>
       <th tal:condition="python:'id' in listing_columns">Bug #</th>
       <th tal:condition="python:'product' in listing_columns">Product</th>
       <th tal:condition="python:'package' in listing_columns">Package</th>
@@ -35,6 +38,9 @@
                         severity assignment/severity/lp:BugSeverity;
                         statusid string:status${repeat/assignment/number};
                         assigneeid string:assignee${repeat/assignment/number};">
+          <td tal:condition="is_maintainer">
+            <input type="checkbox" name="task" value="" tal:attributes="value assignment/id" />
+          </td>
           <td tal:content="bugid"
               tal:condition="python:'id' in listing_columns"
               tal:attributes="onclick string:window.location='${ass_link}';">$Bug.title</td>
@@ -109,5 +115,13 @@
       </span>
     </tr>
   </table>
+
+  <input tal:condition="is_maintainer" type="submit" name="assign_to_milestone" value="Assign to Milestone" />
+  <select tal:condition="is_maintainer" name="milestone">
+    <option tal:repeat="milestone context/milestones"
+            tal:attributes="value milestone/name"
+            tal:content="milestone/name">milestone1</option>
+  </select>
+  
   </form>
 </metal:page>

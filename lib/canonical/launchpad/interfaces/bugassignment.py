@@ -8,7 +8,10 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.lp import dbschema
 
-class IUpstreamBugTask(Interface):
+class IEditableUpstreamBugTask(Interface):
+    pass
+
+class IReadOnlyUpstreamBugTask(Interface):
     pass
 
 class ISourcePackageBugTask(Interface):

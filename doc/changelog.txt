@@ -2,6 +2,51 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-06 01:02:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1153
+
+    Summary:
+      make bug tasks editable by upstream maintainers,
+ but only viewable by not-maintainers
+    Revision:
+      launchpad--devel--0--patch-1153
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-262
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-263
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-264
+       make bug tasks editable by upstream maintainers, but only viewable by not-maintainers
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-265
+       add some UI to allow assigning multiple bug tasks to a milestone
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/bugassignment-display.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/launchpad-display.pt.id
+     lib/canonical/launchpad/templates/bugassignment-display.pt
+     lib/canonical/launchpad/templates/launchpad-display.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/bugassignment.py
+     lib/canonical/launchpad/database/milestone.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/interfaces/bugassignment.py
+     lib/canonical/launchpad/templates/bugassignment-search-listing.pt
+     lib/canonical/launchpad/zcml/bugassignment.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-262
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-263
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-264
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-265
+
+
 2005-01-06 00:43:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1152
 
     Summary:
