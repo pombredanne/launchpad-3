@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-13 18:18:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1197
+
+    Summary:
+      small bugfixes and a first go at a db schema patch for bug group
+ viewing/privacy support
+    Revision:
+      launchpad--devel--0--patch-1197
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-294
+       a first go at how we could patch the schema to handle group viewing and privacy on bugs
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-295
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-296
+       fix bug #30/production: give followup on bugs a sensible subject line
+    
+
+    new files:
+     database/schema/pending/.arch-ids/bradb-bug-group-assignments.sql.id
+     database/schema/pending/bradb-bug-group-assignments.sql
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/templates/bug-index.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-294
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-295
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-296
+
+
 2005-01-13 14:55:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1196
 
     Summary:

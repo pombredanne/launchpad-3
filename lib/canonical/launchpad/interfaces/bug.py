@@ -92,6 +92,10 @@ class IBug(Interface):
     cverefs = Attribute('CVE references for this bug')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
 
+    def followup_title():
+        """Return a candidate title for a followup message."""
+
+
 class IBugAddForm(IBug):
     """Information we need to create a bug"""
     id = Int(title=_("Bug #"), required=False)

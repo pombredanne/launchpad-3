@@ -94,7 +94,8 @@
                             enter it below.
                         </div>
                         <b>Subject:</b>
-                        <input name="field.title" type="text" size="50" /><br />
+                        <input name="field.title" type="text" size="50" 
+                            tal:attributes="value context/followup_title" /><br />
                         <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
                         <input type="submit" name="UPDATE_SUBMIT" value="Add" />
                     </form>
