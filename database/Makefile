@@ -9,6 +9,9 @@ default:
 	@ echo "  launchpad   create and populate the launchpad database"
 	@ echo "  launchpad_test  create and populate the test database"
 
+dbtest:
+	psql --file=launchpad.sql launchpad 2>&1 |grep ERR
+
 +postgres:
 	@ if ! which postgresql ; then \
 	echo "* install postgres" ; \

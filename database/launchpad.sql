@@ -55,6 +55,9 @@
 	  - downloadurl, lastdoap
 	- rewire BinarypackageUpload to point to DistroArchRelease
 	  instead of DistroRelease
+	- rename POMsgSet.iscurrent to POMsgSet.iscomplete
+	   -> .iscurrent is now represented by .sequence>0
+	- make POTemplate.branch NOT NULL
   v0.98:
         - merge SourceSource table from Andrew Bennetts
 	- change SourceSource.homepageurl to SourceSource.product
@@ -243,6 +246,7 @@ DROP TABLE Sourcepackage;
 DROP TABLE ArchConfigEntry;
 DROP TABLE ArchConfig;
 DROP TABLE ProductReleaseFile;
+DROP TABLE ProductSeries;
 DROP TABLE ProductRelease;
 DROP TABLE ChangesetFileHash;
 DROP TABLE ChangesetFile;
@@ -281,6 +285,8 @@ DROP TABLE Builder;
 DROP TABLE DistroArchRelease;
 DROP TABLE Processor;
 DROP TABLE ProcessorFamily;
+DROP TABLE DistributionRole;
+DROP TABLE DistroReleaseRole;
 DROP TABLE DistroRelease;
 DROP TABLE Distribution;
 DROP TABLE LaunchpadFileHash;
@@ -600,6 +606,25 @@ CREATE TABLE ProductRole (
 
 
 /*
+  ProductSeries
+  A series of releases for this product. Typically
+  open source projects have a number of different
+  active branches of development, which turn into
+  releases. For example, Mozilla currently has
+  builds from the trunk ("HEAD"), 1.7 and 1.6
+  series.
+*/
+CREATE TABLE ProductSeries (
+  id            serial PRIMARY KEY,
+  product       integer NOT NULL REFERENCES Product,
+  name          text NOT NULL,
+  displayname   text NOT NULL,
+  UNIQUE ( product, name )
+);
+
+
+
+/*
   ProductRelease
   A specific tarball release of Product.
 */
@@ -744,7 +769,7 @@ CREATE TABLE Branch (
   title                  text NOT NULL,
   description            text NOT NULL,
   owner                  integer REFERENCES Person,
-  project                integer REFERENCES Product
+  product                integer REFERENCES Product
 );
 
 
@@ -987,7 +1012,25 @@ CREATE TABLE Distribution (
   name             text NOT NULL,
   title            text NOT NULL,
   description      text NOT NULL,
+  -- the domain name of the distribution. we use
+  -- this so we know how to map "soyuz.distro.net"
+  -- for example: ubuntu.com, debian.org, redhat.com
+  domainname       text NOT NULL,
   owner            integer NOT NULL REFERENCES Person
+);
+
+
+
+/*
+  Distribution Role
+  A person can take on a number of roles within a
+  distribution. These are documented in the
+  DistributionRole schema, and recorded here.
+*/
+CREATE TABLE DistributionRole (
+  person          integer NOT NULL REFERENCES Person,
+  distribution    integer NOT NULL REFERENCES Distribution,
+  role            integer NOT NULL
 );
 
 
@@ -1009,9 +1052,26 @@ CREATE TABLE DistroRelease (
   sections        integer NOT NULL REFERENCES Schema,
   -- see Distribution Release State schema
   releasestate    integer NOT NULL,
-  datereleased    timestamp
+  datereleased    timestamp,
+  owner           integer NOT NULL REFERENCES Person
 );
 
+
+
+/*
+  DistroReleaseRole
+  A person can have roles within a Distribution, and sometimes
+  these roles are specific to a single release. In general
+  roles should be recorded in the DistributionRole table unless
+  they really are limited to a specific distribution release,
+  in which case they should be recorded here.
+*/
+CREATE TABLE DistroReleaseRole (
+  person         integer NOT NULL REFERENCES Person,
+  distrorelease  integer NOT NULL REFERENCES DistroRelease,
+  -- see the DistributionRole schema
+  role           integer NOT NULL
+);
 
 
 /*
@@ -1399,7 +1459,7 @@ CREATE TABLE TranslationFilter (
 */
 CREATE TABLE POMsgID (
   id                   serial PRIMARY KEY,
-  msgid                text UNIQUE
+  msgid                text NOT NULL UNIQUE
 );
 
 
@@ -1411,7 +1471,7 @@ CREATE TABLE POMsgID (
 */
 CREATE TABLE POTranslation (
   id                    serial PRIMARY KEY,
-  translation           text
+  translation           text NOT NULL UNIQUE
 );
 
 
@@ -1489,9 +1549,9 @@ CREATE TABLE License (
 CREATE TABLE POTemplate (
   id                    serial PRIMARY KEY,
   product               integer NOT NULL REFERENCES Product,
-  branch                integer REFERENCES Branch,
   -- see Translation Priority schema
   priority              integer NOT NULL,
+  branch                integer NOT NULL REFERENCES Branch,
   changeset             integer REFERENCES Changeset,
   name                  text NOT NULL UNIQUE,
   title                 text NOT NULL,
@@ -1505,9 +1565,9 @@ CREATE TABLE POTemplate (
   -- when we last parsed the Template.
   messagecount          integer NOT NULL,
   owner                 integer REFERENCES Person,
-  -- EITHER branch OR changeset:
-  CHECK ( NOT ( branch IS NULL AND changeset IS NULL ) ),
-  CHECK ( NOT ( branch IS NOT NULL AND changeset IS NOT NULL ) )
+  -- if we refer to a changeset make sure that it's
+  -- one where the branch is consistent for that changeset.
+  FOREIGN KEY ( changeset, branch ) REFERENCES Changeset ( id, branch )
 );
 
 
@@ -1545,7 +1605,10 @@ CREATE TABLE POFile (
   variant              text,
   -- the filename within the branch where we find this
   -- PO file
-  filename             text
+  filename             text,
+  -- needs to be UNIQUE so POMsgSet can refer to this
+  -- tuple
+  UNIQUE (id, potemplate )
 );
 
 
@@ -1558,10 +1621,10 @@ CREATE TABLE POFile (
 CREATE TABLE POMsgSet (
   id                  serial PRIMARY KEY,
   primemsgid          integer NOT NULL REFERENCES POMsgID,
-  sequence            integer,
-  potemplate          integer REFERENCES POTemplate,
+  sequence            integer NOT NULL,
+  potemplate          integer NOT NULL REFERENCES POTemplate,
   pofile              integer REFERENCES POFile,
-  iscurrent           boolean NOT NULL,
+  iscomplete          boolean NOT NULL,
   obsolete            boolean NOT NULL,
   fuzzy               boolean NOT NULL,
   -- the free text comment of the msgset
@@ -1572,7 +1635,9 @@ CREATE TABLE POMsgSet (
   -- The comment included in the source code
   sourcecomment       text,
   -- For example: c-source, python-source etc
-  flagscomment        text
+  flagscomment        text,
+  FOREIGN KEY ( pofile, potemplate ) REFERENCES POFile ( id, potemplate ),
+  UNIQUE ( potemplate, pofile, primemsgid )
 );
 
 
@@ -1587,7 +1652,7 @@ CREATE TABLE POMsgIDSighting (
   pomsgid             integer NOT NULL REFERENCES POMsgID,
   firstseen           timestamp NOT NULL,
   lastseen            timestamp NOT NULL,
-  iscurrent           boolean NOT NULL,
+  inpofile            boolean NOT NULL,
   -- 0 for English singular, 1 for English plural
   pluralform          integer NOT NULL,
   -- we only want one sighting of an id in a msgset
@@ -1608,7 +1673,7 @@ CREATE TABLE POTranslationSighting (
   license               integer NOT NULL REFERENCES License,
   firstseen             timestamp NOT NULL,
   lasttouched           timestamp NOT NULL,
-  iscurrent             boolean NOT NULL,
+  inpofile              boolean NOT NULL,
   pluralform            integer NOT NULL,
   deprecated            boolean NOT NULL DEFAULT FALSE,
   -- where this translation came from, see the
@@ -1679,6 +1744,7 @@ CREATE TABLE TranslationEffort (
   project               integer NOT NULL REFERENCES Project,
   name                  text NOT NULL UNIQUE,
   title                 text NOT NULL,
+  shortdesc             text NOT NULL,
   description           text NOT NULL,
   categories            integer REFERENCES Schema
 );
@@ -1714,8 +1780,17 @@ CREATE TABLE POSubscription (
   person               integer NOT NULL REFERENCES Person,
   potemplate           integer NOT NULL REFERENCES POTemplate,
   language             integer REFERENCES Language,
-  notificationinterval interval NOT NULL,
-  lastnotified         timestamp
+  -- the frequency with which a user prefers to be
+  -- sent the POFiles in the subscription. If NULL
+  -- then send on demand.
+  notificationinterval interval,
+  -- the timestamp of the last time the user was
+  -- sent the updated PO files from this
+  -- subscription
+  lastnotified         timestamp,
+  -- a person can only have one subscription to a
+  -- particular PO Template for a given language.
+  UNIQUE ( person, potemplate, language )
 );
 
 
