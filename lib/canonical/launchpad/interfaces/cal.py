@@ -5,13 +5,11 @@ from zope.interface import Interface, Attribute
 from zope.schema import Int, Bool, Object, TextLine, Date, Datetime
 from canonical.launchpad.fields import Title, TimeInterval
 from schoolbell.interfaces import IEditCalendar
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 
-
-class ILaunchpadCalendar(IEditCalendar):
+class ILaunchpadCalendar(IEditCalendar, IHasOwner):
     """Launchpad specific calendar.
     """
-
-    owner = Attribute(_("The person who can edit this calendar"))
 
     title = Title(
                   title=_('Calendar title'), required=True,
@@ -149,24 +147,3 @@ class ICalendarEventInfo(Interface):
 class ICalendarEventCollection(Interface):
     def __getitem__(key):
         """Get an event."""
-
-class ICalendarEventAddForm(Interface):
-    """Schema for the New Calendar Event form."""
-
-    title = TextLine(
-        title=_("Title"), required=True,
-        description=_("""Title of the event"""))
-
-    location = TextLine(
-        title=_("Location"), required=False,
-        description=_("""Location of the event"""))
-
-    dtstart = Datetime(
-        title=_("Start"), required=True,
-        description=_("""Date and time when the event starts."""))
-
-    duration = TimeInterval(
-        title=_("Duration"), required=True,
-        description=_("""Duration of the event."""))
-
-    # TODO: recurrence

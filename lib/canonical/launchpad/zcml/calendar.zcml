@@ -11,6 +11,7 @@
 
   <content class="canonical.launchpad.database.CalendarEvent">
     <allow interface="schoolbell.interfaces.ICalendarEvent" />
+    <allow interface="canonical.launchpad.interfaces.IHasOwner" />
   </content>
 
   <content class="canonical.launchpad.components.cal.MergedCalendar">
@@ -166,7 +167,7 @@
       schema="schoolbell.interfaces.ICalendarEvent"
       label="New Calendar Event"
       fields="title description location dtstart duration"
-      permission="zope.Public"
+      permission="launchpad.Edit"
       template="../templates/calendar-event-addform.pt"
       class="canonical.launchpad.browser.CalendarEventAddView">
     <browser:widget
@@ -203,7 +204,7 @@
       schema="schoolbell.interfaces.ICalendarEvent"
       fields="title description location dtstart duration"
       label="Edit Event"
-      permission="zope.Public"
+      permission="launchpad.Edit"
       template="../templates/calendar-event-editform.pt"
       lp:url="$calendar/events/$event.id/+edit">
     <browser:widget

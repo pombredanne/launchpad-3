@@ -12,6 +12,7 @@ from zope.interface import implements
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from schoolbell.interfaces import IEditCalendar
 from schoolbell.simple import SimpleCalendarEvent
@@ -315,3 +316,6 @@ class CalendarEventAddView(AddView):
 
     def nextURL(self):
         return '.'
+
+class CalendarEventEditView(SQLObjectEditView):
+    pass

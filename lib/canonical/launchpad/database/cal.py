@@ -9,7 +9,7 @@ from schoolbell.mixins import CalendarMixin, EditableCalendarMixin
 from schoolbell.mixins import CalendarEventMixin
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import ILaunchpadCalendar
+from canonical.launchpad.interfaces import ILaunchpadCalendar, IHasOwner
 
 import datetime
 import pytz
@@ -64,7 +64,11 @@ class CalendarSubscription(SQLBase):
                           foreignKey='Calendar')
 
 class CalendarEvent(SQLBase, CalendarEventMixin):
-    implements(ICalendarEvent)
+    implements(ICalendarEvent, IHasOwner)
+
+    def owner(self):
+        return self.calendar.owner
+    owner = property(owner)
 
     unique_id = StringCol(dbName='unique_id', notNull=True, length=255,
                           alternateID=True, alternateMethodName='byUniqueID')
@@ -74,12 +78,16 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
     def _get_dtstart(self):
         '''Add a UTC timezone to the timestamp'''
         value = self._SO_get_dtstart()
-        return datetime.datetime(value.year, value.month, value.day,
-                                 value.hour, value.minute, value.second,
-                                 tzinfo=_utc_tz)
+        if value:
+            return datetime.datetime(value.year, value.month, value.day,
+                                     value.hour, value.minute, value.second,
+                                     tzinfo=_utc_tz)
+        else:
+            return None
     def _set_dtstart(self, value):
         '''Convert timestamp to UTC'''
-        value = value.astimezone(_utc_tz)
+        if value:
+            value = value.astimezone(_utc_tz)
         self._SO_set_dtstart(value)
         
     # actually an interval ...
@@ -101,12 +109,16 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
     def _get_until(self):
         '''Add a UTC timezone to the timestamp'''
         value = self._SO_get_until()
-        return datetime.datetime(value.year, value.month, value.day,
-                                 value.hour, value.minute, value.second,
-                                 tzinfo=_utc_tz)
+        if value:
+            return datetime.datetime(value.year, value.month, value.day,
+                                     value.hour, value.minute, value.second,
+                                     tzinfo=_utc_tz)
+        else:
+            return None
     def _set_until(self, value):
         '''Convert timestamp to UTC'''
-        value = value.astimezone(_utc_tz)
+        if value:
+            value = value.astimezone(_utc_tz)
         self._SO_set_until(value)
 
     exceptions = StringCol(dbName='exceptions', default=None)
