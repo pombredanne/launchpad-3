@@ -4,14 +4,16 @@ application."""
 from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
 from canonical.launchpad.interfaces import IBug
-from canonical.launchpad.mail import sendmail
+from canonical.launchpad.mail import simple_sendmail
 from canonical.lp.dbschema import BugAssignmentStatus, BugPriority, \
      BugSeverity, BugInfestationStatus, BugExternalReferenceType
 
 FROM_MAIL = "noreply@bbnet.ca"
+#FROM_MAIL = "stuart@stuartbishop.net"
 
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug."""
+    #return ["stuart@stuartbishop.net"]
     return ['test@bbnet.ca']
 
 def notify_bug_assigned_product_added(product_assignment, event):
@@ -33,7 +35,7 @@ Assigned: %(assigned)s
        'severity' : BugSeverity.items[int(product_assignment.severity)].title,
        'assigned' : assignee_name}
 
-    sendmail(
+    simple_sendmail(
         FROM_MAIL, get_cc_list(product_assignment.bug),
         '"%s" product assignment' % product_assignment.bug.title, msg)
 
@@ -61,7 +63,7 @@ Assigned: %(assigned)s
        'severity' : BugSeverity.items[int(package_assignment.severity)].title,
        'assigned' : assignee_name}
 
-    sendmail(
+    simple_sendmail(
         FROM_MAIL, get_cc_list(package_assignment.bug),
         '"%s" package assignment' % package_assignment.bug.title, msg)
 
@@ -76,7 +78,7 @@ Infestation: %(infestation)s
          product_infestation.productrelease.version,
        'infestation' : BugInfestationStatus.items[product_infestation.infestationstatus].title}
 
-    sendmail(
+    simple_sendmail(
         FROM_MAIL, get_cc_list(product_infestation.bug),
         '"%s" product infestation' % product_infestation.bug.title, msg)
 
@@ -91,7 +93,7 @@ Infestation: %(infestation)s
          package_infestation.sourcepackagerelease.version,
        'infestation' : BugInfestationStatus.items[package_infestation.infestationstatus].title}
 
-    sendmail(
+    simple_sendmail(
         FROM_MAIL, get_cc_list(package_infestation.bug),
         '"%s" package infestation' % package_infestation.bug.title, msg)
 
@@ -106,7 +108,7 @@ def notify_bug_comment_added(comment, event):
          comment.title,
          comment.contents)
 
-    sendmail(
+    simple_sendmail(
         FROM_MAIL, get_cc_list(comment.bug),
         'Comment on "%s"' % comment.bug.title, msg)
 
@@ -121,7 +123,7 @@ Description: %(description)s
        'data' : ext_ref.data,
        'description' : ext_ref.description}
 
-    sendmail(
+    simple_sendmail(
         FROM_MAIL, get_cc_list(ext_ref.bug),
         '"%s" external reference added' % ext_ref.bug.title, msg)
 
@@ -133,6 +135,6 @@ Bug Tracker: %(bug_tracker)s
 Remote Bug: %(remote_bug)s
 """ % {'bug_tracker' : watch.bugtracker.title, 'remote_bug' : watch.remotebug}
 
-    sendmail(
+    simple_sendmail(
         FROM_MAIL, get_cc_list(watch.bug),
         '"%s" watch added' % watch.bug.title, msg)
