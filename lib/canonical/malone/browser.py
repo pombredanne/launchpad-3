@@ -27,8 +27,6 @@ from interfaces import \
         ISourcepackageContainer, IBugWatchContainer, \
         IProductBugAssignmentContainer, ISourcepackageBugAssignmentContainer
 
-from canonical.interfaces import IProjectContainer
-
 from canonical.database.foaf import IPerson
 
 # TODO: Anything that relies on these imports should not be in this file!
@@ -444,36 +442,6 @@ class BugSubscriptionContainer(BugContainerBase):
         # I want an exception raised if id can't be converted to an int
         conn.query('DELETE FROM BugSubscription WHERE id=%d' % int(id))
   
-
-class ProjectContainer(object):
-    """A container for Project objects."""
-
-    implements(IProjectContainer)
-    table = DBProject
-
-    def __getitem__(self, name):
-        try:
-            return self.table.select(self.table.q.name == name)[0]
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
-            raise KeyError, id
-
-    def __iter__(self):
-        for row in self.table.select():
-            yield row
-
-    def search(self, name, title):
-        q = '1=1'
-        if name:
-            q += """ AND name LIKE '%%%%' || %s || '%%%%' """ % (
-                    sqlbase.quote(name.lower())
-                    )
-        if title:
-            q += """ AND lower(title) LIKE '%%%%' || %s || '%%%%'""" % (
-                    sqlbase.quote(title.lower())
-                    )
-        return DBProject.select(q)
-
 
 class SourcepackageContainer(object):
     """A container for Sourcepackage objects."""

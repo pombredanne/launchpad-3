@@ -39,5 +39,6 @@
   <include file="forms.zcml" />
   <include file="resources.zcml" />
   <include file="vocabulary.zcml" />
+  <include file="sql.zcml" />
 
 </configure>

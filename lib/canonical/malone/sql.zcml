@@ -87,14 +87,6 @@
         factory=".browser.BugSubscriptionContainer"
         provides=".interfaces.IBugSubscriptionContainer" />
 
-    <content class=".browser.ProjectContainer">
-        <allow interface="canonical.interfaces.IProjectContainer" />
-    </content>
-
-    <utility
-        factory=".browser.ProjectContainer"
-        provides="canonical.interfaces.IProjectContainer" />
-
     <content class=".browser.SourcepackageContainer">
         <allow interface=".interfaces.ISourcepackageContainer" />
     </content>

@@ -34,6 +34,7 @@
     <pages
         for="canonical.interfaces.IProjectContainer"
         permission="zope.Public"
+        class="canonical.doap.browser.ProjectContainerView"
         lp:url="doap/projects/">
         <page name="+index"
             template="../lp/templates/projects-index.pt"

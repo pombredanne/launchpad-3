@@ -23,11 +23,12 @@ from canonical.interfaces import *
 
 
 class DOAPApplicationView(object):
+    
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
-    def update(self):
+    def search(self):
         '''Handle request and setup this view the way the templates expect it
         '''
         from sqlobject import OR, LIKE, CONTAINSSTRING, AND
@@ -46,6 +47,44 @@ class DOAPApplicationView(object):
             self.noresults = False
             self.results = []
 
+class ProjectContainerView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.searchrequested = False
+        if 'searchquery' in request.form:
+            self.searchrequested = True
+        self.results = None
+
+    def searchresults(self):
+        """Use searchtext to find the list of Projects that match
+        and then present those as a list. Only do this the first
+        time the method is called, otherwise return previous results.
+        """
+        if self.results is None:
+            self.results = self.context.search(request.get('searchtext'))
+        return self.results
+
+    def tmp(self):
+        '''Handle request and setup this view the way the templates expect it
+        '''
+        from sqlobject import OR, LIKE, CONTAINSSTRING, AND
+        if self.request.form.has_key('searchtext'):
+            # TODO: Make this case insensitive
+            s = self.request.form['searchtext']
+            self.results = DBProject.select(OR(
+                    CONTAINSSTRING(DBProject.q.name, s),
+                    CONTAINSSTRING(DBProject.q.displayname, s),
+                    CONTAINSSTRING(DBProject.q.title, s),
+                    CONTAINSSTRING(DBProject.q.shortdesc, s),
+                    CONTAINSSTRING(DBProject.q.description, s)
+                ))
+            self.noresults = not self.results
+        else:
+            self.noresults = False
+            self.results = []
+
+
 class ProjectContainer(object):
     """A container for Project objects."""
 
@@ -63,16 +102,19 @@ class ProjectContainer(object):
         for row in self.table.select():
             yield row
 
-    def search(self, name, title):
-        q = '1=1'
-        if name:
-            q += """ AND name LIKE '%%%%' || %s || '%%%%' """ % (
-                    sqlbase.quote(name.lower())
-                    )
-        if title:
-            q += """ AND lower(title) LIKE '%%%%' || %s || '%%%%'""" % (
-                    sqlbase.quote(title.lower())
-                    )
+    def search(self, searchtext):
+        q = """name LIKE '%%%%' || %s || '%%%%' """ % (
+                sqlbase.quote(searchtext.lower())
+                )
+        q += """ OR lower(title) LIKE '%%%%' || %s || '%%%%'""" % (
+                sqlbase.quote(searchtext.lower())
+                )
+        q += """ OR lower(shortdesc) LIKE '%%%%' || %s || '%%%%'""" % (
+                sqlbase.quote(searchtext.lower())
+                )
+        q += """ OR lower(description) LIKE '%%%%' || %s || '%%%%'""" % (
+                sqlbase.quote(searchtext.lower())
+                )
         return DBProject.select(q)
 
 
