@@ -92,7 +92,7 @@
             <span class="fieldRequired" title="Required">(Required)</span>
 
                 <input type="text" name="module" size="30"
-                       value="" />
+                       tal:attributes="value context/cvsmodule" />
         </div>
 
         <div class="field">
@@ -102,7 +102,7 @@
             <span class="fieldRequired" title="Required">(Required)</span>
 
                 <input type="text" name="cvstarfile" size="30"
-                       value="" />
+                       tal:attributes="value context/cvstarfile" />
         </div>
 
         <div class="field">
@@ -112,7 +112,7 @@
             <span class="fieldRequired" title="Required">(Required)</span>
 
                 <input type="text" name="branchfrom" size="30"
-                       value="MAIN" />
+                       tal:attributes="value context/branchfrom" />
         </div>
 
     </fieldset>
@@ -131,7 +131,7 @@
                   </div>
 
                 <input type="text" name="svnrepository" size="30"
-                       value="" />
+                       tal:attributes="value context/svnrepository" />
         </div>
 
     </fieldset>
@@ -143,12 +143,22 @@
         
         <div class="field">
 
+            <label>Arch archive</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+            <input type="text" name="archarchive" size="30"
+                   tal:attributes="value context/archarchive" />
+        </div>
+        
+        <div class="field">
+
             <label>Arch category</label>
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
             <input type="text" name="category" size="30"
-                   value="" />
+                   tal:attributes="value context/category" />
         </div>
 
         <div class="field">
@@ -158,7 +168,7 @@
             <span class="fieldRequired" title="Required">(Required)</span>
 
             <input type="text" name="branchto" size="30"
-                   value="" />
+                   tal:attributes="value context/branchto" />
         </div>
 
         <div class="field">
@@ -168,7 +178,7 @@
             <span class="fieldRequired" title="Required">(Required)</span>
 
             <input type="text" name="archversion" size="30"
-                   value="" />
+                   tal:attributes="value context/archversion" />
         </div>
 
     </fieldset>
