@@ -136,6 +136,17 @@
 
 	<tr><td>
 	<div class="field">
+	    <label>Arch User ID</label>
+	    <div class="formHelp">
+	    Enter the Arch User ID.
+            </div>
+	    <input type="text" name="archuserid" 
+	    tal:attributes="value context/archuser/archuserid|nothing"/>
+	</div>
+	</td></tr>
+
+	<tr><td>
+	<div class="field">
 	    <label>JABBER ID</label>
 	    <div class="formHelp">
 	    Enter the Jabber ID.
@@ -144,6 +155,7 @@
 	    tal:attributes="value context/jabber/jabberid|nothing"/>
 	</div>
 	</td></tr>
+
 
 	<tr><td>
 	<div class="field">
@@ -169,7 +181,7 @@
   <tla:block tal:condition="view/enable_edited">
   <div>
   <h4><a tal:attributes="href string:../${context/id}"
-         tal:content="request/displayname">PERSON</a>
+         tal:content="context/person/displayname">PERSON</a>
     Modified</h4>
   </div>
   </tla:block>

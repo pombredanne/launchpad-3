@@ -22,43 +22,47 @@
     <div>
     <table>
        <legend><h3>Private Information</h3></legend>
-       <tr><td>Name</td><td><span
+       <tr><td>Name:</td><td><span
          tal:content="context/person/displayname">
          context</span> </td></tr>
 
        <tr tal:condition="context/person/teamowner">
-       <td>Owner</td>
+       <td>Owner:</td>
        <td><a tal:attributes="href string:../${context/person/teamowner/id}"
               tal:content="context/person/teamowner/displayname">
               OWNER</a></td>
        </tr>
 
        <tr tal:condition="context/person/teamdescription">
-       <td>Description</td><td tal:content="context/person/teamdescription">
+       <td>Description:</td><td tal:content="context/person/teamdescription">
            DESCRIPTION</td>
        </tr>
 
        <tr tal:condition="context/email">
-       <td>Email</td><td tal:content="context/email/email">EMAIL</td>
+       <td>Email:</td><td tal:content="context/email/email">EMAIL</td>
        </tr>
 
        <tr tal:condition="context/wiki">
-       <td>Wiki</td><td> 
+       <td>Wiki:</td><td> 
         <a tal:attributes="href string:${context/wiki/wiki}${context/wiki/wikiname}" 
            tal:content="string:${context/wiki/wiki}${context/wiki/wikiname}"/>        
 	</td></tr>
 
        <tr tal:condition="context/irc">
-       <td>IRC</td><td><span tal:content="context/irc/nickname"/> at 
+       <td>IRC:</td><td><span tal:content="context/irc/nickname"/> at 
        <span tal:content="context/irc/network"/></td>
        </tr> 
 
        <tr tal:condition="context/jabber">
-       <td>Jabber</td><td tal:content="context/jabber/jabberid"></td>
+       <td>Jabber:</td><td tal:content="context/jabber/jabberid"></td>
        </tr> 
 
+       <tr tal:condition="context/archuser">
+       <td>Arch User:</td><td tal:content="context/archuser/archuserid"></td>
+       </tr>
+
        <tr tal:condition="context/gpg">
-       <td>GPG</td><td tal:content="context/gpg/keyid"></td>
+       <td>GPG:</td><td tal:content="context/gpg/keyid"></td>
        </tr>
 
        <tr><td></td><td align="right"><a href="+edit">
@@ -129,8 +133,8 @@
        <td tal:content="member/rolename">ROLE</td>
        <td tal:content="member/statusname">STATUS</td>
    </tr>
-   <tr><td/><td/><td align="right"><a href="+add">
-           Add Member</a></td></tr>
+   <tr><td/><td/><td align="right"><a href="+join">
+           Join This Team</a></td></tr>
    </table>
    </div>
   </td><td>
@@ -145,12 +149,13 @@
        <td><a tal:attributes="href string:../${team/person/id}"
 	      tal:content="team/person/displayname">SUBTEAM</a></td>
    </tr>
-
-   <tr><td/><td/><td align="right"><a href="+create">
-           Create a Sub Team</a></td></tr>
    </table>
    </div>
   </td></tr>
+  <!-- Creating Team  Anyway-->
+   <tr><td></td><th align="right">
+   <a href="+add">Create a New Team</a>
+   </th></tr>
   <!--TeamParticipation anyway -->
   <tr tal:condition="context/teams">
    <td> <div> 
@@ -160,9 +165,6 @@
        <td><a tal:attributes="href string:../${team/team/id}"
 	      tal:content="team/team/displayname">MEMBER</a></td>
    </tr>
-   <tr><th align="right">
-   <a href="+add">Create a New Team</a>
-   </th></tr>
    </table>
    </div>
   </td></tr>

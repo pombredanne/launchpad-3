@@ -235,6 +235,7 @@ class IPersonApp(Interface):
     wiki = Attribute("Wiki")
     jabber = Attribute("Jabber")
     irc = Attribute("IRC")    
+    archuser = Attribute("Arch user")    
     gpg = Attribute("GPG")
 
     members = Attribute("Members of a Team")

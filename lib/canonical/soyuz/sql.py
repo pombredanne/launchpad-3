@@ -411,6 +411,10 @@ class PersonApp(object):
             self.members = None
 
         try:
+            #FIXME: My Teams should be:
+            # -> the Teams owned by me
+            # OR
+            # -> the Teams which I'm member (as It is)
             self.teams = TeamParticipation.selectBy(personID=self.id)
             if self.teams.count() == 0:
                 self.teams = None                
@@ -467,6 +471,10 @@ class PersonApp(object):
             self.jabber = JabberID.selectBy(personID=self.id)[0]
         except IndexError:
             self.jabber = None
+        try:
+            self.archuser = ArchUserID.selectBy(personID=self.id)[0]
+        except IndexError:
+            self.archuser = None
         try:
             self.irc = IrcID.selectBy(personID=self.id)[0]
         except IndexError:

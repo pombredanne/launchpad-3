@@ -69,41 +69,73 @@
 
   <content class="canonical.soyuz.sql.PersonApp">
     <allow interface="canonical.soyuz.interfaces.IPersonApp"/>
+    <require
+     permission="zope.Public"
+     set_attributes="email wiki irc jabber gpg archuser"
+     />	
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.database.SoyuzEmailAddress">
     <allow interface="canonical.soyuz.interfaces.ISoyuzEmailAddress"/>
+    <require
+     permission="zope.Public"
+     set_attributes="email status"
+     />	
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.database.GPGKey">
     <allow interface="canonical.soyuz.interfaces.IGPGKey"/>
+    <require
+     permission="zope.Public"
+     set_attributes="keyid fingerprint pubkey revoked"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.database.ArchUserID">
     <allow interface="canonical.soyuz.interfaces.IArchUserID"/>
+    <require
+     permission="zope.Public"
+     set_attributes="archuserid"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.database.WikiName">
     <allow interface="canonical.soyuz.interfaces.IWikiName"/>
+    <require
+     permission="zope.Public"
+     set_attributes="wiki wikiname"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.database.JabberID">
     <allow interface="canonical.soyuz.interfaces.IJabberID"/>
+    <require
+     permission="zope.Public"
+     set_attributes="jabberid"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.database.IrcID">
     <allow interface="canonical.soyuz.interfaces.IIrcID"/>
+    <require
+     permission="zope.Public"
+     set_attributes="network nickname"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
   <content class="canonical.soyuz.database.Membership">
     <allow interface="canonical.soyuz.interfaces.IMembership"/>
+    <require
+     permission="zope.Public"
+     set_attributes="role status"
+     />
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
@@ -211,6 +243,11 @@
   <content class="canonical.soyuz.sql.SoyuzPerson">
     <allow interface="canonical.soyuz.interfaces.ISoyuzPerson"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    <require
+     permission="zope.Public"
+     set_attributes="displayname givenname familyname teamowner
+    teamdescription password karma karmatimestamp"
+    />
   </content>
 
   <content class="canonical.soyuz.sql.builddepsContainer">

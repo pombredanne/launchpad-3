@@ -1,9 +1,16 @@
 from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
+
 from canonical.soyuz.database import SoyuzSourcePackage, SoyuzBinaryPackage
-from canonical.soyuz.database import TeamParticipation
+
+from canonical.soyuz.database import TeamParticipation, SoyuzEmailAddress
+from canonical.soyuz.database import GPGKey, ArchUserID, WikiName, JabberID
+from canonical.soyuz.database import IrcID, Membership
+
 from sqlobject import LIKE, OR, AND
 
 from canonical.database.sqlbase import quote
+
+from canonical.lp import dbschema
 
 class DistrosSearchView(object):
 
@@ -59,12 +66,14 @@ class PeopleAddView(object):
         self.results = []
         self.enable_added = False
 
-        givenname = self.request.get("givenname", "")
-        familyname = self.request.get("familynname", "")
         displayname = self.request.get("displayname", "")
+        givenname = self.request.get("givenname", "")
+        familyname = self.request.get("familyname", "")
+        email = self.request.get("email", "")
         password = self.request.get("password", "")
+        retype = self.request.get("retype", "")
 
-        
+        #FIXME verify password == retype        
         if displayname:
             #FIXME: How to get the true DB result of the INSERT ?
             self.results = SoyuzPerson(displayname=displayname,
@@ -75,6 +84,11 @@ class PeopleAddView(object):
                                        teamdescription=None,
                                        karma=None,
                                        karmatimestamp=None)
+            
+            SoyuzEmailAddress(person=self.results.id,
+                         email=email,
+                         status=int(dbschema.EmailAddressStatus.NEW))
+            
             self.enable_added = True
 
 class TeamAddView(object):
@@ -100,7 +114,7 @@ class TeamAddView(object):
                                        karma=None,
                                        karmatimestamp=None)
 
-            TeamParticipation(person=self.context.id,team=self.results.id)
+            TeamParticipation(person=self.results.id,team=self.context.id)
 
             ##FIXME: what about Membership ? the owner should be always
             ##       the admin ?
@@ -126,53 +140,93 @@ class PersonEditView(object):
         network = self.request.get("network", "")
         nickname = self.request.get("nickname", "")
         jabberid = self.request.get("jabberid", "")
+        archuserid = self.request.get("archuserid", "")
         gpgid = self.request.get("gpgid", "")
         
-        if displayname or givenname or familyname:
-            #FIXME: verify the unique name before update distro
+        #FIXME: verify the unique name before update distro
+        if displayname :
             self.context.person.displayname = displayname
             self.context.person.givenname = givenname
             self.context.person.familyname = familyname
+            self.context.person.teamdescription = teamdescription
+            self.enable_edited = True            
 
-            self.enable_edited = True
+            #EmailAddress                
+            if self.context.email != None:
+                self.context.email.email = email
+                self.enable_edited = True
+            else:
+                try:
+                    self.context.email = Soyuz.EmailAddress(personID=self.context.person.id,
+                                                            email=email,
+                                                            status=int(dbschema.EmailAddressStatus.NEW))
+                except:
+                    pass
+            #WikiName
+            if self.context.wiki != None:
+                self.context.wiki.wiki = wiki
+                self.context.wiki.wikiname = wikiname
+                self.enable_edited = True
+            else:
+                try:
+                    self.context.wiki = WikiName(personID=self.context.person.id,
+                                                 wiki=wiki,
+                                                 wikiname=wikiname)
+                except:
+                    pass                
+            #IrcID
+            if self.context.irc != None:
+                self.context.irc.network = network
+                self.context.irc.nickname = nickname
+                self.enable_edited = True
+            else:
+                try:
+                    self.context.irc = IrcID(personID=self.context.person.id,
+                                             network=network,
+                                             nickname=nickname)
+                except IndexError:
+                    pass
+            #JabberID    
+            if self.context.jabber != None:
+                self.context.jabber.jabberid = jabberid
+                self.enable_edited = True
+            else:
+                try:
+                    self.context.jabber = JabberID(personID=self.context.person.id,
+                                                   jabberid=jabberid)
+                except IndexError:
+                    pass               
+            #ArchUserID
+            if self.context.archuser != None:
+                self.context.archuser.archuserid = archuserid
+                self.enable_edited = True
+            else:
+                try:
+                    self.context.archuser = ArchUserID(personID=self.context.person.id,
+                                                   archuserid=archuserid)
+                except IndexError:
+                    pass               
 
-#        try:
-#            self.context.email.email = email
-#            self.enable_edited = True
-#        except IndexError:
-#            pass
-#
-#         try:
-#             self.context.wiki.wiki = wiki
-#             self.enable_edited = True
-#         except IndexError:
-#             pass
-#         try:
-#             self.context.wiki.wikiname = wikiname
-#             self.enable_edited = True
-#         except IndexError:
-#             pass
-#         try:
-#             self.context.irc.network = network
-#             self.enable_edited = True
-#         except IndexError:
-#             pass
-#         try:
-#             self.context.irc.nickname = nickname
-#             self.enable_edited = True
-#         except IndexError:
-#             pass
-#         try:
-#             self.context.jabber.jabberid = jabberid
-#             self.enable_edited = True
-#         except IndexError:
-#             pass
-#         try:
-#             self.context.gpg.gpgid = gpgid
-#             self.enable_edited = True
-#         except IndexError:
-#             pass
 
+
+            #GPGKey
+            if self.context.gpg != None:
+                self.context.gpg.gpgid = gpgid
+                self.enable_edited = True
+            else:
+                try:
+                    #FIXME: lazy unique fingerprint and pubkey
+                    fingerprint = 'sample%d'%self.context.id
+                    pubkey = fingerprint
+                    
+                    self.context.gpg = GPGKey(personID=self.context.person.id,
+                                              keyid=gpgid,
+                                              fingerprint=fingerprint,
+                                              pubkey=pubkey,
+                                              revoked=False)
+                except IndexError:
+                    pass
+        
 class DistrosAddView(object):
 
     def __init__(self, context, request):

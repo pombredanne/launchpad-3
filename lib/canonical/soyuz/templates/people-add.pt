@@ -13,7 +13,7 @@
 <body>
 
 <div metal:fill-slot="main">
-    <h1>New People on Soyuz</h1>
+    <h1>New Person on Soyuz</h1>
 
     <div class="documentDescription">	
     <p> Here you can create a new People on Soyuz
@@ -22,14 +22,14 @@
     <div>
     <form name="add" action="" method="POST">
     <fieldset>
-    <legend><h3>Create a New People</h3><legend>
+    <legend><h3>Create a New Person</h3><legend>
 	<table>
 	<tr><td>
 	<div class="field">
 	    <label>DisplayName</label>
 	    <span class="fieldRequired" title="Required">(Required)</span>
 	    <div class="formHelp">
-	    Enter the DisplayName.
+	    Enter the Person DisplayName.
             </div>
 	    <input type="text" name="displayname" size="40"
 	    tal:attributes="value request/displayname|nothing"/>
@@ -39,7 +39,7 @@
 	<div class="field">
 	    <label>Given Name</label>
 	    <div class="formHelp">
-	    Enter the Given Name.
+	    Enter the Person Given Name.
             </div>
 	    <input type="text" name="givenname"
 	    tal:attributes="value request/givenname|nothing"/>
@@ -49,20 +49,41 @@
 	<div class="field">
 	    <label>FamilyName</label>
 	    <div class="formHelp">
-	    Enter the Family Name.
+	    Enter the Person Family Name.
             </div>
 	    <input type="text" name="familyname"
-	    tal:attributes="value request/family|nothing"/>
+	    tal:attributes="value request/familyname|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Email Address</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter the Email Address.
+            </div>
+	    <input type="text" name="email"
+	    tal:attributes="value request/email|nothing"/>
 	</div>
 	</td></tr>
 	<tr><td>
 	<div class="field">
 	    <label>Password</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
 	    <div class="formHelp">
 	    Enter a Password.
             </div>
-	    <input type="password" name="password" 
-	    tal:attributes="value request/password|nothing"/>
+	    <input type="password" name="password"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Retype Password</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter the same Password Again.
+            </div>
+	    <input type="password" name="retype"/> 
 	</div>
 	</td></tr>
 	<tr><td>
