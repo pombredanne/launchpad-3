@@ -94,6 +94,8 @@ COMMENT ON COLUMN POTemplate.rawfile IS 'The pot file itself encoded as a base64
 COMMENT ON COLUMN POTemplate.rawimporter IS 'The person that attached the rawfile.';
 COMMENT ON COLUMN POTemplate.daterawimport IS 'The date when the rawfile was attached.';
 COMMENT ON COLUMN POTemplate.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
+COMMENT ON COLUMN POTemplate.sourcepackagename IS 'A reference to a sourcepackage name from where this POTemplate comes.';
+COMMENT ON COLUMN POTemplate.distrorelease IS 'A reference to the distribution from where this POTemplate comes.';
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a po file for a given product.';

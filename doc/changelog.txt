@@ -2,6 +2,37 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 13:08:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1182
+
+    Summary:
+      More columns in POTemplate for Rosetta
+    Revision:
+      launchpad--devel--0--patch-1182
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-74
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-75
+       More columns in POTemplate for Rosetta
+    
+
+    modified files:
+     database/schema/comments.sql database/schema/patch-6-24-0.sql
+     doc/changelog.txt
+
+    renamed files:
+     database/schema/pending/.arch-ids/carlos-distro-potemplate.sql.id
+       ==> database/schema/.arch-ids/patch-6-24-0.sql.id
+     database/schema/pending/carlos-distro-potemplate.sql
+       ==> database/schema/patch-6-24-0.sql
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-74
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-75
+
+
 2005-01-12 12:06:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1181
 
     Summary:
