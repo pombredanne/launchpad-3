@@ -3,12 +3,11 @@
  *
  * Expected use of this script is something like:
  *    psql --file launchpad.sql launchpad && psql --file default.sql launchpad
- *    && psql --file populate.sql launchpad
- * (where launchpad.sql and default.sql are scripts from Mark located
+ *    && psql --file languages.sql && psql --file populate.sql launchpad
+ * (where launchpad.sql, default.sql and languages.sql are scripts located
  * at launchpad/database)
  *
- * This file is updated with the v0.99-dev version of the scheme + an extra change
- * will come with next update (a flagscomment field in POTemplate table)
+ * This file is updated with the v0.99-dev version of the scheme
  *
  */
 
@@ -96,16 +95,6 @@ VALUES ((SELECT id FROM Product WHERE name = 'evolution'),
 	timestamp '2004-07-13 00:00',
 	'po/', TRUE, 3, 	
 	(SELECT id FROM Person WHERE presentationname = 'Joe Example'));
-
-INSERT INTO Language (code, englishname, nativename)
-VALUES ('es',
-        'Spanish',
-	'Español');
-
-INSERT INTO Language (code, englishname)
-VALUES ('cy',
-        'Welsh');
-
 
 INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
 		    lasttranslator, currentcount, updatescount, rosettacount,

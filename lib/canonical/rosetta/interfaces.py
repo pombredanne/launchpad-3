@@ -191,20 +191,10 @@ class IEditPOFile(IPOFile):
 class IPOMessageSet(Interface):
     """A collection of message IDs and possibly translations."""
 
-    poTemplate = Attribute("""The template this set is associated with, if
-        it's associated with a template.""")
+    poTemplate = Attribute("""The template this set is associated with.""")
 
     poFile = Attribute("""The PO file this set is associated with, if it's
         associated with a PO file.""")
-
-    # Invariant: poTemplate == None || poFile == None
-    # Invariant: poTemplate != None || poFile != None
-
-    # Rephrased:
-    # Invariant: ((poTemplate == None) && (poFile != None)) ||
-    #            ((poTemplate != None) && (poFile == None))
-
-    # XXX: test that
 
     primeMessageID = Attribute("The primary message ID of this set.")
 
@@ -255,8 +245,8 @@ class IPOMessageSet(Interface):
         """Return the message ID sighting that is current and has the
         plural form provided."""
 
-    # XXX: is the primary message ID the same as the message ID with plural
-    # form 0? (Ask Mark)
+    # The primary message ID is the same as the message ID with plural
+    # form 0 -- i.e. it's redundant. However, it acts as a cached value.
 
     def translations():
         """Iterate over this set's translations."""

@@ -253,7 +253,7 @@ def import_spoken(cnx):
 
 
 if __name__ == '__main__':
-    cnx = psycopg.connect("user=carlos dbname=launchpad")
+    cnx = psycopg.connect("user=carlos dbname=launchpad_test")
     import_countries(cnx)
     import_languages(cnx)
     import_spoken(cnx)

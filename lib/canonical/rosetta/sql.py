@@ -204,23 +204,22 @@ class RosettaPOFile(SQLBase):
             notNull=True),
         StringCol(name='topComment', dbName='topcomment', notNull=True),
         StringCol(name='header', dbName='header', notNull=True),
-        BoolCol(name='headerFuzzy', dbName='fuzzyheader', notNull=True)
+        BoolCol(name='headerFuzzy', dbName='fuzzyheader', notNull=True),
+        IntCol(name='translatedCountCached', dbName='currentcount',
+            notNull=True),
+        IntCol(name='rosettaOnlyCountCached', dbName='rosettacount',
+            notNull=True)
         # XXX: missing fields
     ]
 
-    # XXX: ???
-    messageSetsIter = MultipleJoin('RosettaPOMessageSet', joinColumn='pofile')
-
-    def messageSet(self):
-        return iter(self.messageSetsIter)
+    messageSets = MultipleJoin('RosettaPOMessageSet', joinColumn='pofile')
 
     def __iter__(self):
         return iter(self.messageSets)
 
-    # XXX: not implemented
     def __len__(self):
         '''Count of __iter__.'''
-        return 26
+        return len(self.messageSets)
 
     def __getitem__(self, messageSet):
         '''
@@ -257,30 +256,49 @@ class RosettaPOFile(SQLBase):
 
     def translated(self):
         '''
-        SELECT POMsgSet.* FROM
-            POMsgSet,
-            POTranslationSighting
+        SELECT poset.* FROM
+            POMsgSet poSet,
+            POMsgSet potSet
         WHERE
-            POMsgSet.pofile = self.id AND
-            POTranslationSighting.pomsgset = POMsgSet.id;
+            poSet.pofile = self.id AND
+            poSet.iscomplete=TRUE AND
+            poSet.primemsgid = potset.primemsgid AND
+            poSet.potemplate = potset.potemplate AND
+            potSet.pofile IS NULL AND
+            potSet.sequence <> 0;
         '''
-        raise NotImplementedError
+        res = RosettaPOMessageSet.select('''
+            poSet.pofile = %d AND
+            poSet.iscomplete=TRUE AND
+            poSet.primemsgid = potset.primemsgid AND
+            poSet.potemplate = potset.potemplate AND
+            potSet.pofile IS NULL AND
+            potSet.sequence <> 0''' % self.id,
+            clauseTables = [
+                'POMsgSet poSet',
+                'POMsgSet potSet',
+                ])
+        return iter(res)
 
-
-    # XXX: not implemented
+    # XXX: Implemented using the cache, we should add an option to get the
+    # real count.
+    # The number of translated are the ones from the .po file + the ones that
+    # are only translated in Rosetta.
     def translated_count(self):
         '''Same as translated(), but with COUNT.'''
-        return 14
+        return self.translatedCountCached + self.rosettaOnlyCountCached
 
     def untranslated(self):
         '''XXX'''
         raise NotImplementedError
 
-    # XXX: not implemented
+    # XXX: Implemented using the cache, we should add an option to get the
+    # real count.
+    # The number of untranslated are the ones from the .pot file - the ones
+    # that we have already translated.
     def untranslated_count(self):
         '''Same as untranslated(), but with COUNT.'''
-        return 9
-
+        return len(self.poTemplate) - self.translated_count()
 
 class RosettaPOMessageSet(SQLBase):
     implements(IPOMessageSet)
