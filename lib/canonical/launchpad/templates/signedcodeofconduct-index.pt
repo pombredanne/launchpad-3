@@ -13,6 +13,11 @@
 
 <body>
 
+<metal:rightportlets fill-slot="portlets_two">
+        <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
       <h1>Signed Code of Conduct Entry</h1>
@@ -39,7 +44,6 @@
       <p tal:condition="context/admincomment"><b>AdminComment:</b></p>
       <pre tal:condition="context/admincomment" 
            tal:content="context/admincomment">COMMENT</pre>
-
 
 </div>
 

@@ -26,6 +26,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ICodeOfConduct"
+	class="canonical.launchpad.browser.CodeOfConductView"
         permission="zope.Public">
         <browser:page
             template="../templates/codeofconduct-index.pt"
@@ -74,6 +75,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ICodeOfConductSet"
+	class="canonical.launchpad.browser.CodeOfConductSetView"
         permission="zope.Public">
         <browser:page
             template="../templates/codeofconduct-list.pt"
@@ -96,13 +98,49 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
-        permission="zope.Public">
+	class="canonical.launchpad.browser.SignedCodeOfConductView"
+        permission="launchpad.Admin">
         <browser:page
             template="../templates/signedcodeofconduct-index.pt"
             name="+index"
-            lp:url="foaf/$person.name/cocs/$signed.id/+index" />
+            lp:url="codeofconduct/console/$signed.id/+index" />
     </browser:pages>
 
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+	class="canonical.launchpad.browser.SignedCodeOfConductEditView"
+        label="Edit Code of Conduct Signature:"
+        fields="signingkey signedcode"
+        permission="launchpad.Edit"
+        template="../templates/launchpad-editform.pt"
+	lp:url="foaf/$person.name/cocs/$signed.id/+edit">
+    </browser:editform>
+
+    <browser:editform
+        name="+active"
+        for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+	class="canonical.launchpad.browser.SignedCodeOfConductActiveView"
+        label="Active Code of Conduct Signature:"
+        fields="admincomment"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-editform.pt"
+	lp:url="foaf/$person.name/cocs/$signed.id/+active">
+    </browser:editform>
+
+    <browser:editform
+        name="+deactive"
+        for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+	class="canonical.launchpad.browser.SignedCodeOfConductDeactiveView"
+        label="Deactive Code of Conduct Signature:"
+        fields="admincomment"
+        permission="launchpad.Edit"
+        template="../templates/launchpad-editform.pt"
+	lp:url="foaf/$person.name/cocs/$signed.id/+deactive">
+    </browser:editform>
 
     <!-- SignedCodeOfConductSet -->
     <content class="canonical.launchpad.database.SignedCodeOfConductSet">
@@ -126,12 +164,36 @@
     <browser:pages
         for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
 	class="canonical.launchpad.browser.SignedCodeOfConductAdminView"
-        permission="zope.Public">
+        permission="launchpad.Admin">
         <browser:page
             template="../templates/codeofconduct-admin.pt"
             name="+index"
-            lp:url="codeofconduct/admin/+index" />
+            lp:url="codeofconduct/console/+index" />
     </browser:pages>
 
+
+    <browser:addform
+        name="+acknowledge"
+        for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
+        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        label="Acknowledge a Paper Submitted Code of Conduct"
+        fields="person"
+	class="canonical.launchpad.browser.SignedCodeOfConductAckView"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-addform.pt"
+        lp:url="codeofconduct/console/+acknowledge">
+    </browser:addform>
+
+
+    <!-- SignedCoCs for Person -->     
+    <browser:pages
+        for="canonical.launchpad.interfaces.IPerson"
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.PersonSignedCodesOfConductView">
+        <browser:page
+            name="+codesofconduct"
+            template="../templates/person-codesofconduct.pt"
+            lp:url="foaf/people/$person.id/+codesofconduct" />
+    </browser:pages>
 
 </configure>

@@ -16,7 +16,7 @@ from zope.exceptions import NotFoundError
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, flushUpdates
 from canonical.database.constants import DEFAULT
 
 # LP Interfaces
@@ -92,11 +92,16 @@ class CodeOfConductSet(object):
 
     implements(ICodeOfConductSet)
 
+    # XXX cprov 20050301
+    # Might be replace for something similar to displayname
+    title = 'Codes of Conduct Page'
+
+
     def __getitem__(self, version):
         """See ICodeOfConductSet."""
         # Create an entry point for the Admin Console
-        # Obviously we are excluding a CoC version called 'admin'
-        if version == 'admin':
+        # Obviously we are excluding a CoC version called 'console'
+        if version == 'console':
             return SignedCodeOfConductSet()
         # in normal conditions return the CoC Release
         return CodeOfConduct(version)
@@ -150,7 +155,8 @@ class SignedCodeOfConduct(SQLBase):
     
     signedcode = StringCol(dbName='signedcode', notNull=False, default=None)
 
-    signingkey = StringCol(dbName='signingkey', notNull=False, default=None)
+    signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
+                            notNull=False, default=None)
 
     datecreated = DateTimeCol(dbName='datecreated', notNull=False,
                               default=datetime.utcnow())
@@ -168,14 +174,35 @@ class SignedCodeOfConduct(SQLBase):
         """Build a Fancy Title for CoC."""
         # XXX: cprov 20040224
         # We need the proposed field 'version'
-        return '%s (%s)' % (self.person.displayname, self.signingkey)
+        displayname = '%s' % self.person.displayname
+
+
+        if self.signingkey:
+            displayname += '(%s)' % self.signingkey.keyid
+        else:
+            displayname += '(PAPER)'
+            
+        if self.active:
+            displayname += '[ACTIVE]'
+        else:
+            displayname += '[DEACTIVE]'
+
+        return displayname
 
     displayname = property(_getDisplayName)
+
+    # XXX cprov 20050301
+    # Might be replace for something similar to displayname
+    title = 'Signed Code of Conduct Page'
 
 class SignedCodeOfConductSet(object):
     """A set of CodeOfConducts"""
 
     implements(ISignedCodeOfConductSet)
+
+    # XXX cprov 20050301
+    # Might be replace for something similar to displayname
+    title = 'Signed Codes of Conduct Set Page'
 
     def __getitem__(self, id):
         """Get a Signed CoC Entry."""
@@ -186,21 +213,33 @@ class SignedCodeOfConductSet(object):
         """Iterate through the Signed CoC."""
         return iter(SignedCodeOfConduct.select())
 
-
     def verifyAndStore(self, person, signingkey, signedcode):
         """See ISignedCodeOfConductSet"""
         # XXX cprov 20050224
         # Are we missing the version field in SignedCoC table ?
         # how to figure out how CoC version is signed ?
+
+        # use a local method to perform the checks needed
+        if self.verifySignature(person, signingkey, signedcode):
+            return True
+
+        # XXX: cprov 20050227
+        # Since we aren't performing the correct checks, store it with
+        # active field FALSE, i.e, INACTIVE
+
+        # Store the signature 
         SignedCodeOfConduct(person=person, signingkey=signingkey,
                             signedcode=signedcode)
 
     def searchByDisplayname(self, displayname, searchfor=None):
         """See ISignedCodeOfConductSet"""
-        displayname = displayname.replace('%', '%%')
-
         clauseTables = ['Person',]
-        
+
+        # XXX: cprov 20050227
+        # FTI presents problems when query by incomplete names
+        # and I'm not sure if the best solution here is to use
+        # trivial ILIKE query. Oppinion required on Review.
+
         # use FTI
         query = ('SignedCodeOfConduct.person = Person.id AND '
                  'Person.fti @@ ftq(%s)'
@@ -212,4 +251,36 @@ class SignedCodeOfConductSet(object):
         elif searchfor == 'inactiveonly':
             query += ' AND SignedCodeOfConduct.active = false'
         
-        return SignedCodeOfConduct.select(query, clauseTables=clauseTables)
+        return SignedCodeOfConduct.select(query, clauseTables=clauseTables,
+                                          orderBy='SignedCodeOfConduct.active')
+
+    def searchByUser(self, user_id):
+        """See ISignedCodeOfConductSet"""        
+        return SignedCodeOfConduct.selectBy(personID=user_id)
+
+    def deactivateSignature(self, sign_id):
+        """See ISignedCodeOfConductSet"""
+        sign = SignedCodeOfConduct.get(sign_id)
+        sign.active = False
+        flushUpdates()
+        
+    def acknowledgeSignature(self, person, recipient):
+        """See ISignedCodeOfConductSet"""
+        active = True
+        SignedCodeOfConduct(person=person, recipient=recipient,
+                            active=active)
+
+    def verifySignature(self, person, signingkey, signedcode):
+        """See ISignedCodeOfConductSet"""
+
+        # XXX: cprov 20050227
+        # To be implemented:
+        # * Valid Person (probably always true via permission lp.AnyPerson),
+        # * Person has valid email address (send a email acknoledging),
+        # * Valid GPGKey (valid and active),
+        # * Person and GPGkey matches,
+        # * CoC is the current version available, or the previous
+        #   still-supported version in old.txt,
+        # * CoC was signed (correctly) by the GPGkey.
+        
+        return

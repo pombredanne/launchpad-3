@@ -26,12 +26,14 @@ from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
 from canonical.launchpad.interfaces import IObjectAuthorization
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.interfaces import ISourcePackageSet, IEmailAddressSet
+from canonical.launchpad.interfaces import ICodeOfConductConf
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.soyuz import DistributionRole
 from canonical.launchpad.database.soyuz import DistroReleaseRole
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.pofile import POTemplate
+from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.lp.dbschema import KarmaField
@@ -442,6 +444,12 @@ class Person(SQLBase):
     packages = property(_getSourcesByPerson)
 
 
+    def _isUbuntite(self):
+        putil = getUtility(IPersonSet)
+        return putil.isUbuntite(self.id)
+    ubuntite = property(_isUbuntite)
+    
+
 class PersonSet(object):
     """The set of persons."""
     implements(IPersonSet)
@@ -532,6 +540,41 @@ class PersonSet(object):
             clauseTables=('POTranslationSighting', 'POMsgSet',),
             distinct=True, orderBy='displayname')
 
+    def isUbuntite(self, user):
+        """See IPersonSet."""
+        # XXX: cprov 20050226
+        # Verify the the SignedCoC version too
+        # we can't do it before add the field version on
+        # SignedCoC table. Then simple compare the already
+        # checked field with what we grab from CoCConf utility.
+        # Simply add 'SignedCodeOfConduct.version = %s' % conf.current
+        # in query when the field was landed.
+        conf = getUtility(ICodeOfConductConf)
+
+        query = ('SignedCodeOfConduct.active = True AND '
+                 'SignedCodeOfConduct.person = %s' % user)
+                 
+        sign = SignedCodeOfConduct.select(query)
+
+        if sign.count():
+            return True
+        
+
+    def getUbuntites(self):
+        """See IPersonSet."""
+        
+        clauseTables = ['SignedCodeOfConduct',]
+
+        # XXX: cprov 20050226
+        # Verify the the SignedCoC version too
+        # we can't do it before add the field version on
+        # SignedCoC version.
+        query = ('Person.id = SignedCodeOfConduct.person AND '
+                 'SignedCodeOfConduct.active = True')
+
+        return Person.select(query, clauseTables=clauseTables,
+                             orderBy='displayname')
+    
 
 def createPerson(email, displayname=None, givenname=None, familyname=None,
                  password=None):

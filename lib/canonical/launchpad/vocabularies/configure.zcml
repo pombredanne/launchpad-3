@@ -115,6 +115,11 @@
         factory="canonical.launchpad.vocabularies.PackagingVocabulary"
         />
 
+    <vocabulary
+        name="ValidGPGKey"
+        factory="canonical.launchpad.vocabularies.ValidGPGKeyVocabulary"
+        />
+
     <!-- Define the widget used by Choice fields that use huge vocabularies -->
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"

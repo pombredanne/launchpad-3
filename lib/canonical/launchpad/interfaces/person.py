@@ -55,6 +55,7 @@ class IPerson(Interface):
                 "it is correct."))
 
     # Properties of the Person object.
+    ubuntite = Attribute("Ubuntite Flag")
     gpg = Attribute("GPG")
     irc = Attribute("IRC")    
     bugs = Attribute("Bug")
@@ -253,6 +254,11 @@ class IPersonSet(Interface):
         """Return the list of persons that have an active contribution for a
         concrete POFile."""
 
+    def isUbuntite(user):
+        """Return True if User has a valid Signed current version CoC."""
+
+    def getUbuntites():
+        """Return a set of person with valid Ubuntite flag."""
 
 class IEmailAddress(Interface):
     """The object that stores the IPerson's emails."""

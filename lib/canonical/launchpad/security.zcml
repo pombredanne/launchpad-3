@@ -88,4 +88,11 @@
       factory="canonical.launchpad.security.UseApiDoc"
       />
 
+  <adapter
+      provides="canonical.launchpad.interfaces.IAuthorization"
+      for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+      name="launchpad.Edit"
+      factory="canonical.launchpad.security.EditByOwner"
+      />
+
 </configure>

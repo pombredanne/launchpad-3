@@ -66,6 +66,10 @@ class BaseListView(object):
                                 orderBy='displayname')
         return self._getBatchNavigator(list(results))
 
+    def getUbuntitesList(self):
+        putil = getUtility(IPersonSet)
+        results = putil.getUbuntites()
+        return self._getBatchNavigator(list(results))
 
 class PeopleListView(BaseListView):
 
@@ -81,6 +85,13 @@ class TeamListView(BaseListView):
 
     def getList(self):
         return self.getTeamsList()
+
+class UbuntiteListView(BaseListView):
+
+    header = "Ubuntite List"
+
+    def getList(self):
+        return self.getUbuntitesList()
 
 
 class FOAFSearchView(object):

@@ -12,6 +12,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.distrorelease import DistroRelease
 from canonical.launchpad.database.person import Person
+from canonical.launchpad.database.person import GPGKey
 from canonical.launchpad.database.sourcepackage import SourcePackage, \
     SourcePackageRelease, SourcePackageName
 from canonical.launchpad.database.binarypackage import BinaryPackage, \
@@ -426,6 +427,35 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
 
         return []
 
+
+class ValidGPGKeyVocabulary(SQLObjectVocabularyBase):
+    implements(IHugeVocabulary)
+    
+    _table = GPGKey
+    _orderBy = 'keyid'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.id, obj.person.displayname + " " + obj.keyid)
+
+
+    def search(self, query):
+        """Return terms where query is a substring of the keyid"""
+        if query:
+            clauseTables = ['Person',]
+
+            query = quote(query.lower())
+
+            objs = self._table.select(("GPGKey.person = Person.id AND "
+                                       "Person.fti @@ ftq(%s)" % query),
+                                      orderBy=self._orderBy,
+                                      clauseTables=clauseTables)
+            
+            return [self._toTerm(obj) for obj in objs]
+
+        return []
+
+
 class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
 
@@ -445,3 +475,4 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
             return [self._toTerm(obj) for obj in objs]
 
         return []
+
