@@ -2,6 +2,8 @@
 
   <include file="zopeapp.zcml" />
 
+  <include package="canonical" />
+
   <include files="package-includes/*-meta.zcml" />
   <include files="package-includes/*-configure.zcml" />
 
