@@ -4,6 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">FOAF</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -14,24 +15,24 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Soyuz People Overview</h1>
+  <h1>People Overview</h1>
 
   <div class="documentDescription">	
   This Application should help the user to find more Information about
-  each developer in Soyuz, I mean, it should be the portal for each
+  each developer in Launchpad, I mean, it should be the portal for each
   personal user page .... 
   </div>
  
  <div>
     <form name="search" action="" method="GET">
     <fieldset>
-    	<legend><h3>Search Soyuz People</h3></legend>
+    	<legend><h3>Search For People</h3></legend>
 	<table>
 	<tr><td>
 	<div class="field">
 	    <label>Name</label>
 	    <div class="formHelp">
-	    Enter the person Name .
+	    Enter any part of the Person name.
             </div>
 	    <input type="text" name="name" 
 	           tal:attributes="value request/name|nothing"/>

@@ -4,6 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">FOAF: Create a New Team</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -47,7 +48,7 @@
       </div>
 
     <div tal:condition="view/permission">
-    <h1>New Team on Soyuz</h1>
+    <h1>Create a New Team</h1>
 
     <div class="documentDescription">	
     <p> Here you can create a new Team

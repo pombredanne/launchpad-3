@@ -18,6 +18,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import IPerson, IPersonSet, IEmailAddress
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.interfaces import ITeamParticipationSet
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.lp.dbschema import KarmaField
 from canonical.lp import dbschema
@@ -370,6 +371,20 @@ class Membership(SQLBase):
     
     statusname = property(_statusname)
 
+class TeamParticipationSet(object):
+    """ A Set for TeamParticipation objects. """
+
+    implements(ITeamParticipationSet)
+
+    def getSubTeams(self, teamID):
+        clauseTables = ('person',)
+        query = ("team = %d "
+                 "AND Person.id = TeamParticipation.person "
+                 "AND Person.teamowner IS NOT NULL" % teamID)
+
+        return TeamParticipation.select(query, clauseTables=clauseTables)
+
+
 class TeamParticipation(SQLBase):
     _table = 'TeamParticipation'
     _columns = [
@@ -379,21 +394,7 @@ class TeamParticipation(SQLBase):
                    notNull=True)
         ]
 
-    #
-    # TeamPaticipation Class Methods
-    #
 
-    def getSubTeams(klass, teamID):
-        clauseTables = ('person', 'person')
-        query = ("team = %d "
-                 "AND Person.id = TeamParticipation.person "
-                 "AND Person.teamowner IS NOT NULL" % teamID)
-
-        return klass.select(query,
-                            clauseTables=clauseTables)
-    getSubTeams = classmethod(getSubTeams)
-    
-        
 class Karma(SQLBase):
     _table = 'Karma'
 

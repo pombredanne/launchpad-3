@@ -68,3 +68,4 @@
   <include file="generalapp.zcml" />
 
 </configure>
+<!-- arch-tag: 49ae2d27-b8d1-40f1-a5f3-358c696b767f -->

@@ -18,7 +18,8 @@ from canonical.launchpad.database import Person, \
                                          DistributionRole, DistroReleaseRole
 
 from canonical.launchpad.interfaces import IPeopleApp, IPersonApp, \
-                                           ISourcePackageSet
+                                           ISourcePackageSet, \
+                                           ITeamParticipationSet
 
 
 #
@@ -89,8 +90,9 @@ class PersonApp(object):
         except IndexError:
             self.teams = None
 
+        teampart = getUtility(ITeamParticipationSet)
         try:
-            self.subteams = TeamParticipation.getSubTeams(self.id)
+            self.subteams = teampart.getSubTeams(self.id)
             
             if self.subteams.count() == 0:
                 self.subteams = None                
