@@ -1,4 +1,5 @@
-
+The bug index page includes an actions portlet, which provides various
+links to add things to the bug.
 
   >>> print http(r"""
   ... GET /malone/bugs/3 HTTP/1.1

@@ -1,4 +1,7 @@
-
+The bug index is the main page of a bug report. It contains all sorts
+of interesting things related to fixing a problem: the bug
+description, comments, external references, details of places in which
+this bug needs to be fixed, and so forth.
 
   >>> print http(r"""
   ... GET /malone/bugs/2 HTTP/1.1

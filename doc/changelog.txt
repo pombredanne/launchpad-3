@@ -2,6 +2,50 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-06 21:00:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1576
+
+    Summary:
+      add narrative to remaining unnarrated Malone page tests
+    Revision:
+      launchpad--devel--0--patch-1576
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-492
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-493
+       add narrative to remaining unnarrated Malone page tests
+    
+
+    removed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-report-createdby.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-report-createdby.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/malone/10-add-subscription.txt
+     lib/canonical/launchpad/pagetests/malone/15-bugtracker.txt
+     lib/canonical/launchpad/pagetests/malone/30-add-edit-package-infestation.txt
+     lib/canonical/launchpad/pagetests/malone/60-add-external-ref.txt
+     lib/canonical/launchpad/pagetests/malone/70-add-edit-watch.txt
+     lib/canonical/launchpad/pagetests/malone/80-add-comment.txt
+     lib/canonical/launchpad/pagetests/malone/90-bug-add.txt
+     lib/canonical/launchpad/pagetests/malone/91-bug-add-owner-auto-subscribed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-actions.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-activity.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-edit-commit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-edit-get.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-edit-package-bug-task-authenticated.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-malone-homepage.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-view-package-bug-task-anonymous.txt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-492
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-493
+
+
 2005-04-06 19:12:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1575
 
     Summary:

@@ -1,4 +1,9 @@
+Malone supports monitoring the status of a bug in an external bug
+tracker. To monitor the status of a bug in an external bug tracker,
+that bug tracker must be registered.
 
+You can find out which bug trackers are currently registered by
+visited the Known Bug Tracking Systems page.
 
   >>> print http(r"""
   ... GET /malone/bugtrackers HTTP/1.1
@@ -12,6 +17,8 @@
     <h1>Known Bug Tracking Systems</h1>
   ...
 
+As user Foo Bar, let's click on the Register Your Bug Tracker link to
+register a new bug tracker.
 
   >>> print http(r"""
   ... GET /malone/bugtrackers/+newbugtracker HTTP/1.1
@@ -28,6 +35,7 @@
                   <input type="text" name="name" size="15" value="" style="text-transform: lowercase" />
   ...
 
+Fill in all the necessary info about this bug tracker...
 
   >>> print http(r"""
   ... POST /malone/bugtrackers/+newbugtracker HTTP/1.1
@@ -44,6 +52,7 @@
   <BLANKLINE>
   ...
 
+And now, we can see that the new bug tracker is registered.
 
   >>> print http(r"""
   ... GET /malone/bugtrackers HTTP/1.1
@@ -57,6 +66,8 @@
   ...Test bug Tracker...
   ...
 
+Click on the bug tracker's row in the table listing to view the info
+page for that bug tracker.
 
   >>> print http(r"""
   ... GET /malone/bugtrackers/testbugtrck HTTP/1.1
@@ -71,6 +82,7 @@
       <h1>Test bug Tracker</h1>
   ...
 
+Any logged-in user can view the edit page of the bug tracker.
 
   >>> print http(r"""
   ... GET /malone/bugtrackers/testbugtrck/+edit HTTP/1.1
@@ -86,6 +98,7 @@
                          value="Test bug Tracker" />
   ...
 
+Modifications to the bug tracker can be made as any logged in user:
 
   >>> print http(r"""
   ... POST /malone/bugtrackers/testbugtrck/+edit HTTP/1.1

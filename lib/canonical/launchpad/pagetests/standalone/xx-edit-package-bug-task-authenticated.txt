@@ -1,4 +1,5 @@
-
+A source package bug task describes where in a given distro a bug
+needs to be fixed.
 
   >>> print http(r"""
   ... GET /malone/tasks/6/+edit HTTP/1.1
@@ -8,6 +9,8 @@
   ...
             <h3>Edit SourcePackage Bug Task</h3>
   ...
+
+Any authenticated user can edit a source package bug task.
 
   >>> print http(r"""
   ... POST /malone/tasks/6/+edit HTTP/1.1

@@ -1,4 +1,5 @@
-
+Access the edit page on a bug by tacking a +edit to the end of the
+bug's URL.
 
   >>> print http(r"""
   ... GET /malone/bugs/3/+edit HTTP/1.1

@@ -1,4 +1,5 @@
-
+Anonymous users can view bug tasks on public bugs. Even though the URL
+ends in +edit, this is in fact a read-only UI to anonymous users.
 
   >>> print http(r"""
   ... GET /malone/tasks/6/+edit HTTP/1.1
