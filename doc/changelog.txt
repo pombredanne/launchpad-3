@@ -2,6 +2,24 @@
 # arch-tag: automatic-ChangeLog--stuart.bishop@canonical.com/launchpad--devel--1
 #
 
+2004-12-23 12:17:45 GMT	Stuart Bishop <stuart.bishop@canonical.com>	patch-44
+
+    Summary:
+      Fix changelog id so it works
+    Revision:
+      launchpad--devel--1--patch-44
+
+
+    new files:
+     doc/changelog.txt
+
+    removed files:
+     doc/.arch-ids/changelog.txt.id doc/changelog.txt
+
+    modified files:
+     allowed-tags.txt
+
+
 2004-12-23 10:04:04 GMT	Stuart Bishop <stuart.bishop@canonical.com>	patch-43
 
     Summary:
