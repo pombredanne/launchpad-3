@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 14:53:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1185
+
+    Summary:
+      Removed IObjectAuthorization.
+    Revision:
+      launchpad--devel--0--patch-1185
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-01-12 13:28:20 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1184
 
     Summary:
