@@ -447,8 +447,9 @@ class DistroReleaseSourcesView(object):
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', self.BATCH_SIZE))
         batch_size = self.BATCH_SIZE
-        batch = Batch(
-            list = source_packages, start = start, size = batch_size)
+        batch = Batch(list = source_packages, start = start,
+                      size = batch_size)
+
         return BatchNavigator(batch = batch, request = self.request)
 
 class ReleaseEditView(object):

@@ -290,14 +290,15 @@ class SoyuzSourcePackage(SQLBase):
 
     _table = 'SourcePackage'
     _columns = [
-        ForeignKey(name='maintainer', foreignKey='SoyuzPerson', dbName='maintainer',
-                   notNull=True),
-        ForeignKey(name='sourcepackagename', foreignKey='SoyuzSourcePackageName',
+        ForeignKey(name='maintainer', foreignKey='SoyuzPerson',
+                   dbName='maintainer', notNull=True),
+        ForeignKey(name='sourcepackagename',
+                   foreignKey='SoyuzSourcePackageName',
                    dbName='sourcepackagename', notNull=True),
         StringCol('shortdesc', dbName='shortdesc', notNull=True),
         StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='manifest', foreignKey='Manifest', dbName='manifest', 
-                   default=None),
+        ForeignKey(name='manifest', foreignKey='Manifest',
+                   dbName='manifest', default=None),
         ForeignKey(name='distro', foreignKey='Distribution', dbName='distro'),
     ]
     releases = MultipleJoin('SoyuzSourcePackageRelease',

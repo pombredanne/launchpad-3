@@ -42,30 +42,36 @@ Find Source Package by Name:
     </tr>
 
     <tr tal:repeat="release python:list(bn.currentBatch())">      
+
       <tal:dummy tal:define="package release/sourcepackage">
       <td><a tal:content="string: ${package/name} : ${package/shortdesc}"
              tal:attributes="href package/name">PACKAGE</a>
       </td>
       </tal:dummy>
     </tr>    
-
     <tr>
-	  <table class="listing">
+    <td align="center">
+    <fieldset>
+    <div>
+    	  <table>
 	  <tr>
 	  <!-- <th condition="not: prev_url"><< prev</th> -->
-          <th><a tal:condition="prev_url" 
-	         tal:attributes="href prev_url"><< prev</a>
+          <th tal:condition="prev_url">
+	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
 	  </th>
           <th tal:repeat="page_link bn/batchPageURLs">
 	     <a tal:attributes="href python:page_link.values()[0]"
                 tal:content="python:page_link.keys()[0]"></a>
 	  </th>
-          <th><a tal:condition="next_url" 
-	         tal:attributes="href next_url">next >></a>
+          <th tal:condition="next_url" >
+	     <a tal:attributes="href next_url"><b>Next >></b></a>
           </th>
           <!-- <th condition="not: next_url">next >></th> -->
           </tr>
 	  </table>
+     </div>
+     </fieldset>
+    </td>
     </tr>
   </table>
   </tal:block>

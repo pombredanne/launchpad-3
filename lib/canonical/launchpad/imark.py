@@ -933,6 +933,8 @@ class IProduct(Interface):
         with status information about our ability to publish that \
         source in Arch.'))
 
+    packages = Attribute (_('Sourcepackages related to a Product'))
+
     bugs = Attribute(
         """A list of ProductBugAssignments for this Product.""")
 

@@ -330,6 +330,10 @@ class Product(SQLBase):
 
     sourcesources = MultipleJoin('SourceSource', joinColumn='product')
 
+    packages = RelatedJoin('Sourcepackage', joinColumn='product',
+                           otherColumn='sourcepackage',
+                           intermediateTable='Packaging')
+
     #def sourcesources(self):
     #   """iterate over this product's sourcesource entries"""
     #   for source in SourceSource.select("sourcesource.product=%s" % quote(self._product.id)):
