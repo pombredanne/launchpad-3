@@ -6,7 +6,8 @@
 <head>
     <title metal:fill-slot="title">
         <span
-        tal:replace="context/release/distribution/title">Distro</span> Release: <span tal:replace="context/release/title">Foo</span>
+            tal:replace="context/distribution/title">Distro</span> Release:
+        <span tal:replace="context/title">Foo</span>
     </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -19,29 +20,9 @@
 
 <metal:leftportlets fill-slot="portlets_one">
 
-<tal:block tal:define="distro context/release/distribution">
+<div tal:replace="structure view/detailsPortlet" />
 
- <div class="portlet">
-  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
-
-   <div class="portletBody">
-
-     <div class="portletContent even">
-
-     <ul>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
-     Home Page</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
-      Releases</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
-      Source Packages</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
-     Binary Packages</a></li>
-     </ul>
-
-     </div>
-   </div>  
- </div>
+<tal:block tal:define="distro context/distribution">
 
  <div class="portlet">
   <h4>Local Links</h4>
@@ -61,65 +42,81 @@
 
 
 <metal:rightportlets fill-slot="portlets_two">
-<div tal:replace="structure view/rolesPortlet" />
 </metal:rightportlets>
 
 
 
-<div metal:fill-slot="main" tal:define="distro context/release/distribution">
+<div metal:fill-slot="main" tal:define="distro context/distribution">
   <div id="content" class="documentEditable">
     <div class="documentContent" id="region-content"/>    
 
-    <h1><span tal:content="distro/title">
-            Foo</span> Release: <span tal:content="context/release/title">displayname</span></h1> 
-     <p />
-  
+    <h1><span tal:replace="distro/displayname">Distribution
+    displayname</span>:</h1>
+    <h2><span tal:replace="context/title">title</span></h2> 
+
+        <div class="documentDescription"
+             tal:content="context/shortdesc">
+             Release summary
+        </div>
+            
          <div>
-          <span tal:content="context/release/description">description</span>   
+          <span tal:content="context/description">description</span>   
          </div>
 
-         <ul>
-         <li>Owner: <a tal:attributes="href string:/foaf/people/${context/release/owner/name}"
-                       tal:content="context/release/owner/displayname">OWNER</a></li> 
-         <li>Status: <span tal:content="context/release/state">STATE</span></li>
-         <li>Date Released: <span tal:content="context/release/datereleased">DATERELEASED</span></li>
-         <li tal:condition="context/release/parentrelease">
-            Originating Release: <a tal:attributes="href string:/soyuz/distros/${context/release/parentrelease/distribution/name}/releases/${context/release/parentrelease/name}">
-           <span tal:content="context/release/parentrelease/title">
-           PARENTRELEASE</span></a></li>
-         </ul>
+      <tal:block tal:condition="context/architectures" tal:omit-tag>
+      <h2>Architectures</h2>
 
-      <h4 style="margin-bottom: 1em;">Packages</h4>
+      <p>A linux distribution will often support multiple architectures.
+      Each architecture is a specific combination of processor and computer
+      design. This release of
+      <span tal:replace="context/distribution/displayname" /> supports the
+      following architectures:</p>
 
-    <div tal:define="sourcecount context/release/sourcecount">
+      <ul tal:repeat="arch context/architectures">
+          <li><span tal:replace="arch/processorfamily/name" />:
+              <span tal:replace="arch/processorfamily/title" />
+             (<span tal:replace="arch/architecturetag" />) 
+          </li>
+      </ul>
+      </tal:block>
 
-      <div tal:condition="not: sourcecount">
-      No packages have been released for <span tal:content="context/release/title">displayname</span>.
+      <tal:block tal:condition="context/sourcecount" tal:omit-tag>
+      <h2>Packages</h2>
+
+      <p>This release of
+      <span tal:replace="context/distribution/displayname" /> contains
+      <span tal:replace="context/binarycount" /> software packages, 
+      across <span tal:replace="context/architecturecount" /> architectures
+      from a total of <span tal:replace="context/sourcecount" /> source
+      packages.</p>
+
+        <div tal:define="sourcecount context/sourcecount">
+
+          <div tal:condition="sourcecount" align="center">
+
+              <form name="search" method="POST" action="+search">
+               <div class="formControls">
+                <label>Search:</label>
+                <input title="Search for a package" size="30"
+                   type="text" name="name"/>
+                <input type="submit" value="Search"/>
+               </div>
+              </form>
+
+              <table>
+              <tr><td><a 
+                tal:attributes="href string:../../src/${context/name}?showall=1">
+                View All 
+                (<span tal:content="sourcecount"/> Packages)
+                </a></td>
+              </tr>
+              </table>
+
+          </div>
+
       </div>
+      </tal:block>
 
-      <div tal:condition="sourcecount" align="center">
-
-          <form name="search" method="POST" action="+search">
-           <div class="formControls">
-            <label>Package name:</label>
-            <input title="Enter the package name" size="50"
-               type="text" name="name"/>
-            <input type="submit" value="Search"/>
-           </div>
-          </form>
-
-          <table>
-          <tr><td><a 
-            tal:attributes="href string:../../src/${context/release/name}?showall=1">
-            View All 
-            (<span tal:content="sourcecount"/> Packages)
-            </a></td>
-          </tr>
-          </table>
-
-      </div>
-
-    </div>
   </div>
 
 </div>

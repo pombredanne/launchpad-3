@@ -42,7 +42,7 @@ class DistroArchRelease(SQLBase):
                                foreignKey='DistroRelease',
                                notNull=True)
     processorfamily = ForeignKey(dbName='processorfamily',
-                                 foreignKey='DistroArchRelease',
+                                 foreignKey='ProcessorFamily',
                                  notNull=True)
     architecturetag = StringCol(dbName='architecturetag',
                               notNull=True)

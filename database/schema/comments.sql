@@ -266,6 +266,11 @@ COMMENT ON COLUMN PersonLanguage.language IS 'This field is a reference to a Lan
 COMMENT ON VIEW VSourcePackageInDistro IS 'This view allows us to answer the question: what source packages have releases in a certain distribution. This is an interesting case of where a view can actually solve a problem that SQLObject can''t -- there is no way of doing this query (that I see at least) in regular sqlos because there is no DISTINCT and no way to filter things without iterating in
 Python (which generates N queries and we don''t want to go down that route).';
 COMMENT ON VIEW VSourcePackageReleasePublishing IS 'This view simplifies a lot of queries relating to publishing and is for use as a replacement for SourcePackageRelease (I actually intend to move it to a subclass of SourcePackageRelease, because using a View in place of a real table is bizarre).';
+COMMENT ON VIEW PublishedPackageView IS
+    'A very large view that brings together all the information about
+    packages that are currently being published within a distribution. This
+    view was designed for the page which shows packages published in the
+    distribution, but may be more widely used.';
 
 -- ProcessorFamily
 

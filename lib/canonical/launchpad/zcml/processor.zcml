@@ -7,12 +7,18 @@
 
   <content class="canonical.launchpad.database.Processor">
     <allow interface="canonical.launchpad.interfaces.IProcessor"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IProcessor"
+        />
   </content>
 
   <content class="canonical.launchpad.database.ProcessorFamily">
     <allow interface="canonical.launchpad.interfaces.IProcessorFamily"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IProcessorFamily"
+        />
   </content>
 
 </configure>

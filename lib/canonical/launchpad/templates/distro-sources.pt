@@ -8,7 +8,7 @@
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
     <style type="text/css" media="screen">@import url(soyuz.css);</style>
-    <title metal:fill-slot="title"><span tal:replace="context/distribution/title" />: Source
+    <title metal:fill-slot="title"><span tal:replace="context/title" />: Source
 Packages</title>
 </head>
 
@@ -16,52 +16,15 @@ Packages</title>
 
 <metal:leftportlets fill-slot="portlets_one">
 
-<tal:block tal:define="distro context/distribution">
-
- <div class="portlet">
-  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
-
-   <div class="portletBody">
-
-     <div class="portletContent even">
-
-     <ul>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
-     Home Page</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
-      Releases</a></li>
-     <li>Source Packages</li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
-     Binary Packages</a></li>
-     </ul>
-
-     </div>
-   </div>  
- </div>
-
- <div class="portlet" tal:condition="python: len(list(context))">
-  <h4>Local Links</h4>
-   <div class="portletBody">
-     <div class="portletContent even">
-     <ul>
-     <li tal:repeat="release context">
-         Release: <a tal:attributes="href string:/soyuz/distros/${distro/name}/releases/${release/name}" 
-            tal:content="release/title">RELEASE</a></li>
-     </ul>
-     </div>
-   </div>  
- </div>
-
-</tal:block>
-
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
 
-  <div id="content" class="documentEditable" tal:condition="python: len(list(context))">
+  <div id="content" class="documentEditable"
+       tal:condition="python: len(list(context))">
     <div class="documentContent" id="region-content">
 
-      <h1><span tal:content="context/distribution/title" /> Source Packages</h1>
+      <h1><span tal:replace="context/title" /> Source Packages</h1>
 
           <form name="search" method="post" action="">
            <div class="formControls">

@@ -19,25 +19,12 @@ from canonical.soyuz.generalapp import CurrentVersion, builddepsSet
 # Launchpad imports
 
 from canonical.launchpad.interfaces import IBuildSet, \
-                                           IDistroSourcesApp, \
                                            ISourcePackageSet, \
                                            IDistroReleaseSourcesApp, \
                                            IDistroReleaseSourceApp, \
                                            IDistroReleaseSourceReleaseApp
 
 
-# Source app component Section (src) 
-class DistroSourcesApp(object):
-    implements(IDistroSourcesApp)
-
-    def __init__(self, distribution):
-        self.distribution = distribution
-
-    def __getitem__(self, name):
-        return DistroReleaseSourcesApp(self.distribution.getRelease(name))
-
-    def __iter__(self):
-        return iter(self.distribution.releases)
 
 class DistroReleaseSourcesApp(object):
     """Container of SourcePackage objects.

@@ -18,27 +18,22 @@ from canonical.lp import dbschema
 from canonical.soyuz.generalapp import CurrentVersion, builddepsSet
 
 #Launchpad imports
-from canonical.launchpad.interfaces import IDistroBinariesApp, \
-                                           IBinaryPackageSet, \
+from canonical.launchpad.interfaces import IBinaryPackageSet, \
                                            IDistroReleaseBinaryReleaseBuildApp, \
                                            IDistroReleaseBinariesApp, \
                                            IDistroReleaseBinaryApp, \
-                                           IDistroReleaseBinaryReleaseApp
+                                           IDistroReleaseBinaryReleaseApp, \
+                                           IDistroPackageFinder
 
-#
-# 
-#
+class DistroPackageFinder(object):
 
-class DistroBinariesApp(object):
-    implements(IDistroBinariesApp)
-    def __init__(self, distribution):
+    implements(IDistroPackageFinder)
+
+    def __init__(self, distribution=None, processorfamily=None):
         self.distribution = distribution
-        
-    def __getitem__(self, name):
-        return DistroReleaseBinariesApp(self.distribution.getRelease(name))
-    
-    def __iter__(self):
-        return iter(self.distribution.releases)
+        # find the x86 processorfamily
+
+
 
 class DistroReleaseBinariesApp(object):
     """BinaryPackages from a Distro Release"""
@@ -47,8 +42,8 @@ class DistroReleaseBinariesApp(object):
     def __init__(self, release):
         self.release = release
         self.binariesutil = getUtility(IBinaryPackageSet)
-    def findPackagesByName(self, pattern):
 
+    def findPackagesByName(self, pattern):
         selection = Set(self.binariesutil.findByName(self.release.id,
                                                       pattern))
 
@@ -64,7 +59,6 @@ class DistroReleaseBinariesApp(object):
                 result.append(srcpkg)
         return result
                         
-        
     def __getitem__(self, name):
         try:
             bins = self.binariesutil.getByName(self.release.id, name)
@@ -109,7 +103,6 @@ class DistroReleaseBinaryApp(object):
         for release in binaryReleases:
             # Find distroarchs for that release
             archReleases = release.architecturesReleased(self.release)
-            
             current[release] = [a.architecturetag for a in archReleases]
         return current
 
@@ -203,16 +196,13 @@ class DistroReleaseBinaryReleaseBuildApp(object):
         return self._buildList(self.binarypackagerelease.conflicts)
     conflicts = property(conflicts)
 
-
     def replaces(self):
         return self._buildList(self.binarypackagerelease.replaces)
     replaces = property(replaces)
 
-
     def suggests(self):
         return self._buildList(self.binarypackagerelease.suggests)
     suggests = property(suggests)
-
 
     def provides(self):
         return self._buildList(self.binarypackagerelease.provides)

@@ -1,6 +1,9 @@
 
+from sets import Set
+
 # Zope imports
 from zope.interface import implements
+from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
@@ -12,12 +15,12 @@ from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp import dbschema
 
 # interfaces and database 
-from canonical.launchpad.interfaces import IDistroRelease
+from canonical.launchpad.interfaces import IDistroRelease, \
+        ISourcePackageSet, IBinaryPackageSet
 from canonical.launchpad.database import SourcePackageName, \
                                          BinaryPackageName,\
                                          SourcePackageInDistro
                
-
 
 class DistroRelease(SQLBase):
     """Distrorelease SQLObject"""
@@ -46,10 +49,10 @@ class DistroRelease(SQLBase):
         StringCol('lucilleconfig', dbName='lucilleconfig', notNull=False)
     ]
 
-    architectures = MultipleJoin( 'DistroArchRelease',
+    architectures = MultipleJoin('DistroArchRelease',
                                   joinColumn='distrorelease' )
     role_users = MultipleJoin('DistroReleaseRole', 
-                              joinColumn='distrorelease')
+                               joinColumn='distrorelease')
 
     def displayname(self):
         return self.name
@@ -93,17 +96,19 @@ class DistroRelease(SQLBase):
         clauseTables = ['BinaryPackageName', 'PackagePublishing',
             'BinaryPackage', 'DistroArchRelease']
         query = """
-               PackagePublishing.binarypackage = BinaryPackage.id AND
+               BinaryPackageName.id = BinaryPackage.binarypackagename AND
+               BinaryPackage.id = PackagePublishing.binarypackage AND
                PackagePublishing.distroarchrelease = DistroArchRelease.id AND
-               DistroArchRelease.distrorelease = %s AND
-               binarypackagename.id = binarypackage.binarypackagename
+               DistroArchRelease.distrorelease = %s
                """ % (self.id)
         resultset = BinaryPackageName.select(query, distinct=True,
             clauseTables=clauseTables)
         return resultset.count()
 
-                
     binarycount = property(binarycount)
+
+    def architecturecount(self):
+        return len(list(self.architectures))
 
     def bugCounter(self):
         counts = []
@@ -133,8 +138,6 @@ class DistroRelease(SQLBase):
 
     bugCounter = property(bugCounter)
 
-       
-
     def getBugSourcePackages(self):
         """Get SourcePackages in a DistroRelease with BugAssignement"""
 
@@ -149,5 +152,29 @@ class DistroRelease(SQLBase):
 
         return SourcePackageInDistro.select(query, clauseTables=clauseTables)
 
+    def findSourcesByName(self, pattern):
+        srcset = getUtility(ISourcePackageSet)
+        return srcset.findByNameInDistroRelease(self.id, pattern)
+
+    def getSourceByName(self, name):
+        srcset = getUtility(ISourcePackageSet)
+        return srcset.getByNameInDistroRelease(self.id, name)
+
+    def findBinariesByName(self, pattern):
+        binariesutil = getUtility(IBinaryPackageSet)
+        selection = Set(binariesutil.findByNameInDistroRelease(self.id, pattern))
+        # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
+        # XXX Daniel please can you go over this with SABDFL I don't
+        # understand the code here. 11/12/04
+        # expensive routine
+        # Dummy solution to avoid a binarypackage to be shown more
+        # then once
+        present = []
+        result = []
+        for srcpkg in selection:
+            if srcpkg.binarypackagename not in present:
+                present.append(srcpkg.binarypackagename)
+                result.append(srcpkg)
+        return result
 
 

@@ -1,5 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/browser">
-
-    <resource name="soyuz.png" file="images/soyuz.png" />
-
-</configure>

@@ -1,0 +1,38 @@
+<div class="portlet">
+
+    <h4>Release Details:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+            <b>Distribution:</b><br />
+            <a tal:attributes="href string:/soyuz/distros/${context/distribution/name}/">
+            <span tal:replace="context/distribution/displayname" /></a><br />
+
+            <b>Admin:</b><br />
+            <img src="/++resource++user.gif">
+            <a tal:attributes="href string:/foaf/people/${context/owner/name}"
+               tal:content="context/owner/displayname">owner name</a><br /> 
+
+            <b>Status:</b><br />
+            <span tal:replace="context/state">Status</span><br />
+
+            <b>Release Date:</b><br />
+            <span
+                tal:condition="context/datereleased"
+                tal:replace="context/datereleased/fmt:date">release date</span>
+            <span
+                tal:condition="not: context/datereleased">When it's
+                done.</span>
+            <br />
+
+            <span tal:condition="context/parentrelease" tal:omit-tag>
+                <b>Derives from:</b><br />
+                <a tal:attributes="href
+                string:/soyuz/distros/${context/parentrelease/distribution/name}/${context/parentrelease/name}">
+                <span tal:replace="context/parentrelease/displayname" /></a>
+            </span>
+           
+        </div>
+    </div>
+</div>

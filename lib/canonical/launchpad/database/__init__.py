@@ -30,6 +30,7 @@ from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *
 from canonical.launchpad.database.binarypackage import *
+from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *
 from canonical.launchpad.database.distrorelease import *
 from canonical.launchpad.database.person import *

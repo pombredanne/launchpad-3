@@ -39,10 +39,11 @@
             tal:attributes="onclick
                 string:window.location='distros/${distro/name}'">
             <td tal:content="distro/name">distro</td>
-            <td tal:content="distro/title">distribution title</td>
+            <td><a tal:attributes="href string:distros/${distro/name}"
+                   tal:content="distro/title">distribution title</a></td>
             <td tal:content="distro/domainname">http://www.domain.com/</td>
         </tr>
-    <ul>
+    </table>
 
    </div>
   </body>

@@ -52,7 +52,15 @@ class IBinaryPackageName(Interface):
     def nameSelector(sourcepackage=None, selected=None):
         """Return browser-ready HTML to select a Binary Package Name"""
 
+class IBinaryPackageNameSet(Interface):
 
+    def __getitem__():
+        """Return the packagename that matches the given name text"""
+
+    def query(name, distribution=None, distrorelease=None,
+              distroarchrelease=None, text=None):
+        """Return the binary package names for packages that match the given
+        criteria."""
 
 class IBinaryPackageBuild(Interface):
     """A binary package build, e.g apache-utils 2.0.48-4_i386"""
@@ -75,15 +83,14 @@ class IPackagePublishing(Interface):
 class IBinaryPackageSet(Interface):
     """A set of binary packages"""
 
-    def getByName(distroreleaseID, name):
+    def getByNameInDistroRelease(distroreleaseID, name):
         """Get an BinaryPackage in a DistroRelease by its name"""
 
-
-    def findByName(distroreleaseID, pattern):
-        """Returns a set o binarypackages that matchs pattern
+    def findByNameInDistroRelease(distroreleaseID, pattern):
+        """Returns a set of binarypackages that matchs pattern
         inside a distrorelease"""
 
-    def getBinaryPackages(distroreleaseID):
+    def getDistroReleasePackages(distroreleaseID):
         """Get a set of BinaryPackages in a distrorelease"""
     
     def getByNameVersion(distroreleaseID, name, version):
@@ -96,17 +103,6 @@ class IBinaryPackageSet(Interface):
 #
 # BinaryPackages related Applications Interface
 #
-
-class IDistroBinariesApp(Interface):
-    """A Binaries Source Tag """
-    distribution = Attribute("Distribution")
-
-    def __getitem__(name):
-        """retrieve binarypackges by distribution"""
-
-    def __iter__():
-        """retrieve an iterator"""
-
 class IDistroReleaseBinariesApp(Interface):
     """A Release Binary Tag """
     release = Attribute("Release")

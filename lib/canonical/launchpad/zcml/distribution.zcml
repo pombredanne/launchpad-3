@@ -9,11 +9,54 @@
     <content class="canonical.launchpad.database.Distribution">
         <allow interface="canonical.launchpad.interfaces.IDistribution"/>
         <require
-            permission="zope.Public"
+            permission="launchpad.AnyPerson"
             set_attributes="name title description domainname"
             />
-        <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IDistribution"
+        getter="traverse" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionView"
+        permission="zope.Public"
+        >
+
+        <browser:page
+            name="+index"
+            template="../templates/distro-index.pt"
+            lp:url="Soyuz/distros/$Distribution.name/" />
+        <!-- XXX sabdfl moved this here, need to reactivate search tools -->
+	    <browser:page
+            name="+sources"
+            template="../templates/distro-sources.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/+sources"
+	        />
+        <browser:page
+            name="+binaries"
+            template="../templates/binary-index.pt"
+            lp:url="Soyuz/distros/$Distribution.name/+binaries"
+            />
+
+
+
+    </browser:pages>
+
+    <browser:editform
+        for="canonical.launchpad.interfaces.IDistribution"
+        permission="launchpad.AnyPerson"
+        name="+edit"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        fields="displayname title summary description"
+        template="../templates/launchpad-editform.pt"
+        lp:url="Soyuz/distros/$Distribution.name/+edit"
+        />
 
     <!-- DistributionSet -->
     <content class="canonical.launchpad.database.DistributionSet">
@@ -48,26 +91,25 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IDistributionSet"
-        permission="launchpad.AnyPerson"
-	    class="canonical.launchpad.browser.DistributionSetAddView"
-	    template="../templates/distro-add.pt"
-        lp:url="Soyuz/distros/+add"
-	    name="+add"
+        permission="zope.Public"
+	    class="canonical.launchpad.browser.DistributionSetSearchView"
+	    template="../templates/distro-search.pt"
+        lp:url="Soyuz/distros/+search"
+	    name="+search"
         />
 
     <browser:addform
-        name="+new"
+        name="+add"
         for="canonical.launchpad.interfaces.IDistributionSet"
         schema="canonical.launchpad.interfaces.IDistribution"
-        label="Create a New Launchpad Distribution"
+        label="Create a New Distribution in Soyuz"
         fields="name displayname title summary description domainname owner"
         content_factory="canonical.launchpad.database.Distribution"
         class="canonical.launchpad.browser.DistributionSetAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="soyuz/distros/+new">
+        lp:url="soyuz/distros/+add">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
     </browser:addform>
-
 
 </configure>

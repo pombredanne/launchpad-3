@@ -31,6 +31,9 @@ class MaloneLayer(LaunchpadLayer):
 class BazaarLayer(LaunchpadLayer):
     """The `BazaarLayer` layer."""
 
+class SoyuzLayer(LaunchpadLayer):
+    """The `SoyuzLayer` layer."""
+
 class UbuntuLinuxLayer(IDefaultBrowserLayer):
     """The `UbuntuLinuxLayer` layer."""
 

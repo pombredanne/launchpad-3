@@ -151,6 +151,7 @@ class SourcePackageInDistro(SourcePackage):
 
     releases = MultipleJoin('SourcePackageRelease', joinColumn='sourcepackage')
 
+
 class SourcePackageSet(object):
     """A set for SourcePackage objects."""
 
@@ -191,7 +192,7 @@ class SourcePackageSet(object):
 
         return SourcePackageInDistro.select(query, orderBy='name')
 
-    def findByName(self, distroreleaseID, pattern):
+    def findByNameInDistroRelease(self, distroreleaseID, pattern):
         """Returns a set o sourcepackage that matchs pattern
         inside a distrorelease"""
 
@@ -201,7 +202,7 @@ class SourcePackageSet(object):
                  (distroreleaseID, pattern, pattern))
         return VSourcePackageReleasePublishing.select(query, orderBy='name')
 
-    def getByName(self, distroreleaseID, name):
+    def getByNameInDistroRelease(self, distroreleaseID, name):
         """Returns a SourcePackage by its name"""
 
         query = ('distrorelease = %d ' 

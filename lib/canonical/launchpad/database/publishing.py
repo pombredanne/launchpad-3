@@ -21,17 +21,14 @@ class PackagePublishing(SQLBase):
 
     implements(IPackagePublishing)
 
-    _columns = [
-        # XXX: Daniel Silverstone 2004-10-15: Need to fix up the CamelCaseNess
-        # of the table classes. They should be CamelCase not Initialcapital
-        ForeignKey(name='binarypackage', foreignKey='BinaryPackage', dbName='binarypackage'),
-        ForeignKey(name='distroarchrelease', foreignKey='DistroArchRelease', dbName='distroarchrelease'),
-        ForeignKey(name='component', foreignKey='Component', dbName='component'),
-        ForeignKey(name='section', foreignKey='Section', dbName='section'),
-        IntCol('priority'),
-        IntCol('status'),
-        DateTimeCol('scheduleddeletiondate', default=None)
-    ]
+    binarypackage = ForeignKey(foreignKey='BinaryPackage')
+    distroarchrelease = ForeignKey(foreignKey='DistroArchRelease')
+    component = ForeignKey(foreignKey='Component')
+    section = ForeignKey(foreignKey='Section')
+    priority = IntCol()
+    status = IntCol()
+    scheduleddeletiondate = DateTimeCol(default=None)
+
 
 class SourcePackagePublishing(SQLBase):
     """A source package release publishing record."""
@@ -97,32 +94,33 @@ class BinaryPackageFilePublishing(SQLBase):
     implements(IBinaryPackageFilePublishing)
 
     distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True)
+                          notNull=True, immutable=True)
 
     packagepublishing = ForeignKey(dbName='packagepublishing',
-                                   foreignKey='PackagePublishing')
+                                   foreignKey='PackagePublishing',
+                                   immutable=True)
 
     libraryfilealias = IntCol(dbName='libraryfilealias', unique=False,
-                              default=None, notNull=True)
+                              default=None, notNull=True, immutable=True)
     
     libraryfilealiasfilename = StringCol(dbName='libraryfilealiasfilename',
                                          unique=False, default=None,
-                                         notNull=True)
+                                         notNull=True, immutable=True)
 
     componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True)
+                              default=None, notNull=True, immutable=True)
 
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True)
+                                  default=None, notNull=True, immutable=True)
 
     distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True)
+                                  default=None, notNull=True, immutable=True)
 
     publishingstatus = IntCol(dbName='publishingstatus', unique=False,
-                              default=None, notNull=True)
+                              default=None, notNull=True, immutable=True)
 
     architecturetag = StringCol(dbName='architecturetag', unique=False,
-                                default=None, notNull=True)
+                                default=None, notNull=True, immutable=True)
 
 class SourcePackagePublishingView(SQLBase):
     """Source package information published and thus due for putting on disk"""
@@ -130,17 +128,17 @@ class SourcePackagePublishingView(SQLBase):
     implements(ISourcePackagePublishingView)
 
     distroreleasename = StringCol(dbName='distroreleasename', unique=False,
-                                  default=None, notNull=True)
+                                  default=None, notNull=True, immutable=True)
     sourcepackagename = StringCol(dbName='sourcepackagename', unique=False,
-                                  default=None, notNull=True)
+                                  default=None, notNull=True, immutable=True)
     componentname = StringCol(dbName='componentname', unique=False,
-                              default=None, notNull=True)
+                              default=None, notNull=True, immutable=True)
     sectionname = StringCol(dbName='sectionname', unique=False, default=None,
-                            notNull=True)
+                            notNull=True, immutable=True)
     distribution = IntCol(dbName='distribution', unique=False, default=None,
-                          notNull=True)
+                          notNull=True, immutable=True)
     publishingstatus = IntCol(dbName='publishingstatus', unique=False,
-                              default=None, notNull=True)
+                              default=None, notNull=True, immutable=True)
 
 
 

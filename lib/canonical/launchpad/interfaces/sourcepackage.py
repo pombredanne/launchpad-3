@@ -97,11 +97,11 @@ class ISourcePackageSet(Interface):
     def getSourcePackages(distroreleaseID):
         """Returns a set of SourcePackage in a DistroRelease"""
 
-    def findByName(distroreleaseID, pattern):
+    def findByNameInDistroRelease(distroreleaseID, pattern):
         """Returns a set o sourcepackage that matchs pattern
         inside a distrorelease"""
 
-    def getByName(distroreleaseID, name):
+    def getByNameInDistroRelease(distroreleaseID, name):
         """Returns a SourcePackage by its name"""
 
     # XXX: WTF is self doing here?
@@ -184,17 +184,6 @@ class ICurrentVersion(Interface):
 #
 # SourcePackage related Applications Interfaces
 #
-
-class IDistroSourcesApp(Interface):
-    """A Distribution Source Tag """
-    distribution = Attribute("Distribution")
-
-    def __getitem__(name):
-        """retrieve sourcepackges by release"""
-
-    def __iter__():
-        """retrieve an iterator"""
-     
 
 class IDistroReleaseSourcesApp(Interface):
     """A Release Sources Proxy """

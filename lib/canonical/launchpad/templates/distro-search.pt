@@ -18,8 +18,8 @@
     <h1>Soyuz Distribution Search</h1>
 
     <div class="documentDescription">
-    <p> Total of <span tal:content="context/entries">xx</span>
-    Distributions hosted by Soyuz
+        Total of <span tal:replace="context/count">xx</span>
+        Distributions in Soyuz
     </div>
 
     <form name="search" action="" method="POST">
@@ -66,7 +66,7 @@
 
     <div tal:condition="view/search_action">
     <h3>Results</h3>
-    <h4><span tal:content="view/entries"/> entries found</h4> 
+    <h4><span tal:content="view/count"/> entries found</h4> 
     <ul>
         <li tal:repeat="distro view/results"> 
 	<a tal:attributes="href distro/name" tal:content="distro/title"></a>

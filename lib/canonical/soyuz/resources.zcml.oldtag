@@ -1,6 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/browser">
-
-    <resource name="soyuz.png" file="images/soyuz.png" />
-
-</configure>
-<!-- arch-tag: 844b6d1e-43ec-46dd-baa0-e4b03661c6cf -->

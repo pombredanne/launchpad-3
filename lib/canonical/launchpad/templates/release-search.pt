@@ -5,7 +5,7 @@
 
 <head>
     <title metal:fill-slot="title">
-        <span tal:replace="context/release/displayname">Release</span>
+        <span tal:replace="context/displayname">Release</span>
         Packages
     </title>
   <!-- Plone style sheet -->
@@ -18,11 +18,11 @@
 <body>
 
 <div metal:fill-slot="main">
-<h1><span tal:content="context/release/displayname"/> Packages</h1>
+<h1><span tal:content="context/displayname"/> Packages</h1>
 
 
 <table>
-  <legend><h4><span tal:content="context/release/title"/>
+  <legend><h4><span tal:content="context/title"/>
   Packages</h4></legend>
   <tr><td>
   <fieldset>
@@ -46,15 +46,15 @@
 	<div>
 	 <table>
 	 <tr><th><a 
-	 tal:attributes="href string:../../src/${context/release/name}">
+	 tal:attributes="href string:../../src/${context/name}">
 	 View Source Packages List</a></th>
-	 <th>( <span tal:content="context/release/sourcecount"/> 
+	 <th>( <span tal:content="context/sourcecount"/> 
 	 Packages)</th>
 	 </tr><tr>
 	 <th><a
-	 tal:attributes="href string:../../bin/${context/release/name}">
+	 tal:attributes="href string:../../bin/${context/name}">
 	 View Binary Packages List</a></th>
-	 <th>( <span tal:content="context/release/binarycount"/> 
+	 <th>( <span tal:content="context/binarycount"/> 
 	 Packages)</th>
 	 </tr>
 	 </table>
@@ -73,7 +73,7 @@
 <h3>Source Packages</h3>
 <ul>
  <li tal:repeat="source view/sources">
-  <a tal:attributes="href string:../../src/${context/release/name}/${source/name}"
+  <a tal:attributes="href string:../../src/${context/name}/${source/name}"
      tal:content="source/name">SOURCE</a> : 
     <span tal:content="source/shortdesc"/>
   </li> 
@@ -87,7 +87,7 @@
 <h3>Binary Packages</h3>
 <ul>
   <li tal:repeat="binary view/binaries">
-    <a tal:attributes="href string:../../bin/${context/release/name}/${binary/name}" 
+    <a tal:attributes="href string:../../bin/${context/name}/${binary/name}" 
     tal:content="binary/name">BIN</a>  : 
     <span tal:content="binary/shortdesc"/>
   </li> 
@@ -98,8 +98,8 @@
 
 
 
-<h3><a tal:attributes="href string: ../${context/release/name}">Back
-to <span tal:content="context/release/title"/> 
+<h3><a tal:attributes="href string: ../${context/name}">Back
+to <span tal:content="context/title"/> 
 Page</a></h3>
 
 
