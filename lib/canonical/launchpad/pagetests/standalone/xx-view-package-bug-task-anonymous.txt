@@ -6,7 +6,7 @@
   HTTP/1.1 200 Ok
   ...
   <BLANKLINE>
-      <h3>Source Package Bug Assignment</h3>
+      <h3>Source Package Bug Task</h3>
   ...
   <BLANKLINE>
               <label>Source Package Name</label>

@@ -36,7 +36,7 @@ class ISourcePackage(Interface):
     manifest = Int(title=_("Manifest"), required=False)
     distro = Int(title=_("Distribution"), required=False)
     sourcepackagename = Int(title=_("Source package name"), required=True)
-    bugs = Attribute("bugs")
+    bugtasks = Attribute("bugtasks")
 
     product = Attribute("Product, or None")
     proposed = Attribute("A source package release with upload status of "
@@ -45,7 +45,7 @@ class ISourcePackage(Interface):
         """A bug counter widget for sourcepackage"""
 
     def getBugSourcePackages(distrorelease):
-        """Get SourcePackages in a DistroRelease with BugAssignement"""
+        """Get SourcePackages in a DistroRelease with BugTasks"""
 
     def lastversions(distrorelease):
         """
@@ -68,7 +68,7 @@ class ISourcePackageinDistro(Interface):
     manifest = Int(title=_("Manifest"), required=False)
     distro = Int(title=_("Distribution"), required=False)
     sourcepackagename = Int(title=_("SourcePackage Name"), required=True)
-    bugs = Attribute("bugs")
+    bugtasks = Attribute("bug tasks")
     product = Attribute("Product, or None")
     proposed = Attribute("A source package release with upload status of "
                          "PROPOSED, else None")
@@ -112,9 +112,9 @@ class ISourcePackageSet(Interface):
         """Iterate through SourcePackages."""
 
     def withBugs():
-        """Return a sequence of SourcePackage, that have bugs assigned to
-        them. In future, we might pass qualifiers to further limit the list
-        that is returned, such as a name filter, or a bug assignment status
+        """Return a sequence of SourcePackage, that have bugs assigned to them
+        (i.e. tasks.) In future, we might pass qualifiers to further limit the
+        list that is returned, such as a name filter, or a bug task status
         filter."""
 
     def getSourcePackages(distroreleaseID):

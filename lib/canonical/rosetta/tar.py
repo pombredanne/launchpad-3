@@ -64,16 +64,26 @@ def make_tarfile(files):
 
 def join_lines(*lines):
     r'''
+    Concatenate a list of strings, adding a newline at the end of each.
+
     >>> join_lines('foo', 'bar', 'baz')
     'foo\nbar\nbaz\n'
     '''
 
     return ''.join([ x + '\n' for x in lines ])
 
+def string_to_tarfile(s):
+    '''
+    Convert a binary string containing a tar file into a tar file object.
+    '''
+
+    return tarfile.open('', 'r', StringIO(s))
+
 def make_test_string_1():
     '''
-    A test tarball that looks something like a source tarball which has
-    exactly one non-empty directory called 'po'.
+    Generate a test tarball that looks something like a source tarball which
+    has exactly one directory called 'po' which is interesting (i.e. contains
+    some files which look like POT/PO files).
 
     >>> tf = string_to_tarfile(make_test_string_1())
 
@@ -93,7 +103,8 @@ def make_test_string_1():
                 'uberfrob.pot' : '# Yowza!',
                  },
             'blah' : {
-                'po' : { 'la' : 'la la' }
+                'po' : {
+                    'la' : 'la la' }
                 },
             'uberfrob.py' :
                 'import sys\n'
@@ -103,7 +114,8 @@ def make_test_string_1():
 
 def make_test_string_2():
     r'''
-    A test tarball string that has some interesting files in a common prefix.
+    Generate a test tarball string that has some interesting files in a common
+    prefix.
 
     >>> tf = string_to_tarfile(make_test_string_2())
 
@@ -136,9 +148,6 @@ def make_test_string_2():
             'es.po' : po,
             }
         })
-
-def string_to_tarfile(s):
-    return tarfile.open('', 'r', StringIO(s))
 
 def find_po_directories(tarfile):
     '''
@@ -174,6 +183,7 @@ def examine_tarfile(tf):
     ('uberfrob-0.1/po/uberfrob.pot',)
     >>> po
     ('uberfrob-0.1/po/cy.po', 'uberfrob-0.1/po/es.po')
+
     >>> pot, po = examine_tarfile(string_to_tarfile(make_test_string_2()))
     >>> pot
     ('test/test.pot',)

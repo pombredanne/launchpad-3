@@ -38,33 +38,34 @@ class IBugTaskSet(Interface):
     def __iter__():
         """Iterate through IBugTasks for a given bug."""
 
-class IBugsAssignedReport(Interface):
+class IBugTasksReport(Interface):
 
     user = Attribute(_("The user for whom this report will be generated"))
 
-    minseverity = Attribute(_("""The minimum severity of assignments to
-        display in this report."""))
+    minseverity = Attribute(_(
+        "The minimum severity of tasks to display in this report."))
 
-    minpriority = Attribute(_("""The minimum priority of bug fixing
-        assignments to display in this report."""))
+    minpriority = Attribute(_(
+        "The minimum priority of bug fixing tasks to display in this "
+        "report."))
 
-    showclosed = Attribute(_("""Whether or not to show closed bugs on this
-        report."""))
+    showclosed = Attribute(_(
+        "Whether or not to show closed bugs on this report."))
 
     def maintainedPackageBugs():
-        """Return an iterator over the assignments of bugs to distro
+        """Return an iterator over the tasks of bugs on distro
         packages the user maintains."""
 
     def maintainedProductBugs():
-        """Return an iterator over the assignments of bugs to upstream
+        """Return an iterator over the tasks of bugs on upstream
         products the user maintains."""
 
     def productAssigneeBugs():
-        """Return an iterator over the bugassignments to upstream products
+        """Return an iterator over the bugtasks on upstream products
         which are assigned directly to the user."""
 
     def packageAssigneeBugs():
-        """Return an iterator over the bugassignments to distro packages
+        """Return an iterator over the bug tasks on distro packages
         which are assigned directly to the user."""
 
     def assignedBugs():

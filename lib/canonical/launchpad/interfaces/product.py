@@ -83,8 +83,8 @@ class IProduct(IHasOwner):
 
     packages = Attribute (_('SourcePackages related to a Product'))
 
-    bugs = Attribute(
-        """A list of ProductBugAssignments for this Product.""")
+    bugtasks = Attribute(
+        """A list of BugTasks for this Product.""")
 
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))

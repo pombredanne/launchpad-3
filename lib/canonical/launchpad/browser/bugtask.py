@@ -15,7 +15,7 @@ from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
 from canonical.database.sqlbase import quote
 
 # Bug Reports
-class BugsAssignedReportView:
+class BugTasksReportView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -81,18 +81,18 @@ class BugsAssignedReportView:
     def allPeople(self):
         return Person.select('password IS NOT NULL')
 
-# XXX: 2004-11-13, Brad Bollenbach: Much of the code in BugAssignmentsView
+# XXX: 2004-11-13, Brad Bollenbach: Much of the code in BugTasksView
 # is a dirty hack in the abscense of a more clean way of handling generating
 # non-add, non-edit forms in Zope 3. I had a chat with SteveA on this subject
 # and it looks like a browser:form directive will be introduced early next week
 # in which case most of this hackishness can go away.
 # XXX: 2004-12-02, Stuart Bishop: I'm not sure what this class is doing in here
 # since it is actually a view on IBugSet.
-class BugAssignmentsView:
+class BugTasksView:
 
     DEFAULT_STATUS = (
-        int(dbschema.BugAssignmentStatus.NEW),
-        int(dbschema.BugAssignmentStatus.ACCEPTED))
+        int(dbschema.BugTaskStatus.NEW),
+        int(dbschema.BugTaskStatus.ACCEPTED))
 
     def __init__(self, context, request):
         self.context = context
@@ -101,7 +101,7 @@ class BugAssignmentsView:
         self.batchnav = BatchNavigator(self.batch, request)
 
     def search(self):
-        """Find the bug assignments the user wants to see."""
+        """Find the bug tasks the user wants to see."""
         ba_params = []
 
         param_searchtext = self.request.get('searchtext', None)
@@ -236,8 +236,8 @@ class BugAssignmentsView:
         return ValidPersonVocabulary(None)
 
     def statuses(self):
-        """Return the list of bug assignment statuses."""
-        return dbschema.BugAssignmentStatus.items
+        """Return the list of bug task statuses."""
+        return dbschema.BugTaskStatus.items
 
     def packagenames(self):
         """Return the list of source package names."""

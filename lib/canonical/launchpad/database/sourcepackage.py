@@ -48,7 +48,6 @@ class SourcePackage(SQLBase):
                                    dbName='sourcepackagename', notNull=True)
 
     releases = MultipleJoin('SourcePackageRelease', joinColumn='sourcepackage')
-    bugs = MultipleJoin('BugTask', joinColumn='sourcepackage')
 
     #
     # Properties
@@ -57,6 +56,14 @@ class SourcePackage(SQLBase):
         return self.sourcepackagename.name
 
     name = property(name)
+
+    def bugtasks(self):
+        querystr = ("BugTask.distribution = %i AND "
+                    "BugTask.sourcepackagename = %i")
+        querystr = querystr % (self.distro, self.sourcepackagename)
+        return BugTask.select(querystr)
+
+    bugtasks = property(bugtasks)
 
     def product(self):
         try:
@@ -74,8 +81,7 @@ class SourcePackage(SQLBase):
     # Methods
     #
     def bugsCounter(self):
-        # XXXkiko: move to bugassignment?
-        from canonical.launchpad.database.bug import BugTask
+        from canonical.launchpad.database.bugtask import BugTask
 
         ret = [len(self.bugs)]
 
@@ -86,8 +92,8 @@ class SourcePackage(SQLBase):
             dbschema.BugSeverity.NORMAL,
             dbschema.BugSeverity.MINOR,
             dbschema.BugSeverity.WISHLIST,
-            dbschema.BugAssignmentStatus.FIXED,
-            dbschema.BugAssignmentStatus.ACCEPTED,
+            dbschema.BugTaskStatus.FIXED,
+            dbschema.BugTaskStatus.ACCEPTED,
         ]
         for severity in severities:
             n = get(severity=int(severity), sourcepackagenameID=self.sourcepackagename.id).count()
@@ -178,8 +184,9 @@ class SourcePackageSet(object):
     def withBugs(self):
         pkgset = Set()
         results = self.table.select(
-            "SourcePackage.id = SourcePackageBugAssignment.sourcepackage",
-            clauseTables=['SourcePackage', 'SourcePackageBugAssignment'])
+            "SourcePackage.sourcepackagename = BugTask.sourcepackagename AND"
+            "SourcePackage.distro = BugTask.distribution",
+            clauseTables=['SourcePackage', 'BugTask'])
         for pkg in results:
             pkgset.add(pkg)
         return pkgset

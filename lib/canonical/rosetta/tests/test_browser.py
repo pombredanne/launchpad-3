@@ -772,10 +772,11 @@ def test_ProductView_newpotemplate():
     >>> request.method = 'POST'
     >>> pv = ProductView(context, request)
 
-    >>> pv.status_message
-
     >>> len(pv._templates)
     1
+    >>> 'distrorelease' in dir(pv._templates[0])
+    False
+
     >>> tearDown()
     '''
 
@@ -803,14 +804,13 @@ def test_ProductView_newpotemplate_hidden_fields():
     >>> request.method = 'POST'
     >>> pv = ProductView(context, request)
 
-    >>> pv.status_message
-
     >>> len(pv._templates)
     1
+    >>> 'distrorelease' in dir(pv._templates[0])
+    True
+
     >>> tearDown()
     '''
-
-
 
 def test_suite():
     return DocTestSuite()

@@ -3,7 +3,7 @@ launchpad application."""
 
 from canonical.launchpad.database import Person
 from canonical.launchpad.mailnotification import get_changes
-from canonical.lp.dbschema import KarmaField, BugAssignmentStatus
+from canonical.lp.dbschema import KarmaField, BugTaskStatus
 
 
 def bug_added(bug, event):
@@ -16,7 +16,7 @@ def bug_comment_added(bugmessage, event):
     bugmessage.message.owner.assignKarma(KarmaField.BUG_COMMENT)
 
 
-def bug_assignment_modified(assignment, event):
+def bug_task_modified(task, event):
     person = Person.get(event.principal.id)
     # XXX: Should we give Karma points to users who change priority
     # and severity too?
@@ -26,7 +26,7 @@ def bug_assignment_modified(assignment, event):
 
     for field in changes:
         if field == "bugstatus":
-            if changes[field]["new"] == BugAssignmentStatus.FIXED:
+            if changes[field]["new"] == BugTaskStatus.FIXED:
                 # Can we assume that this is the user that really fixed
                 # the bug and give Karma points to him?
                 person.assignKarma(KarmaField.BUG_FIX)

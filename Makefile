@@ -18,7 +18,7 @@ check:
 	$(MAKE) -C sourcecode build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	${PYTHON} ./test_on_merge.py canonical
+	${PYTHON} -t ./test_on_merge.py canonical
 
 pagetests:
 	$(MAKE) -C sourcecode build
@@ -27,7 +27,7 @@ pagetests:
 
 XXXcheck: build
 	$(MAKE) -C sourcecode check
-	PYTHONPATH=$(HERE)/lib ${PYTHON} ./test.py
+	PYTHONPATH=$(HERE)/lib ${PYTHON} -t ./test.py
 
 debugging-on:
 	ln -s ../lib/canonical/canonical.apidoc-configure.zcml ./package-includes/+canonical.apidoc-configure.zcml
@@ -86,7 +86,7 @@ ftest_inplace: inplace
 #ftest: ftest_inplace
 
 run: inplace
-	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) \
+	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) -t \
             $(STARTSCRIPT) -C $(CONFFILE)
 
 debug: principals.zcml

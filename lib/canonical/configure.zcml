@@ -89,6 +89,15 @@
         layer="canonical.launchpad.layers.DebugLayer"
         />
 
+    <!-- This lets us see the real root index even from the debug layer. -->
+    <browser:page
+        for="canonical.publication.RootObject"
+        name="real-index.html"
+        template="launchpad/templates/root-index.pt"
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.DebugLayer"
+        />
+
     <!-- And we want the changelog available on the debug view too, so people
     can see when their patches make it to the dogfood server. -->
 

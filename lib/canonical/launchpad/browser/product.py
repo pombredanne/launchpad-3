@@ -140,14 +140,14 @@ class ProductView:
         # now redirect to view the page
         self.request.response.redirect('+series/'+series.name)
 
-    def latestBugs(self, quantity=5):
+    def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this product."""
-        buglist = self.context.bugs
+        tasklist = self.context.bugtasks
         # Sort the bugs by datecreated and return the last <quantity> bugs.
-        bugsdated = [(bugass.datecreated, bugass) for bugass in buglist]
+        bugsdated = [(task.datecreated, task) for task in tasklist]
         bugsdated.sort()
-        last_few_bugs = bugsdated[-quantity:]
-        return [bugass for sortkey, bugass in last_few_bugs]
+        last_few_tasks = bugsdated[-quantity:]
+        return [task for sortkey, task in last_few_tasks]
 
 # XXX cprov 20050107
 # This class needs revision for:
@@ -156,17 +156,17 @@ class ProductView:
 #  * use Authorization component
 class ProductBugsView:
     DEFAULT_STATUS = (
-        int(dbschema.BugAssignmentStatus.NEW),
-        int(dbschema.BugAssignmentStatus.ACCEPTED))
+        int(dbschema.BugTaskStatus.NEW),
+        int(dbschema.BugTaskStatus.ACCEPTED))
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.batch = Batch(
-            self.bugassignment_search(), int(request.get('batch_start', 0)))
+            self.bugtask_search(), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
 
-    def bugassignment_search(self):
+    def bugtask_search(self):
         ba_params = []
 
         param_searchtext = self.request.get('searchtext')
@@ -264,7 +264,7 @@ class ProductBugsView:
 
         return BugTask.select(*ba_params)
 
-    def assignment_columns(self):
+    def task_columns(self):
         return [
             "id", "title", "milestone", "status", "submittedby", "assignedto"]
 
@@ -303,8 +303,8 @@ class ProductBugsView:
         return MilestoneVocabulary(context)
 
     def statuses(self):
-        """Return the list of bug assignment statuses."""
-        return dbschema.BugAssignmentStatus.items
+        """Return the list of bug task statuses."""
+        return dbschema.BugTaskStatus.items
 
 
 class ProductFileBugView(AddView):

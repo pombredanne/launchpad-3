@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Welcome to DOAP!</h1>
+    <h1>Welcome to Launchpad's DOAP Registry!</h1>
 
     <p>This is the Description of a Project web service, where we catalogue
     all the open source projects registered in The Launchpad. You can read

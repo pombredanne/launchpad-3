@@ -116,21 +116,19 @@ class DistroRelease(SQLBase):
         clauseTables = ("VSourcePackageInDistro",
                         "SourcePackage")
         severities = [
-            dbschema.BugAssignmentStatus.NEW,
-            dbschema.BugAssignmentStatus.ACCEPTED,
-            dbschema.BugAssignmentStatus.FIXED,
-            dbschema.BugAssignmentStatus.REJECTED
+            dbschema.BugTaskStatus.NEW,
+            dbschema.BugTaskStatus.ACCEPTED,
+            dbschema.BugTaskStatus.FIXED,
+            dbschema.BugTaskStatus.REJECTED
         ]
         
-        _query = ("sourcepackagebugassignment.sourcepackage = sourcepackage.id AND "
-                 "sourcepackage.sourcepackagename = vsourcepackageindistro.sourcepackagename AND "
-                 "vsourcepackageindistro.distrorelease = %i AND "
-                 "sourcepackagebugassignment.bugstatus = %i"
+        _query = ("bugtask.distrorelease = %i AND "
+                  "bugtask.bugstatus = %i"
                  )
 
         for severity in severities:
             query = _query %(self.id, int(severity))
-            count = SourcePackageBugAssignment.select(query, clauseTables=clauseTables).count()
+            count = BugTask.select(query, clauseTables=clauseTables).count()
             counts.append(count)
 
         counts.insert(0, sum(counts))
@@ -139,7 +137,7 @@ class DistroRelease(SQLBase):
     bugCounter = property(bugCounter)
 
     def getBugSourcePackages(self):
-        """Get SourcePackages in a DistroRelease with BugAssignement"""
+        """Get SourcePackages in a DistroRelease with BugTask"""
 
         clauseTables=["BugTask",]
         query = ("VSourcePackageInDistro.distrorelease = %i AND "
@@ -147,8 +145,8 @@ class DistroRelease(SQLBase):
                  "VSourcePackageInDistro.name = BugTask.sourcepackagename AND "
                  "(BugTask.status != %i OR BugTask.status != %i)"
                  %(self.id,
-                   int(dbschema.BugAssignmentStatus.FIXED),
-                   int(dbschema.BugAssignmentStatus.REJECTED)))
+                   int(dbschema.BugTaskStatus.FIXED),
+                   int(dbschema.BugTaskStatus.REJECTED)))
 
         return SourcePackageInDistro.select(query,
                                             clauseTables=clauseTables,

@@ -6,8 +6,10 @@ Based on debzilla/bugzilla.py by Matt Zimmerman
 """
 
 from canonical.launchpad.database import *
+from canonical.foaf.nickname import generate_nick
 from canonical.database.sqlbase import quote
 from canonical.lp.encoding import guess as ensure_unicode
+from canonical.lp.dbschema import EmailAddressStatus
 from sets import Set
 
 
@@ -17,11 +19,24 @@ class Launchpad:
         # get the debbugs remote bug tracker id
         self.debtrackerid = list(BugTracker.select("name='debbugs'"))[0].id
 
-    def create_sourcepackagename(self, name):
-        return SourcePackageName(name=name)
+    def ensure_person(self, displayname, email):
+        person = PersonSet().getByEmail(email)
+        if not person:
+            person = PersonSet().createPerson(displayname=displayname,
+                                              email=email)
+        return person
 
-    def create_binarypackagename(self, name):
-        return BinaryPackageName(name=name)
+    def ensure_sourcepackagename(self, name):
+        try:
+            return SourcePackageName.selectBy(name=name)[0]
+        except IndexError:
+            return SourcePackageName(name=name)
+
+    def ensure_binarypackagename(self, name):
+        try:
+            return BinaryPackageName.selectBy(name=name)[0]
+        except IndexError:
+            return BinaryPackageName(name=name)
 
     def get_distribution_by_name(self, name):
         return Distribution.selectBy(name=name)[0]
@@ -37,35 +52,41 @@ class Launchpad:
                    bugtracker = %d
                    """ % (quote(str(debian_bug.id)),
                           self.debtrackerid)
-        try: return BugWatch.select(query)[0]
-        except: return None
+        try:
+            return BugWatch.select(query)[0]
+        except IndexError:
+            return None
 
     def add_debbug_watch(self, malone_bug, debian_bug, owner):
         newwatch = BugWatch(bug=malone_bug.id,
                             remotebug=str(debian_bug.id),
                             owner=owner,
-                            bugtracker=debtrackerid
+                            bugtracker=self.debtrackerid
                             )
 
     def get_bugtracker_by_baseurl(self, baseurl):
         query = "baseurl = %s" % quote(baseurl)
-        try: return BugTracker.select(query)[0]
-        except: return None
+        try:
+            return BugTracker.select(query)[0]
+        except IndexError:
+            return None
 
     def get_msg_by_msgid(self, msgid):
         query = "rfc822msgid = %s" % quote(msgid)
-        try: return Message.select(query)[0]
-        except: return None
+        try:
+            return Message.select(query)[0]
+        except IndexError:
+            return None
 
-    def get_malonebug_for_debbug(self, debian_bug):
+    def get_malonebug_for_debbug_id(self, debian_bug_id):
         """Return a malone bugfor a debian bug number,
         based on the bug watches."""
         try:
             return BugWatch.select("""
                bugtracker = %d AND
                remotebug = %s
-               """ % (self.debtrackerid, quote(str(debian_bug.id)))).bug
-        except:
+               """ % (self.debtrackerid, quote(str(debian_bug_id))))[0].bug
+        except IndexError:
             return None
  
     def link_bug_and_message(self, bug, msg):
@@ -81,12 +102,20 @@ class Launchpad:
                 return bugtask
         return None
 
-    def add_bug_task(self, bug, distro, srcpackagename, binarypkgname, status, owner):
+    def add_bug_task(self, bug, distro, srcpackagename,
+                     binarypkgname, status, owner, datecreated):
+        sourcepackagename = srcpackagename.id
+        if binarypkgname:
+            binarypackagename = binarypkgname.id
+        else:
+            binarypackagename = None
         newbugtask = BugTask(bug=bug.id,
-                             sourcepackagename=srcpackagename.id,
-                             binarypackagename=binarypkgname.id,
+                             distribution=distro.id,
+                             sourcepackagename=sourcepackagename,
+                             binarypackagename=binarypackagename,
                              status=status,
-                             owner=owner)
+                             owner=owner.id,
+                             datecreated=datecreated)
 
     def bug_message_ids(self, bug):
         """Return a list of message IDs found embedded in comments for
@@ -113,28 +142,38 @@ class Launchpad:
                    SourcePackage.sourcepackagename = SourcePackageName.id AND
                    SourcePackageName.name = %s
                    """ % ( quote(distroname), quote(srcpkgname) )
-        try: return SourcePackage.select(query, clauseTables=clauseTables)[0]
-        except: return None
+        try:
+            return SourcePackage.select(query, clauseTables=clauseTables)[0]
+        except IndexError:
+            return None
 
     def get_sourcepackagename(self, srcpkgname):
         query = "name = %s" % quote(srcpkgname)
-        try: return SourcePackageName.select(query)[0]
-        except: return None
+        try:
+            return SourcePackageName.select(query)[0]
+        except IndexError:
+            return None
 
     def get_binarypackagename(self, srcpkgname):
         query = "name = %s" % quote(srcpkgname)
-        try: return BinaryPackageName.select(query)[0]
-        except: return None
+        try:
+            return BinaryPackageName.select(query)[0]
+        except IndexError:
+            return None
 
     def get_distro_by_name(self, distroname):
         query = "name = %s" % quote(distroname)
-        try: return Distribution.select(query)[0]
-        except: return None
+        try:
+            return Distribution.select(query)[0]
+        except IndexError:
+            return None
 
     def get_message_by_id(self, message_id):
         query = "rfc822msgid = %s" % quote(message_id)
-        try: return Message.select(query)[0]
-        except: return None
+        try:
+            return Message.select(query)[0]
+        except IndexError:
+            return None
 
     def add_message(self, message, owner, datecreated):
         msgid = message['message-id']
@@ -142,10 +181,10 @@ class Launchpad:
             return None
         title=message.get('subject', None)
         if not title:
-            print '\t\tERROR getting message title for %s ' % msgid
-            title = 'debbugs message'
-        title = ensure_string_format(title)
-        contents = ensure_string_format(message.as_string())
+            print '\tERROR getting message title for %s ' % msgid
+            title = 'message without subject'
+        title = ensure_unicode(title)
+        contents = ensure_unicode(message.as_string())
         newmsg = Message(title=title,
                          contents=contents,
                          rfc822msgid=msgid,

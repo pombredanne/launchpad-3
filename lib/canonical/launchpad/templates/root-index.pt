@@ -3,7 +3,8 @@
       i18n:domain="launchpad">
 
 <head>
-    <title>Rosetta</title>
+
+    <title>The Launchpad!</title>
     <style type="text/css" media="screen">
     @import url(/++resource++plone.css);
     @import url(/++resource++launchpad.css);
@@ -26,23 +27,42 @@
 
 <body>
 
-    <h1>Welcome to Launchpad!</h1>
+    <h1>Welcome to The Launchpad!</h1>
+
+    <p>The Launchpad is a collection of services for projects in the open
+    source universe. Here you can register your project, and collaborate
+    with your community on translations, bug squashing and the code you
+    write.</p>
 
     <h2><a title="Rosetta" href="rosetta">Rosetta</a></h2>
 
-    <p>
-    Rosetta is a web-based translation tool.
-</p>
+    <p>Rosetta is a <b>web-based translation portal</b>. If your application
+    uses the open source standard <i>gettext</i> system for software
+    internationalisation, then you can easily have users contribute
+    translations for your software through Rosetta. You simply upload the
+    existing translations, point your community at Rosetta and then download
+    their translations before you make your release.
+    <a title="Rosetta" href="rosetta">Translate now!</a></p>
 
     <h2><a title="Malone" href="malone">Malone</a></h2>
 
-    <p>Malone is a web-based bug tracking tool.</p>
+    <p>Malone is a <b>web-based global bug tracking</b> tool. It is designed
+    to track bugs across the whole open source process: it understands that
+    the same code is re-used upstream and in different distributions, and
+    allows us to have a single bug number for any bug, and track where it
+    has been fixed and where it is still a problem.
+    <a title="Malone" href="malone">Track bugs now!</a></p>
 
-    <h2><a title="Projects" href="doap">Projects</a></h2>
+    <h2><a title="DOAP Registry" href="doap">DOAP Registry</a></h2>
 
-    <p>
-    Manage projects in Launchpad.
-    </p>
+    <p>A key part of the Launchpad is its <b>registry of open source and
+    related projects</b>. This registry, inspired by the DOAP framework,
+    allows us to keep track of all the open source software which uses the
+    Launchpad for translations, bug management and distributed code
+    management. You can register individual open source applications, or
+    whole projects, and track the relationships between them.
+    <a title="DOAP Registry" href="doap">Find or register apps
+    now!</a></p>
 
 </body>
 </html>

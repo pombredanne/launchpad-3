@@ -61,15 +61,13 @@ class Distribution(SQLBase):
         clauseTables = ("VSourcePackageInDistro",
                         "SourcePackage")
         severities = [
-            dbschema.BugAssignmentStatus.NEW,
-            dbschema.BugAssignmentStatus.ACCEPTED,
-            dbschema.BugAssignmentStatus.REJECTED,
-            dbschema.BugAssignmentStatus.FIXED]
+            dbschema.BugTaskStatus.NEW,
+            dbschema.BugTaskStatus.ACCEPTED,
+            dbschema.BugTaskStatus.REJECTED,
+            dbschema.BugTaskStatus.FIXED]
 
-        query = ("sourcepackagebugassignment.sourcepackage = sourcepackage.id AND "
-                 "sourcepackage.sourcepackagename = vsourcepackageindistro.sourcepackagename AND "
-                 "vsourcepackageindistro.distro = %s AND "
-                 "sourcepackagebugassignment.bugstatus = %i")
+        query = ("bugtask.distribution = %s AND "
+                 "bugtask.bugstatus = %i")
 
         for severity in severities:
             query = query %(quote(self.id), severity)

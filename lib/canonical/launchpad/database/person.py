@@ -9,23 +9,22 @@ from zope.interface import implements
 from zope.interface import directlyProvides, directlyProvidedBy
 from zope.component import ComponentLookupError, getUtility
 
-
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
 from sqlobject.sqlbuilder import AND
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import UTC_NOW
 
 # canonical imports
 from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
-from canonical.launchpad.interfaces import IMembership
-from canonical.launchpad.interfaces import IEmailAddress
+from canonical.launchpad.interfaces import IMembership, ITeamParticipation
+from canonical.launchpad.interfaces import ITeamParticipationSet
+from canonical.launchpad.interfaces import IEmailAddress, IWikiName
 from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
-from canonical.launchpad.interfaces import ISSHKey, IGPGKey
+from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
 from canonical.launchpad.interfaces import IObjectAuthorization
 from canonical.launchpad.interfaces import IPasswordEncryptor
-from canonical.launchpad.interfaces import ITeamParticipationSet
 from canonical.launchpad.interfaces import ISourcePackageSet
 from canonical.launchpad.interfaces import ICalendarOwner
 
@@ -331,6 +330,8 @@ class Person(SQLBase):
     activities = property(_activities)
 
     def _wiki(self):
+        # XXX: salgado, 2005-01-14: This method will probably be replaced
+        # by a MultipleJoin since we have a good UI to add multiple Wikis. 
         wiki = WikiName.selectBy(personID=self.id)
         count = wiki.count()
         if count:
@@ -339,6 +340,9 @@ class Person(SQLBase):
     wiki = property(_wiki)
 
     def _jabber(self):
+        # XXX: salgado, 2005-01-14: This method will probably be replaced
+        # by a MultipleJoin since we have a good UI to add multiple
+        # JabberIDs. 
         jabber = JabberID.selectBy(personID=self.id)
         if jabber.count() == 0:
             return None
@@ -346,6 +350,9 @@ class Person(SQLBase):
     jabber = property(_jabber)
 
     def _archuser(self):
+        # XXX: salgado, 2005-01-14: This method will probably be replaced
+        # by a MultipleJoin since we have a good UI to add multiple
+        # ArchUserIDs. 
         archuser = ArchUserID.selectBy(personID=self.id)
         if archuser.count() == 0:
             return None
@@ -353,6 +360,9 @@ class Person(SQLBase):
     archuser = property(_archuser)
 
     def _irc(self):
+        # XXX: salgado, 2005-01-14: This method will probably be replaced
+        # by a MultipleJoin since we have a good UI to add multiple
+        # IrcIDs. 
         irc = IrcID.selectBy(personID=self.id)
         if irc.count() == 0:
             return None
@@ -360,6 +370,9 @@ class Person(SQLBase):
     irc = property(_irc)
 
     def _gpg(self):
+        # XXX: salgado, 2005-01-14: This method will probably be replaced
+        # by a MultipleJoin since we have a good UI to add multiple
+        # GPGKeys. 
         gpg = GPGKey.selectBy(personID=self.id)
         if gpg.count() == 0:
             return None
@@ -411,7 +424,8 @@ class PersonSet(object):
 
     def getByEmail(self, email, default=None):
         """See IPersonSet."""
-        results = EmailAddress.selectBy(email=email)
+        results = EmailAddress.select("""lower(email) = %s
+                        """ % quote(email.lower()))
         resultscount = results.count()
         if resultscount == 0:
             return default
@@ -425,7 +439,6 @@ class PersonSet(object):
     def getContributorsForPOFile(self, pofile):
         """See IPersonSet."""
         return Person.select('''
-            POTranslationSighting.active = True AND
             POTranslationSighting.person = Person.id AND
             POTranslationSighting.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = %d''' % pofile.id,
@@ -435,9 +448,14 @@ class PersonSet(object):
     # XXX: Carlos Perello Marin 20/12/2004 We need this method from
     # pofile.py, I think we should remove the function and use it as this
     # method always.
-    def createPerson(self, displayname, givenname, familyname, password, email):
+    def createPerson(self, displayname, givenname=None,
+                           familyname=None, password=None, email=None):
         """Creates a new person"""
-        return createPerson(displayname, givenname, familyname, password, email)
+        return createPerson(displayname=displayname,
+                            givenname=givenname,
+                            familyname=familyname,
+                            password=password,
+                            email=email)
 
 
 def registeredName(name):
@@ -451,6 +469,9 @@ def createPerson(displayname=None, givenname=None, familyname=None,
                  password=None, email=None):
     """Creates a new person"""
 
+    if email:
+        email = email.lower()
+
     nick = nickname.generate_nick(email, registeredName)
     now = datetime.utcnow()
 
@@ -460,10 +481,11 @@ def createPerson(displayname=None, givenname=None, familyname=None,
     
     if password:
         # password = getUtility(IPasswordEncryptor).encrypt(password)
-        # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility from
-        # initZopeless scripts and Rosetta's import_daemon.py calls indirectly to
-        # this function :-(
-        from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+        # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility
+        # from initZopeless scripts and Rosetta's import_daemon.py
+        # calls indirectly to this function :-(
+        from canonical.launchpad.webapp.authentication \
+            import SSHADigestEncryptor
         password = SSHADigestEncryptor().encrypt(password)
  
     person = Person(displayname=displayname,
@@ -478,7 +500,7 @@ def createPerson(displayname=None, givenname=None, familyname=None,
 
     if email:
         EmailAddress(person=person.id,
-                     email=email,
+                     email=email.lower(),
                      status=int(EmailAddressStatus.NEW))
 
     return person
@@ -486,6 +508,9 @@ def createPerson(displayname=None, givenname=None, familyname=None,
 def createTeam(displayname, teamowner, teamdescription, email=None):
     """Creates a new team"""
 
+    # XXX: salgado, 2005-01-17: I don't think we should require an email
+    # address for the creation of a team, and in this case, we need to
+    # generate the team name without using the email address.
     nick = nickname.generate_nick(email, registeredName)
     now = datetime.utcnow()
 
@@ -509,6 +534,8 @@ def createTeam(displayname, teamowner, teamdescription, email=None):
                  email=email,
                  status=int(EmailAddressStatus.NEW))
 
+    # XXX: salgado, 2005-01-14: The owner should be added to the list of
+    # members of that team?
     Membership(personID=teamowner,
                team=team.id,
                role=role,
@@ -556,6 +583,8 @@ class EmailAddress(SQLBase):
 
 
 class GPGKey(SQLBase):
+    implements(IGPGKey)
+
     _table = 'GPGKey'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -579,7 +608,10 @@ class GPGKey(SQLBase):
 
 
 class SSHKey(SQLBase):
+    implements(ISSHKey)
+
     _table = 'SSHKey'
+
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
     keytype = StringCol(dbName='keytype', notNull=True)
     keytext = StringCol(dbName='keytext', notNull=True)
@@ -587,6 +619,8 @@ class SSHKey(SQLBase):
 
 
 class ArchUserID(SQLBase):
+    implements(IArchUserID)
+
     _table = 'ArchUserID'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -594,6 +628,8 @@ class ArchUserID(SQLBase):
     
 
 class WikiName(SQLBase):
+    implements(IWikiName)
+
     _table = 'WikiName'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -602,6 +638,8 @@ class WikiName(SQLBase):
 
 
 class JabberID(SQLBase):
+    implements(IJabberID)
+
     _table = 'JabberID'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -609,6 +647,8 @@ class JabberID(SQLBase):
 
 
 class IrcID(SQLBase):
+    implements(IIrcID)
+
     _table = 'IrcID'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -617,8 +657,9 @@ class IrcID(SQLBase):
 
 
 class Membership(SQLBase):
-    _table = 'Membership'
     implements(IMembership)
+
+    _table = 'Membership'
 
     team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -655,6 +696,8 @@ class TeamParticipationSet(object):
 
 
 class TeamParticipation(SQLBase):
+    implements(ITeamParticipation)
+
     _table = 'TeamParticipation'
 
     team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
@@ -662,7 +705,8 @@ class TeamParticipation(SQLBase):
 
 
 class Karma(SQLBase):
-    # XXX: salgado, 2005-01-12: Define an IKarma interface.
+    implements(IKarma)
+
     _table = 'Karma'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)

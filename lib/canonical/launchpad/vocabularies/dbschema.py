@@ -18,7 +18,7 @@ def vocab_factory(schema):
 
 # DB Schema Vocabularies
 SubscriptionVocabulary = vocab_factory(dbschema.BugSubscription)
-BugStatusVocabulary = vocab_factory(dbschema.BugAssignmentStatus)
+BugStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 BugPriorityVocabulary = vocab_factory(dbschema.BugPriority)
 BugSeverityVocabulary = vocab_factory(dbschema.BugSeverity)
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)

@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-# arch-tag: 752bd71e-584e-416e-abff-a4eb6c82399c
 
 import sys, base64
 

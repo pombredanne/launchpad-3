@@ -75,17 +75,20 @@ class LaunchpadTestRunner(zope.app.tests.test.ImmediateTestRunner):
         assert len(pgsql.PgTestSetup.connections) == 0, \
                 'Not all PostgreSQL connections closed'
 
-        con = psycopg.connect('dbname=template1')
-        try:
-            cur = con.cursor()
-            cur.execute("""
-                SELECT count(*) FROM pg_database
-                WHERE datname='launchpad_ftest'
-                """)
-            r = cur.fetchone()[0]
-            assert r == 0, 'launchpad_ftest database not dropped'
-        finally:
-            con.close()
+        # Disabled this check - we now optimize by only dropping the
+        # db if necessary
+        #
+        #con = psycopg.connect('dbname=template1')
+        #try:
+        #    cur = con.cursor()
+        #    cur.execute("""
+        #        SELECT count(*) FROM pg_database
+        #        WHERE datname='launchpad_ftest'
+        #        """)
+        #    r = cur.fetchone()[0]
+        #    assert r == 0, 'launchpad_ftest database not dropped'
+        #finally:
+        #    con.close()
 
     def run(self, test):
         self.precheck(test)

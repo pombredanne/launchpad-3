@@ -13,8 +13,7 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import IBug, IBugAddForm, IBugSet, \
-    IBugTask
+from canonical.launchpad.interfaces import IBug, IBugAddForm, IBugSet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
@@ -22,6 +21,7 @@ from canonical.database.constants import nowUTC, DEFAULT
 from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import Message, MessageSet
 from canonical.launchpad.database.bugmessage import BugMessage
+from canonical.launchpad.database.bugtask import BugTask
 from canonical.lp import dbschema
 
 class Bug(SQLBase):
@@ -55,9 +55,7 @@ class Bug(SQLBase):
     messages = RelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
                            intermediateTable='BugMessage')
-    tasks = MultipleJoin('BugTask', joinColumn='bug')
-    productassignments = MultipleJoin('BugTask', joinColumn='bug')
-    packageassignments = MultipleJoin('BugTask', joinColumn='bug')
+    bugtasks = MultipleJoin('BugTask', joinColumn='bug')
     productinfestations = MultipleJoin('BugProductInfestation', joinColumn='bug')
     packageinfestations = MultipleJoin('BugPackageInfestation', joinColumn='bug')
     watches = MultipleJoin('BugWatch', joinColumn='bug')
@@ -84,13 +82,19 @@ def BugFactory(*args, **kw):
     # make sure that the factory has been passed enough information
     if not (kw.get('distribution') or kw.get('product')):
         raise ValueError, 'Must pass BugFactory a distro or a product'
-    if not (kw.get('comment', None) or kw.get('description', None)):
-        raise ValueError, 'Must pass BugFactory a comment or description'
-    
+    if not (kw.get('comment', None) or
+            kw.get('description', None) or
+            kw.get('rfc822msgid', None)):
+        raise ValueError, 'BugFactory requires a comment, rfc822msgid or description'
+    # extract the details needed to create the bug and optional msg
     description = kw.get('description', None)
     summary = kw.get('shortdesc', None)
+    # if we have been passed only a description, then we set the summary to
+    # be the first paragraph of it, up to 320 characters long
     if description and not summary:
         summary = description.split('. ')[0]
+        if len(summary) > 320:
+            summary = summary[:320] + '...'
     datecreated = kw.get('datecreated', datetime.now())
     bug = Bug(
         title = kw['title'],
@@ -103,26 +107,25 @@ def BugFactory(*args, **kw):
     if kw.get('comment', None):
         if not kw.get('rfc822msgid', None):
             kw['rfc822msgid'] = make_msgid('malonedeb')
-        try:
-            msg = MessageSet().get(rfc822msgid=kw['rfc822msgid'])
-        except IndexError:
-            msg = Message(title=kw['title'],
-                contents = kw['comment'],
-                distribution = kw.get('distribution', None),
-                rfc822msgid = kw['rfc822msgid'],
-                owner = kw['owner']
-                )
-        bugmsg = BugMessage(bugID=bug.id,
-                            messageID=msg.id)
-
-
+    # retrieve or create the message in the db
+    try:
+        msg = MessageSet().get(rfc822msgid=kw['rfc822msgid'])
+    except IndexError:
+        msg = Message(title=kw['title'],
+            contents = kw['comment'],
+            distribution = kw.get('distribution', None),
+            rfc822msgid = kw['rfc822msgid'],
+            owner = kw['owner']
+            )
+    # link the bug to the message
+    bugmsg = BugMessage(bugID=bug.id,
+                        messageID=msg.id)
     # create the task on a product if one was passed
     if kw.get('product', None):
         BugTask(
             bug = bug,
             product = kw['product'].id,
             owner = kw['owner'].id)
-
     # create the task on a source package name if one was passed
     if kw.get('distribution', None):
         BugTask(
@@ -161,60 +164,3 @@ class BugSet(BugSetBase):
         for row in self.table.select():
             yield row
 
-class BugTask(SQLBase):
-    implements(IBugTask)
-    _table = "BugTask"
-    _defaultOrder = "-bug"
-
-    bug = ForeignKey(dbName='bug', foreignKey='Bug')
-    product = ForeignKey(
-        dbName='product', foreignKey='Product',
-        notNull=False, default=None)
-    sourcepackagename = ForeignKey(
-        dbName='sourcepackagename', foreignKey='SourcePackageName',
-        notNull=False, default=None)
-    distribution = ForeignKey(
-        dbName='distribution', foreignKey='Distribution',
-        notNull=False, default=None)
-    milestone = ForeignKey(
-        dbName='milestone', foreignKey='Milestone',
-        notNull=False, default=None)
-    status = IntCol(
-        dbName='status', notNull=True,
-        default=int(dbschema.BugAssignmentStatus.NEW))
-    priority = IntCol(
-        dbName='priority', notNull=True,
-        default=int(dbschema.BugPriority.MEDIUM))
-    severity = IntCol(
-        dbName='severity', notNull=True,
-        default=int(dbschema.BugSeverity.NORMAL))
-    binarypackagename = ForeignKey(
-        dbName='binarypackagename', foreignKey='BinaryPackageName',
-        notNull=False, default=None)
-    assignee = ForeignKey(
-        dbName='assignee', foreignKey='Person',
-        notNull=False, default=None)
-    dateassigned = DateTimeCol(notNull=False, default=nowUTC)
-    datecreated  = DateTimeCol(notNull=False, default=nowUTC)
-    owner = ForeignKey(
-        foreignKey='Person', dbName='owner', notNull=False, default=None)
-
-    def bugtitle(self):
-        return self.bug.title
-
-    def maintainer(self):
-        # XXX: Brad Bollenbach, 2005-01-06: Only implemented for upstream
-        # at the moment.
-        if self.product:
-            if self.product.owner:
-                return self.product.owner.displayname
-
-        return "(none)"
-
-    def bugdescription(self):
-        if self.bug.messages:
-            return self.bug.messages[0].contents
-
-    maintainer = property(maintainer)
-    bugtitle = property(bugtitle)
-    bugdescription = property(bugdescription)

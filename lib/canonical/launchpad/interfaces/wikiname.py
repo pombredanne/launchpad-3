@@ -1,7 +1,7 @@
-# Imports from zope
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
-from zope.interface import Interface, Attribute
+# Copyright 2004 Canonical Ltd.  All rights reserved.
+
+from zope.schema import Int, TextLine
+from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
@@ -12,7 +12,8 @@ _ = MessageIDFactory('launchpad')
 
 class IWikiName(Interface):
     """Wiki for Users"""
-    person = Attribute("Owner")
-    wiki = Attribute("wiki host")
-    wikiname = Attribute("wikiname for user")
+    id = Int(title=_("Database ID"), required=True, readonly=True)
+    person = Int(title=_("Owner"), required=True)
+    wiki = TextLine(title=_("Wiki host"), required=True)
+    wikiname = TextLine(title=_("Wikiname"), required=True)
 

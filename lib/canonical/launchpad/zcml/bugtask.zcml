@@ -34,35 +34,41 @@
         for="canonical.launchpad.interfaces.IBugTaskSet"
         permission="zope.Public">
         <browser:page name="+index"
-            template="../templates/sourcepackagebugassignments-index.pt"
-            lp:url="malone/bugs/$Bug.id/sourcepackageassignments/index" />
+            template="../templates/bugtasks-index.pt"
+            lp:url="malone/tasks/index" />
     </browser:pages>
 
+    <!-- XXX: Brad Bollenbach, 2005-01-18: We need to sort out the +upstreamtask
+    link, because right now it brings the user to a non-context-aware page to
+    file a bug on a package. See the bug filed here:
+    
+        https://launchpad.ubuntu.com/malone/bugs/66
+    -->
     <browser:addform
         name="+upstreamtask"
         schema="canonical.launchpad.interfaces.IBugTask"
         for="canonical.launchpad.interfaces.IBugTaskSet"
-        label="Add Product Bug Assignment"
+        label="Add Task to fix bug Upstream"
         fields="product status priority severity assignee owner"
-        content_factory="canonical.launchpad.database.ProductBugAssignmentFactory"
+        content_factory="canonical.launchpad.database.BugTaskFactory"
         arguments=""
         keyword_arguments="product status priority severity owner"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/productassignments/+upstreamtask">
+        lp:url="malone/bugs/$Bug.id/tasks/+upstreamtask">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
     </browser:addform>
 
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IEditableUpstreamBugTask"
-        class="canonical.launchpad.browser.bug.BugAssignmentEditView"
+        class="canonical.launchpad.browser.bug.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="product maintainer bugtitle bugdescription milestone status priority severity assignee"
-        label="Edit Product Bug Assignment"
+        label="Edit Product Bug Task"
         permission="launchpad.Edit"
-        template="../templates/bugassignment-editform.pt"
-        lp:url="malone/tasks/$ProductBugAssignment.id/+edit">
+        template="../templates/bugtask-editform.pt"
+        lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:editform>
 
     <browser:schemadisplay
@@ -70,37 +76,37 @@
         for="canonical.launchpad.interfaces.IReadOnlyUpstreamBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="product maintainer bugtitle bugdescription milestone status priority severity assignee"
-        label="Product Bug Assignment"
+        label="Product Bug Task"
         permission="zope.Public"
-        template="../templates/bugassignment-display.pt"
-        lp:url="malone/tasks/$ProductBugAssignment.id/+edit">
+        template="../templates/bugtask-display.pt"
+        lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 
     <browser:addform
         name="+packagetask"
         schema="canonical.launchpad.interfaces.IBugTask"
         for="canonical.launchpad.interfaces.IBugTaskSet"
-        label="Add SourcePackage Bug Assignment"
+        label="Add SourcePackage Bug Task"
         fields="distribution sourcepackagename binarypackagename status priority severity assignee owner"
-        content_factory="canonical.launchpad.database.SourcePackageBugAssignmentFactory"
+        content_factory="canonical.launchpad.database.BugTaskFactory"
         arguments=""
         keyword_arguments="distribution sourcepackagename binarypackagename status priority severity owner"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/sourcepackageassignments/+packagetask">
+        lp:url="malone/bugs/$Bug.id/tasks/+packagetask">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
     </browser:addform>
 
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IEditableDistroBugTask"
-        class="canonical.launchpad.browser.bug.BugAssignmentEditView"
+        class="canonical.launchpad.browser.bug.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename bugtitle bugdescription status priority severity assignee"
-        label="Edit SourcePackage Bug Assignment"
+        label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
-        template="../templates/bugassignment-editform.pt"
-        lp:url="malone/bugs/$Bug.id/sourcepackageassignments/$SourcePackageBugAssignment.id/+edit">
+        template="../templates/bugtask-editform.pt"
+        lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:editform>
 
     <browser:schemadisplay
@@ -108,36 +114,36 @@
         for="canonical.launchpad.interfaces.IReadOnlyDistroBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename bugtitle bugdescription status priority severity assignee"
-        label="Source Package Bug Assignment"
+        label="Source Package Bug Task"
         permission="zope.Public"
-        template="../templates/bugassignment-display.pt"
-        lp:url="malone/tasks/$SourcePackageBugAssignment.id/+edit">
+        template="../templates/bugtask-display.pt"
+        lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 
-    <!-- BugsAssignedReport -->
+    <!-- BugTasksReport -->
     <!-- TODO: figure out why we need to give explicit attributes instead of
                using set_schema-->
-    <content class="canonical.launchpad.database.BugsAssignedReport">
-        <allow interface="canonical.launchpad.interfaces.IBugsAssignedReport" />
+    <content class="canonical.launchpad.database.BugTasksReport">
+        <allow interface="canonical.launchpad.interfaces.IBugTasksReport" />
         <require
             permission="zope.Public"
             set_attributes="user minseverity minpriority showclosed" />
     </content>
 
     <securedutility
-        class="canonical.launchpad.database.BugsAssignedReport"
-        provides="canonical.launchpad.interfaces.IBugsAssignedReport">
-        <allow interface="canonical.launchpad.interfaces.IBugsAssignedReport"
+        class="canonical.launchpad.database.BugTasksReport"
+        provides="canonical.launchpad.interfaces.IBugTasksReport">
+        <allow interface="canonical.launchpad.interfaces.IBugTasksReport"
             />
     </securedutility>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugsAssignedReport"
+        for="canonical.launchpad.interfaces.IBugTasksReport"
         name="+index" />
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IBugsAssignedReport"
-        class="canonical.launchpad.browser.BugsAssignedReportView"
+        for="canonical.launchpad.interfaces.IBugTasksReport"
+        class="canonical.launchpad.browser.BugTasksReportView"
         permission="launchpad.AnyPerson">
         <browser:page name="+index"
               template="../templates/bugs-assigned.pt"
@@ -146,9 +152,9 @@
 
     <browser:page
         for="*"
-        name="bugassignment_search_listing"
+        name="bugtask_search_listing"
         layer="canonical.launchpad.layers.LaunchpadLayer"
         permission="zope.Public"
-        template="../templates/bugassignment-search-listing.pt"
+        template="../templates/bugtask-search-listing.pt"
         />
 </configure>

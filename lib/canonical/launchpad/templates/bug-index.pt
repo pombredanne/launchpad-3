@@ -58,7 +58,7 @@
             product or source package in which this bug should be fixed.
         </div>
 
-        <div tal:replace="structure view/assignmentsHeadline" />
+        <div tal:replace="structure view/tasksHeadline" />
 
         <div class="discreet">
 

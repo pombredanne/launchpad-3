@@ -26,7 +26,7 @@ __all__ = (
 'BinaryPackageFormat',
 'BinaryPackagePriority',
 'BranchRelationships',
-'BugAssignmentStatus',
+'BugTaskStatus',
 'BugExternalReferenceType',
 'BugInfestationStatus',
 'BugPriority',
@@ -1305,11 +1305,11 @@ class BugInfestationStatus(DBSchema):
         """)
 
 
-class BugAssignmentStatus(DBSchema):
-    """Bug Assignment Status
+class BugTaskStatus(DBSchema):
+    """Bug Task Status
 
     Bugs are assigned to products and to source packages in Malone. The
-    assignment carries a status - new, open or closed. This schema
+    task carries a status - new, open or closed. This schema
     documents those possible status values.
     """
 
@@ -1340,7 +1340,7 @@ class BugAssignmentStatus(DBSchema):
         """)
 
 class RemoteBugStatus(DBSchema):
-    """Bug Assignment Status
+    """Bug Task Status
 
     The status of a bug in a remote bug tracker. We map known statuses
     to one of these values, and use UNKNOWN if we are unable to map
@@ -1409,7 +1409,7 @@ class BugPriority(DBSchema):
 class BugSeverity(DBSchema):
     """Bug Severity
 
-    A bug assignment has a severity, which is an indication of the
+    A bug task has a severity, which is an indication of the
     extent to which the bug impairs the stability and security of
     the distribution.
     """

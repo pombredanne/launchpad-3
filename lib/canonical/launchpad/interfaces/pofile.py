@@ -229,8 +229,10 @@ class IEditPOTemplate(IPOTemplate):
         Returns the newly created message set.
         """
 
-    def doRawImport():
-        """Executes the import of the rawfile field if it's needed."""
+    def doRawImport(logger=None):
+        """Executes the import of the rawfile field if it's needed.
+        If a logger argument is given, logs there any problem we have with the
+        import."""
 
 
 class IPOTMsgSet(Interface):
@@ -457,8 +459,10 @@ class IEditPOFile(IPOFile):
         Returns the newly created message set.
         """
 
-    def doRawImport():
-        """Executes the import of the rawfile field if it's needed."""
+    def doRawImport(logger=None):
+        """Executes the import of the rawfile field if it's needed.
+        If a logger argument is given, logs there any problem we have with the
+        import."""
 
 
 class IPOMsgSet(Interface):

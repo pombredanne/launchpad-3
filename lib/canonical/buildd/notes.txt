@@ -21,6 +21,10 @@ CREATE TABLE BuildQueue (
 
 );
 
+-- If speedindex is NULL, we don't know, else it is the number of seconds
+-- needed to build a reference package or something.
+ALTER TABLE Builder ADD COLUMN speedindex INTEGER;
+
 Basic case decision on what to build
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -117,6 +121,11 @@ Operated entirely over XML-RPC... Always initiated by the master to
 the slave; the only outgoing sockets the slave is permitted are direct
 to the public archive machine.
 
+Buildd slaves have HTTP read-only access to librarian.
+
+Buildd master is called Fiera
+Buildd slaves are called Bob
+
 Calls that the master can make to the slave
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -137,21 +146,25 @@ Calls that the master can make to the slave
     if ABORTED
        BUILD-ID Aborted
 
- LOGTAIL (amount) ->
+ FETCHLOGTAIL (amount) ->
     tail of log file (all of log file if amount <= 0) else (up-to) amount bytes
+    Returns an empty string if no build is in progress
 
- HAVE (SHA1sum) ->
-    YES / NO
+ DOYOUHAVE (SHA1sum) ->
+    YES / NO  
+    (May fetch from the librarian and return YES if it lacks the file)
 
- GIVE (CONTENT) ->
+ STOREFILE (CONTENT) ->
     Stores the CONTENT and returns SHA1sum
 
- WANT (SHA1sum) ->
+ FETCHFILE (SHA1sum) ->
     CONTENT for that SHA1summed file
 
- BUILD (BUILD-ID, SHA1sum <-> filename list, CHROOT SHA1sum,
-        BUILDCOMMAND) ->
-    UNKNOWN-SUM / INITIATED
+ STARTBUILD (BUILD-ID, SHA1sum <-> filename list, CHROOT SHA1sum,
+	     BUILDCOMMAND) ->
+    UNKNOWN-SUM 
+      SHA1sum
+    INITIATED
 
  ABORT (none) ->
     Any build in progress is aborted and the builder is placed in
@@ -165,14 +178,16 @@ An example interaction
 ^^^^^^^^^^^^^^^^^^^^^^
 
 STATUS() -> IDLE
-HAVE(chrootsum) -> YES
-HAVE(dscsum) -> NO
-GIVE(foo.dsc) -> dscsum
-HAVE(origsum) -> YES
-HAVE(diffsum) -> NO
-GIVE(foo.diff.gz) -> diffsum
-BUILD(10023, foo.dsc=dscsum, foo.orig.tar=origsum, foo.diff.gz=diffsum,
-      chrootsum, DEBIAN-SOURCE) -> INITIATED
+DOYOUHAVE(chrootsum) -> YES
+DOYOUHAVE(dscsum) -> NO
+STOREFILE(foo.dsc) -> dscsum
+DOYOUHAVE(origsum) -> YES
+DOYOUHAVE(diffsum) -> NO
+STOREFILE(foo.diff.gz) -> diffsum
+STARTBUILD(10023, { foo.dsc: dscsum,
+                    foo.orig.tar: origsum, 
+                    foo.diff.gz: diffsum },
+           chrootsum, DEBIAN-SOURCE) -> INITIATED
 STATUS() -> BUILDING, 10023, "...logtail"
 
 ...time passes...
@@ -183,8 +198,8 @@ STATUS() -> BUILDING, 10023, "...logtail"
 
 STATUS() -> WAITING, OK, 10023, foo.deb=debsum, foo.changes=changessum,
             BUILDLOG=logsum
-WANT(debsum) -> foo.deb
-WANT(changessum) -> foo.changes
-WANT(logsum) -> BUILDLOG
+FETCHFILE(debsum) -> foo.deb
+FETCHFILE(changessum) -> foo.changes
+FETCHFILE(logsum) -> BUILDLOG
 CLEAN() -> OK
 STATUS() -> IDLE

@@ -32,7 +32,7 @@
     <include file="productrelease.zcml" />
     <include file="bugpackageinfestation.zcml" />
     <include file="bugactivity.zcml" />
-    <include file="bugassignment.zcml" />
+    <include file="bugtask.zcml" />
     <include file="bugsubscription.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="bug.zcml" />

@@ -372,7 +372,7 @@ class POTemplate(SQLBase, RosettaStats):
         if variant is None:
             variantspec = 'IS NULL'
         elif isinstance(variant, unicode):
-            variantspec = (u'= "%s"' % quote(variant))
+            variantspec = (u'= %s' % quote(variant))
         else:
             raise TypeError('Variant must be None or unicode.')
 
@@ -532,9 +532,7 @@ class POTemplate(SQLBase, RosettaStats):
 
         return self.createMessageSetFromMessageID(messageID)
 
-    def doRawImport(self):
-        import logging
-
+    def doRawImport(self, logger=None):
         importer = TemplateImporter(self, self.rawimporter)
 
         file = StringIO.StringIO(base64.decodestring(self.rawfile))
@@ -565,8 +563,9 @@ class POTemplate(SQLBase, RosettaStats):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             self.rawimportstatus = RosettaImportStatus.FAILED.value
-            logging.warning('We got an error importing %s' , self.name,
-            exc_info = 1)
+            if logger:
+                logger.warning('We got an error importing %s' , self.name,
+                    exc_info = 1)
 
 
 class POTMsgSet(SQLBase):
@@ -1083,13 +1082,11 @@ class POFile(SQLBase, RosettaStats):
         except IndexError:
             return None
 
-    def doRawImport(self):
-        import logging
-
+    def doRawImport(self, logger=None):
         if self.rawfile is None:
             # We don't have anything to import.
             return
-        
+
         rawdata = base64.decodestring(self.rawfile)
 
         # We need to parse the file to get the last translator information so
@@ -1186,9 +1183,11 @@ class POFile(SQLBase, RosettaStats):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             self.rawimportstatus = RosettaImportStatus.FAILED.value
-            logging.warning(
-                'We got an error importing %s language for %s template' % (
-                    self.language.code, self.potemplate.name), exc_info = 1)
+            if logger:
+                logger.warning(
+                    'We got an error importing %s language for %s template' % (
+                        self.language.code, self.potemplate.name),
+                        exc_info = 1)
 
 
 class POMsgSet(SQLBase):
@@ -1442,6 +1441,25 @@ class POTranslation(SQLBase):
 
     _table = 'POTranslation'
 
+    # alternateID=False because we have to select by hash in order to do
+    # index lookups.
     translation = StringCol(dbName='translation', notNull=True, unique=True,
-        alternateID=True)
+        alternateID=False)
+
+    def byTranslation(cls, key):
+        '''Return a POTranslation object for the given translation'''
+
+        # We can't search directly on msgid, because this database column
+        # contains values too large to index. Instead we search on its
+        # hash, which *is* indexed
+        r = POTranslation.select('sha1(translation) = sha1(%s)' % quote(key))
+        assert len(r) in (0,1), 'Database constraint broken'
+        if len(r) == 1:
+            return r[0]
+        else:
+            # To be 100% compatible with the alternateID behaviour, we should
+            # raise SQLObjectNotFound instead of KeyError
+            raise SQLObjectNotFound(key)
+    byTranslation = classmethod(byTranslation)
+
 

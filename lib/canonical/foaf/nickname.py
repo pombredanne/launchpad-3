@@ -66,8 +66,8 @@ def generate_nick(email_addr, registered=_nick_registered,
     if (registered(generated_nick) or 
         len(generated_nick) < MIN_NICK_LENGTH):
         if report_collisions:
-            print ("collision: %s already registered or shorter than 4 "
-                   "characters." % generated_nick)
+            print ("collision: %s already registered or shorter than %d "
+                   "characters." % ( generated_nick, MIN_NICK_LENGTH ))
 
         for domain_part in domain_parts:
             generated_nick += "-" + domain_part
@@ -83,8 +83,8 @@ def generate_nick(email_addr, registered=_nick_registered,
     if (registered(generated_nick) 
         or len(generated_nick) < MIN_NICK_LENGTH):
         if report_collisions:
-            print ("collision: %s already registered or shorter than 4 "
-                   "characters" % generated_nick)
+            print ("collision: %s already registered or shorter than %d "
+                   "characters" % ( generated_nick, MIN_NICK_LENGTH ))
 
         x = 1
         found_available_nick = False

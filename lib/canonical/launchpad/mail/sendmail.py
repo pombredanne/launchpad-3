@@ -28,11 +28,11 @@ Charset.add_charset('utf8', Charset.QP, Charset.QP, 'utf8')
 
 def simple_sendmail(from_addr, to_addrs, subject, body):
     """Send an email from from_addr to to_addrs with the subject and body
-    provided. to_addrs can be a list, tuple, or string.
+    provided. to_addrs can be a list, tuple, or ASCII/Unicode string.
    
     Returns the Message-Id.
     """
-    if isinstance(to_addrs, str):
+    if not isinstance(to_addrs, (list, tuple)):
         to_addrs = [to_addrs]
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')

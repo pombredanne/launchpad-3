@@ -53,20 +53,20 @@
                 <th>Work Assigned To...</th>
             </tr>
 
-            <tr tal:repeat="bugass context/maintainedProductBugs"
+            <tr tal:repeat="bugtask context/maintainedProductBugs"
                 tal:attributes="onclick
-                string:window.location='/malone/bugs/${bugass/bug/id}'">
-                <td><span tal:replace="bugass/bug/id">$Bug.id</span>
-                    <span tal:condition="bugass/bug/name">(<span
-                    tal:replace="bugass/bug/name">name</span>)</span></td>
-                <td tal:attributes="title bugass/bug/shortdesc">
-                    <b><span tal:replace="bugass/bug/title">$Bug.title</span></b></td>
-                <td tal:content="bugass/product/project/displayname">project</td>
-                <td tal:content="bugass/product/displayname">product</td>
-                <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">status</td>
-                <td tal:content="bugass/severity/lp:BugSeverity">severity</td>
-                <td tal:content="bugass/priority/lp:BugPriority">priority</td>
-                <td tal:content="bugass/assignee/browsername|default">-</td>
+                string:window.location='/malone/bugs/${bugtask/bug/id}'">
+                <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
+                    <span tal:condition="bugtask/bug/name">(<span
+                    tal:replace="bugtask/bug/name">name</span>)</span></td>
+                <td tal:attributes="title bugtask/bug/shortdesc">
+                    <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
+                <td tal:content="bugtask/product/project/displayname">project</td>
+                <td tal:content="bugtask/product/displayname">product</td>
+                <td tal:content="bugtask/bugstatus/lp:BugTaskStatus">status</td>
+                <td tal:content="bugtask/severity/lp:BugSeverity">severity</td>
+                <td tal:content="bugtask/priority/lp:BugPriority">priority</td>
+                <td tal:content="bugtask/assignee/browsername|default">-</td>
             </tr>
  
         </table>
@@ -91,24 +91,24 @@
                 <th>Work Assigned To...</th>
             </tr>
 
-            <tr tal:repeat="bugass context/maintainedPackageBugs"
+            <tr tal:repeat="bugtask context/maintainedPackageBugs"
                 tal:attributes="onclick
-                string:window.location='/malone/bugs/${bugass/bug/id}'">
-                <td><span tal:replace="bugass/bug/id">$Bug.id</span>
-                    <span tal:condition="bugass/bug/name">(<span
-                    tal:replace="bugass/bug/name">name</span>)</span></td>
-                <td tal:attributes="title bugass/bug/shortdesc">
-                    <b><span tal:replace="bugass/bug/title">$Bug.title</span></b></td>
-                <td tal:content="bugass/sourcepackage/distro/name">
+                string:window.location='/malone/bugs/${bugtask/bug/id}'">
+                <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
+                    <span tal:condition="bugtask/bug/name">(<span
+                    tal:replace="bugtask/bug/name">name</span>)</span></td>
+                <td tal:attributes="title bugtask/bug/shortdesc">
+                    <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
+                <td tal:content="bugtask/sourcepackage/distro/name">
                     distro
                 </td>
-                <td tal:content="bugass/sourcepackage/name">
+                <td tal:content="bugtask/sourcepackage/name">
                     package
                 </td>
-                <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">status</td>
-                <td tal:content="bugass/severity/lp:BugSeverity">severity</td>
-                <td tal:content="bugass/priority/lp:BugPriority">priority</td>
-                <td tal:content="bugass/assignee/browsername|default">-</td>
+                <td tal:content="bugtask/bugstatus/lp:BugTaskStatus">status</td>
+                <td tal:content="bugtask/severity/lp:BugSeverity">severity</td>
+                <td tal:content="bugtask/priority/lp:BugPriority">priority</td>
+                <td tal:content="bugtask/assignee/browsername|default">-</td>
             </tr>
  
         </table>
@@ -132,24 +132,24 @@
                 <th>Work Assigned To...</th>
             </tr>
 
-            <tr tal:repeat="bugass context/packageAssigneeBugs"
+            <tr tal:repeat="bugtask context/packageAssigneeBugs"
                 tal:attributes="onclick
-                string:window.location='/malone/bugs/${bugass/bug/id}'">
-                <td><span tal:replace="bugass/bug/id">$Bug.id</span>
-                    <span tal:condition="bugass/bug/name">(<span
-                    tal:replace="bugass/bug/name">name</span>)</span></td>
-                <td tal:attributes="title bugass/bug/shortdesc">
-                    <b><span tal:replace="bugass/bug/title">$Bug.title</span></b></td>
-                <td tal:content="bugass/sourcepackage/distro/name">
+                string:window.location='/malone/bugs/${bugtask/bug/id}'">
+                <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
+                    <span tal:condition="bugtask/bug/name">(<span
+                    tal:replace="bugtask/bug/name">name</span>)</span></td>
+                <td tal:attributes="title bugtask/bug/shortdesc">
+                    <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
+                <td tal:content="bugtask/sourcepackage/distro/name">
                     distro
                 </td>
-                <td tal:content="bugass/sourcepackage/name">
+                <td tal:content="bugtask/sourcepackage/name">
                     package
                 </td>
-                <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">status</td>
-                <td tal:content="bugass/severity/lp:BugSeverity">severity</td>
-                <td tal:content="bugass/priority/lp:BugPriority">priority</td>
-                <td tal:content="bugass/assignee/browsername|default">-</td>
+                <td tal:content="bugtask/bugstatus/lp:BugTaskStatus">status</td>
+                <td tal:content="bugtask/severity/lp:BugSeverity">severity</td>
+                <td tal:content="bugtask/priority/lp:BugPriority">priority</td>
+                <td tal:content="bugtask/assignee/browsername|default">-</td>
             </tr>
  
         </table>
@@ -173,20 +173,20 @@
                 <th>Work Assigned To...</th>
             </tr>
 
-            <tr tal:repeat="bugass context/productAssigneeBugs"
+            <tr tal:repeat="bugtask context/productAssigneeBugs"
                 tal:attributes="onclick
-                string:window.location='/malone/bugs/${bugass/bug/id}'">
-                <td><span tal:replace="bugass/bug/id">$Bug.id</span>
-                    <span tal:condition="bugass/bug/name">(<span
-                    tal:replace="bugass/bug/name">name</span>)</span></td>
-                <td tal:attributes="title bugass/bug/shortdesc">
-                    <b><span tal:replace="bugass/bug/title">$Bug.title</span></b></td>
-                <td tal:content="bugass/product/project/displayname">project</td>
-                <td tal:content="bugass/product/displayname">product</td>
-                <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">status</td>
-                <td tal:content="bugass/severity/lp:BugSeverity">severity</td>
-                <td tal:content="bugass/priority/lp:BugPriority">priority</td>
-                <td tal:content="bugass/assignee/browsername|default">-</td>
+                string:window.location='/malone/bugs/${bugtask/bug/id}'">
+                <td><span tal:replace="bugtask/bug/id">$Bug.id</span>
+                    <span tal:condition="bugtask/bug/name">(<span
+                    tal:replace="bugtask/bug/name">name</span>)</span></td>
+                <td tal:attributes="title bugtask/bug/shortdesc">
+                    <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
+                <td tal:content="bugtask/product/project/displayname">project</td>
+                <td tal:content="bugtask/product/displayname">product</td>
+                <td tal:content="bugtask/bugstatus/lp:BugTaskStatus">status</td>
+                <td tal:content="bugtask/severity/lp:BugSeverity">severity</td>
+                <td tal:content="bugtask/priority/lp:BugPriority">priority</td>
+                <td tal:content="bugtask/assignee/browsername|default">-</td>
             </tr>
  
         </table>

@@ -50,7 +50,7 @@ class IDistroRelease(Interface):
         """Return the number of architectures in this release."""
 
     def getBugSourcePackages():
-        """Get SourcePackages in a DistroRelease with BugAssignement"""
+        """Get SourcePackages in a DistroRelease with BugTask"""
 
 #    def getSourceByName(name):
 #        """Return the latest source package of this name uploaded to this

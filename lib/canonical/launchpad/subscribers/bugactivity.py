@@ -4,7 +4,7 @@ from zope.security.proxy import removeSecurityProxy
 from zope.proxy import isProxy
 from zope.schema.vocabulary import getVocabularyRegistry
 
-from canonical.lp.dbschema import BugAssignmentStatus, BugSeverity, BugPriority, BugInfestationStatus
+from canonical.lp.dbschema import BugTaskStatus, BugSeverity, BugPriority, BugInfestationStatus
 from canonical.database.constants import nowUTC
 from canonical.launchpad.database import Bug, BugActivity, Person, SourcePackageRelease, ProductRelease
 
@@ -27,7 +27,7 @@ def what_changed(sqlobject_modified_event):
 
         # figure out the orig value
         if f == 'status':
-            val_before = BugAssignmentStatus.items[val_before].title
+            val_before = BugTaskStatus.items[val_before].title
         elif f == 'priority':
             val_before = BugPriority.items[val_before].title
         elif f == 'severity':
@@ -47,7 +47,7 @@ def what_changed(sqlobject_modified_event):
 
         # figure out the new value
         if f == 'status':
-            val_after = BugAssignmentStatus.items[val_after].title
+            val_after = BugTaskStatus.items[val_after].title
         elif f == 'priority':
             val_after = BugPriority.items[val_after].title
         elif f == 'severity':
@@ -109,18 +109,18 @@ def record_bug_task_added(bug_task, object_created_event):
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
-        assignment_title = ""
+        task_title = ""
         obm = sqlobject_modified_event.object_before_modification
         if bug_task_edited.product:
             if obm.product is None:
-                assignment_title = None
+                task_title = None
             else:
-                assignment_title = obm.product.name
+                task_title = obm.product.name
         else:
             if obm.sourcepackagename is None:
-                assignment_title = None
+                task_title = None
             else:
-                assignment_title = obm.sourcepackagename.name
+                task_title = obm.sourcepackagename.name
         right_now = datetime.utcnow()
         for changed_field in changes.keys():
             ov = changes[changed_field][0]
@@ -133,27 +133,27 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
                 bug=bug_task_edited.bug.id,
                 datechanged=right_now,
                 person=int(sqlobject_modified_event.principal.id),
-                whatchanged="%s: %s" % (assignment_title, changed_field),
+                whatchanged="%s: %s" % (task_title, changed_field),
                 oldvalue=ov,
                 newvalue=nv,
                 message='XXX: not yet implemented')
 
-def record_product_assignment_added(product_assignment, object_created_event):
+def record_product_task_added(product_task, object_created_event):
     BugActivity(
-        bug=product_assignment.bugID,
+        bug=product_task.bugID,
         datechanged=datetime.utcnow(),
-        person=int(product_assignment.ownerID),
+        person=int(product_task.ownerID),
         whatchanged='bug',
-        message='assigned to product ' + product_assignment.product.name)
+        message='assigned to product ' + product_task.product.name)
 
-def record_product_assignment_edited(product_assignment_edited, sqlobject_modified_event):
+def record_product_task_edited(product_task_edited, sqlobject_modified_event):
     changes = what_changed(sqlobject_modified_event)
     if changes:
         product_name = sqlobject_modified_event.object_before_modification.product.name
         right_now = datetime.utcnow()
         for changed_field in changes.keys():
             BugActivity(
-                bug=product_assignment_edited.bug.id,
+                bug=product_task_edited.bug.id,
                 datechanged=right_now,
                 person=int(sqlobject_modified_event.principal.id),
                 whatchanged="%s: %s" % (product_name, changed_field),

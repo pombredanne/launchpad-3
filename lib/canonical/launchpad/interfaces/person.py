@@ -1,6 +1,6 @@
-# Imports from zope
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
+# Copyright 2004 Canonical Ltd.  All rights reserved.
+
+from zope.schema import Datetime, Int, Text, TextLine, Password
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
