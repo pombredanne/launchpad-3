@@ -1,0 +1,100 @@
+<tal:tag condition="view/update"/>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@launchpad_template/master"
+      i18n:domain="launchpad">
+
+    <title metal:fill-slot="title">
+      Edit Event &ldquo;<span tal:replace="context/title">Event</span>&rdquo;
+    </title>
+
+  <body>
+
+  <div metal:fill-slot="main">
+
+  <div tal:condition="nothing">
+    This file is a modified version of zope/app/form/browser/edit.pt for use
+    in the Launchpad system. You should not edit this file, but rather use
+    it from your custom editform. You create your own template for the
+    specific editform, called table-edit.pt for example, which is the template
+    which uses this one.</div>
+
+    <div metal:define-macro="editform">
+
+      <form action="." tal:attributes="action request/URL" method="post"
+            enctype="multipart/form-data">
+
+        <div metal:define-macro="formbody">
+
+          <h3 tal:condition="view/label"
+              tal:content="view/label"
+              metal:define-slot="heading"
+              >Edit Event</h3>
+
+          <p class="portalMessage"
+             tal:define="status view/update"
+             tal:condition="status"
+             tal:content="status" />
+
+          <p tal:condition="view/errors"
+             class="portalMessage"
+             i18n:translate="">
+             There are <strong tal:content="python:len(view.errors)"
+                              i18n:name="num_errors">6</strong> input errors.
+          </p>
+
+          <div metal:define-slot="extra_info"
+            class="documentDescription"
+            tal:replace="nothing">
+            This is where a document heading paragraph can be inserted. In
+            your actual customised editform, you can fill-slot this with 
+            a descriptive paragraph.
+          </div>
+
+          <fieldset>
+
+          <legend metal:define-slot="editform_legend" tal:replace="nothing">
+             Fieldset Legend
+          </legend>
+
+          <div class="row"
+               metal:define-slot="extra_top" tal:replace="nothing">
+            <div class="label">Extra top</div>
+            <div class="field"><input type="text" style="width:100%" /></div>
+          </div>
+        
+          <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+        
+          <div class="separator"></div>
+        
+          <div class="row"
+               metal:define-slot="extra_bottom" tal:replace="nothing">
+            <div class="label">Extra bottom</div>
+            <div class="field"><input type="text" style="width:100%" /></div>
+          </div>
+
+          </fieldset>
+
+        </div>
+
+        <div class="row">
+          <div class="controls">
+            <input type="submit" name="UPDATE_SUBMIT"
+                   value="Change" style="float: right;"
+                   i18n:attributes="value submit-button"/>
+          </div>
+        </div>
+
+        <div class="row" metal:define-slot="extra_buttons"
+              tal:replace="nothing">
+        </div>
+
+        <div class="separator"></div>
+
+      </form>
+
+    </div>
+  </div>
+
+  </body>
+</html>
