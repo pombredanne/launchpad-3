@@ -1,5 +1,5 @@
 import unittest
-from zope.testing.doctest import DocFileSuite, DocTestSuite
+from zope.testing.doctest import DocFileSuite
 
 def test_suite():
     suite = unittest.TestSuite((DocFileSuite("soyuz_views.txt"),))

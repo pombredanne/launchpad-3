@@ -4,7 +4,7 @@
 """
 
 # sqlobject/sqlos
-from sqlobject import LIKE, LIKE, OR, AND
+from sqlobject import LIKE, LIKE, AND
 from canonical.database.sqlbase import quote
 
 # lp imports
@@ -13,7 +13,7 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 # database imports
-from canonical.launchpad.database import SourcePackage, WikiName
+from canonical.launchpad.database import WikiName
 from canonical.launchpad.database import JabberID 
 from canonical.launchpad.database import TeamParticipation, Membership
 from canonical.launchpad.database import EmailAddress, IrcID

@@ -3,24 +3,21 @@
 (c) Canonical Software Ltd. 2004, all rights reserved.
 """
 
-# Python standard library imports
-from string import split, strip, join
-from sets import Set
-from apt_pkg import ParseDepends, ParseSrcDepends
-
 # Zope imports
 from zope.interface import implements
 
 # sqlos and SQLObject imports
 from canonical.lp import dbschema
 
-from canonical.launchpad.database import DistroRelease, \
-                                         SourcePackageInDistro, \
+# Launchpad imports
+from canonical.launchpad.database import SourcePackageInDistro, \
                                          Person, \
                                          EmailAddress, GPGKey, \
                                          ArchUserID, WikiName, JabberID, \
                                          IrcID, Membership, TeamParticipation,\
                                          DistributionRole, DistroReleaseRole
+
+from canonical.launchpad.database import IPeopleApp, IPersonApp
 
 
 #
@@ -28,6 +25,8 @@ from canonical.launchpad.database import DistroRelease, \
 #
 
 class PeopleApp(object):
+    implements(IPeopleApp)
+    
     def __init__(self):
         # FIXME: (tmp_names) Daniel Debonzi - 2004-10-13
         # these names are totaly crap
@@ -45,6 +44,8 @@ class PeopleApp(object):
         return iter(Person.select(orderBy='displayname'))
 
 class PersonApp(object):
+    implements(IPersonApp)
+
     def __init__(self, name):
         self.person = Person.selectBy(name=name)[0]
         self.id = self.person.id

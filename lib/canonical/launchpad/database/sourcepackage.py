@@ -83,8 +83,8 @@ class SourcePackage(SQLBase):
             dbschema.BugSeverity.NORMAL,
             dbschema.BugSeverity.MINOR,
             dbschema.BugSeverity.WISHLIST,
-            dbschema.BugAssignmentStatus.CLOSED,
-            dbschema.BugAssignmentStatus.OPEN,
+            dbschema.BugAssignmentStatus.FIXED,
+            dbschema.BugAssignmentStatus.ACCEPTED,
         ]
         for severity in severities:
             n = get(severity=int(severity), sourcepackageID=self.id).count()
@@ -171,9 +171,11 @@ class SourcePackageInDistro(SourcePackage):
         clauseTables=["SourcePackageBugAssignment",]
         query = ("VSourcePackageInDistro.distrorelease = %i AND "
                  "VSourcePackageInDistro.id = SourcePackageBugAssignment.sourcepackage AND "
-                 "SourcePackageBugAssignment.bugstatus != %i"
+                 "(SourcePackageBugAssignment.bugstatus != %i OR "
+                 "SourcePackageBugAssignment.bugstatus != %i)"
                  %(distrorelease.id,
-                   int(dbschema.BugAssignmentStatus.CLOSED) ))
+                   int(dbschema.BugAssignmentStatus.FIXED),
+                   int(dbschema.BugAssignmentStatus.REJECTED)))
 
         return Set(klass.select(query, clauseTables=clauseTables))
 

@@ -4,15 +4,12 @@
 """
 
 # Python standard library imports
-from string import split, strip, join
-from sets import Set
-from apt_pkg import ParseDepends, ParseSrcDepends
+from apt_pkg import ParseSrcDepends
 
 # Zope imports
 from zope.interface import implements
 
 # sqlos and SQLObject imports
-from canonical.lp import dbschema
 from canonical.database.sqlbase import quote
 
 #Soyuz imports
@@ -24,6 +21,14 @@ from canonical.launchpad.database import Build, \
                                          VSourcePackageReleasePublishing, \
                                          SourcePackageInDistro
 
+from canonical.launchpad.database import IDistroSourcesApp, \
+                                         IDistroReleaseSourcesApp, \
+                                         IDistroReleaseSourceApp, \
+                                         IDistroReleaseSourceReleaseApp, \
+                                         IDistroReleaseSourceReleaseBuildApp
+
+
+
 
 #
 # 
@@ -31,6 +36,8 @@ from canonical.launchpad.database import Build, \
 
 # Source app component Section (src) 
 class DistroSourcesApp(object):
+    implements(IDistroSourcesApp)
+
     def __init__(self, distribution):
         self.distribution = distribution
 
@@ -48,6 +55,8 @@ class DistroReleaseSourcesApp(object):
 
     Used for web UI.
     """
+    implements(IDistroReleaseSourcesApp)
+
     def __init__(self, release):
         self.release = release
         
@@ -69,6 +78,8 @@ class DistroReleaseSourcesApp(object):
         return iter(ret)
 
 class DistroReleaseSourceApp(object):
+    implements(IDistroReleaseSourceApp)
+
     def __init__(self, release, sourcepackage):
         self.release = release
         self.sourcepackage = sourcepackage
@@ -132,6 +143,8 @@ class DistroReleaseSourceApp(object):
 
 
 class DistroReleaseSourceReleaseApp(object):
+    implements(IDistroReleaseSourceReleaseApp)
+
     def __init__(self, sourcepackage, version, distrorelease):
         self.distroreleasename = distrorelease.name
 
@@ -181,6 +194,8 @@ class DistroReleaseSourceReleaseApp(object):
         return DistroReleaseSourceReleaseBuildApp(self.sourcepackagerelease,
                                                   arch)
 class DistroReleaseSourceReleaseBuildApp(object):
+    implements(IDistroReleaseSourceReleaseBuildApp)
+
     def __init__(self, sourcepackagerelease, arch):
         self.sourcepackagerelease = sourcepackagerelease
         self.arch = arch

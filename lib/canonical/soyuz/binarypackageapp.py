@@ -4,7 +4,6 @@
 """
 
 # Python standard library imports
-from string import split, strip, join
 from sets import Set
 from apt_pkg import ParseDepends
 
@@ -22,6 +21,12 @@ from canonical.launchpad.database import BinaryPackage, \
                                          DistroRelease, \
                                          VSourcePackageReleasePublishing
 
+from canonical.launchpad.interfaces import IDistroBinariesApp, \
+                                           IDistroReleaseBinaryReleaseBuildApp, \
+                                           IDistroReleaseBinariesApp, \
+                                           IDistroReleaseBinaryApp, \
+                                           IDistroReleaseBinaryReleaseApp
+
 #
 # 
 #
@@ -29,6 +34,7 @@ from canonical.launchpad.database import BinaryPackage, \
 # Debonzi 2004-11-10 Who did this comment?
 # Binary app component (bin) still using stubs ...
 class DistroBinariesApp(object):
+    implements(IDistroBinariesApp)
     def __init__(self, distribution):
         self.distribution = distribution
         
@@ -43,6 +49,8 @@ class DistroBinariesApp(object):
 
 class DistroReleaseBinariesApp(object):
     """BinaryPackages from a Distro Release"""
+    implements(IDistroReleaseBinariesApp)
+
     def __init__(self, release):
         self.release = release
 
@@ -75,6 +83,8 @@ class DistroReleaseBinariesApp(object):
 
     
 class DistroReleaseBinaryApp(object):
+    implements(IDistroReleaseBinaryApp)
+
     def __init__(self, binarypackage, release):
         try:
             self.binarypackage = binarypackage[0]
@@ -124,6 +134,8 @@ class DistroReleaseBinaryApp(object):
                                              version, self.release)
 
 class DistroReleaseBinaryReleaseApp(object):
+    implements(IDistroReleaseBinaryReleaseApp)
+
     def __init__(self, binarypackagerelease, version, distrorelease):
         self.version = version
         try:
@@ -159,6 +171,8 @@ class DistroReleaseBinaryReleaseApp(object):
                                                   self.version, arch)
 
 class DistroReleaseBinaryReleaseBuildApp(object):
+    implements(IDistroReleaseBinaryReleaseBuildApp)
+
     def __init__(self, binarypackagerelease, version, arch):
         self.binarypackagerelease = binarypackagerelease
         self.version = version

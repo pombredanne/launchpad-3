@@ -3,16 +3,8 @@
 (c) Canonical Software Ltd. 2004, all rights reserved.
 """
 
-# Python standard library imports
-from string import split, strip, join
-from sets import Set
-from apt_pkg import ParseDepends, ParseSrcDepends
-
 # Zope imports
 from zope.interface import implements
-
-# sqlos and SQLObject imports
-from canonical.lp import dbschema
 
 #Soyuz imports
 from canonical.soyuz.sourcepackageapp import DistroSourcesApp
@@ -26,12 +18,21 @@ from canonical.launchpad.database import BinaryPackage, \
                                          DistroReleaseRole, \
                                          SourcePackageInDistro
 
+from canonical.launchpad.interfaces import IDistribution, \
+                                           IDistroApp, \
+                                           IDistroReleaseApp, \
+                                           IDistroReleasesApp, \
+                                           IDistroReleaseTeamApp, \
+                                           IDistroTeamApp
+
 
 #
 # 
 #
 
 class DistrosApp(object):
+    implements(IDistribution)
+
     def __init__(self):
         self.entries = Distribution.select().count()
 
@@ -43,6 +44,8 @@ class DistrosApp(object):
 
     
 class DistroApp(object):
+    implements(IDistroApp)
+
     def __init__(self, name):
         self.distribution = Distribution.selectBy(name=name)[0]
         self.releases = DistroRelease.selectBy(distributionID=self.distribution.id)
@@ -67,6 +70,8 @@ class DistroApp(object):
 
 # Release app component Section (releases)
 class DistroReleaseApp(object):
+    implements(IDistroReleaseApp)
+
     def __init__(self, release):
         self.release = release
         self.roles=DistroReleaseRole.selectBy(distroreleaseID=self.release.id) 
@@ -82,6 +87,8 @@ class DistroReleaseApp(object):
         return SourcePackageInDistro.getBugSourcePackages(self.release)
 
 class DistroReleasesApp(object):
+    implements(IDistroReleasesApp)
+
     def __init__(self, distribution):
         self.distribution = distribution
 
@@ -94,6 +101,8 @@ class DistroReleasesApp(object):
 
 
 class DistroReleaseTeamApp(object):
+    implements(IDistroReleaseTeamApp)
+
     def __init__(self, release):
         self.release = release
 
@@ -102,6 +111,8 @@ class DistroReleaseTeamApp(object):
         
 
 class DistroTeamApp(object):
+    implements(IDistroTeamApp)
+
     def __init__(self, distribution):
         self.distribution = distribution
         self.team = DistributionRole.selectBy(distributionID=

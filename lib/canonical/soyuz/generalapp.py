@@ -9,12 +9,17 @@ from string import strip
 # Zope imports
 from zope.interface import implements
 
+# Launchpad imports
+from canonical.launchpad.interfaces import IbuilddepsContainer, \
+                                           ICurrentVersion
 
 #
 # 
 #
 
 class builddepsContainer(object):
+    implements(IbuilddepsContainer)
+    
     def __init__(self, name, version, signal):
         self.name = name
         self.version = version
@@ -24,6 +29,8 @@ class builddepsContainer(object):
 
     
 class CurrentVersion(object):
+    implements(ICurrentVersion)
+    
     def __init__(self, release, builds):
         self.release = release
         self.currentversion = release.version
