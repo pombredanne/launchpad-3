@@ -281,3 +281,17 @@ class TeamParticipation(SQLBase):
                    notNull=True)
         ]
 
+    #
+    # TeamPaticipation Class Methods
+    #
+
+    def getSubTeams(klass, teamID):
+        query = ("team = %d "
+                 "AND Person.id = TeamParticipation.person "
+                 "AND Person.teamowner IS NOT NULL" %teamID)
+
+        return klass.select(query)
+    getSubTeams = classmethod(getSubTeams)
+    
+        
+

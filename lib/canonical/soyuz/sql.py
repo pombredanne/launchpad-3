@@ -34,8 +34,8 @@ from canonical.launchpad.database import BinaryPackage, Build, \
                                          IrcID, Membership, TeamParticipation,\
                                          DistributionRole, DistroReleaseRole, \
                                          SourceSource, \
-                                         RCSTypeEnum, Branch, Changeset, \
-                                         SourcePackageSelection
+                                         RCSTypeEnum, Branch, Changeset
+
 
 #
 # 
@@ -93,36 +93,10 @@ class DistroReleaseApp(object):
             raise KeyError, name
 
     def findSourcesByName(self, pattern):
-        # XXX: Daniel Debonzi 2004-10-19
-        # This is a sugestion to make sql queries existents inside
-        # this file available for all aplications.
-        # The SourcePackageSelection class is in
-        # database.sourcepackage.py
-        return SourcePackageSelection.findSourcesByName(self.release, pattern)
-
-    where = (
-        'PackagePublishing.binarypackage = BinaryPackage.id AND '
-        'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
-        'DistroArchRelease.distrorelease = %d AND '
-        'BinaryPackage.binarypackagename = BinaryPackageName.id '
-        )
+        return SourcePackage.findSourcesByName(self.release, pattern)
 
     def findBinariesByName(self, pattern):
-        pattern = pattern.replace('%', '%%')
-        query = (self.where % self.release.id +
-                 'AND (BinaryPackageName.name ILIKE %s '
-                 % quote('%%' + pattern + '%%')
-                 + 'OR BinaryPackage.shortdesc ILIKE %s)'
-                 % quote('%%' + pattern + '%%'))
-        
-        # FIXME: (SQLObject_Selection+batching) Daniel Debonzi - 2004-10-13
-        # The selection is limited here because batching and SQLObject
-        # selection still not working properly. Now the days for each
-        # page showing BATCH_SIZE results the SQLObject makes queries
-        # for all the related things available on the database which
-        # presents a very slow result.
-        # Is those unique ?
-        return BinaryPackage.select(query)[:500]
+        return BinaryPackage.findBinariesByName(self.release, pattern)
 
 
 class DistroReleasesApp(object):
@@ -143,14 +117,9 @@ class DistroReleaseSourceReleaseBuildApp(object):
         self.sourcepackagerelease = sourcepackagerelease
         self.arch = arch
 
-        query = ('Build.sourcepackagerelease = %i '
-                 'AND Build.distroarchrelease = DistroArchRelease.id '
-                 'AND DistroArchRelease.architecturetag = %s'
-                 % (self.sourcepackagerelease.id, quote(self.arch))
-                 )
 
-        build_results = Build.select(query)
-
+        build_results = Build.getSourceReleaseBuild(sourcepackagerelease.id,
+                                                             arch)
         if build_results.count() > 0:
             self.build = build_results[0]
 
@@ -175,11 +144,8 @@ class DistroReleaseSourceReleaseApp(object):
 
         sourceReleases = sourcepackage.current(distrorelease)
 
-        query = sourceReleases.clause + \
-                ' AND SourcePackageRelease.version = %s' %quote(version)
-
-        sourceReleases = SourcePackageRelease.select(query)
-
+        sourceReleases = SourcePackageRelease.selectByVersion(sourceReleases,
+                                                                       version)
         self.archs = None
 
         for release in sourceReleases:
@@ -268,39 +234,17 @@ class DistroReleaseSourcesApp(object):
 
     Used for web UI.
     """
-    table = SourcePackageRelease
-    clauseTables = ('SourcePackage', 'SourcePackagePublishing')
-
     def __init__(self, release):
         self.release = release
-        self.people = Person.select('teamowner IS NULL')
-        
-    def _query(self):
-        return (
-            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
-            'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-            'AND SourcePackagePublishing.distrorelease = %d '
-            'AND SourcePackage.sourcepackagename = SourcePackageName.id'
-            % (self.release.id))
+        self.people = Person.select('teamowner IS NULL',
+                                    orderBy='displayname')
         
     def findPackagesByName(self, pattern):
-        # XXX: Daniel Debonzi 2004-10-19
-        # This is a sugestion to make sql queries existents inside
-        # this file available for all aplications.
-        # The SourcePackageSelection class is in
-        # database.sourcepackage.py
-        return SourcePackageSelection.findSourcesByName(self.release, pattern)
+        return SourcePackage.findSourcesByName(self.release, pattern)
 
     def __getitem__(self, name):
-        # XXX: (mult_results) Daniel Debonzi 2004-10-13
-        # What about multiple results?
-        #(which shouldn't happen here...)
-        query = self._query() + \
-                (' AND SourcePackageName.name = '
-                 '%s' % quote(name))
         try:
-            release = self.table.select(query,
-                                        clauseTables=self.clauseTables)[0]
+            release = SourcePackageRelease.getByName(self.release, name)
         except IndexError:
             # Convert IndexErrors into KeyErrors so that Zope will give a
             # NotFound page.
@@ -309,20 +253,8 @@ class DistroReleaseSourcesApp(object):
             sourcePackage = release.sourcepackage
             return DistroReleaseSourceApp(self.release, sourcePackage)
 
-
-    # FIXME: (distinct_query) Daniel Debonzi - 2004-10-13
-    # the results are NOT UNIQUE (DISTINCT)
-
-    # FIXME: (SQLObject_Selection+batching) Daniel Debonzi - 2004-10-13
-    # The selection is limited here because batching and SQLObject
-    # selection still not working properly. Now the days for each
-    # page showing BATCH_SIZE results the SQLObject makes queries
-    # for all the related things available on the database which
-    # presents a very slow result.
     def __iter__(self):
-        query = self._query()
-        return iter(self.table.select(query,
-                                      orderBy='sourcepackagename.name')[:500])
+        return iter(SourcePackageRelease.getReleases(self.release))
 
 class DistroSourcesApp(object):
     def __init__(self, distribution):
@@ -340,7 +272,7 @@ class DistroReleaseTeamApp(object):
     def __init__(self, release):
         self.release = release
 
-        self.team=DistroReleaserole.selectBy(distroreleaseID=
+        self.team=DistroReleaseRole.selectBy(distroreleaseID=
                                              self.release.id)
         
 
@@ -377,10 +309,7 @@ class PeopleApp(object):
             raise
 
     def __iter__(self):
-        # FIXME: (ordered_query) Daniel Debonzi 2004-10-13
-        # Is available in SQLObject a good way to get results
-        # ordered?
-        return iter(Person.select('1=1 ORDER by displayname'))
+        return iter(Person.select(orderBy='displayname'))
 
 class PersonApp(object):
     def __init__(self, id):
@@ -426,11 +355,7 @@ class PersonApp(object):
             self.teams = None
 
         try:
-            query = ("team = %d "
-                     "AND Person.id = TeamParticipation.person "
-                     "AND Person.teamowner IS NOT NULL" %self.id)
-            
-            self.subteams = TeamParticipation.select(query)
+            self.subteams = TeamParticipation.getSubTeams(self.id)
             
             if self.subteams.count() == 0:
                 self.subteams = None                
@@ -446,7 +371,7 @@ class PersonApp(object):
             self.distroroles = None
 
         try:
-            self.distroreleaseroles = DistroReleaserole.selectBy(personID=\
+            self.distroreleaseroles = DistroReleaseRole.selectBy(personID=\
                                                                  self.id)
             if self.distroreleaseroles.count() == 0:
                 self.distroreleaseroles = None
@@ -482,18 +407,7 @@ class PersonApp(object):
             self.gpg = None
 
     def _getsourcesByPerson(self):
-        query = ('SourcePackagePublishing.sourcepackagerelease = '
-                 'SourcePackageRelease.id '
-                 'AND SourcePackageRelease.sourcepackage = '
-                 'SourcePackage.id '
-                 'AND SourcePackage.maintainer = %i'
-                 %self.id)
-        
-        # FIXME: (sourcename_order) Daniel Debonzi 2004-10-13
-        # ORDER by SourcePackagename
-        # The result should be ordered by SourcePackageName
-        # but seems that is it not possible
-        return Set(SourcePackageRelease.select(query))
+        return Set(SourcePackageRelease.getByPersonID(self.id))
     
 
 
@@ -557,36 +471,30 @@ class DistroReleaseBinaryReleaseApp(object):
         except:
             self.binarypackagerelease = binarypackagerelease[0]
 
-        query = ('SourcePackagePublishing.distrorelease = DistroRelease.id '
-                 'AND SourcePackagePublishing.sourcepackagerelease = %i '
-                 %(self.binarypackagerelease.build.sourcepackagerelease.id))
 
+        self.sourcedistrorelease = \
+             DistroRelease.getBySourcePackageRelease(\
+            self.binarypackagerelease.build.sourcepackagerelease.id)
 
-        self.sourcedistrorelease = DistroRelease.select(query)[0]
+        # It is may be a bit confusing but is used to get the binary
+        # status that comes from SourcePackageRelease
+        sourceReleases = self.binarypackagerelease.current(distrorelease)
 
-
-        binaryReleases = self.binarypackagerelease.current(distrorelease)
-
-        query = binaryReleases.clause + \
-                (' AND Build.id = BinaryPackage.build'
-                 ' AND Build.sourcepackagerelease = SourcePackageRelease.id'
-                 ' AND BinaryPackage.version = %s' %quote(version)
-                )
-
-        binaryReleases = SourcePackageRelease.select(query)
+        sourceReleases = \
+             SourcePackageRelease.selectByBinaryVersion(sourceReleases,
+                                                                 version)
 
         self.archs = None
 
-        for release in binaryReleases:
+        for release in sourceReleases:
             # Find distroarchs for that release
             archReleases = release.architecturesReleased(distrorelease)
             self.archs = [a.architecturetag for a in archReleases]
 
     def __getitem__(self, arch):
-        query = self.binselect.clause + \
-                ' AND DistroArchRelease.architecturetag = %s' %quote(arch)
-        binarypackage = BinaryPackage.select(query)
-        return DistroReleaseBinaryReleaseBuildApp(binarypackage[0],
+        binarypackage = BinaryPackage.selectByArchtag(self.binselect,
+                                                            arch)
+        return DistroReleaseBinaryReleaseBuildApp(binarypackage,
                                                   self.version, arch)
     
 class DistroReleaseBinaryApp(object):
@@ -623,37 +531,22 @@ class DistroReleaseBinaryApp(object):
     lastversions = property(lastversions)
 
     def __getitem__(self, version):
-        query = self.binselect.clause + \
-                ' AND BinaryPackage.version = %s' %quote(version)
-        self.binarypackage = BinaryPackage.select(query)
-        return DistroReleaseBinaryReleaseApp(self.binarypackage,
+        binarypackage = BinaryPackage.getByVersion(self.binselect
+                                                            , version)
+        return DistroReleaseBinaryReleaseApp(binarypackage,
                                              version, self.release)
 
 class DistroReleaseBinariesApp(object):
     """BinaryPackages from a Distro Release"""
-    where = (
-        'PackagePublishing.binarypackage = BinaryPackage.id AND '
-        'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
-        'DistroArchRelease.distrorelease = %d '
-        )
     def __init__(self, release):
         self.release = release
 
     def findPackagesByName(self, pattern):
-        pattern = pattern.replace('%', '%%')
-        query = (self.where % self.release.id + \
-                 'AND  BinaryPackage.binarypackagename = BinaryPackageName.id '
-                 'AND  UPPER(BinaryPackageName.name) LIKE UPPER(%s)'
-                 % quote('%%' + pattern + '%%'))
+        selection = Set(BinaryPackage.findBinariesByName(self.release,
+                                                                  pattern))
 
-
-        # WTF ist That ?? I wonder how many copies of this code we will find !
-        # Will be solved when bug #2094 is fixed
         # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
         # expensive routine
-        selection = Set(BinaryPackage.select(query)[:500])
-
-        # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
         # Dummy solution to avoid a binarypackage to be shown more
         # then once
         present = []
@@ -667,24 +560,13 @@ class DistroReleaseBinariesApp(object):
         
     def __getitem__(self, name):
         try:
-            where = self.where % self.release.id + \
-                    ('AND BinaryPackage.binarypackagename ='
-                     ' BinaryPackageName.id '
-                     'AND BinaryPackageName.name = ' + quote(name)
-                     )
-            return DistroReleaseBinaryApp(BinaryPackage.select(where),
-                                          self.release)
+            bins = BinaryPackage.getBinariesByName(self.release, name)
+            return DistroReleaseBinaryApp(bins, self.release)
         except IndexError:
             raise KeyError, name
 
-
-    # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
-    # FIXME: (SQLObject_Selection+batching)
-    # they were LIMITED by hand
     def __iter__(self):
-        query = self.where % self.release.id
-        return iter(BinaryPackage.select(query, orderBy=\
-                                              'BinaryPackagename.name')[:500])
+        return iter(BinaryPackage.getBinaries(self.release))
 
 class DistroBinariesApp(object):
     def __init__(self, distribution):
@@ -706,83 +588,94 @@ class SourcePackages(object):
 
     Used for web UI.
     """
-    implements(ISourcePackageSet)
+# XXX: Daniel Debonzi 2004-10-20
+# I comment out this class because
+# as far as I know it is not been used anymore
+# If it breaks you code, please uncoment and
+# drop a note here. Otherwise Ill remove it
 
-    table = SourcePackageRelease
-    clauseTables = ('SourcePackage', 'SourcePackagePublishing',)
+##     implements(ISourcePackageSet)
 
-    def __init__(self, release):
-        self.release = release
+##     table = SourcePackageRelease
+##     clauseTables = ('SourcePackage', 'SourcePackagePublishing',)
+
+##     def __init__(self, release):
+##         self.release = release
         
-    def _query(self):
-        return (
-            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
-            'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-            'AND SourcePackagePublishing.distrorelease = %d '
-            % (self.release.id))
+##     def _query(self):
+##         return (
+##             'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
+##             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+##             'AND SourcePackagePublishing.distrorelease = %d '
+##             % (self.release.id))
         
-    def __getitem__(self, name):
-        # XXX: (mult_results) Daniel Debonzi 2004-10-13
-        # What about multiple results?
-        #      (which shouldn't happen here...)
+##     def __getitem__(self, name):
+##         # XXX: (mult_results) Daniel Debonzi 2004-10-13
+##         # What about multiple results?
+##         #      (which shouldn't happen here...)
 
-        query = self._query() + \
-                ' AND name = %s' % quote(name)
-        try:
-            return self.table.select(query, clauseTables=self.clauseTables)[0]
-        except IndexError:
-            # Convert IndexErrors into KeyErrors so that Zope will give a
-            # NotFound page.
-            raise KeyError, name
+##         query = self._query() + \
+##                 ' AND name = %s' % quote(name)
+##         try:
+##             return self.table.select(query, clauseTables=self.clauseTables)[0]
+##         except IndexError:
+##             # Convert IndexErrors into KeyErrors so that Zope will give a
+##             # NotFound page.
+##             raise KeyError, name
 
 
-    def __iter__(self):
-        for bp in self.table.select(self._query(),
-                                    clauseTables=self.clauseTables):
-            yield bp
+##     def __iter__(self):
+##         for bp in self.table.select(self._query(),
+##                                     clauseTables=self.clauseTables):
+##             yield bp
 
 
 ## Doesn't work as expected !!!!
 ## (Deprecated)
+# XXX: Daniel Debonzi 2004-10-20
+# I comment out this class because
+# as far as I know it is not been used anymore
+# If it breaks you code, please uncoment and
+# drop a note here. Otherwise Ill remove it
 class BinaryPackages(object):
     """Container of BinaryPackage objects.
 
     Used for web UI.
     """
-    implements(IBinaryPackageSet)
+##     implements(IBinaryPackageSet)
 
-    clauseTables = ('BinaryPackageUpload', 'DistroArchRelease')
+##     clauseTables = ('BinaryPackageUpload', 'DistroArchRelease')
 
-    def __init__(self, release):
-        self.release = release
+##     def __init__(self, release):
+##         self.release = release
 
-    def _query(self):
-        return (
-            'BinaryPackageUpload.binarypackagebuild = BinaryPackageBuild.id '
-            'AND BinaryPackageUpload.distroarchrelease = DistroArchRelease.id '
-            'AND DistroArchRelease.distrorelease = %d '
-            % (self.release.id))
+##     def _query(self):
+##         return (
+##             'BinaryPackageUpload.binarypackagebuild = BinaryPackageBuild.id '
+##             'AND BinaryPackageUpload.distroarchrelease = DistroArchRelease.id '
+##             'AND DistroArchRelease.distrorelease = %d '
+##             % (self.release.id))
         
-    def __getitem__(self, name):
-        # XXX: (mult_results) Daniel Debonzi 2004-10-13
-        # What about multiple results?
-        #(which shouldn't happen here...)
+##     def __getitem__(self, name):
+##         # XXX: (mult_results) Daniel Debonzi 2004-10-13
+##         # What about multiple results?
+##         #(which shouldn't happen here...)
 
-        query = self._query() + \
-                (' AND BinaryPackageBuild.binarypackage = BinaryPackage.id'
-                 ' AND BinaryPackage.name = %s'
-                 % quote(name) )
-        try:
-            return self.table.select(query, clauseTables=self.clauseTables)[0]
-        except IndexError:
-            # Convert IndexErrors into KeyErrors so that Zope will give a
-            # NotFound page.
-            raise KeyError, name
+##         query = self._query() + \
+##                 (' AND BinaryPackageBuild.binarypackage = BinaryPackage.id'
+##                  ' AND BinaryPackage.name = %s'
+##                  % quote(name) )
+##         try:
+##             return self.table.select(query, clauseTables=self.clauseTables)[0]
+##         except IndexError:
+##             # Convert IndexErrors into KeyErrors so that Zope will give a
+##             # NotFound page.
+##             raise KeyError, name
 
-    def __iter__(self):
-        for bp in self.table.select(self._query(),
-                                    clauseTables=self.clauseTables):
-            yield bp
+##     def __iter__(self):
+##         for bp in self.table.select(self._query(),
+##                                     clauseTables=self.clauseTables):
+##             yield bp
 
 
 # arch-tag: 8dbe3bd2-94d8-4008-a03e-f5c848d6cfa7

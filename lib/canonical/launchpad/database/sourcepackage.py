@@ -78,6 +78,96 @@ class SourcePackageRelease(SQLBase):
     pkgurgency = property(_urgency)
 
 
+    #
+    # SourcePackageRelease Class Methods
+    #
+    
+    def getByName(klass, distrorelease, name):
+        """Get A SourcePackageRelease in a distrorelease by its name"""
+        clauseTables = ('SourcePackage', 'SourcePackagePublishing')
+
+        # XXX: (mult_results) Daniel Debonzi 2004-10-13
+        # What about multiple results?
+        #(which shouldn't happen here...)
+        query = ('SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
+                 'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+                 'AND SourcePackagePublishing.distrorelease = %d '
+                 'AND SourcePackage.sourcepackagename = SourcePackageName.id'
+                 ' AND SourcePackageName.name = %s'
+                 % (distrorelease.id, quote(name))  )
+
+
+        return klass.select(query,
+                            clauseTables=clauseTables)[0]
+    getByName = classmethod(getByName)
+
+    def getReleases(klass, distrorelease):
+        """Get SourcePackageReleases in a distrorelease"""
+
+        query = ('SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
+                 'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+                 'AND SourcePackagePublishing.distrorelease = %d '
+                 'AND SourcePackage.sourcepackagename = SourcePackageName.id'
+                 % (distrorelease.id))
+        
+        # FIXME: (distinct_query) Daniel Debonzi - 2004-10-13
+        # the results are NOT UNIQUE (DISTINCT)
+        
+        # FIXME: (SQLObject_Selection+batching) Daniel Debonzi - 2004-10-13
+        # The selection is limited here because batching and SQLObject
+        # selection still not working properly. Now the days for each
+        # page showing BATCH_SIZE results the SQLObject makes queries
+        # for all the related things available on the database which
+        # presents a very slow result.
+        return klass.select(query,
+                            orderBy='sourcepackagename.name')[:500]
+    getReleases = classmethod(getReleases)
+
+
+    def selectByVersion(klass, sourcereleases, version):
+        """Select from SourcePackageRelease.SelectResult that have version=version"""
+        query = sourcereleases.clause + \
+                ' AND SourcePackageRelease.version = %s' %quote(version)
+
+        return klass.select(query)
+
+    selectByVersion = classmethod(selectByVersion)
+
+    def selectByBinaryVersion(klass, sourcereleases, version):
+        """Select from SourcePackageRelease.SelectResult that have
+        BinaryPackage.version=version"""
+
+        query = sourcereleases.clause + \
+                (' AND Build.id = BinaryPackage.build'
+                 ' AND Build.sourcepackagerelease = SourcePackageRelease.id'
+                 ' AND BinaryPackage.version = %s' %quote(version)
+                )
+
+        return klass.select(query)
+
+    selectByBinaryVersion = classmethod(selectByBinaryVersion)
+
+
+    def getByPersonID(klass, personID):
+        query = ('SourcePackagePublishing.sourcepackagerelease = '
+                 'SourcePackageRelease.id '
+                 'AND SourcePackageRelease.sourcepackage = '
+                 'SourcePackage.id '
+                 'AND SourcePackage.maintainer = %i'
+                 %personID)
+
+        # FIXME: (sourcename_order) Daniel Debonzi 2004-10-13
+        # ORDER by SourcePackagename
+        # The result should be ordered by SourcePackageName
+        # but seems that is it not possible
+        return klass.select(query,
+                            orderBy='sourcepackagename.name')
+    getByPersonID = classmethod(getByPersonID)
+        
+
+
+
+
 def getSourcePackage(name):
     return SourcePackage.selectBy(name=name)
 
@@ -191,6 +281,34 @@ class SourcePackage(SQLBase):
         else:
             return None
 
+    #
+    # SourcePackage Class Methods
+    #
+
+    def findSourcesByName(klass, distrorelease, pattern):
+        """Search for SourcePackages in a distrorelease that matches a pattern"""
+
+        pattern = pattern.replace('%', '%%')
+        query = ('SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
+                  'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+                  'AND SourcePackagePublishing.distrorelease = %d '
+                  'AND SourcePackage.sourcepackagename = SourcePackageName.id'
+                  % (distrorelease.id) +
+                 ' AND (SourcePackageName.name ILIKE %s'
+                 % quote('%%' + pattern + '%%')
+                 + ' OR SourcePackage.shortdesc ILIKE %s)'
+                 % quote('%%' + pattern + '%%'))
+        
+        # XXX: Daniel Debonzi 2004-10-19
+        # Returning limited results until
+        # sql performanse issues been solved
+        return klass.select(query,
+                            orderBy='sourcepackagename.name')[:500]
+
+    findSourcesByName = classmethod(findSourcesByName)
+
+
+
 class SourcePackageContainer(object):
     """A container for SourcePackage objects."""
 
@@ -231,30 +349,5 @@ class SourcePackageName(SQLBase):
 
     name = StringCol(dbName='name', notNull=True)
 
-class SourcePackageSelection(object):
-    """This class have some util queries to get related SourcePackage results"""
-    # XXX. Daniel Henrique Debonzi 2004-10-19
-    # There is no interface defined for this class yet.
-    # Should be implemented since everybody agree with this class
 
-    def findSourcesByName(klass, distrorelease, pattern):
-        """Search for SourcePackages in a distrorelease that matches a pattern"""
-
-        pattern = pattern.replace('%', '%%')
-        query = ('SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
-                  'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-                  'AND SourcePackagePublishing.distrorelease = %d '
-                  'AND SourcePackage.sourcepackagename = SourcePackageName.id'
-                  % (distrorelease.id) +
-                 ' AND (SourcePackageName.name ILIKE %s'
-                 % quote('%%' + pattern + '%%')
-                 + ' OR SourcePackage.shortdesc ILIKE %s)'
-                 % quote('%%' + pattern + '%%'))
-        
-        # XXX: Daniel Debonzi 2004-10-19
-        # Returning limited results until
-        # sql performanse issues been solved
-        return SourcePackage.select(query)[:500]
-
-    findSourcesByName = classmethod(findSourcesByName)
 

@@ -205,4 +205,17 @@ class DistroRelease(SQLBase):
                 
     binarycount = property(binarycount)
 
+    #
+    # DistroRelease Class Methods
+    #
+
+    def getBySourcePackageRelease(klass, sourcepackagereleaseID):
+        query = ('SourcePackagePublishing.distrorelease = DistroRelease.id '
+                 'AND SourcePackagePublishing.sourcepackagerelease = %i '
+                 %(sourcepackagereleaseID))
+        
+        return klass.select(query)[0]
+    getBySourcePackageRelease = \
+                              classmethod(getBySourcePackageRelease)
+
 

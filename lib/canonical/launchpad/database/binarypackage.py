@@ -82,7 +82,9 @@ class BinaryPackage(SQLBase):
             ' AND SourcePackageRelease.sourcepackage = %d'
             ' AND SourcePackagePublishing.status = %d'
             ' ORDER BY sourcePackageRelease.dateuploaded DESC'
-            % (distroRelease.id, self.build.sourcepackagerelease.sourcepackage.id,dbschema.PackagePublishingStatus.SUPERCEDED)
+            % (distroRelease.id,
+               self.build.sourcepackagerelease.sourcepackage.id,
+               dbschema.PackagePublishingStatus.SUPERCEDED)
         ))
         if last:
             return last
@@ -97,6 +99,81 @@ class BinaryPackage(SQLBase):
 
     pkgpriority = property(_priority)
 
+    #
+    # BinaryPackage Class Methods
+    #
+
+    def findBinariesByName(klass, distrorelease, pattern):
+        pattern = pattern.replace('%', '%%')
+
+        query = (
+        'PackagePublishing.binarypackage = BinaryPackage.id AND '
+        'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
+        'DistroArchRelease.distrorelease = %d AND '
+        'BinaryPackage.binarypackagename = BinaryPackageName.id '
+        'AND (BinaryPackageName.name ILIKE %s '
+        'OR BinaryPackage.shortdesc ILIKE %s)'
+        %(distrorelease.id,
+          quote('%%' + pattern + '%%'),
+          quote('%%' + pattern + '%%'))
+        )
+
+        # FIXME: (SQLObject_Selection+batching) Daniel Debonzi - 2004-10-13
+        # The selection is limited here because batching and SQLObject
+        # selection still not working properly. Now the days for each
+        # page showing BATCH_SIZE results the SQLObject makes queries
+        # for all the related things available on the database which
+        # presents a very slow result.
+        # Is those unique ?
+        return klass.select(query,
+                            orderBy='BinaryPackageName.name')[:500]
+    findBinariesByName = classmethod(findBinariesByName)
+
+    def getBinariesByName(klass, distrorelease, name):
+
+        query = (
+            'PackagePublishing.binarypackage = BinaryPackage.id AND '
+            'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
+            'DistroArchRelease.distrorelease = %d AND '
+            'BinaryPackage.binarypackagename = BinaryPackageName.id '
+            'AND BinaryPackageName.name = %s '
+            %(distrorelease.id, quote(name))
+            )
+        return klass.select(query)
+    getBinariesByName = classmethod(getBinariesByName)
+    
+    def getBinaries(klass, distrorelease):
+        query = ('PackagePublishing.binarypackage = BinaryPackage.id AND '
+                 'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
+                 'DistroArchRelease.distrorelease = %d '
+                 % distrorelease.id
+                 )
+
+        # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
+        # FIXME: (SQLObject_Selection+batching)
+        # they were LIMITED by hand
+        return klass.select(query, orderBy=\
+                            'BinaryPackageName.name')[:500]
+
+    getBinaries = classmethod(getBinaries)
+        
+    def getByVersion(klass, binarypackages, version):
+        """From get given BinaryPackageSelection get the one with version"""
+
+        query = binarypackages.clause + \
+                ' AND BinaryPackage.version = %s' %quote(version)
+        return klass.select(query)
+
+    getByVersion = classmethod(getByVersion)
+
+    def selectByArchtag(klass, binarypackages, archtag):
+        """Select from a give BinaryPackage.SelectResult BinaryPackage with archtag"""
+        query = binarypackages.clause + \
+                ' AND DistroArchRelease.architecturetag = %s' %quote(archtag)
+        return klass.select(query)[0]
+        
+    selectByArchtag = classmethod(selectByArchtag)
+
 
 class BinaryPackageName(SQLBase):
     _table = 'BinaryPackageName'
@@ -109,4 +186,5 @@ class BinaryPackageName(SQLBase):
             'BinaryPackage', joinColumn='binarypackagename'
             )
     ####
+
 

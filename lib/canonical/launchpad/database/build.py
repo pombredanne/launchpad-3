@@ -45,6 +45,19 @@ class Build(SQLBase):
 
     ]
 
+    #
+    # Build Class Methods
+    #
+    def getSourceReleaseBuild(klass, sourcepackagereleaseID, archtag):
+        query = ('Build.sourcepackagerelease = %i '
+                 'AND Build.distroarchrelease = DistroArchRelease.id '
+                 'AND DistroArchRelease.architecturetag = %s'
+                 % (sourcepackagereleaseID, quote(archtag))
+                 )
+
+        return Build.select(query)
+
+    getSourceReleaseBuild = classmethod(getSourceReleaseBuild)
 
 
 class Builder(SQLBase):
@@ -62,3 +75,4 @@ class Builder(SQLBase):
                    foreignKey='Person', notNull=True),
         ]
 
+    
