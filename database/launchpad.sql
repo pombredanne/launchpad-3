@@ -199,6 +199,8 @@
 /*
   DESTROY ALL TABLES
 */
+-- remove 25/8/04
+DROP TABLE BugAttachmentContent;
 DROP TABLE ProductBranchRelationship;
 DROP TABLE PackageSelection;
 DROP TABLE SourcepackageBugAssignment;
@@ -212,7 +214,6 @@ DROP TABLE BranchRelationship;
 DROP TABLE ProjectBugsystem;
 DROP TABLE BugWatch;
 DROP TABLE BugSystem;
-DROP TABLE BugAttachment;
 DROP TABLE POTranslationSighting;
 DROP TABLE POMsgIDSighting;
 DROP TABLE POMsgSet;
@@ -221,6 +222,7 @@ DROP TABLE POSubscription;
 DROP TABLE POTemplate;
 DROP TABLE License;
 DROP TABLE BugRelationship;
+DROP TABLE BugAttachment;
 DROP TABLE BugMessage;
 DROP TABLE BugExternalref;
 DROP TABLE BugLabel;
@@ -300,10 +302,6 @@ DROP TABLE LibraryFileContent;
 DROP TABLE Label;
 DROP TABLE Schema;
 DROP TABLE Person;
--- Remove these three in a few days
-DROP TABLE LaunchpadFileHash;
-DROP TABLE LaunchpadFile;
-DROP TABLE BugAttachmentContent;
 
 
 
