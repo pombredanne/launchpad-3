@@ -13,8 +13,9 @@ from zope.component import ComponentLookupError, getUtility
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
 from sqlobject.sqlbuilder import AND
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, cursor
 from canonical.database.constants import UTC_NOW
+from canonical.database import postgresql
 
 # canonical imports
 from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
@@ -65,7 +66,7 @@ class Person(SQLBase):
     displayname = StringCol(dbName='displayname', default=None)
     teamdescription = StringCol(dbName='teamdescription', default=None)
 
-    teamowner = ForeignKey(dbName='teamowner', foreignKey='Person', 
+    teamowner = ForeignKey(dbName='teamowner', foreignKey='Person',
                            default=None)
 
     sshkeys = MultipleJoin('SSHKey', joinColumn='person')
@@ -81,9 +82,12 @@ class Person(SQLBase):
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
                                      default=None)
 
+    merged = ForeignKey(dbName='merged', foreignKey='Person',
+                           default=None)
+
     # RelatedJoin gives us also an addLanguage and removeLanguage for free
-    languages = RelatedJoin('Language', joinColumn='person', 
-                            otherColumn='language', 
+    languages = RelatedJoin('Language', joinColumn='person',
+                            otherColumn='language',
                             intermediateTable='PersonLanguage')
 
     # relevant joins
@@ -635,7 +639,7 @@ class PersonSet(object):
             clauseTables=('POTranslationSighting', 'POMsgSet'),
             distinct=True)
 
-    def isUbuntite(self, user):
+    def isUbuntite(self, person):
         """See IPersonSet."""
         # XXX: cprov 20050226
         # Verify the the SignedCoC version too
@@ -647,7 +651,7 @@ class PersonSet(object):
         conf = getUtility(ICodeOfConductConf)
 
         query = ('SignedCodeOfConduct.active = True AND '
-                 'SignedCodeOfConduct.owner = %s' % user)
+                 'SignedCodeOfConduct.owner = %s' % person)
                  
         sign = SignedCodeOfConduct.select(query)
 
@@ -668,6 +672,150 @@ class PersonSet(object):
 
         return Person.select(query, clauseTables=clauseTables)
     
+    def merge(self, from_person, to_person):
+        """Merge a person into another.
+        
+        The old user (from_person) will be left as an atavism
+
+        XXX: Are we game to delete from_person yet?
+            -- StuartBishop 20050315
+        """
+        # Sanity checks
+        if ITeam.providedBy(from_person):
+            raise TypeError, 'Got a team as from_person'
+        if ITeam.providedBy(to_person):
+            raise TypeError, 'Got a team as to_person'
+        if not IPerson.providedBy(from_person):
+            raise TypeError, 'from_person is not a person'
+        if not IPerson.providedBy(to_person):
+            raise TypeError, 'to_person is not a person'
+
+        # XXX: Looks like I'm supposed to use EmailAddressSet here -
+        # Person.emails would be useful, but it only exists in the
+        # IPerson interface. -- StuartBishop 20050321
+        if len(list(EmailAddress.selectBy(personID=from_person.id))) > 0:
+            raise ValueError, 'from_person still has email addresses'
+
+        # Get a database cursor.
+        cur = cursor()
+
+        references = list(postgresql.queryReferences(cur, 'person', 'id'))
+
+        # These table.columns will be skipped by the 'catch all'
+        # update performed later
+        skip = [
+            ('teammembership', 'person'),
+            ('teammembership', 'team'),
+            ('teamparticipation', 'person'),
+            ('teamparticipation', 'team'),
+            ('personlanguage', 'person'),
+            ('person', 'merged'),
+            ]
+
+        # Sanity check. If we have an indirect reference, it must
+        # be ON DELETE CASCADE. We only have one case of this at the moment,
+        # but this code ensures we catch any new ones added incorrectly.
+        for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
+            # If the ref_tab and ref_col is not Person.id, then we have
+            # an indirect reference. Ensure the update action is 'CASCADE'
+            if ref_tab != 'person' and ref_col != 'id':
+                if updact != 'c':
+                    raise RuntimeError(
+                        '%s.%s reference to %s.%s must be ON UPDATE CASCADE'%(
+                            src_tab, src_col, ref_tab, ref_col
+                            )
+                        )
+
+        # These rows are in a UNIQUE index, and we can only move them
+        # to the new Person if there is not already an entry. eg. if
+        # the destination and source persons are both subscribed to a bounty,
+        # we cannot change the source persons subscription. We just leave them
+        # as noise for the time being.
+
+        to_id = to_person.id
+        from_id = from_person.id
+
+        # Update GPGKey. It won't conflict, but our sanity checks don't
+        # know that
+        cur.execute('''
+            UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d
+            ''' % vars())
+        skip.append(('gpgkey','owner'))
+
+        # Update only the BountySubscriptions that will not conflict
+        # XXX: Add sampledata and test to confirm this case
+        # -- StuartBishop 20050331
+        cur.execute('''
+            UPDATE BountySubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id
+                FROM BountySubscription AS a, BountySubscription AS b
+                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                AND a.bounty = b.bounty
+                )
+            ''' % vars())
+        skip.append(('bountysubscription', 'person'))
+
+        # Update only the POSubscriptions that will not conflict
+        # XXX: Add sampledata and test to confirm this case
+        # -- StuartBishop 20050331
+        cur.execute('''
+            UPDATE POSubscription
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id
+                    FROM POSubscription AS a, POSubscription AS b
+                    WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                    AND a.language = b.language
+                    AND a.potemplate = b.potemplate
+                    )
+            ''' % vars())
+        skip.append(('posubscription', 'person'))
+
+        # Update only the POTranslationSightngs that will not conflict
+        # XXX: Add sampledata and test to confirm this case
+        # -- StuartBishop 20050331
+        cur.execute('''
+            UPDATE POTranslationSighting
+            SET person=%(to_id)d
+            WHERE person=%(from_id)d AND id NOT IN (
+                SELECT a.id
+                FROM POTranslationSighting AS a, POTranslationSighting AS b
+                WHERE a.person = %(from_id)d AND b.person = %(to_id)d
+                    AND a.pomsgset = b.pomsgset
+                    AND a.potranslation = b.potranslation
+                    AND a.license = b.license
+                AND a.pluralform = b.pluralform
+                )
+            ''' % vars())
+        skip.append(('potranslationsighting', 'person'))
+    
+        # Sanity check. If we have a reference that participates in a
+        # UNIQUE index, it must have already been handled by this point.
+        # We can tell this by looking at the skip list.
+        for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
+            uniques = postgresql.queryUniques(cur, src_tab, src_col)
+            if len(uniques) > 0 and (src_tab, src_col) not in skip:
+                raise NotImplementedError(
+                        '%s.%s reference to %s.%s is in a UNIQUE index '
+                        'but has not been handled' % (
+                            src_tab, src_col, ref_tab, ref_col
+                            )
+                        )
+
+        # Handle all simple cases
+        for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
+            if (src_tab, src_col) in skip:
+                continue
+            cur.execute('UPDATE %s SET %s=%d WHERE %s=%d' % (
+                src_tab, src_col, to_person.id, src_col, from_person.id
+                ))
+
+        # Flag the account as merged
+        cur.execute('''
+            UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
+            ''' % vars())
 
 def createPerson(email, displayname=None, givenname=None, familyname=None,
                  password=None):
@@ -997,7 +1145,7 @@ class Karma(SQLBase):
     datecreated = DateTimeCol(dbName='datecreated', notNull=True,
                               default='NOW')
 
-    def _karmatypename(self):
+    def karmatypename(self):
         return self.karmatype.title
-    karmatypename = property(_karmatypename)
+    karmatypename = property(karmatypename)
 

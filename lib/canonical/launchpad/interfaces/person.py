@@ -141,6 +141,14 @@ class IPerson(Interface):
                           'members can only be added by one of the '
                           'administrators of the team.'))
 
+    merged = Int(title=_('Merged Into'), required=False, readonly=True,
+            description=_(
+                'When a Person is merged into another Person, this attribute '
+                'is set on the Person referencing the destination Person. If '
+                'this is set to None, then this Person has not been merged '
+                'into another and is still valid')
+                )
+
     # title is required for the Launchpad Page Layout main template
     title = Attribute('Person Page Title')
 
@@ -355,6 +363,14 @@ class IPersonSet(Interface):
 
     def getUbuntites():
         """Return a set of person with valid Ubuntite flag."""
+
+    # TODO: Currently not declared part of the interface - we need to
+    # sort out permissions as we need to ensure it can only be called
+    # in specific instances. -- StuartBishop 20050331
+    # XXX: salgado, 2005-03-31: can't we have this method declared in IPerson?
+    # I can't see why we need it here.
+    def merge(from_person, to_person):
+        """Merge a person into another."""
 
 
 class IEmailAddress(Interface):

@@ -423,6 +423,15 @@ def rollback():
 
 def commit():
     SQLBase._connection.commit()
+
+
+def cursor():
+    '''Return a cursor from the current database connection.
+
+    This is useful for code that needs to issue database queries
+    directly rather than using the SQLObject interface
+    '''
+    return SQLBase._connection._connection.cursor()
     
 
 class FakeZopelessConnectionDescriptor(_ZopelessConnectionDescriptor):

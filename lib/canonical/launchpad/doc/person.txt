@@ -51,6 +51,66 @@ False
 >>> ITeam.providedBy(buttsource)
 True
 
+
+Merging
+-------
+
+The method to perform the low level merging of two Persons
+should only be used by the one true account merge workflow.
+
+>>> foo = personset.getByName('name16')
+>>> sample = personset.getByName('name12')
+>>> admins = personset.getByName('admins')
+
+XXX: Need to sort out permissions on PersonSet.merge
+
+We can't merge teams
+
+>>> personset.merge(admins, foo)
+Traceback (most recent call last):
+...
+TypeError: ...
+
+>>> personset.merge(foo, admins)
+Traceback (most recent call last):
+...
+TypeError: ...
+
+Nor can we merge an account that still has email addresses attached to it
+
+>>> personset.merge(foo, sample)
+Traceback (most recent call last):
+...
+ValueError: ...
+
+
+Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
+>>> login('mark@hbd.com')
+>>> kw = {'name': 'empty', 'displayname': 'Empty Person'}
+>>> empty = personset.newPerson(**kw)
+>>> ubuntu_team = personset.getByName('name17')
+>>> ubuntu_team.teamowner = empty
+>>> personset.merge(empty, sample)
+
+>>> from canonical.launchpad.database import Person
+>>> cur = Person._connection._connection.cursor()
+>>> cur.execute("select p1.name from person as p1, person as p2 where "
+...             "p1.id = p2.teamowner and p2.name = 'name17'")
+>>> cur.fetchone()[0]
+u'sabdfl'
+
+The account that has been merged is flagged. We can use this to eliminate
+merged accounts from lists etc.
+
+>>> cur.execute("SELECT merged FROM Person WHERE name='empty'")
+>>> cur.fetchone()[0]
+12
+
+>>> cur.execute("SELECT merged FROM Person WHERE name='name12'")
+>>> cur.fetchone()[0] is None
+True
+
+
 Searching for People
 ====================
 
@@ -60,10 +120,10 @@ IPersonSet.search.
 >>> from canonical.launchpad.searchbuilder import NULL
 >>> valid_people = personset.search(password = NULL)
 >>> valid_people.count()
-21
+22
 
 Passing no args would return all people:
 
 >>> all_people = personset.search()
 >>> all_people.count()
-30
+31

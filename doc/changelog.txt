@@ -2,6 +2,135 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-31 23:41:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1537
+
+    Summary:
+      merged from stub's people-merge branch, plugged his magic function into my code and extended the peoplemerge pagetest to check if the merge succeeded.
+    Revision:
+      launchpad--devel--0--patch-1537
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-234
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-235
+       merge from stuart's people-merge branch
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-236
+       plugged stub's magic function into my code and extended the peoplemerge pagetest to check if the merge succeeded
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-237
+       merge from rf (with conflict fixes)
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-158
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-1
+       Work in progress
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-2
+       Recursively figuring foreign key constraints
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-3
+       Comment
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-4
+       Add tests for canonical/database/postgresql.py
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-5
+       Work in progress
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-6
+       UNIQUE index locator
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-7
+       no-reference test case for queryReferences
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-8
+       Commit pre rocketfuel update
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-9
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-10
+       Start of PersonSet.merge and tests
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-11
+       Work in progress
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-12
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-13
+       Sanity checks confirming tables that need ON UPDATE CASCADE have it set
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-14
+       Set required constraints to ON UPDATE CASCADE
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-15
+       UNIQUE sanity check
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-16
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-17
+       Tweak ON UPDATE CASCADE' patch
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-18
+       Handle existing UNIQUE indexes that affect PeopleMerge
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-19
+       Put DB patch into place
+    
+     * stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-20
+       Add Person.merged to the interface and db class
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-15-0.sql.id
+     database/schema/patch-11-15-0.sql
+     lib/canonical/database/.arch-ids/postgresql.py.id
+     lib/canonical/database/ftests/.arch-ids/test_postgresql.py.id
+     lib/canonical/database/ftests/test_postgresql.py
+     lib/canonical/database/postgresql.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/database/sqlbase.py
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/person.txt
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/foaf/30-mergepeople.txt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-234
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-235
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-236
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-237
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--base-0
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-1
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-2
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-3
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-4
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-5
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-6
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-7
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-8
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-9
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-10
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-11
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-12
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-13
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-14
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-15
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-16
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-17
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-18
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-19
+     stuart.bishop@canonical.com/launchpad--peoplemerge--0--patch-20
+
+
 2005-03-31 23:00:34 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1536
 
     Summary:

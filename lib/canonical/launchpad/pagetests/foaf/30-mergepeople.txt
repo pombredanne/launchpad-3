@@ -1,6 +1,7 @@
   'foo' is a dupe account for 'name16'. Let's merge them, and keep only
   'name16'.
 
+  First we have to go to the +requestmerge page.
 
   >>> print http(r"""
   ... GET /people/+requestmerge HTTP/1.1
@@ -13,6 +14,8 @@
   ...<h1>Request Merge of User Accounts</h1>...
   ...
 
+
+  Then we find the dupe account and request the merge.
 
   >>> print http(r"""
   ... POST /people/+requestmerge HTTP/1.1
@@ -38,16 +41,19 @@
   ...
 
 
-  Get the id of the newly created user account so we don't have problems if
-  our sampledata changes.
+  Get the id of the newly created user account (named 'foo') so we don't
+  have problems if our sampledata changes.
   
   >>> from canonical.launchpad.database import PersonSet
-  >>> id = PersonSet().getByName('foo')
+  >>> dupe = PersonSet().getByName('foo')
+
+  This is the page which displays all email addresses owned by the dupe
+  account. Here the user choses the ones which he want to claim.
 
   >>> print http(r"""
   ... GET /people/+requestmerge-multiple?dupe=%d HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """ % id)
+  ... """ % dupe.id)
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -56,7 +62,9 @@
   ...
 
 
-  Get the id for the emails too.
+  Get the emails too, to make sure tests doesn't break if the ids used in
+  sampledata changes.
+
   >>> from canonical.launchpad.database import EmailAddressSet
   >>> email1 = EmailAddressSet().getByEmail('foo@baz.com')
   >>> email2 = EmailAddressSet().getByEmail('bar.foo@canonical.com')
@@ -67,7 +75,8 @@
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... dupe=%d&selected=%d&selected=%d""" % (id, id, email1, email2))
+  ... dupe=%d&selected=%d&selected=%d""" % (dupe.id, dupe.id, email1.id,
+  ...                                       email2.id))
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -99,6 +108,9 @@
   ...
 
 
+  Now the user goes to the page we sent a link via email to validate the first
+  claimed email address.
+
   >>> path = "%s/+accountmerge" % base_path
   >>> print http(r"""
   ... GET %s HTTP/1.1
@@ -111,6 +123,10 @@
   ...You're trying to merge the user account...
   ...
 
+
+  The user types his password and then proves that he is the owner of that
+  email address., but the merge wasn't finished because the dupe account still
+  having registered email adresses.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
@@ -147,6 +163,9 @@
   ...
 
 
+  Now the user proves that he's the owner of the second email address of the
+  dupe account.
+
   >>> path = "%s/+accountmerge" % base_path
   >>> print http(r"""
   ... GET %s HTTP/1.1
@@ -159,6 +178,8 @@
   ...You're trying to merge the user account...
   ...
 
+
+  And now the merge is concluded with success.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
@@ -175,7 +196,11 @@
   ...
 
 
-  XXX: As soon as stub finishes the code to reassign everything that's owned
-  by one person to another, we'll be able to check here if the team created by
-  'foo' is now owned by 'name16'.
+  Now we make sure that the team we just created and was owned by 'foo' is now
+  owned by 'name16'.
+
+  >>> from canonical.launchpad.database import PersonSet
+  >>> team = PersonSet().getByName('myemail')
+  >>> team.teamowner.name
+  u'name16'
 

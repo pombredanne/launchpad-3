@@ -244,7 +244,6 @@ class MergePeopleView(object):
         if self.validate():
             self.doMerge()
             self.context.destroySelf()
-            return
 
     def successfullyProcessed(self):
         return self.formProcessed and not self.errormessage
@@ -283,4 +282,5 @@ class MergePeopleView(object):
 
         # Call Stuart's magic function which will reassign all of the dupe
         # account's stuff to the user account.
+        pset = getUtility(IPersonSet).merge(self.dupe, self.context.requester)
         self.mergeCompleted = True
