@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-18 06:40:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1457
+
+    Summary:
+      Handle 'already closed' errors better, with tests
+    Revision:
+      launchpad--devel--0--patch-1457
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--reconnect-already-closed--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1456
+    
+     * andrew.bennetts@canonical.com/launchpad--reconnect-already-closed--0--patch-1
+       Handle 'already closed' errors better, with tests
+    
+     * andrew.bennetts@canonical.com/launchpad--reconnect-already-closed--0--patch-2
+       Add another comment
+    
+
+    new files:
+     lib/canonical/database/ftests/.arch-ids/test_reconnect_already_closed.txt.id
+     lib/canonical/database/ftests/test_reconnect_already_closed.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/database/ftests/test_disconnects.py
+     lib/canonical/database/reconnect.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--reconnect-already-closed--0--base-0
+     andrew.bennetts@canonical.com/launchpad--reconnect-already-closed--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--reconnect-already-closed--0--patch-2
+
+
 2005-03-17 22:33:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1456
 
     Summary:
