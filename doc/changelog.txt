@@ -2,6 +2,704 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-25 01:54:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1246
+
+    Summary:
+      authserver/sftp work: Make getSSHKeys useful for the pushmirror, and add a Twisted client for the authserver
+    Revision:
+      launchpad--devel--0--patch-1246
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1135
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-1
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-2
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-3
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-4
+       Make getSSHKeys more useful
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-5
+       Twisted XML-RPC client for the authserver
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-6
+       This comment really should be a docstring
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-7
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--sftp--0--patch-8
+       Update test for getSSHKeys
+    
+
+    new files:
+     lib/canonical/authserver/client/.arch-ids/=id
+     lib/canonical/authserver/client/.arch-ids/__init__.py.id
+     lib/canonical/authserver/client/.arch-ids/twistedclient.py.id
+     lib/canonical/authserver/client/__init__.py
+     lib/canonical/authserver/client/twistedclient.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/authserver/database.py
+     lib/canonical/authserver/ftests/test_database.py
+     lib/canonical/authserver/interfaces.py
+
+    new directories:
+     lib/canonical/authserver/client
+     lib/canonical/authserver/client/.arch-ids
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--sftp--0--base-0
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-2
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-3
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-4
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-5
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-6
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-7
+     andrew.bennetts@canonical.com/launchpad--sftp--0--patch-8
+
+
+2005-01-24 18:52:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1245
+
+    Summary:
+      No broken page with sourcepackagerelease has a product but not a project. Closes dogfood bug #216; Comment out Soyuz deprecated pages. Will be removed soon if nobody ask to keep it.
+    Revision:
+      launchpad--devel--0--patch-1245
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-423
+       tar-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-424
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-425
+       No broken page with sourcepackagerelease has a product but not a project. Closes dogfood bug #216
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-426
+       Comment out Soyuz deprecated pages. Will be removed soon if nobody ask to keep it
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/sourcepackagerelease-index.pt
+     lib/canonical/launchpad/zcml/distribution.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-423
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-424
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-425
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-426
+
+
+2005-01-24 18:08:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1244
+
+    Summary:
+      Remember form values when passwords do not match on NewAccountView and automatically login the user after finishing the registration process.
+    Revision:
+      launchpad--devel--0--patch-1244
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-104
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-105
+       Moving _logInPerson() outside CookieLoginPage, so it can be used in other places (like NewAccountView)
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-106
+       Remember form values when passwords do not match on NewAccountView and automatically login the user after finishing the registration process.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/templates/foaf-newaccount.pt
+     lib/canonical/launchpad/templates/foaf-resetpassword.pt
+     lib/canonical/launchpad/webapp/login.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-104
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-105
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-106
+
+
+2005-01-24 13:52:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1243
+
+    Summary:
+      POTemplate additions for Rosetta, as per Bug220
+    Revision:
+      launchpad--devel--0--patch-1243
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-99
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-100
+       POTemplate additions for Rosetta, as per Bug220
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-29-0.sql.id
+     database/schema/patch-6-29-0.sql
+
+    modified files:
+     database/schema/comments.sql database/schema/launchpad.html
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-99
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-100
+
+
+2005-01-24 05:26:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1242
+
+    Summary:
+      Bug.private db patch
+    Revision:
+      launchpad--devel--0--patch-1242
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-98
+       Private bugs DB update
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-28-0.sql.id
+     database/schema/patch-6-28-0.sql
+
+    removed files:
+     database/schema/pending/.arch-ids/bradb-bug-privacy.sql.id
+     database/schema/pending/bradb-bug-privacy.sql
+
+    modified files:
+     database/schema/comments.sql doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-98
+
+
+2005-01-22 14:33:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1241
+
+    Summary:
+      New pagetest that covers the account creation and login.
+    Revision:
+      launchpad--devel--0--patch-1241
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-99
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-100
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-101
+       New pagetest that covers the account creation and login.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-102
+       Check if the email was sent to the right address on launchpad-createaccount-and-login pagetest.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-103
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-launchpad-createaccount-and-login.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-launchpad-createaccount-and-login.txt
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-99
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-100
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-101
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-102
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-103
+
+
+2005-01-22 13:12:42 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1240
+
+    Summary:
+      add malone vision doc
+    Revision:
+      launchpad--devel--0--patch-1240
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-727
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-728
+       skip messages that cannot be stored in the db
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-729
+       import psycopg to get ProgrammingError
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-730
+       add malone vision doc to docs
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-731
+       merge rocketfuel
+    
+
+    new files:
+     doc/.arch-ids/malone.txt.id doc/malone.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/malone/debsync/malone.py
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-727
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-728
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-729
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-730
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-731
+
+
+2005-01-22 02:58:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1239
+
+    Summary:
+      Bug privacy db patch
+    Revision:
+      launchpad--devel--0--patch-1239
+
+
+    modified files:
+     doc/changelog.txt
+
+
+2005-01-22 02:48:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1238
+
+    Summary:
+      Clarify sha1 and md5 compression
+    Revision:
+      launchpad--devel--0--patch-1238
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-96
+       Clarify character limits
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-97
+       Fix constraint
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/base.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-96
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-97
+
+
+2005-01-22 02:21:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1237
+
+    Summary:
+      Add arbitrary base converter for compressing big numbers to simple ASCII
+    Revision:
+      launchpad--devel--0--patch-1237
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-94
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-95
+       Add arbitrary base converter for compressing big numbers to simple ASCII
+    
+
+    new files:
+     lib/canonical/.arch-ids/base.py.id lib/canonical/base.py
+     lib/canonical/tests/.arch-ids/=id
+     lib/canonical/tests/.arch-ids/__init__.py.id
+     lib/canonical/tests/.arch-ids/test_base.py.id
+     lib/canonical/tests/__init__.py
+     lib/canonical/tests/test_base.py
+
+    modified files:
+     doc/changelog.txt
+
+    new directories:
+     lib/canonical/tests lib/canonical/tests/.arch-ids
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-94
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-95
+
+
+2005-01-21 22:37:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1236
+
+    Summary:
+      remove some rejected schema change proposals and submit the new schema
+ change proposal for private bugs
+    Revision:
+      launchpad--devel--0--patch-1236
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-314
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-315
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-316
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-317
+       remove schema change proposals for the rejected bug privacy implementation
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-318
+       add the schema change proposal for private bugs
+    
+
+    new files:
+     database/schema/pending/.arch-ids/bradb-bug-privacy.sql.id
+     database/schema/pending/bradb-bug-privacy.sql
+
+    removed files:
+     database/schema/pending/.arch-ids/bradb-bug-group-assignments.sql.id
+     database/schema/pending/.arch-ids/bradb-security-related-bugs.sql.id
+     database/schema/pending/bradb-bug-group-assignments.sql
+     database/schema/pending/bradb-security-related-bugs.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-314
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-315
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-316
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-317
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-318
+
+
+2005-01-21 19:08:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1235
+
+    Summary:
+      Nicole supports Remote DB
+    Revision:
+      launchpad--devel--0--patch-1235
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-479
+       add Nicole support for remote DB via pyPgSQL
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/database.py
+     lib/canonical/launchpad/scripts/nicole/nicole.py
+     lib/canonical/launchpad/scripts/nicole/rdfproj.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-479
+
+
+2005-01-21 18:06:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1234
+
+    Summary:
+      Nicole Ready to Production
+    Revision:
+      launchpad--devel--0--patch-1234
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-476
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-477
+       improves on Nicole to run on Dogfood
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-478
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/database.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-476
+     celso.providelo@canonical.com/launchpad--devel--0--patch-477
+     celso.providelo@canonical.com/launchpad--devel--0--patch-478
+
+
+2005-01-21 17:32:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1233
+
+    Summary:
+      Bob the builder! (initial buildd slave implementation)
+    Revision:
+      launchpad--devel--0--patch-1233
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-9
+       Initial implementation of buildd slave
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-10
+       Add a few XXX and notes for future addressing
+    
+
+    new files:
+     lib/canonical/buildd/.arch-ids/debian.py.id
+     lib/canonical/buildd/.arch-ids/master.py.id
+     lib/canonical/buildd/.arch-ids/mount-chroot.id
+     lib/canonical/buildd/.arch-ids/remove-build.id
+     lib/canonical/buildd/.arch-ids/sbuild-package.id
+     lib/canonical/buildd/.arch-ids/scan-for-processes.id
+     lib/canonical/buildd/.arch-ids/umount-chroot.id
+     lib/canonical/buildd/.arch-ids/unpack-chroot.id
+     lib/canonical/buildd/.arch-ids/update-debian-chroot.id
+     lib/canonical/buildd/debian.py lib/canonical/buildd/master.py
+     lib/canonical/buildd/mount-chroot
+     lib/canonical/buildd/remove-build
+     lib/canonical/buildd/sbuild-package
+     lib/canonical/buildd/scan-for-processes
+     lib/canonical/buildd/umount-chroot
+     lib/canonical/buildd/unpack-chroot
+     lib/canonical/buildd/update-debian-chroot
+
+    modified files:
+     doc/changelog.txt lib/canonical/buildd/__init__.py
+     lib/canonical/buildd/example.conf
+     lib/canonical/buildd/notes.txt lib/canonical/buildd/slave.py
+     lib/canonical/buildd/slave.tac
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-9
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-10
+
+
+2005-01-21 15:46:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1232
+
+    Summary:
+      ui and textual cleanups of registration process
+    Revision:
+      launchpad--devel--0--patch-1232
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-721
+       tidy up the registration process
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-722
+       resolve spurious conflicts caused by bug in bazaar
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-723
+       merge rocketfuel resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-724
+       clean up text and put emails in templates dir
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-725
+       text changes on registration page
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-726
+       merge rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/templates/foaf-newaccount.pt
+     lib/canonical/launchpad/templates/launchpad-join.pt
+     lib/canonical/launchpad/templates/newuser-email.txt
+     lib/canonical/launchpad/templates/validate-email.txt
+     lib/canonical/launchpad/webapp/login.py
+     lib/canonical/launchpad/zcml/logintoken.zcml
+
+    renamed files:
+     lib/canonical/foaf/.arch-ids/validate-email.txt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/validate-email.txt.id
+     lib/canonical/foaf/validate-email.txt
+       ==> lib/canonical/launchpad/templates/validate-email.txt
+     lib/canonical/launchpad/webapp/.arch-ids/forgottenpassword.txt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/forgottenpassword.txt.id
+     lib/canonical/launchpad/webapp/.arch-ids/newuser-email.txt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/newuser-email.txt.id
+     lib/canonical/launchpad/webapp/forgottenpassword.txt
+       ==> lib/canonical/launchpad/templates/forgottenpassword.txt
+     lib/canonical/launchpad/webapp/newuser-email.txt
+       ==> lib/canonical/launchpad/templates/newuser-email.txt
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-721
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-722
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-723
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-724
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-725
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-726
+
+
+2005-01-21 14:19:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1231
+
+    Summary:
+      Rosetta janitoring
+    Revision:
+      launchpad--devel--0--patch-1231
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-421
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-422
+       tidy up PO template ZCML
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-423
+       fixes to Rosetta browser code based on pychecker output
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-421
+     daf@canonical.com--2004/launchpad--devel--0--patch-422
+     daf@canonical.com--2004/launchpad--devel--0--patch-423
+
+
+2005-01-21 14:13:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1230
+
+    Summary:
+      Add author URL to RDF importer
+    Revision:
+      launchpad--devel--0--patch-1230
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1134
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-1
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-2
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-3
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-4
+       Fix refuel, Changed RDF authors email address from N/A to URL
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-5
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-6
+       Added url_homepage, url_bugtracker, license
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-7
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-8
+       merge rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/rdfproj.py
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--devel--0--base-0
+     morgan.collett@canonical.com/launchpad--devel--0--patch-1
+     morgan.collett@canonical.com/launchpad--devel--0--patch-2
+     morgan.collett@canonical.com/launchpad--devel--0--patch-3
+     morgan.collett@canonical.com/launchpad--devel--0--patch-4
+     morgan.collett@canonical.com/launchpad--devel--0--patch-5
+     morgan.collett@canonical.com/launchpad--devel--0--patch-6
+     morgan.collett@canonical.com/launchpad--devel--0--patch-7
+     morgan.collett@canonical.com/launchpad--devel--0--patch-8
+
+
+2005-01-21 13:40:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1229
+
+    Summary:
+      PushMirrorAccess table for supermirror sftp server access
+    Revision:
+      launchpad--devel--0--patch-1229
+
+
+    modified files:
+     doc/changelog.txt
+
+
+2005-01-21 13:26:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1228
+
+    Summary:
+      Fix database encoding test
+    Revision:
+      launchpad--devel--0--patch-1228
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-91
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-92
+       Fix database encoding test
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-93
+       PushMirrorAccess table for supermirror sftp server access
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-27-0.sql.id
+     database/schema/patch-6-27-0.sql
+
+    modified files:
+     database/schema/comments.sql database/schema/fti.py
+     database/schema/launchpad.html doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-91
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-92
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-93
+
+
+2005-01-21 13:18:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1227
+
+    Summary:
+      Use 16 characters as the token length. Destroy all LoginTokens after they're successfully 'used'. Some new docstrings explaining LoginToken Views and Interfaces.
+    Revision:
+      launchpad--devel--0--patch-1227
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-97
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-98
+       Use 16 characters as the token length. Destroy all LoginTokens after they're successfully 'used'. Some new docstrings explaining LoginToken Views and Interfaces.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/interfaces/logintoken.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-97
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-98
+
+
 2005-01-21 00:37:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1226
 
     Summary:

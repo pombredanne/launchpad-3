@@ -96,6 +96,8 @@ COMMENT ON COLUMN POTemplate.daterawimport IS 'The date when the rawfile was att
 COMMENT ON COLUMN POTemplate.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
 COMMENT ON COLUMN POTemplate.sourcepackagename IS 'A reference to a sourcepackage name from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.distrorelease IS 'A reference to the distribution from where this POTemplate comes.';
+COMMENT ON COLUMN POTemplate.sourcepackagerelease IS 'The sourcepackagerelease from where this POTemplate was imported last time.';
+COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time. This field is temporal, if you use it add a note at https://dogfood.ubuntu.com/malone/bugs/220/';
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a po file for a given product.';
@@ -115,6 +117,7 @@ COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import: 0 pending
 */
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or sourcepackages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
+COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
 COMMENT ON TABLE ProductBugAssignment IS 'Links a given Bug to a particular product.';
 COMMENT ON COLUMN ProductBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
 COMMENT ON TABLE SourcepackageBugAssignment IS 'Links a given Bug to a particular sourcepackage.';
@@ -541,3 +544,7 @@ COMMENT ON COLUMN Milestone.product IS 'The product for which this is a mileston
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
 COMMENT ON COLUMN Milestone.title IS 'The description of, e.g. "1.2."';
 
+    
+COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
+COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
+COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';

@@ -348,8 +348,8 @@ class EmailAddressEditView(object):
 
 
 def sendEmailValidationRequest(token, appurl):
-    template = open('lib/canonical/foaf/validate-email.txt').read()
-    fromaddress = "Launchpad Email Validator <noreply@canonical.com>"
+    template = open('lib/canonical/launchpad/templates/validate-email.txt').read()
+    fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
 
     replacements = {'longstring': token.token,
                     'requester': token.requester.browsername(),

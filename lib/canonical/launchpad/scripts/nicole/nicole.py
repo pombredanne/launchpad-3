@@ -124,6 +124,11 @@ if __name__ == "__main__":
                       help="DOAP Database name",
                       metavar="DBNAME",
                       default="launchpad_dev")
+    ## DOAP DB host 
+    parser.add_option("-H", "--host", dest="dbhost",
+                      help="DOAP Database Host",
+                      metavar="HOST",
+                      default="localhost")
     ## Web search interval avoiding to be blocked by high threshould
     ## of requests reached by second
     parser.add_option("-w", "--wait", dest="wait",
@@ -165,11 +170,12 @@ if __name__ == "__main__":
 
     
     (options,args) = parser.parse_args()
-    
+
     mode = options.mode
     filename = options.filename
     source = options.source
     DOAPDB = options.doapdb
+    DBHOST = options.dbhost
     DISTRO = options.distro
     WAIT = int(options.wait)
     LIST = options.listfile
@@ -180,7 +186,7 @@ if __name__ == "__main__":
     PATH = options.path
     
     # get the DB abstractors
-    doap = Doap(DOAPDB)
+    doap = Doap(DBHOST, DOAPDB)
 
     print '=================================='
     print 'Nicole: Product Information Finder'

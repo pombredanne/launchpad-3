@@ -1,0 +1,24 @@
+#!/bin/sh
+# Copyright Canonical Limited
+# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
+
+# Buildd Slave tool to update a debian chroot
+
+# Expects build id as arg 1, makes build-id to contain the build
+
+# Needs SUDO to be set to a sudo instance for passwordless access
+# Needs chapt-get to be a chrooted apt-get thingy
+
+SUDO=/usr/bin/sudo
+CHAPTGET=/usr/bin/chapt-get
+BUILDID="$1"
+
+set -e
+
+exec 2>&1
+
+set -x
+
+$SUDO $CHAPTGET "$HOME/build-$BUILDID/chroot-autobuild" -uy update
+$SUDO $CHAPTGET "$HOME/build-$BUILDID/chroot-autobuild" -uy dist-upgrade 
+

@@ -16,15 +16,24 @@ class IPerson(Interface):
             )
     displayname = TextLine(
             title=_('Display Name'), required=True, readonly=False,
+            description=_("This is your name as your would like it "
+                "displayed throughout The Launchpad. Most people "
+                "use their full name here.")
             )
     givenname = TextLine(
             title=_('Given Name'), required=False, readonly=False,
+            description=_("Your first name or given name, such as "
+                "Mark, or Richard, or Joanna.")
             )
     familyname = TextLine(
             title=_('Family Name'), required=False, readonly=False,
+            description=_("Your family name or given name, the name "
+                "you acquire from your parents.")
             )
     password = Password(
             title=_('Password'), required=True, readonly=False,
+            description=_("The password you will use to access "
+                "Launchpad services. ")
             )
     teamowner = Int(
             title=_('Team Owner'), required=False, readonly=False,
@@ -49,8 +58,15 @@ class IPerson(Interface):
 
     # XXX: These fields are used only to generate the form to create a
     # new person.
-    email = TextLine(title=_('Email'), required=True)
-    password2 = Password(title=_('Confirm Password'), required=True)
+    email = TextLine(title=_('Email Address'), required=True,
+            description=_("Please give your email address. You will "
+                "log into the Launchpad using your email address and "
+                "password. You will need to receive email at this "
+                "address to complete your registration. We will never "
+                "disclose, share or sell your personal information."))
+    password2 = Password(title=_('Confirm Password'), required=True,
+            description=_("Enter your password again to make certain "
+                "it is correct."))
 
     # Properties of the Person object.
     gpg = Attribute("GPG")

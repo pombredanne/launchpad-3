@@ -50,10 +50,10 @@ class IUserDetailsStorage(Interface):
         :param newSshaDigestedPassword: SSHA digest of the new password.
         """
 
-    def getSSHKeys(loginID):
-        """Retrieve SSH public keys for a given user
+    def getSSHKeys(archiveName):
+        """Retrieve SSH public keys for a given push mirror archive
         
-        :param loginID: a login ID.
+        :param archive: an archive name.
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
         """

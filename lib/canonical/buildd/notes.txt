@@ -164,6 +164,7 @@ Calls that the master can make to the slave
 	     BUILDCOMMAND) ->
     UNKNOWN-SUM 
       SHA1sum
+    UNKNOWN-BUILDER
     INITIATED
 
  ABORT (none) ->

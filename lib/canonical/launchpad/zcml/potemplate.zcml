@@ -7,11 +7,13 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.POTemplate">
-        <require permission="zope.Public"
+        <require
+            permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOTemplate"
             set_attributes="name title description copyright path
                             priority rawfile daterawimport rawimporter
-                            rawimportstatus distrorelease sourcepackagename"/>
+                            rawimportstatus distrorelease sourcepackagename"
+            />
     </content>
 
     <browser:traverse
@@ -24,33 +26,31 @@
         name="+index"
         />
 
-    <browser:pages
+    <browser:page
+        name="+index"
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="zope.Public"
-        class="canonical.rosetta.browser.ViewPOTemplate">
-        <browser:page
-            name="+index"
-            template="../templates/potemplate-index.pt"
-            lp:url="Rosetta/products/$Product.name/$POTemplate.name/+index" />
-    </browser:pages>
-    
-    <browser:pages
+        template="../templates/potemplate-index.pt"
+        class="canonical.rosetta.browser.ViewPOTemplate"
+        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+index"
+        />
+
+    <browser:page
+        name="+edit"
         for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.AnyPerson"
-        class="canonical.rosetta.browser.ViewPOTemplate">
-        <browser:page
-            name="+edit"
-            template="../templates/potemplate-edit.pt"
-            lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit" />
-    </browser:pages> 
-        
-    <browser:pages for="canonical.launchpad.interfaces.IPOTemplate"
+        template="../templates/potemplate-edit.pt"
+        class="canonical.rosetta.browser.ViewPOTemplate"
+        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+edit"
+        />
+
+    <browser:page
+        name="+translate"
+        for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.AnyPerson"
-        class="canonical.rosetta.browser.TranslatePOTemplate" >
-        <browser:page
-            name="+translate"
-            template="../templates/potemplate-translate.pt"
-            lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate" />
-    </browser:pages>
+        template="../templates/potemplate-translate.pt"
+        class="canonical.rosetta.browser.TranslatePOTemplate"
+        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate"
+        />
 
 </configure>

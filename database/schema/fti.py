@@ -173,7 +173,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
             )
     r = locale.split('.',1)
     if len(r) > 1:
-        assert r[1].upper() == "UTF8", \
+        assert r[1].upper() in ("UTF8", "UTF-8"), \
                 "Only UTF8 encodings supported. Fresh initdb required."
     else:
         assert len(r) == 1, 'Invalid database locale %s' % repr(locale)

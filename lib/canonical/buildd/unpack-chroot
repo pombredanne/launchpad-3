@@ -1,0 +1,27 @@
+#!/bin/sh
+# Copyright Canonical Limited
+# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
+
+# Buildd Slave tool to unpack a chroot tarball
+
+# Expects build id as arg 1, makes build-id to contain the build
+# Expects bzip2 compressed tarball as arg 2
+
+# Needs TAR to be set to a gnu tar instance, that needs bzip2
+# Needs SUDO to be set to a sudo instance for passwordless access
+
+TAR=/bin/tar
+SUDO=/usr/bin/sudo
+BUILDID="$1"
+TARBALL="$2"
+
+set -e
+
+exec 2>&1
+
+set -x
+
+cd $HOME
+cd "build-$BUILDID"
+
+$SUDO $TAR -xjf "$TARBALL"

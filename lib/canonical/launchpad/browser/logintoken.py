@@ -3,6 +3,7 @@
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
+from zope.app.form.interfaces import WidgetsError
 from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.lp.dbschema import EmailAddressStatus
@@ -10,6 +11,9 @@ from canonical.lp.dbschema import EmailAddressStatus
 from canonical.foaf.nickname import generate_nick
 
 from canonical.launchpad.database import EmailAddress
+
+from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.login import logInPerson
 
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
@@ -22,23 +26,28 @@ class ResetPasswordView(object):
         self.request = request
         self.errormessage = None
         self.submitted = False
+        self.email = None
 
     def processForm(self):
+        """Check the email address, check if both passwords match and then
+        reset the user's password. When password is successfully changed, the
+        LoginToken (self.context) used is removed, so nobody can use it again.
+        """
         if self.request.method != "POST":
-            return False
+            return
 
-        email = self.request.form.get("email").strip()
+        self.email = self.request.form.get("email").strip()
         if email != self.context.email:
             self.errormessage = ("The email address you provided didn't "
                                  "match with the one you provided when you "
                                  "requested the password reset.")
-            return False
+            return
 
         password = self.request.form.get("password")
         password2 = self.request.form.get("password2")
         if not password and not password2:
             self.errormessage = "Your password cannot be empty."
-            return False
+            return
 
         if password != password2:
             self.errormessage = "Password didn't match."
@@ -54,7 +63,7 @@ class ResetPasswordView(object):
         password = encryptor.encrypt(password)
         person.password = password
         self.submitted = True
-        return True
+        self.context.destroySelf()
 
     def success(self):
         return self.submitted and not self.errormessage
@@ -74,6 +83,13 @@ class ValidateEmailView(object):
         return False
 
     def validate(self):
+        """Check the requester and requesteremail, verify if the user provided
+        the correct password and then set the email address status to
+        VALIDATED. Also, if this is the first validated email for this user,
+        we set it as the PREFERRED one for that user.
+        When everything went ok, we delete the LoginToken (self.context) from
+        the database, so nobody can use it again.
+        """
         # Email validation requests must have a registered requester.
         assert self.context.requester is not None
         assert self.context.requesteremail is not None
@@ -104,12 +120,14 @@ class ValidateEmailView(object):
             assert results.count() == 1
             email = results[0]
             email.status = status
+            self.context.destroySelf()
             return
 
         # New email validated by the user. We must add it to our emailaddress
         # table.
         email = EmailAddress(email=self.context.email, status=status,
                              person=requester.id)
+        self.context.destroySelf()
 
 
 class NewAccountView(AddView):
@@ -119,37 +137,47 @@ class NewAccountView(AddView):
         self.request = request
         AddView.__init__(self, context, request)
         self._nextURL = '.'
+        self.passwordMismatch = False
 
     def nextURL(self):
         return self._nextURL
 
     def createAndAdd(self, data):
+        """Check if both passwords match and then create a new Person.
+        When everything went ok, we delete the LoginToken (self.context) from
+        the database, so nobody can use it again.
+        """
         kw = {}
         for key, value in data.items():
             kw[str(key)] = value
 
+        errors = []
+
         password = kw['password']
         # We don't want to pass password2 to PersonSet.new().
         password2 = kw.pop('password2')
-        if not password and not password2:
-            kw.pop('password')
-            self._nextURL = "%s?nullpassword=1" % self.request.URL
-            return False
-
         if password2 != password:
-            # Do not display the password in the form when an error
-            # occurs.
-            kw.pop('password')
-            self._nextURL = "%s?passwordmismatch=1" % self.request.URL
-            return False
+            self.passwordMismatch = True
+            errors.append('Password mismatch')
+
+        if errors:
+            raise WidgetsError(errors)
 
         nick = generate_nick(self.context.email)
         kw['name'] = nick
         person = getUtility(IPersonSet).new(**kw)
         notify(ObjectCreatedEvent(person))
+
         email = EmailAddress(person=person.id, email=self.context.email,
                              status=int(EmailAddressStatus.PREFERRED))
         notify(ObjectCreatedEvent(email))
+
         self._nextURL = '/foaf/people/%s' % person.name
+        self.context.destroySelf()
+
+        loginsource = getUtility(IPlacelessLoginSource)
+        principal = loginsource.getPrincipalByLogin(email.email)
+        if principal is not None and principal.validate(password):
+            logInPerson(self.request, principal, email.email)
         return True
 
