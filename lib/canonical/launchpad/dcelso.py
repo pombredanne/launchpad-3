@@ -8,7 +8,7 @@
 # Zope/Python standard libraries
 from datetime import datetime
 from email.Utils import make_msgid
-from zope.interface import implements, Interface, Attribute
+from zope.interface import implements
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('canonical')
 
@@ -44,72 +44,6 @@ def is_allowed_filename(value):
     if ':' in value: # Mac Path seperator, DOS drive indicator
         return False
     return True
-
-class IBug(Interface):
-    """The core bug entry."""
-
-    id = Int(
-            title=_('Bug ID'), required=True, readonly=True,
-            )
-    datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True,
-            )
-    name = TextLine(
-            title=_('Nickname'), required=False,
-            )
-    title = TextLine(
-            title=_('Title'), required=True,
-            )
-    shortdesc = Text(
-            title=_('Short Description'), required=True,
-            )
-    description = Text(
-            title=_('Description'), required=True,
-            )
-    ownerID = Int(
-            title=_('Owner'), required=True, readonly=True
-            )
-    owner = Attribute("The owner's IPerson")
-    duplicateof = Int(
-            title=_('Duplicate Of'), required=False,
-            )
-    communityscore = Int(
-            title=_('Community Score'), required=True, readonly=True,
-            default=0,
-            )
-    communitytimestamp = Datetime(
-            title=_('Community Timestamp'), required=True, readonly=True,
-            #default=datetime.utcnow,
-            )
-    hits = Int(
-            title=_('Hits'), required=True, readonly=True,
-            default=0,
-            )
-    hitstimestamp = Datetime(
-            title=_('Hits Timestamp'), required=True, readonly=True,
-            #default=datetime.utcnow,
-            )
-    activityscore = Int(
-            title=_('Activity Score'), required=True, readonly=True,
-            default=0,
-            )
-    activitytimestamp = Datetime(
-            title=_('Activity Timestamp'), required=True, readonly=True,
-            #default=datetime.utcnow,
-            )
-
-    activity = Attribute('SQLObject.Multijoin of IBugActivity')
-    messages = Attribute('SQLObject.Multijoin of IBugMessages')
-    people = Attribute('SQLObject.Multijoin of IPerson')
-    productassignment = Attribute('SQLObject.Multijoin of IProductBugAssigment')
-    sourceassignment = Attribute(
-            'SQLObject.Multijoin of ISourcepackageBugAssignment'
-            )
-    watches = Attribute('SQLObject.Multijoin of IBugWatch')
-    externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
-    subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
-
-    url = Attribute('Generated URL based on data and reference type')
 
 class Bug(SQLBase):
     """A bug."""
@@ -165,29 +99,6 @@ class Bug(SQLBase):
             return self.data
     url = property(_url, None)
 
-class IBugAttachment(Interface):
-    """A file attachment to an IBugMessage."""
-
-    id = Int(
-            title=_('ID'), required=True, readonly=True,
-            )
-    bugmessageID = Int(
-            title=_('Bug Message ID'), required=True, readonly=True,
-            )
-    bugmessage = Attribute('Bug Message')
-    name = TextLine(
-            title=_('Name'), required=False, readonly=False,
-            )
-    description = Text(
-            title=_('Description'), required=True, readonly=False,
-            )
-    libraryfile = Int(
-            title=_('Library File'), required=True, readonly=False,
-            )
-    datedeactivated = Datetime(
-            title=_('Date deactivated'), required=False, readonly=False,
-            )
-
 class BugAttachment(SQLBase):
     """A bug attachment."""
 
@@ -208,18 +119,6 @@ class BugAttachment(SQLBase):
         DateTimeCol('datedeactivated', notNull=False, default=None),
     ]
 
-
-class IBugActivity(Interface):
-    """A log of all things that have happened to a bug."""
-
-    bug = Int(title=_('Bug ID'))
-    datechanged = Datetime(title=_('Date Changed'))
-    person = Int(title=_('Person'))
-    whatchanged = TextLine(title=_('What Changed'))
-    oldvalue = TextLine(title=_('Old Value'))
-    newvalue = TextLine(title=_('New Value'))
-    message = Text(title=_('Message'))
-
 class BugActivity(SQLBase):
     """Bug activity log entry."""
 
@@ -238,35 +137,6 @@ class BugActivity(SQLBase):
         StringCol('newvalue', notNull=True),
         StringCol('message', default=None)
     ]
-
-class IBugExternalRef(Interface):
-    """An external reference for a bug, not supported remote bug systems."""
-
-    id = Int(
-            title=_('ID'), required=True, readonly=True
-            )
-    bug = Int(
-            title=_('Bug ID'), required=True, readonly=True,
-            )
-    bugreftype = Choice(
-            title=_('Bug Ref Type'), required=True, readonly=False,
-            vocabulary=BugRefVocabulary
-            )
-    data = TextLine(
-            title=_('Data'), required=True, readonly=False,
-            )
-    description = Text(
-            title=_('Description'), required=True, readonly=False,
-            )
-    datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True,
-            )
-    owner = Int(
-            title=_('Owner'), required=False, readonly=True,
-            )
-
-    def url():
-        """Return the url of the external resource."""
 
 class BugExternalRef(SQLBase):
     """An external reference for a bug, not supported remote bug systems."""
@@ -300,40 +170,7 @@ class BugExternalRef(SQLBase):
                                                                     self.data)
         else:
             return self.data
-
-
-class IBugMessage(Interface):
-    """A message about a bug."""
-
-    id = Int(
-            title=_('ID'), required=True, readonly=True,
-            )
-    bug = Int(
-            title=_('Bug ID'), required=True, readonly=True,
-            )
-    datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True,
-            )
-    title = TextLine(
-            title=_('Title'), required=True, readonly=True,
-            )
-    contents = Text(
-            title=_('Contents'), required=True, readonly=True,
-            )
-    personmsg = Int(
-            title=_('Person'), required=False, readonly=True,
-            )
-    parent = Int(
-            title=_('Parent'), required=False, readonly=True,
-            )
-    distribution = Int(
-            title=_('Distribution'), required=False, readonly=True,
-            )
-    rfc822msgid = TextLine(
-            title=_('RFC822 Msg ID'), required=True, readonly=True,
-            )
-    attachments = Attribute('Bug Attachments')
-
+        
 class BugMessage(SQLBase):
     """A message for a bug."""
 
@@ -363,20 +200,6 @@ class BugMessage(SQLBase):
 
     attachments = MultipleJoin('BugAttachment', joinColumn='bugmessage')
 
-class IBugSubscription(Interface):
-    """The relationship between a person and a bug."""
-
-    id = Int(title=_('ID'), readonly=True, required=True)
-    person = Choice(
-            title=_('Person ID'), required=True, vocabulary='Person',
-            readonly=True,
-            )
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    subscription = Choice(
-            title=_('Subscription'), required=True, readonly=False,
-            vocabulary=SubscriptionVocabulary
-            )
-
 class BugSubscription(SQLBase):
     """A relationship between a person and a bug."""
 
@@ -394,24 +217,6 @@ class BugSubscription(SQLBase):
         #ForeignKey(name='bug', dbName='bug', foreignKey='Bug', notNull=True),
         IntCol('subscription', notNull=True)
     ]
-
-  
-class IProductBugAssignment(Interface):
-    """The status of a bug with regard to a product."""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    product = Choice(
-            title=_('Product'), required=True,
-            vocabulary='Product'
-            )
-    bugstatus = Choice(title=_('Bug Status'),
-                       vocabulary=BugStatusVocabulary)
-    priority = Choice(title=_('Priority'),
-                      vocabulary=BugPriorityVocabulary)
-    severity = Choice(title=_('Severity'),
-                      vocabulary=BugSeverityVocabulary)
-    assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
 
 class ProductBugAssignment(SQLBase):
     """A relationship between a Product and a Bug."""
@@ -433,34 +238,6 @@ class ProductBugAssignment(SQLBase):
             )
     assignee = ForeignKey(dbName='assignee', foreignKey='Person', default=None)
 
-
-class ISourcepackageBugAssignment(Interface):
-    """The status of a bug with regard to a source package."""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    sourcepackage = Choice(
-            title=_('Source Package'), required=True, readonly=True,
-            vocabulary='Sourcepackage'
-            )
-    bugstatus = Choice(
-            title=_('Bug Status'), vocabulary=BugStatusVocabulary,
-            required=True, default=int(dbschema.BugAssignmentStatus.NEW),
-            )
-    priority = Choice(
-            title=_('Priority'), vocabulary=BugPriorityVocabulary,
-            required=True, default=int(dbschema.BugPriority.MEDIUM),
-            )
-    severity = Choice(
-            title=_('Severity'), vocabulary=BugSeverityVocabulary,
-            required=True, default=int(dbschema.BugSeverity.NORMAL),
-            )
-    binarypackage = Choice(
-            title=_('Binary Package'), required=False,
-            vocabulary='Binarypackage'
-            )
-    assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
-
 class SourcepackageBugAssignment(SQLBase):
     """A relationship between a Sourcepackage and a Bug."""
 
@@ -480,31 +257,6 @@ class SourcepackageBugAssignment(SQLBase):
             )
     assignee = ForeignKey(dbName='assignee', foreignKey='Person', default=None)
 
-class IBugInfestation(Interface):
-    """The bug status scorecard."""
-
-    bug = Int(title=_('Bug ID'))
-    coderelease = Int(title=_('Code Release'))
-    explicit = Bool(title=_('Explicitly Created by a Human'))
-    infestation = Choice(title=_('Infestation'),
-                         vocabulary=InfestationVocabulary)
-    datecreated = Datetime(title=_('Date Created'))
-    creator = Int(title=_('Creator'))
-    dateverified = Datetime(title=_('Date Verified'))
-    verifiedby = Int(title=_('Verified By'))
-    lastmodified = Datetime(title=_('Last Modified'))
-    lastmodifiedby = Int(title=_('Last Modified By'))
-
-class IBugSystemType(Interface):
-    """A type of supported remote bug system, eg Bugzilla."""
-
-    id = Int(title=_('ID'))
-    name = TextLine(title=_('Name'))
-    title = TextLine(title=_('Title'))
-    description = Text(title=_('Description'))
-    homepage = TextLine(title=_('Homepage'))
-    owner = Int(title=_('Owner'))
-
 class BugSystemType(SQLBase):
     """A type of supported remote  bug system. eg Bugzilla."""
 
@@ -522,17 +274,6 @@ class BugSystemType(SQLBase):
                 ),
     ]
 
-class IBugSystem(Interface):
-    """A remote a bug system."""
-
-    id = Int(title=_('ID'))
-    bugsystemtype = Int(title=_('Bug System Type'))
-    name = TextLine(title=_('Name'))
-    title = TextLine(title=_('Title'))
-    description = Text(title=_('Description'))
-    baseurl = TextLine(title=_('Base URL'))
-    owner = Int(title=_('Owner'))
-
 class BugSystem(SQLBase):
     _table = 'BugSystem'
     _columns = [
@@ -546,31 +287,6 @@ class BugSystem(SQLBase):
                 notNull=True),
         StringCol('contactdetails', notNull=True),
         ]
-
-class IBugWatch(Interface):
-    """A bug on a remote system."""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    bugsystem = Choice(title=_('Bug System'), required=True,
-            vocabulary='BugSystem')
-    remotebug = TextLine(title=_('Remote Bug'), required=True, readonly=False)
-    # TODO: default should be NULL, but column is NOT NULL
-    remotestatus = TextLine(
-            title=_('Remote Status'), required=True, readonly=True, default=u''
-            )
-    lastchanged = Datetime(
-            title=_('Last Changed'), required=True, readonly=True
-            )
-    lastchecked = Datetime(
-            title=_('Last Checked'), required=True, readonly=True
-            )
-    datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True
-            )
-    owner = Int(
-            title=_('Owner'), required=True, readonly=True
-            )
 
 class BugWatch(SQLBase):
     implements(IBugWatch)
@@ -589,13 +305,5 @@ class BugWatch(SQLBase):
                 notNull=True),
         ]
 
-class IBugProductRelationship(Interface):
-    """A relationship between a Product and a Bug."""
-
-    bug = Int(title=_('Bug'))
-    product = Int(title=_('Product'))
-    bugstatus = Int(title=_('Bug Status'))
-    priority = Int(title=_('Priority'))
-    severity = Int(title=_('Severity'))
 
 
