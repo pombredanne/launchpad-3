@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-15 16:35:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1438
+
+    Summary:
+      poppy no longer times out.
+    Revision:
+      launchpad--devel--0--patch-1438
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-323
+       make poppy not time out on large uploads.  make logfile start with a + for baz niceness.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/poppy/server.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-323
+
+
 2005-03-15 12:23:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1437
 
     Summary:

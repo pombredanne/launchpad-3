@@ -9,15 +9,16 @@ from zope.server.interfaces.ftp import IFileSystemAccess
 
 import zope.server.ftp.tests.demofs as demofs
 from zope.server.ftp.server import FTPServerChannel
+from zope.server.ftp.server import STORChannel as OriginalSTORChannel
 from zope.server.taskthreads import ThreadedTaskDispatcher
 import ThreadedAsync
 import logging
 import os
 import sys
-from time import time
 from zope.server.serverbase import ServerBase
 from canonical.poppy.filesystem import UploadFileSystem
-from canonical.lucille.uploader.filesystem import UploadFileSystem
+from time import time
+
 
 class Channel(FTPServerChannel):
 
@@ -48,8 +49,11 @@ class Channel(FTPServerChannel):
         #     that code.
         #     http://collector.zope.org/Zope3-dev/350
         #     Steve Alexander, 2005-01-18
-        self.last_activity = time()
+        self.record_activity()
         FTPServerChannel.received(self, data)
+
+    def record_activity(self):
+        self.last_activity = time()
 
     def cmd_pass(self, args):
         'See IFTPCommandHandler'
@@ -60,6 +64,34 @@ class Channel(FTPServerChannel):
         self.authenticated = 1
         self.reply('LOGIN_SUCCESS')
 
+    def cmd_stor(self, args, write_mode='w'):
+        'See IFTPCommandHandler'
+        if not args:
+            self.reply('ERR_ARGS')
+            return
+        path = self._generatePath(args)
+
+        start = 0
+        if self.restart_position:
+            self.start = self.restart_position
+        mode = write_mode + self.type_mode_map[self.transfer_mode]
+
+        if not self._getFileSystem().writable(path):
+            self.reply('ERR_OPEN_WRITE', "Can't write file")
+            return
+
+        cdc = STORChannel(self, (path, mode, start))
+        self.syncConnectData(cdc)
+        self.reply('OPEN_CONN', (self.type_map[self.transfer_mode], path))
+
+class STORChannel(OriginalSTORChannel):
+
+    def received (self, data):
+        if data:
+            self.inbuf.append(data)
+            self.control_channel.record_activity()
+            # This is the point at which some data for an upload has been
+            # received by the server from a client.
 
 class Server(ServerBase):
 
@@ -125,7 +157,7 @@ def main():
     numthreads = 4
 
     logger = logging.getLogger('Server')
-    hdlr = logging.FileHandler('lucilleupload.log')
+    hdlr = logging.FileHandler('+lucilleupload.log')
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
     hdlr.setFormatter(formatter)
     logger.addHandler(hdlr)
