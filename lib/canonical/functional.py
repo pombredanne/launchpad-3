@@ -559,6 +559,8 @@ class SpecialOutputChecker(doctest.OutputChecker):
                 # There was no difference.  May be an error in elided_source().
                 # In any case, return the whole thing.
                 newgot = got
+        else:
+            newgot = got
         return doctest.OutputChecker.output_difference(
             self, example, newgot, optionflags)
 

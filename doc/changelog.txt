@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-17 16:40:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1451
+
+    Summary:
+      Fix uninitialized variable in chunkydiff hook
+    Revision:
+      launchpad--devel--0--patch-1451
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-207
+       Fix uninitialized variable in chunkydiff hook
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/functional.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-207
+
+
 2005-03-17 15:23:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1450
 
     Summary:
