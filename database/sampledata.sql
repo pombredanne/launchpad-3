@@ -82,6 +82,44 @@ INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
 VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+        '0.9.0-6',
+        timestamp '2004-06-17 00:00',
+        1);
+
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+ 	1,
+        (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+        '0.9.0-7',
+        timestamp '2004-06-18 00:00',
+        1);
+
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+ 	1,
+        (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+        '0.9.0-8',
+        timestamp '2004-06-19 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+ 	1,
+        (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+        '0.9.0-9',
+        timestamp '2004-06-20 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+ 	1,
+        (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.1-1',
         timestamp '2004-06-29 00:00',
         1);
@@ -484,7 +522,7 @@ version, shortdesc, description, build, binpackageformat, component,
 section, priority) 
 	VALUES (
 (SELECT id from Sourcepackagerelease WHERE sourcepackage = 
-	(SELECT id from Sourcepackage where name = 'mozilla-firefox')),
+	(SELECT id from Sourcepackage where name = 'mozilla-firefox')  and version='0.9.1-1'),
 (SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
 '0.8', 'Mozilla Firefox 0.8', 'some text', 
 	1, -- hardcoded ?? use query instead
@@ -648,7 +686,31 @@ INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease,
 				uploadstatus) 
 VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
         (SELECT id FROM Sourcepackagerelease WHERE 
-	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox')),
+	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox') and version='0.9.0-6'),
+	6);
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox') and version='0.9.0-7'),
+	6);
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox') and version='0.9.0-8'),
+	6);
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox') and version='0.9.0-9'),
+	4);
+INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
+				uploadstatus) 
+VALUES ((SELECT id FROM Distrorelease WHERE name = 'warty'),
+        (SELECT id FROM Sourcepackagerelease WHERE 
+	 sourcepackage = (SELECT id from Sourcepackage where name = 'mozilla-firefox') and version='0.9.1-1'),
 	1);
 INSERT INTO Sourcepackageupload (distrorelease, sourcepackagerelease, 
 				uploadstatus) 

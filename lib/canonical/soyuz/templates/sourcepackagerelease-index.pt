@@ -17,7 +17,7 @@
     <h1>
        <tal:block tal:replace="context/sourcepackagerelease/sourcepackage/title">
 	TITLE </tal:block>
-     <tal:block tal:replace="context/version">
+     <tal:block tal:replace="context/sourcepackagerelease/version">
 	Version</tal:block>
     </h1>
     <h4>SourcepackageRelease-index (...ubuntu/src/warty/apache2/1.3.6-2) </h4>
@@ -37,7 +37,13 @@
  <p><h4>Package Maintainer:</h4> 
  <span
  tal:content="context/sourcepackagerelease/sourcepackage/maintainer/displayname">
- PRESENTATIONAME
+ MAINTAINER
+ </span>
+
+ <p><h4>Package Creator:</h4> 
+ <span
+ tal:content="context/sourcepackagerelease/creator/displayname">
+ CREATORNAME
  </span>
 
  <p><h4>Package Bugs:</h4> 

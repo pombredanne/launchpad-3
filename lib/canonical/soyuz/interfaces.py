@@ -79,13 +79,11 @@ class IDistroReleaseSourceApp(Interface):
 
 class IDistroReleaseSourceReleaseBuildApp(Interface):
         sourcepackagerelease = Attribute("SourcePackageRelease")
-        version = Attribute("SourcePackageRelease Version ?!?!")
         arch = Attribute("Builded arch")
 
 class IDistroReleaseSourceReleaseApp(Interface):
     """A SourcePackageRelease Proxy """
     sourcepackagerelease = Attribute("SourcePackageRelease")
-    version = Attribute("SourcePackageRelease Version ?!?!")
     archs = Attribute("Builded archs")
 
     def __getitem__(name):

@@ -84,15 +84,13 @@ class DistroReleasesApp(object):
 
 # Source app component Section (src) 
 class DistroReleaseSourceReleaseBuildApp(object):
-    def __init__(self, sourcepackagerelease, version, arch):
+    def __init__(self, sourcepackagerelease, arch):
         self.sourcepackagerelease = sourcepackagerelease
-        self.version = version
         self.arch = arch
 
 
 class DistroReleaseSourceReleaseApp(object):
     def __init__(self, sourcepackage, version):
-        print 'DistroReleaseSourceReleaseApp', sourcepackage, version
         results = SoyuzSourcePackageRelease.selectBy(
                 sourcepackageID=sourcepackage.id, version=version)
         if results.count() == 0:
@@ -100,13 +98,11 @@ class DistroReleaseSourceReleaseApp(object):
         else:
             self.sourcepackagerelease = results[0]
         #self.sourcepackage = sourcepackage
-        self.version = version
         # FIXME: stub
         self.archs = ['i386','AMD64']
         
     def __getitem__(self, arch):
         return DistroReleaseSourceReleaseBuildApp(self.sourcepackagerelease,
-                                                  self.version,
                                                   arch)
 
 class currentVersion(object):
@@ -132,7 +128,7 @@ class DistroReleaseSourceApp(object):
                                 
 
     def __getitem__(self, version):
-        return DistroReleaseSourceReleaseApp(self.sourcepackage, version)
+        return DistroReleaseSourceReleaseApp(self.sourcepackage.sourcepackage, version)
 
     def proposed(self):
         return self.sourcepackage.sourcepackage.proposed(self.release,
@@ -194,7 +190,7 @@ class DistroReleaseSourcesApp(object):
 
         query = self._query()
         # XXX ascii bogus needs to be revisited
-        query += ' AND name = %s' % quote(name.encode('ascii'))
+        query += ' AND name = %s ORDER BY dateuploaded DESC' % quote(name.encode('ascii'))
         try:
             return DistroReleaseSourceApp(self.release,
                     self.table.select(query, clauseTables=self.clauseTables)[0])
