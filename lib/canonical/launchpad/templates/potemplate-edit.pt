@@ -15,18 +15,17 @@
 
 <body>
 
-<div metal:fill-slot="main">
+<tal:thing replace="view/submitForm"/>
 
-    <!--
-    This tal:dummy block never turns into HTML, but it triggers the edit
-    method on the Rosetta ProductView class. This checks to see if a form
-    has been submitted to it, and if so updates the product.
-    -->
-    <tal:dummy condition="view/edit" />
+<div metal:fill-slot="main">
 
     <h1>Edit "<span
     tal:content="context/name">$POTemplate.name</span>" POTemplate
     Details</h1>
+
+    <div class="portalMessage"
+         tal:condition="view/status_message"
+         tal:content="structure view/status_message">Successful</div>
 
     <div class="documentDescription">
     Please edit the po template details below for <span
@@ -37,9 +36,10 @@
 
         <legend>POTemplate Details</legend>
 
-        <form action="+edit" method="post">
+        <form method="POST" enctype="multipart/form-data"
+            tal:attributes="action string: ${request/URL}">
 
-<div class="field">
+        <div class="field">
 
             <label>Name</label>
 
@@ -75,15 +75,40 @@
         </div>
 
         <div class="formControls">
-
             <input class="context" type="submit"
-                   name="Update"
-                   value="Update POTemplate" />
-
+                   name="EDIT"
+                   value="Edit" />
         </div>
+
         </form>
 
+    </fieldset>
 
+    <fieldset>
+        <legend>Upload PO Template Data</legend>
+
+        <form method="POST" enctype="multipart/form-data"
+            tal:attributes="action string: ${request/URL}">
+
+        <div class="field">
+
+            <label>File</label>
+
+            <div class="formHelp">
+            The PO template file we want to upload to translate.
+            </div>
+
+            <input name="file" type="file" />
+        </div>
+
+        <div class="formControls">
+            <input class="context" type="submit"
+                   name="UPLOAD"
+                   value="Upload" />
+        </div>
+
+
+        </form>
     </fieldset>
 
 </div>

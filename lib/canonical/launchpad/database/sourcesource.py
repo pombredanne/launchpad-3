@@ -10,7 +10,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 # SQL object
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 
@@ -19,7 +19,6 @@ from canonical.database.sqlbase import SQLBase, quote
 # Why RCSTypeEnum is inside launchpad.interfaces?
 from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin, ISourceSourceSet, \
                                            RCSTypeEnum, RCSNames, IProductSet
-from canonical.lp.dbschema import ImportTestStatus
 
 # tools
 import datetime
@@ -260,7 +259,7 @@ class SourceSourceSet(object):
 
     def filter(self, sync=None, process=None, 
                      tested=None, text=None,
-                     ready=None):
+                     ready=None, assigned=None):
         query = ''
         clauseTables = Set()
         clauseTables.add('SourceSource')
@@ -295,6 +294,14 @@ class SourceSourceSet(object):
             if len(query) > 0:
                 query = query + ' AND '
             query = query + 'SourceSource.autotested = 2'
+        if assigned is not None:
+            if len(query) > 0:
+                query = query + ' AND '                
+            query = query + "Product.name != 'unassigned'"
+        else:
+            if len(query) > 0:
+                query = query + ' AND '                
+            query = query + "Product.name = 'unassigned'"
         if text is not None:
             if len(query) > 0:
                 query = query + ' AND '

@@ -1,0 +1,130 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Team 
+    <span tal:replace="context/displayname">Name</span>
+    Information</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div id="content" class="documentEditable">
+    <ul class="contentViews">
+      <li id="contentview-profile" class="selected">
+        <a href=".">Team Information</a>
+      </li>
+
+      <li id="contentview-members" class="plain">
+        <a href="+members">Team Members</a>
+      </li>
+    </ul>
+
+    <div class="documentContent" id="region-content">
+
+    <div>
+      <h1 tal:content="context/displayname">Name</h1>
+        <br />
+        <table width="80%">
+          <tr tal:condition="context/teamdescription">
+            <td>Description:</td>
+            <td tal:content="context/teamdescription">DESCRIPTION</td>
+          </tr>
+
+          <tr>
+            <td>Owner:</td>
+            <td><a tal:attributes="href string:../${context/teamowner/name}"
+                   tal:content="context/teamowner/browsername"></a></td>
+          </tr>
+
+          <tr>
+            <td>Members:</td>
+            <td tal:content="python: len(context.currentmembers)">123</td>
+          </tr>
+
+          <tr tal:condition="context/preferredemail">
+            <td>Email:</td>
+            <td><span tal:replace="context/preferredemail/email"></span></td>
+          </tr>
+
+          <tr>
+            <td></td>
+            <td class="listingNext"><a href="+edit">Edit Profile</a></td>
+          </tr>
+        </table>
+    </div> 
+
+
+    <table width="100%">
+    <tr><td width="50%" valign="top"
+            tal:define="subteams context/subteams"
+            tal:condition="subteams">
+      <!-- SubTeams -->
+      <fieldset>
+        <legend>Subteams</legend>
+        <table>
+          <tr tal:repeat="team subteams">
+            <td>
+              <a tal:attributes="href string:../${team/name}"
+                 tal:content="team/browsername">name</a>
+            </td>
+          </tr>
+        </table>
+      </fieldset>
+    </td>
+    <td valign="top" tal:define="superteams context/teams"
+        tal:condition="superteams">
+      <!-- SuperTeams -->
+      <fieldset>
+        <legend>Superteams</legend>
+        <table>
+          <tr tal:repeat="team superteams">
+            <td>
+              <a tal:attributes="href string:../${team/name}"
+                 tal:content="team/browsername">name</a>
+            </td>
+          </tr>
+        </table>
+      </fieldset>
+    </td></tr>
+    </table>
+
+    <!-- Roles -->
+    <div tal:condition="python: context.distroroles or
+                                context.distroreleaseroles">
+      <fieldset>
+        <legend><span tal:replace="context/displayname"></span> is
+        </legend>
+        <table>
+          <tr tal:condition="context/distroroles"
+              tal:repeat="role context/distroroles">
+            <td><span tal:content="role/rolename">ROLENAME</span> on 
+              <a tal:attributes="href string:/soyuz/distros/${role/distribution/name}"
+                 tal:content="role/distribution/title">DISTRO</a></td>
+          </tr>
+          <tr><td></td></tr>
+          <tr tal:condition="context/distroreleaseroles"
+              tal:repeat="role context/distroreleaseroles">
+            <td><span tal:content="role/rolename">ROLENAME</span> on 
+              <a tal:attributes="href string:/soyuz/distros/${role/distrorelease/distribution/name}/${role/distrorelease/name}"
+                 tal:content="role/distrorelease/displayname">RELEASE</a>
+            </td>
+          </tr>
+        </table>
+      </fieldset>
+    </div>
+
+    </div>
+  </div>
+</div> 
+
+</body>
+</html>

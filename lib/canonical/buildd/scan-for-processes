@@ -1,0 +1,35 @@
+#!/bin/bash
+# Copyright Canonical Limited
+# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
+
+# Buildd Slave tool to scan a chroot in case any processes are underneath it
+
+## This script uses bashisms, must be run under bash
+
+# Expects build id as arg 1, makes build-id to contain the build
+
+# Needs SUDO to be set to a sudo instance for passwordless access
+
+SUDO=/usr/bin/sudo
+BUILDID="$1"
+
+set -e
+
+exec 2>&1
+
+set -x
+
+[ $(id -u) = "0" ] || $SUDO $0 "$HOME/build-$BUILDID/chroot-autobuild"
+
+PREFIX="$BUILDID"
+
+for ROOT in /proc/*/root; do
+    LINK=$(readlink $ROOT)
+    if [ "x$LINK" != "x" ]; then
+	if [ "x${LINK:0:${#PREFIX}}" = "x$PREFIX" ]; then
+	    # this process is in the chroot...
+	    PID=$(basename $(dirname "$ROOT"))
+	    kill -9 "$PID"
+	fi
+    fi
+done

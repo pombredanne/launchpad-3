@@ -1,8 +1,8 @@
-
 # Zope
 from zope.interface import implements
+
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import ForeignKey, IntCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBugSubscription, \
@@ -41,5 +41,3 @@ class BugSubscriptionSet(BugSetBase):
         conn = BugSubscription._connection
         # I want an exception raised if id can't be converted to an int
         conn.query('DELETE FROM BugSubscription WHERE id=%d' % int(id))
-
-

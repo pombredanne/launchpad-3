@@ -1,18 +1,10 @@
-# Python imports
-from sets import Set
-from datetime import datetime
-
 # Zope imports
 from zope.interface import implements
-from zope.component import getUtility
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
+from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.lp import dbschema
 from canonical.launchpad.interfaces import IPublishedPackage, \
                                            IPublishedPackageSet
 
@@ -37,7 +29,11 @@ class PublishedPackage(SQLBase):
     binarypackageshortdesc = StringCol(immutable=True)
     binarypackagedescription = StringCol(immutable=True)
     binarypackageversion = StringCol(immutable=True)
-    build = IntCol(immutable=True)
+    # Daniel Debonzi 20050105
+    # Why not ForeignKey?
+    ## build = IntCol(immutable=True)
+    build = ForeignKey(foreignKey='Build', 
+                       dbName='build')
     datebuilt = DateTimeCol(immutable=True)
     sourcepackagerelease = IntCol(immutable=True)
     sourcepackagereleaseversion = StringCol(immutable=True)
@@ -57,7 +53,7 @@ class PublishedPackageSet(object):
               distrorelease=None, distroarchrelease=None):
         querytxt = '1=1'
         if name:
-            name = name.lower().strip()
+            name = name.lower().strip().split()[0]
             name.replace('%','%%')
             querytxt += " AND binarypackagename ILIKE %s" % quote('%'+name+'%')
         if distribution:

@@ -23,7 +23,7 @@
    <div class="field">
       <label>Add New Email</label>
       <div class="formHelp">
-	Enter a New Email or an Edited One
+        Enter a New Email or a Replacement for one
       </div>
       <input class="listing" type="text" name="new_email" size="20"/>
    </div>
@@ -38,7 +38,7 @@
       <select class="listing" name="operation">
 	 <option value="add">Add</option>
 	 <option value="delete">Delete</option>
-	 <option value="edit">Edit</option>
+   <option value="replace">Replace</option>
       </select>
    </div>
 

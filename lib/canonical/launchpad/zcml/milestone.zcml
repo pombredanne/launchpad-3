@@ -1,0 +1,78 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+    
+    <!-- Milestone -->
+    <!-- CONTENT CLASSES -->
+    <content class="canonical.launchpad.database.Milestone">
+        <allow interface="canonical.launchpad.interfaces.IMilestone" />
+        <allow interface="canonical.launchpad.interfaces.IAuthorization" />
+        <require
+            permission="launchpad.AnyPerson"
+            set_attributes="name title" />
+    </content>
+
+    <!-- UTILITIES -->
+    <securedutility
+        class="canonical.launchpad.database.MilestoneSet"
+        provides="canonical.launchpad.interfaces.IMilestoneSet">
+        <allow interface="canonical.launchpad.interfaces.IMilestoneSet" />
+    </securedutility>
+
+    <!-- VOCABULARIES -->
+
+    <!--TRAVERSALS-->
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IMilestoneSet"
+        getter="__getitem__" />
+    
+    <!--BROWSER DEFAULTVIEWS-->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IMilestone"
+        name="+index" />
+
+    <!--PAGE DECLARATIONS-->
+
+    <!--FORMS-->
+    <browser:addform
+        name="+milestone"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IMilestone"
+        class="canonical.launchpad.browser.milestone.ProductMilestoneAddView"
+        label="Add a Milestone for this Product"
+        fields="name title"
+        content_factory="canonical.launchpad.database.milestone.ProductMilestoneFactory"
+        keyword_arguments="name title"
+        permission="launchpad.Edit"
+        template="../templates/launchpad-addform.pt"
+        lp:url="doap/products/$Product.name/+milestone">
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
+    </browser:addform>
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IMilestone"
+        schema="canonical.launchpad.interfaces.IMilestone"
+        fields="name title"
+        label="Edit Product Milestone"
+        permission="launchpad.Edit"
+        template="../templates/launchpad-editform.pt"
+        lp:url="doap/products/$Product.name/milestones/$Milestone.name/+edit">
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
+    </browser:editform>
+
+    <!-- ProductMilestoneSet -->
+    <content class="canonical.launchpad.database.ProductMilestoneSet">
+        <allow interface="canonical.launchpad.interfaces.IMilestoneSet" />
+    </content>
+
+</configure>

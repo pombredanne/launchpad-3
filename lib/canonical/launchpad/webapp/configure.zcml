@@ -3,7 +3,7 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
-<!-- Annotations -->
+    <!-- Annotations -->
 
     <content class="canonical.launchpad.webapp.annotation.SQLObjectAnnotation">
         <require
@@ -43,6 +43,13 @@
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.HTMLFormAPI"
         name="htmlform"
+        />
+
+    <adapter
+        for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.RequestFormatterAPI"
+        name="fmt"
         />
 
     <!-- The next directive should be registered for 'int' only.
@@ -98,6 +105,16 @@
         factory="canonical.launchpad.webapp.authentication.handle"
         />
 
+    <subscriber
+        for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
+        factory="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
+        />
+
+    <subscriber
+        for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
+        factory="canonical.launchpad.webapp.launchbag.reset_login_in_launchbag_on_logout"
+        />
+
     <utility
         factory="canonical.launchpad.webapp.authentication.SSHADigestEncryptor"
         provides="canonical.launchpad.interfaces.IPasswordEncryptor"
@@ -139,6 +156,22 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadApplication"
+        template="../templates/launchpad-join.pt"
+        class="canonical.launchpad.webapp.login.JoinLaunchpadView"
+        permission="zope.Public"
+        name="+register"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadApplication"
+        template="../templates/launchpad-forgottenpassword.pt"
+        class="canonical.launchpad.webapp.login.ForgottenPasswordPage"
+        permission="zope.Public"
+        name="+forgottenpassword"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadApplication"
         template="../templates/launchpad-logout.pt"
         class="canonical.launchpad.webapp.login.CookieLogoutPage"
         permission="zope.Public"
@@ -168,6 +201,16 @@
         template="../templates/launchbag-debug.pt"
         permission="zope.Public"
         class="canonical.launchpad.webapp.launchbag.LaunchBagView"
+        />
+
+    <!-- Resource unnamed view, allowing Z3 preferred spelling
+        /@@/favicon.png to access resource and resourceDirectory -->
+    <browser:page
+        name=""
+        for="canonical.publication.RootObject"
+        class="zope.app.publisher.browser.resources.Resources"
+        permission="zope.Public"
+        allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
         />
 
 </configure>

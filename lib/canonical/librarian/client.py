@@ -12,6 +12,10 @@ class UploadFailed(Exception):
     pass
 
 
+class DownloadFailed(Exception):
+    pass
+
+
 class FileUploadClient(object):
     """Simple blocking client for uploading to the librarian."""
 
@@ -104,7 +108,7 @@ class FileDownloadClient(object):
 
         :returns: sequence of 3-tuples of (fileID, aliasID, filename).
         """
-        return [p.split('/') for p in self._findByDigest(hexdigest)]
+        return [tuple(p.split('/')) for p in self._findByDigest(hexdigest)]
 
     def findLinksByDigest(self, hexdigest):
         """Return a list of URIs to file aliases matching 'hexdigest'"""
@@ -122,10 +126,14 @@ class FileDownloadClient(object):
         url = ('http://%s:%d/byalias?alias=%s'
                % (self.host, self.port, aliasID))
         f = urllib2.urlopen(url)
-        l = f.read()[:-1] # Trim the newline
+        l = f.read()
         f.close()
+        if l == 'Not found':
+            raise DownloadFailed, 'Alias %r not found' % (aliasID,)
+        if l == 'Bad search':
+            raise DownloadFailed, 'Bad search: ' + repr(aliasID)
 
-        return l
+        return l.rstrip()
     
     def getURLForAlias(self, aliasID):
         """Returns the url for talking to the librarian about the given

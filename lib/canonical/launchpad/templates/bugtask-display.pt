@@ -1,0 +1,58 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="launchpad">
+
+    <title metal:fill-slot="title">
+      Bug Task on Malone #<span tal:content="context/bug/id" />
+    </title>
+
+<body>
+<div metal:fill-slot="main">
+<div metal:define-macro="body">
+
+  <br />
+
+  <div>
+      <a href="" tal:attributes="href string:/malone/bugs/${context/bug/id}">
+          More information on this bug...
+      </a>
+  </div>
+  <div tal:condition="context/product">
+      <a href=""
+         tal:attributes="href string:/malone/products/${context/product/name}"
+         tal:content="string:More ${context/product/displayname} bugs...">
+         More Mozilla Firefox bugs...
+      </a>
+  </div>
+  <br />
+  <div metal:define-macro="formbody">
+
+    <h3 tal:condition="view/label"
+        tal:content="view/label"
+        metal:define-slot="heading"
+        >Display something</h3>
+
+    <div metal:define-slot="extra_info" tal:replace="nothing">
+    </div>
+
+    <div class="row"
+         metal:define-slot="extra_top" tal:replace="nothing">
+        <div class="label">Extra top</div>
+        <div class="field"><input type="text" style="width:100%" /></div>
+    </div>
+
+    <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+
+    <div class="row"
+         metal:define-slot="extra_bottom" tal:replace="nothing">
+        <div class="label">Extra bottom</div>
+        <div class="field"><input type="text" style="width:100%" /></div>
+    </div>
+
+  </div>
+
+</div>
+</div>
+</body>
+</html>

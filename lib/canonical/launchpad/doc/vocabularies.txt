@@ -40,7 +40,20 @@ vocabulary registry.
 Enumerable Vocabularies
 =======================
 
-XXX: document your vocabularies here please!
+Creating a new Enumeratable Vocabulary based on an existent dbschema
+constant:
+
+    >>> from canonical.lp import dbschema
+    >>> from canonical.launchpad.vocabularies import vocab_factory
+    >>> PackagingVocabulary = vocab_factory(dbschema.Packaging)
+    
+The right place to do it is in the file vocabularies/dbschema.py.
+Note: don't forget to registry your brand new instance for zope lookup
+in configure.zcml.
+
+o PackagingVocabulary - reflects the available constants for
+  Packaging.packaging field.
+
 
 Non-Enumerable Vocabularies
 ===========================
@@ -83,5 +96,13 @@ o ValidPerson - all 'valid' people. This is currently defined as people
     >>> stuff = vocab.search('bishop')
     >>> [t.token for t in stuff]
     ['stub']
+
+o ValidOwner - all 'valid' person or team in Launchpad context, able to 
+  own an entity (Product, Project, Team, Package, etc) reflecting  
+  "Ubuntu Membership" specification.
+
+   XXX cprov 20050128
+   Now, ValidOwner simply extends Person, i.e., returns all valid person
+   or team, so we have the same usage as PersonVocabulary
 
 XXX: document more vocabularies here, particularly when they break!

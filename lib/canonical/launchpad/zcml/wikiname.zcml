@@ -1,0 +1,9 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+    <content class="canonical.launchpad.database.WikiName">
+        <allow interface="canonical.launchpad.interfaces.IWikiName"/>
+        <require permission="zope.Public"
+            set_attributes="wiki wikiname" />
+    </content>
+
+</configure>

@@ -1,0 +1,13 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/products/firefox/+malone-index?status=10&status=20&assignee=all&product=all&sourcepackagename=all&severity=50&search=Search HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/products/firefox
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+    <small>displaying matching bugs 1 to 1 of 1</small>
+  ...
+            <td onclick="window.location='/malone/tasks/15/+edit'">6</td>
+  ...

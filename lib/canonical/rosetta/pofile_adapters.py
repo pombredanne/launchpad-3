@@ -114,7 +114,10 @@ class TranslationsList(object):
                 return
             # there is one in the DB; mark it as historic
             sighting.inlastrevision = False
-            sighting.active = False
+            # Mark the msgset as fuzzy only if the one in the DB came from
+            # the SCM.
+            if sighting.origin == int(RosettaTranslationOrigin.SCM):
+                self._msgset.fuzzy = True
             # we're done
             return
 
@@ -128,7 +131,7 @@ class TranslationsList(object):
                   "Tried to create objects but have no Person to associate it with"
         # create a translation sighting, or update an existing one
         self._msgset.makeTranslationSighting(self._who, value, index,
-                                             update=True, fromPOFile=True)
+                                             fromPOFile=True)
 
     def __getitem__(self, index):
         "one single item is being requested; index is the plural form"
@@ -161,7 +164,7 @@ class TranslationsList(object):
         # XXX: should probably check if value is not empty/None
         # create (or update) a translation sighting
         self._msgset.makeTranslationSighting(self._who, value, len(self),
-                                             update=True, fromPOFile=True)
+                                             fromPOFile=True)
 
 
 class MessageProxy(POMessage):
@@ -438,9 +441,9 @@ class POFileImporter(object):
                 header.pluralforms = 1
         # store it; use a single db operation
         self.pofile.set(
-            topComment=header.commentText.encode('utf-8'),
+            topcomment=header.commentText.encode('utf-8'),
             header=header.msgstr.encode('utf-8'),
-            headerFuzzy='fuzzy' in header.flags,
+            headerfuzzy='fuzzy' in header.flags,
             pluralforms=header.nplurals)
         # state that we've done so, or someone might give us a card
         self.header_stored = True
@@ -462,7 +465,6 @@ class POFileImporter(object):
         self.store_header()
         if not self.header_stored:
             raise POInvalidInputError('PO file has no header', 0)
-        self.pofile.updateStatistics()
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
@@ -481,12 +483,6 @@ class POFileImporter(object):
             except KeyError:
                 potmsgset = self.pofile.potemplate.createMessageSetFromText(msgid)
             pomsgset = self.pofile.createMessageSetFromMessageSet(potmsgset)
-#        else:
-            # it was in the db - update the timestamp
-            # XXX: Carlos Perello Marin 19/10/04: Not sure if we should do it
-            # anymore, the msgid are shared with the potemplate so I think it
-            # should be updated only when it's seen in a potemplate...
-#            msgset.potmsgset.getMessageIDSighting(SINGULAR, allowOld=True).dateLastSeen = "NOW"
         # set sequence
         self.len += 1
         pomsgset.sequence = self.len
@@ -501,7 +497,7 @@ class POFileImporter(object):
             if 'msgstr' in kw:
                 proxy.msgstr = kw['msgstr']
             # or was it plural?  In fact, store them all!
-            elif 'msgstrPlurals' in kw:
+            if 'msgstrPlurals' in kw:
                 proxy.msgstrPlurals = kw['msgstrPlurals']
             # store comments
             proxy.commentText = kw.get('commentText', '')
@@ -516,3 +512,4 @@ class POFileImporter(object):
                 % (kw['_lineno'], str(e)))
         # Mao; return the results of our work
         return proxy
+

@@ -1,26 +1,9 @@
-# Python imports
-from sets import Set
-from datetime import datetime
-
-# Zope imports
-from zope.interface import implements
-
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
-from sqlobject.sqlbuilder import func
+from sqlobject import ForeignKey, IntCol
 
-from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.database import Product, Project
+from canonical.database.sqlbase import SQLBase
 from canonical.lp import dbschema
 
-
-#
-#
-#
-
- 
 class BranchRelationship(SQLBase):
     """A relationship between branches.
     
@@ -70,3 +53,8 @@ class BranchRelationship(SQLBase):
         return html
         
 
+class BranchLabel(SQLBase):
+    _table = 'BranchLabel'
+
+    label = ForeignKey(foreignKey='Label', dbName='label', notNull=True)
+    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=True)

@@ -18,13 +18,12 @@
             tal:content="view/label"
             metal:fill-slot="heading">Add a New bug in Malone</h3>
 
-        <div metal:fill-slot="extra_info" class="documentDescription">
-            This is the form to create a new bug report. Malone is unlike
-            other bug trackers - it's much more important to establish if
-            this bug already exists in Malone than it might be in other bug
-            trackers. Reducing the number of duplicates makes the most of
-            Malone's unique qualities, such as tracking the status of the
-            same bug in multiple packages of the same upstream code.
+        <div metal:fill-slot="extra_info" class="formHelp">
+            Bug reports provide valuable information to developers who maintain
+            and improve software. Before you report a bug, please ensure that it
+            hasn't <a href="/malone/bugs">already been reported</a>.
+        <br />
+        <br />
         </div>
 
         <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">

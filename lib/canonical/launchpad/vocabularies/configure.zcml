@@ -11,6 +11,16 @@
         />
 
     <vocabulary
+        name="SourcePackageName"
+        factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
+        />
+
+    <vocabulary
+        name="Distribution"
+        factory="canonical.launchpad.vocabularies.DistributionVocabulary"
+        />
+
+    <vocabulary
         name="BinaryPackage"
         factory="canonical.launchpad.vocabularies.BinaryPackageVocabulary"
         />
@@ -31,6 +41,11 @@
         />
 
     <vocabulary
+        name="ValidOwner"
+        factory="canonical.launchpad.vocabularies.ValidOwnerVocabulary"
+        />
+
+    <vocabulary
         name="ProductRelease"
         factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
         />
@@ -43,6 +58,11 @@
     <vocabulary
         name="Project"
         factory="canonical.launchpad.vocabularies.ProjectVocabulary"
+        />
+
+    <vocabulary
+        name="Milestone"
+        factory="canonical.launchpad.vocabularies.MilestoneVocabulary"
         />
 
     <vocabulary
@@ -78,6 +98,11 @@
     <vocabulary
         name="PackageRelease"
         factory="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
+        />
+
+    <vocabulary
+        name="Packaging"
+        factory="canonical.launchpad.vocabularies.PackagingVocabulary"
         />
 
     <!-- Define the widget used by Choice fields that use huge vocabularies -->

@@ -6,6 +6,8 @@ from zope.interface import Interface, Attribute
 class ILanguage(Interface):
     """A Language."""
 
+    id = Attribute("""XXX""")
+
     code = Attribute("""The ISO 639 code for this language.""")
 
     englishname = Attribute("The English name of this language.")

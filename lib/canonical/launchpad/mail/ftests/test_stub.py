@@ -56,7 +56,7 @@ def test_simple_sendmail():
 
     The message should be a sane RFC2822 document
 
-    >>> message = email.message_from_string(raw_message, strict=True)
+    >>> message = email.message_from_string(raw_message)
     >>> message['From']
     'nobody@example.com'
     >>> message['To']

@@ -3,9 +3,6 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-class IDistroPackageFinder(Interface):
-    """A tool to find packages in a distribution."""
-
 class IDistroReleaseRole(Interface):
     """A Distroreleaserole Object """
     distrorelease= Attribute("Release")
@@ -32,6 +29,7 @@ class IDistroArchRelease(Interface):
     processorfamily = Attribute("ProcessorFamily")
     architecturetag = Attribute("ArchitectureTag")
     owner = Attribute("Owner")
+    chroot = Attribute("Chroot")
  
 class IDistroTools(Interface):
     """Interfaces to Tools for Distribution and DistroRelase Manipulation"""

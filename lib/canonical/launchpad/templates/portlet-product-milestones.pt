@@ -1,0 +1,25 @@
+<div class="portlet">
+    <h4>Milestones:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <table class="rowNavigation" border="0">
+            <tr tal:repeat="milestone context/milestones"
+                tal:attributes="onclick string:window.location='milestones/${milestone/name}/+edit'">
+                <td tal:content="milestone/name">milestone title</td>
+            </tr>
+        </table>
+
+        <br />
+
+        <a href="+milestone"
+            style="font-size: 85%; display: inline; clear: both; text-decoration: none;"
+            title="Add a milestone for this product">
+            <img src="/++resource++add.gif" alt="+" />
+            Add milestone
+        </a>
+
+        </div>
+    </div>
+</div>

@@ -1,0 +1,43 @@
+#!/bin/sh
+# Copyright Canonical Limited
+# Author: Daniel Silverstone <daniel.silverstone@canonical.com>
+
+# Buildd Slave tool to update a debian chroot
+
+# Expects build id as arg 1, makes build-id to contain the build
+# Expects rest of arguments to be to pass to sbuild
+
+# Needs SBUILD to be set to a sbuild instance with passwordless sudo ability
+# Needs chapt-get to be a chrooted apt-get thingy
+
+exec 2>&1
+
+set -x
+
+SBUILD=/usr/bin/sbuild
+BUILDID=$1
+
+shift
+
+cd "$HOME/build-$BUILDID"
+
+$SBUILD "$@"
+RET=$?
+
+[ $RET == 0 ] || exit $RET
+
+STATE=$(cat build-progress | cut -d: -f2 | sed -e's/ //g')
+
+# If the build was successful; return 0
+[ "x$STATE" == "xsuccessful" ] && exit 0
+
+# If we thing it's a deps problem, exit 1
+DEP=$(echo $STATE | grep deps)
+[ "x$DEP" == "x" ] || exit 1
+
+# Is it a space issue? if so, exit 2
+SPC=$(echo $STATE | grep space)
+[ "x$SPC" == "x" ] || exit 2
+
+# Any other reason, exit 3
+exit 3

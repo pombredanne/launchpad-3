@@ -1,0 +1,30 @@
+<tal:dummy condition="view/person">
+<tal:dummy tal:define="home string:/foaf/people/${view/person/name}">
+
+<div class="portlet">
+  <h4>Links</h4>
+<div class="portletBody">
+  <div class="portletContent even">
+<ul>
+  <li>
+    <a tal:attributes="href home">My Profile</a>
+  </li>
+
+  <li>
+    <a href="/foaf/people/">Search</a>
+  </li>
+
+  <li>
+    <a href="/foaf/people/+join">New Person</a>
+  </li>
+
+  <li>
+    <a tal:attributes="href string:${home}/+newteam">New Team</a>
+  </li>
+</ul>
+</div>
+</div>
+</div>
+
+</tal:dummy>
+</tal:dummy>

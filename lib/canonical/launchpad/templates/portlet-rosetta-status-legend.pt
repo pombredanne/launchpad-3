@@ -1,0 +1,39 @@
+
+    <fieldset>
+        <legend>Legend</legend>
+
+        <p>The colour coding of the translation status bar indicates the
+        extent to which the app has been translated into that language.
+        The colours describe messages that are either translated in the
+        last-imported PO file (which would imply the translation is the
+        same as the latest upstream version), updated in Rosetta, newly
+        translated in Rosetta (and not yet upstream), or not translated
+        at all.</p>
+
+            <img src="/++resource++green-bar.png"
+                height="10"
+                width="20"
+                style="margin-top: 2px;"
+                alt="Translated Messages"
+                /> These translations were in the last PO file
+                imported<br />
+            <img src="/++resource++blue-bar.png"
+                height="10"
+                width="20"
+                style="margin-top: 2px;" 
+                alt="Improved Message Translations"
+                /> Rosetta has improved translations for these<br />
+            <img src="/++resource++purple-bar.png"
+                height="10"
+                width="20"
+                style="margin-top: 2px;"
+                alt="Newly Translated Messages"
+                /> These messages have been translated in Rosetta,
+                and not yet been seen in a PO file<br />
+            <img src="/++resource++red-bar.png"
+                height="10"
+                width="20"
+                style="margin-top: 2px;"
+                alt="Untranslated Messages"
+                /> Untranslated messages<br />
+    </fieldset>

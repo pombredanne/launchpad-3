@@ -1,20 +1,15 @@
-
 # Zope interfaces
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import ForeignKey, IntCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote
-
+from canonical.database.sqlbase import SQLBase
 
 # canonical imports
 from canonical.launchpad.interfaces import IDistroReleaseQueue, \
                                            IDistroReleaseQueueBuild, \
                                            IDistroReleaseQueueSource
-
-from canonical.launchpad.database import DistroRelease, Build, \
-                                         SourcePackageRelease
 
 class DistroReleaseQueue(SQLBase):
     """A Queue item for Lucille"""

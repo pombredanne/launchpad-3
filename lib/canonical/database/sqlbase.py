@@ -4,7 +4,7 @@ from sqlobject.sqlbuilder import sqlrepr
 from sqlobject.styles import Style
 from datetime import datetime, date, time
 from sqlobject import connectionForURI
-import thread
+import thread, warnings
 
 __all__ = ['SQLBase', 'quote', 'quote_like', 'ZopelessTransactionManager']
 
@@ -85,26 +85,42 @@ class _ZopelessConnectionDescriptor(object):
         return self.transactions[tid]
 
     def __set__(self, inst, value):
-        # FIXME: Write a better warning
-        import warnings
-        warnings.warn("Something tried to set a _connection.  Ignored.")
+        '''Do nothing
+        
+        This used to issue a warning but it seems to be spurious.
+
+        '''
+        pass
+        #import warnings
+        #warnings.warn("Something tried to set a _connection.  Ignored.")
 
     def install(cls, connectionURI, sqlClass=SQLBase, debug=False):
         if isinstance(sqlClass.__dict__.get('_connection'),
                 _ZopelessConnectionDescriptor):
-            import warnings
-            warnings.warn("Already installed a _connection descriptor!  Overriding!")
-            #raise RuntimeError, "Already installed _connection descriptor."
+            # ZopelessTransactionManager.__new__ should now prevent this from
+            # happening, so raise an error if it somehow does anyway.
+            raise RuntimeError, "Already installed _connection descriptor."
         cls.sqlClass = sqlClass
         sqlClass._connection = cls(connectionURI, debug=debug)
     install = classmethod(install)
 
     def uninstall(cls):
-        # Assumes there was no _connection in this particular class to start
-        # with (which is true for SQLBase, but wouldn't be true for SQLOS)
+        # Explicitly close all connections we opened.
+        descriptor = cls.sqlClass.__dict__.get('_connection')
+        for trans in descriptor.transactions.itervalues():
+            trans.releaseConnection(trans._connection, explicit=True)
+            trans._dbConnection._connection.close()
+
+        # Remove the _connection descriptor.  This assumes there was no
+        # _connection in this particular class to start with (which is true for
+        # SQLBase, but wouldn't be true for SQLOS)
         del cls.sqlClass._connection
     uninstall = classmethod(uninstall)
         
+
+alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
+"already installed.  This is probably caused by calling initZopeless twice.")
+
 
 class ZopelessTransactionManager(object):
     """Object to use in scripts and tests if you want transactions.
@@ -190,7 +206,34 @@ class ZopelessTransactionManager(object):
 
     """
 
+    _installed = None
+    alreadyInited = False
+
+    def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False):
+        if cls._installed is not None:
+            if (cls._installed.connectionURI != connectionURI or
+                cls._installed.sqlClass != sqlClass or
+                cls._installed.debug != debug):
+                    raise ConflictingTransactionManagerError(
+                            "A ZopelessTransactionManager with different "
+                            "settings is already installed"
+                    )
+            # There's an identical ZopelessTransactionManager already installed,
+            # so return that one, but also emit a warning.
+            warnings.warn(alreadyInstalledMsg, stacklevel=2)
+            return cls._installed
+        cls._installed = object.__new__(cls, connectionURI, sqlClass, debug)
+        return cls._installed
+
     def __init__(self, connectionURI, sqlClass=SQLBase, debug=False):
+        # For some reason, Python insists on calling __init__ on anything
+        # returned from __new__, even if it's not a newly constructed object
+        # (i.e. type.__call__ calls __init__, rather than object.__new__ like
+        # you'd expect).
+        if self.alreadyInited:
+            return
+        self.alreadyInited = True
+        
         # XXX: Importing a module-global and assigning it as an instance
         #      attribute smells funny.  Why not just use transaction.manager
         #      instead of self.manager?
@@ -198,6 +241,9 @@ class ZopelessTransactionManager(object):
         self.manager = manager
         _ZopelessConnectionDescriptor.install(connectionURI, debug=debug)
         self.sqlClass = sqlClass
+        # The next two instance variables are used for the check in __new__
+        self.connectionURI = connectionURI
+        self.debug = debug
         #self.cls._connection = adapter(self.connection.makeConnection())
         #self.dm = self.cls._connection._dm
         #self.begin()
@@ -206,12 +252,15 @@ class ZopelessTransactionManager(object):
         _ZopelessConnectionDescriptor.uninstall()
         # We delete self.sqlClass to make sure this instance isn't still
         # used after uninstall was called, which is a little bit of a hack.
+        self.manager.free(self.manager.get())
         del self.sqlClass 
+        self.__class__._installed = None
 
     def _dm(self):
         return self.sqlClass._connection._dm
 
     def begin(self):
+        _clearCache()
         txn = self.manager.begin()
         txn.join(self._dm())
 
@@ -220,12 +269,26 @@ class ZopelessTransactionManager(object):
         self.begin()
 
     def abort(self, sub=False):
-        objects = self._dm().objects[:]
+        objects = list(self._dm().objects)
         self.manager.get().abort(sub)
         for obj in objects:
             obj.reset()
             obj.expire()
         self.begin()
+
+
+def _clearCache():
+    """Clear SQLObject's object cache for the current connection."""
+    # XXX: There is a different hack for (I think?) similar reasons in
+    #      canonical.publication.  This should probably share code with
+    #      that one.
+    #        - Andrew Bennetts, 2005-02-01
+
+    # Don't break if _connection is a FakeZopelessConnectionDescriptor
+    if getattr(SQLBase._connection, 'cache', None) is not None:
+        for c in SQLBase._connection.cache.allSubCaches():
+            c.clear()
+
 
 def quote(x):
     r"""Quote a variable ready for inclusion into an SQL statement.
@@ -299,4 +362,51 @@ def quote_like(x):
     if not isinstance(x, basestring):
         raise TypeError, 'Not a string (%s)' % type(x)
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
+
+
+# Some helpers intended for use with initZopeless.  These allow you to avoid
+# passing the transaction manager all through your code.  Also, this begin()
+# does an implicit rollback() for convenience. 
+# XXX: Make these use and work with Zope 3's transaction machinery instead!
+#        - Andrew Bennetts, 2005-02-11
+
+def begin():
+    """Begins a transaction, aborting the current one if necessary."""
+    transaction = SQLBase._connection
+    if not transaction._obsolete:
+        # XXX: This perhaps should raise a warning?
+        #        - Andrew Bennetts, 2005-02-11
+        transaction.rollback()
+    _clearCache()
+    transaction.begin()
+
+def rollback():
+    SQLBase._connection.rollback()
+
+def commit():
+    SQLBase._connection.commit()
+    
+
+class FakeZopelessConnectionDescriptor(_ZopelessConnectionDescriptor):
+    """A helper class for testing.
+    
+    Use this if you want to know if commit or rollback was called.
+    """
+    _obsolete = True
+    begun = False
+    rolledback = False
+    committed = False
+
+    def __get__(self, inst, cls=None):
+        return self
+
+    def begin(self):
+        self.begun = True
+
+    def rollback(self):
+        self.rolledback = True
+
+    def commit(self):
+        self.committed = True
+
 

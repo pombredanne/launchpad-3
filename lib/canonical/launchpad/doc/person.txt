@@ -24,3 +24,24 @@ common use case when checking permissions.
 True
 
 
+If a Person is not a Team then the Person object will not provide the
+ITeam interface.
+
+>>> from canonical.launchpad.interfaces import ITeam
+>>> ITeam.providedBy(lifeless)
+False
+
+If a Person is a Team then the Person will provide the ITeam interface.
+
+>>> ITeam.providedBy(buttsource)
+True
+
+We don't support changing a Person into a Team or a Team into a Person.
+
+>>> lifeless.teamowner = ddaa
+>>> ITeam.providedBy(lifeless)
+False
+>>> buttsource.teamowner = None
+>>> ITeam.providedBy(buttsource)
+True
+

@@ -6,4 +6,9 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
     
+    <!-- DownloadURL -->
+    <content class="canonical.launchpad.database.DownloadURL">
+        <allow interface="canonical.launchpad.interfaces.IDownloadURL" />
+    </content>
+
 </configure>

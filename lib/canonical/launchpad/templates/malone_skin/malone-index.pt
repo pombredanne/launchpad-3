@@ -1,0 +1,179 @@
+<html metal:use-macro="views/standard_macros/master">
+<metal:block fill-slot="main">
+    <tal:block condition="not: request/searchtext|nothing">
+        <form class="central">
+            <div>
+                <label for="searchtext"
+                       tal:content="string:Search ${context/displayname} bug reports:">
+                    Search $context.displayname bug reports:
+                </label>
+            </div>
+            <div>
+                <input type="text" name="searchtext" id="searchtext" size="36" 
+                       tal:attributes="value request/searchtext|nothing" />
+            </div>
+            <ul class="navigation">
+                <li>
+                    <a href="search">Advanced Search</a>
+                </li>
+                <li>
+                    <a href="help">Help</a>
+                </li>
+            </ul>
+        </form>
+    </tal:block>
+ 
+    <!--
+    <div class="stats">
+        <div>
+            48 974 bugs and 110 092 tasks filed
+        </div>
+        <div>
+            Last 24 hours: 3402 bugs and 2778 tasks filed, 23 tasks reopened, 1104 resolved
+        </div>
+    </div>
+    -->
+
+    <tal:block condition="request/searchtext|nothing">
+        <tal:searchresults define="bugtasks view/bugtask_search">
+            <form class="list manipulation" tal:condition="bugtasks">
+                <table>
+                    <tbody>
+                        <tr>
+                            <th>
+                                <label for="viewas">View as:</label>
+                            </th>
+                            <td>
+                                <label><input type="radio" name="viewas" checked="checked" />list</label>
+                                <label><input type="radio" name="viewas" />table</label>
+                            </td>
+                            <th>
+                                <label for="sortby">Sort by:</label>
+                            </th>
+                            <td>
+                                <select
+                                    id="sortby"
+                                    title="Sets the order in which bug reports are displayed. To do one sort within another, perform the secondary sort then the primary one. For example, to sort by priority and by severity within each priority, choose &#8220;Severity&#8221;, &#8220;Change&#8221;, then &#8220;Priority&#8221;, &#8220;Change&#8221;."
+                                >
+                                <!-- if XMLRPC, title="To do one sort within another, perform the secondary sort then the primary one. For example, to sort by priority and by severity within each priority, choose &#8220;Severity&#8221;, then &#8220;Priority&#8221;." -->
+                                    <option>Age</option>
+                                    <option>Assignee</option>
+                                    <option>Package</option>
+                                    <option>Severity</option>
+                                </select>
+                                <input
+                                    type="submit"
+                                    value="Change"
+                                    title="To change the list display, click this button."
+                                >
+                                <!-- + "If you upgrade to currentBrowser versionNumber or higher, you won&#8217;t need to do this any more." -->
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </form>
+            <form id="changemultiple" tal:condition="bugtasks">
+                <table class="buglist data">
+                    <tbody>
+                        <tr tal:repeat="bugtask bugtasks">
+                            <td><input type="checkbox" tal:attributes="value bugtask/bug/id"></td>
+                            <td class="bugnumber" tal:content="string:${bugtask/bug/id}.">$bugtask.bug.id.</td>
+                            <td>
+                                <div>
+                                    <strong>
+                                        <a href="#"
+                                           tal:attributes="href string:/malone/bugs/${bugtask/bug/id}"
+                                           tal:content="bugtask/bug/title">
+                                            Pride and prejudice in About box
+                                        </a>
+                                    </strong>
+                                    <small>(7 months old)</small>
+                                </div>
+                                <div>
+                                    <small>
+                                        <tal:block condition="python:bugtask.assignee and not bugtask.milestone">
+                                            assigned to
+                                            <a class="doomed" href="#" tal:content="bugtask/assignee/displayname">jdub</a>
+                                        </tal:block>
+                                        <tal:block condition="python:bugtask.assignee and bugtask.milestone">
+                                            assigned to
+                                            <a class="doomed" href="#"
+                                               tal:content="string:${bugtask/assignee/displayname} for ${bugtask/milestone/name}">
+                                                jdub for 1.1
+                                            </a>
+                                        </tal:block>
+                                        <tal:block condition="not: bugtask/assignee">
+                                            unassigned
+                                        </tal:block>
+                                        &#8212;
+                                        <em tal:content="bugtask/severity/lp:BugSeverity/title">medium</em>
+                                    </small>
+                                </div>
+                                <div>
+                                    <small>
+                                        Fixed in
+                                        <a href="whatever" class="behind">1 other distribution</a>
+                                        <!--- class="behind" because it's fixed elsewhere but not here -->
+                                    </small>
+                                </div>
+                            </td>
+                        </tr>
+                        <!--
+                        <tr>
+                            <td><input type="checkbox" value="43"></td>
+                            <td class="bugnumber">43.</td>
+                            <td>
+                                <div>
+                                    <strong><a href="38">About window in Firefox doesn't list contributors</a></strong>
+                                    <small>(1 week old)</small>
+                                </div>
+                                <div>
+                                    <small>In <code>mozilla-firefox</code>,
+                                    fixed by
+                                    <a href="?assignee=ben@bengoodger.com&amp;milestone=0.9">Ben Goodger in 0.9</a>
+                                    <small>&#8212;</small>
+                                    high
+                                </div>
+                                <div>
+                                    <small>Fixed in <a href="whatever">2 other distributions</a></small>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><input type="checkbox" value="38"></td>
+                            <td class="bugnumber">51.</td>
+                            <td>
+                                <div>
+                                    <strong><a href="51">Something silly about "File Roller" name</a></strong>
+                                    <small>(5 hours old)</small>
+                                </div>
+                                <div>
+                                    <small>
+                                        In no product,
+                                        not assigned
+                                        &#8212; no priority
+                                    </small>
+                                </div>
+                                <div>
+                                    <small>Not filed elsewhere</small>
+                                </div>
+                            </td>
+                        </tr>
+                        -->
+                    </tbody>
+                </table>
+                <div class="change">
+                    <input type="submit" value="Change Selected Reports">
+                </div>
+                <div class="nav">
+                    <a href="1-10">&larr; 1-10</a>
+                    &bull;
+                    <strong>11-20</strong>
+                    &bull;
+                    <a href="21-30">21-30 &rarr;</a>
+                </div>
+            </form>
+        </tal:searchresults>
+    </tal:block>
+</metal:block>
+</html>

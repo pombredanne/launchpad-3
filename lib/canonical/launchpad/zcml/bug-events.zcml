@@ -7,10 +7,22 @@
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_added" />
 
+<!-- XXX: Brad Bollenbach, 2005-02-04: Not yet implemented
+<subscriber
+   for="canonical.launchpad.interfaces.IBugAddForm
+        zope.app.event.interfaces.IObjectCreatedEvent"
+   factory="canonical.launchpad.subscribers.bugprivacy.make_subscriptions_explicit_on_private_bug" />
+-->
+
 <subscriber
    for="canonical.launchpad.interfaces.IBugAddForm
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.subscribers.karmasubscribers.bug_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBug
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.subscribers.bugprivacy.make_subscriptions_explicit_on_private_bug" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
@@ -26,36 +38,6 @@
    for="canonical.launchpad.interfaces.IBugMessage
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.subscribers.karmasubscribers.bug_comment_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IProductBugAssignment
-        zope.app.event.interfaces.IObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_assigned_product_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IProductBugAssignment
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_assigned_product_modified" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.IProductBugAssignment
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.subscribers.karmasubscribers.bug_assignment_modified" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.ISourcePackageBugAssignment
-        zope.app.event.interfaces.IObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_assigned_package_added" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.ISourcePackageBugAssignment
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_assigned_package_modified" />
-
-<subscriber
-   for="canonical.launchpad.interfaces.ISourcePackageBugAssignment
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.subscribers.karmasubscribers.bug_assignment_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugProductInfestation

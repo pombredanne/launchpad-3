@@ -1,25 +1,12 @@
-# Python imports
-from sets import Set
-from datetime import datetime
-
 # Zope imports
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
-from sqlobject.sqlbuilder import func
+from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol, BoolCol
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.lp import dbschema
-
-# interfaces and database 
-from canonical.launchpad.interfaces import IBuild, IBuilder, IBuildSet
-
-#
-# Build related SQLObjects
-#
+from canonical.launchpad.interfaces import IBuild, IBuilder, IBuildSet, \
+                                           IBuildQueue
 
 class Build(SQLBase):
     implements(IBuild)
@@ -67,4 +54,17 @@ class Builder(SQLBase):
     title = StringCol(dbName='title')
     description = StringCol(dbName='description')
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    builderok = BoolCol(dbName='builderok', notNull=True)
+    failnotes = StringCol(dbName='failnotes')
     
+class BuildQueue(SQLBase):
+    implements(IBuildQueue)
+    _table = "BuildQueue"
+
+    build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
+    builder = ForeignKey(dbName='builder', foreignKey='Builder',
+                         notNull=False)
+    created = DateTimeCol(dbName='created', notNull=True)
+    buildstart = DateTimeCol(dbName='buildstart', notNull=False)
+    logtail = StringCol(dbName='logtail', notNull=False)
+

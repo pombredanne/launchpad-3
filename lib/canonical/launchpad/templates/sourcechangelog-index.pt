@@ -19,7 +19,7 @@
     <h1> <span tal:content="context/shortdesc" /> ChangeLog </h1>
     
     <pre>
-      <span tal:replace="structure context/linkified_changelog" />
+      <span tal:replace="structure view/linkified_changelog" />
     </pre>
 
   </div>

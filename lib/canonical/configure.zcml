@@ -16,13 +16,17 @@
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
     <includeOverrides file="defaultview-meta.zcml" />
 
-    <browser:skin name="launchpad"
-                    interface="canonical.launchpad.layers.LaunchpadLayer"/>
-    <browser:skin name="rosetta"
-                    interface="canonical.launchpad.layers.RosettaLayer"/>
-    <browser:skin name="ubuntulinux"
-                    interface="canonical.launchpad.layers.UbuntuLinuxLayer"/>
-    <browser:defaultSkin name="launchpad" />
+    <browser:skin
+        name="launchpad"
+        interface="canonical.launchpad.layers.LaunchpadLayer"/>
+    <browser:skin
+        name="rosetta"
+        interface="canonical.launchpad.layers.RosettaLayer"/>
+    <browser:skin
+        name="ubuntulinux"
+        interface="canonical.launchpad.layers.UbuntuLinuxLayer"/>
+    <browser:defaultSkin
+        name="launchpad" />
 
     <!-- The default Zope 3 configuration of the SimpleComponentTraverser is
         that it applies to any object that provides Interface.
@@ -85,10 +89,24 @@
         layer="canonical.launchpad.layers.DebugLayer"
         />
 
+    <!-- This lets us see the real root index even from the debug layer. -->
     <browser:page
         for="canonical.publication.RootObject"
-        name="lists"
-        template="mailman-index.html"
+        name="real-index.html"
+        template="launchpad/templates/root-index.pt"
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.DebugLayer"
+        />
+
+    <!-- And we want the changelog available on the debug view too, so people
+    can see when their patches make it to the dogfood server. -->
+
+    <browser:page
+        layer="canonical.launchpad.layers.DebugLayer"
+        for="canonical.publication.RootObject"
+        name="changelog.html"
+        template="launchpad/templates/debug-root-changelog.pt"
+        class="canonical.launchpad.browser.changelog.ChangeLog"
         permission="zope.Public"
         />
 

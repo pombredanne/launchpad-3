@@ -2,7 +2,7 @@
 
   >>> print http(r"""
   ... GET /doap/projects/gnome/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -15,7 +15,7 @@
 
   >>> print http(r"""
   ... POST /doap/projects/gnome/+edit HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1917
   ... Content-Type: multipart/form-data; boundary=---------------------------13925234164844313391724926109
   ... Referer: http://localhost:9000/doap/projects/gnome/+edit

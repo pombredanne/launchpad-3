@@ -81,7 +81,8 @@ class Librarian (object):
 
     def cacheFile(self, fileid, filealias, name, fileobj):
         ## efective creation of a file in fielsystem
-        print 'Caching file', name
+        # Don't spam the test runner please
+        #print 'Caching file', name
         path = os.path.join(self.cache_path, fileid)
         if not os.access(path, os.F_OK):
             os.mkdir(path)

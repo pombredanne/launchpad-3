@@ -1,43 +1,41 @@
-
+# Python imports
+import os
 from sets import Set
+from urllib2 import URLError
 
 # Zope imports
 from zope.interface import implements
 from zope.component import getUtility
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import MultipleJoin
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
 
+from canonical.librarian.client import FileDownloadClient
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IBinaryPackage, \
-                                           IBinaryPackageUtility, \
-                                           ISourcePackageUtility, \
-                                           IBinaryPackageName,\
-                                           IBinaryPackageNameSet
+    IBinaryPackageUtility, IBinaryPackageName, IBinaryPackageNameSet, \
+    IDownloadURL
 
-# The import is done inside BinaryPackage.maintainer to avoid circular import
-##from canonical.launchpad.database.sourcepackage import SourcePackageRelease
+from canonical.launchpad.database.publishing import PackagePublishing
 
 class BinaryPackage(SQLBase):
     implements(IBinaryPackage)
     _table = 'BinaryPackage'
     binarypackagename = ForeignKey(dbName='binarypackagename', 
-                   foreignKey='BinaryPackageName', notNull=True)
+                                 foreignKey='BinaryPackageName', notNull=True)
     version = StringCol(dbName='version', notNull=True)
     shortdesc = StringCol(dbName='shortdesc', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
-    build = ForeignKey(dbName='build', foreignKey='Build',
-                   notNull=True)
+    build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     binpackageformat = IntCol(dbName='binpackageformat', notNull=True)
-    component = ForeignKey(dbName='component',
-                   foreignKey='Component', notNull=True)
-    section = ForeignKey(dbName='section', foreignKey='Section',
-                   notNull=True)
+    component = ForeignKey(dbName='component', foreignKey='Component',
+                           notNull=True)
+    section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
     priority = IntCol(dbName='priority')
     shlibdeps = StringCol(dbName='shlibdeps')
     depends = StringCol(dbName='depends')
@@ -50,6 +48,10 @@ class BinaryPackage(SQLBase):
     installedsize = IntCol(dbName='installedsize')
     copyright = StringCol(dbName='copyright')
     licence = StringCol(dbName='licence')
+    architecturespecific = BoolCol(dbName='architecturespecific')
+
+    files = MultipleJoin('BinaryPackageFile',
+                         joinColumn='binarypackage')
 
     def _title(self):
         return '%s-%s' % (self.binarypackagename.name, self.version)
@@ -61,10 +63,6 @@ class BinaryPackage(SQLBase):
     name = property(name)
 
     def maintainer(self):
-        # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.sourcepackage import \
-             SourcePackageRelease
-
         return self.sourcepackagerelease.sourcepackage.maintainer
     maintainer = property(maintainer)
 
@@ -73,37 +71,44 @@ class BinaryPackage(SQLBase):
         
         :returns: iterable of SourcePackageReleases
         """
-        # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.sourcepackage import \
-             SourcePackageRelease
+        return self.build.sourcepackagerelease.sourcepackage.current(\
+                                                              distroRelease)
 
-        return self.build.sourcepackagerelease.sourcepackage.current(distroRelease)
+    def lastversions(self):
+        """Return the SUPERCEDED BinaryPackages in a DistroRelease
+           that comes from the same SourcePackage"""
 
-    def lastversions(self, distroRelease):
-        # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.sourcepackage import \
-             SourcePackageRelease
-        clauseTables = ('SourcePackagePublishing',)
+        #
+        # Daniel Debonzi: To get the lastest versions of a BinaryPackage
+        # Im suposing that one BinaryPackage is build for only one
+        # DistroRelease (Each DistroRelease compile all its Packages). 
+        # (BinaryPackage.build.distroarchrelease = \
+        # PackagePublishing.distroarchrelease
+        # where PackagePublishing.binarypackage = BinaryPackage.id)
+        # When it is not true anymore, probably it should
+        # be retrieved in a view class where I can use informations from
+        # the launchbag.
+        #
         
-        # XXX: Daniel Debonzi 2004-12-03
-        # Check if the orderBy is working properly
-        # as soon as we have enought data in db.
-        # Anyway, seems to be ok
-        last = list(SourcePackageRelease.select(
-            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
-            ' AND SourcePackagePublishing.distrorelease = %d'
-            ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcePackagePublishing.status = %d'
-            % (distroRelease.id,
-               self.build.sourcepackagerelease.sourcepackage.id,
-               dbschema.PackagePublishingStatus.SUPERCEDED),
-            clauseTables=clauseTables,
-            orderBy='sourcePackageRelease.dateuploaded'))
-        if last:
-            return last
-        else:
-            return None
+        clauseTable = ('PackagePublishing', 'BinaryPackageName',)
+        query = ('PackagePublishing.binarypackage = BinaryPackage.id '
+                 'AND BinaryPackage.binarypackagename = BinaryPackageName.id '
+                 'AND BinaryPackageName.id = %d '
+                 'AND PackagePublishing.distroarchrelease = %d '
+                 'AND PackagePublishing.status = %d'
+                 %(self.binarypackagename.id,
+                   self.build.distroarchrelease.id,
+                   dbschema.PackagePublishingStatus.SUPERCEDED,
+                   ))
 
+        return list(BinaryPackage.select(query,
+                                         clauseTables=clauseTable,
+                                         distinct=True))
+
+    #
+    # Properties
+    #
+    
     def _priority(self):
         for priority in dbschema.BinaryPackagePriority.items:
             if priority.value == self.priority:
@@ -112,7 +117,73 @@ class BinaryPackage(SQLBase):
 
     pkgpriority = property(_priority)
 
+    def _status(self):
+        """Returns the BinaryPackage Status."""
+        #
+        # Daniel Debonzi: To get the lastest versions of a BinaryPackage
+        # Im suposing that one BinaryPackage is build for only one
+        # DistroRelease. If it will happen to have a BinaryPackage
+        # Builded for one DistroRelease included in other DistroReleases
+        # It might be reviewed
+        #
+        try:
+            packagepublishing = PackagePublishing.\
+                                select('binarypackage=%d '
+                                       'AND distroarchrelease=%d '
+                                       %(self.id,
+                                         self.build.distroarchrelease.id))[0];
+        except IndexError:
+            raise KeyError, 'BinaryPackage not found in PackagePublishing'
 
+        try:
+            return dbschema.PackagePublishingStatus.\
+                   items[packagepublishing.status].title
+        except KeyError:
+            return 'Unknown'
+    status = property(_status)
+
+    def files_url(self):
+        """Return an URL to Download this Package"""
+        # XXX: Daniel Debonzi 20050125
+        # Get librarian host and librarian download port from
+        # invironment variables until we have it configurable
+        # somewhere.
+        librarian_host = os.environ.get('LB_HOST', 'localhost')
+        librarian_port = int(os.environ.get('LB_DPORT', '8000'))
+
+        downloader = FileDownloadClient(librarian_host, librarian_port)
+
+        urls = []
+
+        for _file in self.files:
+            try:
+                url = downloader.getURLForAlias(_file.libraryfile.id)
+            except URLError:
+                # librarian not runnig or file not avaiable
+                pass
+            else:
+                name = _file.libraryfile.filename
+            
+                urls.append(DownloadURL(name, url))
+
+        return urls
+
+    files_url = property(files_url)
+
+
+    def __getitem__(self, version):        
+        clauseTables = ["Build",]        
+        query = """Build.id = build
+                   AND  Build.distroarchrelease = %d
+                   AND  binarypackagename = %d
+                   AND  version = %s""" % (self.build.distroarchrelease.id,
+                                           self.binarypackagename.id,
+                                           quote(version))
+        try:
+            return BinaryPackage.select(query, clauseTables=clauseTables)[0]
+        except IndexError:
+            raise KeyError, "Version Not Found"
+        
 
 class BinaryPackageSet(object):
     """A Set of BinaryPackages"""
@@ -125,6 +196,13 @@ class BinaryPackageSet(object):
         binset = getUtility(IBinaryPackageUtility)
         return binset.findByNameInDistroRelease(self.distrorelease.id, pattern)
 
+    def findPackagesByArchtagName(self, pattern, fti=False):
+        """Search BinaryPackages matching pattern and archtag"""
+        binset = getUtility(IBinaryPackageUtility)
+        return binset.findByNameInDistroRelease(self.distrorelease.id,
+                                                pattern, self.arch,
+                                                fti)
+        
     def __getitem__(self, name):
         binset = getUtility(IBinaryPackageUtility)
         try:
@@ -176,7 +254,7 @@ class BinaryPackageUtility(object):
             query += ('AND BinaryPackage.version = %s '
                       %quote(version))
         else:
-            query += ('AND PackagePublishing.status = %s'
+            query += ('AND PackagePublishing.status = %s '
                       % dbschema.PackagePublishingStatus.PUBLISHED)
 
         if archtag:
@@ -186,7 +264,9 @@ class BinaryPackageUtility(object):
         return BinaryPackage.select(query, distinct=True,
                                         clauseTables=clauseTables)
 
-    def findByNameInDistroRelease(self, distroreleaseID, pattern):
+    def findByNameInDistroRelease(self, distroreleaseID,
+                                  pattern, archtag=None,
+                                  fti=False):
         """Returns a set o binarypackages that matchs pattern
         inside a distrorelease"""
 
@@ -200,12 +280,23 @@ class BinaryPackageUtility(object):
         'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
         'DistroArchRelease.distrorelease = %d AND '
         'BinaryPackage.binarypackagename = BinaryPackageName.id '
-        'AND (BinaryPackageName.name ILIKE %s '
-        'OR BinaryPackage.shortdesc ILIKE %s)'
-        %(distroreleaseID,
-          quote('%%' + pattern + '%%'),
-          quote('%%' + pattern + '%%'))
+        %distroreleaseID
         )
+
+        if fti:
+            query += ('AND (BinaryPackageName.name ILIKE %s '
+                      'OR BinaryPackage.fti @@ ftq(%s))'
+                      %(quote('%%' + pattern + '%%'),
+                        quote(pattern))
+        )
+        else:
+            query += ('AND BinaryPackageName.name ILIKE %s '
+                      %quote('%%' + pattern + '%%')
+                      )
+
+        if archtag:
+            query += ('AND DistroArchRelease.architecturetag=%s'
+                      %quote(archtag))
 
         return BinaryPackage.select(query,
                                     clauseTables=clauseTables,
@@ -245,6 +336,9 @@ class BinaryPackageName(SQLBase):
             'BinaryPackage', joinColumn='binarypackagename'
             )
 
+    def __unicode__(self):
+        return self.name
+
 class BinaryPackageNameSet:
     implements(IBinaryPackageNameSet)
 
@@ -256,3 +350,10 @@ class BinaryPackageNameSet:
         clauseTables = Set(['BinaryPackage'])
         # XXX sabdfl 12/12/04 not done yet
 
+
+class DownloadURL(object):
+    implements(IDownloadURL)
+
+    def __init__(self, filename, fileurl):
+        self.filename = filename
+        self.fileurl = fileurl

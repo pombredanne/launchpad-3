@@ -5,12 +5,42 @@
 __metaclass__ = type
 
 import unittest
-from zope.testing.doctestunit import DocTestSuite
+from cStringIO import StringIO
 
-from canonical.launchpad.interfaces import IProjectSet, ILanguageSet, IPerson
+from canonical.launchpad.interfaces import IProjectSet, ILanguageSet, \
+    IPerson, ISourcePackageNameSet, IDistributionSet, ILaunchBag
+
+from zope.testing.doctestunit import DocTestSuite
 from zope.interface import implements
-from zope.app.security.interfaces import IPrincipal
 from zope.publisher.interfaces.browser import IBrowserRequest
+
+
+class DummySourcePackageNameSet:
+    implements(ISourcePackageNameSet)
+
+    def __getitem__(self, name):
+        return DummySourcePackageName()
+
+
+class DummySourcePackageName:
+    id = 1
+
+
+class DummyDistributionSet:
+    implements(IDistributionSet)
+
+    def __getitem__(self, name):
+        return DummyDistribution()
+
+
+class DummyDistribution:
+    def __getitem__(self, name):
+        return DummyDistroRelease()
+
+
+class DummyDistroRelease:
+    id = 1
+
 
 class DummyProjectSet:
     implements(IProjectSet)
@@ -25,7 +55,15 @@ class DummyProject:
 
 
 class DummyProduct:
-    pass
+    id = 1
+
+    def __init__(self):
+        self.potemplates = []
+
+    def newPOTemplate(self, name, title, person):
+        potemplate = DummyPOTemplate(name=name)
+        self.potemplates.append(potemplate)
+        return potemplate
 
 
 class DummyLanguage:
@@ -48,10 +86,6 @@ class DummyLanguageSet:
         return self._languages[key]
 
 
-class DummyPrincipal:
-    implements(IPrincipal)
-
-
 class DummyPerson:
     implements(IPerson)
 
@@ -59,14 +93,19 @@ class DummyPerson:
         self.codes = codes
         all_languages = DummyLanguageSet()
 
-        self.languages = [ all_languages[code] for code in self.codes ]
+        self.languages = [all_languages[code] for code in self.codes]
+
+dummyPerson = DummyPerson(('es',))
+
+dummyNoLanguagePerson = DummyPerson(())
 
 
-def adaptPrincipalToPerson(principal):
-    return DummyPerson(('es',))
+class DummyFileUploadItem:
+    def __init__(self, name, content):
+        self.headers = ''
+        self.filename = name
+        self.file = StringIO(content)
 
-def adaptPrincipalToNoLanguagePerson(principal):
-    return DummyPerson([])
 
 class DummyPOFile:
     pluralforms = 4
@@ -114,6 +153,9 @@ class DummyPOTMsgSet:
 
 
 class DummyPOTemplate:
+    def __init__(self, name='foo'):
+        self.name = name
+
     def getPOFileByLang(self, language_code):
         self.language_code = language_code
 
@@ -131,14 +173,21 @@ class DummyPOTemplate:
     def hasPluralMessage(self):
         return True
 
+    def attachFile(self, contents, importer=None):
+        pass
+
+
+class DummyResponse:
+    def redirect(self, url):
+        pass
 
 class DummyRequest:
     implements(IBrowserRequest)
 
     def __init__(self, **form_data):
-        self.principal = DummyPrincipal()
         self.form = form_data
         self.URL = "http://this.is.a/fake/url"
+        self.response = DummyResponse()
 
     def get(self, key, default):
         raise key
@@ -148,7 +197,6 @@ def adaptRequestToLanguages(request):
 
 
 class DummyRequestLanguages:
-
     def getPreferredLanguages(self):
         return [DummyLanguage('ja', 1),
             DummyLanguage('es', 2),
@@ -158,6 +206,35 @@ class DummyRequestLanguages:
         return [DummyLanguage('da', 4),
             DummyLanguage('as', 5),
             DummyLanguage('sr', 6),]
+
+
+class DummyLaunchBag:
+    implements(ILaunchBag)
+
+    def __init__(self, login=None, user=None):
+        self.login = login
+        self.user = user
+
+
+potfile = '''# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR Valient Gough
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\\n"
+"Report-Msgid-Bugs-To: vgough@pobox.com\\n"
+"POT-Creation-Date: 2004-12-29 22:12+0100\\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"
+"Language-Team: LANGUAGE <LL@li.org>\\n"
+"MIME-Version: 1.0\\n"
+"Content-Type: text/plain; charset=CHARSET\\n"
+"Content-Transfer-Encoding: 8bit\\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\\n"
+'''
 
 
 def test_count_lines():
@@ -229,7 +306,7 @@ def test_request_languages():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
@@ -245,7 +322,7 @@ def test_request_languages():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToNoLanguagePerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyNoLanguagePerson))
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
@@ -284,12 +361,18 @@ def test_escape_unescape_msgid():
     'foo\\\\bar'
     >>> escape_msgid('foo\nbar')
     'foo\\nbar'
+    >>> escape_msgid('foo\tbar')
+    'foo\\tbar'
     >>> unescape_msgid('foo')
     'foo'
     >>> unescape_msgid('foo\\\\bar')
     'foo\\bar'
     >>> unescape_msgid('foo\\nbar')
     'foo\nbar'
+    >>> unescape_msgid('foo\\tbar')
+    'foo\tbar'
+    >>> unescape_msgid('foo\\\\n')
+    'foo\\n'
     '''
 
 def test_parse_translation_form():
@@ -339,6 +422,16 @@ def test_parse_translation_form():
     False
     >>> x[1]['fuzzy']['es']
     True
+
+    Test with a language which contains a country code. This is a regression
+    test.
+
+    >>> x = parse_translation_form({
+    ... 'set_1_msgid' : 'foo',
+    ... 'set_1_translation_pt_BR_0' : 'bar',
+    ... })
+    >>> x[1]['translations']['pt_BR'][0]
+    'bar'
     '''
 
 def test_RosettaProjectView():
@@ -359,7 +452,7 @@ def test_TranslatePOTemplate_init():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
 
     First, test the initialisation.
 
@@ -490,7 +583,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
 
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
@@ -532,7 +625,7 @@ def test_TranslatePOTemplate_URLs():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
 
     Test with no parameters.
 
@@ -540,7 +633,7 @@ def test_TranslatePOTemplate_URLs():
     >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
 
-    >>> t._makeURL()
+    >>> t.URL()
     'http://this.is.a/fake/url'
 
     >>> t.beginningURL()
@@ -574,7 +667,7 @@ def test_TranslatePOTemplate_URLs():
     ...     count=43)
     >>> t = TranslatePOTemplate(context, request)
 
-    >>> t._makeURL()
+    >>> t.URL()
     'http://this.is.a/fake/url?count=43&languages=ca'
 
     >>> t.endURL()
@@ -593,7 +686,7 @@ def test_TranslatePOTemplate_messageSets():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
 
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
@@ -620,49 +713,40 @@ def test_TranslatePOTemplate_messageSets():
     >>> tearDown()
     '''
 
-def test_TranslatePOemplate_mungeMessageID():
-    '''
+def test_msgid_html():
+    r'''
     Test message ID presentation munger.
 
-    First, boilerplate setup code.
-
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-    >>> from canonical.rosetta.browser import TranslatePOTemplate
-
-    >>> setUp()
-    >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
-
-    >>> context = DummyPOTemplate()
-    >>> request = DummyRequest()
-    >>> t = TranslatePOTemplate(context, request)
+    >>> from canonical.rosetta.browser import msgid_html
 
     First, do no harm.
 
-    >>> t._mungeMessageID(u'foo bar', [], 'XXXA')
+    >>> msgid_html(u'foo bar', [], 'XXXA')
     u'foo bar'
 
     Test replacement of leading and trailing spaces.
 
-    >>> t._mungeMessageID(u' foo bar', [], 'XXXA')
+    >>> msgid_html(u' foo bar', [], 'XXXA')
     u'XXXAfoo bar'
-    >>> t._mungeMessageID(u'foo bar ', [], 'XXXA')
+    >>> msgid_html(u'foo bar ', [], 'XXXA')
     u'foo barXXXA'
-    >>> t._mungeMessageID(u'  foo bar  ', [], 'XXXA')
+    >>> msgid_html(u'  foo bar  ', [], 'XXXA')
     u'XXXAXXXAfoo barXXXAXXXA'
 
     Test replacement of newlines.
 
-    >>> t._mungeMessageID(u'foo\\nbar', [], newline='YYYA')
+    >>> msgid_html(u'foo\nbar', [], newline='YYYA')
     u'fooYYYAbar'
 
     And both together.
 
-    >>> t._mungeMessageID(u'foo \\nbar', [], 'XXXA', 'YYYA')
+    >>> msgid_html(u'foo \nbar', [], 'XXXA', 'YYYA')
     u'fooXXXAYYYAbar'
 
-    >>> tearDown()
+    Test treatment of tabs.
+
+    >>> msgid_html(u'foo\tbar', [])
+    u'foo\\tbar'
     '''
 
 def test_TabIndexGenerator():
@@ -673,6 +757,40 @@ def test_TabIndexGenerator():
     1
     >>> tig.generate()
     2
+    '''
+
+def test_ProductView_newpotemplate():
+    '''
+    Test POTemplate creation from website.
+
+    >>> from zope.app.tests.placelesssetup import setUp, tearDown
+    >>> from zope.app.tests import ztapi
+    >>> from zope.publisher.browser import FileUpload
+    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
+    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
+    >>> from canonical.rosetta.browser import ProductView
+
+    >>> setUp()
+    >>> ztapi.provideUtility(IDistributionSet, DummyDistributionSet())
+    >>> ztapi.provideUtility(ISourcePackageNameSet, DummySourcePackageNameSet())
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
+
+    >>> context = DummyProduct()
+    >>> fui = DummyFileUploadItem(name='foo.pot', content=potfile)
+    >>> fu = FileUpload(fui)
+    >>> request = DummyRequest(file=fu, name='template_name',
+    ...     title='template_title', Register='Register POTemplate')
+    >>> request.method = 'POST'
+    >>> pv = ProductView(context, request)
+
+    >>> len(pv._templates)
+    1
+    >>> 'distrorelease' in dir(pv._templates[0])
+    False
+
+    >>> tearDown()
     '''
 
 def test_suite():

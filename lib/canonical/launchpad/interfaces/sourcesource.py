@@ -104,10 +104,14 @@ class ISourceSourceSet(Interface):
         which are connected to projects and products that match this
         text.""")
 
+    assigned = Attribute("""Setting this will limit the set to those which are
+        connected to any product but the one named 'unassigned'.""")
+
     def __getitem__(sourcesourcename):
         """Return the specified sourcesource object."""
 
-    def filter(sync=None, process=None, tested=None, projecttext=None):
+    def filter(sync=None, process=None, tested=None, projecttext=None,
+               assigned=None):
         """Return a subset of the sourcesources, filtered by the criteria
         given in the arguments."""
 

@@ -5,7 +5,7 @@
 
 <head>
     <title metal:fill-slot="title">Edit
-      <span tal:replace="context/person/displayname">Name</span>
+      <span tal:replace="context/displayname">Name</span>
       Information</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -15,81 +15,39 @@
 
 <body>
 
-
-<metal:leftportlets fill-slot="portlets_one">
-<div tal:replace="structure view/emailPortlet" />  
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-
-</metal:rightportlets>
-
-
 <div metal:fill-slot="main">
 
 <div id="content" class="documentEditable">
 
-    <ul class="contentViews">
-        <li id="contentview-view" class="plain">
-            <a href="index.html">View</a>
-        </li>
-	
-	<li id="contentview-packages" class="plain">
-            <a href="+packages">Packages</a>
-        </li>
-	
-        <li tal:condition="view/permission"
-	    id="contentview-edit" class="selected">
-            <a>Edit</a>
-        </li>
-
-	<li tal:condition="view/permission"
-	    id="contentview-add" class="plain">
-            <a href="+add">Add</a>
-        </li>
-
-    </ul>
-
     <div class="documentContent" id="region-content">
 
-      <div class="portalMessage" 
-           tal:condition="not:view/permission">
-	   <p>Warning: You are not authorized to change this page. If you
-	      change something your changes will be lost.
-	   <div align="right"><a href="index.html"><i>back</i></a></div>
-      </div>
-
-    <div tal:condition="view/permission">
-    <h1>Edit <span tal:content="context/person/displayname">DISPLAYNAME</span> 
+    <h1>Edit <span tal:content="context/displayname">DISPLAYNAME</span> 
 	Information</h1>
 
-    <div class="documentDescription">	
-    <p> Here you edit the Information about <span
-    tal:content="context/person/displayname">DISPLAYNAME</span>  
-    </div>
-  
-
     <div tal:condition="view/edit_action">
-    <p> <a tal:attributes="href string:../${context/person/name}"
-         tal:content="context/person/displayname">PERSON</a>
-	 Modified
+      <p class="portalMessage">Your changes have been saved.</p>
     </div>
   
+    <div class="portalMessage" tal:condition="view/errormessage">
+      <p tal:content="view/errormessage"></p>
+    </div>
+
     <div>
     <form name="edit" action="" method="POST">
 	<table>
 	<tr><td>
 	<div class="field">
 	    <label>Display Name</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
 	    <div class="formHelp">
 	    Enter the Display Name.
             </div>
 	    <input type="text" name="displayname"
-	    tal:attributes="value context/person/displayname|nothing"/>
+	    tal:attributes="value context/displayname|nothing"/>
 	</div>
 	</td></tr>
 
-	<tal:block tal:condition="not:context/person/teamowner">
+	<tal:block tal:condition="not:context/teamowner">
 	<tr><td>
 	<div class="field">
 	    <label>Given Name</label>
@@ -97,7 +55,7 @@
 	    Enter the Given Name.
             </div>
 	    <input type="text" name="givenname"
-	    tal:attributes="value context/person/givenname|nothing"/>
+	    tal:attributes="value context/givenname|nothing"/>
 	</div>
 	</td><td>
 	<div class="field">
@@ -106,13 +64,13 @@
 	    Enter the Family Name.
             </div>
 	    <input type="text" name="familyname"
-	    tal:attributes="value context/person/familyname|nothing"/>
+	    tal:attributes="value context/familyname|nothing"/>
 	</div>
 	</td></tr>
 	</tal:block>
 
 
-	<tal:block tal:condition="context/person/teamowner">
+	<tal:block tal:condition="context/teamowner">
 	<tr><td>
 	<div class="field">
 	    <label>Team Description</label>
@@ -120,7 +78,7 @@
 	    Enter the Team Description.
             </div>
             <textarea name="teamdescription" cols="60" rows="6"
-	    tal:content="context/person/teamdescription|nothing">
+	    tal:content="context/teamdescription|nothing">
 	    </textarea>
 	</div>
 	</td></tr>
@@ -181,27 +139,56 @@
 	    <div class="formHelp">
 	    Enter the Jabber ID.
             </div>
-	    <input type="text" name="jabberid" size="20"
-	    tal:attributes="value context/jabber/jabberid|nothing"/>
+      <input type="text" name="jabberid"
+      tal:attributes="value context/jabber/jabberid|nothing"/>
 	</div>
 	</td></tr>
 
-
-	<tr><td class="dummy">	
-	PUB KEY IMPORT ENGINE ????
+	<tr><td>
+	<div class="field">
+	    <label>New Password</label>
+	    <div class="formHelp">
+	    Enter your new Password.
+            </div>
+	    <input type="password" name="newpassword"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Retype New Password</label>
+	    <div class="formHelp">
+	    Enter the same Password Again.
+            </div>
+	    <input type="password" name="newpassword2"/> 
+	</div>
 	</td></tr>
 
+  <tr><td colspan="2">
+      <hr />
+	</td></tr>
+
+  <tr><td>
+      <br/>
+      <div class="field">
+          <label>Current Password</label>
+          <span class="fieldRequired" title="Required">
+            (Required)</span>
+          <div class="formHelp">Please enter your password to confirm the
+            account changes.
+          </div>
+      <input type="password" name="password" />
+      <br/>
+	</td></tr>
 
 	<tr><td>
 	<div class="formControls">
-	  <input type="submit" value="Edit"/>
+	  <input type="submit" value="Save"/>
 	</div>
 	</td></tr>
 	</table>
   </form>
   </div>
     
-  </div>
 </div>
 </div>
 </div>

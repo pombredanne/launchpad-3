@@ -1,12 +1,38 @@
 #! /bin/sh
 
+# Find the location of your Launchpad
+if [ ! -f ~/.rocketfuel ]; then
+  echo "You need a file called ~/.rocketfuel containing a single line"
+  echo "like:"
+  echo "   LAUNCHPAD=~/projects/ubuntu"
+  echo "This line should give the location of the top level directory"
+  echo "containing your launchpad and config checkouts."
+  exit 1
+fi
+source ~/.rocketfuel
+
+# check that your .rocketfuel file included a line giving the launchpad
+# checkout location
+if [ ! $LAUNCHPAD ]; then
+  echo "Your ~/.rocketfuel file must include a line giving the location"
+  echo "of your launchpad directory, of the form:"
+  echo
+  echo "LAUNCHPAD=~/projects/ubuntu"
+  echo
+  echo "Of course, use the correct location for your setup. The"
+  echo "directory you specify should at least contain your configs"
+  echo "(in a directory called configs) and your launchpd checkout"
+  echo "in a directory called launchpad."
+  exit 1
+fi
+
 if [[ ! "$1" ]]; then
   echo "Usage: launch \"commit message\""
   exit 1
 fi
 
 # move into position
-cd ~/projects/ubuntu/launchpad
+cd $LAUNCHPAD/launchpad
 
 # check for loose files
 baz status --lint --untagged-files --strict
@@ -30,4 +56,5 @@ if [ $? -gt 0 ]; then
   exit 1
 fi
 
-/home/mark/projects/ubuntu/arch-pqm/bin/arch-submit-merge "$1" pqm@pqm.ubuntu.com
+$LAUNCHPAD/arch-pqm/bin/arch-submit-merge "$1" pqm@pqm.ubuntu.com
+

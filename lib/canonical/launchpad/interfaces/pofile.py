@@ -6,25 +6,86 @@ class IRosettaStats(Interface):
 
     def messageCount():
         """Returns the number of Current IPOMessageSets in all templates
-        inside this project."""
+        inside this object."""
 
     def currentCount(language=None):
         """Returns the number of msgsets matched to a potemplate for this
-        project that have a non-fuzzy translation in its PO file for this
+        object that have a non-fuzzy translation in its PO file for this
         language when we last parsed it."""
 
+    def currentPercentage(language=None):
+        """Returns the percentage of current msgsets inside this object."""
+
     def updatesCount(language=None):
-        """Returns the number of msgsets for this project where we have a
+        """Returns the number of msgsets for this object where we have a
         newer translation in rosetta than the one in the PO file for this
         language, when we last parsed it."""
+
+    def updatesPercentage(language=None):
+        """Returns the percentage of updated msgsets inside this object."""
 
     def rosettaCount(language=None):
         """Returns the number of msgsets where we have a translation in rosetta
         but there was no translation in the PO file for this language when we
         last parsed it."""
 
+    def rosettaPercentage(language=None):
+        """Returns the percentage of msgsets translated with Rosetta inside
+        this object."""
 
-class IPOTemplate(IRosettaStats):
+    def translatedCount(language=None):
+        """Returns the number of msgsets that are translated."""
+
+    def translatedPercentage(language=None):
+        """Returns the percentage of msgsets translated for this object."""
+
+    def untranslatedCount(language=None):
+        """Returns the number of msgsets that are untranslated."""
+
+    def untranslatedPercentage(language=None):
+        """Returns the percentage of msgsets untranslated for this object."""
+
+    def nonUpdatesCount(language=None):
+        """Returns the number of msgsets that are translated and don't have an
+        update from Rosetta."""
+
+    def nonUpdatesPercentage(language=None):
+        """Returns the percentage of msgsets for this object that are 
+        translated and don't have an update from Rosetta."""
+
+
+class ICanAttachRawFileData(Interface):
+    """Accept .po or .pot attachments."""
+
+    def attachRawFileData(contents, importer=None):
+        """Attach a .pot/.po file to be imported later with doRawImport call.
+
+        The content is parsed first with the POParser, if it has any problem
+        the POSyntaxError or POInvalidInputError exeption will be raised.
+        """
+
+class IRawFileData(Interface):
+    """Represent a raw file data from a .po or .pot file."""
+
+    rawfile = Attribute("The pot/po file itself in raw mode.")
+
+    rawimporter = Attribute("The person that attached the rawfile.")
+
+    daterawimport = Attribute("The date when the rawfile was attached.")
+
+    rawimportstatus = Attribute(
+        "The status of the import: 1 ignore import, 2 pending to be imported,"
+        " 3 imported already and 4 failed.")
+
+    def doRawImport(logger=None):
+        """Execute the import of the rawfile field, if it's needed.
+
+        If a logger argument is given, log there any problem found with the
+        import.
+        """
+
+
+class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
     id = Attribute("The id of this POTemplate.")
@@ -55,14 +116,11 @@ class IPOTemplate(IRosettaStats):
 
     owner = Attribute("The owner of the template.")
 
-    rawfile = Attribute("The pot file itself in raw mode.")
-   
-    rawimporter = Attribute("The person that attached the rawfile.")
-    
-    daterawimport = Attribute("The date when the rawfile was attached.")
+    sourcepackagename = Attribute("""The name of the sourcepackage from where
+        this PO template is.""")
 
-    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
-        imported, 2 failed.""")
+    distrorelease = Attribute("""The distribution where this PO template
+        belongs""")
 
 
     # A "current" messageset is one that was in the latest version of
@@ -145,14 +203,11 @@ class IPOTemplate(IRosettaStats):
 class IEditPOTemplate(IPOTemplate):
     """Edit interface for an IPOTemplate."""
 
-    rawfile = Attribute("The pot file itself in raw mode.")
+    sourcepackagename = Attribute("""The name of the sourcepackage from where
+        this PO template is.""")
 
-    rawimporter = Attribute("The person that attached the rawfile.")
-    
-    daterawimport = Attribute("The date when the rawfile was attached.")
-            
-    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
-        imported, 2 failed.""")
+    distrorelease = Attribute("""The distribution where this PO template
+        belongs""")
 
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
@@ -186,9 +241,6 @@ class IEditPOTemplate(IPOTemplate):
 
         Returns the newly created message set.
         """
-
-    def doRawImport():
-        """Executes the import of the rawfile field if it's needed."""
 
 
 class IPOTMsgSet(Interface):
@@ -270,8 +322,10 @@ class IPOMsgID(Interface):
     msgid = Attribute("A msgid string.")
 
 
-class IPOFile(IRosettaStats):
+class IPOFile(IRosettaStats, ICanAttachRawFileData):
     """A PO File."""
+
+    id = Attribute("This PO file's id.")
 
     potemplate = Attribute("This PO file's template.")
 
@@ -301,14 +355,6 @@ class IPOFile(IRosettaStats):
 
     filename = Attribute("The name of the file that was imported")
 
-    rawfile = Attribute("The pot file itself in raw mode.")
-   
-    rawimporter = Attribute("The person that attached the rawfile.")
-    
-    daterawimport = Attribute("The date when the rawfile was attached.")
-
-    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
-        imported, 2 failed.""")
 
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
@@ -412,9 +458,6 @@ class IEditPOFile(IPOFile):
 
         Returns the newly created message set.
         """
-
-    def doRawImport():
-        """Executes the import of the rawfile field if it's needed."""
 
 
 class IPOMsgSet(Interface):

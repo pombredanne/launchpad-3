@@ -71,12 +71,16 @@ class POMessage(object):
     def check(self, **kw):
         if kw.get('msgstrPlurals'):
             if 'header' not in kw or type(kw['header'].nplurals) is not int:
-                raise POInvalidInputError(msg="File has plural forms, but plural-forms "
-                                          "header entry is missing or invalid")
+                warnings.warn(POSyntaxWarning(
+                    msg="File has plural forms, but plural-forms header entry"
+                        " is missing or invalid."
+                    ))
             if len(kw['msgstrPlurals']) > kw['header'].nplurals:
-                raise POInvalidInputError(lno=kw['_lineno'],
-                                          msg="Bad number of plural-forms in entry "
-                                          "'%s' (line %d)" % (kw['msgid'], kw['_lineno']))
+                warnings.warn(POSyntaxWarning(
+                    lno=kw['_lineno'],
+                    msg="Bad number of plural-forms in entry '%s' (line %d)."
+                        % (kw['msgid'], kw['_lineno'])
+                    ))
 
     def is_obsolete(self):
         return self.obsolete
@@ -213,8 +217,8 @@ class POMessage(object):
         u'msgid ""\n"abcdefghijklmnopqr"\nmsgstr "z"'
         >>> POMessage(msgid="abcdef hijklm", msgstr="z").__unicode__(20)
         u'msgid ""\n"abcdef hijklm"\nmsgstr "z"'
-        >>> POMessage(msgid="abcdefghijklmnopq rs", msgstr="z").__unicode__(20)
-        u'msgid ""\n"abcdefghijklmnopq "\n"rs"\nmsgstr "z"'
+        >>> POMessage(msgid="abcdefghijklmnopqr st", msgstr="z").__unicode__(20)
+        u'msgid ""\n"abcdefghijklmnopqr "\n"st"\nmsgstr "z"'
         >>> POMessage(msgid="abc\ndef", msgstr="z").__unicode__(20)
         u'msgid ""\n"abc\\n"\n"def"\nmsgstr "z"'
 
@@ -250,7 +254,20 @@ class POMessage(object):
                     break
             else:
                 paragraph += u'\\n'
-            wrapped = wrapper.wrap(paragraph)
+            # XXX: Carlos Perello Marin 05/01/2004 I'm not sure this is the
+            # best way to fix the bug #24 . The problem cames with the
+            # TextWrapper.wrap method. If you give it a string that ends with
+            # one or more white spaces it just removes it and that's really
+            # bad for us because that changes the msgid.
+            # With this if - else I just prevent to call the method if it's
+            # not needed but It will still fail with a really long line that
+            # ends with a white space... We need to move to other solution
+            # outside TextWrapper.wrap because I don't see a way to disable
+            # that behaviour.
+            if len(paragraph) <= wrapper.width + 1:
+                wrapped = [wrapper.subsequent_indent + paragraph]
+            else:
+                wrapped = wrapper.wrap(paragraph)
             for line in wrapped[:-1]:
                 r.append(line + u" " + wrapper.subsequent_indent)
             r.append(wrapped[-1] + wrapper.subsequent_indent)
@@ -368,7 +385,19 @@ class POHeader(dict, POMessage):
                 # sure hope it's a template.
                 self.nplurals = 2
             else:
-                self.nplurals = int(d.get('nplurals'))
+                nplurals = d.get('nplurals')
+                try:
+                    self.nplurals = int(nplurals)
+                except TypeError:
+                    # There are some po files with bad headers that have a non
+                    # numeric value here and sometimes an empty value. In that
+                    # case, set the default value.
+                    warnings.warn(POSyntaxWarning(
+                        self._lineno,
+                        "The plural form header has an unknown error. Using"
+                        " the default value..."
+                        ))
+                    self.nplurals = 2
                 self.pluralExpr = d.get('plural', '0')
 
         # Update msgstr
@@ -649,7 +678,14 @@ def parse_assignments(text, separator=';', assigner='=', skipfirst=False):
         if not assignment.strip():
             # empty
             continue
-        name, value = assignment.split(assigner, 1)
+        if assigner in assignment:
+            name, value = assignment.split(assigner, 1)
+        else:
+            warnings.warn(POSyntaxWarning(
+                msg="Found an error in the header content: %s" % text
+                ))
+            continue
+
         d[name.strip()] = value.strip()
     return d
 

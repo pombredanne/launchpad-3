@@ -44,3 +44,9 @@ class IMessage(Interface):
     def followup_title():
         """Return a candidate title for a followup message."""
 
+
+class IMessageSet(Interface):
+
+    def get(rfc822msgid=None):
+        """Return a single IMessage matching the given criteria. Currently
+        the only search criterion supported is an rfc822msgid."""

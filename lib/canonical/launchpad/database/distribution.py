@@ -1,25 +1,20 @@
-
-# Python imports
-from sets import Set
-from datetime import datetime
-
 # Zope imports
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import MultipleJoin, SQLObjectNotFound
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
-from sqlobject.sqlbuilder import func
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.database.bugassignment import SourcePackageBugAssignment
+from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IDistribution
 from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import IDistroPackageFinder
 
 __all__ = ['Distribution', 'DistributionSet']
 
@@ -31,7 +26,8 @@ class Distribution(SQLBase):
     _table = 'Distribution'
     _defaultOrder='name'
     _columns = [
-        StringCol('name', dbName='name'),
+        StringCol('name', dbName='name', notNull=True, alternateID=True,
+                  unique=True),
         StringCol('displayname', dbName='displayname'),
         StringCol('title', dbName='title'),
         StringCol('summary', dbName='summary'),
@@ -50,12 +46,12 @@ class Distribution(SQLBase):
         if name == '+packages':
             return PublishedPackageSet()
         return self.__getitem__(name)
-   
+
     def __getitem__(self, name):
         for release in self.releases:
             if release.name == name:
                 return release
-        raise IndexError, 'No distribution release called %s' % name
+        raise KeyError, name
 
     def __iter__(self):
         return iter(self.releases)
@@ -66,19 +62,17 @@ class Distribution(SQLBase):
         clauseTables = ("VSourcePackageInDistro",
                         "SourcePackage")
         severities = [
-            dbschema.BugAssignmentStatus.NEW,
-            dbschema.BugAssignmentStatus.ACCEPTED,
-            dbschema.BugAssignmentStatus.REJECTED,
-            dbschema.BugAssignmentStatus.FIXED]
+            dbschema.BugTaskStatus.NEW,
+            dbschema.BugTaskStatus.ACCEPTED,
+            dbschema.BugTaskStatus.REJECTED,
+            dbschema.BugTaskStatus.FIXED]
 
-        query = ("sourcepackagebugassignment.sourcepackage = sourcepackage.id AND "
-                 "sourcepackage.sourcepackagename = vsourcepackageindistro.sourcepackagename AND "
-                 "vsourcepackageindistro.distro = %s AND "
-                 "sourcepackagebugassignment.bugstatus = %i")
+        query = ("bugtask.distribution = %s AND "
+                 "bugtask.bugstatus = %i")
 
         for severity in severities:
             query = query %(quote(self.id), severity)
-            count = SourcePackageBugAssignment.select(query, clauseTables=clauseTables).count()
+            count = BugTask.select(query, clauseTables=clauseTables).count()
             counts.append(count)
 
         return counts
@@ -95,7 +89,10 @@ class DistributionSet(object):
         return iter(Distribution.select())
 
     def __getitem__(self, name):
-        return Distribution.selectBy(name=name)[0]
+        try:
+            return Distribution.byName(name)
+        except SQLObjectNotFound:
+            raise KeyError, name
 
     def count(self):
         return Distribution.select().count()
@@ -106,5 +103,12 @@ class DistributionSet(object):
 
     def getDistribution(self, name):
         """Returns a Distribution with name = name"""
-        return Distribution.selectBy(name=name)[0]
+        return self[name]
 
+class DistroPackageFinder(object):
+
+    implements(IDistroPackageFinder)
+
+    def __init__(self, distribution=None, processorfamily=None):
+        self.distribution = distribution
+        # find the x86 processorfamily

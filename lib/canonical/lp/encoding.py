@@ -2,10 +2,10 @@ import re
 import codecs
 
 _boms = [
-    (codecs.BOM_UTF16_BE, 'UTF16be'),
-    (codecs.BOM_UTF16_LE, 'UTF16le'),
-    (codecs.BOM_UTF32_BE, 'UTF32be'),
-    (codecs.BOM_UTF32_LE, 'UTF32le'),
+    (codecs.BOM_UTF16_BE, 'utf_16_be'),
+    (codecs.BOM_UTF16_LE, 'utf_16_le'),
+    (codecs.BOM_UTF32_BE, 'utf_32_be'),
+    (codecs.BOM_UTF32_LE, 'utf_32_le'),
     ]
 
 def guess(s):
@@ -84,7 +84,7 @@ def guess(s):
     at the moment like ISO-2022-jp, BIG5, SHIFT-JIS etc. will be a bigger
     problem.
     
-    >>> guess(u'hello'.encode('UTF16be'))
+    >>> guess(u'hello'.encode('UTF-16be'))
     u'\x00h\x00e\x00l\x00l\x00o'
 
     '''

@@ -32,17 +32,25 @@
             name="+index"
             template="../templates/distro-index.pt"
             lp:url="Soyuz/distros/$Distribution.name/" />
+
         <!-- XXX sabdfl moved this here, need to reactivate search tools -->
-	    <browser:page
+        <!-- 
+        XXX: Daniel Debonzi 20050105 
+        Does it still useful? don't we have enought and better 
+        search places? 
+	I will let it commented. If nobody ask to keep it I will 
+	remove this pages.
+        <browser:page
             name="+sources"
             template="../templates/distro-sources.pt"
-	        lp:url="Soyuz/distros/$Distribution.name/+sources"
-	        />
+            lp:url="Soyuz/distros/$Distribution.name/+sources"
+                />
         <browser:page
             name="+binaries"
             template="../templates/binary-index.pt"
             lp:url="Soyuz/distros/$Distribution.name/+binaries"
             />
+        -->
 
 
 
@@ -50,7 +58,7 @@
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Admin"
         name="+edit"
         schema="canonical.launchpad.interfaces.IDistribution"
         fields="displayname title summary description"
@@ -92,10 +100,10 @@
     <browser:page
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
-	    class="canonical.launchpad.browser.DistributionSetSearchView"
-	    template="../templates/distro-search.pt"
-        lp:url="Soyuz/distros/+search"
-	    name="+search"
+            class="canonical.launchpad.browser.DistributionSetSearchView"
+            template="../templates/distro-search.pt"
+            lp:url="Soyuz/distros/+search"
+            name="+search"
         />
 
     <browser:addform
@@ -106,7 +114,7 @@
         fields="name displayname title summary description domainname owner"
         content_factory="canonical.launchpad.database.Distribution"
         class="canonical.launchpad.browser.DistributionSetAddView"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Admin"
         template="../templates/launchpad-addform.pt"
         lp:url="soyuz/distros/+add">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />

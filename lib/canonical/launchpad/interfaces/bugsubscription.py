@@ -41,3 +41,12 @@ class IBugSubscriptionSet(Interface):
     def getCcEmailAddresses():
         """Return the email addresses of the people Cc'd on
         this bug."""
+
+    def subscribePerson(person):
+        """Subscribe person to the bug, as a Cc.
+
+        Returns the IBugSubscription created.
+        """
+
+    def unsubscribePerson(person):
+        """Unsubscribe person from the bug."""

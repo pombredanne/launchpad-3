@@ -6,6 +6,8 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
+from canonical.launchpad.validators.cve import valid_cve
+
 class ICVERefsView(IAddFormCustomization):
     """Bug Web Link views"""
 
@@ -21,7 +23,7 @@ class ICVERef(Interface):
     cveref = TextLine(
             title=_('CVE Reference'),
             description=_('The CVE reference number related to this bug.'),
-            required=True, readonly=False,
+            required=True, readonly=False, constraint=valid_cve,
             )
     title = TextLine(
             title=_('Title'),

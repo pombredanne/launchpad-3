@@ -2,26 +2,31 @@
 
 import re
 
-VALID_EMAIL_1 = re.compile(
-    r"^[_\.0-9a-z-+]+@([0-9a-z][0-9a-z-]+\.)+[a-z]{2,4}$")
-VALID_EMAIL_2 = re.compile(
-    r"^[_\.0-9a-z-]+@([0-9a-z][0-9a-z-]+)$")
-MIN_NICK_LENGTH = 1
+MIN_NICK_LENGTH = 2
+name_sanity_pattern = re.compile(r"^[^a-z0-9]|[^a-z0-9\\+\\.\\-]+")
 
 class NicknameGenerationError(Exception):
     """I get raised when something went wrong generating
     a nickname."""
     pass
 
+EXISTING_NICKS = [
+    'foop-example', 'spam', 'spam-example', 'turtle', 'taken',
+    'taken-example', 'taken-example-com', 'taken-example-com-1',
+    'bar-spam', 'bar-spam-long', 'bar-spam-long-example']
+
 def _nick_registered(nick):
-    """Answers the question: is this nick registered?"""
-    EXISTING_NICKS = [
-        'foop-example', 'spam', 'spam-example', 'turtle', 'taken',
-        'taken-example', 'taken-example-com', 'taken-example-com-1',
-        'bar-spam', 'bar-spam-long', 'bar-spam-long-example']
+    """Answer the question: is this nick registered?"""
+    from canonical.launchpad.database import PersonSet
+    person = PersonSet().getByName(nick)
+    if person or nick in EXISTING_NICKS:
+        return True
+    else:
+        return False
 
-    return nick in EXISTING_NICKS
-
+def sanitize(name):
+    return name_sanity_pattern.sub('', name)
+    
 def generate_nick(email_addr, registered=_nick_registered,
                   report_collisions=False):
     """Generate a LaunchPad nick from the email address provided.
@@ -29,55 +34,29 @@ def generate_nick(email_addr, registered=_nick_registered,
     A valid nick can contain lower case letters, dashes, and numbers,
     must start with a letter or a number, and must be a minimum of
     four characters.
-
-    >>> generate_nick("foop@example@com")
-    Traceback (most recent call last):
-        ...
-    NicknameGenerationError: foop@example@com is not a valid email address
-    >>> generate_nick("foop@example.com")
-    'foop'
-    >>> generate_nick("bar@example.com")
-    'bar'
-    >>> generate_nick("spam@example.com")
-    'spam-example-com'
-    >>> generate_nick("foop.bar@example.com")
-    'foop-bar'
-    >>> generate_nick("bar.spam@long.example.com")
-    'bar-spam-long-example-com'
-    >>> generate_nick("taken@example.com")
-    'taken-example-com-2'
-    >>> generate_nick("taken@example")
-    'taken-example-1'
-    >>> generate_nick("i@tv")
-    'i'
-    >>> generate_nick("foo+bar@example.com")
-    'foo+bar'
     """
+
+    from canonical.auth.browser import well_formed_email
 
     email_addr = email_addr.strip().lower()
 
-    # XXX: slightly dirty, but my regex-fu isn't good enough at the moment to
-    # do this all in once regex
-    if (not VALID_EMAIL_1.match(email_addr) and 
-        not VALID_EMAIL_2.match(email_addr)):
+    if not well_formed_email(email_addr):
         raise NicknameGenerationError("%s is not a valid email address" 
                                       % email_addr)
-        
 
     user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
-    user = user.replace(".", "-")
-    user = user.replace("_", "-")
+    user = user.replace(".", "-").replace("_", "-")
     domain_parts = domain.split(".")
 
-    generated_nick = user
+    generated_nick = sanitize(user)
     if (registered(generated_nick) or 
         len(generated_nick) < MIN_NICK_LENGTH):
         if report_collisions:
             print ("collision: %s already registered or shorter than %d "
-                   "characters." % (generated_nick, MIN_NICK_LENGTH))
+                   "characters." % ( generated_nick, MIN_NICK_LENGTH ))
 
         for domain_part in domain_parts:
-            generated_nick += "-" + domain_part
+            generated_nick = sanitize(generated_nick + "-" + domain_part)
             if not registered(generated_nick):
                 break
             else:
@@ -91,12 +70,12 @@ def generate_nick(email_addr, registered=_nick_registered,
         or len(generated_nick) < MIN_NICK_LENGTH):
         if report_collisions:
             print ("collision: %s already registered or shorter than %d "
-                   "characters." % (generated_nick, MIN_NICK_LENGTH))
+                   "characters" % ( generated_nick, MIN_NICK_LENGTH ))
 
         x = 1
         found_available_nick = False
         while not found_available_nick:
-            attempt = generated_nick + "-" + str(x)
+            attempt = sanitize(generated_nick + "-" + str(x))
             if not registered(attempt):
                 generated_nick = attempt
                 break
@@ -107,11 +86,4 @@ def generate_nick(email_addr, registered=_nick_registered,
             x += 1
 
     return generated_nick
-
-def _test():
-    import doctest, nickname
-    return doctest.testmod(nickname)
-
-if __name__ == '__main__':
-    _test()
 

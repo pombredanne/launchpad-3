@@ -26,13 +26,14 @@ __all__ = (
 'BinaryPackageFormat',
 'BinaryPackagePriority',
 'BranchRelationships',
-'BugAssignmentStatus',
+'BugTaskStatus',
 'BugExternalReferenceType',
 'BugInfestationStatus',
 'BugPriority',
 'BugRelationship',
 'BugSeverity',
 'BugSubscription',
+'BuildStatus',
 'CodereleaseRelationships',
 'DistributionReleaseState',
 'DistributionRole',
@@ -42,8 +43,8 @@ __all__ = (
 'ImportTestStatus',
 'KarmaField',
 'ManifestEntryType',
-'MembershipRole',
-'MembershipStatus',
+'TeamMembershipRole',
+'TeamMembershipStatus',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'Packaging',
@@ -485,7 +486,8 @@ class EmailAddressStatus(DBSchema):
         has just been created in the system, either by a person claiming
         it as their own, or because we have stored an email message or
         arch changeset including that email address and have created
-        a phantom person and email address to record it.
+        a phantom person and email address to record it. WE SHOULD
+        NEVER EMAIL A "NEW" EMAIL.
         """)
 
     VALIDATED = Item(2, """
@@ -506,8 +508,15 @@ class EmailAddressStatus(DBSchema):
         content from that email address with that person.
         """)
 
-class MembershipRole(DBSchema):
-    """Membership Role
+    PREFERRED = Item(4, """
+        Preferred Email Address
+
+        The email address was validated and is the person's choice for
+        receiving notifications from Launchpad.
+        """)
+
+class TeamMembershipRole(DBSchema):
+    """TeamMembership Role
 
     Launchpad knows about teams and individuals. People can be a member
     of many teams, and in each team that they are a member they will
@@ -529,8 +538,8 @@ class MembershipRole(DBSchema):
         objects associated with that team accordingly.
         """)
 
-class MembershipStatus(DBSchema):
-    """Membership Status
+class TeamMembershipStatus(DBSchema):
+    """TeamMembership Status
 
     Some teams to not have automatic membership to anybody who wishes to
     join. In this case, a person can be proposed for membership, and the
@@ -1297,11 +1306,11 @@ class BugInfestationStatus(DBSchema):
         """)
 
 
-class BugAssignmentStatus(DBSchema):
-    """Bug Assignment Status
+class BugTaskStatus(DBSchema):
+    """Bug Task Status
 
     Bugs are assigned to products and to source packages in Malone. The
-    assignment carries a status - new, open or closed. This schema
+    task carries a status - new, open or closed. This schema
     documents those possible status values.
     """
 
@@ -1332,7 +1341,7 @@ class BugAssignmentStatus(DBSchema):
         """)
 
 class RemoteBugStatus(DBSchema):
-    """Bug Assignment Status
+    """Bug Task Status
 
     The status of a bug in a remote bug tracker. We map known statuses
     to one of these values, and use UNKNOWN if we are unable to map
@@ -1401,7 +1410,7 @@ class BugPriority(DBSchema):
 class BugSeverity(DBSchema):
     """Bug Severity
 
-    A bug assignment has a severity, which is an indication of the
+    A bug task has a severity, which is an indication of the
     extent to which the bug impairs the stability and security of
     the distribution.
     """
@@ -1823,4 +1832,90 @@ class SSHKeyType(DBSchema):
         DSA
         """)
 
+class LoginTokenType(DBSchema):
+    """Login token type
 
+    Tokens are emailed to users in workflows that require email address
+    validation, such as forgotten password recovery or account merging.
+    We need to identify the type of request so we know what workflow
+    is being processed.
+    """
+
+    PASSWORDRECOVERY = Item(1, """
+        Password Recovery
+
+        User has forgotten or never known their password and need to
+        reset it.
+        """)
+
+    ACCOUNTMERGE = Item(2, """
+        Account Merge
+
+        User has requested that another account be merged into their
+        current one.
+        """)
+
+    NEWACCOUNT = Item(3, """
+        New Account
+
+        A new account is being setup. They need to verify their email address
+        before we allow them to set a password and log in.
+        """)
+
+    VALIDATEEMAIL = Item(4, """
+        Validate Email
+
+        A user has added more email addresses to their account and they
+        need to be validated.
+        """)
+
+class BuildStatus(DBSchema):
+    """Build status type
+
+    Builds exist in the database in a number of states such as 'complete',
+    'needs build' and 'dependency wait'. We need to track these states in
+    order to correctly manage the autobuilder queues in the BuildQueue table.
+    """
+
+    NEEDSBUILD = Item(0, """
+        Needs building
+
+        Build record is fresh and needs building. Nothing is yet known to
+        block this build and it is a candidate for building on any free
+        builder of the relevant architecture
+        """)
+
+    FULLYBUILT = Item(1, """
+        Fully built
+
+        Build record is an historic account of the build. The build is complete
+        and needs no further work to complete it. The build log etc are all
+        in place if available.
+        """)
+
+    FAILEDTOBUILD = Item(2, """
+        Failed to build
+
+        Build record is an historic account of the build. The build failed and
+        cannot be automatically retried. Either a new upload will be needed
+        or the build will have to be manually reset into 'NEEDSBUILD' when
+        the issue is corrected
+        """)
+
+    MANUALDEPWAIT = Item(3, """
+        Manual dependency wait
+
+        Build record represents a package whose build dependencies cannot
+        currently be satisfied within the relevant DistroArchRelease. This
+        build will have to be manually given back (put into 'NEEDSBUILD') when
+        the dependency issue is resolved.
+        """)
+
+    CHROOTWAIT = Item(4, """
+        Chroot wait
+
+        Build record represents a build which needs a chroot currently known
+        to be damaged or bad in some way. The buildd maintainer will have to
+        reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
+        has been fixed.
+        """)

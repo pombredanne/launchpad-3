@@ -7,27 +7,34 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces.launchpad import IHasOwner
+from canonical.launchpad.interfaces.launchpad import IHasOwner, IHasAssignee
 
 class IProduct(IHasOwner):
-    """A DOAP Product. DOAP describes the open source world as Projects
+    """
+    A DOAP Product. DOAP describes the open source world as Projects
     and Products. Each Project may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
-    Mozilla App Suite as Products, among others."""
+    Mozilla App Suite as Products, among others.
+    """
     
     # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
     # in SQLObject soon. 12/10/04
     id = Int(title=_('The Product ID'))
     
-    project = Choice(title=_('Project'), required=False,
-        vocabulary='Project')
+    project = Choice(title=_('Project'), required=False, vocabulary='Project', 
+                     description=_("""Optional related Project. Used to group
+                     similar products in a coherent way."""))
     
-    owner = Int(title=_('Owner'))
+    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
+                   description=_("""Product owner, it can either a valid
+                   Person or Team inside Launchpad context."""))
 
     name = TextLine(title=_('Name'), description=_("""The short name of this
-        product, which must be unique among all the products from the same
-        project."""))
+        product, which must be unique among all the products. It should be
+        at least one lowercase letters or number followed by one or more chars,
+        numbers, plusses, dots or hyphens and will be part of the url to this
+        product in the Launchpad."""))
 
     displayname = TextLine(title=_('Display Name'), description=_("""The
         display name of this product is the name of this product as it
@@ -60,8 +67,8 @@ class IProduct(IHasOwner):
     freshmeatproject = TextLine(title=_('Freshmeat Project'),
         required=False)
 
-    autoupdate = Bool(title=_('Autoupdate'), description=_("""Whether or not
-        this product's attributes are autoupdated."""))
+    autoupdate = Bool(title=_('Automatic update'), description=_("""Whether or not
+        this product's attributes are updated automatically."""))
 
     manifest = Attribute(_('Manifest'))
 
@@ -81,8 +88,8 @@ class IProduct(IHasOwner):
 
     packages = Attribute (_('SourcePackages related to a Product'))
 
-    bugs = Attribute(
-        """A list of ProductBugAssignments for this Product.""")
+    bugtasks = Attribute(
+        """A list of BugTasks for this Product.""")
 
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
@@ -100,6 +107,11 @@ class IProduct(IHasOwner):
     branches = Attribute(_("""An iterator over the Bazaar branches that are
     related to this product."""))
 
+    milestones = Attribute(_(
+        """The release milestones associated with this product, useful in
+        particular to the maintainer, for organizing which bugs will be fixed
+        when."""))
+
     def poTemplatesToImport():
         """Returns all PO templates from this product that have a rawfile 
         pending of import into Rosetta."""
@@ -107,12 +119,13 @@ class IProduct(IHasOwner):
     def poTemplate(name):
         """Returns the PO template with the given name."""
 
-    def newPOTemplate(person, name, title):
-        """Creates a new PO template.
+    def newPOTemplate(name, title, person=None):
+        """Create a new PO template.
 
-        Returns the newly created template.
+        Return the newly created template. The person argument is optional,
+        the POTemplate can exist without an owner.
 
-        Raises an KeyError if a PO template with that name already exists.
+        Raise an KeyError if a PO template with that name already exists.
         """
 
     def fullname():
@@ -152,6 +165,34 @@ class IProduct(IHasOwner):
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
+    def attachTranslations(tarfile, prefix=None, sourcepackagename=None,
+                           distrorelease=None, version=None, logger=None):
+        """Attach all .pot and .po files inside tarfile into a product.
+
+        The .pot and .po files are attached to the POTemplate and POFile
+        objects of this product creating them first if needed.
+
+        Associates the POTemplates with the sourcepackagename and the
+        distrorelease (if not None) and its name will have the prefix
+        specified in case it's not None.
+
+        In case all files are imported correctly, set the potemplate's
+        sourcepackageversion field to version.
+
+        Log any error/warning into the logger object, if it's not None.
+        """
+
+
+class IHasProduct(Interface):
+    """An object that has a product attribute that is an IProduct."""
+
+    product = Attribute("The object's product")
+
+
+class IHasProductAndAssignee(IHasProduct, IHasAssignee):
+    """An object that has a product attribute and an assigned attribute.
+    See IHasProduct and IHasAssignee."""
+
 
 class IProductSet(Interface):
     """The collection of products."""
@@ -162,6 +203,20 @@ class IProductSet(Interface):
     def __getitem__(name):
         """Get a product by its name."""
 
+    def get(productid):
+        """Get a product by its id.
+        
+        If the product can't be found a zope.exceptions.NotFoundError will be
+        raised.
+        """
+
+    def createProduct(owner, name, displayname, title, shortdesc,
+                      description, project=None, homepageurl=None,
+                      screenshotsurl=None, wikiurl=None,
+                      downloadurl=None, freshmeatproject=None,
+                      sourceforgeproject=None):
+        """Create and Return a brand new Product."""
+        
     def forReview():
         """Return an iterator over products that need to be reviewed."""
 

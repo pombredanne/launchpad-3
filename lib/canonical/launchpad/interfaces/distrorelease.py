@@ -46,15 +46,20 @@ class IDistroRelease(Interface):
     binarycount = Attribute("Binary Packages Counter")
     architectures = Attribute("The Architecture-specific Releases")
 
-    def getBugSourceRelease():
-        """ xxx """
-
     def architecturecount():
         """Return the number of architectures in this release."""
+
+    def getBugSourcePackages():
+        """Get SourcePackages in a DistroRelease with BugTask"""
 
 #    def getSourceByName(name):
 #        """Return the latest source package of this name uploaded to this
 #        distro release."""
+
+    def traverse(name):
+        """Traverse across a distrorelease in Launchpad. This looks for
+        special URL items, like +sources or +packages, then goes on to
+        traverse using __getitem__."""
 
     def __getitem__(arch):
         """Return a Set of Binary Packages in this distroarchrelease."""

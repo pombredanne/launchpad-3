@@ -1,0 +1,189 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/productassignments/+upstreamtask HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... If-Modified-Since: Mon, 01 Nov 2004 22:57:10 GMT
+  ... Referer: http://localhost:9000/malone/bugs/2/
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <h1>Add Product Bug Assignment</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/productassignments/+upstreamtask HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1090
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://localhost:9000/malone/bugs/2/productassignments/+upstreamtask
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.product"
+  ... 
+  ... arch-mirrors
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.product-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... Fixed
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... High
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Critical
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.assignee-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+          <h1>Add Product Bug Assignment</h1>
+  ...
+  <input type="text" name="field.product" value="arch-mirrors" ... />
+  ...
+  <select name="field.status" size="1" >
+  ...
+  <option selected="selected" value="Fixed">Fixed</option>
+  ...
+  <select name="field.priority" size="1" >
+  <option selected="selected" value="High">High</option>
+  ...
+  <select name="field.severity" size="1" >
+  <option selected="selected" value="Critical">Critical</option>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/productassignments/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugs/2/productassignments/+upstreamtask
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  <BLANKLINE>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/ HTTP/1.1
+  ... Referer: http://localhost:9000/malone/bugs/2/productassignments/+upstreamtask
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <tr onclick="window.location='/malone/bugs/2/productassignments/2/+edit'">
+  ...
+          <tr onclick="window.location='/malone/bugs/2/productassignments/6/+edit'">
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/2/productassignments/6/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... If-Modified-Since: Mon, 01 Nov 2004 22:57:48 GMT
+  ... Referer: http://localhost:9000/malone/bugs/2/
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... POST /malone/bugs/2/productassignments/6/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1092
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://localhost:9000/malone/bugs/2/productassignments/6/+edit
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.product"
+  ... 
+  ... arch-mirrors
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.product-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... New
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... High
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.severity"
+  ... 
+  ... Critical
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.severity-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... stub
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.assignee-empty-marker"
+  ... 
+  ... 1
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT" ...  ... Change ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <BLANKLINE>
+  ...
+  <input type="text" name="field.product" value="arch-mirrors" ... />
+  ...
+  <a href="javascript:popup_window('@@popup-window?vocabulary=Product&amp;field=field.product','500','400')">(list)</a>
+  ...
+  <select name="field.status" size="1" >
+  ...
+  <option selected="selected" value="New">New</option>
+  ...
+  <select name="field.priority" size="1" >
+  <option selected="selected" value="High">High</option>
+  ...
+  <select name="field.severity" size="1" >
+  <option selected="selected" value="Critical">Critical</option>
+  ...
+  <input type="text" name="field.assignee" value="stub" ... />
+  ...
+  <option selected="selected" ... value="stub">Stuart Bishop</option>
+  ...

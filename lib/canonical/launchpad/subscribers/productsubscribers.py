@@ -4,5 +4,5 @@ __metaclass__ = type
 
 
 def product_modified(product, event):
-    product.autoupdate = False    
+    pass
 

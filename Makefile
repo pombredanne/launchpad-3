@@ -18,7 +18,7 @@ check:
 	$(MAKE) -C sourcecode build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	./test_on_merge.py canonical
+	${PYTHON} -t ./test_on_merge.py canonical
 
 pagetests:
 	$(MAKE) -C sourcecode build
@@ -27,19 +27,9 @@ pagetests:
 
 XXXcheck: build
 	$(MAKE) -C sourcecode check
-	PYTHONPATH=$(HERE)/lib ./test.py
+	PYTHONPATH=$(HERE)/lib ${PYTHON} -t ./test.py
 
-debugging-on:
-	ln -s ../lib/canonical/canonical.apidoc-configure.zcml ./package-includes/+canonical.apidoc-configure.zcml
-
-debugging-off:
-	rm -f ./package-includes/+canonical.apidoc-configure.zcml
-	# backwards compatibility for old style
-	rm -f ./package-includes/+canonical.debugskin-configure.zcml
-	rm -f ./package-includes/canonical.debugskin-configure.zcml
-	rm -f ./package-includes/canonical.apidoc-configure.zcml
-
-.PHONY: check debugging-on debugging-off
+.PHONY: check
 
 # XXX What should the default be?
 all: inplace runners
@@ -86,7 +76,7 @@ ftest_inplace: inplace
 #ftest: ftest_inplace
 
 run: inplace
-	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) \
+	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) -t \
             $(STARTSCRIPT) -C $(CONFFILE)
 
 debug: principals.zcml

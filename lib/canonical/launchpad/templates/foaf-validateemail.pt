@@ -1,0 +1,58 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Validate email address</title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Soyuz style sheet -->
+  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+<div id="content" class="documentEditable">
+
+  <tal:block define="submitted view/formSubmitted">
+  <div class="documentContent" id="region-content">
+    <div tal:condition="python: not submitted or view.errormessage">
+      <h1>Validate email: <span tal:replace="context/email"></span></h1>
+
+      <div tal:condition="view/errormessage">
+        <p class="portalMessage" tal:content="view/errormessage"></p>
+      </div>
+
+      <p>To validate your new email address, just enter your password on the
+      field below.</p>
+
+      <form name="validate" action="" method="POST">
+      <table>
+        <tr>
+          <td>Password:</td>
+          <td><input type="password" name="password" /></td>
+        </tr>
+        <tr>
+          <td colspan="2" align="right">
+            <input type="submit" name="SUBMIT_CHANGES" value="Submit" />
+          </td>
+        </tr>
+      </table>
+      </form>
+    </div>
+
+    <div tal:condition="python: submitted and not view.errormessage">
+      <h1>Email validated successfully.</h1>
+
+    </div>
+  </div> <!-- <div class="documentContent" id="region-content"> -->
+  </tal:block>
+</div>   <!-- <div id="content" class="documentEditable"> -->
+</div>   <!-- <div metal:fill-slot="main"> -->
+
+
+</body>
+</html>

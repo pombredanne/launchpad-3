@@ -11,6 +11,8 @@ from zope.i18n import MessageIDFactory
 from sqlobject import connectionForURI
 from canonical.database.sqlbase import ZopelessTransactionManager
 
+from psycopgda import adapter
+
 # Single MessageIDFactory for everyone
 _ = MessageIDFactory('launchpad')
 
@@ -21,10 +23,58 @@ _ = MessageIDFactory('launchpad')
 # instead of a Unix domain socket.
 dbname = os.environ.get('LP_DBNAME', 'launchpad_ftest')
 dbhost = os.environ.get('LP_DBHOST', '')
+dbuser = os.environ.get('LP_DBUSER', 'launchpad')
 
-def initZopeless(debug=False):
-    return ZopelessTransactionManager('postgres://%s/%s' % (dbhost, dbname),
-                                      debug=debug)
+_typesRegistered = False
+def registerTypes():
+    '''Register custom type converters with psycopg
+    
+    After calling this method, string-type columns are returned as Unicode
+    and date and time columns returned as Python datetime, date and time
+    instances.
+
+    To do this, we simply call the internal psycopg adapter method that
+    does this. This is ugly, but ensures that the conversions work
+    identically no matter if the Zope3 environment has been loaded. This
+    is particularly important for the testing framework, as the converters
+    are global and not reset in the test harness tear down methods.
+    It also saves a lot of typing.
+
+    This method is invoked on module load, ensuring that any code that
+    needs to access the Launchpad database has the converters installed
+    (since do do this you need to access dbname and dbhost from this module).
+
+    We cannot unittest this method, but other tests will confirm that
+    the converters are working as expected.
+    
+    '''
+    global _typesRegistered
+    if not _typesRegistered:
+        adapter.registerTypes()
+        _typesRegistered = True
+
+registerTypes()
+
+def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None):
+    registerTypes()
+    if dbname is None:
+        dbname = globals()['dbname']
+    if dbhost is None:
+        dbhost = globals()['dbhost']
+    if dbuser is None:
+        dbuser = globals()['dbuser']
+
+    # If the user has been specified in the dbhost, it overrides.
+    # Might want to remove this backwards compatibility feature at some
+    # point.
+    if '@' in dbhost or not dbuser:
+        dbuser = ''
+    else:
+        dbuser = dbuser + '@'
+
+    return ZopelessTransactionManager('postgres://%s%s/%s' % (
+        dbuser, dbhost, dbname,
+        ), debug=debug)
 
 def decorates(interface, context='context'):
     """Make an adapter into a decorator.

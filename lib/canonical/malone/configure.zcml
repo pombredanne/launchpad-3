@@ -18,6 +18,22 @@
             template="../launchpad/templates/main-template.pt" />
     </browser:pages>
 
+    <!-- XXX: Brad Bollenbach, 2005-02-08: This is only here while
+    I'm integrating mpt's UI design work into Malone. Remove this
+    config once this have stabilized. -->
+    <browser:pages for="*" permission="zope.Public" layer="malone">
+        <browser:page name="malone_template"
+            template="../launchpad/templates/malone_skin/malone-standard-page.pt" />
+    </browser:pages>
+
+    <browser:menu id="malone_actions" title="Menu for Malone-related actions." />
+    <browser:menuItems menu="malone_actions" for="*">
+        <browser:menuItem title="Bugs" action="+malone-index" />
+        <browser:menuItem title="Report a Bug" action="+filebug" />
+        <browser:menuItem title="Advanced Search" action="+advancedsearch" />
+        <browser:menuItem title="Admin" action="+admin" />
+    </browser:menuItems>
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IMaloneApplication"
         name="+index" />
@@ -27,6 +43,12 @@
         utility="canonical.launchpad.interfaces.IBugSet"
         permission="zope.Public"
         name="bugs" />
+
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.IBugTaskSet"
+        permission="zope.Public"
+        name="tasks" />
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"

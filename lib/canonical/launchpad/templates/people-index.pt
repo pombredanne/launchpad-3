@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>People Overview</h1>
+  <h1>People and Teams Overview</h1>
 
   <div class="documentDescription">	
   This Application should help the user to find more Information about
@@ -23,51 +23,56 @@
   personal user page .... 
   </div>
  
- <div>
-    <form name="search" action="" method="GET">
-    <fieldset>
-    	<legend><h3>Search For People</h3></legend>
-	<table>
-	<tr><td>
-	<div class="field">
-	    <label>Name</label>
-	    <div class="formHelp">
-	    Enter any part of the Person name.
-            </div>
-	    <input type="text" name="name" 
-	           tal:attributes="value request/name|nothing"/>
-	 </div>
-	 <div class="formControls">
-	    <input type="submit" value="Search"/>
-	 </div>
-	 </td>
-	 <td>
-	 <div>
-	 <table>
-	 <tr><td>
-	 <a href="+list">View List</a>
-	 </td></tr>
-	 <tr><td>
-	 <b>(<span tal:content="context/p_entries">xx</span> Members and
-	 <span tal:content="context/t_entries">xx</span> Teams)</b>
-	 </td></tr>
-	 <tr><th>
-	 <a href="+add">Create a New Person</a>
-	 </th></tr>	
-	 </table>
-	 </div>
-	 </td></tr>
-	 </table>
-  </form>
-  </div>
+  <fieldset>
+    <legend>Search</legend>
+    <table>
+      <form name="search" action="" method="GET">
+      <tr><td>
+        Find
+      </td>
+      <td>
+        <select name="searchfor">
+          <tal:block tal:define="searchfor request/searchfor|nothing">
+          <option tal:condition="python: searchfor == 'all'"
+                  value="all" selected>People and Teams</option>
+          <option tal:condition="python: searchfor != 'all'"
+                  value="all">People and Teams</option>
+          <option tal:condition="python: searchfor == 'peopleonly'"
+                  value="peopleonly" selected>People</option>
+          <option tal:condition="python: searchfor != 'peopleonly'"
+                  value="peopleonly">People</option>
+          <option tal:condition="python: searchfor == 'teamsonly'"
+                  value="teamsonly" selected>Teams</option>
+          <option tal:condition="python: searchfor != 'teamsonly'"
+                  value="teamsonly">Teams</option>
+          </tal:block>
+        </select>
+      </td>
+      <td>named</td>
+      <td>
+        <input type="text" name="name" 
+               tal:attributes="value request/name|nothing"/>
+      </td>
+      <td>
+        <div class="formControls">
+          <input type="submit" value="Search"/>
+        </div>
+      </td></tr>
+      </form>
+    </table>
 
+    <p>View all: <img src="/++resource++user.gif" /><a href="+peoplelist">Persons</a>
+    or <img src="/++resource++user.gif" /><a href="+teamlist">Teams</a></p>
 
-  <tal:block tal:condition="view/searchPeopleBatchNavigator">
+  <tal:block tal:define="bn view/searchPeopleBatchNavigator">
 
-  <tal:block tal:define="bn view/searchPeopleBatchNavigator;
-                         prev_url bn/prevBatchURL;
+  <tal:block tal:condition="bn">
+
+  <tal:block tal:define="prev_url bn/prevBatchURL;
                          next_url bn/nextBatchURL;">
 
+  <hr>
+  <h4>Search Results</h4>
   <table>
 
     <tr tal:repeat="person python:list(bn.currentBatch())">      
@@ -101,6 +106,7 @@
     </td>
     </tr>
   </table>
+  </tal:block>
   </tal:block>
   </tal:block>
 

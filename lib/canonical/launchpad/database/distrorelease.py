@@ -1,4 +1,3 @@
-
 from sets import Set
 
 # Zope imports
@@ -6,12 +5,11 @@ from zope.interface import implements
 from zope.component import getUtility
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import MultipleJoin
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
-from sqlobject.sqlbuilder import func
 
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase
 from canonical.lp import dbschema
 
 # interfaces and database 
@@ -19,12 +17,14 @@ from canonical.launchpad.interfaces import IDistroRelease, \
                                            IBinaryPackageUtility, \
                                            ISourcePackageUtility
 
-from canonical.launchpad.database import SourcePackageName, \
-                                         BinaryPackageName,\
-                                         SourcePackageInDistro,\
-                                         BinaryPackageSet, \
-                                         SourcePackageInDistroSet
+from canonical.launchpad.database import SourcePackageInDistro, \
+    BinaryPackageSet, SourcePackageInDistroSet, PublishedPackageSet, \
+    PackagePublishing
 
+# XXX: Daniel Debonzi 20040401
+# It is been done inside DistroRelease.sourcecount to avoid
+# circular import
+## from canonical.launchpad.database import SourcePackagePublishing
 
 class DistroRelease(SQLBase):
     """Distrorelease SQLObject"""
@@ -82,32 +82,28 @@ class DistroRelease(SQLBase):
     state = property(state)
 
     def sourcecount(self):
-        clauseTables = ['SourcePackageName', 'SourcePackage',
-            'SourcePackageRelease', 'SourcePackagePublishing']
-        query = """ sourcepackagename.id = sourcepackage.sourcepackagename
-                AND SourcePackagePublishing.sourcepackagerelease=
-                                                  SourcePackageRelease.id
-                AND SourcePackageRelease.sourcepackage = SourcePackage.id
-                AND SourcePackagePublishing.distrorelease = %s;""" % (self.id)
-        resultset = SourcePackageName.select(query, distinct=True,
-            clauseTables=clauseTables)
-        return resultset.count()
-
+        # XXX: Daniel Debonzi 20040104
+        # Import inside method to avoid circular import
+        # See the top of the file
+        from canonical.launchpad.database import SourcePackagePublishing
+        query = ('SourcePackagePublishing.status = %s '
+                 'AND SourcePackagePublishing.distrorelease = %s'
+                 % (dbschema.PackagePublishingStatus.PUBLISHED.value,
+                    self.id))
+        return SourcePackagePublishing.select(query).count()
 
     sourcecount = property(sourcecount)
 
     def binarycount(self):
-        clauseTables = ['BinaryPackageName', 'PackagePublishing',
-            'BinaryPackage', 'DistroArchRelease']
-        query = """
-               BinaryPackageName.id = BinaryPackage.binarypackagename AND
-               BinaryPackage.id = PackagePublishing.binarypackage AND
-               PackagePublishing.distroarchrelease = DistroArchRelease.id AND
-               DistroArchRelease.distrorelease = %s
-               """ % (self.id)
-        resultset = BinaryPackageName.select(query, distinct=True,
-            clauseTables=clauseTables)
-        return resultset.count()
+        clauseTables = ('DistroArchRelease',)
+        query = ('PackagePublishing.status = %s '
+                 'AND PackagePublishing.distroarchrelease = '
+                 'DistroArchRelease.id '
+                 'AND DistroArchRelease.distrorelease = %s'
+                 % (dbschema.PackagePublishingStatus.PUBLISHED.value,
+                    self.id))
+        return PackagePublishing.select(query,
+                                        clauseTables=clauseTables).count()
 
     binarycount = property(binarycount)
 
@@ -120,21 +116,19 @@ class DistroRelease(SQLBase):
         clauseTables = ("VSourcePackageInDistro",
                         "SourcePackage")
         severities = [
-            dbschema.BugAssignmentStatus.NEW,
-            dbschema.BugAssignmentStatus.ACCEPTED,
-            dbschema.BugAssignmentStatus.FIXED,
-            dbschema.BugAssignmentStatus.REJECTED
+            dbschema.BugTaskStatus.NEW,
+            dbschema.BugTaskStatus.ACCEPTED,
+            dbschema.BugTaskStatus.FIXED,
+            dbschema.BugTaskStatus.REJECTED
         ]
         
-        _query = ("sourcepackagebugassignment.sourcepackage = sourcepackage.id AND "
-                 "sourcepackage.sourcepackagename = vsourcepackageindistro.sourcepackagename AND "
-                 "vsourcepackageindistro.distrorelease = %i AND "
-                 "sourcepackagebugassignment.bugstatus = %i"
+        _query = ("bugtask.distrorelease = %i AND "
+                  "bugtask.bugstatus = %i"
                  )
 
         for severity in severities:
             query = _query %(self.id, int(severity))
-            count = SourcePackageBugAssignment.select(query, clauseTables=clauseTables).count()
+            count = BugTask.select(query, clauseTables=clauseTables).count()
             counts.append(count)
 
         counts.insert(0, sum(counts))
@@ -143,18 +137,20 @@ class DistroRelease(SQLBase):
     bugCounter = property(bugCounter)
 
     def getBugSourcePackages(self):
-        """Get SourcePackages in a DistroRelease with BugAssignement"""
+        """Get SourcePackages in a DistroRelease with BugTask"""
 
-        clauseTables=["SourcePackageBugAssignment",]
+        clauseTables=["BugTask",]
         query = ("VSourcePackageInDistro.distrorelease = %i AND "
-                 "VSourcePackageInDistro.id = SourcePackageBugAssignment.sourcepackage AND "
-                 "(SourcePackageBugAssignment.bugstatus != %i OR "
-                 "SourcePackageBugAssignment.bugstatus != %i)"
+                 "VSourcePackageInDistro.distro = BugTask.distribution AND "
+                 "VSourcePackageInDistro.name = BugTask.sourcepackagename AND "
+                 "(BugTask.status != %i OR BugTask.status != %i)"
                  %(self.id,
-                   int(dbschema.BugAssignmentStatus.FIXED),
-                   int(dbschema.BugAssignmentStatus.REJECTED)))
+                   int(dbschema.BugTaskStatus.FIXED),
+                   int(dbschema.BugTaskStatus.REJECTED)))
 
-        return SourcePackageInDistro.select(query, clauseTables=clauseTables)
+        return SourcePackageInDistro.select(query,
+                                            clauseTables=clauseTables,
+                                            distinct=True)
 
     def findSourcesByName(self, pattern):
         srcset = getUtility(ISourcePackageUtility)
@@ -164,10 +160,14 @@ class DistroRelease(SQLBase):
 #        srcset = getUtility(ISourcePackageSet)
 #        return srcset.getByNameInDistroRelease(self.id, name)
 
-    def __getitem__(self, arch):
-        if arch == 'sources':
+    def traverse(self, name):
+        if name == '+sources':
             return SourcePackageInDistroSet(self)
-        
+        if name  == '+packages':
+            return PublishedPackageSet()
+        return self.__getitem__(name)
+
+    def __getitem__(self, arch):
         return BinaryPackageSet(self, arch)
     
 

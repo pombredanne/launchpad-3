@@ -554,7 +554,6 @@ def FunctionalDocFileSuite(*paths, **kw):
     kwsetUp = kw.get('setUp')
     def setUp(test):
         FunctionalTestSetup().setUp()
-
         if kwsetUp is not None:
             kwsetUp(test)
     kw['setUp'] = setUp

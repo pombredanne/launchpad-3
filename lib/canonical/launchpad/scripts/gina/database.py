@@ -6,12 +6,24 @@ PgSQL.noPostgresCursor = 1
 
 from nickname import generate_nick
 
+priomap = {
+    "low": 1,
+    "medium": 2,
+    "high": 3,
+    "emergency": 4
+    # FUCK_PEP8 -- Fuck it right in the ear
+    }
+
 class SQLThing:
-    def __init__(self, dbname):
+    def __init__(self, dbname, dry_run):
         self.dbname = dbname
+        self.dry_run = dry_run
         self.db = PgSQL.connect(database=self.dbname)
 
     def commit(self):
+        if self.dry_run:
+            # Not committing -- we're on a dry run
+            return
         return self.db.commit()
     
     def close(self):
@@ -80,12 +92,12 @@ class SQLThing:
 
 class Katie(SQLThing):
 
-    def __init__(self, bar, suite):
-        SQLThing.__init__(self,bar)
+    def __init__(self, bar, suite, dry_run):
+        SQLThing.__init__(self, bar, dry_run)
         self.suite = suite
 
     def getSourcePackageRelease(self, name, version):
-        print "\t\t* Hunting for spr (%s,%s)" % (name,version)
+        print "\t\t* Hunting for release %s / %s" % (name,version)
         ret =  self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id
@@ -137,8 +149,8 @@ prioritymap = {
 }
 
 class Launchpad(SQLThing):
-    def __init__(self, bar, distro, dr, proc):
-        SQLThing.__init__(self,bar)
+    def __init__(self, bar, distro, dr, proc, dry_run):
+        SQLThing.__init__(self, bar, dry_run)
         self.compcache = {}
         self.sectcache = {}
         try:
@@ -260,19 +272,27 @@ class Launchpad(SQLThing):
             key = None
 
         dsc = self.ensure_string_format(src.dsc)
-        changelog = self.ensure_string_format(src.changelog)
+        try:
+            changelog = self.ensure_string_format(src.changelog[0]["changes"])
+        except IndexError:
+            changelog = None
         component = self.getComponentByName(src.component)[0]
         section = self.getSectionByName(src.section)[0]
+        if src.urgency not in priomap:
+            src.urgency = "low"
+        name = self.getSourcePackageName(src.package)
         data = {
+            "sourcepackagename":       name[0],
             "sourcepackage":           srcpkgid,
             "version":                 src.version,
+            "maintainer":              maintid,
             "dateuploaded":            src.date_uploaded,
             "builddepends":            src.build_depends,
             "builddependsindep":       src.build_depends_indep,
             "architecturehintlist":    src.architecture,
             "component":               component,
             "creator":                 maintid,
-            "urgency":                 1,
+            "urgency":                 priomap[src.urgency],
             "changelog":               changelog,
             "dsc":                     dsc,
             "dscsigningkey":           key,
@@ -295,6 +315,30 @@ class Launchpad(SQLThing):
             "section":                 section, ## default Section
         }
         self._insert("sourcepackagepublishing", data)
+
+    def createFakeSourcePackageRelease(self, release, src):
+        self.ensureSourcePackage(src)
+        srcpkgid = self.getSourcePackage(src.package)[0]
+        maintid = self.getPeople(*release["parsed_maintainer"])[0]
+        # XXX these are hardcoded to the current package's value, which is not
+        # really the truth
+        component = self.getComponentByName(src.component)[0]
+        section = self.getSectionByName(src.section)[0]
+        name = self.getSourcePackageName(src.package)
+        
+        data = {
+            "sourcepackagename":       name[0],
+            "sourcepackage":           srcpkgid,
+            "version":                 release["version"],
+            "dateuploaded":            release["parsed_date"],
+            "component":               component,
+            "creator":                 maintid,
+            "maintainer":              maintid,
+            "urgency":                 priomap[release["urgency"]],
+            "changelog":               self.ensure_string_format(release["changes"]),
+            "section":                 section,
+        }                                                          
+        self._insert("sourcepackagerelease", data)
 
     #
     # Build
@@ -492,7 +536,7 @@ class Launchpad(SQLThing):
     #
     def getPeople(self, name, email):        
         name = self.ensure_string_format(name)
-        email = self.ensure_string_format(email)
+        email = self.ensure_string_format(email).lower()
         self.ensurePerson(name, email)
         return self.getPersonByEmail(email)
 
@@ -518,6 +562,11 @@ class Launchpad(SQLThing):
         if len(items) == 1:
             givenname = name
             familyname = ""
+        elif not items:
+            # No name, just an email
+            print "\t\tGuessing name is stem of email %r" % email
+            givenname = email.split("@")[0]
+            familyname = ""
         else:
             givenname = items[0]
             familyname = " ".join(items[1:])
@@ -541,17 +590,10 @@ class Launchpad(SQLThing):
         self._insert("emailaddress", data)
 
     def ensurePerson(self, name, email):
-        people = self.getPersonByEmail(email)
-        if people:
-            return people
-        # XXX this check isn't exactly right -- if there are name
-        # collisions, we just add addresses because there is no way to
-        # validate them. Bad bad kiko.
-        people = self.getPersonByDisplayName(name)
-        if people:
-            print "\tAdding address <%s> for %s" % (email, name)
-            self.createEmail(people[0], email)
-            return people
+        if self.getPersonByEmail(email):
+            return
+        # No person found and we can't rely on displayname to find the right
+        # person. Have to create a new person.
         self.createPeople(name, email)
     
     def getGPGKey(self, key, name, email, id, armor, is_revoked,
