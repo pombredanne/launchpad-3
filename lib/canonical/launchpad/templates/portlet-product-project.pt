@@ -14,7 +14,10 @@
 
             <b>Project Maintainer:</b><br />
             <img src="/++resource++user.gif">
-            <span tal:replace="context/project/owner/browsername">ownername</span><br />
+            <a tal:content="context/project/owner/browsername"
+               tal:attributes="href
+               string:/people/${context/project/owner/name}"
+               href="#">ownername</a><br />
 
             <b>Other Products:</b><br />
             <span tal:repeat="prod context/project/products" tal:omit-tag>

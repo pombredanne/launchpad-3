@@ -21,7 +21,6 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroRelease"
-        layer="canonical.launchpad.layers.SoyuzLayer"
         name="+index" />
 
     <browser:defaultView

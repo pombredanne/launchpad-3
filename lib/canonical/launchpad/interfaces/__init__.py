@@ -48,6 +48,7 @@ from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distrorelease import *
+from canonical.launchpad.interfaces.distroarchrelease import *
 from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *

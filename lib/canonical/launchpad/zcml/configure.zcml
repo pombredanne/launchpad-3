@@ -4,9 +4,6 @@
     i18n_domain="launchpad"
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
-    <!-- this includes all the badness that must be split up -->
-    <include file="soyuz.zcml" />
-
     <!-- Content class configuration -->
     <include file="archuserid.zcml" />
     <include file="binarypackage.zcml" />
@@ -33,6 +30,7 @@
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
     <include file="distrorelease.zcml" />
+    <include file="distroarchrelease.zcml" />
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />

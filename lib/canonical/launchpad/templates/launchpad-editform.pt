@@ -4,8 +4,10 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
+<!--
     <title metal:fill-slot="title">LAUNCHPAD EDIT TEMPLATE
     </title>
+-->
 
   <body>
 

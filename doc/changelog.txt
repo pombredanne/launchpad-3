@@ -2,6 +2,100 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-10 19:42:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1411
+
+    Summary:
+      brand new look for distroarchrelease, and fixed dar file layout
+    Revision:
+      launchpad--devel--0--patch-1411
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-815
+       merge rocketfuel, phatom conflicts and a few tweaks
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-816
+       soyuz page template tweaks and sampledata fixes
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-817
+       merge rocketfuel, resolving phantom conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-818
+       show bounties on linked projects, products and distro pages
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-819
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-820
+       pull distroarchrelease into its own file
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-821
+       big distroarchrelease refactor
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-822
+       clean up binary pkg search in distroarchreleases
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/distroarchrelease.py.id
+     lib/canonical/launchpad/browser/distroarchrelease.py
+     lib/canonical/launchpad/database/.arch-ids/distroarchrelease.py.id
+     lib/canonical/launchpad/database/distroarchrelease.py
+     lib/canonical/launchpad/interfaces/.arch-ids/distroarchrelease.py.id
+     lib/canonical/launchpad/interfaces/distroarchrelease.py
+     lib/canonical/launchpad/templates/.arch-ids/distroarchrelease-index.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-distroarchrelease-actions.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-distroarchrelease-details.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-related-bounties.pt.id
+     lib/canonical/launchpad/templates/distroarchrelease-index.pt
+     lib/canonical/launchpad/templates/portlet-distroarchrelease-actions.pt
+     lib/canonical/launchpad/templates/portlet-distroarchrelease-details.pt
+     lib/canonical/launchpad/templates/portlet-related-bounties.pt
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/browser/distribution.py
+     lib/canonical/launchpad/browser/packages.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/browser/project.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/soyuz.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/soyuz.py
+     lib/canonical/launchpad/templates/distro-index.pt
+     lib/canonical/launchpad/templates/distroarchrelease-pkgsearch.pt
+     lib/canonical/launchpad/templates/distros-index.pt
+     lib/canonical/launchpad/templates/launchpad-editform.pt
+     lib/canonical/launchpad/templates/portlet-product-project.pt
+     lib/canonical/launchpad/templates/product-index.pt
+     lib/canonical/launchpad/templates/project-index.pt
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/distroarchrelease.zcml
+     lib/canonical/launchpad/zcml/distrorelease.zcml
+
+    renamed files:
+     lib/canonical/launchpad/templates/.arch-ids/binarypackage-list.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/distroarchrelease-pkgsearch.pt.id
+     lib/canonical/launchpad/templates/binarypackage-list.pt
+       ==> lib/canonical/launchpad/templates/distroarchrelease-pkgsearch.pt
+     lib/canonical/launchpad/zcml/.arch-ids/soyuz.zcml.id
+       ==> lib/canonical/launchpad/zcml/.arch-ids/distroarchrelease.zcml.id
+     lib/canonical/launchpad/zcml/soyuz.zcml
+       ==> lib/canonical/launchpad/zcml/distroarchrelease.zcml
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-815
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-816
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-817
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-818
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-819
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-820
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-821
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-822
+
+
 2005-03-10 18:58:14 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1410
 
     Summary:

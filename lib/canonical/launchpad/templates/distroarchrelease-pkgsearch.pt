@@ -17,21 +17,26 @@
 <div metal:fill-slot="main">
 
  <div id="content" class="documentEditable">
+
   <div class="documentContent" id="region-content">
 
+    <h1>Binary Package Search</h1>
 
-<h1><span tal:content="context/distrorelease/title" /> Binary Packages</h1>
-<!-- <div tal:on-error="python: error.type, error.value.args"> -->
+    <p class="documentDescription">Use this form to search through the
+    binary packages in <span tal:replace="context/title" />. This search
+    will include package names and descriptions.</p>
 
-<form name="search" method="GET">
-Find packages by name: 
-<br>
-<input type="text" name="name" tal:attributes="value request/name|nothing" />
-<input type="submit" value="Search"/>
-<div>
-  <label class="checkbox">
-    <input type="checkbox" name="fti"> Search also in description.
-  </label>
+    <form name="search" method="GET">
+    
+      <input type="text"
+        name="name"
+        size="45"
+        tal:attributes="value request/name|nothing" />
+
+      <input type="submit" value="Search"/>
+
+  <div>
+
 </div>
 </form>
 <br><br>

@@ -22,14 +22,7 @@ from canonical.launchpad.database import SourcePackageInDistro, \
     SourcePackageInDistroSet, PublishedPackageSet, \
     PackagePublishing
 
-# XXX: Daniel Debonzi 20050304
-# Why can't I import with the classes above?
-from canonical.launchpad.database.soyuz import DistroArchRelease
-
-# XXX: Daniel Debonzi 20040401
-# It is been done inside DistroRelease.sourcecount to avoid
-# circular import
-## from canonical.launchpad.database import SourcePackagePublishing
+from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 
 class DistroRelease(SQLBase):
     """A particular release of a distribution."""
@@ -74,7 +67,6 @@ class DistroRelease(SQLBase):
     state = property(state)
 
     def sourcecount(self):
-        # XXX: Daniel Debonzi 20040104
         # Import inside method to avoid circular import
         # See the top of the file
         from canonical.launchpad.database import SourcePackagePublishing
@@ -162,7 +154,10 @@ class DistroRelease(SQLBase):
             return DistroArchRelease.selectBy(distroreleaseID=self.id,
                                               architecturetag=arch)[0]
         except:
-            raise KeyError
+            raise KeyError, 'Unknown architecture %s for %s %s' % (
+                      arch,
+                      self.distribution.name,
+                      self.name )
 
 
 # XXX: Daniel Debonzi 2005-03-04

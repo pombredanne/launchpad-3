@@ -51,6 +51,9 @@ class ProductView:
     latestBugPortlet = ViewPageTemplateFile(
         '../templates/portlet-latest-bugs.pt')
 
+    relatedBountiesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-related-bounties.pt')
+
     branchesPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-branches.pt')
 

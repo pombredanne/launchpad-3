@@ -28,6 +28,9 @@ class DistributionView:
     detailsPortlet = ViewPageTemplateFile(
         '../templates/portlet-distro-details.pt')
 
+    relatedBountiesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-related-bounties.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request

@@ -5,19 +5,18 @@
 
 <head>
     <title metal:fill-slot="title">
-      Soyuz Distribution Manager: <span
+      Launchpad Distribution Manager: <span
       tal:replace="context/title">distribution title</span>
       </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
-    <style type="text/css" media="screen">@import url(soyuz.css);</style>
 </head>
 
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure view/detailsPortlet" />
+    <div tal:replace="structure view/relatedBountiesPortlet" />
 </metal:leftportlets>
 
 

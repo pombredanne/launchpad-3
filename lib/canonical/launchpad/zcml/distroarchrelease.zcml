@@ -22,10 +22,17 @@
         for="canonical.launchpad.database.DistroArchRelease" 
         permission="zope.Public"
         name="+index"
-        class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
-        template="../templates/binarypackage-list.pt"
-        lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/+index"/>
+        class="canonical.launchpad.browser.DistroArchReleaseView"
+        template="../templates/distroarchrelease-index.pt"
+        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+index"/>
 
+    <browser:page
+        for="canonical.launchpad.database.DistroArchRelease" 
+        permission="zope.Public"
+        name="+pkgsearch"
+        class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
+        template="../templates/distroarchrelease-pkgsearch.pt"
+        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+pkgsearch"/>
 
     <content class="canonical.launchpad.database.DistributionRole">
         <allow interface="canonical.launchpad.interfaces.IDistributionRole"/>

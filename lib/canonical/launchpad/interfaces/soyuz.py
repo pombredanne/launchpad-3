@@ -23,23 +23,6 @@ class IComponent(Interface):
 class ISection(Interface):
     name = Attribute("The Section Name")
 
-class IDistroArchRelease(Interface):
-    """DistroArchRelease Table Interface"""
-    distrorelease = Attribute("DistroRelease")
-    processorfamily = Attribute("ProcessorFamily")
-    architecturetag = Attribute("ArchitectureTag")
-    owner = Attribute("Owner")
-    chroot = Attribute("Chroot")
-
-    def findPackagesByName(pattern):
-        """Search BinaryPackages matching pattern"""
-
-    def findPackagesByArchtagName(pattern, fti=False):
-        """Search BinaryPackages matching pattern and archtag"""
-        
-    def __getitem__(name):
-        """Getter"""
-
 class IDistroTools(Interface):
     """Interfaces to Tools for Distribution and DistroRelase Manipulation"""
 

@@ -49,6 +49,9 @@ class ProjectView(object):
     languagesPortlet = ViewPageTemplateFile(
         '../templates/portlet-project-languages.pt')
 
+    relatedBountiesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-related-bounties.pt')
+
     trackersPortlet = ViewPageTemplateFile(
         '../templates/portlet-project-trackers.pt')
 

@@ -1,0 +1,29 @@
+<div class="portlet">
+
+    <h4>Related Bounties:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <table class="rowNavigation" border="0" width="100%">
+            <tr tal:repeat="bounty context/bounties"
+                tal:attributes="onclick
+                string:window.location='/bounties/${bounty/name}';">
+                <td>
+                    <span tal:content="bounty/title"
+                          tal:attributes="hover bounty/summary">bounty title</span>
+                </td>
+            </tr>
+        </table>
+
+        <a href="+newbounty"
+            style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+            title="Link to Another Bounty">
+            <img src="/++resource++add.gif" alt="+" />
+            Add bounty...
+        </a><br />
+
+        </div>
+                
+    </div>
+</div>
