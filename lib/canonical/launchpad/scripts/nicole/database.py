@@ -298,8 +298,14 @@ class Doap(SQLThing):
             return 
 
         fit = FitData(data)
-
-        owner = self.ensurePerson(fit.pdisplayname, fit.pemail)[0]
+        #XXX cprov 
+        # Problems with wierd developers name and/or email
+        try:
+            owner = self.ensurePerson(fit.pdisplayname, fit.pemail)[0]
+        except:
+            print "@\t Mark wins a Product "
+            owner = 1
+            
         datecreated = 'now()'
 
         ##XXX: (product+lastdoap) cprov 20041015
