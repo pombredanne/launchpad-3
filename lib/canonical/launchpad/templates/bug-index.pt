@@ -4,8 +4,13 @@
       i18n:domain="rosetta">
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/peoplePortlet" />
+</metal:leftportlets>
+
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure view/referencePortlet" />
+    <div tal:replace="structure view/watchPortlet" />
 </metal:rightportlets>
 
 
@@ -56,6 +61,45 @@
             $Bug.description
         </div>
     
+        <h2>Product assignment</h2>
+
+        <div tal:replace="structure view/productAssignmentPortlet" />
+
+        <h2>Source package assigmnent</h2>
+
+        <div tal:replace="structure view/sourcepackageAssignmentPortlet" />
+  
+        <h2>Comments</h2>
+  
+        <div class="boardComment" tal:repeat="message context/messages">
+            
+            <div class="boardCommentDetails">
+                <strong tal:content="message/title">$Bugmessage.title</strong>
+
+                Posted by <span 
+                tal:replace="message/personmsg/displayname|string:(none)">
+                $Person.displayname
+                </span> 
+                at <span tal:replace="python:message.datecreated.strftime(
+                    '%d %b %y %H:%M')">Thursday 13:21</span>
+            </div>
+
+            <div class="boardCommentBody">
+                <div tal:repeat="attachment message/attachments" 
+                    class="portrait"> 
+                    <!-- TODO: Attachment URL when Librarian is available -->
+                    <a href="#">                    
+                        <div tal:content="attachment/name">
+                            $BugAttachment.name
+                        </div>
+                    </a>
+                </div>
+            
+                <div class="boardCommentContent" tal:content="message/contents">
+                    Comment text.
+                </div>
+            </div>
+                
         <fieldset class="collapsible collapsed">
             <legend>Follow-up</legend>
       
@@ -87,36 +131,6 @@
                 </form>
             </div>
         </fieldset>
-  
-        <div class="boardComment" tal:repeat="message context/messages">
-            
-            <div class="boardCommentDetails">
-                <strong tal:content="message/title">$Bugmessage.title</strong>
-
-                Posted by <span 
-                tal:replace="message/personmsg/displayname|string:(none)">
-                $Person.displayname
-                </span> 
-                at <span tal:replace="python:message.datecreated.strftime(
-                    '%d %b %y %H:%M')">Thursday 13:21</span>
-            </div>
-
-            <div class="boardCommentBody">
-                <div tal:repeat="attachment message/attachments" 
-                    class="portrait"> 
-                    <!-- TODO: Attachment URL when Librarian is available -->
-                    <a href="#">                    
-                        <div tal:content="attachment/name">
-                            $BugAttachment.name
-                        </div>
-                    </a>
-                </div>
-            
-                <div class="boardCommentContent" tal:content="message/contents">
-                    Comment text.
-                </div>
-            </div>
-                
             <div class="visualClear"></div>
 
             <!--
@@ -130,27 +144,36 @@
             -->
         </div>
   
-        <h2>Portlet material</h2>
-
-        <fieldset class="collapsible">
-            <legend>Product Assignments</legend>
-            <div tal:replace="structure view/productAssignmentPortlet" />
-        </fieldset>
-
-        <fieldset class="collapsible">
-            <legend>Sourcepackage Assignments</legend>
-            <div tal:replace="structure view/sourcepackageAssignmentPortlet" />
-        </fieldset>
-
-    
-        <fieldset class="collapsible">
-            <legend>Watches</legend>
-            <div tal:replace="structure view/watchPortlet" />
-        </fieldset>
-
-        <fieldset class="collapsible">
-            <legend>People</legend>
-            <div tal:replace="structure view/peoplePortlet" />
+        <fieldset>
+            <legend>Follow-up</legend>
+      
+            <!--
+            <div class="field">
+                <label>Current status</label>
+                <div class="formHelp">
+                Change status, if necessary
+                </div>
+                <select>
+                    <option>No change</option>
+                    <option>Resolve</option>
+                    <option>Reject</option>
+                    <option>Re-open</option>
+                </select>
+            </div>
+            -->
+      
+            <div class="field">
+                <form action="messages/+new" method="post">
+                    <label>Comment</label>
+                    <div class="formHelp">
+                        If you have additional relevant information, 
+                        enter it below.
+                    </div>
+                    <input name="field.title" type="text" /><br />
+                    <textarea name="field.contents"></textarea>
+                    <input type="submit" name="UPDATE_SUBMIT" value="Add" />
+                </form>
+            </div>
         </fieldset>
 
     </div>
