@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-13 09:47:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1193
+
+    Summary:
+      Test isolation enforcement
+    Revision:
+      launchpad--devel--0--patch-1193
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-79
+       More test isolation integrity checking
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-80
+       Stronger commit for page tests
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-81
+       Stronger commit for page tests
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/ftests/pgsql.py
+     lib/canonical/launchpad/ftests/harness.py
+     lib/canonical/launchpad/ftests/test_pages.py test.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-79
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-80
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-81
+
+
 2005-01-12 23:20:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1192
 
     Summary:

@@ -73,7 +73,7 @@ class PgTestSetup(object):
 
     def setUp(self):
         '''Create a fresh database (dropping the old if necessary)'''
-        installFakeConnect()
+        #installFakeConnect()
         self.dropDb()
         con = psycopg.connect('dbname=%s' % self.template)
         try:
@@ -104,7 +104,7 @@ class PgTestSetup(object):
             con = self.connections[-1]
             con.close() # Removes itself
         self.dropDb()
-        uninstallFakeConnect()
+        #uninstallFakeConnect()
 
     def connect(self):
         """Get an open DB-API Connection object to a temporary database"""

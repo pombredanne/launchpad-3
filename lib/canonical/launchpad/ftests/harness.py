@@ -35,15 +35,27 @@ def _disconnect_sqlos():
         del connCache[key]
 
 def _reconnect_sqlos():
-    db_adapter = None
+    _disconnect_sqlos()
     db_adapter = None
     name = zapi.getUtility(IConnectionName).name
     db_adapter = zapi.getUtility(IZopeDatabaseAdapter, name)
-    db_adapter.disconnect()
-    assert db_adapter._v_connection is None
     db_adapter.connect()
+
+    # Confirm that the database adapter *really is* connected and connected
+    # to the right database
     assert db_adapter.isConnected(), 'Failed to reconnect'
-    return db_adapter
+    cur = db_adapter._v_connection.cursor()
+    cur.execute('SELECT count(*) FROM person')
+    assert cur.fetchone()[0] > 0, 'Sample data not loaded!'
+
+    # Confirm that the SQLOS connection cache has been emptied, so access
+    # to SQLBase._connection will get a fresh Tranaction
+    assert len(connCache.keys()) == 0, 'SQLOS appears to have kept connections'
+
+    # Confirm that SQLOS is again talking to the database (it connects
+    # as soon as SQLBase._connection is accessed
+    r = SQLBase._connection.queryAll('SELECT count(*) FROM person')
+    assert r[0][0] > 0, 'SQLOS is not talking to the database'
 
 
 class LaunchpadTestSetup(PgTestSetup):
@@ -71,12 +83,11 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
         _disconnect_sqlos()
         super(LaunchpadFunctionalTestSetup, self).setUp()
         FunctionalTestSetup().setUp()
-        LaunchpadFunctionalTestSetup.sqlos_dbadapter = _reconnect_sqlos()
-
+        _reconnect_sqlos()
+        
     def tearDown(self):
         FunctionalTestSetup().tearDown()
         _disconnect_sqlos()
-        LaunchpadFunctionalTestSetup.sqlos_dbadapter = None
         super(LaunchpadFunctionalTestSetup, self).tearDown()
 
 class LaunchpadTestCase(unittest.TestCase):
