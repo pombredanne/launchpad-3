@@ -2,6 +2,128 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-16 14:19:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1323
+
+    Summary:
+      Improved the tarball attachment into rosetta and some bug fixes. Changes reviewed by Steve
+    Revision:
+      launchpad--devel--0--patch-1323
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--base-0
+       tag of carlos.perello@canonical.com--2004/launchpad--devel--0--patch-555
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-1
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-2
+       The select method does not need pomsgsetID but pomsgset
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-3
+       Made less strict the parser when the plural forms found are not the same that are specified
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-4
+       If the po header has a wrong value, instead of raise an exception, just print a warning.
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-5
+       Added the sourcepackageversion field to the POTemplate object and interface
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-6
+       Added code to detect already imported tarballs so we ignore them and also try to detect renamed potemplates based on their path.
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-7
+       Applied review changes from the main branch
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-8
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-9
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-10
+       Applied more fixes after Steve's review
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-11
+       Removed warnings from the script output
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-12
+       Forgot to initialize potemplate
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-13
+       Added support to store the .pot's header into the database
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-14
+       Merged latest changes from my main branch
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-15
+       Added support to be able to attach .po files with variant part
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-16
+       Before downloading the tarball we check if we really need it
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-17
+       Merged with my main branch
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-18
+       Merged again from main branch
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-19
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-20
+       raised the right exception when the encoding is not know
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-21
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-22
+       Applied changes after Steve's review
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-23
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-24
+       Removed a hardcoded value
+    
+
+    modified files:
+     cronscripts/rosetta-poupload_tar.py
+     database/schema/restoredump.sh doc/changelog.txt
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/rosetta/pofile.py
+     lib/canonical/rosetta/pofile_adapters.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-2
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-3
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-4
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-5
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-6
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-7
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-8
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-9
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-10
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-11
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-12
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-13
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-14
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-15
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-16
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-17
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-18
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-19
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-20
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-21
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-22
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-23
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-24
+
+
 2005-02-16 14:14:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1322
 
     Summary:

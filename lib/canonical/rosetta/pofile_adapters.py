@@ -1,8 +1,10 @@
 
 import sets
+import warnings
 
 from zope.interface import implements
 
+from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.rosetta.ipofile import IPOHeader, IPOMessage
 from canonical.rosetta.pofile import POHeader, POMessage, POParser, POInvalidInputError
 from canonical.launchpad.interfaces import IPOTemplate, IPOFile
@@ -124,7 +126,9 @@ class TranslationsList(object):
         # value is not empty; there is actually a translation
         # check that the plural form index makes sense
         if index >= self._nplurals:
-            raise IndexError, index
+            # Don't fail, just print a warning.
+            warnings.warn("Found more pluralforms entries than specified for"
+                          " this language.")
         # if we don't have a Person instance, we can't create rows
         if self._who is None:
             raise UnknownUserError, \
@@ -360,8 +364,10 @@ class TemplateImporter(object):
         # how much memory do we want to eat?
         self.parser.write(filelike.read())
         self.parser.finish()
-        if not self.parser.header:
+        if self.parser.header is None:
             raise POInvalidInputError('PO template has no header', 0)
+        # Store the .pot header into the database.
+        self.potemplate.header = self.parser.header.msgstr.encode('utf-8')
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
@@ -430,11 +436,14 @@ class POFileImporter(object):
             return
         # check that the plural forms info is valid
         if not header.nplurals:
-            if self.pofile.pluralforms:
+            if self.pofile.pluralforms is not None:
                 # first attempt: check if the database already knows it
                 old_header = POHeader(msgstr=self.pofile.header)
                 old_header.finish()
                 header['plural-forms'] = old_header['plural-forms']
+            elif self.pofile.language.pluralforms is not None:
+                # Get the default value in the language database.
+                header['plural-forms'] = self.pofile.language.pluralforms
             else:
                 # we absolutely don't know it; only complain if
                 # a plural translation is present

@@ -4,6 +4,7 @@
 import urllib2
 import logging
 import sys
+import warnings
 from optparse import OptionParser
 from datetime import datetime
 
@@ -236,6 +237,10 @@ def parse_options():
     return options
 
 def main():
+
+    # XXX: Carlos Perello Marin 2005-02-09: All warnings are filtered
+    # https://dogfood.ubuntu.com/malone/bugs/236
+    warnings.filterwarnings("ignore")
 
     dates_list = fetch_dates_list(options.archivepath)
 

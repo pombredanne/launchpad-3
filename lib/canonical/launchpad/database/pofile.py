@@ -216,8 +216,11 @@ class POTemplate(SQLBase, RosettaStats):
         default=None)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
+    sourcepackageversion = StringCol(dbName='sourcepackageversion',
+        notNull=False, default=None)
     distrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='distrorelease', notNull=False, default=None)
+    header = StringCol(dbName='header', notNull=False, default=None)
 
     poFiles = MultipleJoin('POFile', joinColumn='potemplate')
 
@@ -329,6 +332,7 @@ class POTemplate(SQLBase, RosettaStats):
                     poset.potmsgset = POTMsgSet.id AND
                     poset.pofile = pofile.id AND
                     pofile.language = language.id AND
+                    pofile.variant IS NULL AND
                     language.code IN (%s) AND
                     iscomplete = FALSE
                 ''' % language_codes
@@ -340,6 +344,7 @@ class POTemplate(SQLBase, RosettaStats):
                     poset.potmsgset = POTMsgSet.id AND
                     poset.pofile = pofile.id AND
                     pofile.language = language.id AND
+                    pofile.variant IS NULL AND
                     language.code IN (%s)
                 ''' % language_codes
 
@@ -366,15 +371,14 @@ class POTemplate(SQLBase, RosettaStats):
         '''This returns the set of languages for which we have
         POFiles for this POTemplate. NOTE that variants are simply
         ignored, if we have three variants for en_GB we will simply
-        return a single record for en_GB.'''
+        return the one with variant=NULL.'''
 
-        # XXX: Carlos Perello Marin 15/10/04: As SQLObject does not have
-        # SELECT DISTINCT we use Sets, as soon as it's fixed we should change
-        # this.
-        return Set(Language.select('''
-            POFile.language = Language.id AND
-            POFile.potemplate = %d
-            ''' % self.id, clauseTables=('POFile', 'Language')))
+        return Language.select("POFile.language = Language.id AND"
+                               " POFile.potemplate = %d AND"
+                               " POFile.variant IS NULL" % self.id,
+                               clauseTables=('POFile', 'Language'),
+                               distinct=True
+                               )
 
     def poFilesToImport(self):
         for pofile in iter(self.poFiles):
