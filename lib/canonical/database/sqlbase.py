@@ -108,7 +108,7 @@ class _ZopelessConnectionDescriptor(object):
         # Explicitly close all connections we opened.
         descriptor = cls.sqlClass.__dict__.get('_connection')
         for trans in descriptor.transactions.itervalues():
-            trans.releaseConnection(trans._connection, explicit=True)
+            trans.rollback() 
             trans._dbConnection._connection.close()
 
         # Remove the _connection descriptor.  This assumes there was no
