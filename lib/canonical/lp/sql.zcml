@@ -6,4 +6,8 @@
     factory=".sql.confirmEncoding"
     for="zope.app.appsetup.IProcessStartingEvent"
     />
+  <subscriber
+    factory=".sql.confirmNoAddMissingFrom"
+    for="zope.app.appsetup.IProcessStartingEvent"
+    />
 </configure>

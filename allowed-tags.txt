@@ -25,7 +25,6 @@ lib/canonical/launchpad/database/translation_effort.py 0a0b2b6c-e563-460a-93a7-a
 lib/canonical/launchpad/iandrew.py f6bfc192-208c-4e7f-afd6-7526697b4c79
 lib/canonical/launchpad/interfaces/bug.py 2C926820-E0AE-11D8-A7D9-000D9329A36C
 lib/canonical/launchpad/zcml/resources.zcml 0f9efb09-00d3-48dd-b5e7-711a9ed3ffff_-->
-lib/canonical/lp/configure.zcml 9139ef7c-314a-4ffe-b905-fdb59c075d1c_-->
 lib/canonical/lp/dbschema.py 42773c8c-4df2-486f-abf2-7f5b84c2f2a9
 lib/canonical/lp/tales.py 91afdd13-6952-46c3-8bf2-0dc201a7dca1
 lib/canonical/lp/tests/__init__.py 87df742d-02ee-4432-af9c-06522c21b762
