@@ -73,11 +73,32 @@ def main():
         print '---- end non-absolute ++resource++ URLs found ----'
         return 1
 
-    # Drop the template database if it exists - the Makefile does this
-    # too, but we can explicity check for errors here
+    # Sanity check PostgreSQL version. No point in trying to create a test
+    # database when PostgreSQL is too old.
     con = psycopg.connect('dbname=template1')
     cur = con.cursor()
-    cur.execute('end transaction; drop database launchpad_ftest_template')
+    cur.execute('show server_version')
+    server_version = cur.fetchone()[0]
+    try:
+        numeric_server_version = tuple(map(int, server_version.split('.')))
+    except ValueError:
+        # Skip this check if the version number is more complicated than
+        # we expected.
+        pass
+    else:
+        if numeric_server_version < (7, 4):
+            print 'Your PostgreSQL version is too old.  You need 7.4.x'
+            print 'You have %s' % server_version
+            return 1
+
+    # Drop the template database if it exists - the Makefile does this
+    # too, but we can explicity check for errors here
+    try:
+        cur.execute('end transaction; drop database launchpad_ftest_template')
+    except psycopg.ProgrammingError:
+        # It is not a problem if 'drop database' failed because the database
+        # does not exist.
+        pass
     cur.close()
     con.close()
     
@@ -85,8 +106,11 @@ def main():
     # Build the template database. Tests duplicate this.
     here = os.path.dirname(os.path.realpath(__file__))
     schema_dir = os.path.join(here, 'database', 'schema')
-    if os.system('cd %s; make test > /dev/null 2>&1' % schema_dir) != 0:
-        print 'Failed to create database'
+    pipe = os.popen('cd %s; make test 2>&1' % schema_dir)
+    output = pipe.read()
+    if pipe.close():
+        print 'Failed to create database:'
+        print output
         return 1
 
     # Sanity check the database. No point running tests if the
@@ -99,6 +123,7 @@ def main():
         print 'Search path incorrect.'
         print 'Add the following line to /etc/postgresql/postgresql.conf:'
         print "    search_path = '$user,public,ts2'"
+        print "and tell postgresql to reload its configuration file."
         return 1
     cur.execute("""
         select count(*) from person where displayname='Mark Shuttleworth'
