@@ -37,7 +37,7 @@ class TestInitZopeless(PgTestCase):
             tm2 = initZopeless(dbname=self.dbname, dbhost='')
         finally:
             # Put the warnings module back the way we found it.
-            warnings.showwarning = warn_explicit
+            warnings.warn_explicit = warn_explicit
         self.failUnless(tm1 is tm2)
         self.failUnless(self.warned)
             

@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-28 00:21:17 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1345
+
+    Summary:
+      Fix small bug in test_zopeless
+    Revision:
+      launchpad--devel--0--patch-1345
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--zopeless-test-repeat-fix--0--patch-2
+       Really put the warnings module back the way the test_zopeless found it.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/lp/ftests/test_zopeless.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--zopeless-test-repeat-fix--0--patch-2
+
+
 2005-02-25 14:26:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1344
 
     Summary:
