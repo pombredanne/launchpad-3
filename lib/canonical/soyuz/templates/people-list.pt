@@ -22,8 +22,6 @@
       <th>Displayname</th>
       <th>Givenname</th>
       <th>Familyname</th>
-      <th>Team Owner</th>
-      <th>Team Description</th>
       <th>Karma</th>
     </tr>
     <tr tal:repeat="person context">
@@ -32,19 +30,12 @@
 	   tal:attributes="href person/id">
 	  displayname
 	</a>
-      </td>
-      <td>
+      </td><td>
         <span tal:content="person/givenname"> 
 	  givenname</span>
       </td><td>
         <span tal:content="person/familyname">
 	 familyname</span>
-      </td><td>
-        <span tal:content="person/teamowner">
-	  teamowner</span>
-      </td><td>
-        <span tal:content="person/teamdescription">
-	  teamowner</span>
       </td><td>
         <span tal:content="person/karma"> 
 	  karma</span></td>

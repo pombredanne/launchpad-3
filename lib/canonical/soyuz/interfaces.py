@@ -209,7 +209,8 @@ class IDistributionRole(Interface):
 
 class IPeopleApp(Interface):
     """A People Tag """
-    entries = Attribute("Number of user entries")
+    entries = Attribute("Number of person entries")
+
     def __getitem__(release):
         """retrieve personal by name"""
 

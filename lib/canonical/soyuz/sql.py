@@ -200,7 +200,7 @@ class DistroReleaseSourcesApp(object):
 
     def __init__(self, release):
         self.release = release
-        self.people = SoyuzPerson.select()
+        self.people = SoyuzPerson.select('teamowner IS NULL')
         
     def _query(self):
         return (
@@ -329,14 +329,14 @@ class DistroTeamApp(object):
 # new People Branch
 class PeopleApp(object):
     def __init__(self):
-        # YAPS: get persons not teams !!
-        self.entries = SoyuzPerson.select().count()
+        self.entries = SoyuzPerson.select('teamowner IS NULL').count()
 
+    #YAPS: traverse by ID ?
     def __getitem__(self, id):
         return PersonApp(id)
 
     def __iter__(self):
-        return iter(SoyuzPerson.select())
+        return iter(SoyuzPerson.select('teamowner IS NULL'))
 
 class PersonApp(object):
     def __init__(self, id):
@@ -349,6 +349,7 @@ class PersonApp(object):
         self.jabber = JabberID.get(self.id)
         self.irc = IrcID.get(self.id)
         self.gpg = GPGKey.get(self.id)
+
 ################################################################
 
 # FIXME: deprecated, old DB layout (spiv: please help!!)
