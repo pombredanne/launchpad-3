@@ -18,9 +18,10 @@ tests = [
     ('ISchemas', 'RosettaSchemas'),
     ('ISchema', 'RosettaSchema'),
     ('ILabel', 'RosettaLabel'),
-    ('ICategory', 'RosettaCategory'),
-    ('ITranslationEffort', 'RosettaTranslationEffort'),
-    ('ITranslationEffortPOTemplate', 'RosettaTranslationEffortPOTemplate'),
+# XXX: Commented until we restart their use
+#    ('ICategory', 'RosettaCategory'),
+#    ('ITranslationEffort', 'RosettaTranslationEffort'),
+#    ('ITranslationEffortPOTemplate', 'RosettaTranslationEffortPOTemplate'),
     ('IEmailAddress', 'RosettaEmailAddress'),
     ]
 

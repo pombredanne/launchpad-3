@@ -7,10 +7,12 @@ from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
 from canonical.rosetta.interfaces import ILanguages
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
-     xxxRosettaProject, RosettaProduct, RosettaLanguages, RosettaPOMessageSet
+     RosettaProduct, RosettaLanguages, RosettaPOMessageSet
 from canonical.rosetta.pofile_adapters import MessageProxy, \
      TemplateImporter, POFileImporter
+from canonical.database.doap import DBProject
 import os
+import canonical.lp
 
 # XXX: not using Person at all, probably should
 class FakePerson(object):
@@ -31,7 +33,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
     def testTemplateImporter(self):
         try:
-            project = xxxRosettaProject.selectBy(name = 'gnome')[0]
+            project = DBProject.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()
@@ -99,7 +101,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
     def testFileImporter(self):
         try:
-            project = xxxRosettaProject.selectBy(name = 'gnome')[0]
+            project = DBProject.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()

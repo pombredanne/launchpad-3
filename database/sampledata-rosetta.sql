@@ -467,7 +467,7 @@ VALUES ((SELECT id FROM POTemplate WHERE name = 'evolution-2.0'),
         'Content-Transfer-Encoding: 8bit\n'
         'Report-Msgid-Bugs-To: serrador@hispalinux.es\n'
         'X-Generator: KBabel 1.3.1\n'
-        'Plural-Forms:  nplurals=2; plural=(n != 1);\n',
+        'Plural-Forms: nplurals=2; plural=(n != 1);\n',
 	FALSE,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	2, 0, 1, 2);
