@@ -57,10 +57,9 @@ class DummyPerson:
 
     def __init__(self, codes):
         self.codes = codes
-
-    def languages(self):
-        languages = DummyLanguageSet()
-        return [ languages[code] for code in self.codes ]
+        all_languages = DummyLanguageSet()
+        
+        self.languages = [ all_languages[code] for code in self.codes ]
 
 
 def adaptPrincipalToPerson(principal):
@@ -198,7 +197,7 @@ def test_request_languages():
 
     >>> from canonical.rosetta.browser import request_languages
 
-    Frist, test with a preson who has a single preferred language.
+    Frist, test with a person who has a single preferred language.
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())

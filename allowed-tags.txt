@@ -2,7 +2,6 @@ COPYING 9a630d4f-fb62-4451-a402-1dc3332063a0
 Makefile c5c98418-056f-41e0-896a-6714a77439a8
 README 8b5febee-46cf-445f-8a2a-8ebcb4c23bd8
 database/default.sql 72b5bbef-19d6-4a07-b434-60f2a121ade2
-database/sampledata/rosetta-alpha.sql c7271ec2-c8e7-4bd0-a78c-6337e9111989
 database/sampledata/rosetta.sql 5734820d-754e-4297-bb54-fbe33b88af4c
 doc/webapp-process.txt cf2cb34d-52a5-4615-b135-439d70f43f36
 launchpad.conf 6fd31574-8259-4a74-b270-822b9db97f53
