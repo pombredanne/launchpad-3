@@ -41,29 +41,46 @@
         </div>
     </div>
 
-    <div tal:condition="not: submitted">
+    <h1>Request project for translation</h1>
 
-        <h1>Request project for translation</h1>
+    <p class="documentDescription">
+    Please give us some information about the project you would like to
+    have available for translation in Rosetta. Information such as a
+    homepage URL and revision control systems details is useful.
+    </p>
 
-        <p class="documentDescription">
-        Please give us some information about the project you would like to
-        have available for translation in Rosetta. Information such as a
-        homepage URL and revision control systems details is useful.
+    <form method="POST" tal:attributes="action request/URL">
+    <fieldset>
+        <p>
+        <label>Name</label>: <input type="text" name="name" />
         </p>
 
-        <form method="POST" tal:attributes="action request/URL">
-        <fieldset>
-            Name: <input type="text" name="name" />
-            <br/>
-            Description:
-            <br/>
-            <textarea name="description"></textarea>
-            <br/>
-            <input type="submit" name="SUBMIT" value="Submit" />
-        </fieldset>
-        </form>
+        <label>Description</label>
 
-    </div>
+        <p>
+        In your description, please include several paragraphs about the intent
+        of the project, the history of the project and major features and
+        highlights of the software involved.
+        </p>
+
+        <textarea name="description" rows="15">
+Description:
+
+&lt;Insert description here&gt;
+
+Project homepage: http://
+
+Project download page: http://
+
+Details of CVS/Subversion/Arch repository, if applicable:
+
+&lt;Insert revision control details here&gt;
+
+</textarea>
+        <br/>
+        <input type="submit" name="SUBMIT" value="Submit" />
+    </fieldset>
+    </form>
 
 </div>
 
