@@ -260,7 +260,7 @@ class SourceSourceSet(object):
 
     def filter(self, sync=None, process=None, 
                      tested=None, text=None,
-                     ready=None):
+                     ready=None, assigned=None):
         query = ''
         clauseTables = Set()
         clauseTables.add('SourceSource')
@@ -295,6 +295,14 @@ class SourceSourceSet(object):
             if len(query) > 0:
                 query = query + ' AND '
             query = query + 'SourceSource.autotested = 2'
+        if assigned is not None:
+            if len(query) > 0:
+                query = query + ' AND '                
+            query = query + "Product.name != 'unassigned'"
+        else:
+            if len(query) > 0:
+                query = query + ' AND '                
+            query = query + "Product.name = 'unassigned'"
         if text is not None:
             if len(query) > 0:
                 query = query + ' AND '
