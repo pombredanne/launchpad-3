@@ -37,8 +37,9 @@ create: drop
 	    else echo ${DBNAME} already exists; \
          fi
 	@ echo
-	@ echo "* Installing PL/Python "
-	# createlang -d launchpad_test plpythonu
+	@ echo "* Installing PL/PythonU, or fall back to PL/pgSQL"
+	createlang -d launchpad_test plpythonu || \
+	    createlang -d launchpad_test plpgsql
 	@ echo
 	@ echo "* Creating functions"
 	psql -d ${DBNAME} -f trusted.sql

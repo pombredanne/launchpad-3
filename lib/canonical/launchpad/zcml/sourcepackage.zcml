@@ -73,9 +73,4 @@
             lp:url="malone/sourcepackages/+index" />
     </browser:pages>
 
-    <!-- VOCABULARIES -->
-    <vocabulary
-        name="PackageRelease"
-        factory="canonical.launchpad.vocabulary.PackageReleaseVocabulary" />
-
 </configure>

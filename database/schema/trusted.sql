@@ -12,6 +12,22 @@ CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean AS '
     return False
 ' LANGUAGE plpythonu;
 
+/* A plpgsql version of the above Python, as temporary help for installations
+    without working plpythonu
+*/
+SET client_min_messages TO fatal;
+CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean AS '
+DECLARE
+    name ALIAS FOR $1;
+BEGIN
+    IF name IS NULL OR name SIMILAR TO \'^[a-z0-9][a-z0-9\\+\\.\\-]+$\' THEN
+        RETURN true;
+    END IF;
+    RETURN false;
+END;
+' LANGUAGE plpgsql;
+SET client_min_messages TO notice;
+
 COMMENT ON FUNCTION valid_name(text)
     IS 'validate a name.
 
@@ -31,6 +47,22 @@ CREATE OR REPLACE FUNCTION valid_bug_name(text) RETURNS boolean AS '
         return True
     return False
 ' LANGUAGE plpythonu;
+
+/* A plpgsql version of the above Python, as temporary help for installations
+    without working plpythonu
+*/
+SET client_min_messages TO fatal;
+CREATE OR REPLACE FUNCTION valid_bug_name(text) RETURNS boolean AS '
+DECLARE
+    name ALIAS FOR $1;
+BEGIN
+    IF name IS NULL OR name SIMILAR TO \'^[a-z][a-z0-9\\+\\.\\-]+$\' THEN
+        RETURN true;
+    END IF;
+    RETURN false;
+END;
+' LANGUAGE plpgsql;
+SET client_min_messages TO notice;
 
 COMMENT ON FUNCTION valid_bug_name(text) IS 'validate a bug name
 
