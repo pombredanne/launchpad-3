@@ -27,9 +27,9 @@ EMPTY_DBNAME=launchpad_empty
 #             launchpad_prod | grep -v '^--'
 # Then, manually, the 'SET client_min_messages' line is added and
 # the first two CREATEs commented out (plpythonu stuff)
-REV=10
+REV=11
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=dbe572c767d824311cc7789ee5548cf8  launchpad-10-00-0.sql
+MD5SUM=6aabb184c995fc9df706aae2d01402b3  launchpad-11-00-0.sql
 
 default: all
 

@@ -1,4 +1,4 @@
--- Generated Thu Feb  3 07:06:44 GMT 2005
+-- Generated Tue Mar  8 10:31:59 GMT 2005
 SET client_min_messages=ERROR;
 
 SET client_encoding = 'UNICODE';
@@ -20,6 +20,9 @@ CREATE TABLE person (
     name text NOT NULL,
     "language" integer,
     fti ts2.tsvector,
+    defaultmembershipperiod integer,
+    defaultrenewalperiod integer,
+    subscriptionpolicy integer DEFAULT 1 NOT NULL,
     CONSTRAINT no_loops CHECK ((id <> teamowner)),
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
@@ -86,8 +89,11 @@ CREATE TABLE teammembership (
     id serial NOT NULL,
     person integer NOT NULL,
     team integer NOT NULL,
-    role integer NOT NULL,
-    status integer NOT NULL
+    status integer NOT NULL,
+    datejoined timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    dateexpires timestamp without time zone,
+    reviewer integer,
+    reviewercomment text
 );
 
 
@@ -541,7 +547,8 @@ CREATE TABLE distroarchrelease (
     distrorelease integer NOT NULL,
     processorfamily integer NOT NULL,
     architecturetag text NOT NULL,
-    "owner" integer NOT NULL
+    "owner" integer NOT NULL,
+    chroot integer
 );
 
 
@@ -560,7 +567,8 @@ CREATE TABLE libraryfilealias (
     id serial NOT NULL,
     content integer NOT NULL,
     filename text NOT NULL,
-    mimetype text NOT NULL
+    mimetype text NOT NULL,
+    expires timestamp without time zone
 );
 
 
@@ -616,7 +624,8 @@ CREATE TABLE sourcepackagelabel (
 CREATE TABLE packaging (
     sourcepackage integer NOT NULL,
     packaging integer NOT NULL,
-    product integer NOT NULL
+    product integer NOT NULL,
+    id integer DEFAULT nextval('packaging_id_seq'::text)
 );
 
 
@@ -737,7 +746,8 @@ CREATE TABLE packagepublishing (
     section integer NOT NULL,
     priority integer NOT NULL,
     scheduleddeletiondate timestamp without time zone,
-    status integer NOT NULL
+    status integer NOT NULL,
+    datepublished timestamp without time zone
 );
 
 
@@ -1335,9 +1345,9 @@ CREATE TABLE potmsgset (
 
 
 CREATE TABLE launchpaddatabaserevision (
-    major integer,
-    minor integer,
-    patch integer
+    major integer NOT NULL,
+    minor integer NOT NULL,
+    patch integer NOT NULL
 );
 
 
@@ -1435,7 +1445,7 @@ CREATE TABLE bugtask (
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
     "owner" integer NOT NULL,
     milestone integer,
-    CONSTRAINT bugtask_assignment_checks CHECK (((product IS NULL) <> (distribution IS NULL)))
+    CONSTRAINT bugtask_assignment_checks CHECK (CASE WHEN (product IS NOT NULL) THEN ((distribution IS NULL) AND (distrorelease IS NULL)) WHEN (distribution IS NOT NULL) THEN ((product IS NULL) AND (distrorelease IS NULL)) WHEN (distrorelease IS NOT NULL) THEN ((product IS NULL) AND (distribution IS NULL)) ELSE NULL::boolean END)
 );
 
 
@@ -1488,16 +1498,6 @@ CREATE TABLE milestone (
 
 
 
-CREATE TABLE archarchivelocation_bak (
-    id integer,
-    archive integer,
-    archivetype integer,
-    url text,
-    gpgsigned boolean
-);
-
-
-
 CREATE TABLE pushmirroraccess (
     id serial NOT NULL,
     name text NOT NULL,
@@ -1513,6 +1513,28 @@ CREATE TABLE buildqueue (
     created timestamp with time zone NOT NULL,
     buildstart timestamp with time zone,
     logtail text
+);
+
+
+
+CREATE SEQUENCE packaging_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MAXVALUE
+    NO MINVALUE
+    CACHE 1;
+
+
+
+CREATE TABLE signedcodeofconduct (
+    id serial NOT NULL,
+    person integer NOT NULL,
+    signingkey integer,
+    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    signedcode text,
+    recipient integer,
+    active boolean DEFAULT false NOT NULL,
+    admincomment text
 );
 
 
@@ -1637,34 +1659,6 @@ CREATE INDEX packagepublishing_distroarchrelease_idx ON packagepublishing USING 
 
 
 
-CREATE INDEX bug_fti ON bug USING gist (fti ts2.gist_tsvector_ops);
-
-
-
-CREATE INDEX message_fti ON message USING gist (fti ts2.gist_tsvector_ops);
-
-
-
-CREATE INDEX person_fti ON person USING gist (fti ts2.gist_tsvector_ops);
-
-
-
-CREATE INDEX product_fti ON product USING gist (fti ts2.gist_tsvector_ops);
-
-
-
-CREATE INDEX project_fti ON project USING gist (fti ts2.gist_tsvector_ops);
-
-
-
-CREATE INDEX sourcepackage_fti ON sourcepackage USING gist (fti ts2.gist_tsvector_ops);
-
-
-
-CREATE INDEX binarypackage_fti ON binarypackage USING gist (fti ts2.gist_tsvector_ops);
-
-
-
 CREATE INDEX bugtask_bug_idx ON bugtask USING btree (bug);
 
 
@@ -1730,6 +1724,34 @@ CREATE INDEX pushmirroraccess_person_idx ON pushmirroraccess USING btree (person
 
 
 CREATE INDEX libraryfilealias_content_idx ON libraryfilealias USING btree (content);
+
+
+
+CREATE INDEX bug_fti ON bug USING gist (fti ts2.gist_tsvector_ops);
+
+
+
+CREATE INDEX message_fti ON message USING gist (fti ts2.gist_tsvector_ops);
+
+
+
+CREATE INDEX person_fti ON person USING gist (fti ts2.gist_tsvector_ops);
+
+
+
+CREATE INDEX product_fti ON product USING gist (fti ts2.gist_tsvector_ops);
+
+
+
+CREATE INDEX project_fti ON project USING gist (fti ts2.gist_tsvector_ops);
+
+
+
+CREATE INDEX sourcepackage_fti ON sourcepackage USING gist (fti ts2.gist_tsvector_ops);
+
+
+
+CREATE INDEX binarypackage_fti ON binarypackage USING gist (fti ts2.gist_tsvector_ops);
 
 
 
@@ -2338,11 +2360,6 @@ ALTER TABLE ONLY distribution
 
 
 
-ALTER TABLE ONLY distrorelease
-    ADD CONSTRAINT distrorelease_distribution_key UNIQUE (distribution, name);
-
-
-
 ALTER TABLE ONLY label
     ADD CONSTRAINT label_schema_key UNIQUE ("schema", name);
 
@@ -2540,6 +2557,21 @@ ALTER TABLE ONLY pushmirroraccess
 
 ALTER TABLE ONLY buildqueue
     ADD CONSTRAINT buildqueue_pkey PRIMARY KEY (id);
+
+
+
+ALTER TABLE ONLY launchpaddatabaserevision
+    ADD CONSTRAINT launchpaddatabaserevision_pkey PRIMARY KEY (major, minor, patch);
+
+
+
+ALTER TABLE ONLY distrorelease
+    ADD CONSTRAINT distrorelease_name_key UNIQUE (name);
+
+
+
+ALTER TABLE ONLY gpgkey
+    ADD CONSTRAINT gpgkey_person_idx UNIQUE (person, id);
 
 
 
@@ -3838,6 +3870,26 @@ ALTER TABLE ONLY buildqueue
 
 
 
+ALTER TABLE ONLY distroarchrelease
+    ADD CONSTRAINT distroarchrelease_chroot_fk FOREIGN KEY (chroot) REFERENCES libraryfilealias(id);
+
+
+
+ALTER TABLE ONLY teammembership
+    ADD CONSTRAINT reviewer_fk FOREIGN KEY (reviewer) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY signedcodeofconduct
+    ADD CONSTRAINT recipient_person_fk FOREIGN KEY (recipient) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY signedcodeofconduct
+    ADD CONSTRAINT person_gpg_fk FOREIGN KEY (person, signingkey) REFERENCES gpgkey(person, id);
+
+
+
 CREATE TRIGGER tsvectorupdate
     BEFORE INSERT OR UPDATE ON bug
     FOR EACH ROW
@@ -3887,11 +3939,6 @@ CREATE TRIGGER tsvectorupdate
 
 
 
-CREATE VIEW vsourcepackagereleasepublishing AS
-    SELECT sourcepackagerelease.id, sourcepackagename.name, sourcepackage.shortdesc, sourcepackage.maintainer, sourcepackage.description, sourcepackage.id AS sourcepackage, sourcepackagepublishing.status AS publishingstatus, sourcepackagepublishing.datepublished, sourcepackagerelease.architecturehintlist, sourcepackagerelease."version", sourcepackagerelease.creator, sourcepackagerelease.section, sourcepackagerelease.component, sourcepackagerelease.changelog, sourcepackagerelease.builddepends, sourcepackagerelease.builddependsindep, sourcepackagerelease.urgency, sourcepackagerelease.dateuploaded, sourcepackagerelease.dsc, sourcepackagerelease.dscsigningkey, distrorelease.id AS distrorelease, component.name AS componentname FROM sourcepackagepublishing, sourcepackagerelease, component, sourcepackage, distrorelease, sourcepackagename WHERE (((((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackagepublishing.distrorelease = distrorelease.id)) AND (sourcepackage.sourcepackagename = sourcepackagename.id)) AND (component.id = sourcepackagerelease.component));
-
-
-
 CREATE VIEW sourcepackagefilepublishing AS
     SELECT (((libraryfilealias.id)::text || '.'::text) || (sourcepackagepublishing.id)::text) AS id, distrorelease.distribution, sourcepackagepublishing.id AS sourcepackagepublishing, sourcepackagereleasefile.libraryfile AS libraryfilealias, libraryfilealias.filename AS libraryfilealiasfilename, sourcepackagename.name AS sourcepackagename, component.name AS componentname, distrorelease.name AS distroreleasename, sourcepackagepublishing.status AS publishingstatus FROM sourcepackagepublishing, sourcepackagerelease, sourcepackagereleasefile, libraryfilealias, distrorelease, sourcepackage, sourcepackagename, component WHERE (((((((sourcepackagepublishing.distrorelease = distrorelease.id) AND (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)) AND (sourcepackagereleasefile.sourcepackagerelease = sourcepackagerelease.id)) AND (libraryfilealias.id = sourcepackagereleasefile.libraryfile)) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackagename.id = sourcepackage.sourcepackagename)) AND (component.id = sourcepackagepublishing.component));
 
@@ -3919,5 +3966,10 @@ CREATE VIEW publishedpackageview AS
 
 CREATE VIEW vsourcepackageindistro AS
     SELECT DISTINCT sourcepackage.id, sourcepackage.shortdesc, sourcepackage.description, sourcepackage.distro, sourcepackage.manifest, sourcepackage.maintainer, sourcepackage.srcpackageformat, sourcepackagename.id AS sourcepackagename, sourcepackagename.name, distrorelease.id AS distrorelease FROM sourcepackagepublishing, sourcepackagerelease, sourcepackage, distrorelease, sourcepackagename WHERE ((((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackagepublishing.distrorelease = distrorelease.id)) AND (sourcepackage.sourcepackagename = sourcepackagename.id)) ORDER BY sourcepackage.id, sourcepackage.shortdesc, sourcepackage.description, sourcepackage.distro, sourcepackage.manifest, sourcepackage.maintainer, sourcepackage.srcpackageformat, sourcepackagename.id, sourcepackagename.name, distrorelease.id;
+
+
+
+CREATE VIEW vsourcepackagereleasepublishing AS
+    SELECT sourcepackagerelease.id, sourcepackagename.name, sourcepackage.shortdesc, sourcepackage.maintainer, sourcepackage.description, sourcepackage.id AS sourcepackage, sourcepackagepublishing.status AS publishingstatus, sourcepackagepublishing.datepublished, sourcepackagerelease.architecturehintlist, sourcepackagerelease."version", sourcepackagerelease.creator, sourcepackagerelease.section, sourcepackagerelease.component, sourcepackagerelease.changelog, sourcepackagerelease.builddepends, sourcepackagerelease.builddependsindep, sourcepackagerelease.manifest, sourcepackagerelease.urgency, sourcepackagerelease.dateuploaded, sourcepackagerelease.dsc, sourcepackagerelease.dscsigningkey, distrorelease.id AS distrorelease, component.name AS componentname FROM sourcepackagepublishing, sourcepackagerelease, component, sourcepackage, distrorelease, sourcepackagename WHERE (((((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id) AND (sourcepackagerelease.sourcepackage = sourcepackage.id)) AND (sourcepackagepublishing.distrorelease = distrorelease.id)) AND (sourcepackage.sourcepackagename = sourcepackagename.id)) AND (component.id = sourcepackagerelease.component));
 
 
