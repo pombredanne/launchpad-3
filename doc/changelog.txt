@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-19 03:45:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1215
+
+    Summary:
+      make 'show' parameter to translation page more persistent
+    Revision:
+      launchpad--devel--0--patch-1215
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-415
+       make 'show' parameter to translation page more persistent
+    
+     * daf@canonical.com--2005/launchpad--devel--0--patch-16
+       try to make 'show' parameter to translation page more persistent
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-415
+     daf@canonical.com--2005/launchpad--devel--0--patch-16
+
+
 2005-01-19 03:22:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1214
 
     Summary:

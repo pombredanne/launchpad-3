@@ -326,6 +326,9 @@
         <input type="hidden" name="languages"
             tal:condition="view/codes"
             tal:attributes="value view/codes" />
+        <input type="hidden" name="show"
+            tal:condition="view/show"
+            tal:attributes="value view/show" />
         <input type="submit" name="SUBMIT" value="Save"
             tal:attributes="tabindex: view/makeTabIndex" />
     </form>

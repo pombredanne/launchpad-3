@@ -972,7 +972,7 @@ class TranslatePOTemplate:
         parameters = {}
 
         # Parameters to copy from kwargs or form.
-        for name in ('languages', 'count'):
+        for name in ('languages', 'count', 'show'):
             if name in kw:
                 parameters[name] = kw[name]
             elif name in self.request.form:
