@@ -18,10 +18,10 @@
     </tr>
     <tr tal:repeat="bug context" tal:attributes="onclick string:window.location='${bug/id}';">
       <td tal:content="bug/id">$Bug.title</td>
-      <td tal:content="bug/nickname">nickname</td>
+      <td tal:content="bug/name">$Bug.name</td>
       <td tal:content="bug/title"><a href="" tal:attributes="href bug/id">title</a></td>
       <td tal:content="python:bug.datecreated.strftime('%d %b %y')">date</td>
-      <td tal:content="bug/owner/presentationname">name</td>
+      <td tal:content="bug/owner/displayname">name</td>
     </tr>
   </table>
   <input type="submit" value="Add" onclick="window.open('+new','_top')" />

@@ -39,8 +39,8 @@
     
       <div class="discreet">
         <span class="bug-confirmed" title="Bug status">Confirmed</span>
-        <span tal:condition="context/nickname">
-          Bugname: <a href="" tal:content="context/nickname"></a>,
+        <span tal:condition="context/name">
+          Bugname: <a href="" tal:content="context/name">$Bug.name</a>,
         </span>
         Created
         <span tal:replace="python:context.datecreated.strftime('%d %b %y %H:%M')">

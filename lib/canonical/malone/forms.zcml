@@ -10,10 +10,10 @@
     for=".interfaces.IMaloneApplication"
     schema="canonical.database.foaf.IPerson"
     label="Register"
-    fields="presentationname givenname familyname password"
+    fields="displayname givenname familyname password"
     content_factory=".browser.PersonFactory"
     arguments=""
-    keyword_arguments="presentationname givenname familyname password"
+    keyword_arguments="displayname givenname familyname password"
     permission="zope.View"
     template="templates/default-addform.pt"
     lp:url="malone/register" />
@@ -27,14 +27,24 @@
     for=".interfaces.IBugContainer"
     schema="canonical.database.malone.IBug"
     label="Add a Bug"
-    fields="nickname title description"
+    fields="title shortdesc description"
     content_factory=".browser.BugFactory"
     arguments=""
-    keyword_arguments="nickname title description"
+    keyword_arguments="title shortdesc description"
     permission="zope.View"
     template="templates/default-addform.pt"
     lp:url="malone/bugs/+new"
     />
+
+  <editform
+    name="+edit"
+    schema="canonical.database.malone.IBug"
+    label="Change Bug Information"
+    permission="zope.View"
+    template="templates/bug-edit.pt"
+    lp:url="malone/bugs/$Bug.id/+edit">
+    <!--<widget field="datecreated" class="canonical.widgets.DateWidget" />-->
+  </editform>
 
   <!-- BugAttachment forms -->
   <addform

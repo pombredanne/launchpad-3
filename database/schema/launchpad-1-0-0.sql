@@ -62,7 +62,6 @@
 	- remove Language.pluralform
 	- add Language.pluralformexpresion
 	- add Language.pluralforms
-	- fix typo "pluralexpresion"
   v0.98:
         - merge SourceSource table from Andrew Bennetts
 	- change SourceSource.homepageurl to SourceSource.product
@@ -1605,9 +1604,9 @@ CREATE TABLE Language (
   englishname           text,
   nativename            text,
   pluralforms           integer,
-  pluralexpression      text,
-  CHECK ( ( pluralforms IS NOT NULL AND pluralexpression IS NOT NULL) OR
-          ( pluralforms IS NULL AND pluralexpression IS NULL ) )
+  pluralexpresion	text,
+  CHECK ( ( pluralforms IS NOT NULL AND pluralexpresion IS NOT NULL) OR
+          ( pluralforms IS NULL AND pluralexpresion IS NULL ) )
 );
 
 

@@ -53,11 +53,14 @@ class IBug(Interface):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
-    nickname = TextLine(
+    name = TextLine(
             title=_('Nickname'), required=False,
             )
     title = TextLine(
             title=_('Title'), required=True,
+            )
+    shortdesc = Text(
+            title=_('Short Description'), required=True,
             )
     description = Text(
             title=_('Description'), required=True,
@@ -119,8 +122,9 @@ class Bug(SQLBase):
     _defaultOrder = '-id'
     _columns = [
         DateTimeCol('datecreated', dbName='datecreated', notNull=True),
-        StringCol('nickname', dbName='nickname', unique=True),
+        StringCol('name', dbName='name', unique=True, default=None),
         StringCol('title', notNull=True),
+        StringCol('shortdesc', notNull=True),
         StringCol('description', notNull=True),
         ForeignKey(
                 name='owner', dbName='owner', foreignKey='Person',
