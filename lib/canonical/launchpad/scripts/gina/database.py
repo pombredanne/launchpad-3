@@ -18,6 +18,7 @@ class SQLThing:
         return self.db.close()
 
     def ensure_string_format(self, name):
+        assert isinstance(name, basestring), repr(name)
         try:
             # check that this is unicode data
             name.decode("utf-8").encode("utf-8")

@@ -5,6 +5,8 @@ from classes import SourcePackageRelease, BinaryPackageRelease
 from database import Launchpad, Katie
 from library import attachLibrarian
 
+from traceback import print_exc as printexception
+
 #
 package_root = "/srv/archive.ubuntu.com/ubuntu/"
 keyrings_root = "keyrings/"
@@ -138,7 +140,7 @@ def do_arch(lp, kdb, bin_map, source_map):
                 srcpkg.ensure_created(lp)
             except Exception, e:
                 print "\t!! sourcepackage addition threw an error."
-                print e
+                printexception(e)
                 # Since we're importing universe which can cause issues,
                 # we don't exit
                 # sys.exit(0)
@@ -152,7 +154,7 @@ def do_arch(lp, kdb, bin_map, source_map):
             binpkg.ensure_created(lp)
         except Exception, e:
             print "\t!! binarypackage addition threw an error."
-            print e
+            printexception(e)
             # Since we're importing universe which can cause issues,
             # we don't exit
             # sys.exit(0)
