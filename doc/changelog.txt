@@ -2,6 +2,53 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-25 22:59:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1502
+
+    Summary:
+      remove RCSTypeEnum, RCSNames, SoyuzProduct.newSync and some SourceSource cruft
+    Revision:
+      launchpad--devel--0--patch-1502
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-65
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-66
+       replace RCSTypeEnum by RevisionControlSystems in a couple of places
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-67
+       remove some (supposed) cruft from SourceSource
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-68
+       move RCSNames into buildJob
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-69
+       remove SoyuzProduct.newSync that does not seem used anywhere
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-70
+       remove RCSTypeEnum that's not use anywhere anymore
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-71
+       fix some typos in infoImporter
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/arch/infoImporter.py
+     lib/canonical/launchpad/database/sourcesource.py
+     lib/canonical/launchpad/interfaces/pyarch.py
+     lib/canonical/soyuz/importd.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-65
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-66
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-67
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-68
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-69
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-70
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-71
+
+
 2005-03-25 03:32:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1501
 
     Summary:

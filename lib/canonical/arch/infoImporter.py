@@ -7,6 +7,7 @@ import sys
 
 from canonical.database.sqlbase import quote
 from canonical.launchpad.database import Product, ArchArchive, Person, SourceSource
+from canonical.lp import dbschema
 import canonical.lp
 
 from sqlobject import ForeignKey, IntCol, StringCol, DateTimeCol, BoolCol, \
@@ -86,6 +87,7 @@ def importInfoFile(infofile):
 
             if job.RCS == 'cvs':
                 ss = SourceSource(
+                        rcstype=dbschema.RevisionControlSystems.CVS,
                         cvsroot=job.repository,
                         cvsmodule=job.module,
                         cvstarfileurl=info.get("cvstarfile") or None,
@@ -93,12 +95,12 @@ def importInfoFile(infofile):
                         **kwargs)
             if job.RCS == 'svn':
                 ss = SourceSource(
-                    rcstype=RCSTypeEnum.svn,
+                    rcstype=dbschema.RevisionControlSystems.SVN,
                     svnrepository=job.svnrepository,
                     **kwargs)
         elif job.RCS == "package":
             ss = SourceSource(
-                    rcstype=RCSTypeEnum.package,
+                    rcstype=dbschema.RevisionControlSystems.PACKAGE,
                     name=jobname,
                     title="",
                     description="",
