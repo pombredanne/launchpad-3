@@ -116,14 +116,6 @@ class IBugAddForm(IBug):
             )
     owner = Int(title=_("Owner"), required=True)
 
-# XXX: Brad Bollenbach, 2004-12-03: Probably refactor the changelog_comment
-# into a separate interface.
-#class IBugEditForm(IBug):
-#    changelog_comment = TextLine(
-#        title = _("Changelog Comment"),
-#        description = _("You may enter a comment below to explain the changes you made."),
-#        required=False)
-
 # Interfaces for set
 class IBugSet(IAddFormCustomization):
     """A set for bugs."""

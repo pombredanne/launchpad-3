@@ -36,28 +36,29 @@
      for="canonical.launchpad.interfaces.IProductBugAssignment
           canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
      factory="canonical.launchpad.subscribers.bugactivity.record_product_assignment_edited" />
-   <!--
+
   <subscriber
      for="canonical.launchpad.interfaces.IBugProductInfestation
           zope.app.event.interfaces.IObjectCreatedEvent"
-     factory="canonical.launchpad.mailnotification.notify_bug_product_infestation_added" />
+     factory="canonical.launchpad.subscribers.bugactivity.record_product_infestation_added" />
   
   <subscriber
      for="canonical.launchpad.interfaces.IBugProductInfestation
           canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-     factory="canonical.launchpad.mailnotification.notify_bug_product_infestation_modified" />
+     factory="canonical.launchpad.subscribers.bugactivity.record_product_infestation_edited" />
   
   <subscriber
      for="canonical.launchpad.interfaces.IBugPackageInfestation
           zope.app.event.interfaces.IObjectCreatedEvent"
-     factory="canonical.launchpad.mailnotification.notify_bug_package_infestation_added" />
+     factory="canonical.launchpad.subscribers.bugactivity.record_package_infestation_added" />
   
   <subscriber
      for="canonical.launchpad.interfaces.IBugPackageInfestation
           canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-     factory="canonical.launchpad.mailnotification.notify_bug_package_infestation_modified" />
+     factory="canonical.launchpad.subscribers.bugactivity.record_package_infestation_edited" />
   
-  <subscriber
+    <!--
+ <subscriber
      for="canonical.launchpad.interfaces.IBugExternalRef
           zope.app.event.interfaces.IObjectCreatedEvent"
      factory="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
