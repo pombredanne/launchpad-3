@@ -148,6 +148,9 @@ class DistroRelease(SQLBase):
         StringCol('lucilleconfig', dbName='lucilleconfig', notNull=False)
     ]
 
+    architectures = MultipleJoin( 'DistroArchRelease',
+                                  joinColumn='distrorelease' )
+
     def displayname(self):
         return "%s %s (%s)" % (self.distribution.title, self.version,
                                self.title)
