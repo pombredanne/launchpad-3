@@ -8,11 +8,14 @@ from canonical.lp import dbschema
 
 # zope imports
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.component import getUtility
 
 # interface import
 from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.interfaces import IDistroTools
 
-from canonical.launchpad.database import Distribution, DistroRelease
+from canonical.launchpad.database import Distribution
+from canonical.launchpad.database import DistroRelease
 from canonical.launchpad.database import Person
 from canonical.launchpad.database import DistributionRole
 from canonical.launchpad.database import DistroReleaseRole
@@ -78,31 +81,25 @@ class DistrosAddView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.results = []
-
 
     def add_action(self):
-        enable_added = False
-        
-        name = self.request.get("name", "")
         title = self.request.get("title", "")
         description = self.request.get("description", "")
+        domain = self.request.get("domain", "")
         person = IPerson(self.request.principal, None)
+
+        d_util = getUtility(IDistroTools)
         
-        if (name or title or description) and person:
-            ##XXX: (uniques) cprov 20041003
+        if not person:
+            return False
+        
+        if not title:
+            return False
 
-            ##XXX: (authserver) cprov 20041003
-            ## The owner is hardcoded to Mark.
-            ## Authserver Security/Authentication Issues ?!?!
-            self.results = Distribution(name=name, title=title, 
-                                        description=description,
-                                        domainname='domain',
-                                        owner=person.id)
-            ##XXX: (results) cprov 20041003
-            enable_added = True
+        self.results = d_util.createDistro(person.id, title,
+                                           description, domain)
 
-        return enable_added
+        return self.results
 
 class DistrosEditView(object):
 
@@ -150,48 +147,36 @@ class ReleasesAddView(object):
         self.results = []
 
     def add_action(self):
-        enable_added = False
-
-        name = self.request.get("name", "")
         title = self.request.get("title", "")
         shortdesc = self.request.get("shortdesc", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
+        parent = self.request.get("parentrelease", "")
 
         distro_id = self.context.distribution.id
         person = IPerson(self.request.principal, None)        
-   
-        if (name or title or description or version) and person:
-            ##XXX: (uniques) cprov 20041003
-            ## again
 
-            ##XXX: (utc) cprov 20041003
-            ## Get current UTC as timestamp 
+        if not person:
+            return False
 
-            ##XXX: (components/section) cprov 20041003
-            ## What about figure out finally what to do with
-            ##   components, sections ans so on ...
+        if not (title and version and parent):
+            return False
 
-            ##XXX: (parentrelease) cprov 20041003
-            ## Parentrelease is hardcoded to "warty", should the users
-            ## be able to select then now ??
-            
-            self.results = DistroRelease(distribution=distro_id,
-                                         name=name, title=title,
-                                         shortdesc=shortdesc,
-                                         description=description,
-                                         version=version,
-                                         owner=person.id,
-                                         components=1,
-                                         releasestate=1,
-                                         sections=1,
-                                         parentrelease=1,
-                                         datereleased='2004-08-15 10:00',
-                                         lucilleconfig='')
-            ##XXX: (results) cprov 20041003
-            ## again
-            enable_added = True
-        return enable_added
+        d_util = getUtility(IDistroTools)
+
+        self.results = d_util.createDistroRelease(person.id,
+                                                  title,
+                                                  distro_id,
+                                                  shortdesc,
+                                                  description,
+                                                  version,
+                                                  parent)
+                                                          
+        return self.results
+
+    def getReleases(self):
+        d_util = getUtility(IDistroTools)
+        return d_util.getDistroReleases()
 
 class ReleaseEditView(object):
 
@@ -200,25 +185,24 @@ class ReleaseEditView(object):
         self.request = request
 
     def edit_action(self):
-        enable_edited = False
-        
-        name = self.request.get("name", "")
+
+        name = self.request.get("name", "")        
         title = self.request.get("title", "")
         shortdesc = self.request.get("shortdesc", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
 
-        if name or title or description or version:
-            ##XXX: (uniques) cprov 20041003
-            self.context.release.name = name
-            self.context.release.title = title
-            self.context.release.shortdesc = shortdesc
-            self.context.release.description = description
-            self.context.release.version = version
-            ##XXX: (results) cprov 20041003
-            enble_edited = True
+        if not (name or title or description or version):
+            return False
+        
+        ##XXX: (uniques) cprov 20041003
+        self.context.release.name = name
+        self.context.release.title = title
+        self.context.release.shortdesc = shortdesc
+        self.context.release.description = description
+        self.context.release.version = version
+        return True
 
-        return enable_edited
 
 class ReleaseSearchView(object):
     def __init__(self, context, request):

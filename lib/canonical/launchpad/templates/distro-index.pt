@@ -4,9 +4,9 @@
       i18n:domain="launchpad">
 
 <head>
-  <title metal:fill-slot="title">
-    <span tal:replace="context/distribution/title">TITLE</span>
-    Page</title>
+    <title metal:fill-slot="title">
+      <span tal:replace="context/distribution/title">TITLE</span>
+      Page</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -42,6 +42,9 @@
              tal:attributes="href string:/foaf/people/${context/distribution/owner/name}">
            OWNER</a>
    </td></tr>
+   <tr><td>
+   Domain: <b tal:content="context/distribution/domainname">DOMAIN</b>
+   </td></tr>
    <tr><th align="right"><a href="+edit">Edit Information</a></th></tr>  
    <!--Conditional block -->
    <tr tal:condition="context/enable_releases"><td>
@@ -74,10 +77,10 @@
       <td tal:content="release/state">RELEASESTATE</td>
       <td tal:content="release/datereleased">DATERELEASED</td>      
 
-      <td>
+      <td align="center">
            <a tal:condition="release/parentrelease"
-	      tal:attributes="href string:releases/${release/parentrelease/name}" 
-	      tal:content="release/parentrelease/title">
+	      tal:attributes="href string:../${release/parentrelease/distribution/name}/releases/${release/parentrelease/name}" 
+	      tal:content="release/parentrelease/displayname">
 	PARENTRELEASE</a>
       </td>          
 

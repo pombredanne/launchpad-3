@@ -18,12 +18,16 @@ from canonical.launchpad.database import SourcePackageBugAssignment
 from canonical.lp import dbschema
 
 # interfaces and database 
-from canonical.launchpad.interfaces import IDistributionRole, IDistroReleaseRole, \
-                                           IDistribution, IDistroRelease, IDistrosSet
+from canonical.launchpad.interfaces import IDistributionRole
+from canonical.launchpad.interfaces import IDistroReleaseRole
+from canonical.launchpad.interfaces import IDistribution
+from canonical.launchpad.interfaces import IDistroRelease
+from canonical.launchpad.interfaces import IDistrosSet
+from canonical.launchpad.interfaces import IDistroTools
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
-from canonical.launchpad.database.sourcepackage import SourcePackage, \
-                                                       SourcePackageInDistro
+from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.sourcepackage import SourcePackageInDistro
 from canonical.launchpad.database.binarypackage import BinaryPackage
 from canonical.launchpad.database.person import Person
 
@@ -303,4 +307,51 @@ class DistrosSet(object):
     def getDistribution(self, name):
         """Returns a Distribution with name = name"""
         return Distribution.selectBy(name=name)[0]
+
+class DistroTools(object):
+    """Tools for help Distribution and DistroRelase Manipulation """
+
+    implements(IDistroTools)
+
+    def createDistro(self, owner, title, description, domain):
+        """Create a Distribution """
+        ##XXX: cprov 20041207
+        ## Verify the name constraint as the postgresql does.
+        ## What about domain ???        
+        name = title.lower()
+        
+        return Distribution(name=name,
+                            title=title,
+                            description=description,
+                            domainname=domain,
+                            owner=owner)
+
+
+    def createDistroRelease(self, owner, title, distribution, shortdesc,
+                            description, version, parent):
+        ##XXX: cprov 20041207
+        ## Verify the name constraint as the postgresql does.
+        name = title.lower()
+
+        ## XXX: cprov 20041207
+        ## Define missed fields
+
+        return DistroRelease(name=name,
+                             distribution=distribution,
+                             title=title,
+                             shortdesc=shortdesc,
+                             description=description,
+                             version=version,
+                             owner=owner,
+                             parentrelease=int(parent),
+                             datereleased=datetime.utcnow(),
+                             components=1,
+                             releasestate=1,
+                             sections=1,
+                             lucilleconfig='')
+
+    def getDistroReleases(self):
+        return DistroRelease.select()
+    
+
 

@@ -95,12 +95,11 @@
   </form>
   </div>
 
-  <tla:block tal:condition="view/edit_action">
-  <div>
+  <div tal:condition="view/edit_action">
   <h4><a tal:attributes="href string:../${context/release/name}">
-  <span tal:content="context/release/title"/></a> Release Modified</h4>
+    <span tal:content="context/release/title"/></a> Release Modified</h4>
   </div>
-  </tla:block>
+
 
 
 

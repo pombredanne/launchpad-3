@@ -1,12 +1,12 @@
-<fieldset tal:condition="view/permission"> 
- <div>
-   <h3>Email Engine</h3>
+<div class="portlet" tal:condition="view/permission"> 
+ <h4>Email Portlet</h4>
 
+ <div class="portletBody">
+  <div class="portletContent even">
 
   <tal:dummy tal:condition="view/email_action"/>
 
    <form name="email" action="" method="POST">
-
    <div class="field">
       <label>Select an Email</label>
       <div class="formHelp">
@@ -60,4 +60,5 @@
   </div>
 
  </div>
-</fieldset>
+ </div>
+</div>

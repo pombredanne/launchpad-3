@@ -1,12 +1,12 @@
-<div>
-    <div tal:condition="view/is_owner"> 
+<div class="portlet" tal:condition="view/is_owner"> 
 
-    <div tal:omit-tag="" 
-         tal:condition="view/add_role"/>
+    <div tal:omit-tag="" tal:condition="view/add_role"/>
 
-    <form name="add" action="" method="POST">
+    <h4>Submit a New Role</h4>
 
-    <legend><h3>Submit a New Role</h3><legend>
+    <div class="portletBody">
+      <div class="portletContent even">
+        <form name="add" action="" method="POST">
  	<table>
 	<tr><td>
 	<div class="field">
@@ -43,23 +43,32 @@
 	</div>
 	</td></tr>
 	</table>
-  </form>
-  </div>
-
-
-  <h3>Roles</h3>
-
-  <div tal:condition="not:view/get_roles">
-  <p>No Member Yet
-  </div>
-
-  <table class="listing" tal:condition="view/get_roles">	
-    <tr> <th> Name</th> <th> Role</th> </tr>
-    <tr tal:repeat="team view/get_roles">
-       <td><a tal:attributes="href string:/foaf/people/${team/person/name}"
-	   tal:content="team/person/displayname">Displayname</a></td>
-       <td><span tal:content="team/rolename">ROLENAME</span></td>
-    </tr>
-  </table>
-
+        </form>
+	</div>
 </div>
+</div>
+
+<div class="portlet"> 
+   <h4>Roles</h4>
+
+   <div class="portletBody">
+    <div class="portletContent even">
+
+    <div tal:condition="not:view/get_roles">
+         <p>No Member Yet
+    </div>
+
+    <div tal:condition="view/get_roles">	
+      <p tal:repeat="team view/get_roles"> 
+          <img src="/++resource++user.gif" alt=""/>
+          <a class="link" 
+	     tal:attributes="href string:/foaf/people/${team/person/name}"
+	     tal:content="team/person/displayname">PERSON</a> as
+	     <span tal:content="team/rolename">ROLE</span>
+      </p>
+    </div>
+   </div>
+  </div>
+</div>
+
+

@@ -4,9 +4,8 @@
       i18n:domain="launchpad">
 
 <head>
-    <title metal:fill-slot="title">
-        Create New Release of 
-        <span tal:replace="context/distribution/displayname">Distro</span>
+    <title metal:fill-slot="title">Create New Release of 
+        <span tal:replace="context/distribution/title">DISTRO</span>
     </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -34,17 +33,6 @@
     <fieldset>
     <legend><h3>Create a New Release</h3><legend>
 	<table>
-	<tr><td>
-	<div class="field">
-	    <label>Name</label>
-	    <span class="fieldRequired" title="Required">(Required)</span>
-	    <div class="formHelp">
-	    Enter the Release Name.
-            </div>
-	    <input type="text" name="name"
-	    tal:attributes="value request/name|nothing"/>
-	</div>
-	</td></tr>
 	<tr><td>
 	<div class="field">
 	    <label>Title</label>
@@ -80,6 +68,19 @@
 	</td></tr>
 	<tr><td>
 	<div class="field">
+	    <label>Parent Release</label>
+	    <div class="formHelp">
+	    Select a Parent DistroRelease.
+            </div>
+            <select class="listing" name="parentrelease">
+	        <option tal:repeat="release view/getReleases" 
+		        tal:attributes="value release/id"
+                        tal:content="release/displayname">PARENT</option>
+            </select>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
 	    <label>Version</label>
 	    <div class="formHelp">
 	    Enter the Release Version.
@@ -97,12 +98,10 @@
   </form>
   </div>
 
-  <tla:block tal:condition="view/add_action">
-  <div>
-  <h4><a tal:attributes="href view/results/name">
-  <span tal:content="view/results/title"/></a> Release added</h4>
+  <div tal:condition="view/add_action">
+    <h4><a tal:attributes="href view/results/name">
+      <span tal:content="view/results/title"/></a> Release added</h4>
   </div>
-  </tla:block>
 
 
 

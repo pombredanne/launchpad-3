@@ -139,3 +139,14 @@ class IDistrosSet(Interface):
     def getDistribution(name):
         """Returns a Distribution with name=name"""
 
+class IDistroTools(Interface):
+    """Interfaces to Tools for Distribution and DistroRelase Manipulation"""
+
+    def createDistro(owner, title, description, domain):
+        """ Create a Distribution """
+
+    def createDistroRelease(owner, title, distribution, shortdesc, description,
+                            version, parent):
+        """ Create a DistroRelease """        
+    def getDistroRelease():
+        """Return All Available DistroReleases"""

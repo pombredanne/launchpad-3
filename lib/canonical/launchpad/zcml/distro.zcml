@@ -46,4 +46,8 @@
      factory="canonical.launchpad.database.DistrosSet"
      provides="canonical.launchpad.interfaces.IDistrosSet" />
 
+  <utility
+     factory="canonical.launchpad.database.DistroTools"
+     provides="canonical.launchpad.interfaces.IDistroTools" />
+
 </configure>
