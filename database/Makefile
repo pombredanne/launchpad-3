@@ -23,26 +23,22 @@ default:
 	sudo sudo -u postgres createuser -A -d $$(id -un)
 	id -un > $@
 
-+launchpad-db: +pguser
-	@ echo '* create the database'
-	createdb launchpad
++launchpad-db +launchpad_test-db: +%-db: +pguser
+	@ echo '* create the $* database'
+	createdb $*
 	touch $@
 
-launchpad: +launchpad-db
-	@ echo '* create the database tables'
-	psql --file launchpad.sql launchpad
-	@ echo '* populate it with the schema information'
-	psql --file schemas.sql launchpad
+launchpad launchpad_test: %: +%-db
+	@ echo '* create the $* database tables'
+	psql --file launchpad.sql $*
+	@ echo '* populate database $* with the schema information'
+	psql --file schemas.sql $*
 
-+launchpad_test-db: +pguser
-	@ echo '* create the database'
-	createdb launchpad_test
-	touch $@
+dropdb-launchpad dropdb-launchpad_test: dropdb-%: +%-db
+	@ echo '* remove the $* database'
+	dropdb $*
+	rm $<
 
-launchpad_test: +launchpad_test-db
-	@ echo '* create the database tables'
-	psql --file launchpad.sql launchpad_test
-	@ echo '* populate it with the schema information'
-	psql --file schemas.sql launchpad_test
 
 .PHONY: default launchpad launchpad_test
+.PHONY: dropdb-launchpad dropdb-launchpad_test

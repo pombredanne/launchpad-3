@@ -1835,8 +1835,8 @@ CREATE TABLE SourceSource (
   rcstype                   integer NOT NULL,
   hosted                    text,
   upstreamname              text,
-  processingapproved        boolean NOT NULL DEFAULT false,
-  syncingapproved           boolean NOT NULL DEFAULT false,
+  processingapproved        timestamp,
+  syncingapproved           timestamp,
   /* These columns are used to create new archives/branches in the DB based on
      values imported from .info files */
   newarchive                text,
