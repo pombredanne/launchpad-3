@@ -1,13 +1,15 @@
+import os
+import urlparse
+import urllib2
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import quote, SQLBase
 from canonical.launchpad.database import ProductReleaseFile, ProductRelease
 from canonical.librarian.client import FileUploadClient
 from canonical.lp import dbschema
 
-import urlparse, urllib2
 
-# FIXME: Hard-coded config!
-librarianHost = 'macaroni.ubuntu.com'
+librarianHost = os.environ.get('LIBRARIAN_HOST', 'macaroni.ubuntu.com')
 librarianPort = 9090
 
 

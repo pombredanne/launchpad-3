@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-16 12:09:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1319
+
+    Summary:
+      allow overriding of fileimporter.librarianHost by $LIBRARIAN_HOST
+    Revision:
+      launchpad--devel--0--patch-1319
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-57
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-58
+       allow overriding of fileimporter.librarianHost by $LIBRARIAN_HOST
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/doap/fileimporter.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-57
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-58
+
+
 2005-02-15 21:03:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1318
 
     Summary:
