@@ -189,12 +189,14 @@ class LaunchpadLoginSource:
 
     def _principalForPerson(self, person):
         person = removeSecurityProxy(person)
-        return LaunchpadPrincipal(
+        principal = LaunchpadPrincipal(
             person.id,
             person.displayname,
             '%s %s' % (person.givenname, person.familyname),
-            person.password
+            person.password,
             )
+        principal.__parent__ = self
+        return principal
 
 
 class LaunchpadPrincipal:

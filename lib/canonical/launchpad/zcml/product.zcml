@@ -112,7 +112,7 @@
         fields="displayname title shortdesc description homepageurl
                 screenshotsurl wikiurl programminglang downloadurl
                 sourceforgeproject freshmeatproject"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
         template="../templates/product-edit.pt"
         lp:url="doap/projects/$Project.name/$Product.name/+edit">
     </browser:editform>

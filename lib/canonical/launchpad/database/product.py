@@ -121,8 +121,10 @@ class Product(SQLBase):
         if permission == 'launchpad.Edit':
             if self.id == principal.id:
                 return True
-            else: return False
-        return False
+            else:
+                return False
+        else:
+            return False
 
     def newseries(self, form):
         # Extract the details from the form
