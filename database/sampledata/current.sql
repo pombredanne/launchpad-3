@@ -730,15 +730,15 @@ INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (5, 11, 2, 2)
 
 
 
-INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee) VALUES (1, 1, 1, 2, 4, 2, NULL, NULL);
-INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee) VALUES (2, 2, 1, 2, 4, 2, NULL, 12);
-INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee) VALUES (3, 3, 1, 1, 2, 3, NULL, NULL);
+INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee, dateassigned) VALUES (1, 1, 1, 2, 4, 2, NULL, NULL, '2004-10-11 11:07:20.584746');
+INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee, dateassigned) VALUES (2, 2, 1, 2, 4, 2, NULL, 12, '2004-10-11 11:07:20.584746');
+INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackagename, assignee, dateassigned) VALUES (3, 3, 1, 1, 2, 3, NULL, NULL, '2004-10-11 11:07:20.584746');
 
 
 
-INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (2, 2, 1, 1, 2, 2, NULL);
-INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (1, 1, 1, 1, 3, 2, 5);
-INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (5, 1, 4, 1, 1, 2, 1);
+INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee, dateassigned) VALUES (2, 2, 1, 1, 2, 2, NULL, '2004-10-11 11:07:20.330975');
+INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee, dateassigned) VALUES (1, 1, 1, 1, 3, 2, 5, '2004-10-11 11:07:20.330975');
+INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee, dateassigned) VALUES (5, 1, 4, 1, 1, 2, 1, '2004-10-11 11:07:20.330975');
 
 
 
