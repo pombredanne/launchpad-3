@@ -14,6 +14,7 @@ from sqlobject import ForeignKey, MultipleJoin, RelatedJoin, IntCol, \
     BoolCol, StringCol, DateTimeCol, SQLObjectNotFound
 from zope.interface import implements, directlyProvides
 from zope.component import getUtility
+from canonical.lp.dbschema import RosettaTranslationOrigin
 
 
 # XXX: in the four strings below, we should fill in owner information
@@ -490,6 +491,11 @@ class POFile(SQLBase):
         return createMessageSetFromText(self, text)
 
     def updateStatistics(self):
+        # XXX: Carlos Perello Marin 05/10/04 This method should be reviewed
+        # harder after the final decission about how should we use active and
+        # inLastRevision fields.
+        # I'm not doing it now because the statistics works is not completed
+        # and I don't want to conflict with lalo's work.
         current = POMessageSet.select('''
             POMsgSet.sequence > 0 AND
             POMsgSet.fuzzy = FALSE AND
@@ -783,7 +789,6 @@ class POMessageSet(SQLBase):
                     "message set, text, and plural form")
 
             existing = existing[0]
-            # XXX: Do we always want to set inLastRevision to True?
             existing.set(dateLastSeen = nowUTC, inLastRevision = True)
 
             return existing
@@ -833,15 +838,15 @@ class POMessageSet(SQLBase):
                 dateLastActive = nowUTC,
                 active = True,
                 # XXX: Ugly!
+                # XXX: Carlos Perello Marin 05/10/04 Why is ugly?
                 inLastRevision = sighting.inLastRevision or fromPOFile)
         else:
             # No sighting exists yet.
 
-            # XXX: This should use dbschema constants.
             if fromPOFile:
-                origin = 1
+                origin = int(RosettaTranslationOrigin.SCM)
             else:
-                origin = 2
+                origin = int(RosettaTranslationOrigin.ROSETTAWEB)
 
             sighting = POTranslationSighting(
                 poMessageSet=self,
