@@ -71,7 +71,6 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         importer.doImport(self.pot)
         get_transaction().commit()
         # try a second time to see if it breaks
-        importer = TemplateImporter(poTemplate, XXXperson)
         self.pot.seek(0)
         importer.doImport(self.pot)
         get_transaction().commit()
@@ -143,7 +142,6 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         importer.doImport(self.po)
         get_transaction().commit()
         # try a second time to see if it breaks
-        importer = POFileImporter(poFile, XXXperson)
         self.po.seek(0)
         importer.doImport(self.po)
         # check that there aren't duplicates in the db

@@ -11,17 +11,21 @@ class UnknownUserError(Exception):
 
 
 # XXX: if you *modify* the adapted pofile "object", it assumes you're updating
-#      it from the latest revision (for the purposes of inLatestRevision fields).
+#      it from the latest revision (for the purposes of inLastRevision fields).
 #      That should probably be optional.
 
 
 class WatchedSet(sets.Set):
     """ Mutable set class that "warns" a callable when changed."""
+    # (Used for bridging flags/flagsComment)
 
+    # need __slots__ because sets.Set says we do
     __slots__ = ['_watcher']
 
     def __init__(self, watcher, iterable=None):
-        """Construct a set from an optional iterable."""
+        """Construct a set from an optional iterable.
+        Watcher is called, with self as an argument, whenever
+        our contents change."""
         self._data = {}
         self._watcher = watcher
         if iterable is not None:
@@ -69,72 +73,117 @@ class WatchedSet(sets.Set):
 
 
 class TranslationsList(object):
+    """Special list-like object to bridge translations.  It pretends to
+    be a list of strings, but it actually fetches values from the database,
+    using translation sightings associated with the passed message set."""
     def __init__(self, messageset, person):
+        # message set we'll use to access the database
         self._msgset = messageset
+        # a person - in case we need to create rows
         self._who = person
-        # cache, as we use that value a lot
+        # cache the number of plural forms, as we use that value a lot
         if messageset.poFile is None:
             # allow pot-sets to have 2 msgstrs, since some efforts
             # seem to like it that way
             self._nplurals = len(list(messageset.messageIDs()))
         else:
+            # find the correct number of forms - fortunately we
+            # have a method that does just that
             self._nplurals = messageset.pluralForms()
 
-    # FIXME: this list implementation is incomplete.  Dude, if you want to do
+    # XXX: this list implementation is incomplete.  Dude, if you want to do
     # del foo.msgstrs[2]
     # or
     # foo.msgstrs.pop()
     # then you're probably on crack anyway.
 
     def __setitem__(self, index, value):
+        "one single item is being set; index is the plural form"
+        # an empty value is interpreted by Rosetta as not having
+        # translation for this form; we don't have sightings for
+        # the empty translation.
         if not value:
+            # if our message set is a template set, then it's *supposed*
+            # to not have any translations
             if self._msgset.poFile is None:
-                # template
                 return
+            # if it's a pofile set, then check if there was already a
+            # translation in the DB which needs to be outdated
             try:
-                sighting = self._msgset.getTranslationSighting(index, allowOld=True)
+                sighting = self._msgset.getTranslationSighting(index, allowOld=False)
             except IndexError:
                 # nothing passed, nothing in the DB, then it's ok
                 return
-            sighting.inLatestRevision = False
+            # there is one in the DB; mark it as historic
+            sighting.inLastRevision = False
+            # we're done
+            return
+
+        # value is not empty; there is actually a translation
+        # check that the plural form index makes sense
         if index > self._nplurals:
             raise IndexError, index
+        # if we're a template set, we can't have translations
         if self._msgset.poFile is None:
-            # template
             raise pofile.POSyntaxError(msg="PO Template has translations!")
+        # if we don't have a Person instance, we can't create rows
         if self._who is None:
             raise UnknownUserError, \
                   "Tried to create objects but have no Person to associate it with"
+        # create a translation sighting, or update an existing one
         self._msgset.makeTranslationSighting(self._who, value, index,
                                              update=True, fromPOFile=True)
 
     def __getitem__(self, index):
+        "one single item is being requested; index is the plural form"
+        # first check if it is in the database
         try:
-            return self._msgset.getTranslationSighting(index, allowOld=True).poTranslation.translation
+            return self._msgset.getTranslationSighting(index, allowOld=False).poTranslation.translation
         except KeyError:
+            # it's not; but if it's a valid plural form, we should return
+            # an empty string
             if index < self._nplurals:
                 return ''
+            # otherwise, raise an exception
             raise IndexError, index
 
     def __len__(self):
+        "return the number of actual translations."
+        # XXX shouldn't it maybe return self._nplurals since this is the
+        # number of items __getitem__ will return?
         return len(list(self._msgset.translations()))
 
     def append(self, value):
+        "add a new item at the end of the list"
+        # only valid if we're not already complete
         if len(self) >= self._nplurals:
             raise ValueError, "Too many plural forms"
+        # and if we have an associated Person object
         if self._who is None:
             raise UnknownUserError, \
                   "Tried to create objects but have no Person to associate it with"
+        # XXX: should probably check if value is not empty/None
+        # create (or update) a translation sighting
         self._msgset.makeTranslationSighting(self._who, value, len(self),
                                              update=True, fromPOFile=True)
 
 
+# marker value used as default in the constructor, to detect the fact
+# that an actual parameter was not passed in
 _marker = []
 
 class MessageProxy(POMessage):
     implements(IPOMessage)
 
-    def __init__(self, msgset, master_msgset=_marker, person=None):
+    def __init__(self, msgset, template_msgset=_marker, person=None):
+        """Initialize a proxy.  We pretend to be a POMessage (and
+        in fact shamelessly leech its methods), but our *data* is
+        acquired from the database.  We get the data associated with
+        msgset; optionally, we can have a "master" msgset which will
+        be used for some authoritative information - tipically, when
+        msgset is a pofile-set, the corresponding template-set will
+        be used as master_msgset.  The person object is used in case
+        we need to create rows (for translations, sightings, etc)."""
         self._msgset = msgset
         self._override_obsolete = False
         if master_msgset is _marker:
@@ -145,6 +194,9 @@ class MessageProxy(POMessage):
         else:
             self._master_msgset = master_msgset
         self._who = person
+        # create and store the TranslationsList object; since it's
+        # fully dynamic, we can have a single one troughout our
+        # lifetime
         self._translations = TranslationsList(msgset, person)
         self._pending_writes = {}
 
