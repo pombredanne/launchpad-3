@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-17 20:37:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1331
+
+    Summary:
+      SourceSource handles new datetime intervals
+    Revision:
+      launchpad--devel--0--patch-1331
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-64
+       SourceSource handles new datetime intervals
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/sourcesource.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-64
+
+
 2005-02-17 20:28:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1330
 
     Summary:
