@@ -13,7 +13,7 @@ First of all, create some teams:
 >>> teampart = TeamParticipationSet()
 >>> OPEN = int(TeamSubscriptionPolicy.OPEN)
 >>> MODERATED = int(TeamSubscriptionPolicy.MODERATED)
->>> expires = datetime('2005-12-01')
+>>> expires = datetime(2005, 12, 01)
 >>> p = Person.byName('name16')
 >>> t1 = Person(subscriptionpolicy=OPEN, name='t1', teamowner=p)
 >>> t2 = Person(subscriptionpolicy=OPEN, name='t2', teamowner=p)

@@ -109,11 +109,11 @@ def BugFactory(*args, **kw):
         # they can actually see it!
         BugSubscription(
             person = kw['product'].owner.id, bug = bug.id,
-            subscription = dbschema.BugSubscription.CC.value)
+            subscription = dbschema.BugSubscription.CC)
 
     BugSubscription(
         person = kw['owner'].id, bug = bug.id,
-        subscription = dbschema.BugSubscription.CC.value)
+        subscription = dbschema.BugSubscription.CC)
 
     # create the bug comment if one was given
     if kw.get('comment', None):

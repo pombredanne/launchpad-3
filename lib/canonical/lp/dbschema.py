@@ -68,6 +68,48 @@ __all__ = (
 from zope.interface.advice import addClassAdvisor
 import sys
 
+from sqlobject.col import IntCol
+
+
+class EnumCol(IntCol):
+
+    def __init__(self, **kw):
+        self.schema = kw.pop('schema')
+        if not issubclass(self.schema, DBSchema):
+            raise TypeError('schema must be a DBSchema: %r' % self.schema)
+        IntCol.__init__(self, **kw)
+
+    def fromPython(self, value, state):
+        """Convert from DBSchema Item to int.
+
+        >>> col = EnumCol(dbName='status', notNull=True,
+        ...     schema=BugTaskStatus, default=BugTaskStatus.NEW)
+        >>> col.fromPython(BugTaskStatus.PENDINGUPLOAD, None)
+        25
+        >>> col.fromPython(ImportTestStatus.NEW, None)
+        Traceback (most recent call last):
+        ...
+        TypeError: DBSchema Item from wrong class
+        >>>
+
+        """
+        if not isinstance(value, Item):
+            raise TypeError('Not a DBSchema Item: %r' % value)
+        if value.schema is not self.schema:
+            raise TypeError('DBSchema Item from wrong class')
+        return value.value
+
+    def toPython(self, value, state):
+        """Convert from int to DBSchema Item.
+
+        >>> col = EnumCol(dbName='status', notNull=True,
+        ...     schema=BugTaskStatus, default=BugTaskStatus.NEW)
+        >>> col.toPython(25, None) is BugTaskStatus.PENDINGUPLOAD
+        True
+
+        """
+        return self.schema.items[value]
+
 
 def docstring_to_title_descr(string):
     """When given a classically formatted docstring, returns a tuple
@@ -171,7 +213,7 @@ class Item:
             self.description = description
 
     def _setClassFromAdvice(self, cls):
-        self._class = cls
+        self.schema = cls
         names = [k for k, v in cls.__dict__.iteritems() if v is self]
         assert len(names) == 1
         self.name = names[0]
@@ -187,7 +229,10 @@ class Item:
         return str(self.value)
 
     def __repr__(self):
-        return "<Item %s (%d) from %s>" % (self.name, self.value, self._class)
+        return "<Item %s (%d) from %s>" % (self.name, self.value, self.schema)
+
+    def __sqlrepr__(self, dbname):
+        return repr(self.value)
 
     def __eq__(self, other):
         if isinstance(other, int):

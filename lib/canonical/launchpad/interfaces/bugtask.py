@@ -46,7 +46,7 @@ class IBugTask(IHasDateCreated):
         title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Bug Status'), vocabulary='BugStatus',
-        default=int(dbschema.BugTaskStatus.NEW))
+        default=dbschema.BugTaskStatus.NEW)
     priority = Choice(
         title=_('Priority'), vocabulary='BugPriority',
         default=int(dbschema.BugPriority.MEDIUM))

@@ -140,8 +140,8 @@ class DistroRelease(SQLBase):
                  "VSourcePackageInDistro.name = BugTask.sourcepackagename AND "
                  "(BugTask.status != %i OR BugTask.status != %i)"
                  %(self.id,
-                   int(dbschema.BugTaskStatus.FIXED),
-                   int(dbschema.BugTaskStatus.REJECTED)))
+                   dbschema.BugTaskStatus.FIXED,
+                   dbschema.BugTaskStatus.REJECTED))
 
         return SourcePackageInDistro.select(
             query, clauseTables=clauseTables, distinct=True)

@@ -35,6 +35,7 @@ from canonical.launchpad.database.pofile import POTemplate
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
+from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import KarmaField
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.lp.dbschema import TeamSubscriptionPolicy
@@ -173,7 +174,7 @@ class Person(SQLBase):
             ''')
 
     def assignKarma(self, karmafield, points=None):
-        if karmafield not in KarmaField.items:
+        if karmafield.schema is not KarmaField:
             raise TypeError('"%s" is not a valid KarmaField value')
         if points is None:
             try:
@@ -183,7 +184,7 @@ class Person(SQLBase):
                 points = 0
                 # Print a warning here, cause someone forgot to add the
                 # karmafield to KARMA_POINTS.
-        Karma(person=self, karmafield=karmafield.value, points=points)
+        Karma(person=self, karmafield=karmafield, points=points)
         # XXX: salgado, 2005-01-12: I think we should recalculate the karma
         # here, but first we must define karma points and depreciation
         # methods.
@@ -896,7 +897,7 @@ class Karma(SQLBase):
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     points = IntCol(dbName='points', notNull=True, default=0)
-    karmafield = IntCol(dbName='karmafield', notNull=True)
+    karmafield = EnumCol(dbName='karmafield', notNull=True, schema=KarmaField)
     datecreated = DateTimeCol(dbName='datecreated', notNull=True, default='NOW')
 
     def _karmafieldname(self):

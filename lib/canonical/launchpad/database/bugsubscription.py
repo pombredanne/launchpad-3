@@ -5,6 +5,7 @@ from zope.interface import implements
 from sqlobject import ForeignKey, IntCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
+from canonical.lp.dbschema import BugSubscription, EnumCol
 from canonical.launchpad.interfaces import IBugSubscription, \
         IBugSubscriptionSet
 
@@ -21,8 +22,8 @@ class BugSubscription(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person',
                 notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    subscription = IntCol(notNull=True)
-
+    subscription = EnumCol(
+        dbName='subscription', notNull=True, schema=BugSubscription)
 
 def BugSubscriptionFactory(context, **kw):
     bug = context.context.bug

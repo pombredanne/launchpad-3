@@ -67,6 +67,17 @@ def test_constructor():
     >>> print repr(SomeClass.attribute)
     <Item attribute (2) from canonical.lp.tests.test_dbschema.SomeClass>
 
+    An Item can tell you its class.
+
+    >>> SomeClass.attribute.schema is SomeClass
+    True
+
+    An Item knows how to represent itself for use in SQL queries by SQLObject.
+    The 'None' value passed in is the database type (I think).
+
+    >>> SomeClass.attribute.__sqlrepr__(None)
+    '2'
+
     """
 
 def test_decorator():

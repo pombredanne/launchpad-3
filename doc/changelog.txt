@@ -2,6 +2,42 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-09 18:26:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1398
+
+    Summary:
+      EnumCol for DBSchema columns.
+    Revision:
+      launchpad--devel--0--patch-1398
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-2
+       make EnumCol type for using DBSchema with sqlobject.  Make DBSchema Items have an __sqlrepr__ method.
+    
+     * steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-3
+       Converted some IntCols to be EnumCols, and removed DBSchemaClass.ITEM.value where possible in these cases.
+    
+     * steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-4
+       refuel, plus fix literal string date used as datetime constructor in teamparticipation.txt
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugsubscription.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/teamparticipation.txt
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/lp/dbschema.py
+     lib/canonical/lp/tests/test_dbschema.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-2
+     steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-3
+     steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-4
+
+
 2005-03-09 15:05:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1397
 
     Summary:

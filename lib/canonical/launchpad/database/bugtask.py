@@ -17,6 +17,7 @@ from zope.interface import implements, directlyProvides, directlyProvidedBy
 from zope.interface import implements
 
 from canonical.lp import dbschema
+from canonical.lp.dbschema import EnumCol
 from canonical.launchpad.interfaces import IBugTask
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import nowUTC, DEFAULT
@@ -48,15 +49,18 @@ class BugTask(SQLBase):
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None)
-    status = IntCol(
+    status = EnumCol(
         dbName='status', notNull=True,
-        default=int(dbschema.BugTaskStatus.NEW))
-    priority = IntCol(
+        schema=dbschema.BugTaskStatus,
+        default=dbschema.BugTaskStatus.NEW)
+    priority = EnumCol(
         dbName='priority', notNull=True,
-        default=int(dbschema.BugPriority.MEDIUM))
-    severity = IntCol(
+        schema=dbschema.BugPriority,
+        default=dbschema.BugPriority.MEDIUM)
+    severity = EnumCol(
         dbName='severity', notNull=True,
-        default=int(dbschema.BugSeverity.NORMAL))
+        schema=dbschema.BugSeverity,
+        default=dbschema.BugSeverity.NORMAL)
     binarypackagename = ForeignKey(
         dbName='binarypackagename', foreignKey='BinaryPackageName',
         notNull=False, default=None)
@@ -239,8 +243,8 @@ class BugTaskSet:
                 "                (BugSubscription.person = %(personid)d) AND "
                 "                (BugSubscription.subscription IN (%(cc)d, %(watch)d))))))") %
                 {'personid' : user.id,
-                 'cc' : dbschema.BugSubscription.CC.value,
-                 'watch' : dbschema.BugSubscription.WATCH.value})
+                 'cc' : dbschema.BugSubscription.CC,
+                 'watch' : dbschema.BugSubscription.WATCH})
 
         bugtasks = BugTask.select(
             query, clauseTables = ["Bug", "BugTask"])
