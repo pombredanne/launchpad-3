@@ -52,9 +52,12 @@
     <tr tal:repeat="assignment ass_batch">
       <span tal:omit-tag=""
             tal:define="bugid assignment/bug/id;
+                        assid assignment/id;
                         product_name assignment/product/name|nothing;
                         project_name assignment/product/project/name|nothing;
                         package_name assignment/sourcepackage/sourcepackagename/name|nothing;
+                        collection_name python:(product_name and 'productassignments') or 'packageassignments';
+                        ass_link string:$bugid/$collection_name/$assid/+edit;
                         ass_owner assignment/owner/name|nothing;
                         potential_assignee request/lp:person/displayname|nothing;
                         status assignment/bugstatus/lp:BugAssignmentStatus;
@@ -64,30 +67,30 @@
                         statusid string:status${repeat/assignment/number};
                         assigneeid string:assignee${repeat/assignment/number};">
           <td tal:content="bugid"
-              tal:attributes="onclick string:window.location='${bugid}';">$Bug.title</td>
+              tal:attributes="onclick string:window.location='${ass_link}';">$Bug.title</td>
           <td tal:condition="product_name"
               tal:content="python: (project_name == product_name) and product_name or (project_name + ' ' + product_name)"
-              tal:attributes="onclick string:window.location='${bugid}';">product</td>
+              tal:attributes="onclick string:window.location='${ass_link}';">product</td>
           <td tal:condition="not:product_name"
-              tal:attributes="onclick string:window.location='${bugid}';">-</td>
+              tal:attributes="onclick string:window.location='${ass_link}';">-</td>
           <td tal:content="python:package_name and package_name or '-'"
-              tal:attributes="onclick string:window.location='${bugid}';">-</td>
-          <td tal:attributes="onclick string:window.location='${bugid}';">
+              tal:attributes="onclick string:window.location='${ass_link}';">-</td>
+          <td tal:attributes="onclick string:window.location='${ass_link}';">
             <a tal:content="assignment/bug/title" tal:attributes="href bugid">title</a>
           </td>
           <td tal:content="status"
-              tal:attributes="onclick string:window.location='${bugid}';
+              tal:attributes="onclick string:window.location='${ass_link}';
                               id statusid">New</td>
           <td tal:content="priority"
-              tal:attributes="onclick string:window.location='${bugid}';">High</td>
+              tal:attributes="onclick string:window.location='${ass_link}';">High</td>
           <td tal:content="severity"
-              tal:attributes="onclick string:window.location='${bugid}';">Medium</td>
+              tal:attributes="onclick string:window.location='${ass_link}';">Medium</td>
           <td tal:content="python:assignment.datecreated.strftime('%d %b %y')"
-              tal:attributes="onclick string:window.location='${bugid}';">date</td>
+              tal:attributes="onclick string:window.location='${ass_link}';">date</td>
           <td tal:content="assignment/owner/displayname|string:-"
-              tal:attributes="onclick string:window.location='${bugid}';">name</td>
+              tal:attributes="onclick string:window.location='${ass_link}';">name</td>
           <td tal:content="assignment/assignee/displayname|string:-"
-              tal:attributes="onclick string:window.location='${bugid}';
+              tal:attributes="onclick string:window.location='${ass_link}';
                               id assigneeid;">somebody</td>
           <td tal:condition="request/lp:person">
             <a href=""
