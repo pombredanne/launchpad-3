@@ -73,7 +73,7 @@
 
     <!-- Authentication. -->
     <utility
-        factory="canonical.launchpad.webapp.authentication.PlacelessAuthUtility"
+        component="canonical.launchpad.webapp.authentication.authService"
         provides="canonical.launchpad.webapp.interfaces.IPlacelessAuthUtility"
         permission="zope.Public"
         />
@@ -105,7 +105,7 @@
         />
 
     <utility
-        factory="canonical.launchpad.webapp.authentication.LaunchpadLoginSource"
+        component="canonical.launchpad.webapp.authentication.loginSource"
         provides="canonical.launchpad.webapp.interfaces.IPlacelessLoginSource"
         permission="zope.Public"
         />

@@ -159,7 +159,6 @@ class SSHADigestEncryptor:
         v = binascii.b2a_base64(sha.new(plaintext + salt).digest() + salt)[:-1]
         return (v == encrypted)
 
-
 class LaunchpadLoginSource:
     """A login source that uses the launchpad SQL database to look up
     principal information.
@@ -198,6 +197,10 @@ class LaunchpadLoginSource:
         principal.__parent__ = self
         return principal
 
+# Fake a containment heirarchy because Zope3 is on crack
+authService = PlacelessAuthUtility()
+loginSource = LaunchpadLoginSource()
+loginSource.__parent__ = authService
 
 class LaunchpadPrincipal:
 
