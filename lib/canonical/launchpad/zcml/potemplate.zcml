@@ -13,6 +13,11 @@
             set_attributes="name title description copyright path
                             priority distrorelease sourcepackagename"
             />
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IRawFileData"
+            set_attributes="rawimportstatus"
+            />
     </content>
 
     <browser:traverse

@@ -438,9 +438,6 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
 
-    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
-        imported, 2 failed.""")
-
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
 

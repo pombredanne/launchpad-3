@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-17 17:45:34 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1328
+
+    Summary:
+      Bug fix I missed with previous merge
+    Revision:
+      launchpad--devel--0--patch-1328
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-25
+       Fixed a missing import from my previous patch
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-26
+       Fixed the bug about IRawFileData
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/zcml/pofile.zcml
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-25
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-26
+
+
 2005-02-17 15:20:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1327
 
     Summary:

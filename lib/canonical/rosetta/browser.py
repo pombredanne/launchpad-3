@@ -24,7 +24,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILanguageSet,  \
     IProjectSet, IProductSet, IPasswordEncryptor, IRequestLocalLanguages, \
     IRequestPreferredLanguages, IDistributionSet, ISourcePackageNameSet, \
-    ILaunchBag
+    ILaunchBag, IRawFileData
 
 from canonical.launchpad.database import Person, POTemplate, POFile
 
