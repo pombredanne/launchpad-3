@@ -2,6 +2,64 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-31 15:50:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1530
+
+    Summary:
+      Rosetta Polish about portlets and URLs
+    Revision:
+      launchpad--devel--0--patch-1530
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-581
+       Rosetta URL/webs polish
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-582
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-583
+       Moved code to reuse it instead of copy it over an over again
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-rosetta-source-package-pots-redirect.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-source-package-pots-redirect.txt
+
+    removed files:
+     lib/canonical/launchpad/templates/.arch-ids/potemplatesubset-index.pt.id
+     lib/canonical/launchpad/templates/potemplatesubset-index.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/browser/potemplate.py
+     lib/canonical/launchpad/browser/productrelease.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/browser/sourcepackagename.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/vsourcepackagereleasepublishing.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-edit-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-edit-not-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-edit-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-edit-not-allowed.txt
+     lib/canonical/launchpad/templates/object-pots.pt
+     lib/canonical/launchpad/templates/portlet-distrorelease-actions.pt
+     lib/canonical/launchpad/templates/portlet-product-translations.pt
+     lib/canonical/launchpad/templates/potemplate-index.pt
+     lib/canonical/launchpad/templates/rosetta-preferences.pt
+     lib/canonical/launchpad/templates/sourcepackage-index.pt
+     lib/canonical/launchpad/templates/sourcepackage.pt
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/launchpad/zcml/vsourcepackagereleasepublishing.zcml
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-581
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-582
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-583
+
+
 2005-03-31 12:56:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1529
 
     Summary:

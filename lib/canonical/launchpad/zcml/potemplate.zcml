@@ -106,8 +106,8 @@
         name="+index"
         for="canonical.launchpad.interfaces.IPOTemplateSubset"
         permission="zope.Public"
-        template="../templates/potemplatesubset-index.pt"
         class="canonical.launchpad.browser.POTemplateSubsetView"
+        attribute="__call__"
         />
 
 </configure>

@@ -14,10 +14,6 @@
     for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
     name="+index" />
 
-  <browser:traverse
-    for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
-    getter="traverse" />
-
   <browser:pages
     for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
     permission="zope.Public"

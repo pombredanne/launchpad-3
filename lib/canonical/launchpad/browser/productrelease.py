@@ -9,6 +9,8 @@ from canonical.rosetta.browser import request_languages, TemplateLanguages
 # launchpad interfaces
 from canonical.launchpad.interfaces import IPOTemplateSet
 
+from canonical.launchpad import helpers
+
 # launchpad db objects
 from canonical.launchpad.database import ProductRelease
 
@@ -62,11 +64,17 @@ class ProductReleaseView:
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-actions.pt')
 
-    prefLangsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-pref-langs.pt')
-
     statusLegend = ViewPageTemplateFile(
         '../templates/portlet-rosetta-status-legend.pt')
+
+    prefLangPortlet = ViewPageTemplateFile(
+        '../templates/portlet-pref-langs.pt')
+
+    countryPortlet = ViewPageTemplateFile(
+        '../templates/portlet-country-langs.pt')
+
+    browserLangPortlet = ViewPageTemplateFile(
+        '../templates/portlet-browser-langs.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -108,4 +116,9 @@ class ProductReleaseView:
 
         return self._template_languages
 
+    def requestCountry(self):
+        return helpers.requestCountry(self.request)
+
+    def browserLanguages(self):
+        return helpers.browserLanguages(self.request)
 

@@ -64,15 +64,6 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
                              distrorelease=self.distrorelease)
     sourcepackage = property(sourcepackage)
 
-    def traverse(self, name):
-        if name == '+rosetta':
-            potemplateset = getUtility(IPOTemplateSet)
-            return potemplateset.getSubset(
-                distrorelease=self.distrorelease,
-                sourcepackagename=self.sourcepackage.sourcepackagename)
-        else:
-            raise KeyError, 'No such traversal: %s' % name
-
 
 # 24/03/05 sabdfl I've renamed this to XXXcreateSourcePackage because I
 # don't think it's used any longer, please remove if it's still here in a

@@ -16,6 +16,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 # interface import
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import IPerson,\
                                            IPersonSet, \
                                            IDistroTools
@@ -44,7 +45,7 @@ def linkify_changelog(changelog, sourcepkgnametxt):
     return changelog
 
 def traverseSourcePackage(sourcepackage, request, name):
-    if name in ['+rosetta', '+pots']:
+    if name == '+pots':
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(
                    distrorelease=sourcepackage.distrorelease,
@@ -160,11 +161,20 @@ class SourcePackageInDistroSetView(object):
 
 class SourcePackageView:
 
+    translationsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-sourcepackage-translations.pt')
+
     statusLegend = ViewPageTemplateFile(
         '../templates/portlet-rosetta-status-legend.pt')
 
-    translationsPortlet = ViewPageTemplateFile(
-        '../templates/portlet-sourcepackage-translations.pt')
+    prefLangPortlet = ViewPageTemplateFile(
+            '../templates/portlet-pref-langs.pt')
+
+    countryPortlet = ViewPageTemplateFile(
+        '../templates/portlet-country-langs.pt')
+
+    browserLangPortlet = ViewPageTemplateFile(
+        '../templates/portlet-browser-langs.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -240,8 +250,11 @@ class SourcePackageView:
 
         return self._template_languages
 
+    def requestCountry(self):
+        return helpers.requestCountry(self.request)
 
-
+    def browserLanguages(self):
+        return helpers.browserLanguages(self.request)
 
 
 class SourcePackageBugsView:

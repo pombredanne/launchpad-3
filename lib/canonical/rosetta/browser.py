@@ -703,7 +703,6 @@ class ViewPreferences:
         self.request = request
 
         self.error_msg = None
-        self.submitted_personal = False
         self.person = getUtility(ILaunchBag).user
 
     def languages(self):
@@ -715,12 +714,9 @@ class ViewPreferences:
     def submit(self):
         '''Process a POST request to one of the Rosetta preferences forms.'''
 
-        if self.request.method == "POST":
-            if "SAVE-LANGS" in self.request.form:
-                self.submitLanguages()
-            elif "SAVE-PERSONAL" in self.request.form:
-                self.submitPersonal()
-                self.submitted_personal = True
+        if (self.request.method == "POST" and
+            "SAVE-LANGS" in self.request.form):
+            self.submitLanguages()
 
     def submitLanguages(self):
         '''Process a POST request to the language preference form.
@@ -759,44 +755,6 @@ class ViewPreferences:
         for language in old_languages:
             if language.englishname not in new_languages:
                 self.person.removeLanguage(language)
-
-    def submitPersonal(self):
-        '''Process a POST request to the personal information form.'''
-
-        # First thing to do, check the password. If it's wrong, we stop.
-        currentPassword = self.request.form['currentPassword']
-        encryptor = getUtility(IPasswordEncryptor)
-        isvalid = encryptor.validate(currentPassword, self.person.password)
-
-        if not (currentPassword and isvalid):
-            self.error_msg = "The password you entered is not valid."
-
-        password1 = self.request.form['newPassword1']
-        password2 = self.request.form['newPassword2']
-
-        if password1:
-            if password1 == password2:
-                try:
-                    self.person.password = encryptor.encrypt(password1)
-                except UnicodeEncodeError:
-                    self.error_msg = (
-                        "Your password must contatin ASCII characters only.")
-            else:
-                self.error_msg = (
-                    "The two passwords you entered did not match.")
-
-        given = self.request.form['given']
-        family = self.request.form['family']
-        display = self.request.form['display']
-
-        if given and self.person.givenname != given:
-            self.person.givenname = given
-
-        if family and self.person.familyname != family:
-            self.person.familyname = family
-
-        if display and self.person.displayname != display:
-            self.person.displayname = display
 
 
 class ViewPOExport:

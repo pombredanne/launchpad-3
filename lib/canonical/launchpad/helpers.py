@@ -8,7 +8,8 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import ILaunchBag, IHasOwner
+from canonical.launchpad.interfaces import ILaunchBag, IHasOwner, IGeoIP, \
+    IRequestPreferredLanguages
 
 def is_maintainer(hasowner):
     """Return True if the logged in user is an owner of hasowner.
@@ -221,4 +222,19 @@ def getValidNameFromString(invalid_name):
     name = name.replace(' ', '-')
 
     return name
+
+def requestCountry(request):
+    """Return the country from where the request was done."""
+    ip = request.get('HTTP_X_FORWARDED_FOR', None)
+    if ip is None:
+        ip = request.get('REMOTE_ADDR', None)
+    if ip is None:
+        return None
+    gi = getUtility(IGeoIP)
+    return gi.country_by_addr(ip)
+
+def browserLanguages(request):
+    """Return a list of Language objects based on the browser preferences."""
+    request_preferred_languages = IRequestPreferredLanguages(request)
+    return request_preferred_languages.getPreferredLanguages()
 

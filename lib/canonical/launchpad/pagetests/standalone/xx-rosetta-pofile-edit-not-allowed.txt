@@ -3,7 +3,7 @@ options from its edit form.
 
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+rosetta/evolution-2.2/es/+edit HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/es/+edit HTTP/1.1
   ... Accept-Language: en-gb,en;q=0.5
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
