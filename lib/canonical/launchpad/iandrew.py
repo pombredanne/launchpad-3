@@ -1395,3 +1395,14 @@ except ImportError:
     pass
 else:
     pyarch_implements()
+
+class RCSTypeEnum:
+    cvs = 1
+    svn = 2
+    arch = 3
+    package = 4
+    bitkeeper = 5
+
+RCSNames = {1: 'cvs', 2: 'svn', 3: 'arch', 4: 'package', 5: 'bitkeeper'}
+
+

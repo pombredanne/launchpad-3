@@ -20,8 +20,8 @@ from canonical.launchpad.database import SoyuzSourcePackage, SoyuzBinaryPackage,
 
 
 # app components
-from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson, \
-                                ProjectMapper, ProductMapper
+from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
+from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
 #
 #

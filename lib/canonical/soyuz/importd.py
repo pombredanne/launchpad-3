@@ -20,7 +20,7 @@ from canonical.database.sqlbase import quote
 # Interfaces
 from canonical.launchpad.interfaces import ISync
 from canonical.launchpad.interfaces import IProjectSet, IProduct, IProject
-from canonical.launchpad.interfaces import Project as dbProject, Product \
+from canonical.launchpad.database import Project as dbProject, Product \
      as dbProduct
 
 
