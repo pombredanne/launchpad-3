@@ -1,3 +1,5 @@
+SET client_min_messages=ERROR;
+
 /* Product.name is now UNIQUE. Products do not need a project. */
 ALTER TABLE Product ALTER COLUMN project DROP NOT NULL;
 ALTER TABLE Product ADD CONSTRAINT product_name_key UNIQUE(name);
@@ -10,4 +12,6 @@ ALTER TABLE Product ADD CONSTRAINT product_owner_fk
 ALTER TABLE Product DROP CONSTRAINT "$1";
 ALTER TABLE Product ADD CONSTRAINT product_project_fk
     FOREIGN KEY(project) REFERENCES Project(id);
+
+UPDATE LaunchpadDatabaseRevision SET major=6,minor=3,patch=0;
 
