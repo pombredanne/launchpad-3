@@ -11,9 +11,9 @@ TEST_DBNAME=launchpad_ftest_template
 
 default: all
 
-test: create
+test: create check
 	@ echo "* Loading base database schema"
-	psql -d ${TEST_DBNAME} -f launchpad-3-00-0.sql
+	psql -d ${TEST_DBNAME} -f launchpad-4-00-0.sql
 	@ echo "* Patching the database schema"
 	ls -1 patch*.sql | sort | xargs -n 1 psql -d ${TEST_DBNAME} -f
 	@ echo "* Loading language data"
@@ -57,10 +57,10 @@ create:
 	@ echo "* Creating functions"
 	psql -d ${TEST_DBNAME} -f trusted.sql
 
-# Confirm that launchpad-3-00-0.sql hasn't been messed with - this file
+# Confirm that launchpad-4-00-0.sql hasn't been messed with - this file
 # is our baseline telling us what was installed into production
 check:
-	@if [ "`md5sum launchpad-3-00-0.sql`" != '4334075ea148a66337de442e9e953d43  launchpad-3-00-0.sql' ]; then echo "* launchpad-3-00-0.sql is corrupt or has been modified"; exit 1; else echo "* Using launchpad-3-00-0 as baseline"; fi
+	@if [ "`md5sum launchpad-4-00-0.sql`" != 'ec9ccdbcdcfc1f15c15368f2642c17ed  launchpad-4-00-0.sql' ]; then echo "* launchpad-4-00-0.sql is corrupt or has been modified"; exit 1; else echo "* Using launchpad-4-00-0 as baseline"; fi
 
 all: dev test
 	@ echo "* All done"
