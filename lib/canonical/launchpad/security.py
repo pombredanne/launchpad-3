@@ -7,6 +7,7 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 
 from canonical.launchpad.interfaces import IAuthorization, IHasOwner
+from canonical.launchpad.interfaces import ISourceSource
 
 class AdminByAdminsTeam:
     implements(IAuthorization)
@@ -17,7 +18,7 @@ class AdminByAdminsTeam:
         self.obj = obj
 
     def checkPermission(self, user):
-        if IPerson(user).inTeam('buttsource'):
+        if IPerson(user).inTeam('admins'):
             return True
         else:
             return False
@@ -36,3 +37,19 @@ class EditByOwners:
             return True
         else:
             return False
+
+
+class AdminSourceSourceByButtSource:
+    implements(IAuthorization)
+    permission = 'launchpad.Admin'
+    usedfor = ISourceSource
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def checkPermission(self, user):
+        if IPerson(user).inTeam('buttsource'):
+            return True
+        else:
+            return False
+

@@ -18,4 +18,11 @@
       factory="canonical.launchpad.security.EditByOwners"
       />
 
+  <adapter
+      provides="canonical.launchpad.interfaces.IAuthorization"
+      for="canonical.launchpad.interfaces.ISourceSource"
+      name="launchpad.Admin"
+      factory="canonical.launchpad.security.AdminSourceSourceByButtSource"
+      />
+
 </configure>
