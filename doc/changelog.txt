@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-11 16:04:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1307
+
+    Summary:
+      Add PackagePublishing.datepublished column
+    Revision:
+      launchpad--devel--0--patch-1307
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-131
+       Add PackagePublishing.datepublished column
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-132
+       Merge from Rocketfuel
+    
+
+    new files:
+     database/schema/.arch-ids/patch-10-03-0.sql.id
+     database/schema/patch-10-03-0.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-131
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-132
+
+
 2005-02-11 15:52:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1306
 
     Summary:
