@@ -26,36 +26,36 @@
     </p>
 
     <form action="prefs" method="post" tal:define="translator view/person">
-        <fieldset>
         <div tal:condition="view/submitted_personal">
-            <div tal:condition="view/error_msg">
-            <font size="+2" tal:content="view/error_msg">error</font>
-            <br/>
+            <p class="error" tal:condition="view/error_msg">
+                <span tal:content="view/error_msg">error</span>
+            </p>
         </div>
+
         <div tal:condition="not: view/error_msg">
-            <font color="red">The changes to your account settings have been saved.</font>
+            <p>
+            The changes to your account settings have been saved.
+            </p>
+        </div>
+
+        <fieldset>
+            Please enter your existing password to confirm account changes.
             <br/>
-        </div>
-        </div>
-        <div tal:condition="not: view/error_msg">
-                Please enter your existing password to confirm account changes.
-                <br/>
             Password: <input type="password" name="currentPassword" />
             <br/>
             <hr/>
-                Given name: <input type="text" name="given" tal:attributes="value translator/givenName"/>
+            Given name: <input type="text" name="given" tal:attributes="value translator/givenName"/>
             Family name: <input type="text" name="family" tal:attributes="value translator/familyName" />
-                <br/>
-                Display name: <input type="text" name="display" tal:attributes="value translator/displayName" />
-                <br/>
+            <br/>
+            Display name: <input type="text" name="display" tal:attributes="value translator/displayName" />
+            <br/>
             New Password: <input type="password" name="newPassword1" />
             <br/>
             Re-enter new Password: <input type="password" name="newPassword2" />
             <br/>
             <div class="formControls">
-                    <input type="submit" name="SAVE-PERSONAL" value="Save" />
-                </div>
-        </div>
+                <input type="submit" name="SAVE-PERSONAL" value="Save" />
+            </div>
         </fieldset>
     </form>
 

@@ -1200,16 +1200,16 @@ class RosettaBranch(SQLBase):
 
 def personFromPrincipal(principal):
     from zope.app.security.interfaces import IUnauthenticatedPrincipal
+    from canonical.lp.placelessauth.launchpadsourceutility import \
+        LaunchpadPrincipal
+
     if IUnauthenticatedPrincipal.providedBy(principal):
         return None
-    else:
-        # XXX: Fill in real query.
-        ret = RosettaPerson.selectBy(displayName='Foo Bar')
 
-        if ret.count() == 0:
-            raise KeyError, principal
-        else:
-            return ret[0]
+    if not isinstance(principal, LaunchpadPrincipal):
+        return None
+
+    return RosettaPerson.get(principal.id)
 
 
 class RosettaSchemas(object):

@@ -306,10 +306,6 @@ class TranslatorDashboard:
 
         self.person = IPerson(self.request.principal, None)
 
-        # XXX
-        if self.person is None:
-            self.person = fake_person()
-
     def projects(self):
         return getUtility(IProjects)
 
@@ -320,10 +316,6 @@ class ViewPreferences:
         self.request = request
 
         self.person = IPerson(self.request.principal, None)
-
-        # XXX
-        if self.person is None:
-            self.person = fake_person()
 
     def languages(self):
         return getUtility(ILanguages)
@@ -515,9 +507,6 @@ class TranslatePOTemplate:
                     pass
         else:
             person = IPerson(request.principal, None)
-            if person is None:
-                # XXX
-                person = fake_person()
 
             self.languages = list(person.languages())
 
