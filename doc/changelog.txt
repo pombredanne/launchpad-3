@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-30 21:21:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1523
+
+    Summary:
+      Improving description paragraphs in some foaf pagetests.
+    Revision:
+      launchpad--devel--0--patch-1523
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-232
+       Improving description paragraphs in some foaf pagetests.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/foaf/00-createaccount.txt
+     lib/canonical/launchpad/pagetests/foaf/01-login.txt
+     lib/canonical/launchpad/pagetests/foaf/02-addemail.txt
+     lib/canonical/launchpad/pagetests/foaf/17-add-member.txt
+     lib/canonical/launchpad/pagetests/foaf/20-make-team-moderated.txt
+     lib/canonical/launchpad/pagetests/foaf/24-demote-member.txt
+     lib/canonical/launchpad/pagetests/foaf/25-expire-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/26-renew-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/27-deactivate-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/28-reactivate-subscription.txt
+     lib/canonical/launchpad/pagetests/foaf/95-add-sshkey.txt
+     lib/canonical/launchpad/pagetests/foaf/96-del-sshkey.txt
+     lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-232
+
+
 2005-03-30 20:36:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1522
 
     Summary:

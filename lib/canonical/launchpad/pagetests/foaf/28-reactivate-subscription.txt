@@ -1,4 +1,8 @@
+  Reactivate the subscription for 'name16', on team 'myemail', which we just
+  deactivated.
 
+
+  Go to the member's page.
 
   >>> print http(r"""
   ... GET /people/myemail/+members/name16 HTTP/1.1
@@ -14,6 +18,8 @@
   ...
 
 
+  Click on the 'Reactivate' button.
+
   >>> print http(r"""
   ... POST /people/myemail/+members/name16 HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
@@ -26,6 +32,9 @@
   Content-Type: text/html;charset=utf-8
   ...
 
+
+  Got redirected to the team's members page, and see the reactivated member
+  listed as an active member.
 
   >>> print http(r"""
   ... GET /people/myemail/+members/ HTTP/1.1

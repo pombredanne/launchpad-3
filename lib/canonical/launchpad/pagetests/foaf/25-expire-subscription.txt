@@ -1,3 +1,5 @@
+  Change expiration date for membership of 'name16' into team 'myemail' to a
+  retroative date, so it's membership status is set to EXPIRED.
 
 
   >>> print http(r"""

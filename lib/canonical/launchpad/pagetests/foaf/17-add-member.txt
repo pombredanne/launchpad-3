@@ -1,4 +1,4 @@
-
+  Go to the 'Add Members' page.
 
   >>> print http(r"""
   ... GET /people/myemail/+members/+add HTTP/1.1
@@ -11,6 +11,8 @@
   ...New member...
   ...
 
+
+  Add 'cprov' as a member of the newly created team, 'myemail'
 
   >>> print http(r"""
   ... POST /people/myemail/+members/+add HTTP/1.1

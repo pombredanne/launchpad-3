@@ -1,4 +1,7 @@
+  Deactivate membership for 'name16' on team 'myemail'.
 
+
+  Go to the member's page.
 
   >>> print http(r"""
   ... GET /people/myemail/+members/name16 HTTP/1.1
@@ -14,6 +17,8 @@
   ...
 
 
+  Click on the 'Deactivate' button.
+
   >>> print http(r"""
   ... POST /people/myemail/+members/name16 HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
@@ -26,6 +31,9 @@
   Content-Type: text/html;charset=utf-8
   ...
 
+
+  Got redirected to the team's members page, and see the deactivated member
+  listed as an inactive member.
 
   >>> print http(r"""
   ... GET /people/myemail/+members/ HTTP/1.1

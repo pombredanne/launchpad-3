@@ -1,5 +1,4 @@
-  Let's create the account which will be named 'foo'
-
+  Go to the register page.
 
   >>> print http(r"""
   ... GET /+register HTTP/1.1
@@ -11,6 +10,8 @@
   ...Log in or register with Launchpad...
   ...
 
+
+  Type in an invalid email address and got a warning message.
 
   >>> print http(r"""
   ... POST /+register HTTP/1.1
@@ -25,6 +26,9 @@
   ...
 
 
+  Type an email address that's already registered and got another warning
+  message.
+
   >>> print http(r"""
   ... POST /+register HTTP/1.1
   ... Content-Type: application/x-www-form-urlencoded
@@ -37,6 +41,8 @@
   ...The email address foo.bar@canonical.com is already registered in our system...
   ...
 
+
+  Now, provide a valid email address and ask to create a new account.
 
   >>> print http(r"""
   ... POST /+register HTTP/1.1
@@ -68,6 +74,8 @@
   ['foo@baz.com']
 
 
+  Go to the link sent by email.
+
   >>> print http(r"""
   ... GET %s HTTP/1.1
   ... """ % base_path)
@@ -90,6 +98,8 @@
   ...<h1>Launchpad Account Details</h1>...
   ...
 
+
+  Fill in the information to create the new account and submit it.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
@@ -128,6 +138,8 @@
   ...<h1>Launchpad Account Details</h1>...
   ...
 
+
+  New account was created with name 'foo'.
 
   >>> print http(r"""
   ... GET /people/foo HTTP/1.1

@@ -1,4 +1,5 @@
 
+  Go to the +editsshkey page.
 
   >>> print http(r"""
   ... GET /people/salgado/+editsshkey HTTP/1.1
@@ -13,6 +14,8 @@
   ...<input type="submit" value="Remove"...
   ...
 
+  
+  Click on 'Remove' to delete the selected key.
 
   >>> print http(r"""
   ... POST /people/salgado/+editsshkey HTTP/1.1

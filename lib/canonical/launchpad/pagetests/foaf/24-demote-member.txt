@@ -1,3 +1,4 @@
+  Demote 'name16' from the ADMIN status on team 'myemail'.
 
 
   >>> print http(r"""

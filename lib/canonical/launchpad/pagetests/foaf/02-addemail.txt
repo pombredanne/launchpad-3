@@ -1,6 +1,8 @@
   'foo' adds a new email in launchpad and validates it.
 
 
+  Type the new email address and submit the form.
+
   >>> print http(r"""
   ... POST /people/foo/+emails HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
@@ -33,6 +35,8 @@
   ['bar.foo@canonical.com']
 
 
+  Go to the link sent by email, to validate the email address.
+
   >>> print http(r"""
   ... GET %s HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
@@ -58,6 +62,8 @@
   ...
 
 
+  Email was validated.
+
   >>> print http(r"""
   ... POST %s HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
@@ -72,6 +78,8 @@
   ...Email validated successfully...
   ...
 
+
+  Now we can see it on the person's emails page.
 
   >>> print http(r"""
   ... GET /people/foo/+emails HTTP/1.1

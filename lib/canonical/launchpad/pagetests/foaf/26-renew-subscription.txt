@@ -1,3 +1,5 @@
+  Renew the subscription of 'name16' on team 'myemail', which we just set as
+  expired.
 
 
   >>> print http(r"""
