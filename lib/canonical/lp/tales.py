@@ -47,3 +47,15 @@ class DBSchemaAPI:
         else:
             raise AttributeError, name
 
+import cgi
+
+class FormattersAPI:
+    """Adapter from strings to HTML formatted text."""
+
+    def __init__(self, s):
+        self._s = s
+
+    def nl_to_br(self):
+        '''Quote HTML characters, then replace newlines with <br /> tags'''
+        return cgi.escape(self._s).replace('\n','<br />')
+
