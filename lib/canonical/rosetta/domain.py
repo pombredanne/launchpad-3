@@ -10,12 +10,6 @@ from canonical.lp import decorates
 from canonical.launchpad.interfaces import IRosettaProject
 from canonical.launchpad.interfaces import IProject, IProjectSet
 
-class RosettaProjectSet:
-    decorates(IProjectSet)
-
-    def __init__(self, context):
-        self.context = context
-
 class RosettaProject:
     implements(IRosettaProject)
     decorates(IProject)

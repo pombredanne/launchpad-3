@@ -14,6 +14,11 @@
         />
     </content>
 
+    <!-- XXX Daf please get rid of this -->
+    <content class="canonical.rosetta.domain.RosettaProject">
+        <allow interface="canonical.launchpad.interfaces.IRosettaProject"/>
+    </content>
+
     <browser:traverse
         for="canonical.launchpad.interfaces.IProject"
         getter="getProduct" />
@@ -94,6 +99,15 @@
         for="canonical.launchpad.interfaces.IProjectSet"
         name="+index" />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProjectSet"
+        layer="canonical.launchpad.layers.RosettaLayer"
+        name="+rosetta-index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProjectSet"
+        getter="__getitem__" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
@@ -131,12 +145,15 @@
         template="../templates/project-new.pt"
         lp:url="doap/projects/+new" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProjectSet"
-        getter="__getitem__" />
-
-    <content class="canonical.rosetta.domain.RosettaProject">
-        <allow interface="canonical.launchpad.interfaces.IRosettaProject"/>
-    </content>
+    <browser:pages for="canonical.launchpad.interfaces.IProjectSet"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProjectSetView">
+        <browser:page name="+rosetta-index"
+            template="../templates/rosetta-projects-index.pt"
+            lp:url="Rosetta/projects/+rosetta-index" />
+        <browser:page name="+request"
+            template="../templates/projects-request.pt"
+            lp:url="Rosetta/projects/+request" />
+    </browser:pages>
 
 </configure>

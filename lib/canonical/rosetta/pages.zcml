@@ -1,28 +1,7 @@
 <configure xmlns="http://namespaces.zope.org/browser"
            xmlns:lp="http://launchpad.canonical.com">
 
-<!-- This file has the declarations for page templates
-
-     Use the lp:url attribute to refer to URLs in the table on the wiki.
-  -->
-
   <!-- pages for the collection of projects -->
-  <pages for="canonical.rosetta.domain.RosettaProjectSet"
-         permission="zope.Public"
-         class="canonical.rosetta.browser.ViewProjects"
-         lp:url="Rosetta/projects">
-    <page name="+index"
-          template="../launchpad/templates/rosetta-projects-index.pt"
-          lp:url="Rosetta/projects" />
-    <page name="+request"
-          template="../launchpad/templates/projects-request.pt"
-          lp:url="Rosetta/projects/+request" />
-  </pages>
-
-  <traverse for="canonical.rosetta.domain.RosettaProjectSet"
-            getter="__getitem__"
-            adaptwith="canonical.rosetta.domain.RosettaProject" />
-
   <!-- pages for a project -->
   <pages for="canonical.launchpad.interfaces.IRosettaProject"
          permission="zope.Public"
@@ -51,7 +30,7 @@
          permission="zope.Public"
          lp:url="Rosetta">
     <page name="about"
-          template="../launchpad/templates/about.pt"
+          template="../launchpad/templates/rosetta-about.pt"
           lp:url="Rosetta/about" />
     <page name="search"
           template="../launchpad/templates/search.pt"

@@ -34,23 +34,14 @@
       for="canonical.launchpad.interfaces.IRosettaApplication"
       utility="canonical.launchpad.interfaces.IProjectSet"
       name="projects"
-      adaptwith="canonical.rosetta.domain.RosettaProjectSet"
       />
 
-
-  <content class="canonical.rosetta.domain.RosettaProjectSet">
-    <allow interface="canonical.launchpad.interfaces.IProjectSet" />
-  </content>
 
   <!-- Set the default view for the rosetta application, for projects and
        for project.
     -->
   <browser:defaultView
       for="canonical.launchpad.interfaces.IRosettaApplication"
-      name="+index"
-      />
-  <browser:defaultView
-      for="canonical.rosetta.domain.RosettaProjectSet"
       name="+index"
       />
   <browser:defaultView

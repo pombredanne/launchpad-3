@@ -176,5 +176,3 @@ class ProjectSetView(object):
         # now redirect to the page to view it
         self.request.response.redirect(name)
 
-
-
