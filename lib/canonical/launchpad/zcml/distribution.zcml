@@ -9,8 +9,8 @@
     <content class="canonical.launchpad.database.Distribution">
         <allow interface="canonical.launchpad.interfaces.IDistribution"/>
         <require
-            permission="launchpad.AnyPerson"
-            set_attributes="name title description domainname"
+            permission="launchpad.Admin"
+            set_attributes="displayname title summary description"
             />
     </content>
 

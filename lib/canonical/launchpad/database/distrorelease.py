@@ -52,10 +52,6 @@ class DistroRelease(SQLBase):
     architectures = MultipleJoin('DistroArchRelease', joinColumn='distrorelease' )
     role_users = MultipleJoin('DistroReleaseRole', joinColumn='distrorelease')
 
-    def displayname(self):
-        return self.name
-    displayname = property(displayname)
-
     def parent(self):
         if self.parentrelease:
             return self.parentrelease.title

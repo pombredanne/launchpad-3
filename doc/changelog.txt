@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-15 21:45:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1441
+
+    Summary:
+      Fixes and pagetests
+    Revision:
+      launchpad--devel--0--patch-1441
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-471
+       pages fixed before makes its pagetests
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-472
+       More pagetests added
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-473
+       merge from rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-soyuz-distribution-edit.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-soyuz-distrorelease-edit.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distribution-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distrorelease-edit.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/zcml/distribution.zcml
+     lib/canonical/launchpad/zcml/distrorelease.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-471
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-472
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-473
+
+
 2005-03-15 20:44:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1440
 
     Summary:
