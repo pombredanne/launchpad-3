@@ -17,15 +17,22 @@ class URLTraverseProject:
         """Search for views, and if no view is found, PO templates."""
         # TODO: consider replacing this with a custom zcml directive.
         view = queryView(self.context, name, request)
-        if view is None:
+        if view is not None:
+            return view
+
+        # try a template
+        # XXX: this has to go away after the conference
+        #      (as it may silently hide templates with the same name)
+        for product in self.context.products:
             try:
-                template = self.context.poTemplate(name)
+                template = product.poTemplate(name)
             except KeyError:
-                raise NotFound(self.context, name)
+                continue
             else:
                 return template
-        else:
-            return view
+
+        # nay sir
+        raise NotFound(self.context, name)
 
     def browserDefault(self, request):
         view_name = getDefaultViewName(self.context, request)

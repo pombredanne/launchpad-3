@@ -8,7 +8,7 @@ class IProjects(Interface):
     """The collection of projects."""
 
     def __iter__():
-        """Iterate over all the projects."""
+        """Return an iterator over all the projects."""
 
     def __getitem__(name):
         """Get a project by its name."""
@@ -42,9 +42,6 @@ class IProject(Interface):
     def products():
         """Returns an iterator over this projects products."""
 
-    def poTemplate(name):
-        """Returns the PO template with the given name."""
-
 
 class IProduct(Interface):
     """A Product.  For example 'firefox' in the 'mozilla' project."""
@@ -60,6 +57,9 @@ class IProduct(Interface):
     def poTemplates():
         """Returns an iterator over this product's PO templates."""
 
+    def poTemplate(name):
+        """Returns the PO template with the given name."""
+
     def newPOTemplate(name, title):
         """Creates a new PO template.
 
@@ -74,7 +74,7 @@ class IPOTemplate(Interface):
 
     title = Attribute("The PO template's title.")
 
-    description = Attribute("The PO template's title.")
+    description = Attribute("The PO template's description.")
 
     product = Attribute("The PO template's product.")
 
@@ -88,26 +88,33 @@ class IPOTemplate(Interface):
 
     # XXX: copyright, license: where do we get this information?
 
+    # A "current" messageset is one that was in the latest version of
+    # the POTemplate parsed and recorded in the database. Current
+    # MessageSets are indicated by having 'sequence > 0'
+
     def __len__():
-        """Returns the number of current IPOMessageSet in this template."""
+        """Returns the number of Current IPOMessageSets in this template."""
 
     def __iter__():
-        """Iterate over current IPOMessageSets in this template."""
+        """Return an iterator over Current IPOMessageSets in this template."""
 
     def __getitem__(msgid):
-        """Get the current IPOMessageSet for this template that has the
-        given primary message ID."""
+        """Get the IPOMessageSet for this template that has the
+        given primary message ID. Note that this will also find old
+        (not current) MessageSets"""
 
     def languages():
-        """Iterate over languages that this template's messages are
+        """Return an iterator over languages that this template's messages are
         translated into.
         """
 
     def poFiles():
-        """Iterate over the PO files that exist for this language."""
+        """Return an iterator over the PO files that exist for this language."""
 
-    def poFile(language_code):
-        """Get the PO file of the given language.
+    def poFile(language_code, variant=None):
+        """Get the PO file of the given language and (potentially)
+        variant. If no variant is specified then the translation
+        without a variant is given.
 
         Raises KeyError if there is no such POFile."""
 
@@ -118,14 +125,15 @@ class IEditPOTemplate(IPOTemplate):
     """Edit interface for an IPOTemplate."""
 
     def expireAllMessages():
-        """Mark our of our message sets as not current (sequence=0)"""
+        """Mark all of our message sets as not current (sequence=0)"""
 
-    def newMessageSet(text):
+    def newMessageSet(messageid_text):
         """Add a message set to this template.  Primary message ID
-        is 'text'."""
+        is 'messageid_text'."""
 
-    def createPOFile(language, variant):
-        """Create and return a new po file in the given language.
+    def createPOFile(language, variant=None):
+        """Create and return a new po file in the given language. The
+        variant is optional.
 
         Raises an KeyError if a po file of that language already exists.
         """
@@ -158,7 +166,7 @@ class IPOFile(Interface):
 
     def translated():
         """
-        Iterate over translated message sets in this PO file.
+        Return an iterator over translated message sets in this PO file.
         """
 
     def untranslatedCount():
@@ -169,14 +177,14 @@ class IPOFile(Interface):
 
     def untranslated():
         """
-        Iterate over untranslated message sets in this PO file.
+        Return an iterator over untranslated message sets in this PO file.
         """
 
     # Invariant: translatedCount() + untranslatedCount() = __len__()
     # XXX: add a test for this
 
     def __iter__():
-        """Iterate over IPOMessageSets in this PO file."""
+        """Return an iterator over IPOMessageSets in this PO file."""
 
     def __getitem__(IPOMessageSet):
         """Returns the IPOMessageSet with the corresponding translations, if
@@ -255,7 +263,7 @@ class IPOMessageSet(Interface):
         """)
 
     def messageIDs():
-        """Iterate over this set's message IDs."""
+        """Return an iterator over this set's message IDs."""
 
     def getMessageIDSighting(plural_form):
         """Return the message ID sighting that is current and has the
@@ -265,14 +273,14 @@ class IPOMessageSet(Interface):
     # form 0 -- i.e. it's redundant. However, it acts as a cached value.
 
     def translations():
-        """Iterate over this set's translations."""
+        """Return an iterator over this set's translations."""
 
     def getTranslationSighting(plural_form):
         """Return the translation sighting that is current and has the
         plural form provided."""
 
     def translationSightings():
-        """Iterate over current translation sightings."""
+        """Return an iterator over current translation sightings."""
 
 
 class IEditPOMessageSet(IPOMessageSet):
@@ -313,7 +321,7 @@ class IPOMessageID(Interface):
     """A PO message ID."""
 
     # this is called "msgid" in the DB
-    text = Attribute("")
+    msgid = Attribute("")
 
 
 class IPOTranslationSighting(Interface):
@@ -345,7 +353,7 @@ class IPOTranslation(Interface):
     """A translation in a PO file."""
 
     # this is called "translation" in the DB
-    text = Attribute("")
+    translation = Attribute("")
 
 
 class IBranch(Interface):
@@ -408,7 +416,7 @@ class ILanguages(Interface):
         """Get a language by its code."""
 
     def keys():
-        """Iterate over the language codes."""
+        """Return an iterator over the language codes."""
 
 
 class IPOExport(Interface):

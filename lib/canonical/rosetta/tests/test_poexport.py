@@ -146,6 +146,7 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
             raise IndexError, "Couldn't find record in database, please import populate.sql to do the tests."
         export = POExport(poTemplate)
         dump = export.export('cy')
+        print dump
         import difflib, sys
         if dump != expected:
             for l in difflib.unified_diff(
