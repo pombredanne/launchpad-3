@@ -38,6 +38,7 @@ def BugMessageFactory(context, **kw):
     # XXX Brad Bollenbach this bug message is being set to owner 1
     return BugMessage(
             bug=bug, parent=None, datecreated=datetime.utcnow(),
-            ownerID=1, rfc822msgid=make_msgid('malone'), **kw)
+            ownerID=context.request.principal.id,
+            rfc822msgid=make_msgid('malone'), **kw)
 
 

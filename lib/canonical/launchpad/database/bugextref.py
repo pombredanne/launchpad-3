@@ -52,6 +52,7 @@ class BugExternalRefContainer(BugContainerBase):
 
 def BugExternalRefFactory(context, **kw):
     bug = context.context.bug
-    owner = 1 # Will be id of logged in user
     datecreated = datetime.utcnow()
-    return BugExternalRef(bug=bug, owner=owner, datecreated=datecreated, **kw)
+    return BugExternalRef(
+        bug=bug, owner=context.request.principal.id,
+        datecreated=datecreated, **kw)

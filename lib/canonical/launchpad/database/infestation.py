@@ -101,11 +101,11 @@ def BugProductInfestationFactory(context, **kw):
         bug=context.context.bug,
         explicit=True,
         datecreated=now,
-        creatorID=1, # XXX: (2004-10-08) Brad Bollenbach: Should be the real owner ID
+        creatorID=context.request.principal.id,
         dateverified=now,
-        verifiedbyID=1,
+        verifiedbyID=context.request.principal.id,
         lastmodified=now,
-        lastmodifiedbyID=1,
+        lastmodifiedbyID=context.request.principal.id,
         **kw)
 
 def BugPackageInfestationFactory(context, **kw):
@@ -114,9 +114,9 @@ def BugPackageInfestationFactory(context, **kw):
         bug=context.context.bug,
         explicit=True,
         datecreated=now,
-        creatorID=1, # XXX: (2004-10-11) Brad Bollenbach: Should be the real owner ID
+        creatorID=context.request.principal.id,
         dateverified=now,
-        verifiedbyID=1,
+        verifiedbyID=context.request.principal.id,
         lastmodified=now,
-        lastmodifiedbyID=1,
+        lastmodifiedbyID=context.request.principal.id,
         **kw)

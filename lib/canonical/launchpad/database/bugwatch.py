@@ -35,8 +35,7 @@ class BugWatchContainer(BugContainerBase):
 
 def BugWatchFactory(context, **kw):
     bug = context.context.bug
-    owner = 1 # XXX: Will be id of logged in user
     now = datetime.utcnow()
     return BugWatch(
-        bug=bug, owner=owner, datecreated=now, lastchanged=now,
-        lastchecked=now, **kw)
+        bug=bug, owner=context.request.principal.id, datecreated=now,
+        lastchanged=now, lastchecked=now, **kw)
