@@ -38,7 +38,8 @@ class FatSamStorage:
         return os.access(self._fileLocation(fileid), os.F_OK)
     
     def _relFileLocation(self, fileid):
-        return '%s/%s' % (fileid[:5], fileid)
+        h = "%08x" % int(fileid)
+        return '%s/%s/%s/%s' % (h[:2],h[2:4],h[4:6],h[6:])
     
     def _fileLocation(self, fileid):
         return os.path.join(self.directory, self._relFileLocation(str(fileid)))
@@ -117,14 +118,25 @@ class FatSamFile(object):
             else:
                 if txn is not None:
                    txn.commit()
-            
+	else:
+            # Not a new file; perhaps a new alias. Commit the transaction
+	    if txn is not None:
+	        txn.commit()
+        
+        if txn is not None:
+            # XXX: dsilvers 2004-10-13: Need to make this nicer
+            # We release the connection to the pool here. Without
+            # this call; we end up overloading the psql server and
+            # we get refused new connections.
+	    txn._makeObsolete()
+	
         # Return the IDs
         return fileID, alias
 
     def _move(self, fileID):
         location = self.storage._fileLocation(fileID)
         try:
-            os.mkdir(os.path.dirname(location))
+            os.makedirs(os.path.dirname(location))
         except OSError, e:
             # If the directory already exists, that's ok.
             if e.errno != errno.EEXIST:

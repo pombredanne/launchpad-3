@@ -89,8 +89,37 @@ class Katie(SQLThing):
                                                 architecture.id
                                       AND    arch_string = %s""",
                                         (name, version, arch))
+    def getSections(self):
+        return self._query("""SELECT section FROM section""")
+
+prioritymap = {
+"required": 50,
+"important": 40,
+"standard": 30,
+"optional": 20,
+"extra":10
+}
+
+def map_arch(fname):
+    return 1;
+    print "Attempting to map %s" % fname
+    fname = fname[fname.rfind("/"):]
+    if fname.find("_i386."):
+        print "i386"
+        return 1
+    if fname.find("_amd64."):
+        print "amd64"
+        return 2
+    if fname.find("_powerpc."):
+        print "powerpc"
+        return 3
+    raise ValueError, "Unknown architecture in %s" % fname
 
 class Launchpad(SQLThing):
+    def __init__(self, bar):
+        SQLThing.__init__(self,bar)
+        self.compcache = {}
+        self.sectcache = {}
     #
     # SourcePackageName
     #
@@ -144,9 +173,20 @@ class Launchpad(SQLThing):
         if not src_id:
             return None
         #FIXME: SELECT * is crap !!!
-        return self._query("""SELECT * FROM sourcepackagerelease
+        return self._query("""SELECT id FROM sourcepackagerelease
                               WHERE sourcepackage = %s 
                               AND version = %s;""", (src_id[0] , version))
+    def createSourcePackageReleaseFile(self, src, fname, alias):
+        r = self.getSourcePackageRelease(src.package, src.version)
+        if not r:
+            raise ValueError, "Source not yet in database"
+        data = {
+        "sourcepackagerelease": r[0][0],
+        "libraryfile": alias,
+        "filetype": 1 # XXX: No types defined as yet?
+        }
+
+        self._insert( "sourcepackagereleasefile", data )
 
     def createSourcePackageRelease(self, src):
         self.ensureSourcePackage(src)
@@ -162,6 +202,7 @@ class Launchpad(SQLThing):
         dsc = self.ensure_string_format(src.dsc)
         changelog = self.ensure_string_format(src.changelog)
         component = self.getComponentByName(src.component)[0]
+        section = self.getSectionByName(src.section)[0]
         data = {
             "sourcepackage":           srcpkgid,
             "version":                 src.version,
@@ -176,21 +217,18 @@ class Launchpad(SQLThing):
             "changelog":               changelog,
             "dsc":                     dsc,
             "dscsigningkey":           key,
+            "section": section,
         }                                                          
         self._insert("sourcepackagerelease", data)
 
         release = self.getSourcePackageRelease(src.package, src.version)[0]
-        # 1 - PROPOSED
-        # 2 - NEW
-        # 3 - ACCEPTED
-        # 4 - PUBLISHED
-        # 5 - REJECTED
-        # 6 - SUPERSEDED
-        # 7 - REMOVED
+        # 1 - Pending
         data = {
             "distrorelease":           1,
             "sourcepackagerelease":    release[0],
-            "uploadstatus":            4,
+            "status":            1, # Pending
+            "component": component,
+            "section": section,
         }
         self._insert("sourcepackagepublishing", data)
 
@@ -246,7 +284,17 @@ class Launchpad(SQLThing):
     def createBinaryPackageName(self, name):
         name = self.ensure_string_format(name)
         self._insert("binarypackagename", {"name": name})
-        
+       
+    def createBinaryPackageFile(self, binpkg, alias):
+        bp = self.getBinaryPackage(binpkg.package,binpkg.version)
+        #print bp
+        data = {
+        "binarypackage": bp[0],
+        "libraryfile": alias,
+        "filetype": 1, # XXX: File types?
+        }
+        self._insert("binarypackagefile", data)
+        pass
     #
     # BinaryPackage
     #
@@ -278,6 +326,7 @@ class Launchpad(SQLThing):
         short_desc = description.split("\n")[0]
         licence = self.ensure_string_format(bin.licence)
         component = self.getComponentByName(bin.component)[0]
+        section = self.getSectionByName(bin.section)[0]
 
         data = {
             "binarypackagename":    name[0][0],
@@ -287,8 +336,8 @@ class Launchpad(SQLThing):
             "description":          description,
             "build":                build[0],
             "binpackageformat":     1, # XXX
-            "section":              1, # XXX
-            "priority":             1, # XXX
+            "section":              section, # XXX
+            "priority":             prioritymap[bin.priority], # XXX
             "shlibdeps":            bin.shlibs,
             "depends":              bin.depends,
             "suggests":             bin.suggests,
@@ -308,9 +357,10 @@ class Launchpad(SQLThing):
         data = {
            "binarypackage":     bin_id[0], 
            "component":         component, 
-           "section":           1, # XXX
-           "priority":          1, # XXX
-           "distroarchrelease": 1, # XXX distroarchrelease
+           "section":           section,
+           "priority":          prioritymap[bin.priority],
+           "distroarchrelease": map_arch(bin.filename), # XXX: Always returns 1 for x86 until we import multi-arch
+           "status": 1,
         }
         self._insert("packagepublishing", data)
 
@@ -426,9 +476,31 @@ class Launchpad(SQLThing):
         pass
 
     def getComponentByName(self, component):
+        if component in self.compcache:
+            return self.compcache[component]
         ret = self._query_single("""SELECT id FROM component 
                                     WHERE  name = %s""", component)
         if not ret:
             raise ValueError, "Component %s not found" % component
+        self.compcache[component] = ret
+        print "\t+++ Component %s is %s" % (component, self.compcache[component])
         return ret
+
+    def getSectionByName(self, section):
+        if section in self.sectcache:
+            return self.sectcache[section]
+        ret = self._query_single("""SELECT id FROM section
+                                    WHERE  name = %s""", section)
+        if not ret:
+            raise ValueError, "Section %s not found" % section
+        self.sectcache[section] = ret
+        print "\t+++ Section %s is %s" % (section, self.sectcache[section])
+        return ret
+
+    def addSection(self, section):
+        try:
+            self.getSectionByName(section)
+        except:
+            self._insert( "section", { "name": section } )
+
 

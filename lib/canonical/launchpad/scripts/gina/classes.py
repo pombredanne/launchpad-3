@@ -1,5 +1,7 @@
 import re, os, tempfile, shutil, sys
 
+from library import getLibraryAlias
+
 # From zless /usr/share/doc/gnupg/DETAILS.gz 
 GPGALGOS = {
     1 : "R",  # RSA
@@ -148,6 +150,7 @@ class SourcePackageRelease(AbstractPackageRelease):
                 setattr(self, k.lower().replace("-", "_"), v)
 
     def do_package(self, dir, package_root):
+        self.package_root = package_root
         cwd = os.getcwd()
 
         version = re.sub("^\d+:", "", self.version) 
@@ -197,6 +200,15 @@ class SourcePackageRelease(AbstractPackageRelease):
         if not db.getSourcePackageRelease(self.package, self.version):
             print "\t$ Creating source package"
             db.createSourcePackageRelease(self)
+            print "\t$ Adding files to librarian"
+            files={}
+            for f in self.files:
+                fname = f[-1]
+                print "\t\t+ %s/%s" % (self.directory, fname);
+                alias = getLibraryAlias( "%s/%s" % (self.package_root, self.directory), fname )
+                print "\t\t\t= %s" % alias
+                db.createSourcePackageReleaseFile(self, fname, alias)
+            
 
 class BinaryPackageRelease(AbstractPackageRelease):
     # package
@@ -255,6 +267,7 @@ class BinaryPackageRelease(AbstractPackageRelease):
                 self.source_version = src_bits[1][1:-1]
 
     def do_package(self, dir, package_root):
+        self.package_root = package_root
         cwd = os.getcwd()
         fullpath = os.path.join(package_root, self.filename)
         os.chdir(dir)
@@ -276,9 +289,17 @@ class BinaryPackageRelease(AbstractPackageRelease):
             self.get_person_by_key(keyrings, self.gpg_signing_key)
 
     def ensure_created(self, db):
-        assert not self.is_created(db)
-        print "\t$ Creating binary package"
-        db.createBinaryPackage(self)
+        if not self.is_created(db):
+            print "\t$ Creating binary package"
+            db.createBinaryPackage(self)
+            if not self.is_created(db):
+                return; # FMO TROUP etc.
+            fname = self.filename[self.filename.rfind("/")+1:]
+            fdir = self.filename[:self.filename.rfind("/")]
+            print "\t\t+ %s" % self.filename
+            alias = getLibraryAlias( "%s/%s" % (self.package_root, fdir), fname)
+            print "\t\t\t= %s" % alias
+            db.createBinaryPackageFile( self, alias )
 
     def is_created(self, db):
         return db.getBinaryPackage(self.package, self.version)

@@ -3,6 +3,7 @@ import apt_pkg, tempfile, os, tempfile, shutil
 
 from classes import SourcePackageRelease, BinaryPackageRelease
 from database import Launchpad, Katie
+from library import attachLibrarian
 
 #
 package_root = "/srv/archive.ubuntu.com/"
@@ -14,6 +15,9 @@ arch = "i386"
 
 LPDB = "launchpad_test"
 KTDB = "katie"
+
+LIBRHOST = "localhost"
+LIBRPORT = 19090
 
 #
 # helpers
@@ -59,10 +63,16 @@ def do_packages(source_map, bin_map, lp, kdb, keyrings, component):
         os.unlink(bin_tags)
         os.unlink(src_tags)
 
+def do_sections(lp, kdb):
+    sections = kdb.getSections()
+    for section in sections:
+        lp.addSection( section[0] )
+
 if __name__ == "__main__":
     # get the DB abstractors
     lp = Launchpad(LPDB)
     kdb = Katie(KTDB)
+    attachLibrarian( LIBRHOST, LIBRPORT )
 
     keyrings = ""
     for keyring in os.listdir("keyrings"):
@@ -76,13 +86,16 @@ if __name__ == "__main__":
     for component in components:
         print "@ Loading components for %s" % component
         do_packages(source_map, bin_map, lp, kdb, keyrings, component)
-
+    print "@ Loading sections"
+    do_sections(lp, kdb)
+        
     # Loop through binaries and insert stuff in DB. We do this as a
     # separate loop mainly to ensure that all source packages get
     # preferentially the description relative to a homonymous binary
     # package, and if not, the first description tht pops up.
     bins = bin_map.items()
     bins.sort()
+    count = 0
     for name, binpkg in bins:
         print "- Evaluating %s (%s, %s)" % (binpkg.package, 
                                             binpkg.component, 
@@ -114,6 +127,11 @@ if __name__ == "__main__":
 
         binpkg.process_package(kdb, package_root, keyrings)
         binpkg.ensure_created(lp)
+        count = count + 1
+        if count == 10:
+            lp.commit()
+            count = 0
+            print "* Committed"
 
     lp.commit()
     lp.close()
