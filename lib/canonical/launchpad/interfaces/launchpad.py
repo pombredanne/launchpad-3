@@ -10,11 +10,10 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
-           'IRosettaApplication', 'ISoyuzApplication',
-           'IDOAPApplication', 'IFOAFApplication',
-           'IPasswordEncryptor', 'IReadZODBAnnotation',
-           'IWriteZODBAnnotation', 'IZODBAnnotation',
-           'IAuthorization', 'IObjectAuthorization',
+           'IRosettaApplication', 'IDOAPApplication',
+           'IFOAFApplication', 'IPasswordEncryptor',
+           'IReadZODBAnnotation', 'IWriteZODBAnnotation',
+           'IZODBAnnotation', 'IAuthorization',
            'IHasOwner', 'IOpenLaunchBag', 'ILaunchBag')
 
 class ILaunchpadApplication(Interface):
@@ -25,10 +24,13 @@ class ILaunchpadApplication(Interface):
     interface.
     """
     name = Attribute('Name')
+    title = Attribute('Title')
 
 
 class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
+
+    title = Attribute('Title')
 
 
 class IRosettaApplication(ILaunchpadApplication):
@@ -39,21 +41,16 @@ class IRosettaApplication(ILaunchpadApplication):
         are part of Ubuntu's translation project."""
 
 
-class ISoyuzApplication(ILaunchpadApplication):
-    """Application root for soyuz."""
-
-    def distributions():
-        """Return a list of distributions that are entirely managed
-        by Soyuz. This does not include distributions which are parsed by
-        the backend tools, such as Fedora and Debian."""
-
-
 class IDOAPApplication(ILaunchpadApplication):
     """DOAP application root."""
+
+    title = Attribute('Title')
 
 
 class IFOAFApplication(ILaunchpadApplication):
     """FOAF application root."""
+
+    title = Attribute('Title')
 
 
 class IPasswordEncryptor(Interface):
@@ -99,19 +96,6 @@ class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
 
 
-class IObjectAuthorization(Interface):
-    """Authorization policy for a particular object."""
-
-    def checkPermission(person, permission):
-        """Returns True if the person has that permission on the adapted
-        object.  Otherwise returns False.
-
-        The argument person is the person who is authenticated, or None if
-        the principal is not adaptable to a Person.  So, person is None when
-        no-one is logged in.
-        """
-
-
 class IAuthorization(Interface):
     """Authorization policy for a particular object and permission."""
 
@@ -120,11 +104,11 @@ class IAuthorization(Interface):
         on the adapted object.  Otherwise returns False.
         """
 
-    def checkPermission(person):
-        """Returns True if the person has that permission on the adapted
+    def checkAuthenticated(user):
+        """Returns True if the user has that permission on the adapted
         object.  Otherwise returns False.
 
-        The argument `person` is the person who is authenticated.
+        The argument `user` is the person who is authenticated.
         """
 
 

@@ -9,6 +9,7 @@ from canonical.authserver import adbapi
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.lp import dbschema
+from canonical.database.sqlbase import quote
 
 from canonical.authserver.interfaces import IUserDetailsStorage
 
@@ -63,6 +64,10 @@ class DatabaseUserDetailsStorage(object):
             # No-one found
             return {}
 
+        if passwordDigest is None:
+            # The user has no password, which means they can't login.
+            return {}
+        
         if passwordDigest.rstrip() != sshaDigestedPassword.rstrip():
             # Wrong password
             return {}
@@ -78,10 +83,16 @@ class DatabaseUserDetailsStorage(object):
 
     def createUser(self, loginID, sshaDigestedPassword, displayname,
                    emailAddresses):
+        """Create a user.
+        
+        This method should only be called if the email address has been
+        validated, or the password is only known by the controller of the
+        given email address
+        """
         ri = self.connectionPool.runInteraction
         if loginID not in emailAddresses:
             emailAddresses = emailAddresses + [loginID]
-        deferred = ri(self._createUserInteraction, 
+        deferred = ri(self._createUserInteraction,
                       sshaDigestedPassword.encode('base64'),
                       displayname, emailAddresses)
         deferred.addErrback(self._eb_createUser)
@@ -105,11 +116,12 @@ class DatabaseUserDetailsStorage(object):
         displaynameOrig = displayname
         name = nickname.generate_nick(emailAddresses[0], lambda nick:
                 self._getPerson(transaction, nick))
-        displayname = displayname.replace("'", "''").encode('utf-8')
-        pw = sshaDigestedPassword.replace("'", "''")
+        displayname = quote(displayname).encode('utf-8')
+        pw = quote(sshaDigestedPassword)
         sql = ("""\
-            INSERT INTO Person (name, displayname, password)  VALUES ('%s', '%s', '%s')"""
-            % (name, displayname, pw))
+            INSERT INTO Person (name, displayname, password) VALUES
+                (%s, %s, %s)"""
+            % (quote(name), displayname, pw))
 
         transaction.execute(sql)
 
@@ -117,8 +129,8 @@ class DatabaseUserDetailsStorage(object):
         transaction.execute(
             "SELECT Person.id "
             "FROM Person "
-            "WHERE Person.displayname = '%s' "
-            "AND Person.password = '%s'"
+            "WHERE Person.displayname = %s "
+            "AND Person.password = %s"
             % (displayname, pw)
         )
 
@@ -129,10 +141,10 @@ class DatabaseUserDetailsStorage(object):
         for emailAddress in emailAddresses:
             transaction.execute(
                 "INSERT INTO EmailAddress (person, email, status) "
-                "VALUES ('%d', '%s', %d)"
+                "VALUES (%d, %s, %d)"
                 % (personID,
-                   emailAddress.replace("'", "''"),
-                   dbschema.EmailAddressStatus.NEW)
+                   quote(emailAddress),
+                   dbschema.EmailAddressStatus.PREFERRED.value)
             )
 
         return {
@@ -146,7 +158,7 @@ class DatabaseUserDetailsStorage(object):
                        newSshaDigestedPassword):
         ri = self.connectionPool.runInteraction
         return ri(self._changePasswordInteraction, loginID,
-                  sshaDigestedPassword.encode('base64'), 
+                  sshaDigestedPassword.encode('base64'),
                   newSshaDigestedPassword.encode('base64'))
 
     def _changePasswordInteraction(self, transaction, loginID,
@@ -161,9 +173,9 @@ class DatabaseUserDetailsStorage(object):
         
         transaction.execute(
             "UPDATE Person "
-            "SET password = '%s' "
+            "SET password = %s "
             "WHERE Person.id = %d "
-            % (str(newSshaDigestedPassword).replace("'", "''"),
+            % (str(quote(newSshaDigestedPassword)),
                personID)
         )
         
@@ -174,12 +186,12 @@ class DatabaseUserDetailsStorage(object):
         query = (
             "SELECT Person.id, Person.displayname, Person.password "
             "FROM Person "
-            "INNER JOIN EmailAddress ON EmailAddress.person = Person.id "
         )
         transaction.execute(
-            query + 
-            "WHERE lower(EmailAddress.email) = '%s' "
-            % (str(loginID).lower().replace("'", "''"),)
+            query +
+            "INNER JOIN EmailAddress ON EmailAddress.person = Person.id "
+            "WHERE lower(EmailAddress.email) = %s"
+            % (quote(str(loginID).lower()),)
         )
         
         row = transaction.fetchone()
@@ -192,15 +204,15 @@ class DatabaseUserDetailsStorage(object):
             else:
                 transaction.execute(
                     query +
-                    "WHERE Person.id = '%d'" % (personID,)
+                    "WHERE Person.id = %d" % (personID,)
                 )
                 row = transaction.fetchone()
         if row is None:
             # Fallback #2: try treating loginID as a nickname
             transaction.execute(
                 query +
-                "WHERE Person.name = '%s'" 
-                % (str(loginID).replace("'", "''"),)
+                "WHERE Person.name = %s" 
+                % (quote(str(loginID)),)
             )
             row = transaction.fetchone()
         if row is None:
@@ -230,14 +242,37 @@ class DatabaseUserDetailsStorage(object):
         return ri(self._getSSHKeysInteraction, archiveName)
 
     def _getSSHKeysInteraction(self, transaction, archiveName):
+        # The PushMirrorAccess table explicitly says that a person may access a
+        # particular push mirror.
         transaction.execute(
             "SELECT keytype, keytext "
             "FROM SSHKey "
             "JOIN PushMirrorAccess ON SSHKey.person = PushMirrorAccess.person "
-            "WHERE PushMirrorAccess.name = '%s'"
-            % (archiveName.replace("'", "''"),)
+            "WHERE PushMirrorAccess.name = %s"
+            % (quote(archiveName),)
         )
-        return list(transaction.fetchall())
+        authorisedKeys = transaction.fetchall()
+        
+        # A person can also access any archive named after a validated email
+        # address.
+        if '--' in archiveName:
+            email, suffix = archiveName.split('--', 1)
+        else:
+            email = archiveName
+
+        transaction.execute(
+            "SELECT keytype, keytext "
+            "FROM SSHKey "
+            "JOIN EmailAddress ON SSHKey.person = EmailAddress.person "
+            "WHERE EmailAddress.email = %s "
+            "AND EmailAddress.status in (2, 4)"
+            % (quote(email),)
+        )
+        authorisedKeys.extend(transaction.fetchall())
+        # Replace keytype with correct DBSchema items.
+        authorisedKeys = [(dbschema.SSHKeyType.items[keytype].title, keytext)
+                          for keytype, keytext in authorisedKeys]
+        return authorisedKeys
 
 
 def saltFromDigest(digest):

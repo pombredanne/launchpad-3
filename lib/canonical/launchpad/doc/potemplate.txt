@@ -1,0 +1,50 @@
+
+# Get the PO template name.
+
+>>> from canonical.launchpad.database import POTemplateName
+>>> ptn = POTemplateName.byName('evolution-2.2')
+
+# Get a PO template with that name.
+
+>>> from canonical.launchpad.database import POTemplate
+>>> template = POTemplate.selectBy(potemplatenameID=ptn.id)[0]
+
+# Check that the import status enum column is working correctly.
+
+>>> from canonical.lp.dbschema import RosettaImportStatus
+>>> template.rawimportstatus
+<Item IMPORTED (3) from <class 'canonical.lp.dbschema.RosettaImportStatus'>>
+
+# Get a Spanish PO file, and check its import status.
+
+>>> pofile = template.getPOFileByLang('es')
+>>> pofile.rawimportstatus
+<Item PENDING (2) from <class 'canonical.lp.dbschema.RosettaImportStatus'>>
+
+# Get a PO message set for a particular message and check it has no
+# translation.
+
+>>> pomsgset = pofile[u'evolution addressbook']
+>>> pomsgset.translations()
+[None]
+
+# Get a person to create a translation with.
+
+>>> from canonical.launchpad.database import Person
+>>> person = Person.get(1)
+
+# Add a translation.
+
+>>> sighting = pomsgset.makeTranslationSighting(person, u'foo', 0)
+
+# Test the origin enum column.
+
+>>> from canonical.lp.dbschema import RosettaTranslationOrigin
+>>> sighting.origin
+<Item ROSETTAWEB (2) from <class 'canonical.lp.dbschema.RosettaTranslationOrigin'>>
+
+# Get a list of the translations again to check the new one has been added.
+
+>>> pomsgset.translations()
+[u'foo']
+

@@ -6,6 +6,12 @@
     i18n_domain="launchpad">
 
     <!-- BugTracker -->
+    <content class="canonical.launchpad.database.BugTracker">
+        <allow interface="canonical.launchpad.interfaces.IBugTracker" />
+        <require permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IBugTracker" />
+    </content>
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTracker"
         name="+index" />

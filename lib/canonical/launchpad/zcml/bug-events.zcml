@@ -7,27 +7,30 @@
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_added" />
 
-<!-- XXX: Brad Bollenbach, 2005-02-04: Not yet implemented
 <subscriber
    for="canonical.launchpad.interfaces.IBugAddForm
         zope.app.event.interfaces.IObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.bugprivacy.make_subscriptions_explicit_on_private_bug" />
--->
-
-<subscriber
-   for="canonical.launchpad.interfaces.IBugAddForm
-        zope.app.event.interfaces.IObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karmasubscribers.bug_added" />
+   factory="canonical.launchpad.subscribers.karma.bug_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        canonical.launchpad.event.interfaces.ISQLObjectToBeModifiedEvent"
    factory="canonical.launchpad.subscribers.bugprivacy.make_subscriptions_explicit_on_private_bug" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_modified" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugTask
+        zope.app.event.interfaces.IObjectCreatedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bugtask_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugTask
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bugtask_edited" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage
@@ -37,7 +40,7 @@
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage
         zope.app.event.interfaces.IObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karmasubscribers.bug_comment_added" />
+   factory="canonical.launchpad.subscribers.karma.bug_comment_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugProductInfestation

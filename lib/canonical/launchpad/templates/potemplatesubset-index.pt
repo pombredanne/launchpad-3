@@ -1,0 +1,219 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      i18n:domain="launchpad">
+
+<head>
+    <title metal:fill-slot="title" i18n:translate="">Rosetta Translations:
+        <span tal:replace="view/title">foopackage in Hoary</span>
+    </title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1 i18n:translate="">Rosetta Translation overview for
+        <span tal:replace="view/title">foopackage in Hoary</span>
+    </h1>
+
+    <!-- indicate if no templates are registered for this sourcepackage and
+         distrorelease and redirect to the mailing lists in case it's an error
+    -->
+    <tal:block condition="not: view/templates">
+
+        <h2 i18n:translate="">No Translatable Strings Available</h2>
+
+        <p i18n:translate="">
+            <tal:block condition="context/sourcepackagename">
+                <span tal:replace="context/sourcepackagename/name"
+                      i18n:name="sourcepackagename_name">
+                    This sourcepackagename
+                </span>
+            </tal:block>
+            <tal:block condition="view/isDistroReleaseSubset">
+                <span tal:replace="context/distrorelease/displayname"
+                      i18n:name="distrorelease_displayname">
+                    This distrorelease
+                </span>
+            </tal:block>
+        does not have any string to be translated through Rosetta. In case
+        you think it's an error, please send us an email to
+        <a href="mailto:rosetta-users@lists.ubuntu.com">Rosetta's mailing
+        list</a> or file a bug in our
+        <a href="https://launchpad.ubuntu.com/malone/products/rosetta">bug
+        tracking system</a> so we can look into the problem. Thanks.
+        </p>
+    </tal:block>
+
+    <tal:block condition="view/templates">
+
+    <!-- Stuff which is for distro releases. -->
+
+        <tal:block tal:condition="view/isDistroReleaseSubset">
+
+            <table class="listing">
+                <thead>
+                    <tr>
+                        <th>template</th>
+                        <th>description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tal:block repeat="template view/distroReleaseTemplates">
+                        <tr>
+                            <td><a tal:attributes="href string:
+                                ../+sources/${template/sourcepackagename}/+rosetta/${template/potemplatename}/+translate"
+                                ><span tal:replace="template/title"
+                                    >title</span></a>
+                            <td><span tal:replace="template/description"
+                                >description</span></td>
+                        </tr>
+                    </tal:block>
+                </tbody>
+            </table>
+
+        </tal:block>
+
+    <!-- Stuff which is not for distro releases. -->
+
+        <tal:block tal:condition="not: view/isDistroReleaseSubset">
+
+            <p tal:condition="view/has_multiple_templates" i18n:translate="">
+                Below is a list of translation templates for
+                <tal:block condition="context/sourcepackagename">
+                    <span tal:replace="context/sourcepackagename/name"
+                          i18n:name="sourcepackagename_name">
+                        this sourcepackagename
+                    </span>.
+                </tal:block>
+                <tal:block condition="python: view/isDistroReleaseSubset">
+                    <span tal:replace="context/distrorelease/displayname"
+                          i18n:name="distrorelease_displayname">
+                        this distrorelease
+                    </span>
+                </tal:block>
+            </p>
+
+            <div tal:condition="not: view/languages">
+
+                <ul>
+                    <li tal:repeat="template view/templates">
+                        <a tal:attributes="href string:${template/baseurl}translate"
+                            tal:content="template/name">template</a>
+                    </li>
+                </ul>
+            </div>
+
+            <p tal:condition="view/languages" i18n:translate="">We have
+            determined a short list of languages that you may be interested in
+            translating, and show the translation templates status in each of
+            those languages below:
+            </p>
+
+            <div tal:condition="view/languages"
+                tal:repeat="template view/templates">
+
+                <h2 tal:content="template/title">Template</h2>
+
+                <p tal:content="template/template/description">
+                    Template description
+                </p>
+
+                <table class="listing rowNavigation" width="100%">
+                    <thead>
+                        <th i18n:translate="">Language</th>
+                        <th i18n:translate="">Done</th>
+                        <th i18n:translate="">Todo</th>
+                        <th i18n:translate="">Graph</th>
+                        <th i18n:translate="">Latest Contributor</th>
+                        <th i18n:translate="">Last Edited</th>
+                    </thead>
+
+                    <tbody>
+                        <tr tal:repeat="language template/languages"
+                            tal:attributes="onclick
+                            string:window.location='${template/name}/${language/translateURL}'">
+                            <td>
+                                <a tal:attributes="href
+                                string:${template/baseurl}${language/translateURL}"
+                                tal:content="language/name">Language
+                                Name</a></td>
+                            <td tal:content="language/poTranslated">0</td>
+                            <td tal:content="language/poUntranslated">0</td>
+                            <td>
+                                <!-- Show an mdash if there is no graph -->
+                                <span tal:condition="not: language/poLen">&mdash;</span>
+
+                                <img src="/++resource++green-bar.png"
+                                    height="10"
+                                    style="margin-top: 2px;"
+                                    alt="Translated Messages"
+                                    tal:condition="language/poNonUpdatesCount"
+                                    tal:attributes="width language/poNonUpdatesPercent;
+                                                    title string: Translated: ${language/poNonUpdatesPercent}%"
+                                /><img src="/++resource++blue-bar.png"
+                                    height="10"
+                                    style="margin-top: 2px;"
+                                    alt="Improved Message Translations"
+                                    tal:condition="language/poUpdatesCount"
+                                    tal:attributes="width language/poUpdatesPercent;
+                                                    title string: Improved In Rosetta : ${language/poUpdatesPercent}%"
+                                /><img src="/++resource++purple-bar.png"
+                                    height="10"
+                                    style="margin-top: 2px;"
+                                    alt="Newly Translated Messages"
+                                    tal:condition="language/poRosettaCount"
+                                    tal:attributes="width language/poRosettaPercent;
+                                                    title string: New In Rosetta: ${language/poRosettaPercent}%"
+                                /><img src="/++resource++red-bar.png"
+                                    height="10"
+                                    style="margin-top: 2px;"
+                                    alt="Untranslated Messages"
+                                    tal:condition="language/poUntranslated"
+                                    tal:attributes="width language/poUntranslatedPercent;
+                                                    title string: Untranslated: ${language/poUntranslatedPercent}%" />
+                            </td>
+                            <td>
+                                <tal:block condition="language/lastChangedSighting">
+                                    <span tal:content="language/lastChangedSighting/person/displayname" />
+                                </tal:block>
+                                <tal:block condition="not: language/lastChangedSighting">
+                                    &mdash;
+                                </tal:block>
+                            </td>
+                            <td>
+                                <tal:block condition="language/lastChangedSighting">
+                                    <span
+                                    tal:content="language/lastChangedSighting/datelastactive/fmt:date"
+                                    /> GMT
+                                </tal:block>
+                                <tal:block condition="not: language/lastChangedSighting">
+                                    &mdash;
+                                </tal:block>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div align="right">
+                    [ <a tal:attributes="href string:${template/baseurl}"
+                       i18n:translate="">More...</a> ]
+                </div>
+
+                <div tal:replace="structure view/statusLegend" tal:omit-tag />
+
+            </div>
+
+        </tal:block> <!-- condition: non-distrorelease-only stuff -->
+
+    </tal:block> <!-- condition="view/templates -->
+</div>
+
+</body>
+</html>

@@ -91,6 +91,21 @@ class XMLRPCTestCase(LaunchpadTestCase):
         self.failUnlessEqual(r2['displayname'], 'Display Name')
         self.failUnlessEqual(r2['emailaddresses'], ['nobody@example.com'])
 
+    def testGetSSHKeys(self):
+        # Unknown users have no SSH keys, of course.
+        self.assertEqual([], self.server.getSSHKeys('unknown@user'))
+
+        # Check that the SSH key in the sample data can be retrieved
+        # successfully.
+        keys = self.server.getSSHKeys('test@canonical.com')
+
+        # There should only be one key for this user.
+        self.assertEqual(1, len(keys))
+
+        # Check the keytype is being returned correctly.
+        keytype, keytext = keys[0]
+        self.assertEqual('DSA', keytype)
+
     def tearDown(self):
         pid = int(open('twistd.pid').read())
         ret = os.system('kill `cat twistd.pid`')

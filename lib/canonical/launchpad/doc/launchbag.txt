@@ -1,6 +1,5 @@
-
 The LaunchBag is a collection of all the 'stuff' we have traversed. It
-contains the requests 'context' or environment, which can be used to
+contains the request's 'context' or environment, which can be used to
 filter or otherwise specialize views or behavior.
 
 First, we'll set up various imports and stub objects.
@@ -82,5 +81,3 @@ will be cookie@example.com, as given in the session dict above.
 >>> notify(event)
 >>> print launchbag.login
 cookie@example.com
-
-

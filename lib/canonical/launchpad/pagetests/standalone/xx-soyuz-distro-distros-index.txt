@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /soyuz/distros HTTP/1.1
+  ... GET /distros HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -13,8 +13,8 @@
 
 
   >>> print http(r"""
-  ... GET /soyuz/distros/ubuntu HTTP/1.1
-  ... Referer: http://localhost:9000/soyuz/distros
+  ... GET /distros/ubuntu HTTP/1.1
+  ... Referer: http://localhost:9000/distros
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

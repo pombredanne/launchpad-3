@@ -1,3 +1,7 @@
+
+<!--
+  <title metal:fill-slot="title">A Fake Title</title>
+-->
 <div class="portlet">
     <h4>Context</h4>
 

@@ -11,6 +11,8 @@ from canonical.launchpad.interfaces import CategoryAlreadyRegistered
 from canonical.launchpad.interfaces import IBranch
 
 from canonical.launchpad.database.archbranch import VersionMapper
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import HashAlgorithms
 
 class Changeset(SQLBase):
     """A changeset"""
@@ -50,7 +52,8 @@ class ChangesetFileHash(SQLBase):
     _columns = [
         ForeignKey(name='changesetfile', foreignKey='ChangesetFile', 
                    dbName='changesetfile', notNull=True),
-        IntCol('hashalg', dbName='hashalg', notNull=True),
+        EnumCol('hashalg', dbName='hashalg', notNull=True,
+                schema=HashAlgorithms),
         StringCol('hash', dbName='hash', notNull=True),
     ]
 

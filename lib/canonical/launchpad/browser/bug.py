@@ -8,13 +8,14 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile, \
 from zope.app.form.browser.add import AddView
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IPerson, ILaunchBag
+from canonical.launchpad.interfaces import IPerson, ILaunchBag, \
+     IBugSet, IBugTaskSet
 from canonical.lp import dbschema
 from canonical.launchpad.database import BugAttachmentSet, \
         BugExternalRefSet, BugSubscriptionSet, \
         BugWatchSet, BugProductInfestationSet, \
         BugPackageInfestationSet, Person, Bug, \
-        BugTasksReport, BugSet, BugTaskSet, CVERefSet
+        BugTasksReport, CVERefSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 def traverseBug(bug, request, name):
@@ -29,17 +30,19 @@ def traverseBug(bug, request, name):
     elif name == 'watches':
         return BugWatchSet(bug=bug.id)
     elif name == 'tasks':
-        return BugTaskSet(bug=bug.id)
+        return getUtility(IBugTaskSet).get(bug.id)
     elif name == 'productinfestations':
         return BugProductInfestationSet(bug=bug.id)
     elif name == 'packageinfestations':
         return BugPackageInfestationSet(bug=bug.id)
 
+
 def traverseBugs(bugcontainer, request, name):
     if name == 'assigned':
         return BugTasksReport()
     else:
-        return BugSet()[int(name)]
+        return getUtility(IBugSet).get(int(name))
+
 
 # TODO: Steve will be hacking on a more general portlet mechanism today
 # (2004-12-09)
@@ -47,10 +50,24 @@ class BoundPortlet(BoundPageTemplate):
     def __call__(self, *args, **kw):
         return BoundPageTemplate.__call__(self, *args, **kw)
 
+
 class ViewWithBugContext:
     def __init__(self, view):
         self.request = view.request
         self.context = getUtility(ILaunchBag).bug
+
+    def getCCs(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.CC]
+
+    def getWatches(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.WATCH]
+
+    def getIgnores(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.IGNORE]
+
 
 class BugPortlet:
     def __init__(self, template_filename):
@@ -61,6 +78,7 @@ class BugPortlet:
 
     def __get__(self, instance, type=None):
         return BoundPortlet(self, instance)
+
 
 # TODO: It should be possible to specify all this via ZCML and not require
 # the BugView class with its ViewPageTemplateFile attributes
@@ -90,15 +108,30 @@ class BugView:
     actionsPortlet = BugPortlet(
         '../templates/portlet-bug-actions.pt')
 
+    def getCCs(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.CC]
+
+    def getWatches(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.WATCH]
+
+    def getIgnores(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.IGNORE]
+
+
 class BugEditView(BugView, SQLObjectEditView):
     def __init__(self, context, request):
         BugView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
 
+
 class BugTaskEditView(BugView, SQLObjectEditView):
     def __init__(self, context, request):
         BugView.__init__(self, context, request)
         SQLObjectEditView.__init__(self, context, request)
+
 
 class BugAddView(AddView):
     def add(self, content):
@@ -108,6 +141,20 @@ class BugAddView(AddView):
 
     def nextURL(self):
         return ".?bugadded=" + str(self.bugadded.id)
+
+
+class BugAddingView:
+    """A hack for browser:addform's that use IBug as their context.
+
+    Use this class in the class="" of a browser:addform directive
+    for IBug.
+    """
+    def add(self, content):
+        return content
+
+    def nextURL(self):
+        return "."
+
 
 class BugsCreatedByView:
     def __init__(self, context, request):

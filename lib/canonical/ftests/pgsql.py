@@ -27,15 +27,20 @@ class ConnectionWrapper(object):
             PgTestSetup.connections.remove(self)
             self.__dict__['real_connection'].close()
 
-    def rollback(self):
+    def rollback(self, InterfaceError=psycopg.InterfaceError):
         # In our test suites, rollback ends up being called twice in some
         # circumstances. Silently ignoring this is probably not correct,
         # but the alternative is wasting further time chasing this 
         # and probably refactoring sqlos and/or zope3
         # -- StuartBishop 2005-01-11
+        # Need to store InterfaceError cleverly, otherwise it may have been
+        # GCed when the world is being destroyed, leading to an odd
+        # AttributeError with
+        #   except psycopg.InterfaceError:
+        # -- SteveAlexander 2005-03-22
         try:
             self.__dict__['real_connection'].rollback()
-        except psycopg.InterfaceError:
+        except InterfaceError:
             pass
 
     def commit(self):
@@ -46,7 +51,6 @@ class ConnectionWrapper(object):
             return self.__dict__['real_connection'].commit()
         finally:
             ConnectionWrapper.committed = True
-
 
     def __getattr__(self, key):
         return getattr(self.__dict__['real_connection'], key)
@@ -86,9 +90,14 @@ class PgTestSetup(object):
         if dbuser is not None:
             self.dbuser = dbuser
 
-    def setUp(self):
-        '''Create a fresh database (dropping the old if necessary)'''
+    def setUp(self, reset_db=True):
+        '''Create a fresh database (dropping the old if necessary)
+
+        Skips db creation if reset_db is False
+        '''
         #installFakeConnect()
+        if not reset_db:
+            return
         self.dropDb()
         con = psycopg.connect('dbname=%s' % self.template)
         try:
@@ -114,12 +123,13 @@ class PgTestSetup(object):
         finally:
             con.close()
 
-    def tearDown(self):
+    def tearDown(self, reset_db=True):
         '''Close all outstanding connections and drop the database'''
         while self.connections:
             con = self.connections[-1]
-            con.close() # Removes itself
-        self.dropDb()
+            con.close() # Removes itself from self.connections
+        if reset_db:
+            self.dropDb()
         #uninstallFakeConnect()
 
     def connect(self):

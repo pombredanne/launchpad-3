@@ -20,23 +20,47 @@ from email.MIMEText import MIMEText
 from email import Charset
 from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
+from zope.security.proxy import isinstance as pisinstance
 
 # email package by default ends up encoding UTF8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
 # our own custom charset definition to force quoted printable.
 Charset.add_charset('utf8', Charset.QP, Charset.QP, 'utf8')
 
-def simple_sendmail(from_addr, to_addrs, subject, body):
+def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     """Send an email from from_addr to to_addrs with the subject and body
     provided. to_addrs can be a list, tuple, or ASCII/Unicode string.
+
+    Arbitrary headers can be set using the headers parameter.
    
     Returns the Message-Id.
     """
-    if not isinstance(to_addrs, (list, tuple)):
+
+    # Extremely paranoid parameter checking is required to ensure
+    # we raise an exception rather than stick garbage in the mail
+    # queue. Currently, the Z3 mailer is too forgiving and accepts
+    # badly formatted emails which the delivery mechanism then
+    # can't send.
+    # XXX: These checks need to be migrated upstream if this bug
+    # still exists in modern Z3 -- StuartBishop 20050319
+    if pisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
+    assert pisinstance(to_addrs, (list, tuple)) and len(to_addrs) > 0, \
+            'Invalid To: %r' % (to_addrs,)
+    assert pisinstance(from_addr, basestring), \
+            'Invalid From: %r' % (from_addr,)
+    assert pisinstance(subject, basestring), \
+            'Invalid Subject: %r' % (from_addr,)
+    assert pisinstance(body, basestring), 'Invalid body: %r' % (from_addr,)
+    for addr in to_addrs:
+        assert pisinstance(addr, basestring) and bool(addr), \
+                'Invalid recipient: %r in %r' % (addr, to_addrs)
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-    msg['To'] = ', '.join([str(a) for a in to_addrs])
+    for k,v in headers.items():
+        del msg[k]
+        msg[k] = v
+    msg['To'] = ','.join([str(a) for a in to_addrs])
     msg['From'] = from_addr
     msg['Subject'] = subject
     return sendmail(msg)
@@ -60,9 +84,10 @@ def sendmail(message):
  
     """
     assert isinstance(message, Message), 'Not an email.Message.Message'
-    assert 'to' in message, 'No To: header'
-    assert 'from' in message, 'No From: header'
-    assert 'subject' in message, 'No Subject: header'
+    assert 'to' in message and bool(message['to']), 'No To: header'
+    assert 'from' in message and bool(message['from']), 'No From: header'
+    assert 'subject' in message and bool(message['subject']), \
+            'No Subject: header'
 
     from_addr = message['from']
     to_addrs = message['to'].split(',')

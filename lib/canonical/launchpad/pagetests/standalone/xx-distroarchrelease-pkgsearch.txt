@@ -1,0 +1,18 @@
+
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/warty/i386/+pkgsearch HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/warty/i386/+pkgsearch?name=firefox HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... Referer: http://localhost:9000/distros/ubuntu/warty/i386/+pkgsearch
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

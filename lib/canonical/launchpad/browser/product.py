@@ -1,5 +1,7 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
+"""Browser views and traversal functions for products."""
+
 __metaclass__ = type
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -8,7 +10,7 @@ from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-from zope.component import getUtility
+from zope.component import getUtility, getAdapter
 import zope.security.interfaces
 
 from sqlobject.sqlbuilder import AND, IN, ISNULL
@@ -20,16 +22,15 @@ from canonical.database.sqlbase import quote
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      MilestoneVocabulary
-from canonical.launchpad.database import Product, ProductSeriesSet, Bug, \
+from canonical.launchpad.database import Product, ProductSeriesSet, \
      BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
-     IPersonSet, IBugTaskSet
+     IPersonSet, IBugTaskSet, IAging, ITeamParticipationSet, ILaunchBag
 from canonical.launchpad.browser.productrelease import newProductRelease
+from canonical.launchpad.helpers import is_maintainer
 
-#
 # Traversal functions that help us look up something
 # about a project or product
-#
 def traverseProduct(product, request, name):
     if name == '+sources':
         return SourceSourceSet()
@@ -40,16 +41,23 @@ def traverseProduct(product, request, name):
     else:
         return product.getRelease(name)
 
-#
+
 # A View Class for Product
-#
 class ProductView:
+
+    __used_for__ = IProduct
+
+    summaryPortlet = ViewPageTemplateFile(
+        '../templates/portlet-object-summary.pt')
 
     translationsPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-translations.pt')
 
     latestBugPortlet = ViewPageTemplateFile(
         '../templates/portlet-latest-bugs.pt')
+
+    relatedBountiesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-related-bounties.pt')
 
     branchesPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-branches.pt')
@@ -97,6 +105,14 @@ class ProductView:
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
 
+    def projproducts(self):
+        """Return a list of other products from the same project as this
+        product, excluding this product"""
+        if self.context.project is None:
+            return []
+        return [p for p in self.context.project.products \
+                    if p.id <> self.context.id]
+
     def sourcesources(self):
         return iter(self.context.sourcesources())
 
@@ -122,7 +138,7 @@ class ProductView:
         #XXX: cprov 20050112
         # Avoid passing obscure arguments as self.form
         pr = newProductRelease(self.form, self.context, owner)
- 
+
     def newseries(self):
         #
         # Handle a request to create a new series for this product.
@@ -141,24 +157,23 @@ class ProductView:
 
     def latestBugTasks(self, quantity=5):
         """Return <quantity> latest bugs reported against this product."""
-        tasklist = self.context.bugtasks
-        # Sort the bugs by datecreated and return the last <quantity> bugs.
-        bugsdated = [(task.datecreated, task) for task in tasklist]
-        bugsdated.sort()
-        last_few_tasks = bugsdated[-quantity:]
-        return [task for sortkey, task in last_few_tasks]
+        bugtaskset = getUtility(IBugTaskSet)
+        tasklist = bugtaskset.search(product = self.context, orderby = "-datecreated")
+        return tasklist[:quantity]
+
 
 class ProductBugsView:
     DEFAULT_STATUS = (
-        int(dbschema.BugTaskStatus.NEW),
-        int(dbschema.BugTaskStatus.ACCEPTED))
+        dbschema.BugTaskStatus.NEW.value,
+        dbschema.BugTaskStatus.ACCEPTED.value)
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.batch = Batch(
-            self.bugtask_search(), int(request.get('batch_start', 0)))
+            list(self.bugtask_search()), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
+        self.is_maintainer = is_maintainer(self.context)
 
     def hideGlobalSearchBox(self):
         """Should the global search box be hidden on the page?"""
@@ -225,19 +240,26 @@ class ProductBugsView:
                             tasks = [BugTask.get(taskid) for taskid in taskids]
                             for task in tasks:
                                 task.milestone = milestone
-       
+
+    # XXX: Brad Bollenbach, 2005-02-11: Replace this view method hack with a
+    # TALES adapter, perhaps.
+    def currentApproximateAge(self, bugtask):
+        """Return a human readable string of the age of a bug task."""
+        aging_bugtask = getAdapter(bugtask, IAging, '')
+        return aging_bugtask.currentApproximateAge()
+
     def people(self):
         """Return the list of people in Launchpad."""
         # the vocabulary doesn't need context since the
         # ValidPerson is independent of it in LP
         return ValidPersonVocabulary(None)
-    
+
     def milestones(self):
         """Return the list of milestones for this product."""
-        # Produce an empty context 
+        # Produce an empty context
         class HackedContext:
             pass
-        
+
         context = HackedContext()
         # Set context.product as required by Vocabulary
         context.product = self.context
@@ -253,12 +275,6 @@ class ProductFileBugView(AddView):
 
     __used_for__ = IProduct
 
-    #XXX cprov 20050107
-    # Can we use the IBug instead of the content class ?
-    ow = CustomWidgetFactory(ObjectWidget, Bug)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
-    
     def __init__(self, context, request):
         self.request = request
         self.context = context
@@ -285,14 +301,14 @@ class ProductFileBugView(AddView):
 
     def nextURL(self):
         return self._nextURL
- 
+
 
 class ProductSetView:
 
     __used_for__ = IProductSet
 
     def __init__(self, context, request):
-        
+
         self.context = context
         self.request = request
         form = self.request.form
@@ -303,9 +319,9 @@ class ProductSetView:
         self.text = form.get('text')
         self.searchrequested = False
         if (self.text is not None or
-            self.bazaar is not None or 
-            self.malone is not None or 
-            self.rosetta is not None or 
+            self.bazaar is not None or
+            self.malone is not None or
+            self.rosetta is not None or
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
@@ -327,15 +343,10 @@ class ProductSetView:
         return self.results
 
 
-
 class ProductSetAddView(AddView):
 
     __used_for__ = IProductSet
 
-    ow = CustomWidgetFactory(ObjectWidget, Bug)
-    sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
-    options_widget = sw
-    
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -352,7 +363,7 @@ class ProductSetAddView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
         kw['owner'] = owner
-        # grab a ProductSet utility 
+        # grab a ProductSet utility
         product_util = getUtility(IProductSet)
         # create a brand new Product
         # XXX cprov 20050112
@@ -364,7 +375,7 @@ class ProductSetAddView(AddView):
         #                      screenshotsurl=None, wikiurl=None,
         #                      downloadurl=None, freshmeatproject=None,
         #                      sourceforgeproject=None):
-        # make sure you have those required keys in the kw dict 
+        # make sure you have those required keys in the kw dict
         product = product_util.createProduct(**kw)
         notify(ObjectCreatedEvent(product))
         self._nextURL = kw['name']

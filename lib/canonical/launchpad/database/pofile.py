@@ -9,21 +9,25 @@ from sets import Set
 # Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
     parseDatetimetz
 
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
+from sqlobject import MultipleJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, flushUpdates
 
 # canonical imports
 from canonical.launchpad.interfaces import IPOTMsgSet, \
-    IEditPOTemplate, IPOMsgID, IPOMsgIDSighting, \
-    IEditPOFile, IPOTranslation, IEditPOMsgSet, \
-    IPOTranslationSighting, IPersonSet, IRosettaStats, IRawFileData
+    IEditPOTemplate, IPOMsgID, IPOMsgIDSighting, IPOFileSet, \
+    IEditPOFile, IPOTranslation, IEditPOMsgSet, IPOTemplateSet, \
+    IPOTemplateSubset, IPOTranslationSighting, IPersonSet, IRosettaStats, \
+    IRawFileData
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
+from canonical.lp.dbschema import EnumCol
+from canonical.launchpad.database.potemplatename import POTemplateName
 from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.lp.dbschema import RosettaImportStatus
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -34,16 +38,16 @@ from canonical.rosetta.pofile import POParser, POHeader
 standardPOTemplateCopyright = 'Canonical Ltd'
 
 # XXX: in the four strings below, we should fill in owner information
-standardPOTemplateTopComment = ''' PO template for %(productname)s
+standardPOTemplateTopComment = ''' PO template for %(origin)s
  Copyright (c) %(copyright)s %(year)s
- This file is distributed under the same license as the %(productname)s package.
+ This file is distributed under the same license as %(origin)s.
  PROJECT MAINTAINER OR MAILING LIST <EMAIL@ADDRESS>, %(year)s.
 
 '''
 
 # XXX: project-id-version needs a version
 standardPOTemplateHeader = (
-"Project-Id-Version: %(productname)s\n"
+"Project-Id-Version: %(origin)s\n"
 "POT-Creation-Date: %(date)s\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
@@ -54,15 +58,15 @@ standardPOTemplateHeader = (
 "X-Rosetta-Version: 0.1\n"
 )
 
-standardPOFileTopComment = ''' %(languagename)s translation for %(productname)s
+standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
  Copyright (c) %(copyright)s %(year)s
- This file is distributed under the same license as the %(productname)s package.
+ This file is distributed under the same license as the %(origin)s package.
  FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
 
 '''
 
 standardPOFileHeader = (
-"Project-Id-Version: %(productname)s\n"
+"Project-Id-Version: %(origin)s\n"
 "Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
 "POT-Creation-Date: %(templatedate)s\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
@@ -76,17 +80,11 @@ standardPOFileHeader = (
 )
 
 def _attachRawFileData(raw_file_data, contents, importer):
-    # Initial check to be sure that the content is a valid .po/.pot file, if
-    # it fails an exception will be throw and the attachment will be rejected.
-    parser = POParser()
-    parser.write(contents)
-    parser.finish()
-
     raw_file_data.rawfile = base64.encodestring(contents)
     raw_file_data.daterawimport = UTC_NOW
-    if importer is not None:
-        raw_file_data.rawimporter = importer
-    raw_file_data.rawimportstatus = RosettaImportStatus.PENDING.value
+    assert importer is not None
+    raw_file_data.rawimporter = importer
+    raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
 
 
 class RosettaStats(object):
@@ -191,18 +189,182 @@ class RosettaStats(object):
         return float(str(percent))
 
 
+class POTemplateSubset:
+    implements(IPOTemplateSubset)
+
+    def __init__(self, sourcepackagename=None,
+                 distrorelease=None, productrelease=None):
+        """Create a new POTemplateSubset object.
+
+        The set of POTemplate depends on the arguments you pass to this
+        constructor. The sourcepackagename, distrorelease and productrelease
+        are just filters for that set.
+        """
+
+        self.sourcepackagename = sourcepackagename
+        self.distrorelease = distrorelease
+        self.productrelease = productrelease
+
+        if (productrelease is not None and (distrorelease is not None or
+            sourcepackagename is not None)):
+            raise ValueError(
+                'A product release must not be used with a source package name'
+                ' or a distro release.')
+        elif productrelease is not None:
+            self.query = ('POTemplate.productrelease = %d' %
+                          productrelease.id)
+            self.orderby = None
+            self.clausetables = None
+        elif distrorelease is not None and sourcepackagename is not None:
+            self.query = ('POTemplate.sourcepackagename = %d AND'
+                          ' POTemplate.distrorelease = %d ' %
+                          (sourcepackagename.id, distrorelease.id))
+            self.orderby = None
+            self.clausetables = None
+        elif distrorelease is not None:
+            self.query = (
+                'POTemplate.distrorelease = DistroRelease.id AND'
+                ' DistroRelease.id = %d' % distrorelease.id)
+            self.orderby = 'DistroRelease.name'
+            self.clausetables = ['DistroRelease']
+        else:
+            raise ValueError(
+                'You need to specify the kind of subset you want.')
+
+    def __iter__(self):
+        """See IPOTemplateSubset."""
+        res = POTemplate.select(self.query, clauseTables=self.clausetables,
+                                orderBy=self.orderby)
+
+        for potemplate in res:
+            yield potemplate
+
+    def __getitem__(self, name):
+        """See IPOTemplateSubset."""
+        try:
+            ptn = POTemplateName.byName(name)
+        except SQLObjectNotFound:
+            raise NotFoundError, name
+
+        if self.query is None:
+            query = 'POTemplate.potemplatename = %d' % ptn.id
+        else:
+            query = '%s AND POTemplate.potemplatename = %d' % (
+                    self.query, ptn.id)
+
+        res = POTemplate.select(query, clauseTables=self.clausetables)
+
+        if res.count() == 0:
+            raise NotFoundError, name
+        else:
+            return res[0]
+
+    def new(self, potemplatename, title, contents, owner):
+        if self.sourcepackagename is not None:
+            sourcepackagename_id = self.sourcepackagename.id
+        else:
+            sourcepackagename_id = None
+        if self.distrorelease is not None:
+            distrorelease_id = self.distrorelease.id
+        else:
+            distrorelease_id = None
+        if self.productrelease is not None:
+            productrelease_id = self.productrelease.id
+        else:
+            productrelease_id = None
+
+        encoded_file = base64.encodestring(contents)
+
+        return POTemplate(potemplatenameID=potemplatename.id,
+                          title=title,
+                          sourcepackagenameID=sourcepackagename_id,
+                          distroreleaseID=distrorelease_id,
+                          productreleaseID=productrelease_id,
+                          ownerID=owner.id,
+                          daterawimport=UTC_NOW,
+                          rawfile=encoded_file,
+                          rawimporterID=owner.id,
+                          rawimportstatus=RosettaImportStatus.PENDING)
+
+
+class POTemplateSet:
+    implements(IPOTemplateSet)
+
+    def __iter__(self):
+        """See IPOTemplateSet."""
+        res = POTemplate.select()
+
+        for potemplate in res:
+            yield potemplate
+
+    def __getitem__(self, name):
+        """See IPOTemplateSet."""
+        try:
+            ptn = POTemplateName.byName(name)
+        except SQLObjectNotFound:
+            raise NotFoundError, name
+
+        res = POTemplate.select('POTemplate.potemplatename = %d' % ptn.id)
+
+        if res.count() == 0:
+            raise NotFoundError, name
+        else:
+            return res[0]
+
+    def getSubset(self, **kw):
+        """See IPOTemplateSet."""
+        if kw.get('distrorelease'):
+            assert 'productrelease' not in kw
+
+            distrorelease = kw['distrorelease']
+
+            if kw.get('sourcepackagename'):
+                sourcepackagename = kw['sourcepackagename']
+
+                return POTemplateSubset(
+                    distrorelease=distrorelease,
+                    sourcepackagename=sourcepackagename)
+            else:
+                return POTemplateSubset(distrorelease=distrorelease)
+
+        assert kw.get('productrelease')
+
+        return POTemplateSubset(productrelease=kw['productrelease'])
+
+    def getTemplatesPendingImport(self):
+        """See IPOTemplateSet."""
+        results = POTemplate.selectBy(
+            rawimportstatus=RosettaImportStatus.PENDING)
+
+        # XXX: Carlos Perello Marin 2005-03-24
+        # Really ugly hack needed to do the initial import of the whole hoary
+        # archive. It will disappear as soon as the whole
+        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
+        # rawfile is not used anymore and we start using Librarian.
+        # The problem comes with the memory requirements to get more than 7500
+        # rows into memory with about 200KB - 300KB of data each one.
+        total = results.count()
+        done = 0
+        while done < total:
+            for potemplate in results[done:done+100]:
+                yield potemplate
+            done = done + 100
+
+
+class LanguageNotFound(ValueError):
+    """Raised when a a language does not exists in the database."""
+
+
 class POTemplate(SQLBase, RosettaStats):
     implements(IEditPOTemplate, IRawFileData)
 
     _table = 'POTemplate'
 
-    product = ForeignKey(foreignKey='Product', dbName='product', notNull=True)
+    productrelease = ForeignKey(foreignKey='ProductRelease',
+        dbName='productrelease', notNull=False, default=None)
     priority = IntCol(dbName='priority', notNull=False, default=None)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=False,
-        default=None)
-    changeset = ForeignKey(foreignKey='Changeset', dbName='changeset',
-        notNull=False, default=None)
-    name = StringCol(dbName='name', notNull=True)
+    potemplatename = ForeignKey(foreignKey='POTemplateName',
+        dbName='potemplatename', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=False, default=None)
     copyright = StringCol(dbName='copyright', notNull=False, default=None)
@@ -210,10 +372,9 @@ class POTemplate(SQLBase, RosettaStats):
     license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = DateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
-    iscurrent = BoolCol(dbName='iscurrent', notNull=True)
+    iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False,
-        default=None)
+    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
     sourcepackageversion = StringCol(dbName='sourcepackageversion',
@@ -221,6 +382,10 @@ class POTemplate(SQLBase, RosettaStats):
     distrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='distrorelease', notNull=False, default=None)
     header = StringCol(dbName='header', notNull=False, default=None)
+    binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
+        dbName='binarypackagename', notNull=False, default=None)
+    languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
+    filename = StringCol(dbName='filename', notNull=False, default=None)
 
     poFiles = MultipleJoin('POFile', joinColumn='potemplate')
 
@@ -458,6 +623,7 @@ class POTemplate(SQLBase, RosettaStats):
             msgset.sequence = 0
 
     def getOrCreatePOFile(self, language_code, variant=None, owner=None):
+        """See IPOFile."""
         # see if one exists already
         existingpo = self.queryPOFileByLang(language_code, variant)
         if existingpo is not None:
@@ -467,26 +633,28 @@ class POTemplate(SQLBase, RosettaStats):
         try:
             language = Language.byCode(language_code)
         except SQLObjectNotFound:
-            raise ValueError, "Unknown language code '%s'" % language_code
+            raise LanguageNotFound(language_code)
 
         now = datetime.datetime.now()
         data = {
             'year': now.year,
             'languagename': language.englishname,
             'languagecode': language_code,
-            'productname': self.product.title,
             'date': now.isoformat(' '),
-            # XXX: This is not working and I'm not able to fix it easily
-            #'templatedate': self.datecreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
             'templatedate': self.datecreated,
             'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors' % now.year,
             'nplurals': language.pluralforms or 1,
             'pluralexpr': language.pluralexpression or '0',
             }
 
+        if self.productrelease is not None:
+            data['origin'] = self.productrelease.product.name
+        else:
+            data['origin'] = self.sourcepackagename.name
+
         return POFile(potemplate=self,
                       language=language,
-                      title='Rosetta %(languagename)s translation of %(productname)s' % data,
+                      title='Rosetta %(languagename)s translation of %(origin)s' % data,
                       topcomment=standardPOFileTopComment % data,
                       header=standardPOFileHeader % data,
                       fuzzyheader=True,
@@ -563,26 +731,20 @@ class POTemplate(SQLBase, RosettaStats):
 
     # Any use of this interface should adapt this object as an IRawFileData.
 
-    rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
+    rawfile = StringCol(dbName='rawfile', notNull=True)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
-        notNull=False, default=None)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
-        default=None)
-    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=True,
-        default=RosettaImportStatus.IGNORE.value)
+        notNull=True)
+    daterawimport = DateTimeCol(dbName='daterawimport', notNull=True,
+        default=UTC_NOW)
+    rawimportstatus = EnumCol(dbName='rawimportstatus', notNull=True,
+        schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)
 
     def doRawImport(self, logger=None):
         """See IRawFileData."""
 
-        if self.rawimporter is not None:
-            # By default the owner of the import is who imported it, if we
-            # have such information...
-            owner = self.rawimporter
-        else:
-            # As fallback, we get the product's owner.
-            owner = self.product.owner
+        # The owner of the import is the person who imported it.
 
-        importer = TemplateImporter(self, owner)
+        importer = TemplateImporter(self, self.rawimporter)
 
         file = StringIO.StringIO(base64.decodestring(self.rawfile))
 
@@ -590,7 +752,7 @@ class POTemplate(SQLBase, RosettaStats):
             importer.doImport(file)
 
             # The import has been done, we mark it that way.
-            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+            self.rawimportstatus = RosettaImportStatus.IMPORTED
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
@@ -609,10 +771,10 @@ class POTemplate(SQLBase, RosettaStats):
         except:
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
-            self.rawimportstatus = RosettaImportStatus.FAILED.value
+            self.rawimportstatus = RosettaImportStatus.FAILED
             if logger:
-                logger.warning('We got an error importing %s' , self.name,
-                    exc_info = 1)
+                logger.warning('We got an error importing %s' ,
+                    self.potemplatename.name, exc_info = 1)
 
 
 class POTMsgSet(SQLBase):
@@ -824,8 +986,8 @@ class POMsgID(SQLBase):
         # contains values too large to index. Instead we search on its
         # hash, which *is* indexed
         r = POMsgID.select('sha1(msgid) = sha1(%s)' % quote(key))
-        assert len(r) in (0,1), 'Database constraint broken'
-        if len(r) == 1:
+        assert r.count() in (0,1), 'Database constraint broken'
+        if r.count() == 1:
             return r[0]
         else:
             # To be 100% compatible with the alternateID behaviour, we should
@@ -847,19 +1009,41 @@ def getPORevisionDate(poheader):
     if not isinstance(poheader, POHeader):
         raise TypeError, 'Expected a POHeader argument'
 
-    try:
-        date_string = poheader['PO-Revision-Date']
-        date = parseDatetimetz(date_string)
-    except KeyError:
-        # There is not PO-Revision-Date entry in poheader.
+    date_string = poheader.get('PO-Revision-Date')
+    if date_string is None:
         date = None
         date_string = 'Missing header'
-    except (SyntaxError, DateError, DateTimeError), e:
-        # The date format is not valid.
-        date = None
-        date_string = str(e)
+    else:
+        try:
+            date = parseDatetimetz(date_string)
+        except (SyntaxError, DateError, DateTimeError):
+            # The date format is not valid.
+            date = None
 
     return (date_string, date)
+
+
+class POFileSet:
+    implements(IPOFileSet)
+
+    def getPOFilesPendingImport(self):
+        """See IPOFileSet."""
+        results = POFile.selectBy(
+            rawimportstatus=RosettaImportStatus.PENDING)
+
+        # XXX: Carlos Perello Marin 2005-03-24
+        # Really ugly hack needed to do the initial import of the whole hoary
+        # archive. It will disappear as soon as the whole
+        # LaunchpadPackagePoAttach and LaunchpadPoImport are implemented so
+        # rawfile is not used anymore and we start using Librarian.
+        # The problem comes with the memory requirements to get more than 7500
+        # rows into memory with about 200KB - 300KB of data each one.
+        total = results.count()
+        done = 0
+        while done < total:
+            for potemplate in results[done:done+100]:
+                yield potemplate
+            done = done + 100
 
 
 class POFile(SQLBase, RosettaStats):
@@ -1161,8 +1345,8 @@ class POFile(SQLBase, RosettaStats):
                              notNull=False, default=None)
     daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
                                 default=None)
-    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False,
-                             default=RosettaImportStatus.IGNORE.value)
+    rawimportstatus = EnumCol(dbName='rawimportstatus', notNull=True,
+        schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)
 
     def doRawImport(self, logger=None):
         """See IRawFileData."""
@@ -1185,7 +1369,7 @@ class POFile(SQLBase, RosettaStats):
             # We should not get any exception here because we checked the file
             # before being imported, but this could help prevent programming
             # errors.
-            self.rawimportstatus = RosettaImportStatus.FAILED.value
+            self.rawimportstatus = RosettaImportStatus.FAILED
             return
 
         # Check now that the file we are trying to import is newer than the
@@ -1195,8 +1379,16 @@ class POFile(SQLBase, RosettaStats):
         old_header.finish()
 
         # Get the old and new PO-Revision-Date entries as datetime objects.
-        (old_date_string, old_date) = getPORevisionDate(old_header)
-        (new_date_string, new_date) = getPORevisionDate(parser.header)
+        try:
+            (old_date_string, old_date) = getPORevisionDate(old_header)
+        except TypeError:
+            old_date_string = 'unknown'
+            old_date = None
+        try:
+            (new_date_string, new_date) = getPORevisionDate(parser.header)
+        except TypeError:
+            new_date_string= 'unknown'
+            old_date = None
 
         # Check if the import should or not be ignored.
         if old_date is None or new_date is None:
@@ -1206,10 +1398,9 @@ class POFile(SQLBase, RosettaStats):
             if logger is not None:
                 logger.warning(
                     'There is a problem with the dates importing %s language '
-                    'for %s template from %s product. New: %s, old %s' % (
+                    'for template %s. New: %s, old %s' % (
                     self.language.code,
-                    self.potemplate.name,
-                    self.potemplate.product.name,
+                    self.potemplate.description,
                     new_date_string,
                     old_date_string))
         elif old_date >= new_date:
@@ -1217,24 +1408,17 @@ class POFile(SQLBase, RosettaStats):
             # system, the import is rejected and logged.
             if logger is not None:
                 logger.warning(
-                    'We got an older version importing %s language for %s '
-                    'template from %s product. New: %s, old: %s . Ignoring '
-                    'the import...' % (
-                    self.language.code,
-                    self.potemplate.name,
-                    self.potemplate.product.name,
-                    new_date_string,
-                    old_date_string))
-            self.rawimportstatus = RosettaImportStatus.FAILED.value
+                    'We got an older version importing %s language for'
+                    ' template %s . New: %s, old: %s . Ignoring the import...'
+                    % (self.language.code,
+                       self.potemplate.description,
+                       new_date_string,
+                       old_date_string))
+            self.rawimportstatus = RosettaImportStatus.FAILED
             return
 
-        if self.rawimporter is not None:
-            # By default the owner of the import is who imported it, if we
-            # have such information...
-            default_owner = self.rawimporter
-        else:
-            # As fallback, we get the product's owner.
-            default_owner = self.potemplate.product.owner
+        # By default the owner of the import is who imported it.
+        default_owner = self.rawimporter
 
         try:
             last_translator = parser.header['Last-Translator']
@@ -1300,7 +1484,7 @@ class POFile(SQLBase, RosettaStats):
 
             importer.doImport(file)
 
-            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+            self.rawimportstatus = RosettaImportStatus.IMPORTED
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
@@ -1312,7 +1496,7 @@ class POFile(SQLBase, RosettaStats):
         except:
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
-            self.rawimportstatus = RosettaImportStatus.FAILED.value
+            self.rawimportstatus = RosettaImportStatus.FAILED
             if logger:
                 logger.warning(
                     'We got an error importing %s language for %s template' % (
@@ -1502,9 +1686,9 @@ class POMsgSet(SQLBase):
             # No sighting exists yet.
 
             if fromPOFile:
-                origin = int(RosettaTranslationOrigin.SCM)
+                origin = RosettaTranslationOrigin.SCM
             else:
-                origin = int(RosettaTranslationOrigin.ROSETTAWEB)
+                origin = RosettaTranslationOrigin.ROSETTAWEB
 
             sighting = POTranslationSighting(
                 pomsgsetID=self.id,
@@ -1547,7 +1731,7 @@ class POMsgSet(SQLBase):
                     sighting.datelastactive = UTC_NOW
                     sighting.inlastrevision = True
                     new_active = sighting
-                elif old_active.origin == int(RosettaTranslationOrigin.SCM):
+                elif old_active.origin == RosettaTranslationOrigin.SCM:
                     # The current active translation is from a previous
                     # .po import so we can override it directly.
                     sighting.datelastactive = UTC_NOW
@@ -1624,7 +1808,8 @@ class POTranslationSighting(SQLBase):
     pluralform = IntCol(dbName='pluralform', notNull=True)
     active = BoolCol(dbName='active', notNull=True, default=DEFAULT)
     # See canonical.lp.dbschema.RosettaTranslationOrigin.
-    origin = IntCol(dbName='origin', notNull=True)
+    origin = EnumCol(dbName='origin', notNull=True,
+        schema=RosettaTranslationOrigin)
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
 
 
@@ -1645,13 +1830,11 @@ class POTranslation(SQLBase):
         # contains values too large to index. Instead we search on its
         # hash, which *is* indexed
         r = POTranslation.select('sha1(translation) = sha1(%s)' % quote(key))
-        assert len(r) in (0,1), 'Database constraint broken'
-        if len(r) == 1:
+        assert r.count() in (0,1), 'Database constraint broken'
+        if r.count() == 1:
             return r[0]
         else:
             # To be 100% compatible with the alternateID behaviour, we should
             # raise SQLObjectNotFound instead of KeyError
             raise SQLObjectNotFound(key)
     byTranslation = classmethod(byTranslation)
-
-

@@ -79,10 +79,10 @@
                   <div><div id="field.priority">
   <div class="value">
   <select name="field.priority" size="1" >
-  <option value="High">High</option>
+  <option value="Wontfix">Wontfix</option>
   <option value="Low">Low</option>
   <option selected="selected" value="Medium">Medium</option>
-  <option value="Wontfix">Wontfix</option>
+  <option value="High">High</option>
   </select>
   ...
 
@@ -156,9 +156,9 @@
                   <div><div id="field.priority">
   <div class="value">
   <select name="field.priority" size="1" >
-  <option value="High">High</option>
+  <option value="Wontfix">Wontfix</option>
   <option selected="selected" value="Low">Low</option>
   <option value="Medium">Medium</option>
-  <option value="Wontfix">Wontfix</option>
+  <option value="High">High</option>
   </select>
   ...

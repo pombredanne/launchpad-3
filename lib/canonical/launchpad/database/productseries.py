@@ -26,6 +26,11 @@ class ProductSeries(SQLBase):
             if release.version==version: return release
         raise KeyError, version
 
+    def _title(self):
+        return self.product.displayname + ' Series: ' + self.displayname
+
+    title = property(_title)
+
 class ProductSeriesSet:
     implements(IProductSeriesSet)
 

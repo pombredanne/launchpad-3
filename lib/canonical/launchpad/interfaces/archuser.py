@@ -16,3 +16,10 @@ class IArchUserID(Interface):
     person = Int(title=_("Owner"), required=True, readonly=True)
     archuserid = TextLine(title=_("ARCH user ID"), required=True)
 
+
+class IArchUserIDSet(Interface):
+    """The set of ArchUserIDs."""
+
+    def new(personID, archuserid):
+        """Create a new ArchUserID pointing to the given Person."""
+

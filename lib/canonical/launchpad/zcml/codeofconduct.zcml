@@ -1,0 +1,196 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- This view registers 'codeofconduct' as a suburl of RootObject. -->
+    <browser:suburl
+        for="canonical.publication.RootObject"
+        class="canonical.launchpad.database.CodeOfConductSet"
+        name="codeofconduct" />
+
+
+    <!-- CodeofConduct -->
+    <content class="canonical.launchpad.database.CodeOfConduct">
+        <allow interface="canonical.launchpad.interfaces.ICodeOfConduct" />
+        <require
+            permission="launchpad.AnyPerson"
+            set_schema="canonical.launchpad.interfaces.ICodeOfConduct" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ICodeOfConduct"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ICodeOfConduct"
+        class="canonical.launchpad.browser.CodeOfConductView"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/codeofconduct-index.pt"
+            name="+index"
+            lp:url="codeofconduct/$CoC.version/+index" />
+    </browser:pages>
+
+    <browser:page 
+        name="+download"
+        for="canonical.launchpad.interfaces.ICodeOfConduct"
+        class="canonical.launchpad.browser.CodeOfConductDownloadView"
+        permission="zope.Public"
+        attribute="__call__"
+        lp:url="codeofconduct/$CoC.version/+download" />
+
+    <browser:addform
+        name="+sign"
+        for="canonical.launchpad.interfaces.ICodeOfConduct"
+        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        label="Sign a Code of Conduct"
+        fields="signingkey signedcode"
+        class="canonical.launchpad.browser.SignedCodeOfConductAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="codeofconduct/$release/+sign">
+    </browser:addform>
+
+    <!-- CodeOfConductConf -->
+    <securedutility
+        class="canonical.launchpad.database.CodeOfConductConf"
+        provides="canonical.launchpad.interfaces.ICodeOfConductConf" >
+        <allow interface="canonical.launchpad.interfaces.ICodeOfConductConf" />
+    </securedutility>
+
+
+    <!-- CodeOfConductSet -->
+    <content class="canonical.launchpad.database.CodeOfConductSet">
+        <allow interface="canonical.launchpad.interfaces.ICodeOfConductSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.CodeOfConductSet"
+        provides="canonical.launchpad.interfaces.ICodeOfConductSet" >
+        <allow interface="canonical.launchpad.interfaces.ICodeOfConductSet" />
+    </securedutility>
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ICodeOfConductSet"
+        getter="__getitem__" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ICodeOfConductSet"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ICodeOfConductSet"
+        class="canonical.launchpad.browser.CodeOfConductSetView"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/codeofconduct-list.pt"
+            name="+index"
+            lp:url="codeofconduct/+index" />
+    </browser:pages>
+
+
+    <!-- SignedCodeofConduct -->
+    <content class="canonical.launchpad.database.SignedCodeOfConduct">
+        <allow interface="canonical.launchpad.interfaces.ISignedCodeOfConduct" />
+        <require
+            permission="launchpad.AnyPerson"
+            set_schema="canonical.launchpad.interfaces.ISignedCodeOfConduct" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        class="canonical.launchpad.browser.SignedCodeOfConductView"
+        permission="launchpad.Admin">
+        <browser:page
+            template="../templates/signedcodeofconduct-index.pt"
+            name="+index"
+            lp:url="codeofconduct/console/$signed.id/+index" />
+    </browser:pages>
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        class="canonical.launchpad.browser.SignedCodeOfConductEditView"
+        label="Edit Code of Conduct Signature:"
+        fields="signingkey signedcode"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-editform.pt"
+        lp:url="foaf/$person.name/cocs/$signed.id/+edit">
+    </browser:editform>
+
+    <browser:editform
+        name="+active"
+        for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        class="canonical.launchpad.browser.SignedCodeOfConductActiveView"
+        label="Active Code of Conduct Signature:"
+        fields="admincomment"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-editform.pt"
+        lp:url="foaf/$person.name/cocs/$signed.id/+active">
+    </browser:editform>
+
+    <browser:editform
+        name="+deactive"
+        for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        class="canonical.launchpad.browser.SignedCodeOfConductDeactiveView"
+        label="Deactive Code of Conduct Signature:"
+        fields="admincomment"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-editform.pt"
+        lp:url="foaf/$person.name/cocs/$signed.id/+deactive">
+    </browser:editform>
+
+    <!-- SignedCodeOfConductSet -->
+    <content class="canonical.launchpad.database.SignedCodeOfConductSet">
+        <allow interface="canonical.launchpad.interfaces.ISignedCodeOfConductSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.SignedCodeOfConductSet"
+        provides="canonical.launchpad.interfaces.ISignedCodeOfConductSet" >
+        <allow interface="canonical.launchpad.interfaces.ISignedCodeOfConductSet" />
+    </securedutility>
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
+        getter="__getitem__" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
+        class="canonical.launchpad.browser.SignedCodeOfConductAdminView"
+        permission="launchpad.Admin">
+        <browser:page
+            template="../templates/codeofconduct-admin.pt"
+            name="+index"
+            lp:url="codeofconduct/console/+index" />
+    </browser:pages>
+
+
+    <browser:addform
+        name="+acknowledge"
+        for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
+        schema="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+        label="Acknowledge a Paper Submitted Code of Conduct"
+        fields="person"
+        class="canonical.launchpad.browser.SignedCodeOfConductAckView"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-addform.pt"
+        lp:url="codeofconduct/console/+acknowledge">
+    </browser:addform>
+
+
+</configure>

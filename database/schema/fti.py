@@ -138,7 +138,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
     # Create ftq helper
     execute(con, r"""
-        CREATE OR REPLACE FUNCTION ftq(text) RETURNS tsquery AS '
+        CREATE OR REPLACE FUNCTION ts2.ftq(text) RETURNS tsquery AS '
             import re
             q = args[0].lower()
             q = re.subn("[\|\&]", " ", q)

@@ -1,13 +1,17 @@
 
 This test the root page of Launchpad, i.e. the page with the URL '/'.
+Make sure important links are there, title ad heading set correctly etc.
 
-  >>> print http(r"""
-  ... GET / HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-      <h1>Welcome to The Launchpad!</h1>
-  ...
+    >>> print http(r"""
+    ... GET / HTTP/1.1
+    ... """)
+    HTTP/1.1 200 Ok
+    Content-Length: ...
+    Content-Type: text/html;charset=utf-8
+    <BLANKLINE>
+    ...
+        <title>The Launchpad Home Page</title>
+    ...
+        <h1>Welcome to The Launchpad!</h1>
+    ...
+

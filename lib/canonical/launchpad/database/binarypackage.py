@@ -1,6 +1,5 @@
 # Python imports
 import os
-from sets import Set
 from urllib2 import URLError
 
 # Zope imports
@@ -8,20 +7,23 @@ from zope.interface import implements
 from zope.component import getUtility
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
+from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
 
 from canonical.librarian.client import FileDownloadClient
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.lp import dbschema
 
 # interfaces and database 
-from canonical.launchpad.interfaces import IBinaryPackage, \
-    IBinaryPackageUtility, IBinaryPackageName, IBinaryPackageNameSet, \
-    IDownloadURL
+from canonical.launchpad.interfaces import IBinaryPackage, IDownloadURL
+from canonical.launchpad.interfaces import IBinaryPackageSet
 
 from canonical.launchpad.database.publishing import PackagePublishing
+
+from canonical.lp import dbschema
+from canonical.lp.dbschema import EnumCol
+
+#
+#
+#
 
 class BinaryPackage(SQLBase):
     implements(IBinaryPackage)
@@ -32,11 +34,13 @@ class BinaryPackage(SQLBase):
     shortdesc = StringCol(dbName='shortdesc', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
-    binpackageformat = IntCol(dbName='binpackageformat', notNull=True)
+    binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,
+                               schema=dbschema.BinaryPackageFormat)
     component = ForeignKey(dbName='component', foreignKey='Component',
                            notNull=True)
     section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
-    priority = IntCol(dbName='priority')
+    priority = EnumCol(dbName='priority',
+                       schema=dbschema.BinaryPackagePriority)
     shlibdeps = StringCol(dbName='shlibdeps')
     depends = StringCol(dbName='depends')
     recommends = StringCol(dbName='recommends')
@@ -98,7 +102,7 @@ class BinaryPackage(SQLBase):
                  'AND PackagePublishing.status = %d'
                  %(self.binarypackagename.id,
                    self.build.distroarchrelease.id,
-                   dbschema.PackagePublishingStatus.SUPERSEDED,
+                   dbschema.PackagePublishingStatus.SUPERSEDED.value,
                    ))
 
         return list(BinaryPackage.select(query,
@@ -109,14 +113,6 @@ class BinaryPackage(SQLBase):
     # Properties
     #
     
-    def _priority(self):
-        for priority in dbschema.BinaryPackagePriority.items:
-            if priority.value == self.priority:
-                return priority.title
-        return 'Unknown (%d)' %self.priority
-
-    pkgpriority = property(_priority)
-
     def _status(self):
         """Returns the BinaryPackage Status."""
         #
@@ -135,11 +131,8 @@ class BinaryPackage(SQLBase):
         except IndexError:
             raise KeyError, 'BinaryPackage not found in PackagePublishing'
 
-        try:
-            return dbschema.PackagePublishingStatus.\
-                   items[packagepublishing.status].title
-        except KeyError:
-            return 'Unknown'
+        return packagepublishing.status.title
+        
     status = property(_status)
 
     def files_url(self):
@@ -183,86 +176,11 @@ class BinaryPackage(SQLBase):
             return BinaryPackage.select(query, clauseTables=clauseTables)[0]
         except IndexError:
             raise KeyError, "Version Not Found"
-        
+
 
 class BinaryPackageSet(object):
     """A Set of BinaryPackages"""
-    def __init__(self, distrorelease, arch):
-        self.distrorelease = distrorelease
-        self.arch = arch
-
-    def findPackagesByName(self, pattern):
-        """Search BinaryPackages matching pattern"""
-        binset = getUtility(IBinaryPackageUtility)
-        return binset.findByNameInDistroRelease(self.distrorelease.id, pattern)
-
-    def findPackagesByArchtagName(self, pattern, fti=False):
-        """Search BinaryPackages matching pattern and archtag"""
-        binset = getUtility(IBinaryPackageUtility)
-        return binset.findByNameInDistroRelease(self.distrorelease.id,
-                                                pattern, self.arch,
-                                                fti)
-        
-    def __getitem__(self, name):
-        binset = getUtility(IBinaryPackageUtility)
-        try:
-            return binset.getByNameInDistroRelease(self.distrorelease.id,
-                                                   name=name,
-                                                   archtag=self.arch)[0]
-        except IndexError:
-            raise KeyError
-    
-    def __iter__(self):
-        binset = getUtility(IBinaryPackageUtility)
-        return iter(binset.getByNameInDistroRelease(self.distrorelease.id,
-                                                    archtag=self.arch))
-
-class BinaryPackageUtility(object):
-    """The set of BinaryPackage objects."""
-
-    implements(IBinaryPackageUtility)
-
-    def query(self, name=None, distribution=None, distrorelease=None,
-              distroarchrelease=None, text=None):
-        if name is None and distribution is None and \
-            distrorelease is None and text is None:
-            raise NotImplementedError, 'must give something to the query.'
-        clauseTables = Set(['BinaryPackage'])
-        # XXX sabdfl this is not yet done 12/12/04
-
-    def getByNameInDistroRelease(self, distroreleaseID, name=None,
-                                 version=None, archtag=None):
-        """Get an BinaryPackage in a DistroRelease by its name"""
-
-        clauseTables = ('PackagePublishing', 'DistroArchRelease',
-                        'BinaryPackage', 'BinaryPackageName')
-
-        query = (
-            'PackagePublishing.binarypackage = BinaryPackage.id AND '
-            'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
-            'DistroArchRelease.distrorelease = %d AND '
-            'BinaryPackage.binarypackagename = BinaryPackageName.id '
-            %(distroreleaseID)
-            )
-
-        if name:
-            query += 'AND BinaryPackageName.name = %s '% (quote(name))
-
-        # Look for a specific binarypackage version or if version == None
-        # return the current one
-        if version:
-            query += ('AND BinaryPackage.version = %s '
-                      %quote(version))
-        else:
-            query += ('AND PackagePublishing.status = %s '
-                      % dbschema.PackagePublishingStatus.PUBLISHED)
-
-        if archtag:
-            query += ('AND DistroArchRelease.architecturetag = %s '
-                      %quote(archtag))
-
-        return BinaryPackage.select(query, distinct=True,
-                                        clauseTables=clauseTables)
+    implements(IBinaryPackageSet)
 
     def findByNameInDistroRelease(self, distroreleaseID,
                                   pattern, archtag=None,
@@ -302,13 +220,54 @@ class BinaryPackageUtility(object):
                                     clauseTables=clauseTables,
                                     orderBy='BinaryPackageName.name')
 
+
+
+    def getByNameInDistroRelease(self, distroreleaseID, name=None,
+                                 version=None, archtag=None):
+        """Get an BinaryPackage in a DistroRelease by its name"""
+
+        clauseTables = ('PackagePublishing', 'DistroArchRelease',
+                        'BinaryPackage', 'BinaryPackageName')
+
+        query = (
+            'PackagePublishing.binarypackage = BinaryPackage.id AND '
+            'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
+            'DistroArchRelease.distrorelease = %d AND '
+            'BinaryPackage.binarypackagename = BinaryPackageName.id '
+            %(distroreleaseID)
+            )
+
+        if name:
+            query += 'AND BinaryPackageName.name = %s '% (quote(name))
+
+        # Look for a specific binarypackage version or if version == None
+        # return the current one
+        if version:
+            query += ('AND BinaryPackage.version = %s '
+                      %quote(version))
+        else:
+            query += ('AND PackagePublishing.status = %s '
+                      % dbschema.PackagePublishingStatus.PUBLISHED.value)
+
+        if archtag:
+            query += ('AND DistroArchRelease.architecturetag = %s '
+                      %quote(archtag))
+
+        return BinaryPackage.select(query, distinct=True,
+                                        clauseTables=clauseTables)
+
+
+
+    # Used outside
+
     def getDistroReleasePackages(self, distroreleaseID):
         """Get a set of BinaryPackages in a distrorelease"""
         clauseTables = ('PackagePublishing', 'DistroArchRelease',
                         'BinaryPackageName')
         
         query = ('PackagePublishing.binarypackage = BinaryPackage.id AND '
-                 'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
+                 'PackagePublishing.distroarchrelease = '
+                 'DistroArchRelease.id AND '
                  'DistroArchRelease.distrorelease = %d AND '
                  'BinaryPackage.binarypackagename = BinaryPackageName.id'
                  % distroreleaseID
@@ -317,30 +276,45 @@ class BinaryPackageUtility(object):
         return BinaryPackage.select(query,clauseTables=clauseTables,
                                     orderBy='BinaryPackageName.name')
         
+
     def getByNameVersion(self, distroreleaseID, name, version):
-        """Get a set of  BinaryPackages in a DistroRelease by its name and version"""
+        """Get a set of  BinaryPackages in a
+        DistroRelease by its name and version"""
         return self.getByName(distroreleaseID, name, version)
 
+
     def getByArchtag(self, distroreleaseID, name, version, archtag):
-        """Get a BinaryPackage in a DistroRelease by its name, version and archtag"""
+        """Get a BinaryPackage in a DistroRelease
+        by its name, version and archtag"""
         return self.getByName(distroreleaseID, name, version, archtag)[0]
 
 
-class BinaryPackageName(SQLBase):
+    def getBySourceName(self, DistroRelease, sourcepackagename):
+        """Get a set of BinaryPackage generated by the current
+        SourcePackageRelease with an SourcePackageName inside a
+        DistroRelease context."""
 
-    implements(IBinaryPackageName)
-    _table = 'BinaryPackageName'
-    name = StringCol(dbName='name', notNull=True)
+        clauseTables = ('SourcePackageName', 'SourcePackageRelease',
+                        'SourcePackagePublishing', 'Build',)
+        
+        query = ('SourcePackageRelease.sourcepackagename = '
+                 'SourcePackageName.id AND '
+                 'SourcePackagePublishing.sourcepackagerelease = '
+                 'SourcePackageRelease.id AND '
+                 'Build.sourcepackagerelease = SourcePackageRelease.id AND '
+                 'BinaryPackage.build = Build.id AND '
+                 'SourcePackageName.name = %s AND '
+                 'SourcePackagePublishing.distrorelease = %d AND '
+                 'SourcePackagePublishing.status = %s'
 
-    binarypackages = MultipleJoin(
-            'BinaryPackage', joinColumn='binarypackagename'
-            )
+                 %(quote(sourcepackagename),
+                   DistroRelease.id,
+                   dbschema.PackagePublishingStatus.PUBLISHED.value
+                   )
+                 )
 
-    def __unicode__(self):
-        return self.name
+        return BinaryPackage.select(query, clauseTables=clauseTables)
 
-class BinaryPackageNameSet:
-    implements(IBinaryPackageNameSet)
 
     def query(self, name=None, distribution=None, distrorelease=None,
               distroarchrelease=None, text=None):
@@ -348,8 +322,8 @@ class BinaryPackageNameSet:
             distrorelease is None and text is None:
             raise NotImplementedError, 'must give something to the query.'
         clauseTables = Set(['BinaryPackage'])
-        # XXX sabdfl 12/12/04 not done yet
-
+        # XXX sabdfl this is not yet done 12/12/04
+    
 
 class DownloadURL(object):
     implements(IDownloadURL)

@@ -6,6 +6,12 @@
     i18n_domain="launchpad">
 
     <!-- BugWatch -->
+    <content class="canonical.launchpad.database.BugWatch">
+        <allow interface="canonical.launchpad.interfaces.IBugWatch" />
+        <require permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IBugWatch" />
+    </content>
+
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugWatch"

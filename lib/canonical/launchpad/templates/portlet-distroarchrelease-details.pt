@@ -1,0 +1,23 @@
+<div class="portlet">
+
+    <h4>Release Details:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+            <b>Distribution:</b><br />
+            <a tal:attributes="href string:/distros/${context/distrorelease/distribution/name}/">
+            <span tal:replace="context/distrorelease/distribution/displayname" /></a><br />
+
+            <b>Release:</b><br />
+            <a tal:attributes="href string:/distros/${context/distrorelease/distribution/name}/${context/distrorelease/name}/">
+            <span tal:replace="context/distrorelease/displayname" /></a><br />
+
+            <b>Porting Lead:</b><br />
+            <img src="/++resource++user.gif">
+            <a tal:attributes="href string:/people/${context/owner/name}"
+               tal:content="context/owner/displayname">owner name</a><br /> 
+
+        </div>
+    </div>
+</div>

@@ -81,10 +81,11 @@ class IBug(Interface):
             #default=datetime.utcnow,
             )
     private = Bool(
-            title=_("Is this bug security related?"), required=False,
+            title=_("Should this bug be kept confidential?"), required=False,
             description=_(
-                "Check the box if this bug exposes a security vulnerability. If "
-                "you're not sure, leave this unchecked."),
+                "Check this box if, for example, this bug exposes a security "
+                "vulnerability. If selected, this bug will be visible only to "
+                "its subscribers."),
             default=False)
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
@@ -99,6 +100,30 @@ class IBug(Interface):
 
     def followup_title():
         """Return a candidate title for a followup message."""
+
+    def subscribe(person, subscription):
+        """Subscribe person to the bug, with the provided subscription type.
+
+        Returns an IBugSubscription. Raises a ValueError if the person is
+        already subscribed.
+        """
+
+    def unsubscribe(person):
+        """Remove this person's subscription to this bug.
+
+        Raises a ValueError if the person wasn't subscribed.
+        """
+
+    def isSubscribed(person):
+        """Is person subscribed to this bug?
+
+        Returns True if the user is explicitly subscribed to this bug
+        (no matter what the type of subscription), otherwise False.
+        """
+
+    def notificationRecipientAddresses():
+        """Return the list of email addresses that recieve notifications.
+        """
 
 
 class IBugAddForm(IBug):
@@ -131,6 +156,8 @@ class IBugAddForm(IBug):
 # Interfaces for set
 class IBugSet(IAddFormCustomization):
     """A set for bugs."""
+
+    title = Attribute('Title')
 
     def __getitem__(key):
         """Get a Bug."""

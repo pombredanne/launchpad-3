@@ -10,43 +10,102 @@ the bug task that tracks priority, severity, assignee, etc.
 Working with Bug Tasks in Launchpad
 ===================================
 
-All BugTask creation and retrieval is done through BugTaskSet.  BugTaskSet can
-be accessed as a utility.
+Creating Bug Tasks
+------------------
+
+All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
     >>> from zope.component import getUtility
     >>> import transaction
     >>> from canonical.launchpad.interfaces import IBugTaskSet
     >>> bugtaskset = getUtility(IBugTaskSet)
 
-To retrieve a specific BugTask, use BugTaskSet.get. As an example,
-interacting with the system as an anonymous (i.e. unauthenticated) user:
+To create a bug task, you have to be logged in:
 
-    >>> import zope.security.management
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+
+There are three kinds of bug tasks. We need to pass the bug task creation
+methods some other objects to create a task, so lets get the utilities we need
+to access those other objects:
+
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet, \
+    ...     IProductSet, IDistributionSet, IDistroReleaseSet
+    >>> productset = getUtility(IProductSet)
+    >>> distroset = getUtility(IDistributionSet)
+    >>> distoreleaseset = getUtility(IDistroReleaseSet)
+    >>> bugset = getUtility(IBugSet)
+    >>> personset = getUtility(IPersonSet)
+    >>> bug_one = bugset.get(1)
+    >>> sabdfl = personset.get(1)
+
+Next, we need to grab some values to provide for priority, severity and status.
+
+    >>> from canonical.lp.dbschema import BugTaskStatus, BugSeverity, \
+    ...     BugPriority
+    >>> STATUS_NEW = BugTaskStatus.NEW
+    >>> STATUS_ACCEPTED = BugTaskStatus.ACCEPTED
+    >>> STATUS_FIXED = BugTaskStatus.FIXED
+    >>> SEVERITY_NORMAL = BugSeverity.NORMAL
+    >>> PRIORITY_MEDIUM = BugPriority.MEDIUM
+
+  i. Upstream -- a bug that has to be fixed in an upstream product
+
+    >>> evolution = productset.get(5)
+    >>> upstream_task = bugtaskset.createTask(
+    ...     bug = bug_one, product = evolution, owner = sabdfl,
+    ...     status = STATUS_NEW, priority = PRIORITY_MEDIUM,
+    ...     severity = SEVERITY_NORMAL)
+    >>> upstream_task.product == evolution
+    True
+
+    >>> from canonical.launchpad.interfaces import IUpstreamBugTask
+    >>> IUpstreamBugTask.providedBy(upstream_task)
+    True
+
+  ii. Distro -- a bug that has to be fixed in a specific distro
+
+    >>> ubuntu = distroset.get(1)
+    >>> distro_task = bugtaskset.createTask(
+    ...     bug = bug_one, distribution = ubuntu, owner = sabdfl,
+    ...     status = STATUS_NEW, priority = PRIORITY_MEDIUM,
+    ...     severity = SEVERITY_NORMAL)
+    >>> distro_task.distribution == ubuntu
+    True
+
+    >>> from canonical.launchpad.interfaces import IDistroBugTask
+    >>> IDistroBugTask.providedBy(distro_task)
+    True
+
+  ii. Distro Release -- a bug that has to be fixed in a specific distro
+  release. This primary use case for distro release bug tasks is for backporting
+  fixes (e.g. for security bugs or bugs causing critical data loss.)
+
+    >>> hoary = distoreleaseset.get(3)
+    >>> distro_release_task = bugtaskset.createTask(
+    ...     bug = bug_one, distrorelease = hoary, owner = sabdfl,
+    ...     status = STATUS_NEW, priority = PRIORITY_MEDIUM,
+    ...     severity = SEVERITY_NORMAL)
+    >>> distro_release_task.distrorelease == hoary
+    True
+
+    >>> from canonical.launchpad.interfaces import IDistroReleaseBugTask
+    >>> IDistroReleaseBugTask.providedBy(distro_release_task)
+    True
+
+XXX: Brad Bollenbach, 2005-02-24: See the bottom of this file for a chunk of
+test documentation that is missing from here, due to problems with resetting
+the connection after an IntegrityError is raised. ARGH.
+
+Retrieving and Searching for Bug Tasks
+--------------------------------------
+
+To retrieve a specific BugTask, use IBugTaskSet.get. As an example, interacting
+with the system as an anonymous (i.e. unauthenticated) user:
+
     >>> from canonical.launchpad.interfaces import IPerson
     >>> from canonical.launchpad.database import Person
-    >>> class Principal:
-    ...     def __init__(self, id):
-    ...         self.id = id
-    ...         self.groups = []
-    >>> principal = Principal('launchpad.anonymous')
-
-    >>> class Participation:
-    ...     interaction = None
-    >>> anon_participation = Participation()
-    >>> anon_participation.principal = principal
-
-    >>> zope.security.management.newInteraction(anon_participation)
-
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> from zope.app.tests import ztapi
-    >>> from zope.interface import implements
-    >>> class MockLaunchBag(object):
-    ...     implements(ILaunchBag)
-    ...     def __init__(self, login=None, user=None):
-    ...         self.login = login
-    ...         self.user = user
-    >>> launchbag = MockLaunchBag()
-    >>> ztapi.provideUtility(ILaunchBag, launchbag)
+    >>> login('launchpad.anonymous')
 
 let's fetch the BugTask with ID 1:
 
@@ -65,12 +124,14 @@ zope.exceptions.NotFoundError:
 To retrieve a set of bug tasks matching a set of search criteria, use
 BugTaskSet.search. Here's how you'd grab all the NEW and ACCEPTED tasks:
 
+For upstream:
+
     >>> from canonical.launchpad.searchbuilder import any
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> from canonical.launchpad.database import Product
     >>> upstream_mozilla = Product.get(4)
     >>> bugtasks = bugtaskset.search(
-    ...     status = any(BugTaskStatus.NEW.value, BugTaskStatus.ACCEPTED.value),
+    ...     status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
     ...     product = upstream_mozilla,
     ...     orderby = "id")
     >>> print bugtasks.count()
@@ -78,6 +139,19 @@ BugTaskSet.search. Here's how you'd grab all the NEW and ACCEPTED tasks:
     >>> bugtask_ids = [bt.id for bt in bugtasks]
     >>> print bugtask_ids
     [2, 13, 14, 15]
+
+For a distribution:
+
+    >>> debian = distroset.get(3)
+    >>> sample_person = personset.get(12)
+    >>> bugtasks = bugtaskset.search(
+    ...     status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
+    ...     distribution = debian, orderby = "id",
+    ...     assignee = sample_person)
+    >>> print bugtasks.count()
+    1
+    >>> bugtasks[0].id
+    5
 
 To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
 
@@ -97,6 +171,146 @@ There's also support for searching tasks based on a string of text, e.g.:
     >>> print [bugtask.bug.id for bugtask in bugtasks]
     [5]
 
+It's also possible to iterate over all the bug tasks:
+
+    >>> bugtasks = [bugtask for bugtasks in bugtaskset]
+    >>> print len(bugtasks)
+    12
+
+Editing Bug Tasks
+-----------------
+
+Upstream Bug Tasks
+^^^^^^^^^^^^^^^^^^
+
+Only the maintainer and the assignee (if there is one) may edit upstream
+bug tasks.
+
+    >>> login('launchpad.anonymous')
+    >>> upstream_task.status = STATUS_ACCEPTED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+As you can see an anonymous user was not able to edit the task. Also the
+task is not editable by an authenticated user who is not the maintainer.
+
+    >>> login('foo.bar@canonical.com')
+    >>> upstream_task.status = STATUS_FIXED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+Now let's login as a maintainer and try again.
+
+    >>> login('test@canonical.com')
+    >>> upstream_task.status = STATUS_FIXED
+
+The maintainer could be a team as well. In that case, all members of
+that team, or members of teams which are themselves members of that
+team, are able to edit the task.
+
+Let's create a new team, a product which the team owns, and
+associate the same bug with this product:
+
+    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> policy = TeamSubscriptionPolicy.OPEN
+    >>> foobar = personset.get(16)
+    >>> foo_team = personset.newTeam(
+    ...     subscriptionpolicy = policy, name = 'foo',
+    ...     teamownerID = foobar.id)
+    >>> foo_product = productset.createProduct(
+    ...     owner = foo_team.id, name = 'foo-product',
+    ...     displayname = 'foo product', title = 'Foo',
+    ...     shortdesc = 'a great product', description = 'no long desc')
+    >>> upstream_task = bugtaskset.createTask(
+    ...     bug = bug_one, product = foo_product, owner = sabdfl,
+    ...     status = STATUS_NEW, priority = PRIORITY_MEDIUM,
+    ...     severity = SEVERITY_NORMAL)
+    >>> upstream_task.maintainer == foo_team
+    True
+
+Then let's login as the Sample Person user:
+
+    >>> login('test@canonical.com')
+
+Note that Sample Person is not a member of the Foo team:
+
+    >>> from canonical.launchpad.database import TeamParticipationSet
+    >>> teampart = TeamParticipationSet()
+    >>> sample_person not in teampart.getAllMembers(foo_team)
+    True
+
+Thus, he can't edit the task:
+
+    >>> upstream_task.status = STATUS_ACCEPTED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+If he joins the maintainer team, though, he's allowed to edit the task.
+Let's add him to the maintainer team:
+
+    >>> sample_person = personset.get(12)
+    >>> sample_person.join(foo_team)
+    True
+
+Now he's allowed to edit the task:
+
+    >>> upstream_task.status = STATUS_ACCEPTED
+
+Next, we demonstrate how the assignee can edit the task.  Let's remove
+the logged in person from the maintainer team, so that he can't edit the
+task anymore:
+
+    >>> sample_person.leave(foo_team)
+    True
+    >>> upstream_task.status = STATUS_FIXED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+Then let's login as one member of the maintainer team (in this case the
+team owner) and assign Sample Person to the task:
+
+    >>> login('foo.bar@canonical.com')
+    >>> upstream_task.assignee = sample_person.id
+
+Now Sample Person is allowed to edit the bug task again:
+
+    >>> login('test@canonical.com')
+    >>> upstream_task.status = STATUS_FIXED
+
+
+Distro and Distro Release Bug Tasks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Any logged-in user can edit tasks filed on distros as long as the bug
+is not marked private. So, as an anonymous user, we can edit anything:
+
+    >>> login('launchpad.anonymous')
+    >>> distro_task.status = STATUS_FIXED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+    >>> distro_release_task.assignee = sample_person
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('assignee', 'launchpad.Edit')
+
+But once authenticated:
+
+    >>> login('test@canonical.com')
+
+We can edit the task:
+
+    >>> distro_task.status = STATUS_FIXED
+    >>> distro_release_task.assignee = sample_person
+
+For bugs that *are* marked private, see the next section...
+
+
 Bug Privacy
 ===========
 
@@ -104,35 +318,45 @@ A bug is either private or public. Private bugs are only visible (e.g. in
 search listings) to explicit subscribers. Public bugs are visible to
 anyone.
 
+    >>> from zope.event import notify
+    >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectToBeModifiedEvent, \
+    ...     SQLObjectModifiedEvent
+
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
-    >>> from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
-    >>> foobar = LaunchpadPrincipal(
-    ...     16, "firefox maintainer",
-    ...     "i can't think of a description to write here")
-    >>> foobar_participation = Participation()
-    >>> foobar_participation.principal = foobar
-    >>> zope.security.management.endInteraction()
-    >>> zope.security.management.newInteraction(foobar_participation)
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag,
-    ...     MockLaunchBag("foo.bar@canonical.com", foobar))
+    >>> login('foo.bar@canonical.com')
 
 and mark one of the Firefox bugs private:
 
     >>> bug_firefox_no_svg_support = bugtaskset.get(2)
+    >>> notify(SQLObjectToBeModifiedEvent(
+    ...     bug_firefox_no_svg_support.bug, {'private' : True}))
+
+    >>> def capture_state(obj, *fields):
+    ...     class State: pass
+    ...     state = State()
+    ...     for field in fields:
+    ...         setattr(state, field, getattr(obj, field))
+    ...     return state
+    >>> old_state = capture_state(
+    ...     bug_firefox_no_svg_support.bug, "id", "title", "private")
     >>> bug_firefox_no_svg_support.bug.private = True
+    >>> bug_set_private = SQLObjectModifiedEvent(
+    ...     bug_firefox_no_svg_support.bug, old_state,
+    ...     ["id", "title", "private"],
+    ...     getUtility(IPersonSet).get(16))
+    >>> notify(bug_set_private)
     >>> transaction.commit()
 
-Now the same search as above yields only three bugs, because Foo Bar can't see
-the private bug (XXX: Brad Bollenbach, 2005-02-04: admittedly, this example is
-a bit contrived; setting a bug private and then not being able to see it
-anymore is not something one could do through the UI. I'm stumbling through
-this test this way until bug #104/production gets fixed so that one doesn't
-require so much boilerplate to simulate logins in tests.)
+Now, if we log in as David Allouche:
+
+    >>> login("david.allouche@canonical.com")
+
+The same search as above yields only three bugs, because David
+Allouche can't see the private bug.
 
     >>> bugtasks = bugtaskset.search(
-    ...     status = any(BugTaskStatus.NEW.value, BugTaskStatus.ACCEPTED.value),
+    ...     status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
     ...     product = upstream_mozilla,
     ...     orderby = "id")
     >>> print bugtasks.count()
@@ -145,32 +369,32 @@ Trying to retrieve the bug directly will work fine:
 
     >>> bug_firefox_no_svg_support = bugtaskset.get(2)
 
-But attribute access on the IBugTask will raise an authorization exception:
+But attribute access on the IBugTask will raise an authorization
+exception:
 
     >>> bug_firefox_no_svg_support.bug
     Traceback (most recent call last):
       ...
     Unauthorized: ('bug', 'launchpad.View')
 
+As well, trying to edit a distro task as David Allouche will also
+raise an Unauthorized exception:
+
+    >>> bug_debian_firefox_no_svg_support = bugtaskset.get(4)
+    >>> bug_debian_firefox_no_svg_support.status = BugTaskStatus.FIXED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
 But, logged in as the Firefox maintainer:
 
-    XXX: Brad Bollenbach, 2005-01-26: Simulating a login in a test needs to be
-    a one-liner. See: https://launchpad.ubuntu.com/malone/bugs/104
-
-    >>> firefox_maintainer = Person.get(12)
-    >>> firefox_maintainer_participation = Participation()
-    >>> firefox_maintainer_participation.principal = firefox_maintainer
-    >>> zope.security.management.endInteraction()
-    >>> zope.security.management.newInteraction(firefox_maintainer_participation)
-
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag, MockLaunchBag("test@canonical.com", firefox_maintainer))
+    >>> login('test@canonical.com')
 
 We'll find all four IBugTasks that match the search criteria, as the maintainer
 is also an explicit subscriber in this case.
 
     >>> bugtasks = bugtaskset.search(
-    ...     status = any(BugTaskStatus.NEW.value, BugTaskStatus.ACCEPTED.value),
+    ...     status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
     ...     product = upstream_mozilla,
     ...     orderby = "id")
     >>> print bugtasks.count()
@@ -185,8 +409,20 @@ And, as you would expect, we'll also be able to access it directly:
     >>> bug_firefox_no_svg_support.bug.title
     u'Firefox does not support SVG'
 
-XXX: Brad Bollenbach, 2005-02-03: this shouldn't be in a doctest, but I don't
-have time to think about a better place to put this at the moment.
+XXX: Brad Bollenbach, 2005-02-24: This bit testing the IntegrityError should be
+higher up in the file (under the explanation about creating tasks), but I can't
+figure out how to reset the connection properly after an IntegrityError is
+raised. ARGH.
 
-    >>> ztapi.unprovideUtility(ILaunchBag)
-    >>> zope.security.management.endInteraction()
+Note that a task filed on a specific distro release does *not* have its
+distribution column set. In fact, a task must have exactly one of its product,
+distribution or distrorelease fields set, otherwise the database integrity
+constraints will be violated.
+
+    >>> bad_task = bugtaskset.createTask(
+    ...     bug = bug_one, distribution = ubuntu, distrorelease = hoary,
+    ...     owner = sabdfl, status = STATUS_NEW, priority = PRIORITY_MEDIUM,
+    ...     severity = SEVERITY_NORMAL)
+    Traceback (most recent call last):
+      ...
+    IntegrityError: ...

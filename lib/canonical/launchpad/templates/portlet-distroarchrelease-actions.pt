@@ -1,0 +1,13 @@
+<div class="portlet">
+    <h4>Actions:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <img src="/++resource++edit.gif">
+        <a href="+edit">Edit Architecture Release Details</a> <br />
+        <img src="/++resource++search_icon.gif">
+        <a href="+pkgsearch">Search Packages</a> <br />
+        </div>
+    </div>
+</div>

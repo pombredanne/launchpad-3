@@ -38,7 +38,6 @@ class IMessage(Interface):
     rfc822msgid = TextLine(
             title=_('RFC822 Msg ID'), required=True, readonly=True,
             )
-    attachments = Attribute('Bug Attachments')
     bugs = Attribute(_('Bug List'))
 
     def followup_title():

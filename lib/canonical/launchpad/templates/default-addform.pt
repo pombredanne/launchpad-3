@@ -2,7 +2,12 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
-  <body>
+
+<head>
+  <title metal:fill-slot="title">Default "Add" Page</title>
+</head>
+
+<body>
   <div metal:fill-slot="main">
 
   <div tal:condition="nothing">
@@ -80,7 +85,7 @@
   </div>
 
   </div>
-  </body>
+</body>
 
 </html>
 

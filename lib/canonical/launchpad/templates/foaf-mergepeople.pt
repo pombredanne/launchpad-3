@@ -1,0 +1,75 @@
+<tal:do-this-first tal:content="view/processForm" />
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Merge User Accounts</title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Launchpad style sheet -->
+  <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+<div id="content" class="documentEditable">
+
+  <div class="documentContent" id="region-content">
+    <div tal:condition="not: view/successfullyProcessed">
+      <h1>Merge User Accounts</h1>
+
+      <div tal:condition="view/errormessage">
+        <p class="portalMessage" tal:content="view/errormessage"></p>
+      </div>
+
+      <p>You're trying to merge the user account named
+      <em><span tal:replace="view/dupe/name" /></em> into the
+      account named <em><span tal:replace="context/requester/name" /></em>. 
+      To complete this proccess, just fill in your Launchpad password on the
+      form bellow and click on <em>Submit</em>.</p>
+
+      <form name="merge" action="" method="POST">
+      <table>
+        <tr>
+          <td>Password:</td>
+          <td><input type="password" name="password" /></td>
+        </tr>
+        <tr>
+          <td colspan="2" align="right">
+            <input type="submit" value="Submit" />
+          </td>
+        </tr>
+      </table>
+      </form>
+    </div>
+
+    <div tal:condition="view/successfullyProcessed">
+      <h1>Merge User Accounts</h1>
+
+      <div tal:condition="not: view/mergeCompleted">
+        <p>The email address <em><span tal:replace="context/email" /></em> have
+        been assigned to you, but the dupe account you selected still have
+        more registered email addresses. In order to actually complete the
+        merge, you have to prove that you have access to all email addresses of
+        that account.</p>
+      </div>
+
+      <div tal:condition="view/mergeCompleted">
+        <p>The merge you requested was concluded with success. Now, everything
+        that was owned by the duplicated account should be owned by your user
+        account.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+</div>
+
+
+</body>
+</html>

@@ -1,20 +1,24 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@malone_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="malone">
+
+<head>
+  <title metal:fill-slot="title">Malone Bug #<span
+    tal:replace="context/bug/id">345</span> CVE Reference</title>
+</head>
+
 <body>
 
 <div metal:fill-slot="main">
   <h1>CVE Reference</h1>
   <table class="listing">
     <tr>
-      <th>Type</th>
-      <th>Description</th>
+      <th>Title</th>
       <th>Data</th>
     </tr>
     <tr>
-      <td tal:content="context/bugreftype/lp:BugExternalReferenceType">type</td>
-      <td tal:content="context/description">description</td>
+      <td tal:content="context/title">CVE Title</td>
       <td>
         <a tal:attributes="href context/url"
            tal:content="context/data">999</a>

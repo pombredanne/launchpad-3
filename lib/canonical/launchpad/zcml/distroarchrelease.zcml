@@ -1,0 +1,37 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- DistroArchRelease -->
+    <content class="canonical.launchpad.database.DistroArchRelease">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchRelease"/>
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistroArchRelease"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.database.DistroArchRelease" 
+        getter="__getitem__" />
+
+    <browser:page
+        for="canonical.launchpad.database.DistroArchRelease" 
+        permission="zope.Public"
+        name="+index"
+        class="canonical.launchpad.browser.DistroArchReleaseView"
+        template="../templates/distroarchrelease-index.pt"
+        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+index"/>
+
+    <browser:page
+        for="canonical.launchpad.database.DistroArchRelease" 
+        permission="zope.Public"
+        name="+pkgsearch"
+        class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
+        template="../templates/distroarchrelease-pkgsearch.pt"
+        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+pkgsearch"/>
+
+</configure>

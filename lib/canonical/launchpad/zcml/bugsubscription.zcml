@@ -6,6 +6,14 @@
     i18n_domain="launchpad">
 
     <!-- BugSubscription -->
+    <content class="canonical.launchpad.database.BugSubscription">
+        <allow interface="canonical.launchpad.interfaces.IBugSubscription" />
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IBugSubscription"
+        />
+    </content>
+
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugSubscription"
@@ -44,12 +52,6 @@
         />
     </securedutility>
 
-    <adapter
-        for="canonical.launchpad.interfaces.IBug"
-        provides="canonical.launchpad.interfaces.IBugSubscriptionSet"
-        factory="canonical.launchpad.components.bugsubscription.BugSubscriptionSetAdapter"
-        />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugSubscriptionSet"
         name="+index" />
@@ -64,7 +66,7 @@
         lp:url="malone/bugs/$Bug.id/people">
         <browser:page name="+index"
             template="../templates/malone-people-index.pt"
-            lp:url="malone/bugs/$Bug.id/people/index" />
+            lp:url="malone/bugs/$Bug.id/people/+index" />
     </browser:pages>
 
 </configure>

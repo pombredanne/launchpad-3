@@ -1,0 +1,51 @@
+  Now, 'myemail' is a MODERATED team, and 'salgado' will join again.
+
+
+  >>> print http(r"""
+  ... GET /people/myemail/+join HTTP/1.1
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...This is a Moderated team...
+  ...
+
+
+  >>> print http(r"""
+  ... POST /people/myemail/+join HTTP/1.1
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... join=Join""")
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+
+
+  >>> print http(r"""
+  ... GET /people/myemail/ HTTP/1.1
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...my own team...
+  ...
+
+
+  >>> from canonical.launchpad.database import Person, TeamMembership
+  >>> salgado = Person.byName('salgado')
+  >>> team = Person.byName('myemail')
+  >>> tm = TeamMembership.selectBy(personID=salgado.id, teamID=team.id)[0]
+  >>> tm.statusname
+  'Proposed Member'
+
+  Proposed Members are not shown as "real" team members by our API.
+
+  >>> salgado.inTeam(team)
+  False

@@ -1,190 +1,143 @@
-<metal:page define-macro="master">
-<metal:doctype define-slot="doctype">
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-</metal:doctype>
+<metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
-<html xmlns="http://www.w3.org/1999/xhtml"
-      xml:lang="en"
-      lang="en"
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
       tal:attributes="lang default_language|default;
                       xml:lang default_language|default;">
-  <head>
+<head>
     <metal:block define-slot="title"></metal:block>
     <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(/++resource++plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(/++resource++launchpad.css);</style>
+    <style type="text/css"
+        media="screen">@import url(/@@/plone.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css"
+        media="screen">@import url(/@@/launchpad.css);</style>
     <!-- Launchpad JS code -->
-    <script type="text/javascript" src="/++resource++launchpad.js"></script>
-    <link rel="shortcut icon" href="/++resource++defaultFavicon.gif" />
-  </head>
+    <script type="text/javascript" src="/@@/launchpad.js"></script>
+    <link rel="shortcut icon" href="/@@/defaultFavicon.gif" />
+</head>
 
-  <body>
-      <div id="portal-top"
-           tal:define="path_info request/PATH_INFO">
-               <a href="/rosetta"
-                  tal:condition="python:'/rosetta' in path_info">
-                  <img src="/++resource++rosetta.png" alt="Rosetta" />
-               </a>
-               <a href="/malone"
-                  tal:condition="python:'/malone' in path_info">
-                  <img src="/++resource++malone.png" alt="Malone" />
-               </a>
-               <a href="/soyuz"
-                  tal:condition="python:'/soyuz' in path_info">
-                  <img src="/++resource++soyuz.png" alt="Soyuz" />
-               </a>
-      </div>
+<body>
 
-          <ul id="portal-globalnav"
-              tal:define="path_info request/PATH_INFO">
+    <div class="page-header">
+        <div class="page-header-ribbon">
+            <div class="user" tal:condition="not: request/lp:person">
+                <a href="/+login">Log In</a>
+            </div>
+            <div class="user" tal:condition="request/lp:person">
+                Welcome,
+                <a tal:attributes="href string:/people/${request/lp:person/name}">
+                <span tal:replace="request/lp:person/displayname">Foo Bar</span></a>
+                &ndash;
+                Prefs
+                &ndash;
+                <a href="/+logout">Log Out</a>
+            </div>
+            <address>
+               <span tal:replace="structure request/fmt:breadcrumbs" /><br />
+            </address>
+        </div>
+        <div class="clear-everything-hackishly" style="clear: both;">
+            <a href="/">
+                <img src="/@@/launchpad.png" alt="Launchpad Home" />
+            </a>
 
-            <li class="selected"
-                tal:condition="python:'/foaf' in path_info">
-              <a href="/foaf">People</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:'/foaf' not in path_info">
-              <a href="/foaf">People</a>
-            </li>
+            <table class="launchpad-apps" tal:define="path_info request/PATH_INFO">
+                <tr>
+                    <td class="plain">
+                        <a href=".">Overview</a>
+                    </td>
 
-            <li class="selected"
-                tal:condition="python:'/doap' in path_info">
-              <a href="/doap">Projects</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:'/doap' not in path_info">
-              <a href="/doap">Projects</a>
-            </li>
+              <td class="selected" tal:condition="python:'+bug' in path_info or '+malone' in path_info">
+                <a href="+bugs">Bugs</a>
+              </td>
+              <td class="plain"
+                tal:condition="python:'+bug' not in path_info or '+malone' in path_info">
+                <a href="+bugs">Bugs</a>
+              </td>
 
-            <li class="selected"
-                tal:condition="python:'/malone' in path_info">
-              <a href="/malone">Malone</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:'/malone' not in path_info">
-              <a href="/malone">Malone</a>
-            </li>
+              <td class="selected"
+                tal:condition="python:'+transl' in path_info or '+roset' in path_info">
+                <a href="+translations">Translations</a>
+              </td>
+              <td class="plain"
+                tal:condition="python:'+transl' not in path_info or '+roset' in path_info">
+                <a href="+translations">Translations</a>
+              </td>
+              <td rowspan="2">
+                <img src="/@@/launchpad.png" alt="Launchpad Home" />
+              </td>
+            </tr><tr>
+              <td class="selected"
+                tal:condition="python:'/+bount' in path_info">
+                <a href="+bounties">Bounties</a>
+              </td>
+              <td class="plain"
+                tal:condition="python:'+bount' not in path_info">
+                <a href="+bounties">Bounties</a>
+              </td>
+            </tr>
+          </table>
 
-            <li class="selected"
-                tal:condition="python:'/rosetta' in path_info">
-              <a href="/rosetta">Rosetta</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:'/rosetta' not in path_info">
-              <a href="/rosetta">Rosetta</a>
-            </li>
+          <h2 tal:content="context/title | default">The Launchpad</h2>
 
-            <li class="selected"
-                tal:condition="python:'/soyuz' in path_info">
-              <a href="/soyuz">Soyuz</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:'/soyuz' not in path_info">
-              <a href="/soyuz">Soyuz</a>
-            </li>
+        </div>
 
-            <li class="selected"
-                tal:condition="python:'/bounties' in path_info">
-              <a href="/bounties">Bounties</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:'/bounties' not in path_info">
-              <a href="/bounties">Bounties</a>
-            </li>
+        <div id="portal-personaltools"
+             style="text-align: left;"
+             tal:define="path_info request/PATH_INFO">
+           App Tabs Here
+        </div>
 
-            <li class="selected"
-                tal:condition="python:'/bazaar' in path_info">
-              <a href="/bazaar">Bazaar</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:'/bazaar' not in path_info">
-              <a href="/bazaar">Bazaar</a>
-            </li>
+    </div><!-- class="page-header"-->
 
-          </ul>
+    <div class="visualClear"></div>
 
-      <div id="portal-personaltools"
-           tal:define="path_info request/PATH_INFO">
-
-        <span tal:condition="request/lp:person">
-            Logged in as
-            <a tal:attributes="href string:/foaf/people/${request/lp:person/name}">
-            <span tal:replace="request/lp:person/displayname">Foo Bar</span></a>
-            &mdash;
-            <a href="/+logout">Log Out</a>
-        </span>
-
-        <span tal:condition="not: request/lp:person">
-            <a href="/+login">Log In</a>
-            &mdash;
-            <a href="/+register">Join</a>
-        </span>
-
-        &mdash;
-
-        <a href="/rosetta/translator">Translator Dashboard</a>
-
-        &mdash;
-
-        <a href="/rosetta/prefs">My Preferences</a>
-
-      </div>
-
-      <div id="portal-breadcrumbs">
-        You are here:
-        <span tal:replace="structure request/fmt:breadcrumbs" />
-      </div>
-
-      <div class="visualClear"></div>
-
-      <table id="portal-columns">
+    <table id="portal-columns">
         <tbody>
-          <tr>
+            <tr>
 
-            <!-- start of the left (by default at least) column -->
-            <td id="portal-column-one"
-                metal:define-slot="column_one">
-              <div class="visualPadding">
-                <metal:portlets define-slot="portlets_one">
+                <!-- start of the left (by default at least) column -->
+                <td id="portal-column-one"
+                    metal:define-slot="column_one">
+                <div class="visualPadding">
+                    <metal:portlets define-slot="portlets_one">
 
-                </metal:portlets>
-                &nbsp;
-              </div>
-            </td>
-            <!-- end of the left (by default at least) column -->
+                    </metal:portlets>
+                    &nbsp;
+                </div>
+                </td>
+                <!-- end of the left (by default at least) column -->
 
-            <td id="portal-column-content">
-              <div id="region-content">
-                  <metal:main define-slot="main">
-                  <p>Main content area.</p>
-                  </metal:main>
-              </div>
-            </td>
+                <td id="portal-column-content">
+                <div id="region-content">
+                    <metal:main define-slot="main">
+                        <p>Main content area.</p>
+                    </metal:main>
+                </div>
+                </td>
 
-            <!-- start of right (by default at least) column -->
-            <td id="portal-column-two"
-                metal:define-slot="column_two">
-              <div class="visualPadding">
-                <metal:portlets define-slot="portlets_two">
+                <!-- start of right (by default at least) column -->
+                <td id="portal-column-two" metal:define-slot="column_two">
+                    <div class="visualPadding">
+                        <metal:portlets define-slot="portlets_two">
 
-                </metal:portlets>
-                &nbsp;
-              </div>
-            </td>
-            <!-- end of the right (by default at least) column -->
+                        </metal:portlets>
+                        &nbsp;
+                    </div>
+                </td>
+                <!-- end of the right (by default at least) column -->
 
-          </tr>
+            </tr>
         </tbody>
-      </table>
-      <!-- end column wrapper -->
+    </table>
+    <!-- end column wrapper -->
 
-      <div class="visualClear">&nbsp;</div>
+    <div class="visualClear">&nbsp;</div>
 
-      <div id="portal-footer">
-          Copyright 2004 Canonical Ltd.<br />
-          <a href="/legal">Legal</a>
-      </div>
-  </body>
+    <div id="portal-footer">
+        Copyright 2004 Canonical Ltd.<br />
+        <a href="/legal">Legal</a>
+    </div>
+</body>
 </html>
 </metal:page>

@@ -35,7 +35,7 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
         permission="zope.Public"
-        class="canonical.rosetta.RosettaApplicationView"
+        class="canonical.rosetta.browser.RosettaApplicationView"
         lp:url="Rosetta">
         <browser:page
             name="+index"
@@ -55,10 +55,6 @@
             name="+interest"
             template="../launchpad/templates/project-interest.pt"
             lp:url="Rosetta/project/+interest" />
-        <browser:page
-            name="legal"
-            template="../launchpad/templates/legal.pt"
-            lp:url="Rosetta/legal" />
     </browser:pages>
 
     <browser:pages

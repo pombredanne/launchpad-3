@@ -1,14 +1,29 @@
 digraph g {
 graph [
-    pack = true, overlap = false, rankdir = "LR", concentrate = false,
-    ratio = auto, splines = true, sep = .4, dim = 2, maxiter = 60000,
-    K=1
+    page="8.27,11.69",
+    /*size="10.69,7.27",*/
+    size="42.76,29.08",
+    overlap=false,
+    fontsize=16,
+    ratio=fill,
+    dpi=144,
+    pack=true,
+    rankdir="LR",
+    concentrate=false,
+    splines=true,
+    sep=.1,
+    dim=2,
+    maxiter=60000,
+    k=1,
+    damping=0.9,
+    /*packmode="graph",*/
+    /*model=subset,*/
 ];
 node [
-fontsize = "10",
-shape = plaintext
+    shape = plaintext, fontsize=6
 ];
 edge [
+    fontsize=6, len=.1, w=1000
 ];
 <TMPL_LOOP name="schemas">
     <TMPL_LOOP name="tables">

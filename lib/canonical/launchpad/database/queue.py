@@ -2,7 +2,7 @@
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import ForeignKey, IntCol
+from sqlobject import ForeignKey
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
 
@@ -10,12 +10,19 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IDistroReleaseQueue, \
                                            IDistroReleaseQueueBuild, \
                                            IDistroReleaseQueueSource
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import DistroReleaseQueueStatus
+
+#
+#
+#
 
 class DistroReleaseQueue(SQLBase):
     """A Queue item for Lucille"""
     implements(IDistroReleaseQueue)
 
-    status = IntCol(dbName='status', unique=False, default=None, notNull=True)
+    status = EnumCol(dbName='status', unique=False, default=None, notNull=True,
+                     schema=DistroReleaseQueueStatus)
 
     distrorelease = ForeignKey(dbName="distrorelease",
                                foreignKey='DistroRelease')

@@ -4,14 +4,12 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Launchpad Password Change</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
 </head>
 
 <body>
-
 
 <div metal:fill-slot="main">
 
@@ -22,13 +20,20 @@
    Please try again, using the Forgotten password 
    <a href=".."> form </a>
 </div>
+
 <tal:block tal:condition="not:view/success">
-<div class="portalMessage" tal:condition="result" tal:content="result"> MESSAGE </div>
+
+  <div class="portalMessage" tal:condition="result" tal:content="result">
+    MESSAGE
+  </div>
+
 </tal:block>
-<br>
-<h1> Reset password</h1>
-<br>
-<div tal:condition="view/success" tal:content="result"> MESSAGE </div>
+
+<h1>Reset password</h1>
+
+<div tal:condition="view/success" tal:content="result">
+  MESSAGE
+</div>
 
 <fieldset tal:condition="not:view/success">
   <legend>
@@ -64,8 +69,6 @@
 
 </tal:block>
 </div>
-
-
 
 </body>
 </html>

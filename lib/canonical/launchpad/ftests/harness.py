@@ -69,16 +69,13 @@ class LaunchpadTestSetup(PgTestSetup):
     reset_db = True
 
     def setUp(self):
-        if LaunchpadTestSetup.reset_db:
-            super(LaunchpadTestSetup, self).setUp()
+        super(LaunchpadTestSetup, self).setUp(LaunchpadTestSetup.reset_db)
         LaunchpadTestSetup.reset_db = False
 
     def tearDown(self):
         if ConnectionWrapper.committed:
             LaunchpadTestSetup.reset_db = True
-
-        if LaunchpadTestSetup.reset_db:
-            super(LaunchpadTestSetup, self).tearDown()
+        super(LaunchpadTestSetup, self).tearDown(LaunchpadTestSetup.reset_db)
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
     txn = None

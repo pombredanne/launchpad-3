@@ -3,12 +3,13 @@
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
 from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.interfaces import IHasOwner
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 
-class IDistroRelease(Interface):
+class IDistroRelease(IHasOwner):
     """A Release Object"""
     id = Attribute("The distrorelease's unique number.")
     name = TextLine(title=_("Name"), required=True,
@@ -31,6 +32,7 @@ class IDistroRelease(Interface):
         description=_("The version string for this release."))
     distribution = Int(title=_("Distribution"), required=True,
         description=_("The distribution for which this is a release."))
+    bugtasks = Attribute("The bug tasks filed specifically on this release.")
     componentes = Attribute("The release componentes.")
     sections = Attribute("The release section.")
     releasestate = Attribute("The release's state.")
@@ -40,8 +42,6 @@ class IDistroRelease(Interface):
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
-    role_users = Attribute("Roles inside this Releases")
-    bugCounter = Attribute("The distro bug counter")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
     architectures = Attribute("The Architecture-specific Releases")
@@ -51,10 +51,6 @@ class IDistroRelease(Interface):
 
     def getBugSourcePackages():
         """Get SourcePackages in a DistroRelease with BugTask"""
-
-#    def getSourceByName(name):
-#        """Return the latest source package of this name uploaded to this
-#        distro release."""
 
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for
@@ -71,3 +67,9 @@ class IDistroRelease(Interface):
     def findBinariesByName(name):
         """Return an iterator over binary packages with a name that matches
         this one."""
+
+class IDistroReleaseSet(Interface):
+    """The set of distro releases."""
+
+    def get(distroreleaseid):
+        """Retrieve the distro release with the given distroreleaseid."""

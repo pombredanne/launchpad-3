@@ -10,23 +10,20 @@ class NicknameGenerationError(Exception):
     a nickname."""
     pass
 
-EXISTING_NICKS = [
-    'foop-example', 'spam', 'spam-example', 'turtle', 'taken',
-    'taken-example', 'taken-example-com', 'taken-example-com-1',
-    'bar-spam', 'bar-spam-long', 'bar-spam-long-example']
 
 def _nick_registered(nick):
     """Answer the question: is this nick registered?"""
     from canonical.launchpad.database import PersonSet
-    person = PersonSet().getByName(nick)
-    if person or nick in EXISTING_NICKS:
+    if PersonSet().getByName(nick) is not None:
         return True
     else:
         return False
 
+
 def sanitize(name):
     return name_sanity_pattern.sub('', name)
     
+
 def generate_nick(email_addr, registered=_nick_registered,
                   report_collisions=False):
     """Generate a LaunchPad nick from the email address provided.

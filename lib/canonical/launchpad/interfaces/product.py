@@ -97,9 +97,6 @@ class IProduct(IHasOwner):
     releases = Attribute(_("""An iterator over the ProductReleases for this
         product."""))
 
-    potemplates = Attribute(_("""Returns an iterator over this
-        product's PO templates."""))
-
     bugsummary = Attribute(_("""A matrix by bug severity and status of the
         number of bugs of that severity and status assigned to this
         product."""))
@@ -111,6 +108,11 @@ class IProduct(IHasOwner):
         """The release milestones associated with this product, useful in
         particular to the maintainer, for organizing which bugs will be fixed
         when."""))
+
+    bounties = Attribute(_("The bounties that are related to this product."))
+
+    def potemplates():
+        """Returns an iterator over this product's PO templates."""
 
     def poTemplatesToImport():
         """Returns all PO templates from this product that have a rawfile 
@@ -196,6 +198,8 @@ class IHasProductAndAssignee(IHasProduct, IHasAssignee):
 
 class IProductSet(Interface):
     """The collection of products."""
+
+    title = Attribute("""The set of Products registered in the Launchpad""")
 
     def __iter__():
         """Return an iterator over all the products."""

@@ -19,7 +19,7 @@ import canonical.sourcerer.deb.version
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp.dbschema import BugSeverity, BugTaskStatus
 from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
-from canonical.rosetta.tar import string_to_tarfile, examine_tarfile
+from canonical.launchpad import helpers
 from canonical.rosetta.pofile import POSyntaxError, POInvalidInputError
 
 from canonical.launchpad.database.sourcesource import SourceSource
@@ -86,8 +86,6 @@ class Product(SQLBase):
     #
     # useful Joins
     #
-    potemplates = MultipleJoin('POTemplate', joinColumn='product')
-
     bugtasks = MultipleJoin('BugTask', joinColumn='product')
 
     branches = MultipleJoin('Branch', joinColumn='product')
@@ -105,6 +103,10 @@ class Product(SQLBase):
 
     milestones = MultipleJoin('Milestone', joinColumn = 'product')
 
+    bounties = RelatedJoin('Bounty', joinColumn='product',
+                            otherColumn='bounty',
+                            intermediateTable='ProductBounty')
+
     def newseries(self, form):
         # Extract the details from the form
         name = form['name']
@@ -117,9 +119,9 @@ class Product(SQLBase):
                              product=self.id)
 
     def newSourceSource(self, form, owner):
-        rcstype = RevisionControlSystems.CVS.value
+        rcstype = RevisionControlSystems.CVS
         if form['svnrepository']:
-            rcstype = RevisionControlSystems.SVN.value
+            rcstype = RevisionControlSystems.SVN
         # XXX Robert Collins 05/10/04 need to handle arch too
         ss = SourceSource(name=form['name'],
             title=form['title'],
@@ -161,19 +163,33 @@ class Product(SQLBase):
                                 (quote(name), self._product.id)
                                 )[0])
 
+    def potemplates(self):
+        """See IProduct."""
+        templates = []
+        for series in self.serieslist:
+            for release in series.releases:
+                for potemplate in release.potemplates:
+                    templates.append(potemplate)
+
+        return templates
+
     def poTemplatesToImport(self):
         for template in iter(self.potemplates):
             if template.rawimportstatus == RosettaImportStatus.PENDING:
                 yield template
 
+    # XXX: Carlos Perello Marin 2005-03-17
+    # This method should be removed as soon as we have completely removed the old
+    # URL space.
     def poTemplate(self, name):
-        '''SELECT POTemplate.* FROM POTemplate WHERE
-              POTemplate.product = id AND
-              POTemplate.name = name;'''
-        results = POTemplate.select('''
-            POTemplate.product = %d AND
-            POTemplate.name = %s''' %
-            (self.id, quote(name)))
+        results = POTemplate.select(
+            "ProductSeries.product = %d AND"
+            " ProductSeries.id = ProductRelease.productseries AND"
+            " ProductRelease.id = POTemplate.productrelease AND"
+            " POTemplate.potemplatename = POTemplateName.id AND"
+            " POTemplateName.name = %s" % (self.id, quote(name)),
+            clauseTables=['ProductSeries', 'ProductRelease',
+                          'POTemplateName'])
 
         if results.count() == 0:
             raise KeyError, name
@@ -299,8 +315,8 @@ class Product(SQLBase):
                                     " imported. Ignoring it...")
                     return updated, added, errors
 
-        tf = string_to_tarfile(tarfile.read())
-        pot_paths, po_paths = examine_tarfile(tf)
+        tarball = helpers.string_to_tarfile(tarfile.read())
+        pot_paths, po_paths = helpers.examine_tarfile(tarball)
 
         if len(pot_paths) == 0:
             # It's not a valid tar file, it does not have any .pot file.
@@ -315,7 +331,7 @@ class Product(SQLBase):
             # Get the list of domains
             domains = []
             try:
-                domains_file = tf.extractfile('domains.txt')
+                domains_file = tarball.extractfile('domains.txt')
                 # We have that file inside the tar file.
                 for line in domains_file.readlines():
                     domains.append(line.strip())
@@ -396,8 +412,9 @@ class Product(SQLBase):
                         potemplate = self.newPOTemplate(potname, potname)
                         added.append(pot_path)
 
+                potfilecontent = tarball.extractfile(pot_path).read()
                 try:
-                    potemplate.attachRawFileData(tf.extractfile(pot_path).read())
+                    potemplate.attachRawFileData(potfilecontent)
                 except (POSyntaxError, POInvalidInputError):
                     # The file has an error detected by our parser.
                     errors.append(pot_path)
@@ -440,8 +457,9 @@ class Product(SQLBase):
                                                " Rosetta." % code)
                             errors.append(po_path)
                             continue
+                        pofilecontent = tarball.extractfile(po_path).read()
                         try:
-                            pofile.attachRawFileData(tf.extractfile(po_path).read())
+                            pofile.attachRawFileData(pofilecontent)
                         except (POSyntaxError, POInvalidInputError):
                             # The file has an error detected by our parser.
                             errors.append(po_path)
@@ -475,6 +493,9 @@ class Product(SQLBase):
 
 class ProductSet:
     implements(IProductSet)
+
+    def __init__(self):
+        self.title = "Launchpad Products"
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -547,12 +568,13 @@ class ProductSet:
 
     def translatables(self, translationProject=None):
         """See canonical.launchpad.interfaces.product.IProductSet.
-        
+
         This will give a list of the translatables in the given Translation
         Project. For the moment it just returns every translatable product.
         """
-        clauseTables = ['Product', 'POTemplate']
-        query = """POTemplate.product=Product.id"""
+        clauseTables = ['Product', 'ProductRelease', 'POTemplate']
+        query = ("POTemplate.productrelease=ProductRelease.id AND"
+                 " ProductRelease.product = Product.id")
         return Product.select(query, distinct=True,
                               clauseTables=clauseTables)
 

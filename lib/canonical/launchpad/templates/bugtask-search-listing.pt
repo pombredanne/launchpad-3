@@ -3,7 +3,6 @@
   <form action="" method="GET"
      tal:define="listing_columns view/task_columns;
                  logged_in request/lp:person;
-                 is_maintainer python:logged_in and logged_in.id == context.owner.id;
                  task_batch view/batch">
 
   <small> 
@@ -13,24 +12,27 @@
       <span tal:omit-tag="" tal:condition="logged_in">.
           <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackagename=all&search=Search">submitted by me</a></span>
       :: bug id or text
-      <input style="border-style: solid; border-width: 1px; border-color: grey;" type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/>
-      <input type="submit" style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; " name="search" value="Search" />
+      <input type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/>
+      <input type="submit" name="search" value="Search" />
     <input
         tal:condition="not:request/advanced|nothing"
-        style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; "
         type="submit" name="advanced" value="Advanced" />
     <input
         tal:condition="request/advanced|nothing"
-        style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; "
         type="submit" name="simple_submit" value="Simple" />
     <input type="hidden"
         name="advanced" tal:attributes="value request/advanced|nothing" />
   </small><br /><br />
-  <small tal:content="python:'displaying matching bugs ' + str(task_batch.startNumber()) + ' to ' + str(task_batch.endNumber()) + ' of ' + str(task_batch.total())">displaying 1 to 20 of 42 </small>
+  <small tal:define="startno task_batch/startNumber;
+                     endno task_batch/endNumber;
+                     total task_batch/total"
+         tal:content="string:displaying matching bugs $startno to $endno of $total">
+    displaying matching bugs 1 to 10 of 42
+  </small>
   <table id="ass_listing"
          class="listing rowNavigation">
     <tr>
-      <th tal:condition="is_maintainer">Select</th>
+      <th tal:condition="view/is_maintainer">Select</th>
       <th tal:condition="python:'id' in listing_columns">Bug #</th>
       <th tal:condition="python:'product' in listing_columns">Product</th>
       <th tal:condition="python:'package' in listing_columns">Package</th>
@@ -50,18 +52,18 @@
                         assid task/id;
                         product_name task/product/name|nothing;
                         project_name task/product/project/name|nothing;
-                        package_name task/sourcepackage/sourcepackagename/name|nothing;
+                        package_name task/sourcepackagename/name|nothing;
                         collection_name string:tasks;
                         ass_link string:/malone/$collection_name/$assid/+edit;
                         ass_owner task/owner/name|nothing;
                         potential_assignee logged_in/displayname|nothing;
-                        status task/status/lp:BugTaskStatus;
+                        status task/status/title;
                         assignee task/assignee/name|python:'';
-                        priority task/priority/lp:BugPriority;
-                        severity task/severity/lp:BugSeverity;
+                        priority task/priority/title;
+                        severity task/severity/title;
                         statusid string:status${repeat/task/number};
                         assigneeid string:assignee${repeat/task/number};">
-          <td tal:condition="is_maintainer">
+          <td tal:condition="view/is_maintainer">
             <input type="checkbox" name="task" value="" tal:attributes="value task/id" />
           </td>
           <td tal:content="bugid"
@@ -77,7 +79,7 @@
               tal:attributes="onclick string:window.location='${ass_link}';">-</td>
           <td tal:attributes="onclick string:window.location='${ass_link}';"
               tal:condition="python:'title' in listing_columns"
-              tal:content="task/bug/title">
+              tal:content="task/bug/title/fmt:shorten/60">
               title
           </td>
           <td tal:attributes="onclick string:window.location='${ass_link}';"
@@ -155,8 +157,8 @@
     </tr>
   </table>
 
-  <input tal:condition="is_maintainer" type="submit" name="assign_to_milestone" value="Assign to Milestone" />
-  <select tal:condition="is_maintainer" name="milestone">
+  <input tal:condition="view/is_maintainer" type="submit" name="assign_to_milestone" value="Assign to Milestone" />
+  <select tal:condition="view/is_maintainer" name="milestone">
     <option tal:repeat="milestone context/milestones"
             tal:attributes="value milestone/name"
             tal:content="milestone/name">milestone1</option>

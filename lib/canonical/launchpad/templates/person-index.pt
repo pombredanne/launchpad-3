@@ -9,46 +9,24 @@
     Personal Information</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Soyuz style sheet -->
+    <!-- Launchpad style sheet -->
     <style type="text/css" media="screen">@import url(launchpad.css);</style>
 </head>
 
 <body>
 
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
-  <div id="content" class="documentEditable">
-    <ul class="contentViews">
-      <li id="contentview-profile" class="selected">
-        <a href=".">Profile</a>
-      </li>
+      <h1><span tal:content="context/displayname">DISPAYNAME</span>
+      <i tal:condition="context/ubuntite">(Ubuntite)</i></h1>
 
-      <li tal:condition="context/packages" id="contentview-packages"
-          class="plain">
-        <a href="+packages">Packages</a>
-      </li>
+      <br/>
 
-      <li tal:condition="context/bugs" id="contentview-bugs" class="plain">
-        <a href="+bugs">Bugs</a>
-      </li>
-
-      <li tal:condition="context/translations" id="contentview-translations"
-          class="plain">
-        <a href="+translations">Translations</a>
-      </li>
-
-      <li tal:condition="context/activities" id="contentview-karma"
-          class="plain">
-        <a href="+karma">Karma</a>
-      </li>
-    </ul>
-
-    <div class="documentContent" id="region-content">
-
-    <div>
-      <h1><span tal:content="context/displayname"></span></h1>
-        <br />
-        <table width="80%">
+        <table>
           <tr>
             <td>Name:</td>
             <td tal:content="string:${context/displayname} 
@@ -71,14 +49,15 @@
           <tr>
             <td>Email:</td>
             <td><span tal:replace="email/email"></span>
-              <a href="+emails">(Edit your emails)</a></td>
+              <a href="+emails">(Edit)</a></td>
           </tr>
           </tal:dummy>
 
-          <tal:dummy tal:condition="not: context/preferredemail">
+          <tal:dummy tal:condition="not: context/validatedemails">
           <tr>
             <td>Email:</td>
-            <td>Please <a href="+emails">set your preferred email.</a></td>
+            <td>0 validated email addresses 
+              [ <a href="+emails">Add or validate emails</a> ]</td>
           </tr>
           </tal:dummy>
 
@@ -121,57 +100,42 @@
             <td>SSH:</td>
             <td tal:condition="context/sshkeys">
               <a href="+sshkey"><span tal:replace="view/sshkeysCount">0</span>SSH key(s)</a>
-              <a href="+editsshkey">(Edit your ssh key(s))</a>
+              <a href="+editsshkey">(Edit)</a>
             </td>
             <td tal:condition="not: context/sshkeys">
-              <a href="+editsshkey">Upload your ssh key(s)</a>
+              <a href="+editsshkey">(Upload)</a>
             </td>
           </tr>
+
+	  <tr>
+	    <td>Signed Codes of Conduct:</td>
+	    <td><a href="+codesofconduct">Handle CoCs</a></td>
+	  </tr>
 
           <tr>
             <td></td>
             <td class="listingNext"><a href="+edit">Edit Profile</a></td>
           </tr>
         </table>
+
+
+        <!-- Teams and Roles-->
+        <div tal:condition="view/membershipOrRoles">
+          <fieldset>
+            <legend><span tal:replace="context/displayname"></span> is
+            </legend>
+            <table>
+              <tr tal:repeat="membership context/memberships">
+                <td>
+                  <span tal:replace="membership/statusname"></span> of 
+                  <a tal:attributes="href string:../${membership/team/name}"
+                     tal:content="membership/team/displayname">foo</a>
+                </td>
+            </tr>
+            </table>
+          </fieldset>
+        </div>
+
     </div> 
-
-
-    <!-- Teams and Roles-->
-    <div tal:condition="view/membershipOrRoles">
-      <fieldset>
-        <legend><span tal:replace="context/displayname"></span> is
-        </legend>
-        <table>
-          <tr tal:repeat="membership context/memberships">
-            <td>
-              <span tal:replace="membership/rolename"></span> of 
-              <a tal:attributes="href string:../${membership/team/name}"
-                 tal:content="membership/team/displayname">foo</a>
-            </td>
-          </tr>
-          <tr><td></td></tr>
-          <tr tal:condition="context/distroroles"
-              tal:repeat="role context/distroroles">
-            <td><span tal:content="role/rolename">ROLENAME</span> on 
-              <a tal:attributes="href string:/soyuz/distros/${role/distribution/name}"
-                 tal:content="role/distribution/title">DISTRO</a></td>
-          </tr>
-          <tr><td></td></tr>
-          <tr tal:condition="context/distroreleaseroles"
-              tal:repeat="role context/distroreleaseroles">
-            <td><span tal:content="role/rolename">ROLENAME</span> on 
-              <a tal:attributes="href string:/soyuz/distros/${role/distrorelease/distribution/name}/${role/distrorelease/name}"
-                 tal:content="role/distrorelease/displayname">RELEASE</a>
-            </td>
-          </tr>
-        </table>
-      </fieldset>
-    </div>
-
-    </div>
-  </div>
-</div>
- 
-
 </body>
 </html>

@@ -1,3 +1,7 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 # Python imports
 from datetime import datetime
 
@@ -6,7 +10,7 @@ from zope.interface import implements
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
+from sqlobject import StringCol, ForeignKey, MultipleJoin, BoolCol, \
                       DateTimeCol, StringCol
 
 from canonical.database.sqlbase import SQLBase
@@ -27,17 +31,13 @@ class Manifest(SQLBase):
 
     _table = 'Manifest'
 
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
-                default=datetime.utcnow())
+    datecreated = DateTimeCol(notNull=True, default=datetime.utcnow())
 
-    uuid = StringCol(dbName='uuid', notNull=True, default=uuidgen())
+    uuid = StringCol(notNull=True, default=uuidgen(), alternateID=True)
 
     entries = MultipleJoin('ManifestEntry', joinColumn='manifest')
     
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
-
     def __iter__(self):
         return self.entries
-
 
 

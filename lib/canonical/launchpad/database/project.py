@@ -45,19 +45,16 @@ class Project(SQLBase):
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
 
     # convenient joins
-    _products = MultipleJoin('Product', joinColumn='project')
 
-    _bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
+    bounties = RelatedJoin('Bounty', joinColumn='project',
+                            otherColumn='bounty',
+                            intermediateTable='ProjectBounty')
+
+    products = MultipleJoin('Product', joinColumn='project')
+
+    bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
                                otherColumn='bugtracker',
                                intermediateTable='ProjectBugTracker')
-
-    def bugtrackers(self):
-        for bugtracker in self._bugtrackers:
-            yield bugtracker
-
-    def products(self):
-        for product in self._products:
-            yield product
 
     def getProduct(self, name):
         try:
@@ -68,6 +65,9 @@ class Project(SQLBase):
 
 class ProjectSet:
     implements(IProjectSet)
+
+    def __init__(self):
+        self.title = 'Open Source Projects in the Launchpad'
 
     def __iter__(self):
         return iter(Project.select())

@@ -85,20 +85,53 @@ class IRawFileData(Interface):
         """
 
 
+class IPOTemplateSubset(Interface):
+    """A subset of POTemplate."""
+
+    sourcepackagename = Attribute(
+        "The sourcepackagename associated with this subset of POTemplates.")
+
+    distrorelease = Attribute(
+        "The distrorelease associated with this subset of POTemplates.")
+
+    productrelease = Attribute(
+        "The productrelease associated with this subset of POTemplates.")
+
+    def __iter__():
+        """Returns an iterator over all POTemplate for this subset."""
+
+    def __getitem__(name):
+        """Get a POTemplate by its name."""
+
+
+class IPOTemplateSet(Interface):
+    """A set of PO templates."""
+
+    def __iter__():
+        """Return an iterator over all PO templates."""
+
+    def __getitem__(name):
+        """Get a PO template by its name."""
+
+    def getSubset(distrorelease=None, sourcepackagename=None,
+                  productrelease=None):
+        """Return a POTemplateSubset object depending on the given arguments.
+        """
+
+    def getTemplatesPendingImport():
+        """Return a list of PO templates that have data to be imported."""
+
+
 class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
     id = Attribute("The id of this POTemplate.")
 
-    product = Attribute("The PO template's product.")
+    productrelease = Attribute("The PO template's product release.")
 
     priority = Attribute("The PO template priority.")
 
-    branch = Attribute("The branch where this PO template is.")
-
-    changeset = Attribute("The changeset where this PO template is.")
-
-    name = Attribute("The PO template's name.  For example 'nautilus'.")
+    potemplatename = Attribute("The PO template name.")
 
     title = Attribute("The PO template's title.")
 
@@ -127,6 +160,15 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
 
     header = Attribute("The header of this .pot file.")
 
+    binarypackagename = Attribute(
+        "The name of the binarypackage where this potemplate's translations"
+        " are installed.")
+
+    languagepack = Attribute(
+        "Flag to know if this potemplate belongs to a languagepack.")
+
+    filename = Attribute(
+        "The file name this PO Template had when last imported.")
 
     # A "current" messageset is one that was in the latest version of
     # the POTemplate parsed and recorded in the database. Current
@@ -226,7 +268,8 @@ class IEditPOTemplate(IPOTemplate):
         """Create and return a new po file in the given language. The
         variant is optional.
 
-        Raises an KeyError if a po file of that language already exists.
+        Raises LanguageNotFound if the language does not exist in the
+        database.
         """
 
     def createMessageSetFromMessageID(msgid):
@@ -325,6 +368,13 @@ class IPOMsgID(Interface):
     """A PO message ID."""
 
     msgid = Attribute("A msgid string.")
+
+
+class IPOFileSet(Interface):
+    """A set of POFile."""
+
+    def getPOFilesPendingImport():
+        """Return a list of PO files that have data to be imported."""
 
 
 class IPOFile(IRosettaStats, ICanAttachRawFileData):
@@ -437,9 +487,6 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
-
-    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
-        imported, 2 failed.""")
 
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""

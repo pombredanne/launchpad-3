@@ -1,0 +1,11 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/7 HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <title>Malone: Bug #7
+  ...

@@ -7,29 +7,30 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
-from canonical.launchpad.interfaces import IHasProductAndAssignee
+from canonical.launchpad.interfaces import IHasProductAndAssignee, \
+    IHasDateCreated
 
 class IEditableUpstreamBugTask(IHasProductAndAssignee):
     """A bug assigned to upstream, which is editable by the current
     user."""
-    pass
+    title = Attribute('Title')
 
 class IReadOnlyUpstreamBugTask(IHasProductAndAssignee):
     """A bug assigned to upstream, which is read-only by the current
     user."""
-    pass
+    title = Attribute('Title')
 
 class IEditableDistroBugTask(Interface):
     """A bug assigned to a distro package, which is editable by
     the current user."""
-    pass
+    title = Attribute('Title')
 
 class IReadOnlyDistroBugTask(Interface):
     """A bug assigned to a distro package, which is read-only by the
     current user."""
-    pass
+    title = Attribute('Title')
 
-class IBugTask(Interface):
+class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
     or package."""
     id = Int(title=_("Bug Task #"))
@@ -39,17 +40,19 @@ class IBugTask(Interface):
         title=_("Source Package Name"), required=False, vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    distrorelease = Choice(
+        title=_("Distribution Release"), required=False, vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Bug Status'), vocabulary='BugStatus',
-        default=int(dbschema.BugTaskStatus.NEW))
+        default=dbschema.BugTaskStatus.NEW)
     priority = Choice(
         title=_('Priority'), vocabulary='BugPriority',
-        default=int(dbschema.BugPriority.MEDIUM))
+        default=dbschema.BugPriority.MEDIUM)
     severity = Choice(
         title=_('Severity'), vocabulary='BugSeverity',
-        default=int(dbschema.BugSeverity.NORMAL))
+        default=dbschema.BugSeverity.NORMAL)
     assignee = Choice(
         title=_('Assignee'), required=False, vocabulary='ValidPerson')
     binarypackagename = Choice(
@@ -58,13 +61,25 @@ class IBugTask(Interface):
             )
     dateassigned = Datetime()
     datecreated  = Datetime()
-    owner = Int() 
+    owner = Int()
     maintainer = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
     bugtitle = TextLine(
         title=_("Bug Title"), required=True, readonly=True)
     bugdescription = Text(
         title=_("Bug Description"), required=False, readonly=True)
+
+    # used for the page layout
+    title = Attribute("Title")
+
+class IUpstreamBugTask(IBugTask):
+    """Marker interface for upstream bug tasks."""
+
+class IDistroBugTask(IBugTask):
+    """Marker interface for distro bug tasks."""
+
+class IDistroReleaseBugTask(IDistroBugTask):
+    """Marker interface for distro release bug tasks."""
 
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
 # when spiv pushes a fix upstream for the bug that makes this hackery
@@ -76,7 +91,8 @@ class ISelectResultsSlicable(ISelectResults):
         """Called to implement evaluation of self[i:j]."""
 
 class IBugTaskSet(Interface):
-    bug = Int(title=_("Bug id"), readonly=True)
+
+    title = Attribute('Title')
 
     def __getitem__(key):
         """Get an IBugTask."""
@@ -93,14 +109,14 @@ class IBugTaskSet(Interface):
         """
 
     def search(bug=None, searchtext=None, status=None, priority=None,
-               severity=None, product=None, milestone=None, assignee=None,
-               submitter=None, orderby=None):
+               severity=None, product=None, distribution=None, distrorelease=None,
+               milestone=None, assignee=None, submitter=None, orderby=None):
         """Return a set of IBugTasks that satisfy the query arguments.
 
         Keyword arguments should always be used. The argument passing
         semantics are as follows:
 
-        * BugTaskSet.search(arg = 'foo'): Match all IBugTasks where 
+        * BugTaskSet.search(arg = 'foo'): Match all IBugTasks where
           IBugTask.arg == 'foo'.
 
         * BugTaskSet.search(arg = any('foo', 'bar')): Match all IBugTasks
@@ -113,6 +129,15 @@ class IBugTaskSet(Interface):
         For a more thorough treatment, check out:
 
             lib/canonical/launchpad/doc/bugtask.txt
+        """
+
+    def createTask(bug, product=None, distribution=None, distrorelease=None,
+                   sourcepackagename=None, binarypackagename=None, status=None,
+                   priority=None, severity=None, assignee=None, owner=None,
+                   milestone=None):
+        """Create a bug task on a bug.
+
+        Exactly one of product, distribution or distrorelease must be provided.
         """
 
 class IBugTasksReport(Interface):

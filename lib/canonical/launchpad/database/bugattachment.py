@@ -19,6 +19,7 @@ class BugAttachment(SQLBase):
     implements(IBugAttachment)
 
     _table = 'BugAttachment'
+
     message = ForeignKey(foreignKey='Message',
                             dbName='message', notNull=True)
     name = StringCol(notNull=False, default=None)

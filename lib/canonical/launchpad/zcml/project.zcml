@@ -51,6 +51,10 @@
         <browser:page name="+bazaar-index"
             template="../templates/project-branches.pt"
             lp:url="bazaar/upstream/$Project.name/" />
+        <browser:page
+            name="+bounties"
+            template="../templates/related-bounties.pt"
+            lp:url="/projects/$Project.name/+bounties/" />
     </browser:pages>
 
     <browser:pages

@@ -12,8 +12,8 @@ import harness
 import sqlos.connection
 
 from canonical.functional import FunctionalDocFileSuite
-from canonical.launchpad.ftests.harness import \
-        _disconnect_sqlos, _reconnect_sqlos
+from canonical.launchpad.ftests.harness import _disconnect_sqlos
+from canonical.launchpad.ftests.harness import _reconnect_sqlos
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -61,6 +61,7 @@ def test_suite():
         if not d.startswith('.')
         ]
     stories = [d for d in stories if os.path.isdir(d)]
+    stories.sort()
 
     for storydir in stories:
         suite.addTest(unittest.makeSuite(StartStory))

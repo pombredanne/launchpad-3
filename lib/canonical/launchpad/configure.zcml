@@ -5,8 +5,58 @@
   <include package="canonical.launchpad.webapp" />
   <include package="canonical.launchpad.vocabularies" />
   <include package="canonical.launchpad.zcml" />
-  <include file="security.zcml" />
+  <authorizations module="canonical.launchpad.security" />
   <include file="robots.zcml" />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="products"
+    utility="canonical.launchpad.interfaces.IProductSet"
+    permission="zope.Public"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="people"
+    utility="canonical.launchpad.interfaces.IPersonSet"
+    permission="zope.Public"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    newlayer="canonical.launchpad.layers.SoyuzLayer"
+    name="distros"
+    utility="canonical.launchpad.interfaces.IDistributionSet"
+    permission="zope.Public"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="sourcepackagenames"
+    utility="canonical.launchpad.interfaces.ISourcePackageNameSet"
+    permission="zope.Public"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="binarypackagenames"
+    utility="canonical.launchpad.interfaces.IBinaryPackageNameSet"
+    permission="zope.Public"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="projects"
+    utility="canonical.launchpad.interfaces.IProjectSet"
+    permission="zope.Public"
+    />
+
+  <browser:suburl
+    for="canonical.publication.RootObject"
+    name="token"
+    utility="canonical.launchpad.interfaces.ILoginTokenSet"
+    permission="zope.Public"
+    />
 
   <!-- legal link -->
   <browser:page

@@ -1,13 +1,18 @@
-from email.Utils import make_msgid
-import string
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# Zope
+__metaclass__ = type
+
+import string
+from email.Utils import make_msgid
+
 from zope.interface import implements
-# SQL imports
+from zope.component import getUtility
+
 from sqlobject import DateTimeCol, ForeignKey, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import IMessage, IMessageSet
+from canonical.launchpad.interfaces import IMessage, IMessageSet, \
+    ILaunchBag
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
@@ -32,7 +37,6 @@ class Message(SQLBase):
                               dbName='distribution',
                               notNull=False, default=None)
     rfc822msgid = StringCol(unique=True, notNull=True)
-    attachments = MultipleJoin('BugAttachment', joinColumn='bugmessage')
     bugs = RelatedJoin('Bug', joinColumn='message', otherColumn='bug',
                        intermediateTable='BugMessage')
 
@@ -48,7 +52,6 @@ class Message(SQLBase):
 
 
 class MessageSet:
-
     implements(IMessageSet)
 
     def get(self, rfc822msgid=None):
@@ -59,12 +62,8 @@ class MessageSet:
 
 def BugMessageFactory(context, **kw):
     from canonical.launchpad.database import BugMessage
-    bug = context.context.context.id # view.comments.bug
-    msg = Message(parent=None,
-            ownerID=context.request.principal.id,
-            rfc822msgid=make_msgid('malone'),
-            **kw)
-    bmsg = BugMessage(bug=bug, message=msg.id)
-    return msg
-
-
+    msg = Message(
+        parent=None, ownerID = getUtility(ILaunchBag).user.id,
+        rfc822msgid=make_msgid('malone'), **kw)
+    bmsg = BugMessage(bug = getUtility(ILaunchBag).bug.id, message = msg.id)
+    return bmsg

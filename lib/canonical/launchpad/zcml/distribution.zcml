@@ -9,14 +9,19 @@
     <content class="canonical.launchpad.database.Distribution">
         <allow interface="canonical.launchpad.interfaces.IDistribution"/>
         <require
-            permission="launchpad.AnyPerson"
-            set_attributes="name title description domainname"
+            permission="launchpad.Admin"
+            set_attributes="displayname title summary description"
             />
     </content>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistribution"
         name="+index" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistribution"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        name="+bugs" />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistribution"
@@ -25,36 +30,43 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionView"
-        permission="zope.Public"
-        >
-
+        permission="zope.Public" >
         <browser:page
             name="+index"
             template="../templates/distro-index.pt"
-            lp:url="Soyuz/distros/$Distribution.name/" />
-
-        <!-- XXX sabdfl moved this here, need to reactivate search tools -->
-        <!-- 
-        XXX: Daniel Debonzi 20050105 
-        Does it still useful? don't we have enought and better 
-        search places? 
-	I will let it commented. If nobody ask to keep it I will 
-	remove this pages.
+            lp:url="/distros/$Distribution.name/" />
         <browser:page
-            name="+sources"
-            template="../templates/distro-sources.pt"
-            lp:url="Soyuz/distros/$Distribution.name/+sources"
-                />
+            name="+bugs"
+            template="../templates/distribution-bugs.pt"
+            lp:url="/distros/$Distribution.name/" />
         <browser:page
-            name="+binaries"
-            template="../templates/binary-index.pt"
-            lp:url="Soyuz/distros/$Distribution.name/+binaries"
-            />
-        -->
-
-
-
+            name="+bounties"
+            template="../templates/related-bounties.pt"
+            lp:url="/distros/$Distribution.name/+bounties/" />
     </browser:pages>
+
+    <browser:addform
+        name="+filebug"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IBugAddForm"
+        label="Report Bug in a Linux Distribution"
+        fields="sourcepackagename title comment private owner"
+        class="canonical.launchpad.browser.DistributionFileBugView"
+        arguments=""
+        keyword_arguments="sourcepackagename title comment private owner"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-add.pt"
+        lp:url="/distros/$Distribution.name/+filebug">
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
+        <browser:widget
+           field="comment"
+           class="zope.app.form.browser.TextAreaWidget"
+           width="62" />
+    </browser:addform>
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"
@@ -63,8 +75,7 @@
         schema="canonical.launchpad.interfaces.IDistribution"
         fields="displayname title summary description"
         template="../templates/launchpad-editform.pt"
-        lp:url="Soyuz/distros/$Distribution.name/+edit"
-        />
+        lp:url="/distros/$Distribution.name/+edit" />
 
     <!-- DistributionSet -->
     <content class="canonical.launchpad.database.DistributionSet">
@@ -81,6 +92,11 @@
         for="canonical.launchpad.interfaces.IDistributionSet"
         name="+index" />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistributionSet"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        name="+bugs" />
+
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistributionSet"
         getter="__getitem__" />
@@ -89,12 +105,20 @@
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
         class="canonical.launchpad.browser.DistributionSetView">
-
         <browser:page
             name="+index"
             template="../templates/distros-index.pt"
-            lp:url="Soyuz/distros/" />
+            lp:url="/distros/" />
+        <browser:page
+            name="+bugs"
+            template="../templates/malone-distros-index.pt"
+            lp:url="/distros/+bugs" />
+    </browser:pages>
 
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistributionSet"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionSetView">
     </browser:pages>
 
     <browser:page

@@ -7,15 +7,15 @@ from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 class IBugAttachment(Interface):
-    """A file attachment to an IBugMessage."""
+    """A file attachment to an IMessage."""
 
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    bugmessageID = Int(
-            title=_('Bug Message ID'), required=True, readonly=True,
+    messageID = Int(
+            title=_('Message ID'), required=True, readonly=True,
             )
-    bugmessage = Attribute('Bug Message')
+    message = Attribute('Message')
     name = TextLine(
             title=_('Name'), required=False, readonly=False,
             )

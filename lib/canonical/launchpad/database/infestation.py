@@ -20,6 +20,8 @@ from canonical.launchpad.interfaces import IBugProductInfestationSet, \
                                            IBugPackageInfestation
 
 from canonical.launchpad.database.bugset import BugSetBase
+from canonical.lp import dbschema
+from canonical.lp.dbschema import EnumCol
 
 
 __all__ = ['BugProductInfestation', 'BugPackageInfestation',
@@ -37,7 +39,8 @@ class BugProductInfestation(SQLBase):
     explicit = IntCol(notNull=True, default=False)
     productrelease = ForeignKey(
         dbName="productrelease", foreignKey='ProductRelease', notNull=False, default=None)
-    infestationstatus = IntCol(notNull=False, default=None)
+    infestationstatus = EnumCol(
+        notNull=False, default=None, schema=dbschema.BugInfestationStatus)
     datecreated = DateTimeCol(notNull=True)
     creator = ForeignKey(dbName="creator", foreignKey='Person', notNull=True)
     dateverified = DateTimeCol(notNull=False)
@@ -45,6 +48,14 @@ class BugProductInfestation(SQLBase):
         dbName="verifiedby", foreignKey='Person', notNull=False, default=None)
     lastmodified = DateTimeCol(notNull=True)
     lastmodifiedby = ForeignKey(dbName="lastmodifiedby", foreignKey='Person', notNull=True)
+
+    # used for launchpad pages
+    def _title(self):
+        title = 'Malone Bug #' + str(self.bug.id) + ' infests '
+        title += self.productrelease.productseries.product.displayname
+        return title
+    title = property(_title)
+    
 
 
 
@@ -56,7 +67,8 @@ class BugPackageInfestation(SQLBase):
     explicit = IntCol(dbName='explicit', notNull=True, default=False)
     sourcepackagerelease = ForeignKey(
         dbName='sourcepackagerelease', foreignKey='SourcePackageRelease', notNull=True)
-    infestationstatus = IntCol(dbName='infestationstatus', notNull=True)
+    infestationstatus = EnumCol(dbName='infestationstatus', notNull=True,
+        schema=dbschema.BugInfestationStatus)
     datecreated = DateTimeCol(dbName='datecreated', notNull=True)
     creator = ForeignKey(dbName='creator', foreignKey='Person', notNull=True)
     dateverified = DateTimeCol(dbName='dateverified')
@@ -64,6 +76,13 @@ class BugPackageInfestation(SQLBase):
     lastmodified = DateTimeCol(dbName='lastmodified')
     lastmodifiedby = ForeignKey(dbName='lastmodifiedby', foreignKey='Person')
 
+    # used for launchpad pages
+    def _title(self):
+        title = 'Malone Bug #' + str(self.bug.id) + ' infests '
+        title += self.sourcepackagerelease.name
+        return title
+    title = property(_title)
+    
 
 class BugProductInfestationSet(BugSetBase):
     """A set for BugProductInfestation."""

@@ -81,6 +81,15 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
                                                 ssha)
         self.assertEqual({}, userDict)
 
+    def test_authUserNullPassword(self):
+        # Authing a user with a NULL password should always return {}
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('supersecret!')
+        # The 'admins' user in the sample data has no password, so we use that.
+        userDict = storage._authUserInteraction(self.cursor, 'admins', ssha)
+        self.assertEqual({}, userDict)
+
+
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
     def setUp(self):
@@ -99,7 +108,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             "VALUES ("
             "  (SELECT id FROM Person WHERE displayname = 'Fred Flintstone'), "
             "  'fred@bedrock',"
-            "  1)"
+            "  4)"  # 4 == Preferred
         )
 
     def test_authUser(self):
@@ -112,6 +121,38 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
 
         # In fact, it should return the same dict as getUser
         goodDict = storage._getUserInteraction(self.cursor, 'fred@bedrock')
+        self.assertEqual(goodDict, userDict)
+
+    def test_authUserByNickname(self):
+        # Authing a user by their nickname should work, just like an email
+        # address in test_authUser.
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('supersecret!', self.fredsalt)
+        userDict = storage._authUserInteraction(self.cursor, 'fflintst', ssha)
+        self.assertNotEqual({}, userDict)
+
+        # In fact, it should return the same dict as getUser
+        goodDict = storage._getUserInteraction(self.cursor, 'fflintst')
+        self.assertEqual(goodDict, userDict)
+        
+        # And it should be the same as returned by looking them up by email
+        # address.
+        goodDict = storage._getUserInteraction(self.cursor, 'fred@bedrock')
+        self.assertEqual(goodDict, userDict)
+
+    def test_authUserByNicknameNoEmailAddr(self):
+        # Just like test_authUserByNickname, but for a user with no email
+        # address.  The result should be the same.
+        self.cursor.execute(
+            "DELETE FROM EmailAddress WHERE email = 'fred@bedrock'"
+        )
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('supersecret!', self.fredsalt)
+        userDict = storage._authUserInteraction(self.cursor, 'fflintst', ssha)
+        self.assertNotEqual({}, userDict)
+
+        # In fact, it should return the same dict as getUser
+        goodDict = storage._getUserInteraction(self.cursor, 'fflintst')
         self.assertEqual(goodDict, userDict)
 
     def test_authUserBadPassword(self):
@@ -209,7 +250,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             "  %d,"
             "  'garbage123',"
             "  'fred@bedrock')"
-            % (dbschema.SSHKeyType.DSA,)
+            % (dbschema.SSHKeyType.DSA.value, )
         )
 
         # Add test push mirror access
@@ -220,11 +261,56 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             "  (SELECT id FROM Person WHERE displayname = 'Fred Flintstone')) "
         )
 
-        
+        # Fred's SSH key should have access to freds-archive@example.com
         storage = DatabaseUserDetailsStorage(None)
         keys = storage._getSSHKeysInteraction(self.cursor,
                                               'freds-archive@example.com')
-        self.assertEqual([(dbschema.SSHKeyType.DSA, 'garbage123')], keys)
+        self.assertEqual([('DSA', 'garbage123')], keys)
+
+        # Fred's SSH key should also have access to an archive with his email
+        # address
+        keys = storage._getSSHKeysInteraction(self.cursor, 'fred@bedrock')
+        self.assertEqual([('DSA', 'garbage123')], keys)
+
+        # Fred's SSH key should also have access to an archive whose name
+        # starts with his email address + '--'.
+        keys = storage._getSSHKeysInteraction(self.cursor,
+                                              'fred@bedrock--2005')
+        self.assertEqual([('DSA', 'garbage123')], keys)
+
+        # No-one should have access to wilma@bedrock
+        keys = storage._getSSHKeysInteraction(self.cursor, 'wilma@bedrock')
+        self.assertEqual([], keys)
+
+        # Fred should not have access to wilma@bedrock--2005, even if he has the
+        # email address wilma@bedrock--2005.fred.is.a.hacker.com
+        self.cursor.execute(
+            "INSERT INTO EmailAddress (person, email, status) "
+            "VALUES ("
+            "  (SELECT id FROM Person WHERE displayname = 'Fred Flintstone'), "
+            "  'wilma@bedrock--2005.fred.is.a.hacker.com',"
+            "  2)"  # 2 == Validated
+        )
+        keys = storage._getSSHKeysInteraction(
+            self.cursor, 'wilma@bedrock--2005.fred.is.a.hacker.com'
+        )
+        self.assertEqual([], keys)
+        keys = storage._getSSHKeysInteraction(
+            self.cursor, 'wilma@bedrock--2005.fred.is.a.hacker.com--2005'
+        )
+        self.assertEqual([], keys)
+
+        # Fred should not have access to archives named after an unvalidated
+        # email address of his
+        self.cursor.execute(
+            "INSERT INTO EmailAddress (person, email, status) "
+            "VALUES ("
+            "  (SELECT id FROM Person WHERE displayname = 'Fred Flintstone'), "
+            "  'fred@hotmail',"
+            "  1)"  # 1 == New (unvalidated)
+        )
+        keys = storage._getSSHKeysInteraction(self.cursor, 'fred@hotmail')
+        self.assertEqual([], keys)
 
 
 def test_suite():

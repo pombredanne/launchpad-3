@@ -4,7 +4,7 @@
 
 -- Project
 COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
-COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be the person who creates this Project in the system. We will encourage upstream project leaders to take on this role. The Project owner is able to edit the project and appoint project administrators (administrators are recorded in the ProjectRole table).';
+COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be the person who creates this Project in the system. We will encourage upstream project leaders to take on this role. The Project owner is able to edit the project.';
 COMMENT ON COLUMN Project.homepageurl IS 'The home page URL of this project. Note that this could well be the home page of the main product of this project as well, if the project is too small to have a separate home page for project and product.';
 COMMENT ON COLUMN Project.wikiurl IS 'This is the URL of a wiki that includes information about the project. It might be a page in a bigger wiki, or it might be the top page of a wiki devoted to this project.';
 COMMENT ON COLUMN Project.lastdoap IS 'This column stores a cached copy of the last DOAP description we saw for this project. We cache the last DOAP fragment for this project because there may be some aspects of it which we are unable to represent in the database (such as multiple homepageurl\'s instead of just a single homepageurl) and storing the DOAP file allows us to re-parse it later and recover this information when our database model has been updated appropriately.';
@@ -25,15 +25,17 @@ COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. 
 COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The email address is stored in a casesensitive way, but must be case insensitivly unique.';
 
 -- ProjectRole
+/*
 COMMENT ON TABLE ProjectRole IS 'Project Roles. This table records the explicit roles that people play in an open source project, with the exception of the \'ownership\' role, which is encoded in Project.owner. Types of roles are enumerated in dbschema.py DOAPRole.';
 COMMENT ON COLUMN ProjectRole.person IS 'The person playing the role.';
 COMMENT ON COLUMN ProjectRole.role IS 'The role, an integer enumeration documented in dbschema.py ProjectRole.';
 COMMENT ON COLUMN ProjectRole.project IS 'The project in which the person plays a role.';
+*/
 
 
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
-COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who createed this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product (see the ProductRole table). Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
+COMMENT ON COLUMN Product.owner IS 'The Product owner would typically be the person who createed this product in Launchpad. But we will encourage the upstream maintainer of a product to become the owner in Launchpad. The Product owner can edit any aspect of the Product, as well as appointing people to specific roles with regard to the Product. Also, the owner can add a new ProductRelease and also edit Rosetta POTemplates associated with this product.';
 COMMENT ON COLUMN Product.project IS 'Every Product belongs to one and only one Project, which is referenced in this column.';
 COMMENT ON COLUMN Product.listurl IS 'This is the URL where information about a mailing list for this Product can be found. The URL might point at a web archive or at the page where one can subscribe to the mailing list.';
 COMMENT ON COLUMN Product.programminglang IS 'This field records, in plain text, the name of any significant programming languages used in this product. There are no rules, conventions or restrictions on this field at present, other than basic sanity. Examples might be "Python", "Python, C" and "Java".';
@@ -52,11 +54,12 @@ COMMENT ON TABLE ProductLabel IS 'The Product label table. We have not yet clear
 
 
 -- ProductRole
+/*
 COMMENT ON TABLE ProductRole IS 'Product Roles: this table documents the roles that people play with regard to a specific product. Note that if the project only has one product then it\'s best to document these roles at the project level, not at the product level. If a project has many products, then this table allows you to identify people playing a role that is specific to one of them.';
 COMMENT ON COLUMN ProductRole.person IS 'The person playing the role.';
 COMMENT ON COLUMN ProductRole.role IS 'The role being played. Valid roles are documented in dbschema.py DOAPRole. The roles are exactly the same as those used for ProjectRole.';
 COMMENT ON COLUMN ProductRole.product IS 'The product where the person plays this role.';
-
+*/
 
 
 -- ProductSeries
@@ -96,9 +99,17 @@ COMMENT ON COLUMN POTemplate.daterawimport IS 'The date when the rawfile was att
 COMMENT ON COLUMN POTemplate.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
 COMMENT ON COLUMN POTemplate.sourcepackagename IS 'A reference to a sourcepackage name from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.distrorelease IS 'A reference to the distribution from where this POTemplate comes.';
-COMMENT ON COLUMN POTemplate.sourcepackagerelease IS 'The sourcepackagerelease from where this POTemplate was imported last time.';
-COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time. This field is temporal, if you use it add a note at https://dogfood.ubuntu.com/malone/bugs/220/';
+COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time with our buildd <-> Rosetta gateway.';
 COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
+COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName row that tells us the name/domain for this POTemplate.';
+COMMENT ON COLUMN POTemplate.productrelease IS 'A reference to a ProductRelease from where this POTemplate comes.';
+
+-- POTemplateName
+COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
+COMMENT ON COLUMN POTemplateName.name IS 'The name of the POTemplate set. It must be unique';
+COMMENT ON COLUMN POTemplateName.title IS 'The title we are going to use every time that we render a view of this POTemplateName row.';
+COMMENT ON COLUMN POTemplateName.description IS 'A brief text about this POTemplateName so the user could know more about it.';
+COMMENT ON COLUMN POTemplateName.translationdomain IS 'The translation domain name for this POTemplateName';
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a po file for a given product.';
@@ -108,8 +119,16 @@ COMMENT ON COLUMN POFile.daterawimport IS 'The date when the rawfile was attache
 COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
 
 /*
-  Buttress
+  Bazaar
 */
+COMMENT ON TABLE Manifest IS 'A Manifest describes the branches that go into
+making up a source package or product release. This allows us to describe
+the source package or product release in a way that HCT can pull down the
+sources directly from The Bazaar and allow people to branch and edit
+immediately. Note that a Manifest does not have an owner, please ensure that
+ANYTHING that points TO a manifest, such as ProductRelease or
+SourcePackageRelease, has an owner, so that we do not end up with orphaned
+manifests.';
 
 
 
@@ -318,10 +337,10 @@ COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset 
 
 -- Karma
 COMMENT ON TABLE Karma IS 'Used to quantify all the ''operations'' a user performs inside the system, which maybe reporting and fixing bugs, uploading packages, end-user support, wiki editting, etc.';
-COMMENT ON COLUMN Karma.KarmaField IS 'Type of the performed ''operation''. This is a foreign key to KarmaField.';
+COMMENT ON COLUMN Karma.KarmaType IS 'Type of the performed ''operation''. Possible values are in dbschema.KarmaType.';
 COMMENT ON COLUMN Karma.datecreated IS 'A timestamp for the assignment of this Karma.';
 COMMENT ON COLUMN Karma.Person IS 'The Person for wich this Karma was assigned.';
-COMMENT ON COLUMN Karma.Points IS 'The ''weight'' of this Karma. Two Karmas of the same KarmaField may have different Points, meaning that we may give higher weights for hard-to-fix bugs, for example.';
+COMMENT ON COLUMN Karma.Points IS 'The ''weight'' of this Karma. Two Karmas of the same KarmaType may have different Points, meaning that we may give higher weights for hard-to-fix bugs, for example.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
@@ -330,6 +349,17 @@ COMMENT ON COLUMN Bounty.difficulty IS 'An estimate of the difficulty of the bou
 COMMENT ON COLUMN Bounty.duration IS 'An estimate of the length of time it should take to complete this bounty, given the skills required.';
 COMMENT ON COLUMN Bounty.reviewer IS 'The person who will review this bounty regularly for progress. The reviewer is the person who is responsible for establishing when the bounty is complete.';
 COMMENT ON COLUMN Bounty.owner IS 'The person who created the bounty. The owner can update the specification of the bounty, and appoints the reviewer.';
+
+COMMENT ON TABLE BountySubscription IS 'This table records whether or not someone it interested in a bounty. Subscribers will show up on the page with the bounty details.';
+COMMENT ON COLUMN BountySubscription.bounty IS 'The bounty to which the person is subscribed.';
+COMMENT ON COLUMN BountySubscription.person IS 'The person being subscribed to this bounty.';
+COMMENT ON COLUMN BountySubscription.subscription IS 'The nature of the subscription. A NULL value indicates that this subscription has been nullified, and is as if there was no subscription record at all.';
+
+COMMENT ON TABLE ProductBounty IS 'This table records a simple link between a bounty and a product. This bounty will be listed on the product web page, and the product will be mentioned on the bounty web page.';
+
+COMMENT ON TABLE DistroBounty IS 'This table records a simple link between a bounty and a distribution. This bounty will be listed on the distribution web page, and the distribution will be mentioned on the bounty web page.';
+
+COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
 -- SourceSource
 COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.';
@@ -467,18 +497,20 @@ COMMENT ON COLUMN DistroArchRelease.distrorelease IS 'The distribution which thi
 COMMENT ON COLUMN DistroArchRelease.chroot IS 'The chroot tarball used to build packages for this distroarchrelease. Without this, the buildd master is unable to schedule builds for this distroarchrelease.';
 
 -- DistributionRole
-
+/*
 COMMENT ON TABLE DistributionRole IS 'DistributionRole: A soyuz distribution role. This table represents a role played by a specific person in a given distribution.';
 COMMENT ON COLUMN DistributionRole.person IS 'The person undertaking the represented role.';
 COMMENT ON COLUMN DistributionRole.distribution IS 'The distribution in which this role is undertaken';
 COMMENT ON COLUMN DistributionRole.role IS 'The role that the identified person takes in the referenced distribution';
+*/
 
 -- DistroReleaseRole
-
+/*
 COMMENT ON TABLE DistroReleaseRole IS 'DistroReleaseRole: A soyuz distribution release role. This table represents a role played by a specific person in a specific distrorelease of a distribution.';
 COMMENT ON COLUMN DistroReleaseRole.person IS 'The person undertaking the represented role.';
 COMMENT ON COLUMN DistroReleaseRole.distrorelease IS 'The distrorelease in which the role is undertaken.';
 COMMENT ON COLUMN DistroReleaseRole.role IS 'The role that the identified person undertakes in the referenced distrorelease.';
+*/
 
 -- LibraryFileContent
 
@@ -561,4 +593,25 @@ COMMENT ON COLUMN BuildQueue.builder IS 'The builder assigned to this build. Som
 COMMENT ON COLUMN BuildQueue.created IS 'The timestamp of the creation of this row. This is used by the buildd master scheduling algorithm to decide how soon to schedule a build to run on a given builder.';
 COMMENT ON COLUMN BuildQueue.buildstart IS 'The timestamp of the start of the build run on the given builder. If this is NULL then the build is not running yet.';
 COMMENT ON COLUMN BuildQueue.logtail IS 'The tail end of the log of the current build. This is updated regularly as the buildd master polls the buildd slaves. Once the build is complete; the full log will be lodged with the librarian and linked into the build table.';
+
+-- Mirrors
+
+COMMENT ON TABLE Mirror IS 'Stores general information about mirror sites. Both regular pull mirrors and top tier mirrors are included.';
+COMMENT ON COLUMN Mirror.baseurl IS 'The base URL to the mirror, including protocol and optional trailing slash.';
+COMMENT ON COLUMN Mirror.country IS 'The country where the mirror is located.';
+COMMENT ON COLUMN Mirror.name IS 'Unique name for the mirror, suitable for use in URLs.';
+COMMENT ON COLUMN Mirror.description IS 'Description of the mirror.';
+COMMENT ON COLUMN Mirror.freshness IS 'dbschema.MirrorFreshness enumeration indicating freshness.';
+COMMENT ON COLUMN Mirror.lastcheckeddate IS 'UTC timestamp of when the last check for freshness and consistency was made. NULL indicates no check has ever been made.';
+COMMENT ON COLUMN Mirror.approved IS 'True if this mirror has been approved by the Ubuntu/Canonical mirror manager, otherwise False.';
+
+COMMENT ON TABLE MirrorContent IS 'Stores which distroarchreleases and compoenents a given mirror has.';
+COMMENT ON COLUMN MirrorContent.distroarchrelease IS 'A distroarchrelease that this mirror contains.';
+COMMENT ON COLUMN MirrorContent.component IS 'What component of the distroarchrelease that this mirror contains.';
+
+COMMENT ON TABLE MirrorSourceContent IS 'Stores which distrorelease and components a given mirror that includes source packages has.';
+COMMENT ON COLUMN MirrorSourceContent.distrorelease IS 'A distrorelease that this mirror contains.';
+COMMENT ON COLUMN MirrorSourceContent.component IS 'What component of the distrorelease that this sourcepackage mirror contains.';
+
+
 

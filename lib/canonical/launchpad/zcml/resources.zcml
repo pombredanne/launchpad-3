@@ -12,6 +12,7 @@
     <!-- App-specific Images -->
     <resource name="rosetta.png" file="../../rosetta/images/rosetta.png" />
     <resource name="soyuz.png" file="../../soyuz/images/soyuz.png" />
+    <resource name="launchpad.png" file="../images/launchpad.png" />
 
     <!-- General Images -->
     <resource name="green-bar.png" file="../images/green-bar.png" />
@@ -23,10 +24,13 @@
 
     <resource name="info.gif" file="../images/info.gif" />
     <resource name="info.png" file="../images/info.png" />
+    <resource name="info_icon.gif" file="../images/info_icon.gif" />
     <resource name="download.png" file="../images/download.png" />
 
     <resource name="arrowBottom.gif" file="../images/arrowBottom.gif" />
     <resource name="arrowDown.gif" file="../images/arrowDown.gif" />
+    <resource name="arrowDownAlternative.gif"
+              file="../images/arrowDownAlternative.gif" />
     <resource name="arrowRight.gif" file="../images/arrowRight.gif" />
     <resource name="arrowBlank.gif" file="../images/arrowBlank.gif" />
     <resource name="treeExpanded.gif" file="../images/treeExpanded.gif" />

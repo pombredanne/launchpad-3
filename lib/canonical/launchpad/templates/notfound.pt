@@ -1,9 +1,11 @@
-<!-- macro commented out for now, until we get our own skin and macros
-     declarations in place -->
-<html xmetal:use-macro="context/@@standard_macros/dialog">
+<html metal:use-macro="context/@@standard_macros/dialog">
+
+<head>
+  <title metal:fill-slot="title">Launchpad Page Not Found</title>
+</head>
 <body>
 
-<div xmetal:fill-slot="body">
+<div metal:fill-slot="body">
 
 <h3  i18n:translate="">
   The page that you are trying to access is not available
@@ -12,10 +14,9 @@
 <b  i18n:translate="">Please note the following:</b>
 <br/>
 <ol>
-   <li i18n:translate=""> You might have miss-spelled the url </li>
-   <li i18n:translate="">
-     You might be trying to access a non-existing page
-   </li>
+   <li i18n:translate="">You might have miss-typed the url.</li>
+   <li i18n:translate="">You might be trying to access a non-existent
+   page.</li>
 </ol>
 </div>
 </body>

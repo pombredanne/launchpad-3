@@ -21,10 +21,12 @@ __metaclass__ = type
 
 # This should be in alphabetical order. please keep it that way.
 __all__ = (
+'EnumCol',
 'ArchArchiveType',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BinaryPackagePriority',
+'BountySubscription',
 'BranchRelationships',
 'BugTaskStatus',
 'BugExternalReferenceType',
@@ -36,18 +38,15 @@ __all__ = (
 'BuildStatus',
 'CodereleaseRelationships',
 'DistributionReleaseState',
-'DistributionRole',
-'DOAPRole',
 'EmailAddressStatus',
 'HashAlgorithms',
 'ImportTestStatus',
-'KarmaField',
+'KarmaType',
 'ManifestEntryType',
-'TeamMembershipRole',
-'TeamMembershipStatus',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'Packaging',
+'GPGKeyAlgorithms',
 'ProjectRelationship',
 'ProjectStatus',
 'RevisionControlSystems',
@@ -57,19 +56,90 @@ __all__ = (
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
+'SourceSourceStatus',
 'SSHKeyType',
+'TeamMembershipStatus',
+'TeamSubscriptionPolicy',
 'TranslationPriority',
+'DistroReleaseQueueStatus',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
+'MirrorFreshness',
 )
 
 from zope.interface.advice import addClassAdvisor
 import sys
+import warnings
 
+from sqlobject.col import SOCol, Col
+from sqlobject.include import validators
+import sqlobject.constraints as consts
+
+class SODBSchemaEnumCol(SOCol):
+
+    def __init__(self, **kw):
+        self.schema = kw.pop('schema')
+        if not issubclass(self.schema, DBSchema):
+            raise TypeError('schema must be a DBSchema: %r' % self.schema)
+        SOCol.__init__(self, **kw)
+        self.validator = validators.All.join(
+            DBSchemaValidator(schema=self.schema), self.validator)
+
+    def autoConstraints(self):
+        return [consts.isInt]
+
+    def _sqlType(self):
+        return 'INT'
+
+class DBSchemaEnumCol(Col):
+    baseClass = SODBSchemaEnumCol
+
+class DBSchemaValidator(validators.Validator):
+
+    def __init__(self, **kw):
+        self.schema = kw.pop('schema')
+        validators.Validator.__init__(self, **kw)
+
+    def fromPython(self, value, state):
+        """Convert from DBSchema Item to int.
+
+        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
+        >>> validator.fromPython(BugTaskStatus.PENDINGUPLOAD, None)
+        25
+        >>> validator.fromPython(ImportTestStatus.NEW, None)
+        Traceback (most recent call last):
+        ...
+        TypeError: DBSchema Item from wrong class
+        >>>
+
+        """
+        if isinstance(value, int):
+            raise TypeError(
+                'Need to set a dbschema Enum column to a dbschema Item,'
+                ' not an int')
+        # Allow this to work in the presence of security proxies.
+        ##if not isinstance(value, Item):
+        if value.__class__ != Item:
+            raise TypeError('Not a DBSchema Item: %r' % value)
+        if value.schema is not self.schema:
+            raise TypeError('DBSchema Item from wrong class')
+        return value.value
+
+    def toPython(self, value, state):
+        """Convert from int to DBSchema Item.
+
+        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
+        >>> validator.toPython(25, None) is BugTaskStatus.PENDINGUPLOAD
+        True
+
+        """
+        return self.schema.items[value]
+
+EnumCol = DBSchemaEnumCol
 
 def docstring_to_title_descr(string):
     """When given a classically formatted docstring, returns a tuple
-    (title, description).
+    (title,x description).
 
     >>> class Foo:
     ...     '''
@@ -123,7 +193,13 @@ class OrderedMapping:
         self.mapping = mapping
 
     def __getitem__(self, key):
-        return self.mapping[key]
+        if key in self.mapping:
+            return self.mapping[key]
+        else:
+            for k, v in self.mapping.iteritems():
+                if v.name == key:
+                    return v
+            raise KeyError, key
 
     def __iter__(self):
         L = self.mapping.items()
@@ -163,7 +239,7 @@ class Item:
             self.description = description
 
     def _setClassFromAdvice(self, cls):
-        self._class = cls
+        self.schema = cls
         names = [k for k, v in cls.__dict__.iteritems() if v is self]
         assert len(names) == 1
         self.name = names[0]
@@ -173,21 +249,31 @@ class Item:
         return cls
 
     def __int__(self):
-        return self.value
+        raise TypeError("Cannot cast Item to int.  Use item.value instead.")
 
     def __str__(self):
         return str(self.value)
 
     def __repr__(self):
-        return "<Item %s (%d) from %s>" % (self.name, self.value, self._class)
+        return "<Item %s (%d) from %s>" % (self.name, self.value, self.schema)
 
-    def __eq__(self, other):
+    def __sqlrepr__(self, dbname):
+        return repr(self.value)
+
+    def __eq__(self, other, stacklevel=2):
         if isinstance(other, int):
-            return self.value == other
-        elif isinstance(other, Item):
-            return self.value == other.value
+            warnings.warn('comparison of DBSchema Item to an int: %r' % self,
+                stacklevel=stacklevel)
+            return False
+        # Cannot use isinstance, because 'other' might be security proxied.
+        ##elif isinstance(other, Item):
+        elif other.__class__ == Item:
+            return self.value == other.value and self.schema == other.schema
         else:
             return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other, stacklevel=3)
 
     def __hash__(self):
         return self.value
@@ -515,37 +601,12 @@ class EmailAddressStatus(DBSchema):
         receiving notifications from Launchpad.
         """)
 
-class TeamMembershipRole(DBSchema):
-    """TeamMembership Role
-
-    Launchpad knows about teams and individuals. People can be a member
-    of many teams, and in each team that they are a member they will
-    have a specific role. These are the kind of roles they could have.
-    """
-
-    ADMIN = Item(1, """
-        Administrator
-
-        The person is an administrator of this team. Typically that means
-        that they can do anything that the owner of the team can do, it is
-        a way for the owner to delegate authority in the team.
-        """)
-
-    MEMBER = Item(2, """
-        Member
-
-        The person is a normal member of the team, and can view and edit
-        objects associated with that team accordingly.
-        """)
-
 class TeamMembershipStatus(DBSchema):
     """TeamMembership Status
 
-    Some teams to not have automatic membership to anybody who wishes to
-    join. In this case, a person can be proposed for membership, and the
-    request can be approved or declined. The status of a membership can
-    be one of these values. The Person.teamowner is always an admin
-    member of the team, they do not need to have a membership record.
+    According to the policies specified by each team, the membership status of
+    a given member can be one of multiple different statuses. More information
+    can be found in the TeamMembership spec.
     """
 
     PROPOSED = Item(1, """
@@ -556,12 +617,68 @@ class TeamMembershipStatus(DBSchema):
         privileges to the person.
         """)
 
-    CURRENT = Item(2, """
-        Current Member
+    APPROVED = Item(2, """
+        Approved Member
 
         This person is currently a member of the team. This status means
-        that the person will have full access as a member or admin, depending
-        on their role.
+        that the person will have full access as a member of the team.
+        """)
+
+    ADMIN = Item(3, """
+        Administrator
+
+        This person is currently an administrator of the team. This status 
+        means that the person will have full access as an administrator of 
+        the team.
+        """)
+
+    DEACTIVATED = Item(4, """
+        Deactivated Member
+
+        Either the member or any of the team's administrators have canceled
+        this subscription.
+        """)
+
+    EXPIRED = Item(5, """
+        Expired Member
+        
+        The period for which this subscription was valid has expired.
+        """)
+
+    DECLINED = Item(6, """
+        Declined Member
+
+        User was proposed as a member but the subscription was not approved.
+        """)
+
+
+class TeamSubscriptionPolicy(DBSchema):
+    """Team Subscription Policies
+
+    The policies that apply to a team and specify how new subscriptions must
+    be handled. More information can be found in the TeamMembershipPolicies
+    spec.
+    """
+
+    MODERATED = Item(1, """
+        Moderated Team
+
+        All subscriptions for this team are subjected to approval by one of
+        the team's administrators.
+        """)
+
+    OPEN = Item(2, """
+        Open Team
+
+        This team is 'Free for All', which means that anyone can join and
+        new subscriptions are not subjected to approval.
+        """)
+
+    RESTRICTED = Item(3, """
+        Restricted Team
+
+        New members can only be added by one of the team's administrators.
+        Users cannot ask to join the team.
         """)
 
 
@@ -789,6 +906,72 @@ class SourcePackageUrgency(DBSchema):
         as possible after appropriate review.
         """)
 
+class SourceSourceStatus(DBSchema):
+    """This schema describes the states that a SourceSource record can take
+    on."""
+
+    DONTSYNC = Item(1, """
+        Do Not Sync
+
+        We do not want to attempt to test or sync this upstream repository
+        or branch. The ProductSeries can be set to DONTSYNC from any state
+        other than SYNCING. Once it is Syncing, it can be STOPPED but should
+        not be set to DONTSYNC. This prevents us from forgetting that we
+        were at one stage SYNCING the ProductSeries.  """)
+
+    TESTING = Item(2, """
+        Testing
+
+        New entries should start in this mode. We will try to import the
+        given upstream branch from CVS or SVN automatically. When / if this
+        ever succeeds it should set the status to AUTOTESTED.  """)
+
+    TESTFAILED = Item(3, """
+        Test Failed
+
+        This sourcesource has failed its test import run. Failures can be
+        indicative of a problem with the RCS server, or a problem with the
+        actual data in their RCS system, or a network error.""")
+
+    AUTOTESTED = Item(4, """
+        Auto Tested
+
+        The automatic testing system ("roomba") has successfully imported
+        and in theory verified its import of the upstream revision control
+        system. This ProductSeries is a definite candidate for manual review
+        and should be switched to PROCESSING.  """)
+
+    PROCESSING = Item(5, """
+        Processing
+
+        This ProductSeries is nearly ready for syncing. We will run it
+        through the official import process, and then manually review the
+        results. If they appear to be correct, then the
+        ProductSeries.bazimportstatus can be set to SYNCING.  """)
+
+    SYNCING = Item(6, """
+        Syncing
+
+        This ProductSeries is in Sync mode and SHOULD NOT BE EDITED OR
+        CHANGED.  At this point, protection of the data related to the
+        upstream revision control system should be extreme, with only
+        launchpad.Special (in this case the buttsource team) able to affect
+        these fields. If it is necessary to stop the syncing then the status
+        must be changed to STOPPED, and not to DONTSYNC.  """)
+
+    STOPPED = Item(7, """
+        Stopped
+
+        This state is used for ProductSeries that were in SYNCING mode and
+        it was necessary to stop the sync activity. For example, when an
+        upstream uses the same branch for versions 1, 2 and 3 of their
+        product, we should put the ProductSeries into STOPPED after each
+        release, create a new ProductSeries for the next version with the
+        same branch details for upstream revision control system. That way,
+        if they go back and branch off the previous release tag, we can
+        amend the previous ProductSeries.  In theory, a STOPPED
+        ProductSeries can be set to Sync again, but this requires serious
+        Bazaar fu, and the buttsource team.  """)
 
 class SourcePackageFileType(DBSchema):
     """Source Package File Type
@@ -804,48 +987,42 @@ class SourcePackageFileType(DBSchema):
 
         This is a Gentoo Ebuild, the core file that Gentoo uses as a source
         package release. Typically this is a shell script that pulls in the
-        upstream tarballs, configures them and builds them into the appropriate
-        locations.
-        """)
+        upstream tarballs, configures them and builds them into the
+        appropriate locations.  """)
 
     SRPM = Item(2, """
         Source RPM
 
         This is a Source RPM, a normal RPM containing the needed source code
         to build binary packages. It would include the Spec file as well as
-        all control and source code files.
-        """)
+        all control and source code files.  """)
 
     DSC = Item(3, """
         DSC File
 
         This is a DSC file containing the Ubuntu source package description,
-        which in turn lists the orig.tar.gz and diff.tar.gz files used to make
-        up the package.
-        """)
+        which in turn lists the orig.tar.gz and diff.tar.gz files used to
+        make up the package.  """)
 
     ORIG = Item(4, """
         Orig Tarball
 
         This file is an Ubuntu "orig" file, typically an upstream tarball or
-        other lightly-modified upstreamish thing.
-        """)
+        other lightly-modified upstreamish thing.  """)
 
     DIFF = Item(5, """
         Diff File
 
-        This is an Ubuntu "diff" file, containing changes that need to be made
-        to upstream code for the packaging on Ubuntu. Typically this diff
-        creates additional directories with patches and documentation used
-        to build the binary packages for Ubuntu.
-        """)
+        This is an Ubuntu "diff" file, containing changes that need to be
+        made to upstream code for the packaging on Ubuntu. Typically this
+        diff creates additional directories with patches and documentation
+        used to build the binary packages for Ubuntu.  """)
 
     TARBALL = Item(6, """
         Tarball
 
         This is a tarball, usually of a mixture of Ubuntu and upstream code,
-        used in the build process for this source package.
-        """)
+        used in the build process for this source package.  """)
 
 
 class TranslationPriority(DBSchema):
@@ -854,65 +1031,58 @@ class TranslationPriority(DBSchema):
     Translations in Rosetta can be assigned a priority. This is used in a
     number of places. The priority stored on the translation itself is set
     by the upstream project maintainers, and used to identify the
-    translations they care most about. For example, if Apache were nearing
-    a big release milestone they would set the priority on those
-    POTemplates to 'high'. The priority is also used by TranslationEfforts
-    to indicate how important that POTemplate is to the effort. And
-    lastly, an individual translator can set the priority on his personal
-    subscription to a project, to determine where it shows up on his list.
-    """
+    translations they care most about. For example, if Apache were nearing a
+    big release milestone they would set the priority on those POTemplates
+    to 'high'. The priority is also used by TranslationEfforts to indicate
+    how important that POTemplate is to the effort. And lastly, an
+    individual translator can set the priority on his personal subscription
+    to a project, to determine where it shows up on his list.  """
 
     HIGH = Item(1, """
         High
 
-        This translation should be shown on any summary list of
-        translations in the relevant context. For example, 'high' priority
-        projects show up on the home page of a TranslationEffort or Project
-        in Rosetta.
+        This translation should be shown on any summary list of translations
+        in the relevant context. For example, 'high' priority projects show
+        up on the home page of a TranslationEffort or Project in Rosetta.
         """)
 
     MEDIUM = Item(2, """
         Medium
 
         A medium priority POTemplate should be shown on longer lists and
-        dropdowns lists of POTemplates in the relevant context.
-        """)
+        dropdowns lists of POTemplates in the relevant context.  """)
 
     LOW = Item(3, """
         Low
 
         A low priority POTemplate should only show up if a comprehensive
-        search or complete listing is requested by the user.
-        """)
+        search or complete listing is requested by the user.  """)
 
 class DistroReleaseQueueStatus(DBSchema):
     """Distro Release Queue Status
 
-    An upload has various stages it must pass through before becoming
-    part of a DistroRelease. These are managed via the DistroReleaseQueue
-    table and related tables and eventually (assuming a successful upload
-    into the DistroRelease) the effects are published via the PackagePublishing
-    and SourcePackagePublishing tables.
-    """
+    An upload has various stages it must pass through before becoming part
+    of a DistroRelease. These are managed via the DistroReleaseQueue table
+    and related tables and eventually (assuming a successful upload into the
+    DistroRelease) the effects are published via the PackagePublishing and
+    SourcePackagePublishing tables.  """
 
     UNCHECKED = Item(1, """
         Unchecked
 
         This upload has been checked enough to get it into the database but
         has yet to be checked for new binary packages, mismatched overrides
-        or similar.
-        """)
+        or similar.  """)
 
     NEW = Item(2, """
         New
 
-        This upload is either a brand-new source package or contains a binary
-        package with brand new debs or similar. The package must sit here until
-        someone with the right role in the DistroRelease checks and either
-        accepts or rejects the upload. If the upload is accepted then
-        entries will be made in the overrides tables and further uploads
-        will bypass this state
-        """)
+        This upload is either a brand-new source package or contains a
+        binary package with brand new debs or similar. The package must sit
+        here until someone with the right role in the DistroRelease checks
+        and either accepts or rejects the upload. If the upload is accepted
+        then entries will be made in the overrides tables and further
+        uploads will bypass this state """)
 
     UNAPPROVED = Item(3, """
         Unapproved
@@ -920,45 +1090,41 @@ class DistroReleaseQueueStatus(DBSchema):
         If a DistroRelease is frozen or locked out of ordinary updates then
         this state is used to mean that while the package is correct from a
         technical point of view; it has yet to be approved for inclusion in
-        this DistroRelease. One use of this state may be for security releases
-        where you want the security team of a DistroRelease to approve uploads.
-        """)
+        this DistroRelease. One use of this state may be for security
+        releases where you want the security team of a DistroRelease to
+        approve uploads.  """)
 
     BYHAND = Item(4, """
         ByHand
 
         If an upload contains files which are not stored directly into the
-        pool tree (I.E. not .orig.tar.gz .tar.gz .diff.gz .dsc .deb or .udeb)
-        then the package must be processed by hand. This may involve unpacking
-        a tarball somewhere special or similar.
-        """)
+        pool tree (I.E. not .orig.tar.gz .tar.gz .diff.gz .dsc .deb or
+        .udeb) then the package must be processed by hand. This may involve
+        unpacking a tarball somewhere special or similar.  """)
 
     ACCEPTED = Item(5, """
         Accepted
 
         An upload in this state has passed all the checks required of it and
-        is ready to have its publishing records created.
-        """)
+        is ready to have its publishing records created.  """)
 
     DONE = Item(7, """
         Done
 
-        An upload in this state has had its publishing records created
-        if it needs them and is fully processed into the
-        DistroRelease. This state exists so that a logging and/or
-        auditing tool can pick up accepted uploads and create entries
-        in a journal or similar before removing the queue item.
-        """)
+        An upload in this state has had its publishing records created if it
+        needs them and is fully processed into the DistroRelease. This state
+        exists so that a logging and/or auditing tool can pick up accepted
+        uploads and create entries in a journal or similar before removing
+        the queue item.  """)
 
     REJECTED = Item(6, """
         Rejected
 
         An upload which reaches this state has, for some reason or another
         not passed the requirements (technical or human) for entry into the
-        DistroRelease it was targetting. As for the 'done' state, this
-        state is present to allow logging tools to record the rejection
-        and then clean up any subsequently unnecessary records.
-        """)
+        DistroRelease it was targetting. As for the 'done' state, this state
+        is present to allow logging tools to record the rejection and then
+        clean up any subsequently unnecessary records.  """)
 
 
 class PackagePublishingStatus(DBSchema):
@@ -983,8 +1149,8 @@ class PackagePublishingStatus(DBSchema):
         Published
 
         This package is currently published as part of the archive for that
-        distrorelease. In general there will only ever be one version of
-        any source/binary package published at any one time. Once a newer
+        distrorelease. In general there will only ever be one version of any
+        source/binary package published at any one time. Once a newer
         version becomes published the older version is marked as superseded.
         """)
 
@@ -992,19 +1158,17 @@ class PackagePublishingStatus(DBSchema):
         Superseded
 
         When a newer version of a [source] package is published the existing
-        one is marked as "superseded".
-        """)
+        one is marked as "superseded".  """)
 
     PENDINGREMOVAL = Item(6, """
         PendingRemoval
 
         Once a package is ready to be removed from the archive is is put
-        into this state and the removal will be acted upon when a period
-        of time has passed. When the package is moved to this state the
-        scheduleddeletiondate column is filled out. When that date has passed
-        the archive maintainance tools will remove the package from the on-disk
-        archive and remove the publishing record.
-        """)
+        into this state and the removal will be acted upon when a period of
+        time has passed. When the package is moved to this state the
+        scheduleddeletiondate column is filled out. When that date has
+        passed the archive maintainance tools will remove the package from
+        the on-disk archive and remove the publishing record.  """)
 
 
 class PackagePublishingPriority(DBSchema):
@@ -1026,35 +1190,30 @@ class PackagePublishingPriority(DBSchema):
     IMPORTANT = Item( 40, """
         Important
 
-        If foo is in a package; and "What is going on?! Where on earth
-        is foo?!?!" would be the reaction of an experienced UNIX
-        hacker were the package not installed, then the package is
-        important.
-        """)
+        If foo is in a package; and "What is going on?! Where on earth is
+        foo?!?!" would be the reaction of an experienced UNIX hacker were
+        the package not installed, then the package is important.  """)
 
     STANDARD = Item( 30, """
         Standard
 
-        Packages at this priority are standard ones you can rely on to be
-        in a distribution. They will be installed by default and provide
-        a basic character-interface userland.
-        """)
+        Packages at this priority are standard ones you can rely on to be in
+        a distribution. They will be installed by default and provide a
+        basic character-interface userland.  """)
 
     OPTIONAL = Item( 20, """
         Optional
 
-        This is the software you might reasonably want to install if you
-        did not know what it was or what your requiredments were. Systems
-        such as X or TeX will live here.
-        """)
+        This is the software you might reasonably want to install if you did
+        not know what it was or what your requiredments were. Systems such
+        as X or TeX will live here.  """)
 
     EXTRA = Item( 10, """
         Extra
 
-        This contains all the packages which conflict with those at the other
-        priority levels; or packages which are only useful to people who have
-        very specialised needs.
-        """)
+        This contains all the packages which conflict with those at the
+        other priority levels; or packages which are only useful to people
+        who have very specialised needs.  """)
 
 class SourcePackageRelationships(DBSchema):
     """Source Package Relationships
@@ -1068,43 +1227,37 @@ class SourcePackageRelationships(DBSchema):
     REPLACES = Item(1, """
         Replaces
 
-        The subject source package was designed to replace the object
-        source package.
-        """)
+        The subject source package was designed to replace the object source
+        package.  """)
 
     REIMPLEMENTS = Item(2, """
         Reimplements
 
-        The subject source package is a completely new packaging of
-        the same underlying products as the object package.
-        """)
+        The subject source package is a completely new packaging of the same
+        underlying products as the object package.  """)
 
     SIMILARTO = Item(3, """
         Similar To
 
-        The subject source package is similar, in that it packages
-        software that has similar functionality to the object package.
-        For example, postfix and exim4 would be "similarto" one
-        another.
-        """)
+        The subject source package is similar, in that it packages software
+        that has similar functionality to the object package.  For example,
+        postfix and exim4 would be "similarto" one another.  """)
 
     DERIVESFROM = Item(4, """
         Derives From
 
-        The subject source package derives from and tracks the object
-        source package. This means that new uploads of the object package
-        should trigger a notification to the maintainer of the subject
-        source package.
-        """)
+        The subject source package derives from and tracks the object source
+        package. This means that new uploads of the object package should
+        trigger a notification to the maintainer of the subject source
+        package.  """)
 
     CORRESPONDSTO = Item(5, """
         Corresponds To
 
-        The subject source package includes the same products as th
-        object source package, but for a different distribution. For
-        example, the "apache2" Ubuntu package "correspondsto" the
-        "httpd2" package in Red Hat.
-        """)
+        The subject source package includes the same products as the object
+        source package, but for a different distribution. For example, the
+        "apache2" Ubuntu package "correspondsto" the "httpd2" package in Red
+        Hat.  """)
 
 
 class BinaryPackageFormat(DBSchema):
@@ -1118,66 +1271,57 @@ class BinaryPackageFormat(DBSchema):
     DEB = Item(1, """
         Ubuntu Package
 
-        This is the binary package format used by Ubuntu and all
-        similar distributions. It includes dependency information
-        to allow the system to ensure it always has all the software
-        installed to make any new package work correctly.
-        """)
+        This is the binary package format used by Ubuntu and all similar
+        distributions. It includes dependency information to allow the
+        system to ensure it always has all the software installed to make
+        any new package work correctly.  """)
 
     UDEB = Item(2, """
         Ubuntu Installer Package
 
-        This is the binary package format use by the installer
-        in Ubuntu and similar distributions.
-        """)
+        This is the binary package format use by the installer in Ubuntu and
+        similar distributions.  """)
 
     EBUILD = Item(3, """
         Gentoo Ebuild Package
 
-        This is the Gentoo binary package format. While Gentoo
-        is primarily known for being a build-it-from-source-yourself
-        kind of distribution, it is possible to exchange binary
-        packages between Gentoo systems.
-        """)
+        This is the Gentoo binary package format. While Gentoo is primarily
+        known for being a build-it-from-source-yourself kind of
+        distribution, it is possible to exchange binary packages between
+        Gentoo systems.  """)
 
     RPM = Item(4, """
         RPM Package
 
-        This is the format used by Mandrake and other similar
-        distributions. It does not include dependency tracking
-        information.
-        """)
+        This is the format used by Mandrake and other similar distributions.
+        It does not include dependency tracking information.  """)
 
 
 class BinaryPackagePriority(DBSchema):
     """Binary Package Priority
 
-    When a binary package is installed in an archive it can be assigned
-    a specific priority. This schema documents the priorities that Launchpad
-    knows about.
-    """
+    When a binary package is installed in an archive it can be assigned a
+    specific priority. This schema documents the priorities that Launchpad
+    knows about.  """
 
     REQUIRED = Item(1, """
         Required Package
 
         This package is required for the distribution to operate normally.
         Usually these are critical core packages that are essential for the
-        correct operation of the operating system.
-        """)
+        correct operation of the operating system.  """)
 
     IMPORTANT = Item(2, """
         Important
 
         This package is important, and should be installed under normal
-        circumstances.
-        """)
+        circumstances.  """)
 
     STANDARD = Item(3, """
         Standard
 
         The typical install of this distribution should include this
-        package.
-        """)
+        package.  """)
 
     OPTIONAL = Item(4, """
         Optional
@@ -1326,6 +1470,14 @@ class BugTaskStatus(DBSchema):
 
         This bug has been reviewed, perhaps verified, and accepted as
         something needing fixing.
+        """)
+
+    PENDINGUPLOAD = Item(25, """
+        PendingUpload
+
+        The source package with the fix has been sent off to the buildds.
+        The bug will be resolved once the newly uploaded package is
+        completed.
         """)
 
     FIXED = Item(30, """
@@ -1596,6 +1748,35 @@ class ArchArchiveType(DBSchema):
         """)
 
 
+class BountySubscription(DBSchema):
+    """A Bounty Subscription.
+
+    This is a way to register interest that someone has in a bounty.
+    """
+
+    WATCH = Item(1, """
+        Watch
+
+        The person wishes to watch this bounty through a web interface. Emails
+        are not required.
+        """)
+
+    CC = Item(2, """
+        CC
+
+        The person wishes to watch this bounty through a web interface and in
+        addition wishes to be notified by email whenever there is activity
+        relating to this bounty.
+        """)
+
+    IGNORE = Item(3, """
+        Ignore
+
+        The person has taken an active decision to ignore this bounty. They do
+        not wish to receive any communications about it.
+        """)
+
+
 class BugSubscription(DBSchema):
     """A Bug Subscription type.
 
@@ -1613,7 +1794,7 @@ class BugSubscription(DBSchema):
         CC
 
         The person wishes to watch this bug through a web interface and in
-        addition wishes to be notified by email whenever their is activity
+        addition wishes to be notified by email whenever there is activity
         relating to this bug.
         """)
 
@@ -1647,85 +1828,6 @@ class RosettaTranslationOrigin(DBSchema):
          This translation was presented to Rosetta via
        the community web site.
          """)
-
-
-class DistributionRole(DBSchema):
-    """Distribution Role
-
-    This schema documents the roles that a person can play in
-    a distribution, other than being a package maintainer.
-    """
-
-    DM = Item (1, """
-        Distro Master
-
-        Oversees all distribution activities.
-        """
-    )
-    SO = Item (2, """
-        Security Overlord
-
-        Ensures no sharp edges are left in the distribution.
-        """
-    )
-    PD = Item (3, """
-        Prophet of Doom
-
-        Makes hand-wavy predictions.
-        """
-    )
-
-class DistroReleaseRole(DBSchema):
-    """Distribution Role
-
-    This schema documents the roles that a person can play in
-    a distribution, other than being a package maintainer.
-    """
-
-    RM = Item (1, """
-        Release Manager
-
-        Distribution Release Manager""")
-    
-    SO = Item (2, """
-        Security Officer
-
-        Distribution Release Manager""")
-
-    BW = Item (3, """
-        Bug Wrangler
-
-        Corrals and keeps the release bugs under control""")
-
-    UB = Item (4, """
-        User Bender
-        
-        Convinces users that it's a feature""")
-
-class DOAPRole(DBSchema):
-    """DOAP Role
-
-    This schema documents the roles that a person can play in
-    a DOAP project. The person might have these roles with
-    regard to the project as a whole or to a specific product
-    of that project."""
-
-    MAINTAINER = Item(1, """
-        Maintainer
-
-        A project or product maintainer is a member of the core
-        team of people who are responsible for that open source
-        work. Maintainers have commit rights to the relevant code
-        repository, and are the ones who sign off on any release.""")
-
-    ADMIN = Item(2, """
-        Administrator
-
-        The project or product administrators for a Launchpad
-        project and product have the same privileges as the
-        project or product owner, except that they cannot appoint
-        more administrators. This allows the project owner to share
-        the load of administration with other individuals.""")
 
 
 class RosettaImportStatus(DBSchema):
@@ -1764,16 +1866,16 @@ class RosettaImportStatus(DBSchema):
         """)
 
 
-class KarmaField(DBSchema):
+class KarmaType(DBSchema):
     # If you add a new Item here, please remember to add it to 
     # canonical.launchpad.database.person.KARMA_POINTS too. 
-    # XXX: This KarmaField is a good candidate for leaving dbschema and
+    # XXX: This KarmaType is a good candidate for leaving dbschema and
     # get into the database.
     """Karma Field
 
     This schema documents the different kinds of Karma that can be
     assigned to a person. A person have a list of assigned Karmas and
-    each of these Karmas have a KarmaField.
+    each of these Karmas have a KarmaType.
     """
 
     WIKI_EDIT = Item(1, """
@@ -1918,4 +2020,16 @@ class BuildStatus(DBSchema):
         to be damaged or bad in some way. The buildd maintainer will have to
         reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
         has been fixed.
+        """)
+
+class MirrorFreshness(DBSchema):
+    """ Mirror Freshness
+
+    This valeu indicates how up-to-date Mirror is.
+    """
+
+    UNKNOWN = Item(99, """
+        Freshness Unknown
+
+        The Freshness was never verified and is unknown.
         """)

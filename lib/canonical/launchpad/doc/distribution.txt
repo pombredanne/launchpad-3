@@ -1,0 +1,32 @@
+Distributions
+=============
+
+From the DerivationOverview spec[1]:
+
+    A distribution of GNU/Linux comprises a set of packages, an installer,
+    possibly a live-CD, some amount of metadata associated with the arrangement
+    of those elements and also a lot of information on managing it.
+
+In Launchpad, one distribution is mapped to one row in the Distribution table.
+To retrieve a distribution, use the IDistributionSet utility. If you've already
+used IPersonSet to retrieve a Person, or IBugTaskSet to retrieve a task, this
+syntax should look familiar.
+
+Let's simulate interacting with the system as an anonymous user:
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('launchpad.anonymous')
+
+The IDistributionSet utility is accessed in the usual fashion:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> distroset = getUtility(IDistributionSet)
+
+To retrieve a specific distribution, use IDistributionSet.get:
+
+    >>> ubuntu = distroset.get(1)
+    >>> print ubuntu.name
+    ubuntu
+
+[1] https://wiki.launchpad.canonical.com/DerivationOverview

@@ -1,0 +1,210 @@
+<tal:do-this-first tal:content="view/processForm" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Members of 
+    <span tal:replace="context/team/browsername" /></title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div id="content" class="documentEditable">
+
+    <div class="documentContent" id="region-content">
+
+      <h1 tal:content="context/person/browsername" />
+
+      <div tal:condition="view/isActive"> 
+
+        <p>This is an <em>Active Member</em> of 
+          <span tal:replace="context/team/browsername" />.
+          In this page you can change the expiration date for this subscription,
+          promote/demote the member to/from the Administrator status, and you
+          can also Deactivate this subscription. You can also leave a comment
+          explaining why you're taking a given action for this subscription.</p>
+
+        <p class="portalMessage" tal:condition="view/errormessage"
+           tal:content="view/errormessage" />
+
+        <form action="" method="POST" name="editactive">
+          <table>
+          <tr>
+            <td style="text-align: right">Member since:</td>
+            <td tal:content="context/datejoined/date" />
+          </tr>
+
+          <tr tal:condition="view/userIsTeamOwner">
+            <td style="text-align: right">Administrator:</td>
+            <td>
+              <tal:block tal:condition="view/isAdmin">
+                <label for="admin">
+                  <input type="radio" value="yes" checked name="admin" id="admin" />
+                  Yes
+                </label>
+                <label for="notadmin">
+                  <input type="radio" value="no" name="admin" id="notadmin" />
+                  No
+                </label>
+              </tal:block>
+              <tal:block tal:condition="not: view/isAdmin">
+                <label for="promote">
+                  <input type="radio" value="yes" name="admin" id="promote" />
+                  Yes
+                </label>
+                <label for="demote">
+                  <input type="radio" value="no" checked name="admin" id="demote" />
+                  No
+                </label>
+              </tal:block>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="text-align: right">Subscription expires in:</td>
+            <td><span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" /></td>
+          </tr>
+
+          <tr>
+            <td style="text-align: right">Comment:</td>
+            <td><textarea cols="40" name="comment" tal:content="request/comment|nothing">
+                </textarea></td>
+          </tr>
+
+          <tr>
+            <td align="left">
+              <input type="submit" value="Deactivate" name="editactive" />
+            </td>
+            <td align="right">
+              <input type="submit" value="Change" name="editactive" />
+            </td>
+          </tr>
+        </table>
+
+        </form>
+      </div>
+
+      <div tal:condition="view/isInactive"> 
+
+        <p tal:condition="view/isExpired">
+          This is an <em>Expired Member</em> of 
+          <span tal:replace="context/team/browsername" />. In this page you
+          can renew its subscription, turning this user into an active
+          member of this team. To do this, just select a new expiration date
+          (leave it blank if you want this subscription to never expire) and
+          click on the Renew button.
+        </p>
+
+        <p tal:condition="view/isDeactivated">
+          This is a <em>Deactivated Member</em> of 
+          <span tal:replace="context/team/browsername" />. In this page you
+          can reactivate its subscription, turning this user into an active
+          member of this team. To do this, just select a expiration date
+          (leave it blank if you want this subscription to never expire) and
+          click on the Reactivate button.
+        </p>
+
+        <p class="portalMessage" tal:condition="view/errormessage"
+           tal:content="view/errormessage" />
+
+        <form action="" method="POST" name="editinactive">
+          <table>
+          <tr>
+            <td style="text-align: right">Became member in:</td>
+            <td tal:content="context/datejoined/date" />
+          </tr>
+
+          <tal:block tal:condition="view/isExpired">
+          <tr>
+            <td>Subscription expired in:</td>
+            <td tal:content="context/dateexpires/date"></td>
+          </tr>
+
+          <tr>
+            <td style="text-align: right">New expiration date:</td>
+            <td><span tal:replace="structure view/dateChooserForExpiredMembers" /></td>
+          </tr>
+          </tal:block>
+
+          <tal:block tal:condition="not: view/isExpired">
+          <tr>
+            <td style="text-align: right">Subscription expires in:</td>
+            <td><span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" /></td>
+          </tr>
+          </tal:block>
+
+          <tr>
+            <td style="text-align: right">Comment:</td>
+            <td><textarea cols="40" name="comment" tal:content="request/comment|nothing">
+                </textarea></td>
+          </tr>
+
+          <tr>
+            <td colspan="2" align="right">
+              <input tal:condition="view/isExpired" type="submit" value="Renew"
+                     name="editinactive" />
+              <input tal:condition="view/isDeactivated" type="submit"
+                     value="Reactivate" name="editinactive" />
+            </td>
+          </tr>
+        </table>
+
+        </form>
+      </div>
+
+      <div tal:condition="view/isProposed"> 
+
+        <p>This user wants to join this team but its subscription must be
+        approved first. Just select the date you want this subscription to
+        expire (leave it blank if you don't want it to expire) and click on
+        Approve if you want this user as a member of this team. Otherwise, if
+        you think this user should not be made a member of this team, just
+        click on the Decline button.</p>
+
+        <p class="portalMessage" tal:condition="view/errormessage"
+           tal:content="view/errormessage" />
+
+        <form action="" method="POST" name="editproposed">
+          <table>
+          <tr>
+            <td style="text-align: right">Join requested in:</td>
+            <td tal:content="context/datejoined/date" />
+          </tr>
+
+          <tr>
+            <td style="text-align: right">Subscription expires in:</td>
+            <td><span tal:replace="structure view/dateChooserForProposedMembers" /></td>
+          </tr>
+
+          <tr>
+            <td style="text-align: right">Comment:</td>
+            <td><textarea cols="40" name="comment" tal:content="request/comment|nothing">
+                </textarea></td>
+          </tr>
+
+          <tr>
+            <td align="left">
+              <input type="submit" value="Decline" name="editproposed" />
+            </td>
+            <td align="right">
+              <input type="submit" value="Approve" name="editproposed" />
+            </td>
+          </tr>
+        </table>
+
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

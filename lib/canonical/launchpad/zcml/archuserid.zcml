@@ -10,4 +10,14 @@
             set_attributes="archuserid" />
     </content>
 
+    <content class="canonical.launchpad.database.ArchUserIDSet">
+        <allow interface="canonical.launchpad.interfaces.IArchUserIDSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ArchUserIDSet"
+        provides="canonical.launchpad.interfaces.IArchUserIDSet">
+        <allow interface="canonical.launchpad.interfaces.IArchUserIDSet" />
+    </securedutility>
+
 </configure>

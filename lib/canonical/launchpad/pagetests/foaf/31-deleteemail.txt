@@ -1,0 +1,21 @@
+  'name16' don't want to use bar.foo@canonical.com on Launchpad. Let's remove
+  it.
+
+  Get the id of the email address we want to delete. 
+
+  >>> from canonical.launchpad.database import EmailAddress
+  >>> id = EmailAddress.byEmail('bar.foo@canonical.com').id
+
+  >>> print http(r"""
+  ... POST /people/name16/+emails HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ...  PREFERRED_EMAIL=&REMOVE_EMAIL=%d&newemail=&password=test&SUBMIT_CHANGES=Submit""" % id)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Thank you for your email changes...
+  ...

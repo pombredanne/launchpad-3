@@ -71,12 +71,18 @@
         />
 
     <adapter
-        for="*"
+        for="basestring"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.FormattersAPI"
         name="fmt"
         />
 
+    <adapter
+        for="types.NoneType"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.NoneFormatter"
+        name="fmt"
+        />
 
     <!-- Authentication. -->
     <utility
@@ -177,6 +183,19 @@
         permission="zope.Public"
         name="+logout"
         />
+
+    <!-- We want the changelog available on the debug view too, so people
+    can see when their patches make it to the dogfood server. -->
+
+    <browser:page
+        layer="canonical.launchpad.layers.DebugLayer"
+        for="canonical.publication.RootObject"
+        name="changelog.html"
+        template="../templates/debug-root-changelog.pt"
+        class="canonical.launchpad.webapp.changelog.ChangeLog"
+        permission="zope.Public"
+        />
+
 
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/defaultFavicon.gif" />

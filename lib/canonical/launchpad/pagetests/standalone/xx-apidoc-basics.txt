@@ -7,7 +7,7 @@ Z3 functional test harnesses.
   >>> try:
   ...     http(r"""
   ... GET /++apidoc++ HTTP/1.1
-  ... """)
+  ... """, handle_errors=False)
   ...     print "Access granted"
   ... except AttributeError:
   ...     print "Access denied"

@@ -6,8 +6,10 @@ from canonical.launchpad.interfaces import IBugSet
 
 class BugSetBase:
     implements(IBugSet, IAddFormCustomization)
+
     def __init__(self, bug=None):
         self.bug = bug
+        self.title = 'A set of Bugs'
 
     def __getitem__(self, id):
         try:

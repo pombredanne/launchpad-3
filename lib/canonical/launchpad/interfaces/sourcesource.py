@@ -107,8 +107,14 @@ class ISourceSourceSet(Interface):
     assigned = Attribute("""Setting this will limit the set to those which are
         connected to any product but the one named 'unassigned'.""")
 
+    title = Attribute('Title')
+
     def __getitem__(sourcesourcename):
         """Return the specified sourcesource object."""
+
+    def search(text=None, state=None):
+        """Return the sourcesource objects matching the state and text given
+        as arguments."""
 
     def filter(sync=None, process=None, tested=None, projecttext=None,
                assigned=None):

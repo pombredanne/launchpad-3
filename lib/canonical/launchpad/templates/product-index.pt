@@ -17,16 +17,17 @@
 
 <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure view/latestBugPortlet" />
-    <div tal:replace="structure view/branchesPortlet" />
+    <div tal:replace="structure view/relatedBountiesPortlet" />
     <div tal:replace="structure view/translationsPortlet" />
+    <div tal:replace="structure view/branchesPortlet" />
     <div tal:condition="python:request.principal and request.principal.id == context.owner.id"
          tal:replace="structure view/milestonePortlet" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-        <div tal:replace="structure view/detailsPortlet" />
-        <div tal:replace="structure view/actionsPortlet" />
-        <div tal:replace="structure view/projectPortlet" />
+    <div tal:replace="structure view/detailsPortlet" />
+    <div tal:replace="structure view/actionsPortlet" />
+    <div tal:replace="structure view/projectPortlet" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main" class="documentContent">
@@ -69,7 +70,7 @@
         <p>Here you can see distribution packages for this upstream product.</p>
 
 		<ul tal:repeat="package context/sourcepackages">
-			<li><a tal:attributes="href string:/soyuz/distros/${package/distro/name}">
+			<li><a tal:attributes="href string:/distros/${package/distro/name}">
             <span tal:replace="package/name">name</span> (<span
             tal:replace="package/distro/name">distro</span>)</a></li>
 		</ul>

@@ -6,8 +6,12 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.Bug">
-        <allow interface="canonical.launchpad.interfaces.IBug" />
-        <require permission="launchpad.AnyPerson" set_schema="canonical.launchpad.interfaces.IBug" />
+        <require
+            permission="launchpad.View"
+            interface="canonical.launchpad.interfaces.IBug" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IBug" />
     </content>
 
     <browser:defaultView
@@ -107,10 +111,10 @@
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bug.BugAddView"
         label="File a Bug on a Package"
-        fields="distribution sourcepackagename title comment owner"
+        fields="distribution sourcepackagename title comment private owner"
         content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
-        keyword_arguments="distribution sourcepackagename title comment owner"
+        keyword_arguments="distribution sourcepackagename title comment private owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/bugs/+product">

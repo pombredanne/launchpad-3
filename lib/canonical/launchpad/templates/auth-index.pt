@@ -4,10 +4,9 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Launchpad Password Reminder</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-<!--     <style type="text/css" media="screen">@import url(rosetta.css);</style> -->
 </head>
 
 <body>
@@ -17,13 +16,14 @@
 
 <tal:block tal:define="result view/getResult" >
 
-<div class="portalMessage" tal:condition="result" tal:content="result"> MESSAGE </div>
+<p class="portalMessage"
+   tal:condition="result"
+   tal:content="result"> MESSAGE </p>
 
-<br>
-<h1> Forgotten your password? </h1>
+<h1>Forgotten your password?</h1>
 
 
-<div  tal:condition="not:view/success">
+<div tal:condition="not:view/success">
 
  <p class="documentDescription">
    Enter your valid registration email address below.  

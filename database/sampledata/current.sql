@@ -7,35 +7,36 @@ SET search_path = public, pg_catalog;
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'person'::pg_catalog.regclass;
 
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (28, 'Celso Providelo', 'Celso', 'Providelo', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 0, '2005-01-10 13:08:28.753737', 'cprov', NULL, '''celso'':1,3 ''providelo'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (29, 'Guilherme Salgado', 'Guilherme', 'Salgado', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 0, '2005-01-10 13:08:28.753737', 'salgado', NULL, '''salgado'':2,4 ''guilherm'':1,3');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (7, 'Andrew Bennetts', 'Andrew', 'Bennetts', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'spiv', NULL, '''andrew'':1,3 ''bennett'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (8, 'James Blackwell', 'James', 'Blackwell', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'jblack', NULL, '''jame'':1,3 ''blackwel'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (25, NULL, NULL, NULL, NULL, 1, 'Launchpad Administrators', 0, '2004-12-13 18:08:27.2609', 'admins', NULL, '');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'kiko', NULL, '''rei'':2,4 ''christian'':1,3');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'limi', NULL, '''limi'':2,4 ''alexand'':1,3');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'carlos', NULL, '''carlo'':1,4 ''marín'':3,6 ''perelló'':2,5');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'daf', NULL, '''harri'':2,4 ''dafydd'':1,3');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (22, 'Stuart Bishop', 'Stuart', 'Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'stub', NULL, '''bishop'':2,4 ''stuart'':1,3');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (23, 'David Allouche', 'David', 'Allouche', NULL, NULL, NULL, 0, '2004-12-09 17:59:07.717254', 'ddaa', NULL, '''david'':1,3 ''allouch'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (24, 'Buttress Source Administrators', NULL, NULL, NULL, 2, 'Ultimate control of the Buttress systems', 666, '2004-12-09 17:59:38.607384', 'buttsource', NULL, '''sourc'':2 ''buttress'':1 ''administr'':3');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (21, 'Hoary Gnome Team', NULL, NULL, NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', 0, '2004-10-12 06:57:28.753737', 'name21', NULL, '''team'':3 ''gnome'':2 ''hoari'':1');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'sabdfl', NULL, '''mark'':1,3 ''shuttleworth'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'name16', NULL, '''bar'':2,4 ''foo'':1,3');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 0, '2004-10-12 06:57:28.753737', 'name17', NULL, '''team'':2 ''ubuntu'':1');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'justdave', NULL, '''dave'':1,3 ''miller'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'jdub', NULL, '''jeff'':1,3 ''waugh'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'stevea', NULL, '''steve'':1,3 ''alexand'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (4, 'Colin Watson', 'Colin', 'Watson', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'kamion', NULL, '''colin'':1,3 ''watson'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (18, 'Ubuntu Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', 0, '2004-10-12 06:57:28.753737', 'name18', NULL, '''team'':3 ''gnome'':2 ''ubuntu'':1');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', 0, '2004-10-12 06:57:28.753737', 'name19', NULL, '''team'':3 ''gnome'':2 ''warti'':1');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', 0, '2004-10-12 06:57:28.753737', 'name20', NULL, '''team'':3 ''secur'':2 ''warti'':1');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (15, 'Lalo Martins', 'Lalo', 'Martins', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'lalo', NULL, '''lalo'':1,3 ''martin'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 30, '2004-10-12 06:57:28.753737', 'name12', NULL, '''sampl'':1,3 ''person'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (2, 'Robert Collins', 'Robert', 'Collins', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'lifeless', NULL, '''collin'':2,4 ''robert'':1,3');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'keybuk', NULL, '''jame'':2,5 ''scott'':1,4 ''remnant'':3,6');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (26, 'Daniel Silverstone', 'Daniel', 'Silverstone', NULL, NULL, NULL, 0, '2004-12-13 18:10:17.294019', 'kinnison', NULL, '''daniel'':1,3 ''silverston'':2,4');
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti) VALUES (27, 'Daniel Henrique Debonzi', 'Daniel', 'Henrique', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 0, '2005-01-10 13:08:28.753737', 'debonzi', NULL, '''daniel'':1,3 ''debonzi'':5 ''henriqu'':2,4');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (21, 'Hoary Gnome Team', NULL, NULL, NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', 0, '2004-10-12 06:57:28.753737', 'name21', NULL, '''team'':3 ''gnome'':2 ''hoari'':1', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'limi', NULL, '''limi'':2,4 ''alexand'':1,3', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (2, 'Robert Collins', 'Robert', 'Collins', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'lifeless', NULL, '''collin'':2,4 ''robert'':1,3', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'sabdfl', NULL, '''mark'':1,3 ''shuttleworth'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (22, 'Stuart Bishop', 'Stuart', 'Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'stub', NULL, '''bishop'':2,4 ''stuart'':1,3', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'name16', NULL, '''bar'':2,4 ''foo'':1,3', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (28, 'Celso Providelo', 'Celso', 'Providelo', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 0, '2005-01-10 13:08:28.753737', 'cprov', NULL, '''celso'':1,3 ''providelo'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (7, 'Andrew Bennetts', 'Andrew', 'Bennetts', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'spiv', NULL, '''andrew'':1,3 ''bennett'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'stevea', NULL, '''steve'':1,3 ''alexand'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (4, 'Colin Watson', 'Colin', 'Watson', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'kamion', NULL, '''colin'':1,3 ''watson'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', 0, '2004-10-12 06:57:28.753737', 'name19', NULL, '''team'':3 ''gnome'':2 ''warti'':1', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (24, 'Buttress Source Administrators', NULL, NULL, NULL, 2, 'Ultimate control of the Buttress systems', 666, '2004-12-09 17:59:38.607384', 'buttsource', NULL, '''sourc'':2 ''buttress'':1 ''administr'':3', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'jdub', NULL, '''jeff'':1,3 ''waugh'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 0, '2004-10-12 06:57:28.753737', 'name17', NULL, '''team'':2 ''ubuntu'':1', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 30, '2004-10-12 06:57:28.753737', 'name12', NULL, '''sampl'':1,3 ''person'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (18, 'Ubuntu Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', 0, '2004-10-12 06:57:28.753737', 'name18', NULL, '''team'':3 ''gnome'':2 ''ubuntu'':1', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'keybuk', NULL, '''jame'':2,5 ''scott'':1,4 ''remnant'':3,6', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (26, 'Daniel Silverstone', 'Daniel', 'Silverstone', NULL, NULL, NULL, 0, '2004-12-13 18:10:17.294019', 'kinnison', NULL, '''daniel'':1,3 ''silverston'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', 0, '2004-10-12 06:57:28.753737', 'name20', NULL, '''team'':3 ''secur'':2 ''warti'':1', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (27, 'Daniel Henrique Debonzi', 'Daniel', 'Henrique', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 0, '2005-01-10 13:08:28.753737', 'debonzi', NULL, '''daniel'':1,3 ''debonzi'':5 ''henriqu'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (29, 'Guilherme Salgado', 'Guilherme', 'Salgado', 'DAJs/l1RrrYFPPd2mBY4b/aFjnTfodXOyg+L+U6uPxUy8rCp/IFC/w==', NULL, NULL, 0, '2005-01-10 13:08:28.753737', 'salgado', NULL, '''salgado'':2,4 ''guilherm'':1,3', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'justdave', NULL, '''dave'':1,3 ''miller'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (8, 'James Blackwell', 'James', 'Blackwell', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'jblack', NULL, '''jame'':1,3 ''blackwel'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (30, 'Rosetta Administrators', NULL, NULL, NULL, 25, 'Rosetta Administrators', 0, '2005-03-07 13:05:56.480934', 'rosetta-admins', NULL, '''rosetta'':1 ''administr'':2', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (31, 'Ubuntu Translators', NULL, NULL, NULL, 30, 'Ubuntu Translators', 0, '2005-03-07 13:05:57.563047', 'ubuntu-translators', NULL, '''ubuntu'':1 ''translat'':2', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'carlos', NULL, '''carlo'':1,4 ''marín'':3,6 ''perelló'':2,5', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'daf', NULL, '''harri'':2,4 ''dafydd'':1,3', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (25, 'Launchpad Administrators', NULL, NULL, NULL, 1, 'Launchpad Administrators', 0, '2004-12-13 18:08:27.2609', 'admins', NULL, '''administr'':2 ''launchpad'':1', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (23, 'David Allouche', 'David', 'Allouche', NULL, NULL, NULL, 0, '2004-12-09 17:59:07.717254', 'ddaa', NULL, '''david'':1,3 ''allouch'':2,4', NULL, NULL, 1);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, 0, '2004-10-12 06:57:28.753737', 'kiko', NULL, '''rei'':2,4 ''christian'':1,3', NULL, NULL, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'person'::pg_catalog.regclass;
@@ -43,12 +44,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'emailaddress'::pg_catalog.regclass;
 
-INSERT INTO emailaddress (id, email, person, status) VALUES (1, 'mark@hbd.com', 1, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (2, 'robertc@robertcollins.net', 2, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (3, 'carlos@canonical.com', 13, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (4, 'daf@canonical.com', 14, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (5, 'lalo@canonical.com', 15, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (6, 'foo.bar@canonical.com', 16, 2);
 INSERT INTO emailaddress (id, email, person, status) VALUES (7, 'steve.alexander@ubuntulinux.com', 11, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (8, 'colin.watson@ubuntulinux.com', 4, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (9, 'scott.james.remnant@ubuntulinux.com', 5, 1);
@@ -57,17 +52,23 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (11, 'james.blackwel
 INSERT INTO emailaddress (id, email, person, status) VALUES (12, 'christian.reis@ubuntulinux.com', 9, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (13, 'jeff.waugh@ubuntulinux.com', 6, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (14, 'dave.miller@ubuntulinux.com', 3, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (15, 'justdave@bugzilla.org', 3, 2);
-INSERT INTO emailaddress (id, email, person, status) VALUES (16, 'test@canonical.com', 12, 2);
 INSERT INTO emailaddress (id, email, person, status) VALUES (17, 'testtest@canonical.com', 12, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (18, 'testtesttest@canonical.com', 12, 3);
-INSERT INTO emailaddress (id, email, person, status) VALUES (19, 'testing@canonical.com', 12, 2);
 INSERT INTO emailaddress (id, email, person, status) VALUES (20, 'stuart.bishop@canonical.com', 22, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (21, 'david.allouche@canonical.com', 23, 2);
 INSERT INTO emailaddress (id, email, person, status) VALUES (22, 'david@canonical.com', 23, 2);
 INSERT INTO emailaddress (id, email, person, status) VALUES (23, 'daniel.debonzi@canonical.com', 27, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (24, 'celso.providelo@canonical.com', 28, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (25, 'guilherme.salgado@canonical.com', 29, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (1, 'mark@hbd.com', 1, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (2, 'robertc@robertcollins.net', 2, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (3, 'carlos@canonical.com', 13, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (4, 'daf@canonical.com', 14, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (6, 'foo.bar@canonical.com', 16, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (21, 'david.allouche@canonical.com', 23, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (5, 'lalo@canonical.com', 15, 3);
+INSERT INTO emailaddress (id, email, person, status) VALUES (15, 'justdave@bugzilla.org', 3, 3);
+INSERT INTO emailaddress (id, email, person, status) VALUES (16, 'test@canonical.com', 12, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (19, 'testing@canonical.com', 12, 2);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'emailaddress'::pg_catalog.regclass;
@@ -85,6 +86,7 @@ INSERT INTO gpgkey (id, person, keyid, fingerprint, pubkey, revoked, algorithm, 
 INSERT INTO gpgkey (id, person, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (8, 7, '1024D/09F89126', 'XVHJ OU77 IYTX 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
 INSERT INTO gpgkey (id, person, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (9, 3, '1024D/09F89127', 'XVHJ OU77 IYTZ 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
 INSERT INTO gpgkey (id, person, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (10, 6, '1024D/09F89120', 'XVHJ OU77 IYTP 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false, 17, 1024);
+INSERT INTO gpgkey (id, person, keyid, fingerprint, pubkey, revoked, algorithm, keysize) VALUES (11, 28, '681B6469', 'C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469', '<-- sample pubkey ??? -->', false, 17, 1024);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'gpgkey'::pg_catalog.regclass;
@@ -159,14 +161,41 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'teammembership'::pg_catalog.regclass;
 
-INSERT INTO teammembership (id, person, team, role, status) VALUES (1, 1, 17, 1, 2);
-INSERT INTO teammembership (id, person, team, role, status) VALUES (2, 11, 17, 2, 2);
-INSERT INTO teammembership (id, person, team, role, status) VALUES (3, 10, 17, 2, 1);
-INSERT INTO teammembership (id, person, team, role, status) VALUES (4, 4, 17, 2, 1);
-INSERT INTO teammembership (id, person, team, role, status) VALUES (5, 7, 17, 2, 1);
-INSERT INTO teammembership (id, person, team, role, status) VALUES (6, 3, 17, 2, 1);
-INSERT INTO teammembership (id, person, team, role, status) VALUES (7, 1, 18, 1, 2);
-INSERT INTO teammembership (id, person, team, role, status) VALUES (8, 6, 18, 2, 2);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (1, 1, 17, 3, '2005-03-03 10:02:53.830191', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (2, 11, 17, 2, '2005-03-03 10:02:53.831231', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (3, 10, 17, 3, '2005-03-03 10:02:53.831725', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (4, 4, 17, 3, '2005-03-03 10:02:53.832216', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (5, 7, 17, 1, '2005-03-03 10:02:53.832809', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (6, 3, 17, 6, '2005-03-03 10:02:53.833299', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (7, 1, 18, 5, '2005-03-03 10:02:53.833759', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (8, 6, 18, 5, '2005-03-03 10:02:53.834248', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (9, 20, 17, 1, '2005-03-03 10:02:53.834789', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (10, 11, 18, 3, '2005-03-03 10:02:53.835303', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (11, 10, 18, 2, '2005-03-03 10:02:53.835792', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (12, 4, 18, 5, '2005-03-03 10:02:53.836299', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (13, 7, 18, 2, '2005-03-03 10:02:53.8368', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (14, 3, 18, 1, '2005-03-03 10:02:53.837284', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (15, 20, 18, 4, '2005-03-03 10:02:53.837789', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (16, 6, 17, 3, '2005-03-03 10:02:53.838301', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (17, 16, 17, 3, '2005-03-03 10:02:53.838806', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (18, 16, 18, 3, '2005-03-03 10:02:53.839322', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (19, 23, 24, 3, '2005-03-03 10:02:53.839822', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (20, 2, 24, 3, '2005-03-03 10:02:53.840339', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (21, 28, 25, 2, '2005-03-03 10:02:53.840813', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (22, 22, 25, 2, '2005-03-03 10:02:53.841292', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (23, 2, 25, 2, '2005-03-03 10:02:53.841836', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (24, 11, 25, 2, '2005-03-03 10:02:53.842335', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (25, 23, 25, 2, '2005-03-03 10:02:53.842821', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (26, 7, 25, 2, '2005-03-03 10:02:53.843319', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (27, 8, 25, 2, '2005-03-03 10:02:53.843811', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (28, 14, 25, 2, '2005-03-03 10:02:53.844315', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (29, 13, 25, 2, '2005-03-03 10:02:53.844834', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (30, 26, 25, 2, '2005-03-03 10:02:53.84533', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (31, 27, 25, 2, '2005-03-03 10:02:53.845844', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (32, 16, 25, 3, '2005-03-03 10:02:53.846352', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (33, 29, 25, 3, '2005-03-03 10:02:53.846864', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (34, 14, 30, 3, '2005-03-07 13:05:57.590333', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (35, 13, 30, 3, '2005-03-07 13:05:57.610314', NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teammembership'::pg_catalog.regclass;
@@ -183,22 +212,54 @@ INSERT INTO teamparticipation (id, team, person) VALUES (6, 17, 3);
 INSERT INTO teamparticipation (id, team, person) VALUES (7, 18, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (8, 18, 6);
 INSERT INTO teamparticipation (id, team, person) VALUES (9, 17, 20);
-INSERT INTO teamparticipation (id, team, person) VALUES (10, 18, 19);
-INSERT INTO teamparticipation (id, team, person) VALUES (11, 18, 21);
-INSERT INTO teamparticipation (id, team, person) VALUES (12, 24, 2);
-INSERT INTO teamparticipation (id, team, person) VALUES (13, 24, 23);
-INSERT INTO teamparticipation (id, team, person) VALUES (14, 25, 22);
-INSERT INTO teamparticipation (id, team, person) VALUES (15, 25, 2);
-INSERT INTO teamparticipation (id, team, person) VALUES (16, 25, 11);
-INSERT INTO teamparticipation (id, team, person) VALUES (17, 25, 23);
-INSERT INTO teamparticipation (id, team, person) VALUES (19, 25, 7);
-INSERT INTO teamparticipation (id, team, person) VALUES (20, 25, 8);
-INSERT INTO teamparticipation (id, team, person) VALUES (21, 25, 14);
-INSERT INTO teamparticipation (id, team, person) VALUES (22, 25, 13);
-INSERT INTO teamparticipation (id, team, person) VALUES (23, 25, 26);
-INSERT INTO teamparticipation (id, team, person) VALUES (24, 25, 27);
-INSERT INTO teamparticipation (id, team, person) VALUES (25, 25, 28);
-INSERT INTO teamparticipation (id, team, person) VALUES (26, 25, 29);
+INSERT INTO teamparticipation (id, team, person) VALUES (10, 18, 11);
+INSERT INTO teamparticipation (id, team, person) VALUES (11, 18, 10);
+INSERT INTO teamparticipation (id, team, person) VALUES (12, 18, 4);
+INSERT INTO teamparticipation (id, team, person) VALUES (13, 18, 7);
+INSERT INTO teamparticipation (id, team, person) VALUES (14, 18, 3);
+INSERT INTO teamparticipation (id, team, person) VALUES (15, 18, 20);
+INSERT INTO teamparticipation (id, team, person) VALUES (16, 17, 6);
+INSERT INTO teamparticipation (id, team, person) VALUES (17, 17, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (18, 18, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (19, 24, 23);
+INSERT INTO teamparticipation (id, team, person) VALUES (20, 24, 2);
+INSERT INTO teamparticipation (id, team, person) VALUES (21, 25, 28);
+INSERT INTO teamparticipation (id, team, person) VALUES (22, 25, 22);
+INSERT INTO teamparticipation (id, team, person) VALUES (23, 25, 2);
+INSERT INTO teamparticipation (id, team, person) VALUES (24, 25, 11);
+INSERT INTO teamparticipation (id, team, person) VALUES (25, 25, 23);
+INSERT INTO teamparticipation (id, team, person) VALUES (26, 25, 7);
+INSERT INTO teamparticipation (id, team, person) VALUES (27, 25, 8);
+INSERT INTO teamparticipation (id, team, person) VALUES (28, 25, 14);
+INSERT INTO teamparticipation (id, team, person) VALUES (29, 25, 13);
+INSERT INTO teamparticipation (id, team, person) VALUES (30, 25, 26);
+INSERT INTO teamparticipation (id, team, person) VALUES (31, 25, 27);
+INSERT INTO teamparticipation (id, team, person) VALUES (32, 25, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (33, 25, 29);
+INSERT INTO teamparticipation (id, team, person) VALUES (34, 30, 14);
+INSERT INTO teamparticipation (id, team, person) VALUES (35, 30, 13);
+INSERT INTO teamparticipation (id, team, person) VALUES (36, 2, 2);
+INSERT INTO teamparticipation (id, team, person) VALUES (37, 5, 5);
+INSERT INTO teamparticipation (id, team, person) VALUES (38, 26, 26);
+INSERT INTO teamparticipation (id, team, person) VALUES (39, 27, 27);
+INSERT INTO teamparticipation (id, team, person) VALUES (40, 29, 29);
+INSERT INTO teamparticipation (id, team, person) VALUES (41, 3, 3);
+INSERT INTO teamparticipation (id, team, person) VALUES (42, 8, 8);
+INSERT INTO teamparticipation (id, team, person) VALUES (43, 10, 10);
+INSERT INTO teamparticipation (id, team, person) VALUES (44, 13, 13);
+INSERT INTO teamparticipation (id, team, person) VALUES (45, 14, 14);
+INSERT INTO teamparticipation (id, team, person) VALUES (46, 23, 23);
+INSERT INTO teamparticipation (id, team, person) VALUES (47, 9, 9);
+INSERT INTO teamparticipation (id, team, person) VALUES (48, 1, 1);
+INSERT INTO teamparticipation (id, team, person) VALUES (49, 15, 15);
+INSERT INTO teamparticipation (id, team, person) VALUES (50, 22, 22);
+INSERT INTO teamparticipation (id, team, person) VALUES (51, 16, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (52, 28, 28);
+INSERT INTO teamparticipation (id, team, person) VALUES (53, 7, 7);
+INSERT INTO teamparticipation (id, team, person) VALUES (54, 6, 6);
+INSERT INTO teamparticipation (id, team, person) VALUES (55, 11, 11);
+INSERT INTO teamparticipation (id, team, person) VALUES (56, 4, 4);
+INSERT INTO teamparticipation (id, team, person) VALUES (57, 12, 12);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teamparticipation'::pg_catalog.regclass;
@@ -232,10 +293,19 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'project'::pg_catalog.regclass;
 
+INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (1, 1, 'ubuntu', 'the Ubuntu Project', 'The Ubuntu Project', 'A community Linux distribution building a slick desktop for the global market. Ubuntu is absolutely free and will stay that way, contains no proprietary application software, always ships with the latest Gnome desktop software and Python integration.', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community, especially the Gnome Project. While the full range of KDE and other desktop environments are available, Ubuntu''s Gnome desktop receives most of the polish and support work done for each release.
+
+Ubuntu also includes work to unify the translation of common open source desktop applications and the tracking of bugs across multiple distributions.', '2004-09-24 20:58:00.633513', 'http://www.ubuntulinux.org/', NULL, NULL, NULL, NULL, false, true, '''os'':54 ''aim'':48 ''bug'':125 ''kde'':84 ''six'':67 ''way'':28 ''also'':108 ''done'':103 ''easi'':57 ''free'':23 ''full'':81 ''larg'':73 ''open'':117 ''rang'':82 ''ship'':35 ''stay'':26 ''work'':102,110 ''alway'':34 ''avail'':90 ''build'':12 ''creat'':50 ''deriv'':61 ''everi'':66 ''gnome'':39,77,93 ''linux'':10 ''month'':68 ''slick'':14 ''sourc'':118 ''track'':123 ''unifi'':112 ''across'':126 ''applic'':32,120 ''common'':116 ''commun'':9,74 ''custom'':59 ''especi'':75 ''freeli'':52 ''global'':18 ''includ'':109 ''integr'':44 ''latest'':38 ''market'':19 ''polish'':99 ''python'':43 ''receiv'':95 ''releas'':65,106 ''ubuntu'':1,3,6,20,46,63,91,107 ''absolut'':22 ''contain'':29 ''desktop'':15,40,87,94,119 ''environ'':88 ''multipl'':127 ''project'':4,7,47,78 ''softwar'':33,41 ''support'':101 ''translat'':114 ''contribut'':70 ''distribut'':11,128 ''proprietari'':31 ''redistribut'':53');
+INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (6, 12, 'iso-codes', 'iso-codes', 'iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.238443', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, false, true, '''bar'':11 ''foo'':10 ''iso'':2,5,8 ''code'':3,6,9 ''iso-cod'':1,4,7');
+INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (3, 2, 'launchpad-mirrors', 'Launchpad SCM Mirrors', 'The Launchpad Mirroring Project', 'launchpad mirrors various revision control archives, that mirroring is managed here', 'A project to mirror revision control archives into Arch.', '2004-09-24 20:58:00.65398', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, false, true, '''scm'':5 ''arch'':30 ''manag'':20 ''revis'':14,26 ''archiv'':16,28 ''mirror'':3,6,9,12,18,25 ''control'':15,27 ''project'':10,23 ''various'':13 ''launchpad'':2,4,8,11 ''launchpad-mirror'':1');
+INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (4, 12, 'mozilla', 'the Mozilla Project', 'The Mozilla Project', 'The Mozilla Project is the largest open source web browser collaborative project. Founded when Netscape released the source code to its pioneering browser in 1999, the Mozilla Project continues to set the standard for web browser technology.', 'The Mozilla Project produces several internet applications that are very widely used, and is also a center for collaboration on internet standards work by open source groups.
+
+The Project now has several popular products, including the Firefox web browser, the Thunderbird mail client and the libraries that enable them to run on many platforms.
+
+Organisationally, the Mozilla Project is hosted by the Mozilla Foundation, a not-for-profit company incorporated in the US.', '2004-09-24 20:58:02.177698', 'http://www.mozilla.org/', NULL, NULL, NULL, NULL, false, true, '''us'':118 ''run'':95 ''set'':38 ''use'':56 ''web'':16,42,82 ''1999'':32 ''also'':59 ''code'':26 ''host'':104 ''mail'':86 ''mani'':97 ''open'':14,69 ''wide'':55 ''work'':67 ''enabl'':92 ''found'':20 ''group'':71 ''sever'':49,76 ''sourc'':15,25,70 ''applic'':51 ''center'':61 ''client'':87 ''includ'':79 ''produc'':48 ''profit'':113 ''releas'':23 ''browser'':17,30,43,83 ''compani'':114 ''continu'':36 ''firefox'':81 ''foundat'':108 ''largest'':13 ''librari'':90 ''mozilla'':1,3,6,9,34,46,101,107 ''netscap'':22 ''organis'':99 ''pioneer'':29 ''popular'':77 ''product'':78 ''project'':4,7,10,19,35,47,73,102 ''collabor'':18,63 ''incorpor'':115 ''internet'':50,65 ''platform'':98 ''standard'':40,66 ''technolog'':44 ''thunderbird'':85 ''not-for-profit'':110');
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (7, 16, 'aaa', 'the Test Project', 'The Test Project', 'This is a small project that has no purpose by to serve as a test data point. The only thing this project has ever produced is products, most of which are largely unheard of. This short description is long enough.', 'Of course, one can''t say enough about the Test Project. Not only is it always there, it''s often exactly in the same state that you saw it last. And it has an amazing ability to pop up in places where you just didn''t think you''d expect to find it. Very noticeable when you least want it noticed, that sort of thing.
 
 It would be very interesting to know whether this second paragraph of text about the test project is in fact rendered as a second paragraph, or if it all blurs together in a haze of testing. Only time will tell.', '2004-10-03 22:27:25.02843', 'http://www.testmenow.com', NULL, NULL, NULL, NULL, false, true, '''d'':96 ''aaa'':1 ''one'':50 ''pop'':85 ''saw'':75 ''say'':53 ''abil'':83 ''amaz'':82 ''blur'':142 ''data'':23 ''didn'':92 ''ever'':31 ''fact'':132 ''find'':99 ''haze'':146 ''know'':119 ''larg'':39 ''last'':77 ''long'':46 ''serv'':19 ''sort'':110 ''tell'':152 ''test'':3,6,22,57,128,148 ''text'':125 ''time'':150 ''want'':106 ''alway'':63 ''cours'':49 ''exact'':68 ''least'':105 ''notic'':102,108 ''often'':67 ''place'':88 ''point'':24 ''short'':43 ''small'':11 ''state'':72 ''thing'':27,112 ''think'':94 ''would'':114 ''enough'':47,54 ''expect'':97 ''produc'':32 ''purpos'':16 ''render'':133 ''second'':122,136 ''togeth'':143 ''product'':34 ''project'':4,7,12,29,58,129 ''unheard'':40 ''whether'':120 ''descript'':44 ''interest'':117 ''paragraph'':123,137');
-INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (6, 12, 'iso-codes', 'iso-codes', 'iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.238443', 'http://www.gnome.org/', NULL, NULL, NULL, NULL, false, true, '''bar'':11 ''foo'':10 ''iso'':2,5,8 ''code'':3,6,9 ''iso-cod'':1,4,7');
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (2, 2, 'do-not-use-info-imports', 'DO NOT USE', 'DO NOT USE', 'DO NOT USE', 'TEMPORARY project till mirror jobs are assigned to correct project', '2004-09-24 20:58:00.637677', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, true, false, '''job'':20 ''use'':4,9,12,15 ''info'':5 ''till'':18 ''assign'':22 ''import'':6 ''mirror'':19 ''correct'':24 ''project'':17,25 ''temporari'':16 ''do-not-use-info-import'':1');
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (5, 12, 'gnome', 'GNOME', 'The GNOME Project', 'The GNOME Project is an initiative to prduce a free desktop software framework. GNOME is more than a set of applications, it is a user interface standard (the Gnome HIG) and a set of libraries that allow applications to work together in a harmonious desktop-ish way.', 'The Gnome Project was founded (when?) to build on the success of early applications using the Gtk GUI toolkit. Many of those applications are still part of Gnome, and the Gtk toolkit remains an essential part of Gnome.
 
@@ -243,15 +313,6 @@ Gnome applications cover the full spectrum from office productivity applications
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (8, 16, 'gimp', 'the GiMP Project', 'The GIMP Project', 'The GIMP Project works in the field of image manipulation and reproduction. The Project is responsible for several pieces of software, such as The GiMP and GiMP-Print.', 'Founded by Spencer Kimball in 1996 with the simple aim of producing a "paint" program, the GIMP project has become one of the defining projects of the open source world. The GIMP itself is an image manipulation program that is beginning to rival even Adobe Photoshop in features and functionality.
 
 The project is loosely organised, with about 15 people making regular contributions. There is no fixed release schedule other than "when it is done".', '2004-10-03 22:27:45.283741', 'http://www.gimp.org/', NULL, NULL, NULL, NULL, false, true, '''15'':94 ''aim'':46 ''fix'':102 ''one'':57 ''1996'':42 ''adob'':81 ''done'':110 ''even'':80 ''gimp'':1,3,6,9,32,35,53,68 ''imag'':16,72 ''loos'':90 ''make'':96 ''open'':64 ''piec'':26 ''work'':11 ''becom'':56 ''begin'':77 ''defin'':60 ''field'':14 ''found'':37 ''paint'':50 ''peopl'':95 ''print'':36 ''rival'':79 ''sever'':25 ''simpl'':45 ''sourc'':65 ''world'':66 ''featur'':84 ''kimbal'':40 ''produc'':48 ''releas'':103 ''manipul'':17,73 ''organis'':91 ''program'':51,74 ''project'':4,7,10,21,54,61,88 ''regular'':97 ''respons'':23 ''schedul'':104 ''softwar'':28 ''spencer'':39 ''function'':86 ''contribut'':98 ''photoshop'':82 ''reproduct'':19 ''gimp-print'':34');
-INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (3, 2, 'launchpad-mirrors', 'Launchpad SCM Mirrors', 'The Launchpad Mirroring Project', 'launchpad mirrors various revision control archives, that mirroring is managed here', 'A project to mirror revision control archives into Arch.', '2004-09-24 20:58:00.65398', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, false, true, '''scm'':5 ''arch'':30 ''manag'':20 ''revis'':14,26 ''archiv'':16,28 ''mirror'':3,6,9,12,18,25 ''control'':15,27 ''project'':10,23 ''various'':13 ''launchpad'':2,4,8,11 ''launchpad-mirror'':1');
-INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (1, 1, 'ubuntu', 'the Ubuntu Project', 'The Ubuntu Project', 'A community Linux distribution building a slick desktop for the global market. Ubuntu is absolutely free and will stay that way, contains no proprietary application software, always ships with the latest Gnome desktop software and Python integration.', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community, especially the Gnome Project. While the full range of KDE and other desktop environments are available, Ubuntu''s Gnome desktop receives most of the polish and support work done for each release.
-
-Ubuntu also includes work to unify the translation of common open source desktop applications and the tracking of bugs across multiple distributions.', '2004-09-24 20:58:00.633513', 'http://www.ubuntulinux.org/', NULL, NULL, NULL, NULL, false, true, '''os'':54 ''aim'':48 ''bug'':125 ''kde'':84 ''six'':67 ''way'':28 ''also'':108 ''done'':103 ''easi'':57 ''free'':23 ''full'':81 ''larg'':73 ''open'':117 ''rang'':82 ''ship'':35 ''stay'':26 ''work'':102,110 ''alway'':34 ''avail'':90 ''build'':12 ''creat'':50 ''deriv'':61 ''everi'':66 ''gnome'':39,77,93 ''linux'':10 ''month'':68 ''slick'':14 ''sourc'':118 ''track'':123 ''unifi'':112 ''across'':126 ''applic'':32,120 ''common'':116 ''commun'':9,74 ''custom'':59 ''especi'':75 ''freeli'':52 ''global'':18 ''includ'':109 ''integr'':44 ''latest'':38 ''market'':19 ''polish'':99 ''python'':43 ''receiv'':95 ''releas'':65,106 ''ubuntu'':1,3,6,20,46,63,91,107 ''absolut'':22 ''contain'':29 ''desktop'':15,40,87,94,119 ''environ'':88 ''multipl'':127 ''project'':4,7,47,78 ''softwar'':33,41 ''support'':101 ''translat'':114 ''contribut'':70 ''distribut'':11,128 ''proprietari'':31 ''redistribut'':53');
-INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti) VALUES (4, 12, 'mozilla', 'the Mozilla Project', 'The Mozilla Project', 'The Mozilla Project is the largest open source web browser collaborative project. Founded when Netscape released the source code to its pioneering browser in 1999, the Mozilla Project continues to set the standard for web browser technology.', 'The Mozilla Project produces several internet applications that are very widely used, and is also a center for collaboration on internet standards work by open source groups.
-
-The Project now has several popular products, including the Firefox web browser, the Thunderbird mail client and the libraries that enable them to run on many platforms.
-
-Organisationally, the Mozilla Project is hosted by the Mozilla Foundation, a not-for-profit company incorporated in the US.', '2004-09-24 20:58:02.177698', 'http://www.mozilla.org/', NULL, NULL, NULL, NULL, false, true, '''us'':118 ''run'':95 ''set'':38 ''use'':56 ''web'':16,42,82 ''1999'':32 ''also'':59 ''code'':26 ''host'':104 ''mail'':86 ''mani'':97 ''open'':14,69 ''wide'':55 ''work'':67 ''enabl'':92 ''found'':20 ''group'':71 ''sever'':49,76 ''sourc'':15,25,70 ''applic'':51 ''center'':61 ''client'':87 ''includ'':79 ''produc'':48 ''profit'':113 ''releas'':23 ''browser'':17,30,43,83 ''compani'':114 ''continu'':36 ''firefox'':81 ''foundat'':108 ''largest'':13 ''librari'':90 ''mozilla'':1,3,6,9,34,46,101,107 ''netscap'':22 ''organis'':99 ''pioneer'':29 ''popular'':77 ''product'':78 ''project'':4,7,10,19,35,47,73,102 ''collabor'':18,63 ''incorpor'':115 ''internet'':50,65 ''platform'':98 ''standard'':40,66 ''technolog'':44 ''thunderbird'':85 ''not-for-profit'':110');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'project'::pg_catalog.regclass;
@@ -262,13 +323,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'projectrelationship'
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'projectrelationship'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'projectrole'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'projectrole'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'product'::pg_catalog.regclass;
@@ -283,7 +337,7 @@ INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, 
 INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate) VALUES (9, 5, 16, 'applets', 'Gnome Applets', 'The Gnome Panel Applets', 'The Gnome Panel Applets are a collection of standard widgets that can be installed on your desktop Panel. These icons act as launchers for applications, or indicators of the status of your machine. For example, panel applets exist to show you your battery status or wifi network signal strength.', 'This is the collection of Panel Applets that is part of the default Gnome release. Additional Panel Applets are available from third parties. A complete set of Panel Applets is included in the Ubuntu OS, for example.
 
 The Gnome Panel team includes Abel Kascinsky, Frederick Wurst and Andreas Andropovitch Axelsson.', '2004-10-03 16:46:09.113721', 'http://www.gnome.org/panel/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''os'':91 ''act'':28 ''set'':82 ''abel'':99 ''icon'':27 ''part'':66 ''show'':47 ''team'':97 ''wifi'':53 ''addit'':72 ''avail'':76 ''exist'':45 ''gnome'':2,5,9,70,95 ''indic'':34 ''panel'':6,10,25,43,62,73,84,96 ''parti'':79 ''third'':78 ''wurst'':102 ''andrea'':104 ''applet'':1,3,7,11,44,63,74,85 ''applic'':32 ''exampl'':42,93 ''includ'':87,98 ''instal'':21 ''machin'':40 ''releas'':71 ''signal'':55 ''status'':37,51 ''ubuntu'':90 ''widget'':17 ''batteri'':50 ''collect'':14,60 ''complet'':81 ''default'':69 ''desktop'':24 ''network'':54 ''axelsson'':106 ''launcher'':30 ''standard'':16 ''strength'':56 ''frederick'':101 ''kascinski'':100 ''andropovitch'':105', false);
-INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate) VALUES (1, 1, 1, 'ubuntu', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''box'':43 ''set'':16 ''six'':59 ''use'':22 ''come'':61 ''easi'':6 ''free'':74 ''give'':34 ''make'':51 ''mind'':68 ''peac'':66 ''work'':39 ''avail'':71 ''charg'':76 ''everi'':58 ''gnome'':46 ''linux'':11,30 ''month'':60 ''readi'':20 ''secur'':63 ''updat'':57,64 ''applic'':19,48 ''immedi'':23,54 ''instal'':8,25,38 ''recent'':45 ''ubuntu'':1,2,3,26,55 ''absolut'':73 ''complet'':15 ''desktop'':18,29,47 ''product'':53 ''version'':9 ''configur'':49 ''everywher'':72 ''girlfriend'':36 ''easy-to-instal'':5', false);
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate) VALUES (1, 1, 17, 'ubuntu', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''box'':43 ''set'':16 ''six'':59 ''use'':22 ''come'':61 ''easi'':6 ''free'':74 ''give'':34 ''make'':51 ''mind'':68 ''peac'':66 ''work'':39 ''avail'':71 ''charg'':76 ''everi'':58 ''gnome'':46 ''linux'':11,30 ''month'':60 ''readi'':20 ''secur'':63 ''updat'':57,64 ''applic'':19,48 ''immedi'':23,54 ''instal'':8,25,38 ''recent'':45 ''ubuntu'':1,2,3,26,55 ''absolut'':73 ''complet'':15 ''desktop'':18,29,47 ''product'':53 ''version'':9 ''configur'':49 ''everywher'':72 ''girlfriend'':36 ''easy-to-instal'':5', false);
 INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real proejcts ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''asap'':26 ''move'':22 ''real'':12,24 ''sync'':3,5,6,15 ''still'':7 ''assign'':9 ''process'':19 ''product'':13 ''proejct'':25 ''unassign'':1,2,4,14', false);
 INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate) VALUES (10, NULL, 2, 'python-gnome2-dev', 'python gnome2 dev', 'python gnome2 dev', 'Python bindings for the GNOME desktop environment', 'Python bindings for the GNOME desktop environment', '2004-09-24 20:58:00.674409', 'http://www.daa.com.au/~james/software/pygtk/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''dev'':4,7,10 ''bind'':12,19 ''gnome'':15,22 ''gnome2'':3,6,9 ''python'':2,5,8,11,18 ''desktop'':16,23 ''environ'':17,24 ''python-gnome2-dev'':1', false);
 INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''web'':9,14 ''browser'':10,15 ''firefox'':1,3,5,8,13 ''mozilla'':2,4,7,12', false);
@@ -297,13 +351,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productlabel'::pg_ca
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productlabel'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productrole'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productrole'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productseries'::pg_catalog.regclass;
@@ -359,6 +406,125 @@ INSERT INTO productrelease (id, product, datereleased, "version", title, descrip
 ', NULL, 16, 'This was a security fix release for 0.9.', 1, NULL);
 INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries, manifest) VALUES (1, 4, '2004-06-28 00:00:00', '0.8', NULL, NULL, NULL, 12, NULL, NULL, NULL);
 INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries, manifest) VALUES (2, 8, '2004-06-28 00:00:00', '0.8', NULL, NULL, NULL, 12, NULL, NULL, NULL);
+INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries, manifest) VALUES (6, 5, '2005-02-28 00:00:00', '2.1.6', NULL, NULL, 'Bugzilla bugs fixed (see http://bugzilla.ximian.com/show_bug.cgi):
+
+ * Addressbook
+   #73005 - Cannot cancel ''Contact List Editor'' (Siva)
+   #73005 - offline - setting/unsetting folder offline property is not working (Sushma)
+   #70371 - Evolution crashes when adding contact list (Siva)
+   #67724 - When unix user name, callendar points to old username (Siva)
+   #54825 - Freeze on .vcf import from MacOS X AddressBook (Christophe Fergeau)
+   #73013 - ''Right'' click on a ''Contact'' cannot select ''Cut'' (Siva)
+
+ * Calendar
+   #72958 - Unable to send delayed meeting (Chen)
+   #72006 - Opened existing appointments with attachment - press cancel - popup info with save / discard / cancel changes (Chen)
+   #63866 - Same name can be entered twice in invitations tab (JP)
+   #67714 - Invitations Tab Allows Entry Of Empty Line (JP)
+   #62089 - adding contact lists to meetings impossible (JP)
+   #47747 - Changes to attendee not updated until click on different row (JP)
+   #61495 - Existing text is placed off screen when editing attendee field (JP)
+   #28947 - adding contact list to attendee list should expand it (JP)
+   #67724 - When unix user name, callendar points to old username (Siva)
+   #72038 - Changes meeting to appoinment after throwing warning invalid mail id (Rodrigo)
+   #69556 - Crash attaching mime parts to calendar events (Harish)
+
+ * Mail
+   #66126 - attach File Chooser is modal (Michael)
+   #68549 - Answering to Usenet article doesn''t consider the "Followup-To:" field (Michael)
+   #71003 - threads still running at exit (Michael)
+   #62109 - Inconsistent ways of determining 8-bit Subject: and From: header charsets (Jeff)
+   #34153 - Confusing Outbox semantics for deleted outgoing messages (Michael)
+   #71528 - Search Selection Widget Has Repeated Items (Michael)
+   #71967 - Evolution delete mail from POP3 server even is checked the option "leave the mail on server (Michael)
+   #40515 - Signature scripts do not allow switches (Michael)
+   #68866 - Forward button doesn''t put newline between headers and body (Michael)
+   #35219 - flag-for-followup crufting (Michael)
+   #64987 - Go to next unread message doesn''t work when multiple messages are selected (Michael)
+   #72337 - Evolution crashes if I click OK/Cancel on the password dialog after disabling the IMAP account (Michael)
+   #70718 - Next and previous buttons don''t realize there''s new mail (Michael)
+   #61363 - Setup wizard, IMAP for receiving server, sending default GW (Michael)
+   #70795 - Next/Previous Message Should Only Display Listed Emails (Michael)
+   #23822 - no copy text option when right-clicking on marked mail text (Rodney)
+   #72266 - You shouldn''t be able to open more than one ''Select Folder'' dialog in the mail filters (Michael)
+   #71429 - on NLD, menus in wrong order (Michae)l
+   #72228 - cannot store into groupwise sent folder (Michael)
+   #72209 - Evolution is crashing when you move a VFolder to a folder ''on this computer'' (Michael)
+   #72275 - Can''t use Shift+F10 to popup context menu for link in message (Harry Lu)
+   #54503 - "New" dropdown menu on toolbar has wrong widget style (Rodney)
+   #72676 - Saved filter rule can''t be modified if it is selected with GOK. (Harry Lu)
+
+ * SMIME
+   #68592 - "Backup" buttons in certificate settings does nothing - work around (Michael)
+
+ * Shell
+   #33287 - "send/receive" button not greyed out when starting offline (JP)
+   #48868 - Status bar changes its height when fonts are large (William Jon McCann)
+
+ * Plugins
+   #71527 - Save Calendar widget mixup between directory and file (Rodrigo)
+
+Other bugs
+
+ * Addressbook
+   - Use new categories dialog in contact editor (Rodrigo)
+   - HIG spacing fixes (Rodney)
+   - Display warning dialog when GW server is old (Vivek)
+
+ * Calendar
+   - Always ensure default sources are available (Siva)
+   - Don''t look up free/busy unless we need to (Harish)
+   - Make sure new events don''t display twice (Chen)
+   - Make sure double click opens attachments (Chen)
+
+ * Mail
+   - a11y fixes for composer (Harry Lu)
+   - Use gnome-vfs API to launch external applications (Marco Pesenti Gritti)
+   - New mailer context menus for messages (Rodney)
+
+ * Shell
+   - Fix leak (JP)
+   - Use gnome-vfs API to open quick reference (Marco Pesenti Gritti)
+
+ * Plugins
+   - Make e-popup more robust (Michael)
+   - Cleanup authors/descriptions (Björn Torkelsson)
+   - out of office exchange fixes (Sushma)
+   - retry send options if invalid session string (Chen)
+   - set proper default port for shared folders (Vivek)
+
+ * Miscellaneous
+   - BSD runtime linking fixes (Hans)
+   - distclean fixes (Björn Torkelsson)
+
+Updated translations:
+   - et (Priit Laes)
+   - el (Kostas Papadimas, Nikos Charonitakis)
+   - sv (Christian Rose)
+   - es (Francisco Javier F. Serrador)
+   - it (Luca Ferretti, Marco Ciampa)
+   - da (Martin Willemoes Hansen)
+   - ca (Josep Puigdemont, Xavi Conde)
+   - nb (Kjartan Maraas)
+   - no (Kjartan Maraas)
+   - ru (Leonid Kanter)
+   - gu (Ankit Patel)
+   - cs (Miloslav Trmac)
+   - nl (Vincent van Adrighem)
+   - fi (Ilkka Tuohela)
+   - pt (Duarte Loreto)
+   - uk (Maxim Dziumanenko)
+   - ko (Changwoo Ryu)
+   - de (Frank Arnold)
+   - fr (Vincent Carriere)
+   - en_CA (Adam Weinberger)
+   - cs (Miloslav Trmac)
+   - pl (Artur Flinta)
+   - bg (Vladimir Petkov)
+   - ja (Takeshi AIHANA)
+   - en_GB (David Lodge)
+   - en_CA (Adam Weinberger)
+   - lt (Zygimantas Berucka)', 12, NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productrelease'::pg_catalog.regclass;
@@ -498,15 +664,16 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifest'::pg_catalog.regclass;
 
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (1, '2004-06-29 00:00:00', 1, '1');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (2, '2004-06-30 00:00:00', 11, '2');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (3, '2004-07-01 00:00:00', 7, '3');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (4, '2004-07-02 00:00:00', 3, '4');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (5, '2004-07-03 00:00:00', 8, '5');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (6, '2004-07-04 00:00:00', 9, '6');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (7, '2004-07-05 00:00:00', 10, '7');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (8, '2004-06-29 00:00:00', 12, '8');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (9, '2004-06-29 00:00:00', 12, '9');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (1, '2004-06-29 00:00:00', '1');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (2, '2004-06-30 00:00:00', '2');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (3, '2004-07-01 00:00:00', '3');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (4, '2004-07-02 00:00:00', '4');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (5, '2004-07-03 00:00:00', '5');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (6, '2004-07-04 00:00:00', '6');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (7, '2004-07-05 00:00:00', '7');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (8, '2004-06-29 00:00:00', '8');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (9, '2004-06-29 00:00:00', '9');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (14, '2005-03-24 00:00:00', 'e0451064-b405-4f52-b387-ebfc1a7ee297');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifest'::pg_catalog.regclass;
@@ -602,20 +769,6 @@ Environment as its default desktop after install.');
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distribution'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distributionrole'::pg_catalog.regclass;
-
-INSERT INTO distributionrole (person, distribution, role, id) VALUES (1, 1, 1, 1);
-INSERT INTO distributionrole (person, distribution, role, id) VALUES (11, 1, 1, 2);
-INSERT INTO distributionrole (person, distribution, role, id) VALUES (10, 1, 1, 3);
-INSERT INTO distributionrole (person, distribution, role, id) VALUES (7, 1, 1, 4);
-INSERT INTO distributionrole (person, distribution, role, id) VALUES (5, 1, 1, 5);
-INSERT INTO distributionrole (person, distribution, role, id) VALUES (17, 1, 3, 6);
-INSERT INTO distributionrole (person, distribution, role, id) VALUES (18, 1, 3, 7);
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distributionrole'::pg_catalog.regclass;
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrorelease'::pg_catalog.regclass;
 
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc, displayname) VALUES (1, 1, 'warty', 'The Warty Warthog
@@ -626,11 +779,7 @@ Ubuntu itself. Warty includes excellent support for Python, with most of the
 widely used Python libraries installed by default.', '4.10', 1, 1, 3, '2004-08-20 00:00:00', NULL, 1, NULL, 'Warty is the first release of Ubuntu,
 with a planned release date of October 2004.', 'warty');
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc, displayname) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 1, 1, 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH', 'six');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc, displayname) VALUES (3, 1, 'hoary', 'The Hoary
-Hedgehod Release', 'Hoary is the second release of Ubuntu. Key feature goals
-include the integration of Hoary with the Launchpad for bugs and translation
-information, as well as Gnome 2.10 and the X.org window system.', '5.04', 1, 1, 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of
-Ubuntu, with release planned for April 2005.', 'hoary');
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc, displayname) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 1, 1, 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'hoary');
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc, displayname) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 1, 1, 3, '2004-04-01 00:00:00', 2, 7, NULL, 'The release that we would not expect', '7.0');
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc, displayname) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 1, 1, 4, '2003-01-01 00:00:00', NULL, 2, NULL, 'WOODY is the current stable verison of Debian GNU/Linux', 'woody');
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc, displayname) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 1, 1, 3, '2004-09-29 00:00:00', 6, 5, NULL, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'sarge');
@@ -644,25 +793,10 @@ Ubuntu, planned for October 2005.', 'grumpy');
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrorelease'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleaserole'::pg_catalog.regclass;
-
-INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (1, 1, 1, 1);
-INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (1, 3, 1, 2);
-INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (1, 5, 1, 3);
-INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (11, 1, 2, 4);
-INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (11, 3, 2, 5);
-INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (11, 5, 3, 6);
-INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (20, 1, 4, 7);
-INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (19, 1, 4, 8);
-INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (21, 3, 4, 9);
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleaserole'::pg_catalog.regclass;
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroarchrelease'::pg_catalog.regclass;
 
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", chroot) VALUES (1, 1, 1, 'i386', 1, NULL);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", chroot) VALUES (6, 3, 1, 'i386', 1, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroarchrelease'::pg_catalog.regclass;
@@ -693,6 +827,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagename'::
 
 INSERT INTO sourcepackagename (id, name) VALUES (1, 'mozilla-firefox-dummy');
 INSERT INTO sourcepackagename (id, name) VALUES (9, 'evolution');
+INSERT INTO sourcepackagename (id, name) VALUES (14, 'pmount');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagename'::pg_catalog.regclass;
@@ -704,6 +839,7 @@ INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, dis
 	K-Meleon and Camino, but written using the XUL user interface language and 
 	designed to lightweight and cross-platform.', NULL, 3, 1, 1, '''k'':18 ''use'':24 ''web'':3 ''xul'':26 ''user'':27 ''cross'':36 ''camino'':21 ''compon'':13 ''design'':31 ''galeon'':16 ''meleon'':19 ''browser'':4,12 ''firefox'':2,5 ''languag'':29 ''mozilla'':1,11 ''similar'':14 ''written'':23 ''interfac'':28 ''k-meleon'':17 ''platform'':37 ''redesign'':8 ''lightweight'':33 ''cross-platform'':35');
 INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat, fti) VALUES (9, 1, 'Evolution-Dummy', 'This is evolution sample data package', NULL, 1, 9, 1, '''data'':8 ''dummi'':3 ''sampl'':7 ''evolut'':2,6 ''packag'':9 ''evolution-dummi'':1');
+INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat, fti) VALUES (17, 1, 'pmount shortdesc', 'pmount description', 14, 1, 14, 1, '''pmount'':1,3 ''descript'':4 ''shortdesc'':2');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackage'::pg_catalog.regclass;
@@ -736,6 +872,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagerelease
 
 INSERT INTO sourcepackagerelease (id, sourcepackage, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename) VALUES (14, 1, 1, '0.9', '2004-09-27 11:57:13', 1, 1, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4)', NULL, NULL, 1, NULL, 1, 1);
 INSERT INTO sourcepackagerelease (id, sourcepackage, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename) VALUES (15, 9, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 9);
+INSERT INTO sourcepackagerelease (id, sourcepackage, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename) VALUES (20, 17, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, 14, 1, 14);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagerelease'::pg_catalog.regclass;
@@ -752,6 +889,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagepublish
 
 INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 15, 2, 2, 1, 1, '2004-09-27 11:57:13', NULL);
 INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 14, 2, 1, 1, 1, '2004-09-27 11:57:13', NULL);
+INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (3, 15, 2, 3, 1, 1, '2004-09-27 11:57:13', NULL);
+INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (3, 20, 2, 8, 1, 1, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagepublishing'::pg_catalog.regclass;
@@ -760,6 +899,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'build'::pg_catalog.regclass;
 
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (2, '2004-09-27 11:57:13', 1, 1, 1, '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, 'Sample changes :)....', 14);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (7, '2005-03-24 00:00:00', 1, 6, 1, NULL, NULL, NULL, NULL, NULL, 'changes', 20);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'build'::pg_catalog.regclass;
@@ -768,6 +908,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackagename'::pg_catalog.regclass;
 
 INSERT INTO binarypackagename (id, name) VALUES (8, 'mozilla-firefox-dummy');
+INSERT INTO binarypackagename (id, name) VALUES (13, 'pmount');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackagename'::pg_catalog.regclass;
@@ -776,6 +917,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackage'::pg_catalog.regclass;
 
 INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 1, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox-dummy', NULL, NULL, NULL, NULL, true, '''web'':3,7 ''browser'':4,8 ''firefox'':2,6 ''mozilla'':1,5');
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 4, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1,3 ''descript'':4 ''shortdesc'':2');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackage'::pg_catalog.regclass;
@@ -791,6 +933,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packagepublishing'::pg_catalog.regclass;
 
 INSERT INTO packagepublishing (id, binarypackage, distroarchrelease, component, section, priority, scheduleddeletiondate, status, datepublished) VALUES (9, 12, 1, 1, 1, 1, NULL, 2, NULL);
+INSERT INTO packagepublishing (id, binarypackage, distroarchrelease, component, section, priority, scheduleddeletiondate, status, datepublished) VALUES (11, 15, 6, 1, 1, 4, NULL, 2, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packagepublishing'::pg_catalog.regclass;
@@ -831,111 +974,25 @@ INSERT INTO pomsgid (id, msgid) VALUES (9, 'This addressbook could not be opened
 INSERT INTO pomsgid (id, msgid) VALUES (10, 'This addressbook server might unreachable or the server name may be misspelled or your network connection could be down.');
 INSERT INTO pomsgid (id, msgid) VALUES (11, 'Failed to authenticate with LDAP server.');
 INSERT INTO pomsgid (id, msgid) VALUES (12, 'Check to make sure your password is spelled correctly and that you are using a supported login method. Remember that many passwords are case sensitive; your caps lock might be on.');
-INSERT INTO pomsgid (id, msgid) VALUES (13, 'This addressbook server does not have any suggested search bases.');
-INSERT INTO pomsgid (id, msgid) VALUES (14, 'This LDAP server may use an older version of LDAP, which does not support this functionality or it may be misconfigured. Ask your administrator for supported search bases.');
-INSERT INTO pomsgid (id, msgid) VALUES (15, 'This server does not support LDAPv3 schema information.');
-INSERT INTO pomsgid (id, msgid) VALUES (16, 'Could not get schema information for LDAP server.');
-INSERT INTO pomsgid (id, msgid) VALUES (17, 'LDAP server did not respond with valid schema information.');
-INSERT INTO pomsgid (id, msgid) VALUES (18, 'Could not remove addressbook.');
-INSERT INTO pomsgid (id, msgid) VALUES (19, '{0}');
-INSERT INTO pomsgid (id, msgid) VALUES (20, 'Category editor not available.');
-INSERT INTO pomsgid (id, msgid) VALUES (21, '{1}');
-INSERT INTO pomsgid (id, msgid) VALUES (22, 'Unable to open addressbook');
-INSERT INTO pomsgid (id, msgid) VALUES (23, 'Error loading addressbook.');
-INSERT INTO pomsgid (id, msgid) VALUES (24, 'Unable to perform search.');
-INSERT INTO pomsgid (id, msgid) VALUES (25, 'Would you like to save your changes?');
-INSERT INTO pomsgid (id, msgid) VALUES (26, 'You have made modifications to this contact. Do you want to save these changes?');
-INSERT INTO pomsgid (id, msgid) VALUES (27, '_Discard');
-INSERT INTO pomsgid (id, msgid) VALUES (28, 'Cannot move contact.');
-INSERT INTO pomsgid (id, msgid) VALUES (29, 'You are attempting to move a contact from one addressbook to another but it cannot be removed from the source. Do you want to save a copy instead?');
-INSERT INTO pomsgid (id, msgid) VALUES (30, 'Unable to save contact(s).');
-INSERT INTO pomsgid (id, msgid) VALUES (31, 'Error saving contacts to {0}: {1}');
-INSERT INTO pomsgid (id, msgid) VALUES (32, 'The Evolution addressbook has quit unexpectedly.');
-INSERT INTO pomsgid (id, msgid) VALUES (33, 'Your contacts for {0} will not be available until Evolution is restarted.');
-INSERT INTO pomsgid (id, msgid) VALUES (34, 'Default Sync Address:');
-INSERT INTO pomsgid (id, msgid) VALUES (35, 'Could not load addressbook');
-INSERT INTO pomsgid (id, msgid) VALUES (36, 'Could not read pilot''s Address application block');
-INSERT INTO pomsgid (id, msgid) VALUES (37, '*Control*F2');
-INSERT INTO pomsgid (id, msgid) VALUES (38, 'Autocompletion');
-INSERT INTO pomsgid (id, msgid) VALUES (39, 'C_ontacts');
-INSERT INTO pomsgid (id, msgid) VALUES (40, 'Certificates');
-INSERT INTO pomsgid (id, msgid) VALUES (41, 'Configure autocomplete here');
-INSERT INTO pomsgid (id, msgid) VALUES (42, 'Contacts');
-INSERT INTO pomsgid (id, msgid) VALUES (43, 'Evolution Addressbook');
-INSERT INTO pomsgid (id, msgid) VALUES (44, 'Evolution Addressbook address pop-up');
-INSERT INTO pomsgid (id, msgid) VALUES (45, 'Evolution Addressbook address viewer');
-INSERT INTO pomsgid (id, msgid) VALUES (46, 'Evolution Addressbook card viewer');
-INSERT INTO pomsgid (id, msgid) VALUES (47, 'Evolution Addressbook component');
-INSERT INTO pomsgid (id, msgid) VALUES (48, 'Evolution S/Mime Certificate Management Control');
-INSERT INTO pomsgid (id, msgid) VALUES (49, 'Evolution folder settings configuration control');
-INSERT INTO pomsgid (id, msgid) VALUES (50, 'Manage your S/MIME certificates here');
-INSERT INTO pomsgid (id, msgid) VALUES (51, 'New Contact');
-INSERT INTO pomsgid (id, msgid) VALUES (52, '_Contact');
-INSERT INTO pomsgid (id, msgid) VALUES (53, 'Create a new contact');
-INSERT INTO pomsgid (id, msgid) VALUES (54, 'New Contact List');
-INSERT INTO pomsgid (id, msgid) VALUES (55, 'Contact _List');
-INSERT INTO pomsgid (id, msgid) VALUES (56, 'Create a new contact list');
-INSERT INTO pomsgid (id, msgid) VALUES (57, 'New Address Book');
-INSERT INTO pomsgid (id, msgid) VALUES (58, 'Address _Book');
-INSERT INTO pomsgid (id, msgid) VALUES (59, 'Create a new address book');
-INSERT INTO pomsgid (id, msgid) VALUES (60, 'Failed upgrading Addressbook settings or folders.');
-INSERT INTO pomsgid (id, msgid) VALUES (61, 'Migrating...');
-INSERT INTO pomsgid (id, msgid) VALUES (62, 'Migrating `%s'':');
-INSERT INTO pomsgid (id, msgid) VALUES (63, 'On This Computer');
-INSERT INTO pomsgid (id, msgid) VALUES (64, 'Personal');
-INSERT INTO pomsgid (id, msgid) VALUES (65, 'On LDAP Servers');
-INSERT INTO pomsgid (id, msgid) VALUES (66, 'LDAP Servers');
-INSERT INTO pomsgid (id, msgid) VALUES (67, 'Autocompletion Settings');
-INSERT INTO pomsgid (id, msgid) VALUES (68, 'The location and hierarchy of the Evolution contact folders has changed since Evolution 1.x.
+INSERT INTO pomsgid (id, msgid) VALUES (13, 'Migrating `%s'':');
+INSERT INTO pomsgid (id, msgid) VALUES (14, 'The location and hierarchy of the Evolution contact folders has changed since Evolution 1.x.
 
 Please be patient while Evolution migrates your folders...');
-INSERT INTO pomsgid (id, msgid) VALUES (69, 'The format of mailing list contacts has changed.
-
-Please be patient while Evolution migrates your folders...');
-INSERT INTO pomsgid (id, msgid) VALUES (70, 'The way Evolution stores some phone numbers has changed.
-
-Please be patient while Evolution migrates your folders...');
-INSERT INTO pomsgid (id, msgid) VALUES (71, 'Evolution''s Palm Sync changelog and map files have changed.
-
-Please be patient while Evolution migrates your Pilot Sync data...');
-INSERT INTO pomsgid (id, msgid) VALUES (72, 'Address book ''%s'' will be removed. Are you sure you want to continue?');
-INSERT INTO pomsgid (id, msgid) VALUES (73, 'Delete');
-INSERT INTO pomsgid (id, msgid) VALUES (74, 'Properties...');
-INSERT INTO pomsgid (id, msgid) VALUES (75, 'Accessing LDAP Server anonymously');
-INSERT INTO pomsgid (id, msgid) VALUES (76, 'Failed to authenticate.
-');
-INSERT INTO pomsgid (id, msgid) VALUES (77, '%sEnter password for %s (user %s)');
-INSERT INTO pomsgid (id, msgid) VALUES (78, 'EFolderList xml for the list of completion uris');
-INSERT INTO pomsgid (id, msgid) VALUES (79, 'Position of the vertical pane in main view');
-INSERT INTO pomsgid (id, msgid) VALUES (80, 'The number of characters that must be typed before evolution will attempt to autocomplete');
-INSERT INTO pomsgid (id, msgid) VALUES (81, 'URI for the folder last used in the select names dialog');
-INSERT INTO pomsgid (id, msgid) VALUES (82, '*');
-INSERT INTO pomsgid (id, msgid) VALUES (83, '1');
-INSERT INTO pomsgid (id, msgid) VALUES (84, '3268');
-INSERT INTO pomsgid (id, msgid) VALUES (85, '389');
-INSERT INTO pomsgid (id, msgid) VALUES (86, '5');
-INSERT INTO pomsgid (id, msgid) VALUES (87, '636');
-INSERT INTO pomsgid (id, msgid) VALUES (88, '<b>Authentication</b>');
-INSERT INTO pomsgid (id, msgid) VALUES (89, '<b>Display</b>');
-INSERT INTO pomsgid (id, msgid) VALUES (90, '<b>Downloading</b>');
-INSERT INTO pomsgid (id, msgid) VALUES (91, '<b>Searching</b>');
-INSERT INTO pomsgid (id, msgid) VALUES (92, '<b>Server Information</b>');
-INSERT INTO pomsgid (id, msgid) VALUES (93, '%d contact');
-INSERT INTO pomsgid (id, msgid) VALUES (94, '%d contacts');
-INSERT INTO pomsgid (id, msgid) VALUES (95, 'Opening %d contact will open %d new window as well.
+INSERT INTO pomsgid (id, msgid) VALUES (15, '%d contact');
+INSERT INTO pomsgid (id, msgid) VALUES (16, '%d contacts');
+INSERT INTO pomsgid (id, msgid) VALUES (17, 'Opening %d contact will open %d new window as well.
 Do you really want to display this contact?');
-INSERT INTO pomsgid (id, msgid) VALUES (96, 'Opening %d contacts will open %d new windows as well.
+INSERT INTO pomsgid (id, msgid) VALUES (18, 'Opening %d contacts will open %d new windows as well.
 Do you really want to display all of these contacts?');
-INSERT INTO pomsgid (id, msgid) VALUES (97, '_Add Group');
-INSERT INTO pomsgid (id, msgid) VALUES (98, '%d foo');
-INSERT INTO pomsgid (id, msgid) VALUES (99, '%d bars');
-INSERT INTO pomsgid (id, msgid) VALUES (100, 'EncFS Password: ');
-INSERT INTO pomsgid (id, msgid) VALUES (101, 'When specifying daemon mode, you must use absolute paths (beginning with ''/'')');
-INSERT INTO pomsgid (id, msgid) VALUES (102, 'Please select a key size in bits.  The cipher you have chosen
+INSERT INTO pomsgid (id, msgid) VALUES (19, '%d foo');
+INSERT INTO pomsgid (id, msgid) VALUES (20, '%d bars');
+INSERT INTO pomsgid (id, msgid) VALUES (21, 'EncFS Password: ');
+INSERT INTO pomsgid (id, msgid) VALUES (22, 'When specifying daemon mode, you must use absolute paths (beginning with ''/'')');
+INSERT INTO pomsgid (id, msgid) VALUES (23, 'Please select a key size in bits.  The cipher you have chosen
 supports sizes from %i to %i bits in increments of %i bits.
 For example: ');
-INSERT INTO pomsgid (id, msgid) VALUES (103, 'Found %i invalid file.');
-INSERT INTO pomsgid (id, msgid) VALUES (104, 'Found %i invalid files.');
+INSERT INTO pomsgid (id, msgid) VALUES (24, 'Found %i invalid file.');
+INSERT INTO pomsgid (id, msgid) VALUES (25, 'Found %i invalid files.');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'pomsgid'::pg_catalog.regclass;
@@ -944,25 +1001,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'potranslation'::pg_catalog.regclass;
 
 INSERT INTO potranslation (id, translation) VALUES (1, 'libreta de direcciones de Evolution');
-INSERT INTO potranslation (id, translation) VALUES (2, 'carpeta de libretas de direcciones actual');
-INSERT INTO potranslation (id, translation) VALUES (3, 'tiene');
-INSERT INTO potranslation (id, translation) VALUES (4, '%d contacto');
-INSERT INTO potranslation (id, translation) VALUES (5, '%d contactos');
-INSERT INTO potranslation (id, translation) VALUES (6, 'La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.
-
-Tenga paciencia mientras Evolution migra sus carpetas...');
-INSERT INTO potranslation (id, translation) VALUES (7, 'Abrir %d contacto abrirá %d ventanas nuevas también.
-¿Quiere realmente mostrar este contacto?');
-INSERT INTO potranslation (id, translation) VALUES (8, 'Abrir %d contactos abrirá %d ventanas nuevas también.
-¿Quiere realmente mostrar todos estos contactos?');
-INSERT INTO potranslation (id, translation) VALUES (9, '_Añadir grupo');
-INSERT INTO potranslation (id, translation) VALUES (10, '%d foo');
-INSERT INTO potranslation (id, translation) VALUES (11, ' tarjetas');
-INSERT INTO potranslation (id, translation) VALUES (12, 'Abrir %d contacto abrirá %d ventanas nuevas también.
-¿Quiere realmente mostrar este contacto?');
-INSERT INTO potranslation (id, translation) VALUES (13, 'Abrir %d contactos abrirá %d ventanas nuevas también.
-¿Quiere realmente mostrar todos estos contactos?');
-INSERT INTO potranslation (id, translation) VALUES (14, 'Contraseña de EncFS: ');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potranslation'::pg_catalog.regclass;
@@ -999,8 +1037,80 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'potemplate'::pg_catalog.regclass;
 
-INSERT INTO potemplate (id, product, priority, branch, changeset, name, title, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawfile, rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackagerelease, sourcepackageversion, header) VALUES (2, 7, 2, 9, NULL, 'languages', 'POT file for the iso_639 strings', 'I suppose we should create a long description here....', 'Copyright', 1, '2004-08-17 09:10:00', 'iso_639/', true, 0, 13, NULL, NULL, '2004-11-25 01:11:50.722882', 0, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO potemplate (id, product, priority, branch, changeset, name, title, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawfile, rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackagerelease, sourcepackageversion, header) VALUES (1, 5, 2, 8, NULL, 'hoary-2.0', 'Template for Evolution 2.0', 'This is a PO template for Evolution 2.0.', 'Copyright (C) 2003  Ximian Inc.', 1, '2004-08-17 09:10:00', 'po/', true, 21, 13, NULL, NULL, '2004-11-25 01:11:50.721111', 0, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO potemplate (id, priority, title, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawfile, rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, productrelease, binarypackagename, languagepack, filename) VALUES (1, NULL, 'Template for evolution in hoary', 'Template for evolution in hoary', NULL, NULL, '2005-03-18 18:20:12.273149', 'po', true, 21, 30, 'IywgZnV6enkKbXNnaWQgIiIKbXNnc3RyICIiCiJQcm9qZWN0LUlkLVZlcnNpb246IFBBQ0tBR0Ug
+VkVSU0lPTlxuIgoiUmVwb3J0LU1zZ2lkLUJ1Z3MtVG86IEZVTEwgTkFNRSA8RU1BSUxAQUREUkVT
+Uz5cbiIKIlBPVC1DcmVhdGlvbi1EYXRlOiAyMDA1LTAzLTAxIDAxOjMyLTA1MDBcbiIKIlBPLVJl
+dmlzaW9uLURhdGU6IFlFQVItTU8tREEgSE86TUkrWk9ORVxuIgoiTGFzdC1UcmFuc2xhdG9yOiBG
+VUxMIE5BTUUgPEVNQUlMQEFERFJFU1M+XG4iCiJMYW5ndWFnZS1UZWFtOiBMQU5HVUFHRSA8TExA
+bGkub3JnPlxuIgoiTUlNRS1WZXJzaW9uOiAxLjBcbiIKIkNvbnRlbnQtVHlwZTogdGV4dC9wbGFp
+bjsgY2hhcnNldD1DSEFSU0VUXG4iCiJDb250ZW50LVRyYW5zZmVyLUVuY29kaW5nOiA4Yml0XG4i
+CiJQbHVyYWwtRm9ybXM6IG5wbHVyYWxzPUlOVEVHRVI7IHBsdXJhbD1FWFBSRVNTSU9OO1xuIgoK
+IzogYTExeS9hZGRyZXNzYm9vay9lYS1hZGRyZXNzYm9vay12aWV3LmM6OTQKIzogYTExeS9hZGRy
+ZXNzYm9vay9lYS1hZGRyZXNzYm9vay12aWV3LmM6MTAzCiM6IGExMXkvYWRkcmVzc2Jvb2svZWEt
+bWluaWNhcmQtdmlldy5jOjExOQptc2dpZCAiZXZvbHV0aW9uIGFkZHJlc3Nib29rIgptc2dzdHIg
+IiIKCiM6IGExMXkvYWRkcmVzc2Jvb2svZWEtbWluaWNhcmQtdmlldy5jOjEwMQptc2dpZCAiY3Vy
+cmVudCBhZGRyZXNzYm9vayBmb2xkZXIiCm1zZ3N0ciAiIgoKIzogYTExeS9hZGRyZXNzYm9vay9l
+YS1taW5pY2FyZC12aWV3LmM6MTAyCm1zZ2lkICJoYXZlICIKbXNnc3RyICIiCgojOiBhMTF5L2Fk
+ZHJlc3Nib29rL2VhLW1pbmljYXJkLXZpZXcuYzoxMDIKbXNnaWQgImhhcyAiCm1zZ3N0ciAiIgoK
+IzogYTExeS9hZGRyZXNzYm9vay9lYS1taW5pY2FyZC12aWV3LmM6MTA0Cm1zZ2lkICIgY2FyZHMi
+Cm1zZ3N0ciAiIgoKIzogYTExeS9hZGRyZXNzYm9vay9lYS1taW5pY2FyZC12aWV3LmM6MTA0Cm1z
+Z2lkICIgY2FyZCIKbXNnc3RyICIiCgojOiBhMTF5L2FkZHJlc3Nib29rL2VhLW1pbmljYXJkLXZp
+ZXcuYzoxMDUKbXNnaWQgImNvbnRhY3QncyBoZWFkZXI6ICIKbXNnc3RyICIiCgojOiBhMTF5L2Fk
+ZHJlc3Nib29rL2VhLW1pbmljYXJkLmM6MTY2Cm1zZ2lkICJldm9sdXRpb24gbWluaWNhcmQiCm1z
+Z3N0ciAiIgoKIy4gYWRkcmVzc2Jvb2s6bGRhcC1pbml0IHByaW1hcnkKIzogYWRkcmVzc2Jvb2sv
+YWRkcmVzc2Jvb2stZXJyb3JzLnhtbC5oOjIKbXNnaWQgIlRoaXMgYWRkcmVzc2Jvb2sgY291bGQg
+bm90IGJlIG9wZW5lZC4iCm1zZ3N0ciAiIgoKIy4gYWRkcmVzc2Jvb2s6bGRhcC1pbml0IHNlY29u
+ZGFyeQojOiBhZGRyZXNzYm9vay9hZGRyZXNzYm9vay1lcnJvcnMueG1sLmg6NAptc2dpZCAiIgoi
+VGhpcyBhZGRyZXNzYm9vayBzZXJ2ZXIgbWlnaHQgdW5yZWFjaGFibGUgb3IgdGhlIHNlcnZlciBu
+YW1lIG1heSBiZSAiCiJtaXNzcGVsbGVkIG9yIHlvdXIgbmV0d29yayBjb25uZWN0aW9uIGNvdWxk
+IGJlIGRvd24uIgptc2dzdHIgIiIKCiMuIGFkZHJlc3Nib29rOmxkYXAtYXV0aCBwcmltYXJ5CiM6
+IGFkZHJlc3Nib29rL2FkZHJlc3Nib29rLWVycm9ycy54bWwuaDo2Cm1zZ2lkICJGYWlsZWQgdG8g
+YXV0aGVudGljYXRlIHdpdGggTERBUCBzZXJ2ZXIuIgptc2dzdHIgIiIKCiMuIGFkZHJlc3Nib29r
+OmxkYXAtYXV0aCBzZWNvbmRhcnkKIzogYWRkcmVzc2Jvb2svYWRkcmVzc2Jvb2stZXJyb3JzLnht
+bC5oOjgKbXNnaWQgIiIKIkNoZWNrIHRvIG1ha2Ugc3VyZSB5b3VyIHBhc3N3b3JkIGlzIHNwZWxs
+ZWQgY29ycmVjdGx5IGFuZCB0aGF0IHlvdSBhcmUgdXNpbmcgIgoiYSBzdXBwb3J0ZWQgbG9naW4g
+bWV0aG9kLiBSZW1lbWJlciB0aGF0IG1hbnkgcGFzc3dvcmRzIGFyZSBjYXNlIHNlbnNpdGl2ZTsg
+IgoieW91ciBjYXBzIGxvY2sgbWlnaHQgYmUgb24uIgptc2dzdHIgIiIKCiM6IGFkZHJlc3Nib29r
+L2d1aS9jb21wb25lbnQvYWRkcmVzc2Jvb2stbWlncmF0ZS5jOjEyNAojOiBjYWxlbmRhci9ndWkv
+bWlncmF0aW9uLmM6MTg4IG1haWwvZW0tbWlncmF0ZS5jOjEyMDEKIywgYy1mb3JtYXQKbXNnaWQg
+Ik1pZ3JhdGluZyBgJXMnOiIKbXNnc3RyICIiCgojOiBhZGRyZXNzYm9vay9ndWkvY29tcG9uZW50
+L2FkZHJlc3Nib29rLW1pZ3JhdGUuYzoxMTIzCm1zZ2lkICIiCiJUaGUgbG9jYXRpb24gYW5kIGhp
+ZXJhcmNoeSBvZiB0aGUgRXZvbHV0aW9uIGNvbnRhY3QgZm9sZGVycyBoYXMgY2hhbmdlZCAiCiJz
+aW5jZSBFdm9sdXRpb24gMS54LlxuIgoiXG4iCiJQbGVhc2UgYmUgcGF0aWVudCB3aGlsZSBFdm9s
+dXRpb24gbWlncmF0ZXMgeW91ciBmb2xkZXJzLi4uIgptc2dzdHIgIiIKCiM6IGFkZHJlc3Nib29r
+L2d1aS93aWRnZXRzL2UtYWRkcmVzc2Jvb2stbW9kZWwuYzoxNTEKIywgYy1mb3JtYXQKbXNnaWQg
+IiVkIGNvbnRhY3QiCm1zZ2lkX3BsdXJhbCAiJWQgY29udGFjdHMiCm1zZ3N0clswXSAiIgptc2dz
+dHJbMV0gIiIKCiM6IGFkZHJlc3Nib29rL2d1aS93aWRnZXRzL2VhYi1ndWktdXRpbC5jOjI3NQoj
+LCBjLWZvcm1hdAptc2dpZCAiIgoiT3BlbmluZyAlZCBjb250YWN0IHdpbGwgb3BlbiAlZCBuZXcg
+d2luZG93IGFzIHdlbGwuXG4iCiJEbyB5b3UgcmVhbGx5IHdhbnQgdG8gZGlzcGxheSB0aGlzIGNv
+bnRhY3Q/Igptc2dpZF9wbHVyYWwgIiIKIk9wZW5pbmcgJWQgY29udGFjdHMgd2lsbCBvcGVuICVk
+IG5ldyB3aW5kb3dzIGFzIHdlbGwuXG4iCiJEbyB5b3UgcmVhbGx5IHdhbnQgdG8gZGlzcGxheSBh
+bGwgb2YgdGhlc2UgY29udGFjdHM/Igptc2dzdHJbMF0gIiIKbXNnc3RyWzFdICIiCgojOiBhZGRy
+ZXNzYm9vay9ndWkvd2lkZ2V0cy9mb28uYzozNDUKIywgYy1mb3JtYXQKbXNnaWQgIiVkIGZvbyIK
+bXNnaWRfcGx1cmFsICIlZCBiYXJzIgptc2dzdHJbMF0gIiIKbXNnc3RyWzFdICIiCgojIHN0YXJ0
+IHBvLWdyb3VwOiBjb21tb24KIy4geGdyb3VwKGNvbW1vbikKIzogZW5jZnMvRmlsZVV0aWxzLmNw
+cDoxMDQ0Cm1zZ2lkICJFbmNGUyBQYXNzd29yZDogIgptc2dzdHIgIiIKCiMuIHhncm91cCh1c2Fn
+ZSkKIzogZW5jZnMvbWFpbi5jcHA6MzQwCm1zZ2lkICIiCiJXaGVuIHNwZWNpZnlpbmcgZGFlbW9u
+IG1vZGUsIHlvdSBtdXN0IHVzZSBhYnNvbHV0ZSBwYXRocyAoYmVnaW5uaW5nIHdpdGggJy8nKSIK
+bXNnc3RyICIiCgojLiB4Z3JvdXAoc2V0dXApCiM6IGVuY2ZzL0ZpbGVVdGlscy5jcHA6NTM1CiMs
+IGMtZm9ybWF0Cm1zZ2lkICIiCiJQbGVhc2Ugc2VsZWN0IGEga2V5IHNpemUgaW4gYml0cy4gIFRo
+ZSBjaXBoZXIgeW91IGhhdmUgY2hvc2VuXG4iCiJzdXBwb3J0cyBzaXplcyBmcm9tICVpIHRvICVp
+IGJpdHMgaW4gaW5jcmVtZW50cyBvZiAlaSBiaXRzLlxuIgoiRm9yIGV4YW1wbGU6ICIKbXNnc3Ry
+ICIiCgojOiBlbmNmcy9lbmNmc2N0bC5jcHA6MzQ2CiMsIGMtZm9ybWF0Cm1zZ2lkICJGb3VuZCAl
+aSBpbnZhbGlkIGZpbGUuIgptc2dpZF9wbHVyYWwgIkZvdW5kICVpIGludmFsaWQgZmlsZXMuIgpt
+c2dzdHJbMF0gIiIKbXNnc3RyWzFdICIiCg==
+', 30, '2005-03-18 18:20:12.273149', 3, 9, 3, NULL, 'Project-Id-Version: PACKAGE VERSION
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2005-03-01 01:32-0500
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: LANGUAGE <LL@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=CHARSET
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
+', 1, NULL, NULL, false, NULL);
+INSERT INTO potemplate (id, priority, title, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner", rawfile, rawimporter, daterawimport, rawimportstatus, sourcepackagename, distrorelease, sourcepackageversion, header, potemplatename, productrelease, binarypackagename, languagepack, filename) VALUES (2, NULL, 'pmount', NULL, NULL, NULL, '2005-03-24 19:59:31.439579', NULL, true, 0, 1, '', 1, '2005-03-24 19:59:31.439579', 1, 14, 3, NULL, NULL, 2, NULL, 13, false, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potemplate'::pg_catalog.regclass;
@@ -1008,7 +1118,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'pofile'::pg_catalog.regclass;
 
-INSERT INTO pofile (id, potemplate, "language", title, description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawfile, rawimporter, daterawimport, rawimportstatus) VALUES (1, 1, 387, NULL, NULL, ' traducción de es.po al Spanish
+INSERT INTO pofile (id, potemplate, "language", title, description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawfile, rawimporter, daterawimport, rawimportstatus) VALUES (1, 1, 387, 'Spanish translation for evolution in hoary', 'Spanish translation for evolution in hoary', ' traducción de es.po al Spanish
  translation of es.po to Spanish
  translation of evolution.HEAD to Spanish
  Copyright © 2000-2002 Free Software Foundation, Inc.
@@ -1024,16 +1134,103 @@ INSERT INTO pofile (id, potemplate, "language", title, description, topcomment, 
 
 ', 'Project-Id-Version: es
 POT-Creation-Date: 2004-08-17 11:10+0200
-PO-Revision-Date: 2004-08-15 19:32+0200
-Last-Translator: Francisco Javier F. Serrador <serrador@cvs.gnome.org>
+PO-Revision-Date: 2005-01-05 13:22+0000
+Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
 Language-Team: Spanish <traductores@es.gnome.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
-X-Generator: KBabel 1.3.1
+X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
 Plural-Forms: nplurals=2; plural=(n != 1);
-', false, 13, NULL, 5, 0, 1, NULL, NULL, 2, NULL, NULL, NULL, NULL, '2004-11-25 01:11:50.726209', 0);
+', true, NULL, NULL, 0, 0, 0, NULL, NULL, 2, NULL, NULL, 'IyB0cmFkdWNjacOzbiBkZSBlcy5wbyBhbCBTcGFuaXNoCiMgdHJhbnNsYXRpb24gb2YgZXMucG8g
+dG8gU3BhbmlzaAojIHRyYW5zbGF0aW9uIG9mIGV2b2x1dGlvbi5IRUFEIHRvIFNwYW5pc2gKIyBD
+b3B5cmlnaHQgwqkgMjAwMC0yMDAyIEZyZWUgU29mdHdhcmUgRm91bmRhdGlvbiwgSW5jLgojIFRo
+aXMgZmlsZSBpcyBkaXN0cmlidXRlZCB1bmRlciB0aGUgc2FtZSBsaWNlbnNlIGFzIHRoZSBldm9s
+dXRpb24gcGFja2FnZS4KIyBDYXJsb3MgUGVyZWxsw7MgTWFyw61uIDxjYXJsb3NAZ25vbWUtZGIu
+b3JnPiwgMjAwMC0yMDAxLgojIEjDqWN0b3IgR2FyY8OtYSDDgWx2YXJleiA8aGVjdG9yQHNjb3V0
+cy1lcy5vcmc+LCAyMDAwLTIwMDIuCiMgSXNtYWVsIE9sZWEgPElzbWFlbEBvbGVhLm9yZz4sIDIw
+MDEsIChyZXZpc2lvbmVzKSAyMDAzLgojIEVuZWtvIExhY3VuemEgPGVubGFyQGluYW1lLmNvbT4s
+IDIwMDEtMjAwMi4KIyBIw6ljdG9yIEdhcmPDrWEgw4FsdmFyZXogPGhlY3RvckBzY291dHMtZXMu
+b3JnPiwgMjAwMi4KIyBQYWJsbyBHb256YWxvIGRlbCBDYW1wbyA8cGFibG9kY0BiaWdmb290LmNv
+bT4sMjAwMyAocmV2aXNpw7NuKS4KIyBGcmFuY2lzY28gSmF2aWVyIEYuIFNlcnJhZG9yIDxzZXJy
+YWRvckBjdnMuZ25vbWUub3JnPiwgMjAwMywgMjAwNC4KIwojCm1zZ2lkICIiCm1zZ3N0ciAiIgoi
+UHJvamVjdC1JZC1WZXJzaW9uOiBlc1xuIgoiUE9ULUNyZWF0aW9uLURhdGU6IDIwMDQtMDgtMTcg
+MTE6MTArMDIwMFxuIgoiUE8tUmV2aXNpb24tRGF0ZTogMjAwNS0wMS0wNSAxMzoyMiswMDAwXG4i
+CiJMYXN0LVRyYW5zbGF0b3I6IENhcmxvcyBQZXJlbGzDsyBNYXLDrW4gPGNhcmxvc0BjYW5vbmlj
+YWwuY29tPlxuIgoiTGFuZ3VhZ2UtVGVhbTogU3BhbmlzaCA8dHJhZHVjdG9yZXNAZXMuZ25vbWUu
+b3JnPlxuIgoiTUlNRS1WZXJzaW9uOiAxLjBcbiIKIkNvbnRlbnQtVHlwZTogdGV4dC9wbGFpbjsg
+Y2hhcnNldD1VVEYtOFxuIgoiQ29udGVudC1UcmFuc2Zlci1FbmNvZGluZzogOGJpdFxuIgoiUmVw
+b3J0LU1zZ2lkLUJ1Z3MtVG86IHNlcnJhZG9yQGhpc3BhbGludXguZXNcbiIKIlgtR2VuZXJhdG9y
+OiBSb3NldHRhIChodHRwOi8vbGF1bmNocGFkLnVidW50dS5jb20vcm9zZXR0YS8pXG4iCiJQbHVy
+YWwtRm9ybXM6IG5wbHVyYWxzPTI7IHBsdXJhbD0obiAhPSAxKTtcbiIKCiM6IGExMXkvYWRkcmVz
+c2Jvb2svZWEtYWRkcmVzc2Jvb2stdmlldy5jOjk0CiM6IGExMXkvYWRkcmVzc2Jvb2svZWEtYWRk
+cmVzc2Jvb2stdmlldy5jOjEwMwojOiBhMTF5L2FkZHJlc3Nib29rL2VhLW1pbmljYXJkLXZpZXcu
+YzoxMTkKbXNnaWQgImV2b2x1dGlvbiBhZGRyZXNzYm9vayIKbXNnc3RyICJsaWJyZXRhIGRlIGRp
+cmVjY2lvbmVzIGRlIEV2b2x1dGlvbiIKCiM6IGExMXkvYWRkcmVzc2Jvb2svZWEtbWluaWNhcmQt
+dmlldy5jOjEwMQptc2dpZCAiY3VycmVudCBhZGRyZXNzYm9vayBmb2xkZXIiCm1zZ3N0ciAiY2Fy
+cGV0YSBkZSBsaWJyZXRhcyBkZSBkaXJlY2Npb25lcyBhY3R1YWwiCgojOiBhMTF5L2FkZHJlc3Ni
+b29rL2VhLW1pbmljYXJkLXZpZXcuYzoxMDIKIywgZnV6enkKbXNnaWQgImhhdmUgIgptc2dzdHIg
+InRpZW5lIgoKIzogYTExeS9hZGRyZXNzYm9vay9lYS1taW5pY2FyZC12aWV3LmM6MTAyCm1zZ2lk
+ICJoYXMgIgptc2dzdHIgIiIKCiM6IGExMXkvYWRkcmVzc2Jvb2svZWEtbWluaWNhcmQtdmlldy5j
+OjEwNAptc2dpZCAiIGNhcmRzIgptc2dzdHIgIiB0YXJqZXRhcyIKCiM6IGExMXkvYWRkcmVzc2Jv
+b2svZWEtbWluaWNhcmQtdmlldy5jOjEwNAptc2dpZCAiIGNhcmQiCm1zZ3N0ciAiIgoKIzogYTEx
+eS9hZGRyZXNzYm9vay9lYS1taW5pY2FyZC12aWV3LmM6MTA1Cm1zZ2lkICJjb250YWN0J3MgaGVh
+ZGVyOiAiCm1zZ3N0ciAiIgoKIzogYTExeS9hZGRyZXNzYm9vay9lYS1taW5pY2FyZC5jOjE2Ngpt
+c2dpZCAiZXZvbHV0aW9uIG1pbmljYXJkIgptc2dzdHIgIiIKCiMuIGFkZHJlc3Nib29rOmxkYXAt
+aW5pdCBwcmltYXJ5CiM6IGFkZHJlc3Nib29rL2FkZHJlc3Nib29rLWVycm9ycy54bWwuaDoyCm1z
+Z2lkICJUaGlzIGFkZHJlc3Nib29rIGNvdWxkIG5vdCBiZSBvcGVuZWQuIgptc2dzdHIgIiIKCiMu
+IGFkZHJlc3Nib29rOmxkYXAtaW5pdCBzZWNvbmRhcnkKIzogYWRkcmVzc2Jvb2svYWRkcmVzc2Jv
+b2stZXJyb3JzLnhtbC5oOjQKbXNnaWQgIiIKIlRoaXMgYWRkcmVzc2Jvb2sgc2VydmVyIG1pZ2h0
+IHVucmVhY2hhYmxlIG9yIHRoZSBzZXJ2ZXIgbmFtZSBtYXkgYmUgIgoibWlzc3BlbGxlZCBvciB5
+b3VyIG5ldHdvcmsgY29ubmVjdGlvbiBjb3VsZCBiZSBkb3duLiIKbXNnc3RyICIiCgojLiBhZGRy
+ZXNzYm9vazpsZGFwLWF1dGggcHJpbWFyeQojOiBhZGRyZXNzYm9vay9hZGRyZXNzYm9vay1lcnJv
+cnMueG1sLmg6Ngptc2dpZCAiRmFpbGVkIHRvIGF1dGhlbnRpY2F0ZSB3aXRoIExEQVAgc2VydmVy
+LiIKbXNnc3RyICIiCgojLiBhZGRyZXNzYm9vazpsZGFwLWF1dGggc2Vjb25kYXJ5CiM6IGFkZHJl
+c3Nib29rL2FkZHJlc3Nib29rLWVycm9ycy54bWwuaDo4Cm1zZ2lkICIiCiJDaGVjayB0byBtYWtl
+IHN1cmUgeW91ciBwYXNzd29yZCBpcyBzcGVsbGVkIGNvcnJlY3RseSBhbmQgdGhhdCB5b3UgYXJl
+IHVzaW5nICIKImEgc3VwcG9ydGVkIGxvZ2luIG1ldGhvZC4gUmVtZW1iZXIgdGhhdCBtYW55IHBh
+c3N3b3JkcyBhcmUgY2FzZSBzZW5zaXRpdmU7ICIKInlvdXIgY2FwcyBsb2NrIG1pZ2h0IGJlIG9u
+LiIKbXNnc3RyICIiCgojOiBhZGRyZXNzYm9vay9ndWkvY29tcG9uZW50L2FkZHJlc3Nib29rLW1p
+Z3JhdGUuYzoxMjQKIzogY2FsZW5kYXIvZ3VpL21pZ3JhdGlvbi5jOjE4OCBtYWlsL2VtLW1pZ3Jh
+dGUuYzoxMjAxCiMsIGMtZm9ybWF0Cm1zZ2lkICJNaWdyYXRpbmcgYCVzJzoiCm1zZ3N0ciAiIgoK
+IyBUaGlzIGlzIGFuIGV4YW1wbGUgb2YgY29tbWVudHRleHQgZm9yIGEgbXVsdGlsaW5lIG1zZ3Nl
+dAojOiBhZGRyZXNzYm9vay9ndWkvY29tcG9uZW50L2FkZHJlc3Nib29rLW1pZ3JhdGUuYzoxMTIz
+Cm1zZ2lkICIiCiJUaGUgbG9jYXRpb24gYW5kIGhpZXJhcmNoeSBvZiB0aGUgRXZvbHV0aW9uIGNv
+bnRhY3QgZm9sZGVycyBoYXMgY2hhbmdlZCAiCiJzaW5jZSBFdm9sdXRpb24gMS54LlxuIgoiXG4i
+CiJQbGVhc2UgYmUgcGF0aWVudCB3aGlsZSBFdm9sdXRpb24gbWlncmF0ZXMgeW91ciBmb2xkZXJz
+Li4uIgptc2dzdHIgIiIKIkxhIHViaWNhY2nDs24geSBqZXJhcnF1w61hIGRlIGxhcyBjYXJwZXRh
+cyBkZSBjb250YWN0b3MgZGUgRXZvbHV0aW9uIGhhICIKImNhbWJpYWRvIGRlc2RlIEV2b2x1dGlv
+biAxLnguXG4iCiJcbiIKIlRlbmdhIHBhY2llbmNpYSBtaWVudHJhcyBFdm9sdXRpb24gbWlncmEg
+c3VzIGNhcnBldGFzLi4uIgoKIzogYWRkcmVzc2Jvb2svZ3VpL3dpZGdldHMvZS1hZGRyZXNzYm9v
+ay1tb2RlbC5jOjE1MQojLCBjLWZvcm1hdAptc2dpZCAiJWQgY29udGFjdCIKbXNnaWRfcGx1cmFs
+ICIlZCBjb250YWN0cyIKbXNnc3RyWzBdICIlZCBjb250YWN0byIKbXNnc3RyWzFdICIlZCBjb250
+YWN0b3MiCgojOiBhZGRyZXNzYm9vay9ndWkvd2lkZ2V0cy9lYWItZ3VpLXV0aWwuYzoyNzUKIywg
+Yy1mb3JtYXQKbXNnaWQgIiIKIk9wZW5pbmcgJWQgY29udGFjdCB3aWxsIG9wZW4gJWQgbmV3IHdp
+bmRvdyBhcyB3ZWxsLlxuIgoiRG8geW91IHJlYWxseSB3YW50IHRvIGRpc3BsYXkgdGhpcyBjb250
+YWN0PyIKbXNnaWRfcGx1cmFsICIiCiJPcGVuaW5nICVkIGNvbnRhY3RzIHdpbGwgb3BlbiAlZCBu
+ZXcgd2luZG93cyBhcyB3ZWxsLlxuIgoiRG8geW91IHJlYWxseSB3YW50IHRvIGRpc3BsYXkgYWxs
+IG9mIHRoZXNlIGNvbnRhY3RzPyIKbXNnc3RyWzBdICIiCiJBYnJpciAlZCBjb250YWN0byBhYnJp
+csOhICVkIHZlbnRhbmFzIG51ZXZhcyB0YW1iacOpbi5cbiIKIsK/UXVpZXJlIHJlYWxtZW50ZSBt
+b3N0cmFyIGVzdGUgY29udGFjdG8/Igptc2dzdHJbMV0gIiIKIkFicmlyICVkIGNvbnRhY3RvcyBh
+YnJpcsOhICVkIHZlbnRhbmFzIG51ZXZhcyB0YW1iacOpbi5cbiIKIsK/UXVpZXJlIHJlYWxtZW50
+ZSBtb3N0cmFyIHRvZG9zIGVzdG9zIGNvbnRhY3Rvcz8iCgojOiBhZGRyZXNzYm9vay9ndWkvd2lk
+Z2V0cy9mb28uYzozNDUKIywgZnV6enksIGMtZm9ybWF0Cm1zZ2lkICIlZCBmb28iCm1zZ2lkX3Bs
+dXJhbCAiJWQgYmFycyIKbXNnc3RyWzBdICIlZCBmb28iCm1zZ3N0clsxXSAiIgoKIyBzdGFydCBw
+by1ncm91cDogY29tbW9uCiMgc3RhcnQgcG8tZ3JvdXA6IGNvbW1vbgojLiB4Z3JvdXAoY29tbW9u
+KQojOiBlbmNmcy9GaWxlVXRpbHMuY3BwOjEwNDQKbXNnaWQgIkVuY0ZTIFBhc3N3b3JkOiAiCm1z
+Z3N0ciAiQ29udHJhc2XDsWEgZGUgRW5jRlM6ICIKCiMuIHhncm91cCh1c2FnZSkKIzogZW5jZnMv
+bWFpbi5jcHA6MzQwCm1zZ2lkICIiCiJXaGVuIHNwZWNpZnlpbmcgZGFlbW9uIG1vZGUsIHlvdSBt
+dXN0IHVzZSBhYnNvbHV0ZSBwYXRocyAoYmVnaW5uaW5nIHdpdGggJy8nKSIKbXNnc3RyICIiCgoj
+LiB4Z3JvdXAoc2V0dXApCiM6IGVuY2ZzL0ZpbGVVdGlscy5jcHA6NTM1CiMsIGMtZm9ybWF0Cm1z
+Z2lkICIiCiJQbGVhc2Ugc2VsZWN0IGEga2V5IHNpemUgaW4gYml0cy4gIFRoZSBjaXBoZXIgeW91
+IGhhdmUgY2hvc2VuXG4iCiJzdXBwb3J0cyBzaXplcyBmcm9tICVpIHRvICVpIGJpdHMgaW4gaW5j
+cmVtZW50cyBvZiAlaSBiaXRzLlxuIgoiRm9yIGV4YW1wbGU6ICIKbXNnc3RyICIiCgojOiBlbmNm
+cy9lbmNmc2N0bC5jcHA6MzQ2CiMsIGMtZm9ybWF0Cm1zZ2lkICJGb3VuZCAlaSBpbnZhbGlkIGZp
+bGUuIgptc2dpZF9wbHVyYWwgIkZvdW5kICVpIGludmFsaWQgZmlsZXMuIgptc2dzdHJbMF0gIiIK
+bXNnc3RyWzFdICIiCgojfiBtc2dpZCAiX0FkZCBHcm91cCIKI34gbXNnc3RyICJfQcOxYWRpciBn
+cnVwbyIK
+', 30, NULL, 2);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'pofile'::pg_catalog.regclass;
@@ -1041,20 +1238,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'pomsgset'::pg_catalog.regclass;
 
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (1, 1, 1, true, false, false, NULL, 1);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (2, 2, 1, true, false, false, NULL, 2);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (3, 3, 1, false, false, true, NULL, 3);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (4, 4, 1, true, false, false, NULL, 15);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (5, 5, 1, true, false, false, ' This is an example of commenttext for a multiline msgset', 14);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (7, 7, 1, true, true, false, NULL, 17);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (9, 0, 1, false, false, false, NULL, 4);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (10, 0, 1, true, false, false, NULL, 5);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (11, 0, 1, false, false, false, NULL, 11);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (12, 0, 1, false, false, false, NULL, 12);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (13, 0, 1, false, false, false, NULL, 13);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (6, 6, 1, false, false, false, NULL, 16);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (8, 8, 1, false, false, false, NULL, 18);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (14, 9, 1, true, false, false, ' start po-group: common', 19);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (1, 1, 1, false, false, false, NULL, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'pomsgset'::pg_catalog.regclass;
@@ -1062,32 +1246,31 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'pomsgidsighting'::pg_catalog.regclass;
 
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (1, 1, 1, '2004-09-24 21:58:04.969875', '2004-09-24 21:58:04.969875', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (2, 2, 2, '2004-09-24 21:58:05.005673', '2004-09-24 21:58:05.005673', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (3, 3, 3, '2004-09-24 21:58:05.11396', '2004-09-24 21:58:05.11396', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (4, 4, 4, '2004-09-24 21:58:05.148051', '2004-09-24 21:58:05.148051', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (5, 5, 5, '2004-09-24 21:58:05.181877', '2004-09-24 21:58:05.181877', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (6, 6, 6, '2004-09-24 21:58:05.216203', '2004-09-24 21:58:05.216203', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (7, 7, 7, '2004-09-24 21:58:05.250458', '2004-09-24 21:58:05.250458', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (8, 8, 8, '2004-09-24 21:58:05.283205', '2004-09-24 21:58:05.283205', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (9, 9, 9, '2004-09-24 21:58:05.301434', '2004-09-24 21:58:05.301434', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (10, 10, 10, '2004-09-24 21:58:05.319483', '2004-09-24 21:58:05.319483', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (11, 11, 11, '2004-09-24 21:58:05.337554', '2004-09-24 21:58:05.337554', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (12, 12, 12, '2004-09-24 21:58:05.355659', '2004-09-24 21:58:05.355659', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (13, 13, 62, '2004-09-24 21:58:05.650973', '2004-09-24 21:58:05.650973', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (14, 14, 68, '2004-09-24 21:58:05.701435', '2004-09-24 21:58:05.701435', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (15, 15, 93, '2004-09-24 21:58:05.868655', '2004-09-24 21:58:05.868655', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (16, 15, 94, '2004-09-24 21:58:05.870713', '2004-09-24 21:58:05.870713', true, 1);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (17, 16, 95, '2004-09-24 21:58:05.870713', '2004-09-24 21:58:05.870713', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (18, 16, 96, '2004-09-24 21:58:05.870713', '2004-09-24 21:58:05.870713', true, 1);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (19, 17, 97, '2004-09-24 21:58:06.306292', '2004-09-24 21:58:06.306292', false, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (20, 18, 98, '2004-11-08 19:25:59.000014', '2004-11-08 19:25:59.000014', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (21, 18, 99, '2004-11-08 19:26:13.270815', '2004-11-08 19:26:13.270815', true, 1);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (22, 19, 100, '2005-01-05 14:16:48.857395', '2005-01-05 14:16:48.857395', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (23, 20, 101, '2005-01-05 14:53:22.355852', '2005-01-05 14:53:22.355852', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (24, 21, 102, '2005-01-05 15:26:20.246494', '2005-01-05 15:26:20.246494', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (25, 22, 103, '2005-01-05 15:41:36.335931', '2005-01-05 15:41:36.335931', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (26, 22, 104, '2005-01-05 15:41:42.471176', '2005-01-05 15:41:42.471176', true, 1);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (1, 1, 1, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (2, 2, 2, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (3, 3, 3, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (4, 4, 4, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (5, 5, 5, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (6, 6, 6, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (7, 7, 7, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (8, 8, 8, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (9, 9, 9, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (10, 10, 10, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (11, 11, 11, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (12, 12, 12, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (13, 13, 13, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (14, 14, 14, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (15, 15, 15, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (16, 15, 16, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 1);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (17, 16, 17, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (18, 16, 18, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 1);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (19, 17, 19, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (20, 17, 20, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 1);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (21, 18, 21, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (22, 19, 22, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (23, 20, 23, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (24, 21, 24, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (25, 21, 25, '2005-03-18 18:31:17.54732', '2005-03-18 18:31:17.54732', true, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'pomsgidsighting'::pg_catalog.regclass;
@@ -1095,20 +1278,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'potranslationsighting'::pg_catalog.regclass;
 
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (1, 1, 1, 1, '2004-09-24 21:58:05.989829', '2004-09-24 21:58:05.989829', true, 0, true, 0, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (2, 2, 2, 1, '2004-09-24 21:58:06.036589', '2004-09-24 21:58:06.036589', true, 0, true, 0, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (3, 3, 3, 1, '2004-09-24 21:58:06.086645', '2004-09-24 21:58:06.086645', true, 0, true, 0, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (4, 4, 4, 1, '2004-09-24 21:58:06.154994', '2004-09-24 21:58:06.154994', true, 0, true, 0, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (5, 4, 5, 1, '2004-09-24 21:58:06.15703', '2004-09-24 21:58:06.15703', true, 1, true, 0, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (6, 5, 6, 1, '2004-09-24 21:58:06.206034', '2004-09-24 21:58:06.206034', true, 0, true, 0, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (9, 7, 9, 1, '2004-09-24 21:58:06.307785', '2004-09-24 21:58:06.307785', true, 0, true, 0, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (10, 8, 10, 1, '2004-11-08 19:32:21.604729', '2004-11-08 19:32:21.604729', true, 0, true, 0, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (11, 10, 11, 1, '2004-11-15 16:04:49.157656', '2004-11-15 16:04:49.157656', false, 0, true, 2, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (12, 6, 12, NULL, '2005-01-05 13:22:51.826473', '2005-01-05 13:22:51.826473', false, 0, true, 2, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (13, 6, 13, NULL, '2005-01-05 13:22:51.826473', '2005-01-05 13:22:51.826473', false, 1, true, 2, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (14, 14, 14, NULL, '2005-01-05 13:22:51.826473', '2005-01-05 13:22:51.826473', false, 0, true, 2, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (7, 6, 7, 1, '2004-09-24 21:58:06.256662', '2004-09-24 21:58:06.256662', true, 0, false, 0, 13);
-INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (8, 6, 8, 1, '2004-09-24 21:58:06.273004', '2004-09-24 21:58:06.273004', true, 1, false, 0, 13);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potranslationsighting'::pg_catalog.regclass;
@@ -1144,14 +1313,14 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bug'::pg_catalog.regclass;
 
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc, fti, private) VALUES (1, '2004-09-24 20:58:04.553583', NULL, 'Firefox does not support SVG', 'The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 'Firefox needs to support embedded SVG images, now that the standard has been finalised.', '''1.0'':23 ''one'':32 ''svg'':5,11,21,57,66 ''base'':42 ''draw'':67 ''imag'':12 ''need'':7,36,49 ''draft'':27 ''dynam'':65 ''embed'':10 ''enabl'':62 ''exist'':31 ''ideal'':46 ''includ'':51 ''instal'':43 ''integr'':39 ''object'':58 ''complet'':25 ''finalis'':19 ''firefox'':1,6,30,45 ''manipul'':55 ''support'':4,9,52 ''interact'':63 ''standard'':16,22 ''implement'':28,35,48 ''javascript'':60', false);
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc, fti, private) VALUES (4, '2005-01-14 00:00:00', NULL, 'Reflow problems with complex page layouts', NULL, 12, NULL, 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', NULL, '''page'':5 ''layout'':6 ''reflow'':1 ''complex'':4 ''problem'':2', false);
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc, fti, private) VALUES (5, '2005-01-14 00:00:00', NULL, 'Firefox install instructions should be complete', NULL, 12, NULL, 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', NULL, '''instal'':2 ''complet'':6 ''firefox'':1 ''instruct'':3', false);
-INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc, fti, private) VALUES (6, '2005-01-14 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', NULL, 12, NULL, 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', NULL, '''save'':4 ''close'':12 ''crash'':2 ''dialog'':6 ''window'':10 ''firefox'':1 ''nonexist'':9', false);
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc, fti, private) VALUES (3, '2004-10-05 00:00:00', NULL, 'Bug Title Test', 'y idu yifdxhfgffxShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
 
 Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 'Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', '''y'':19 ''xo'':18,49,78,107 ''bug'':1 ''idu'':20 ''kfd'':10,27,41,56,70,85,99 ''lkd'':6,23,37,52,66,81,95 ''lkjd'':7,24,38,53,67,82,96 ''test'':3 ''titl'':2 ''glkfd'':11,28,42,57,71,86,100 ''oiugf'':15,32,46,61,75,90,104 ''gkfdsg'':9,26,40,55,69,84,98 ''jlkdsj'':5,22,36,51,65,80,94 ''yxoiuy'':14,31,45,60,74,89,103 ''hlkjfds'':8,25,39,54,68,83,97 ''shirtpkdf'':4,50,79 ''xoshirtpkdf'':35,64,93 ''xoiuyxoiyxoifuy'':17,34,48,63,77,92,106 ''hyoifxugyoixgfuy'':16,33,47,62,76,91,105 ''yifdxhfgffxshirtpkdf'':21 ''yxoigfyoigfxuyfxoiug'':13,30,44,59,73,88,102 ''gifdsytoxdiytxoiufdytoidxf'':12,29,43,58,72,87,101', false);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc, fti, private) VALUES (1, '2004-09-24 20:58:04.553583', NULL, 'Firefox does not support SVG', 'The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 'Firefox needs to support embedded SVG images, now that the standard has been finalised.', '''1.0'':23 ''one'':32 ''svg'':5,11,21,57,66 ''base'':42 ''draw'':67 ''imag'':12 ''need'':7,36,49 ''draft'':27 ''dynam'':65 ''embed'':10 ''enabl'':62 ''exist'':31 ''ideal'':46 ''includ'':51 ''instal'':43 ''integr'':39 ''object'':58 ''complet'':25 ''finalis'':19 ''firefox'':1,6,30,45 ''manipul'':55 ''support'':4,9,52 ''interact'':63 ''standard'':16,22 ''implement'':28,35,48 ''javascript'':60', false);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc, fti, private) VALUES (4, '2005-01-14 00:00:00', NULL, 'Reflow problems with complex page layouts', NULL, 12, NULL, 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', 0, '2005-01-14 17:20:12.820778', NULL, '''page'':5 ''layout'':6 ''reflow'':1 ''complex'':4 ''problem'':2', false);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc, fti, private) VALUES (5, '2005-01-14 00:00:00', NULL, 'Firefox install instructions should be complete', NULL, 12, NULL, 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', 0, '2005-01-14 17:27:03.702622', NULL, '''instal'':2 ''complet'':6 ''firefox'':1 ''instruct'':3', false);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc, fti, private) VALUES (6, '2005-01-14 00:00:00', NULL, 'Firefox crashes when Save As dialog for a nonexistent window is closed', NULL, 12, NULL, 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', NULL, '''save'':4 ''close'':12 ''crash'':2 ''dialog'':6 ''window'':10 ''firefox'':1 ''nonexist'':9', false);
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc, fti, private) VALUES (2, '2004-09-24 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 'Everything put into the folder "Trash" disappears!', '''put'':6 ''abil'':54 ''disk'':48 ''drag'':23 ''file'':59 ''hard'':47 ''help'':60 ''item'':25,34 ''seem'':15 ''undo'':52 ''delet'':32,44,58 ''recov'':56 ''trash'':3,10,13,28,40 ''appear'':37 ''folder'':4,9,14 ''immedi'':31 ''moment'':22 ''result'':29 ''everyth'':5 ''problem'':19 ''blackhol'':1,2 ''signific'':18 ''disappear'':11', false);
 
 
@@ -1368,31 +1537,30 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'potmsgset'::pg_catalog.regclass;
 
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (1, 1, 1, 1, NULL, 'a11y/addressbook/ea-addressbook-view.c:94
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (11, 11, 11, 1, '', 'addressbook/addressbook-errors.xml.h:6', 'addressbook:ldap-auth primary', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (19, 22, 19, 1, '', 'encfs/main.cpp:340', 'xgroup(usage)', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (20, 23, 20, 1, '', 'encfs/FileUtils.cpp:535', 'xgroup(setup)', 'c-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (14, 14, 14, 1, '', 'addressbook/gui/component/addressbook-migrate.c:1123', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (12, 12, 12, 1, '', 'addressbook/addressbook-errors.xml.h:8', 'addressbook:ldap-auth secondary', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (8, 8, 8, 1, '', 'a11y/addressbook/ea-minicard.c:166', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (13, 13, 13, 1, '', 'addressbook/gui/component/addressbook-migrate.c:124
+calendar/gui/migration.c:188 mail/em-migrate.c:1201', '', 'c-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (3, 3, 3, 1, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (1, 1, 1, 1, '', 'a11y/addressbook/ea-addressbook-view.c:94
 a11y/addressbook/ea-addressbook-view.c:103
-a11y/addressbook/ea-minicard-view.c:119', NULL, NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (2, 2, 2, 1, NULL, 'a11y/addressbook/ea-minicard-view.c:101', NULL, NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (3, 3, 3, 1, NULL, 'a11y/addressbook/ea-minicard-view.c:102', NULL, NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (4, 4, 4, 1, NULL, 'a11y/addressbook/ea-minicard-view.c:102', NULL, NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (5, 5, 5, 1, NULL, 'a11y/addressbook/ea-minicard-view.c:104', NULL, NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (6, 6, 6, 1, NULL, 'a11y/addressbook/ea-minicard-view.c:104', NULL, NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (7, 7, 7, 1, NULL, 'a11y/addressbook/ea-minicard-view.c:105', NULL, NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (8, 8, 8, 1, NULL, 'a11y/addressbook/ea-minicard.c:166', NULL, NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (9, 9, 9, 1, NULL, 'addressbook/addressbook-errors.xml.h:2', 'addressbook:ldap-init primary', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (10, 10, 10, 1, NULL, 'addressbook/addressbook-errors.xml.h:4', 'addressbook:ldap-init secondary', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (11, 11, 11, 1, NULL, 'addressbook/addressbook-errors.xml.h:6', 'addressbook:ldap-auth primary', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (12, 12, 12, 1, NULL, 'addressbook/addressbook-errors.xml.h:8', 'addressbook:ldap-auth secondary', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (13, 62, 13, 1, NULL, 'addressbook/gui/component/addressbook-migrate.c:124
-calendar/gui/migration.c:188 mail/em-migrate.c:1201', NULL, 'c-format');
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (14, 68, 14, 1, NULL, 'addressbook/gui/component/addressbook-migrate.c:1123', NULL, NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (15, 93, 15, 1, NULL, 'addressbook/gui/widgets/e-addressbook-model.c:151', NULL, 'c-format');
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (16, 95, 16, 1, NULL, 'addressbook/gui/widgets/eab-gui-util.c:275', NULL, 'c-format');
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (17, 97, 0, 1, NULL, NULL, NULL, NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (18, 98, 17, 1, NULL, 'addressbook/gui/widgets/foo.c:345', NULL, 'c-format');
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (19, 100, 18, 1, ' start po-group: common', 'encfs/FileUtils.cpp:1044', 'xgroup(common)', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (20, 101, 19, 1, NULL, 'encfs/main.cpp:340', 'xgroup(usage)', NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (21, 102, 20, 1, NULL, 'encfs/FileUtils.cpp:535', 'xgroup(setup)', 'c-format');
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (22, 103, 21, 1, NULL, 'encfs/encfsctl.cpp:346', NULL, 'c-format');
+a11y/addressbook/ea-minicard-view.c:119', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (6, 6, 6, 1, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (7, 7, 7, 1, '', 'a11y/addressbook/ea-minicard-view.c:105', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (2, 2, 2, 1, '', 'a11y/addressbook/ea-minicard-view.c:101', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (10, 10, 10, 1, '', 'addressbook/addressbook-errors.xml.h:4', 'addressbook:ldap-init secondary', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (4, 4, 4, 1, '', 'a11y/addressbook/ea-minicard-view.c:102', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (18, 21, 18, 1, ' start po-group: common', 'encfs/FileUtils.cpp:1044', 'xgroup(common)', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (17, 19, 17, 1, '', 'addressbook/gui/widgets/foo.c:345', '', 'c-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (16, 17, 16, 1, '', 'addressbook/gui/widgets/eab-gui-util.c:275', '', 'c-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (21, 24, 21, 1, '', 'encfs/encfsctl.cpp:346', '', 'c-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (15, 15, 15, 1, '', 'addressbook/gui/widgets/e-addressbook-model.c:151', '', 'c-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (5, 5, 5, 1, '', 'a11y/addressbook/ea-minicard-view.c:104', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (9, 9, 9, 1, '', 'addressbook/addressbook-errors.xml.h:2', 'addressbook:ldap-init primary', '');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potmsgset'::pg_catalog.regclass;
@@ -1407,6 +1575,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bounty'::pg_catalog.regclass;
 
+INSERT INTO bounty (id, name, title, summary, description, usdvalue, difficulty, duration, reviewer, datecreated, "owner", deadline, claimant, dateclaimed) VALUES (1, 'foomatic-widgets', 'Make foomatic have better widgets.', 'Foomatic needs to have way better widgets. The current ones are SO WinXP. Eeewww. Maybe we can get some of that K-Bling that I saw in Kubuntu?', 'The widgets need to be particularly polished, since foomatic is going to be the default foomaster on the desktop for the planet.', 453.44, 65, '7 days', 16, '2005-03-11 09:17:40.585397', 16, NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bounty'::pg_catalog.regclass;
@@ -1436,9 +1605,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karma'::pg_catalog.regclass;
 
-INSERT INTO karma (id, karmafield, datecreated, person, points) VALUES (1, 4, '2005-01-14 12:20:12.820778', 12, 10);
-INSERT INTO karma (id, karmafield, datecreated, person, points) VALUES (2, 4, '2005-01-14 12:27:03.702622', 12, 10);
-INSERT INTO karma (id, karmafield, datecreated, person, points) VALUES (3, 4, '2005-01-14 12:35:39.548665', 12, 10);
+INSERT INTO karma (id, karmatype, datecreated, person, points) VALUES (1, 4, '2005-01-14 12:20:12.820778', 12, 10);
+INSERT INTO karma (id, karmatype, datecreated, person, points) VALUES (2, 4, '2005-01-14 12:27:03.702622', 12, 10);
+INSERT INTO karma (id, karmatype, datecreated, person, points) VALUES (3, 4, '2005-01-14 12:35:39.548665', 12, 10);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karma'::pg_catalog.regclass;
@@ -1446,6 +1615,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sshkey'::pg_catalog.regclass;
 
+INSERT INTO sshkey (id, person, keytype, keytext, "comment") VALUES (1, 12, 2, 'AAAAB3NzaC1kc3MAAAEBAPfhCA15ZaT08brwVXwpJjcZT6QFIipzF1sGy57HY7QPi/W+uljr1VcCHzWdlSmda7YpTCTx0NFYYQIccQRGX6zYL8v1w9FSRCAnxxUJmqEhsUDFYFdVTa9uLCrs3MSbmh7wwFPdRrGrO6X5x7T4dMZQwykSZrOVdpLcCHRgrMZslLomIAjERn6OAQNiGFz7B2tEi/3Soqd52bGJwOtGymRiAXkPSLbH7KfzSCe34ytdh6BD+4SrgSoa+TL3VDV70QAdlOFXD42ZHl3Sc0Tde4LbZeYq2Uf84DOATLZBbOYpRSqTLkM9XngpnvCRVb6dxEQfgODDw783tEuPpySLj2EAAAAVANpUVgivDjt9gFibN/AXfYy1meeBAAABAB6FtnMywmWZg2lr2I3nDfE5U5QbGUQB/ZEP98ZkSkhOcF29VlnGOxyb2/VZbVTLa/btlPF82L4An/c8VKtKZnel7LnAlMoArdgzQNXGVQQVtnaWwM26ydgDzkSSIes3elNZgsfnPRBvaF0ol9Tqju0rNGKjnr3ZOX/NX+42bxpjRnxYj1h56yP2jKKeGfjorI6JK1YfqBAiTxzaDMzSpknnrbztaKJoh7IFqMMOp9ANSFh7H106pEaCv3ebCTJZprtWqNKjb2zum7OQPRz3upA0qx22ocTokjv4itXJ6yj/BvGu9qdOIQFXuB2rsFtLZtS8ATueOly0GzyeiZBx/AEAAAEBAO8jRYjL7tAYnVlO1p6UzPOicAuGCFWfNbBEDRAXoSgLNdj451jStw+eUc9ZVz7tG/XRVZsiavtFHb2cbrcfX1YOd69xi0m+IY6mo3yKt3irQRokDtt376sHoUdHgj2ozySZJgG8IJndtoS+VQQy6NdClA3fNFb96bF865eNaRYoHJO9ZI84lkWQL++MLzIuyFfCs1hSlapyyuHC8kFmF7AQdrVZvbohSbnWs+w53nIW8nAA7z21wAukvE1Pl6AQyG0e7U1sYS8Pc8dtmzJvdtVZWBl02/gqQJ7f06mFvnsN45rR1Uyxnrwl6rbFwqabZDlyD5Ac6Icbvz9SG1gBOiI=', 'andrew@trogdor');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sshkey'::pg_catalog.regclass;
@@ -1481,13 +1651,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'milestone'::pg_catal
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'milestone'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archarchivelocation_bak'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archarchivelocation_bak'::pg_catalog.regclass;
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'pushmirroraccess'::pg_catalog.regclass;
 
 
@@ -1502,7 +1665,78 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'buildqueue'::pg_cata
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'buildqueue'::pg_catalog.regclass;
 
 
-SELECT pg_catalog.setval('person_id_seq', 29, true);
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'signedcodeofconduct'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'signedcodeofconduct'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bountysubscription'::pg_catalog.regclass;
+
+INSERT INTO bountysubscription (id, bounty, person, subscription) VALUES (1, 1, 9, 1);
+INSERT INTO bountysubscription (id, bounty, person, subscription) VALUES (2, 1, 6, 3);
+INSERT INTO bountysubscription (id, bounty, person, subscription) VALUES (3, 1, 1, 2);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bountysubscription'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productbounty'::pg_catalog.regclass;
+
+INSERT INTO productbounty (id, bounty, product) VALUES (1, 1, 4);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productbounty'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrobounty'::pg_catalog.regclass;
+
+INSERT INTO distrobounty (id, bounty, distribution) VALUES (1, 1, 1);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrobounty'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'projectbounty'::pg_catalog.regclass;
+
+INSERT INTO projectbounty (id, bounty, project) VALUES (1, 1, 4);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'projectbounty'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'mirror'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'mirror'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'mirrorcontent'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'mirrorcontent'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'mirrorsourcecontent'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'mirrorsourcecontent'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'potemplatename'::pg_catalog.regclass;
+
+INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (1, 'evolution-2.2', 'Main translation domain for the Evolution 2.2', 'This is a description about Evolution 2.2 POTemplateName', 'evolution-2.2');
+INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (2, 'pmount', 'pmount', NULL, 'pmount');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potemplatename'::pg_catalog.regclass;
+
+
+SELECT pg_catalog.setval('person_id_seq', 31, true);
 
 
 
@@ -1510,7 +1744,7 @@ SELECT pg_catalog.setval('emailaddress_id_seq', 25, true);
 
 
 
-SELECT pg_catalog.setval('gpgkey_id_seq', 10, true);
+SELECT pg_catalog.setval('gpgkey_id_seq', 11, true);
 
 
 
@@ -1530,11 +1764,11 @@ SELECT pg_catalog.setval('ircid_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('teammembership_id_seq', 8, true);
+SELECT pg_catalog.setval('teammembership_id_seq', 35, true);
 
 
 
-SELECT pg_catalog.setval('teamparticipation_id_seq', 26, true);
+SELECT pg_catalog.setval('teamparticipation_id_seq', 57, true);
 
 
 
@@ -1554,10 +1788,6 @@ SELECT pg_catalog.setval('projectrelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('projectrole_id_seq', 1, false);
-
-
-
 SELECT pg_catalog.setval('product_id_seq', 10, true);
 
 
@@ -1566,15 +1796,11 @@ SELECT pg_catalog.setval('productlabel_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productrole_id_seq', 1, false);
-
-
-
 SELECT pg_catalog.setval('productseries_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('productrelease_id_seq', 5, true);
+SELECT pg_catalog.setval('productrelease_id_seq', 6, true);
 
 
 
@@ -1626,7 +1852,7 @@ SELECT pg_catalog.setval('productbranchrelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('manifest_id_seq', 9, true);
+SELECT pg_catalog.setval('manifest_id_seq', 14, true);
 
 
 
@@ -1666,7 +1892,7 @@ SELECT pg_catalog.setval('distrorelease_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('distroarchrelease_id_seq', 1, true);
+SELECT pg_catalog.setval('distroarchrelease_id_seq', 6, true);
 
 
 
@@ -1678,31 +1904,31 @@ SELECT pg_catalog.setval('libraryfilealias_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sourcepackagename_id_seq', 9, true);
+SELECT pg_catalog.setval('sourcepackagename_id_seq', 14, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackage_id_seq', 12, true);
+SELECT pg_catalog.setval('sourcepackage_id_seq', 17, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagerelease_id_seq', 15, true);
+SELECT pg_catalog.setval('sourcepackagerelease_id_seq', 20, true);
 
 
 
-SELECT pg_catalog.setval('build_id_seq', 2, true);
+SELECT pg_catalog.setval('build_id_seq', 7, true);
 
 
 
-SELECT pg_catalog.setval('binarypackagename_id_seq', 8, true);
+SELECT pg_catalog.setval('binarypackagename_id_seq', 13, true);
 
 
 
-SELECT pg_catalog.setval('binarypackage_id_seq', 12, true);
+SELECT pg_catalog.setval('binarypackage_id_seq', 15, true);
 
 
 
-SELECT pg_catalog.setval('packagepublishing_id_seq', 9, true);
+SELECT pg_catalog.setval('packagepublishing_id_seq', 11, true);
 
 
 
@@ -1714,11 +1940,11 @@ SELECT pg_catalog.setval('osfile_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('pomsgid_id_seq', 104, true);
+SELECT pg_catalog.setval('pomsgid_id_seq', 25, true);
 
 
 
-SELECT pg_catalog.setval('potranslation_id_seq', 14, true);
+SELECT pg_catalog.setval('potranslation_id_seq', 1, true);
 
 
 
@@ -1736,19 +1962,19 @@ SELECT pg_catalog.setval('potemplate_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('pofile_id_seq', 1, true);
+SELECT pg_catalog.setval('pofile_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('pomsgset_id_seq', 14, true);
+SELECT pg_catalog.setval('pomsgset_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('pomsgidsighting_id_seq', 26, true);
+SELECT pg_catalog.setval('pomsgidsighting_id_seq', 25, true);
 
 
 
-SELECT pg_catalog.setval('potranslationsighting_id_seq', 14, true);
+SELECT pg_catalog.setval('potranslationsighting_id_seq', 1, false);
 
 
 
@@ -1832,7 +2058,7 @@ SELECT pg_catalog.setval('sectionselection_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sourcepackagepublishing_id_seq', 2, true);
+SELECT pg_catalog.setval('sourcepackagepublishing_id_seq', 8, true);
 
 
 
@@ -1868,11 +2094,11 @@ SELECT pg_catalog.setval('personlanguage_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('potmsgset_id_seq', 22, true);
+SELECT pg_catalog.setval('potmsgset_id_seq', 21, true);
 
 
 
-SELECT pg_catalog.setval('bounty_id_seq', 1, false);
+SELECT pg_catalog.setval('bounty_id_seq', 1, true);
 
 
 
@@ -1896,7 +2122,7 @@ SELECT pg_catalog.setval('sourcepackagerelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sshkey_id_seq', 1, false);
+SELECT pg_catalog.setval('sshkey_id_seq', 1, true);
 
 
 
@@ -1933,5 +2159,41 @@ SELECT pg_catalog.setval('buildqueue_id_seq', 1, false);
 
 
 SELECT pg_catalog.setval('packaging_id_seq', 2, true);
+
+
+
+SELECT pg_catalog.setval('signedcodeofconduct_id_seq', 1, false);
+
+
+
+SELECT pg_catalog.setval('bountysubscription_id_seq', 3, true);
+
+
+
+SELECT pg_catalog.setval('productbounty_id_seq', 1, true);
+
+
+
+SELECT pg_catalog.setval('distrobounty_id_seq', 1, true);
+
+
+
+SELECT pg_catalog.setval('projectbounty_id_seq', 1, true);
+
+
+
+SELECT pg_catalog.setval('mirror_id_seq', 1, false);
+
+
+
+SELECT pg_catalog.setval('mirrorcontent_id_seq', 1, false);
+
+
+
+SELECT pg_catalog.setval('mirrorsourcecontent_id_seq', 1, false);
+
+
+
+SELECT pg_catalog.setval('potemplatename_id_seq', 2, true);
 
 

@@ -1,12 +1,17 @@
-# Zope
-from zope.interface import implements
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# SQL imports
-from sqlobject import ForeignKey, IntCol
+__metaclass__ = type
+
+from zope.interface import implements
+from zope.component import getUtility
+
+from sqlobject import ForeignKey
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
+from canonical.lp.dbschema import EnumCol
+from canonical.lp import dbschema
 from canonical.launchpad.interfaces import IBugSubscription, \
-        IBugSubscriptionSet
+        IBugSubscriptionSet, ILaunchBag
 
 from canonical.launchpad.database.bugset import BugSetBase
 
@@ -21,12 +26,12 @@ class BugSubscription(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person',
                 notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    subscription = IntCol(notNull=True)
+    subscription = EnumCol(
+        dbName='subscription', notNull=True, schema=dbschema.BugSubscription)
 
 
 def BugSubscriptionFactory(context, **kw):
-    bug = context.context.bug
-    return BugSubscription(bug=bug, **kw)
+    return BugSubscription(bug = getUtility(ILaunchBag).bug.id, **kw)
 
 
 class BugSubscriptionSet(BugSetBase):

@@ -5,6 +5,10 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
+<head>
+  <title metal:fill-slot="title">Launchpad Logout</title>
+</head>
+
 <body>
 
 

@@ -79,6 +79,29 @@ class TestSignedFiles(unittest.TestCase):
                           datadir("singular-stanza"),
                           [datadir("pubring.gpg")])
 
+    def testCheckPubkeyNotFound(self):
+        """canonical.lucille.GPGV.verify_signed_file should raise
+           NoPublicKeyError
+        """
+        from canonical.lucille.GPGV import verify_signed_file
+        from canonical.lucille.GPGV import NoPublicKeyError
+        self.assertRaises(NoPublicKeyError,
+                          verify_signed_file,
+                          datadir("good-signed-changes"),
+                          [datadir("empty-file")])
+
+    def testCheckPubkeyNotFoundDetailsKey(self):
+        """canonical.lucille.GPGV.verify_signed_file should raise
+           NoPublicKeyError with the right key id
+        """
+        from canonical.lucille.GPGV import verify_signed_file
+        from canonical.lucille.GPGV import NoPublicKeyError
+        try:
+            verify_signed_file(datadir("good-signed-changes"),
+                               [datadir("empty-file")])
+        except NoPublicKeyError, err:
+            self.assertEquals(err.key, '3AD3DF3EF2D2C028')
+
 def test_suite():
     suite = unittest.TestSuite()
     loader = unittest.TestLoader()

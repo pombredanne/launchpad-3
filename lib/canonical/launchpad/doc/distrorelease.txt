@@ -1,0 +1,35 @@
+Distro Releases
+===============
+
+From the DerivationOverview spec[1]:
+
+    A distribution of GNU/Linux comprises a set of packages, an installer,
+    possibly a live-CD, some amount of metadata associated with the arrangement
+    of those elements and also a lot of information on managing it.
+
+A distro release is a given version of a distribution. So, for Ubuntu, there
+are releases (or planned releases) like "warty", "hoary" and "bendy".
+
+Distro releases are retrieved with the IDistroReleaseSet utility, much like
+people are retrieved with the IPersonSet utility, or bug tasks are retrieved
+with the IBugTaskSet utility.
+
+To demonstrate how to use this utility, let's simulate interacting with the
+system as an anonymous user:
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('launchpad.anonymous')
+
+The IDistroReleaseSet utility is accessed in the usual fashion:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IDistroReleaseSet
+    >>> distroreleaseset = getUtility(IDistroReleaseSet)
+
+To retrieve a specific release of a distribution, use IDistroReleaseSet.get:
+
+    >>> warty = distroreleaseset.get(1)
+    >>> print warty.name
+    warty
+
+[1] https://wiki.launchpad.canonical.com/DerivationOverview

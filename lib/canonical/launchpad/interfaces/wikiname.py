@@ -17,3 +17,10 @@ class IWikiName(Interface):
     wiki = TextLine(title=_("Wiki host"), required=True)
     wikiname = TextLine(title=_("Wikiname"), required=True)
 
+
+class IWikiNameSet(Interface):
+    """The set of WikiNames."""
+
+    def new(personID, wiki, wikiname):
+        """Create a new WikiName pointing to the given Person."""
+

@@ -9,11 +9,12 @@ import random
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol
 from canonical.database.sqlbase import SQLBase
 
 # canonical imports
 from canonical.launchpad.interfaces import ILoginToken, ILoginTokenSet
+from canonical.lp.dbschema import LoginTokenType, EnumCol
 
 
 class LoginToken(SQLBase):
@@ -24,12 +25,17 @@ class LoginToken(SQLBase):
     requesteremail = StringCol(dbName='requesteremail') 
     email = StringCol(dbName='email', notNull=True)
     token = StringCol(dbName='token', unique=True)
-    tokentype = IntCol(dbName='tokentype', notNull=True)
+    tokentype = EnumCol(dbName='tokentype', notNull=True,
+                        schema=LoginTokenType)
     created = DateTimeCol(dbName='created', notNull=True)
 
+    title = 'Launchpad Email Verification'
 
 class LoginTokenSet(object):
     implements(ILoginTokenSet)
+
+    def __init__(self):
+        self.title = 'Launchpad Email Verification System'
 
     def new(self, requester, requesteremail, email, tokentype):
         """See ILoginTokenSet"""
@@ -37,7 +43,7 @@ class LoginTokenSet(object):
         length = 20
         token = ''.join([random.choice(characters) for count in range(length)])
         return LoginToken(requester=requester, requesteremail=requesteremail,
-                          email=email, token=token, tokentype=int(tokentype),
+                          email=email, token=token, tokentype=tokentype,
                           created=datetime.utcnow())
 
     def __getitem__(self, tokentext):

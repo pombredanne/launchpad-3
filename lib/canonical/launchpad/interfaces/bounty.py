@@ -10,9 +10,10 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Summary, Title, TimeInterval
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.interfaces import IHasOwner
 
 
-class IBounty(Interface):
+class IBounty(IHasOwner):
     """The core bounty description."""
 
     id = Int(
@@ -22,7 +23,7 @@ class IBounty(Interface):
             title=_('Bounty name'), required=True,
             description=_("""A short and unique name for this bounty. 
                 This allows us to refer to the bounty directly in a url,
-                so it needs to be destinct and descriptive. For example:
+                so it needs to be distinct and descriptive. For example:
                 mozilla-type-ahead-find and
                 postgres-smart-serial."""),
             constraint=valid_name,
@@ -75,12 +76,27 @@ class IBounty(Interface):
             title=_('Owner'), required=True, readonly=True
             )
     owner = Attribute("The owner's IPerson")
+    # joins
+    subscriptions = Attribute('The set of subscriptions to this bounty.')
+    projects = Attribute('The projects which this bounty is related to.')
+    products = Attribute('The products to which this bounty is related.')
+    distributions = Attribute('The distributions to which this bounty is related.')
 
+    # subscription-related methods
+    def subscribe(person, subscription):
+        """Subscribe this person to the bounty, using the given level of
+        subscription. Returns the BountySubscription that this would have
+        created or updated."""
+
+    def unsubscribe(person):
+        """Remove this person's subscription to this bounty."""
 
 
 # Interfaces for containers
 class IBountySet(IAddFormCustomization):
     """A container for bounties."""
+
+    title = Attribute('Title')
 
     def __getitem__(key):
         """Get a bounty."""

@@ -9,7 +9,7 @@
     <content class="canonical.launchpad.database.BugTask">
         <require permission="launchpad.View"
                  interface="canonical.launchpad.interfaces.IBugTask" />
-        <require permission="zope.Public"
+        <require permission="launchpad.Edit"
                  set_schema="canonical.launchpad.interfaces.IBugTask" />
     </content>
 
@@ -55,7 +55,8 @@
     <browser:addform
         name="+upstreamtask"
         schema="canonical.launchpad.interfaces.IBugTask"
-        for="canonical.launchpad.interfaces.IBugTaskSet"
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.bug.BugAddingView"
         label="Add Task to fix bug Upstream"
         fields="product status priority severity assignee owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
@@ -63,7 +64,7 @@
         keyword_arguments="product status priority severity owner"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/tasks/+upstreamtask">
+        lp:url="malone/bugs/$Bug.id/+upstreamtask">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
     </browser:addform>
 
@@ -72,7 +73,8 @@
         for="canonical.launchpad.interfaces.IEditableUpstreamBugTask"
         class="canonical.launchpad.browser.bug.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="product maintainer bugtitle bugdescription milestone status priority severity assignee"
+        fields="product maintainer bugtitle bugdescription milestone
+                status priority severity assignee"
         label="Edit Product Bug Task"
         permission="launchpad.Edit"
         template="../templates/bugtask-editform.pt"
@@ -83,7 +85,8 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IReadOnlyUpstreamBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="product maintainer bugtitle bugdescription milestone status priority severity assignee"
+        fields="product maintainer bugtitle bugdescription milestone
+                status priority severity assignee"
         label="Product Bug Task"
         permission="launchpad.View"
         template="../templates/bugtask-display.pt"
@@ -91,17 +94,18 @@
     </browser:schemadisplay>
 
     <browser:addform
-        name="+packagetask"
+        name="+distrotask"
         schema="canonical.launchpad.interfaces.IBugTask"
-        for="canonical.launchpad.interfaces.IBugTaskSet"
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.bug.BugAddingView"
         label="Add SourcePackage Bug Task"
-        fields="distribution sourcepackagename binarypackagename status priority severity assignee owner"
+        fields="distribution sourcepackagename owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
         arguments=""
-        keyword_arguments="distribution sourcepackagename binarypackagename status priority severity owner"
+        keyword_arguments="distribution sourcepackagename owner"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/tasks/+packagetask">
+        lp:url="malone/bugs/$Bug.id/+distrotask">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
     </browser:addform>
 
@@ -110,7 +114,8 @@
         for="canonical.launchpad.interfaces.IEditableDistroBugTask"
         class="canonical.launchpad.browser.bug.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename bugtitle bugdescription status priority severity assignee"
+        fields="sourcepackagename binarypackagename bugtitle bugdescription
+                status priority severity assignee"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-editform.pt"
@@ -121,13 +126,56 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IReadOnlyDistroBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename bugtitle bugdescription status priority severity assignee"
+        fields="sourcepackagename binarypackagename bugtitle bugdescription
+                status priority severity assignee"
         label="Source Package Bug Task"
         permission="zope.Public"
         template="../templates/bugtask-display.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 
+    <browser:addform
+        name="+distroreleasetask"
+        schema="canonical.launchpad.interfaces.IBugTask"
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.bug.BugAddingView"
+        label="Add Distro Release Bug Task"
+        fields="distrorelease sourcepackagename owner"
+        content_factory="canonical.launchpad.database.BugTaskFactory"
+        arguments=""
+        keyword_arguments="distrorelease sourcepackagename owner"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="malone/bugs/$Bug.id/tasks/+distroreleasetask">
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+    </browser:addform>
+
+<!--
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IEditableDistroBugTask"
+        class="canonical.launchpad.browser.bug.BugTaskEditView"
+        schema="canonical.launchpad.interfaces.IBugTask"
+        fields="sourcepackagename binarypackagename bugtitle bugdescription
+                status priority severity assignee"
+        label="Edit SourcePackage Bug Task"
+        permission="launchpad.AnyPerson"
+        template="../templates/bugtask-editform.pt"
+        lp:url="malone/tasks/$BugTask.id/+edit">
+    </browser:editform>
+
+    <browser:schemadisplay
+        name="+edit"
+        for="canonical.launchpad.interfaces.IReadOnlyDistroBugTask"
+        schema="canonical.launchpad.interfaces.IBugTask"
+        fields="sourcepackagename binarypackagename bugtitle bugdescription
+                status priority severity assignee"
+        label="Source Package Bug Task"
+        permission="zope.Public"
+        template="../templates/bugtask-display.pt"
+        lp:url="malone/tasks/$BugTask.id/+edit">
+    </browser:schemadisplay>
+-->
     <!-- BugTasksReport -->
     <!-- TODO: figure out why we need to give explicit attributes instead of
                using set_schema-->
@@ -141,8 +189,10 @@
     <securedutility
         class="canonical.launchpad.database.BugTasksReport"
         provides="canonical.launchpad.interfaces.IBugTasksReport">
-        <allow interface="canonical.launchpad.interfaces.IBugTasksReport"
-            />
+        <allow interface="canonical.launchpad.interfaces.IBugTasksReport" />
+        <require
+            permission="zope.Public"
+            set_attributes="user minseverity minpriority showclosed" />
     </securedutility>
 
     <browser:defaultView

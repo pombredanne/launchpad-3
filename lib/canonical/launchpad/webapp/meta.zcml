@@ -37,4 +37,10 @@
           />
   </complexDirective>
 
+  <directive
+      namespace="http://namespaces.zope.org/zope"
+      name="authorizations"
+      schema="canonical.launchpad.webapp.metazcml.IAuthorizationsDirective"
+      handler="canonical.launchpad.webapp.metazcml.authorizations"
+      />
 </configure>

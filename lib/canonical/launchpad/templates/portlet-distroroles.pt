@@ -17,7 +17,7 @@
         <p tal:repeat="team view/get_role_users">
           <img src="/++resource++user.gif" alt=""/>
           <a class="link" 
-             tal:attributes="href string:/foaf/people/${team/person/name}"
+             tal:attributes="href string:/people/${team/person/name}"
              tal:content="team/person/displayname">PERSON</a> as
           <span tal:content="team/rolename">ROLE</span>
         </p>

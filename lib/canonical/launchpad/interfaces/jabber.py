@@ -15,3 +15,10 @@ class IJabberID(Interface):
     person = Int(title=_("Owner"), required=True)
     jabberid = TextLine(title=_("Jabber user ID"), required=True)
 
+
+class IJabberIDSet(Interface):
+    """The set of JabberIDs."""
+
+    def new(personID, jabberid):
+        """Create a new JabberID pointing to the given Person."""
+

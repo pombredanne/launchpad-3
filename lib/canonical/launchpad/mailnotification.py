@@ -4,7 +4,7 @@ application."""
 from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
 
-from canonical.launchpad.interfaces import IBug, IBugSubscriptionSet
+from canonical.launchpad.interfaces import IBug
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.database import Bug, BugTracker, EmailAddress
 from canonical.lp.dbschema import BugTaskStatus, BugPriority, \
@@ -24,7 +24,7 @@ def send_edit_notification_simple(bug, from_addr, to_addrs, subject, message):
         from_addr, to_addrs, subject, subject + "\n\n" + message)
 
 def send_edit_notification(bug, from_addr, to_addrs, subject, edit_header_line,
-                      changes):
+                           changes):
     if changes:
         msg = """%s
 
@@ -33,14 +33,20 @@ The following changes were made:
 """ % edit_header_line
         for changed_field in changes.keys():
             msg += "%s: %s => %s\n" % (
-                changed_field, changes[changed_field]["old"], changes[changed_field]["new"])
+                changed_field, changes[changed_field]["old"],
+                changes[changed_field]["new"])
 
         send_edit_notification_simple(bug, from_addr, to_addrs, subject, msg)
 
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug."""
-    bugsubscriptions = zapi.getAdapter(bug, IBugSubscriptionSet, "")
-    return list(GLOBAL_NOTIFICATION_EMAIL_ADDRS) + bugsubscriptions.getCcEmailAddresses()
+    subscriptions = []
+    if not bug.private:
+        subscriptions = list(GLOBAL_NOTIFICATION_EMAIL_ADDRS)
+
+    subscriptions += bug.notificationRecipientAddresses()
+
+    return subscriptions
 
 def get_changes(before, after, fields):
     """Return what changed from the object before to after for the
@@ -116,103 +122,54 @@ def notify_bug_modified(modified_bug, event):
             "Edited bug: %s" % event.object_before_modification.title),
         changes = changes)
 
-def notify_bug_assigned_product_added(product_task, event):
-    """Notify CC'd list that this bug has been assigned to
-    a product."""
-    product_task = event.object
+def notify_bugtask_added(bugtask, event):
+    """Notify CC'd list that this bug has been marked as needing fixing
+    somewhere else."""
+    bugtask = event.object
     assignee_name = "(not assigned)"
-    if product_task.assignee:
-        assignee_name = product_task.assignee.displayname
-    msg = """\
-Product: %(product)s
-Status: %(status)s
-Priority: %(priority)s
-Severity: %(severity)s
-Assigned: %(assigned)s
-""" % {'product' : product_task.product.displayname,
-       'status' : BugTaskStatus.items[int(product_task.bugstatus)].title,
-       'priority' : BugPriority.items[int(product_task.priority)].title,
-       'severity' : BugSeverity.items[int(product_task.severity)].title,
-       'assigned' : assignee_name}
+    if bugtask.product:
+        msg = "Upstream: %s" % bugtask.product.displayname
+    elif bugtask.distribution:
+        msg = "Distribution: %s" % bugtask.distribution.displayname
+    elif bugtask.distrorelease: 
+        msg = "Distribution Release: %s (%s)" % (
+            bugtask.distrorelease.distribution.displayname,
+            bugtask.distrorelease.displayname)
+    else:
+        raise ValueError("Unrecognized BugTask type")
 
     send_edit_notification_simple(
-        product_task.bug,
-        FROM_ADDR, get_cc_list(product_task.bug),
-        '"%s" assigned to product' % product_task.bug.title, msg)
+        bugtask.bug, FROM_ADDR, get_cc_list(bugtask.bug),
+        '"%s" task added' % bugtask.bug.title, msg)
 
-def notify_bug_assigned_product_modified(modified_product_task, event):
-    """Notify CC'd list that this bug product task has been
-    modified, describing what the changes were."""
+def notify_bugtask_edited(modified_bugtask, event):
+    """Notify CC'd subscribers of this bug that something has changed on this
+    task."""
+    task = event.object
     changes = get_changes(
         before = event.object_before_modification,
-        after = event.object,
+        after = task,
         fields = (
-            ("product", lambda v: v.displayname),
-            ("bugstatus", lambda v: BugTaskStatus.items[v].title),
-            ("priority", lambda v: BugPriority.items[v].title),
-            ("severity", lambda v: BugSeverity.items[v].title),
-            ("assignee", lambda v: (v and v.displayname) or "(not assigned)")))
-
-    send_edit_notification(
-        bug = modified_product_task.bug,
-        from_addr = FROM_ADDR,
-        to_addrs = get_cc_list(modified_product_task.bug),
-        subject = '"%s" product task edited' % modified_product_task.bug.title,
-        edit_header_line = (
-            "Edited task for product: %s" %
-            modified_product_task.product.displayname),
-        changes = changes)
-
-def notify_bug_assigned_package_added(package_task, event):
-    """Notify CC'd list that this bug has been assigned to
-    a source package."""
-    assignee_name = "(not assigned)"
-    binary = "(none)"
-    if package_task.assignee:
-        assignee_name = package_task.assignee.displayname
-    if package_task.binarypackagename:
-        binary = package_task.binarypackagename.name
-
-    msg = """\
-Source Package: %(package)s
-Binary: %(binary)s
-Status: %(status)s
-Priority: %(priority)s
-Severity: %(severity)s
-Assigned: %(assigned)s
-""" % {'package' : package_task.sourcepackage.sourcepackagename.name,
-       'binary' : binary,
-       'status' : BugTaskStatus.items[int(package_task.bugstatus)].title,
-       'priority' : BugPriority.items[int(package_task.priority)].title,
-       'severity' : BugSeverity.items[int(package_task.severity)].title,
-       'assigned' : assignee_name}
-
-    send_edit_notification_simple(
-        package_task.bug,
-        FROM_ADDR, get_cc_list(package_task.bug),
-        '"%s" assigned to package' % package_task.bug.title, msg)
-
-def notify_bug_assigned_package_modified(modified_package_task, event):
-    """Notify CC'd list that something had been changed about this bug
-    package task."""
-    changes = get_changes(
-        before = event.object_before_modification,
-        after = event.object,
-        fields = (
-            ("bugstatus", lambda v: BugTaskStatus.items[v].title),
-            ("priority", lambda v: BugPriority.items[v].title),
-            ("severity", lambda v: BugSeverity.items[v].title),
+            ("status", lambda v: v.title),
+            ("priority", lambda v: v.title),
+            ("severity", lambda v: v.title),
             ("binarypackagename", lambda v: (v and v.name) or "(none)"),
             ("assignee", lambda v: (v and v.displayname) or "(not assigned)")))
 
+    where = None
+    if task.product:
+        where = "upstream " + task.product.name
+    elif task.distribution:
+        where = task.distribution.name
+    elif task.distrorelease:
+        where = "%s %s" % (
+            task.distrorelease.distribution.name, task.distrorelease.name)
+
     send_edit_notification(
-        bug = modified_package_task.bug,
-        from_addr = FROM_ADDR,
-        to_addrs = get_cc_list(modified_package_task.bug),
-        subject = '"%s" package task edited' % modified_package_task.bug.title,
-        edit_header_line = (
-            "Edited task for package: %s" %
-            modified_package_task.sourcepackage.sourcepackagename.name),
+        bug = task.bug, from_addr = FROM_ADDR,
+        to_addrs = get_cc_list(task.bug),
+        subject = '"%s" task edited' % task.bug.title,
+        edit_header_line = "Edited task on %s" % where,
         changes = changes)
 
 def notify_bug_product_infestation_added(product_infestation, event):
@@ -224,7 +181,7 @@ Infestation: %(infestation)s
 """ % {'product' :
          product_infestation.productrelease.product.name + " " +
          product_infestation.productrelease.version,
-       'infestation' : BugInfestationStatus.items[product_infestation.infestationstatus].title}
+       'infestation' : product_infestation.infestationstatus.title}
 
     send_edit_notification_simple(
         product_infestation.bug,
@@ -239,7 +196,7 @@ def notify_bug_product_infestation_modified(modified_product_infestation, event)
         fields = (
             ("productrelease", lambda v: "%s %s" % (
                 v.product.name, v.version)),
-            ("infestationstatus", lambda v: BugInfestationStatus.items[v].title)))
+            ("infestationstatus", lambda v: v.title)))
 
     send_edit_notification(
         bug = modified_product_infestation.bug,
@@ -263,7 +220,7 @@ Infestation: %(infestation)s
 """ % {'package' :
          package_infestation.sourcepackagerelease.sourcepackage.name + " " +
          package_infestation.sourcepackagerelease.version,
-       'infestation' : BugInfestationStatus.items[package_infestation.infestationstatus].title}
+       'infestation' : package_infestation.infestationstatus.title}
 
     send_edit_notification_simple(
         package_infestation.bug,
@@ -278,7 +235,7 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
         fields = (
             ("sourcepackagerelease", lambda v: "%s %s" % (
                 v.sourcepackage.sourcepackagename.name, v.version)),
-            ("infestationstatus", lambda v: BugInfestationStatus.items[v].title)))
+            ("infestationstatus", lambda v: v.title)))
 
     send_edit_notification(
         bug = modified_package_infestation.bug,

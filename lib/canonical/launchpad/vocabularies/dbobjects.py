@@ -9,17 +9,19 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.database.distribution import Distribution
-from canonical.launchpad.database.person import Person
-from canonical.launchpad.database.sourcepackage import SourcePackage, \
+from canonical.launchpad.database import Distribution
+from canonical.launchpad.database import DistroRelease
+from canonical.launchpad.database import Person
+from canonical.launchpad.database import GPGKey
+from canonical.launchpad.database import SourcePackage, \
     SourcePackageRelease, SourcePackageName
-from canonical.launchpad.database.binarypackage import BinaryPackage, \
-    BinaryPackageName
-from canonical.launchpad.database.milestone import Milestone
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.project import Project
-from canonical.launchpad.database.productrelease import ProductRelease
-from canonical.launchpad.database.bugtracker import BugTracker
+from canonical.launchpad.database import BinaryPackage
+from canonical.launchpad.database import BinaryPackageName
+from canonical.launchpad.database import Milestone
+from canonical.launchpad.database import Product
+from canonical.launchpad.database import Project
+from canonical.launchpad.database import ProductRelease
+from canonical.launchpad.database import BugTracker
 from canonical.database.sqlbase import SQLBase, quote_like, quote
 
 from sqlobject import AND, OR, CONTAINSSTRING
@@ -192,7 +194,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         objs = self._table.select(self._table.q.name == token)
-        if len(objs) != 1:
+        if objs.count() != 1:
             raise LookupError, token
         return self._toTerm(objs[0])
 
@@ -424,3 +426,53 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
             return [self._toTerm(obj) for obj in objs]
 
         return []
+
+
+class ValidGPGKeyVocabulary(SQLObjectVocabularyBase):
+    implements(IHugeVocabulary)
+    
+    _table = GPGKey
+    _orderBy = 'keyid'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.id, obj.person.displayname + " " + obj.keyid)
+
+
+    def search(self, query):
+        """Return terms where query is a substring of the keyid"""
+        if query:
+            clauseTables = ['Person',]
+
+            query = quote(query.lower())
+
+            objs = self._table.select(("GPGKey.person = Person.id AND "
+                                       "Person.fti @@ ftq(%s)" % query),
+                                      orderBy=self._orderBy,
+                                      clauseTables=clauseTables)
+            
+            return [self._toTerm(obj) for obj in objs]
+
+        return []
+
+
+class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
+    implements(IHugeVocabulary)
+
+    _table = DistroRelease
+    _orderBy = 'name'
+
+    def search(self, query):
+        """Return terms where query is a substring of the name"""
+        if query:
+            query = query.lower()
+            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+            fti_query = quote(query)
+            kw = {}
+            if self._orderBy:
+                kw['orderBy'] = self._orderBy
+            objs = self._table.select("name LIKE %s" % like_query, **kw)
+            return [self._toTerm(obj) for obj in objs]
+
+        return []
+

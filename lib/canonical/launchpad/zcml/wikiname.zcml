@@ -6,4 +6,14 @@
             set_attributes="wiki wikiname" />
     </content>
 
+    <content class="canonical.launchpad.database.WikiNameSet">
+        <allow interface="canonical.launchpad.interfaces.IWikiNameSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.WikiNameSet"
+        provides="canonical.launchpad.interfaces.IWikiNameSet">
+        <allow interface="canonical.launchpad.interfaces.IWikiNameSet" />
+    </securedutility>
+
 </configure>

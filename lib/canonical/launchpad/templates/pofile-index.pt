@@ -88,7 +88,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Translation of <span tal:replace="context/potemplate/name">PO Template</span>
+    <h1>Translation of <span tal:replace="context/potemplate/potemplatename/name">PO Template</span>
         into <span tal:replace="context/language/englishname">Language</span></h1>
 
     <h2>Contributors for this translation:</h2>

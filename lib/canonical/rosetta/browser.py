@@ -22,16 +22,17 @@ from zope.publisher.browser import FileUpload
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILanguageSet,  \
-    IProjectSet, IProductSet, IPasswordEncryptor, IRequestLocalLanguages, \
+    IProjectSet, IPasswordEncryptor, IRequestLocalLanguages, \
     IRequestPreferredLanguages, IDistributionSet, ISourcePackageNameSet, \
-    ILaunchBag
+    ILaunchBag, IRawFileData, ICountrySet, IGeoIP, \
+    IRequestPreferredLanguages, IPOTemplateSet
 
 from canonical.launchpad.database import Person, POTemplate, POFile
 
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader, POSyntaxError, \
     POInvalidInputError
-from canonical.rosetta.tar import string_to_tarfile, examine_tarfile
+from canonical.launchpad import helpers
 
 from canonical.lp.dbschema import RosettaImportStatus
 
@@ -321,7 +322,8 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
     # We don't support other kinds of tarballs and before calling this
     # function we did already the needed tests to be sure that pot_paths
     # follows our requirements.
-    potemplate.attachFile(tarfile.extractfile(pot_paths[0]).read(), importer)
+    potemplate.attachRawFileData(tarfile.extractfile(pot_paths[0]).read(),
+                                 importer)
     pot_base_dir = os.path.dirname(pot_paths[0])
 
     # List of .pot and .po files that were not able to be imported.
@@ -352,7 +354,7 @@ def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
         pofile = potemplate.getOrCreatePOFile(code, variant, importer)
 
         try:
-            pofile.attachFile(contents, importer)
+            pofile.attachRawFileData(contents, importer)
         except (POSyntaxError, POInvalidInputError):
             errors.append(path)
             continue
@@ -376,7 +378,40 @@ class TabIndexGenerator:
         self.index += 1
         return index
 
+class RosettaApplicationView(object):
+
+    prefLangPortlet = ViewPageTemplateFile(
+            '../launchpad/templates/portlet-pref-langs.pt')
+
+    countryPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-country-langs.pt')
+
+    browserLangPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-browser-langs.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.languages = request_languages(self.request)
+
+    def requestCountry(self):
+        ip = self.request.get('HTTP_X_FORWARDED_FOR', None)
+        if ip is None:
+            ip = self.request.get('REMOTE_ADDR', None)
+        if ip is None:
+            return None
+        gi = getUtility(IGeoIP)
+        return gi.country_by_addr(ip)
+
+    def browserLanguages(self):
+        return IRequestPreferredLanguages(self.request).getPreferredLanguages()
+
 class ProductView:
+    # XXX sabdfl 17/03/05 please merge this with the browser/product.py
+    # ProductView.
+    summaryPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-object-summary.pt')
+
     branchesPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-product-branches.pt')
 
@@ -389,6 +424,9 @@ class ProductView:
     projectPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-product-project.pt')
 
+    prefLangsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-pref-langs.pt')
+
     statusLegend = ViewPageTemplateFile(
         '../launchpad/templates/portlet-rosetta-status-legend.pt')
 
@@ -396,148 +434,56 @@ class ProductView:
         self.context = context
         self.request = request
         self.form = self.request.form
+        # List of languages the user is interested on based on their browser,
+        # IP address and launchpad preferences.
         self.languages = request_languages(self.request)
-        self.multitemplates = False
-        self._templangs = None
-        self._templates = list(self.context.potemplates)
+        # Cache value for the return value of self.templates
+        self._template_languages = None
+        # List of the templates we have in this subset.
+        self._templates = self.context.potemplates()
         self.status_message = None
+        # Whether there is more than one PO template.
+        self.has_multiple_templates = len(self._templates) > 1
 
-        self.newpotemplate()
-
-        if len(list(self._templates)) > 1:
-            self.multitemplates = True
-
-    def newpotemplate(self):
-        # Handle a request to create a new potemplate for this project. The
-        # code needs to extract all the relevant form elements, then call the
-        # POTemplate creation methods.
-
-        if not self.form.get("Register", None) == "Register POTemplate":
-            return
-        if not self.request.method == "POST":
-            self.status_message='You should post the form'
-            return
-
-        if ('file' not in self.form or
-            'name' not in self.form or
-            'title' not in self.form):
-            self.status_message = 'Please fill all the required fields.'
-            return
-
-        # Extract the details from the form
-        name = self.form['name']
-        if name == '':
-            self.status_message='The name field cannot be empty'
-            return
-        title = self.form['title']
-        if title == '':
-            self.status_message='The title field cannot be empty'
-            return
-
-
-        # get the launchpad person who is creating this product
-        owner = getUtility(ILaunchBag).user
-
-        file = self.form['file']
-
-        if type(file) is not FileUpload:
-            if file == '':
-                self.status_message = 'Please fill all the required fields.'
-            else:
-                # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
-                # aleatory bug with upload forms (or perhaps it's launchpad because
-                # I never had problems with bugzilla). The fact is that some uploads
-                # don't work and we get a unicode object instead of a file-like object
-                # in "file". We show an error if we see that behaviour.
-                # For more info, look at bug #116
-                self.status_message = 'There was an unknow error getting the file.'
-            return
-
-        filename = file.filename
-
-        if not (filename.endswith('.pot') or is_tar_filename(filename)):
-            self.status_message = (
-                'You must upload a PO template or a tar file.')
-            return
-
-        contents = file.read()
-
-        if filename.endswith('.pot'):
-            if not check_po_syntax(contents):
-                # The file is not correct.
-                self.status_message = 'Please, review the pot file seems to have a problem'
-                return
-        else:
-            tarfile = string_to_tarfile(contents)
-            pot_paths, po_paths = examine_tarfile(tarfile)
-
-            if len(pot_paths) == 0:
-                self.status_message = (
-                    "No PO templates were found in the tar file you "
-                    "uploaded. A PO template file must be present when "
-                    "creating a PO template in Rosetta.")
-                return
-
-            # Perform general check on the tar file, and stop before creating
-            # the template if there was a problem.
-
-            error = check_tar(tarfile, pot_paths, po_paths)
-
-            if error is not None:
-                self.status_message = error
-                return
-
-        # Now create a new potemplate in the db
-        try:
-            potemplate = self.context.newPOTemplate(
-                name=name,
-                title=title,
-                person=owner)
-        except KeyError:
-            # We already have a potemplate with that name in the database
-            self.status_message = (
-                'There is already a potemplate named %s' % name)
-            return
-
-        self._templates.append(potemplate)
-
-        if filename.endswith('.pot'):
-            potemplate.attachFile(contents, owner)
-            self.status_message = (
-                "Your PO template has been queued for import.")
-        else:
-            self.status_message = (
-                import_tar(potemplate, owner, tarfile, pot_paths, po_paths))
+    def projproducts(self):
+        """Return a list of other products from the same project as this
+        product, excluding this product"""
+        if self.context.project is None:
+            return []
+        return [p for p in self.context.project.products \
+                    if p.id <> self.context.id]
 
     def templates(self):
-        if self._templangs is None:
-            self._templangs = [TemplateLanguages(template, self.languages)
+        if self._template_languages is None:
+            self._template_languages = [TemplateLanguages(template, self.languages)
                                for template in self._templates]
 
-        return self._templangs
+        return self._template_languages
 
 
 class TemplateLanguages:
     """Support class for ProductView."""
 
-    def __init__(self, template, languages):
+    def __init__(self, template, languages, baseurl=''):
         self.template = template
-        self.name = template.name
+        self.name = template.potemplatename.name
         self.title = template.title
         self._languages = languages
+        self.baseurl = baseurl
 
     def languages(self):
         for language in self._languages:
-            yield TemplateLanguage(self.template, language)
+            yield TemplateLanguage(self.template, language, self.baseurl)
 
 
 class TemplateLanguage:
     """Support class for ProductView."""
 
-    def __init__(self, template, language):
+    def __init__(self, template, language, baseurl=''):
         self.name = language.englishname
         self.code = language.code
         self.translateURL = '+translate?languages=' + self.code
+        self.baseurl = baseurl
 
         poFile = template.queryPOFileByLang(language.code)
 
@@ -628,10 +574,10 @@ class ViewPOTemplate:
         """Called from the page template to do any processing needed if a form
         was submitted with the request."""
 
-        if request.method == 'POST':
-            if 'EDIT' in request.form:
+        if self.request.method == 'POST':
+            if 'EDIT' in self.request.form:
                 self.edit()
-            elif 'UPLOAD' in request.form:
+            elif 'UPLOAD' in self.request.form:
                 self.upload()
 
         return ''
@@ -696,26 +642,26 @@ class ViewPOTemplate:
             potfile = file.read()
 
             try:
-                self.context.attachFile(potfile, owner)
+                self.context.attachRawFileData(potfile, owner)
             except (POSyntaxError, POInvalidInputError):
                 # The file is not correct.
                 self.status_message = (
                     'There was a problem parsing the file you uploaded.'
                     ' Please check that it is correct.')
 
-            self.context.attachFile(potfile, owner)
+            self.context.attachRawFileData(potfile, owner)
         elif is_tar_filename(filename):
-            tf = string_to_tarfile(file.read())
-            pot_paths, po_paths = examine_tarfile(tf)
+            tarball = helpers.string_to_tarfile(file.read())
+            pot_paths, po_paths = helpers.examine_tarfile(tarball)
 
-            error = check_tar(tf, pot_paths, po_paths)
+            error = check_tar(tarball, pot_paths, po_paths)
 
             if error is not None:
                 self.status_message = error
                 return
 
             self.status_message = (
-                import_tar(self.context, owner, tf, pot_paths, po_paths))
+                import_tar(self.context, owner, tarball, pot_paths, po_paths))
         else:
             self.status_message = (
                 'The file you uploaded was not recognised as a file that '
@@ -784,7 +730,7 @@ class ViewPOFile:
             user = getUtility(ILaunchBag).user
 
             try:
-                self.context.attachFile(pofile, user, None)
+                self.context.attachRawFileData(pofile, user)
             except (POSyntaxError, POInvalidInputError):
                 # The file is not correct.
                 self.status_message = 'Please, review the po file seems to have a problem'
@@ -1302,15 +1248,12 @@ class ViewImportQueue:
         queue = []
 
         id = 0
-        for product in getUtility(IProductSet):
-            if product.project is not None:
-                project_name = product.project.displayname
-            else:
-                project_name = '-'
-            for template in product.potemplates:
+        potemplateset = getUtility(IPOTemplateSet)
+
+        for template in potemplateset:
                 template_raw = IRawFileData(template)
                 if (template_raw.rawimportstatus == \
-                    int(RosettaImportStatus.PENDING)):
+                    RosettaImportStatus.PENDING):
                     if template_raw.rawimporter is not None:
                         importer_name = template_raw.rawimporter.displayname
                     else:
@@ -1318,9 +1261,8 @@ class ViewImportQueue:
 
                     retdict = {
                         'id': 'pot_%d' % template.id,
-                        'project': project_name,
-                        'product': product.displayname,
-                        'template': template.name,
+                        'description': template.title,
+                        'template': template.potemplatename.name,
                         'language': '-',
                         'importer': importer_name,
                         'importdate' : template_raw.daterawimport,
@@ -1337,9 +1279,8 @@ class ViewImportQueue:
 
                     retdict = {
                         'id': 'po_%d' % pofile.id,
-                        'project': project_name,
-                        'product': product.displayname,
-                        'template': template.name,
+                        'description': template.title,
+                        'template': template.potemplatename.name,
                         'language': pofile.language.englishname,
                         'importer': importer_name,
                         'importdate' : pofile_raw.daterawimport,

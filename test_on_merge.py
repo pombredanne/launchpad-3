@@ -48,7 +48,8 @@ def main():
     if not checkarchtag.is_tree_good():
         return 1
 
-    checktitles.summarise_directory("lib/canonical/launchpad/templates")
+    if not checktitles.summarise_directory("lib/canonical/launchpad/templates"):
+        return 1
 
     # Tabnanny
     org_stdout = sys.stdout
@@ -77,7 +78,11 @@ def main():
     # too, but we can explicity check for errors here
     con = psycopg.connect('dbname=template1')
     cur = con.cursor()
-    cur.execute('end transaction; drop database launchpad_ftest_template')
+    try:
+        cur.execute('end transaction; drop database launchpad_ftest_template')
+    except psycopg.ProgrammingError, x:
+        if 'does not exist' not in str(x):
+            raise
     cur.close()
     con.close()
     

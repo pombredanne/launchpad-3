@@ -2,6 +2,10 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
+  <class class="canonical.lp.dbschema.Item">
+      <allow attributes="name title value description schema" />
+  </class>
+
   <browser:pages for="*" permission="zope.Public" >
       <!--  XXX yuck... registering a main template as a view for everything.
             This should be a non-published resource.

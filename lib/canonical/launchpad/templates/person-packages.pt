@@ -14,49 +14,25 @@
 
 <body>
 
-<div metal:fill-slot="main">
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+  </metal:rightportlets>
 
-<div id="content" class="documentEditable">
+  <div metal:fill-slot="main">
 
-    <ul class="contentViews">
-      <li id="contentview-profile" class="plain">
-        <a href=".">Profile</a>
-      </li>
+      <h1>Package Maintenance Report</h1>
+      
+      <p tal:condition="not: context/packages"><span
+      tal:replace="context/displayname">Person DisplayName</span> is not
+      currently recorded as the maintainer of any packages in the Launchpad
+      system.</p>
 
-      <li tal:condition="context/packages" id="contentview-packages"
-          class="selected">
-        <a href="+packages">Packages</a>
-      </li>
-
-      <li tal:condition="context/bugs" id="contentview-bugs" class="plain">
-        <a href="+bugs">Bugs</a>
-      </li>
-
-      <li tal:condition="context/translations" id="contentview-translations"
-          class="plain">
-        <a href="+translations">Translations</a>
-      </li>
-
-      <li tal:condition="context/activities" id="contentview-karma"
-          class="plain">
-        <a href="+karma">Karma</a>
-      </li>
-    </ul>
-
-    <div class="documentContent" id="region-content">
-      <h1>Packages maintained By 
-      <span tal:content="context/displayname">context</span></h1>
-        <div>
          <table>
-           <tr tal:condition="not:context/packages">
-             <td> No packages available </td>
-           </tr>
-
            <tr tal:repeat="package context/packages">
              <td tal:define="name package/name; 
                              distrorelease package/distrorelease/name;
                              distro package/distrorelease/distribution/name;
-                             distro_path string:/soyuz/distros/${distro};">
+                             distro_path string:/distros/${distro};">
       
                <a tal:attributes="href distro_path"
                   tal:content="package/distrorelease/distribution/title">DISTRO</a> ::
@@ -71,12 +47,8 @@
              </td>
           </tr>
      </table>
-    </div>
 
-</div>
-</div>
-</div>
-
+  </div>
 
 </body>
 </html>

@@ -1,0 +1,19 @@
+The changelog should be not found, since we are accessing it via the
+production port. Unfortunately, we can't yet test to see if it is
+available through the debug port.
+
+NB. This test also confirms that 404 errors are being returned
+on not found errors.
+
+  >>> print http(r"""
+  ... GET /cchangelog.html HTTP/1.1
+  ... Accept-Language: en-au,en-gb;q=0.7,en;q=0.3
+  ... """)
+  HTTP/1.1 404 Not Found
+  ...
+  <BLANKLINE>
+  ...
+  <title>Launchpad Page Not Found</title>
+  ...
+  The page that you are trying to access is not available
+  ...

@@ -15,11 +15,16 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 
 # Launchpad interfaces
-# XXX: Daniel Debonzi 2004-11-25
+# XXX: David Allouch 2004-11-25
 # Why RCSTypeEnum is inside launchpad.interfaces?
-from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin, ISourceSourceSet, \
-                                           RCSTypeEnum, RCSNames, IProductSet
+from canonical.launchpad.interfaces import ISourceSource, \
+    ISourceSourceAdmin, ISourceSourceSet, \
+    RCSTypeEnum, RCSNames, IProductSet
 
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import ImportTestStatus
+from canonical.lp.dbschema import SourceSourceStatus
+from canonical.lp.dbschema import RevisionControlSystems
 # tools
 import datetime
 from sets import Set
@@ -62,8 +67,10 @@ class SourceSource(SQLBase):
     #IntCol('rcstype', dbName='rcstype', default=RCSTypeEnum.cvs,
     #       notNull=True),
     # FIXME: use 'RCSTypeEnum.cvs' rather than '1'
-    rcstype = IntCol(dbName='rcstype', default=1,
-               notNull=True)
+    rcstype = EnumCol(dbName='rcstype',
+                      default=RevisionControlSystems.CVS,
+                      schema=RevisionControlSystems,
+                      notNull=True)
     hosted = StringCol(dbName='hosted', default=None)
     upstreamname = StringCol(dbName='upstreamname', default=None)
     processingapproved = DateTimeCol(dbName='processingapproved',
@@ -84,7 +91,9 @@ class SourceSource(SQLBase):
     currentgpgkey = StringCol(dbName='currentgpgkey', default=None)
     fileidreference = StringCol(dbName='fileidreference', default=None)
     # canonical.lp.dbschema.ImportTestStatus
-    autotested = IntCol(dbName='autotested', notNull=True, default=0)
+    autotested = EnumCol(dbName='autotested', notNull=True,
+                         default=ImportTestStatus.NEW,
+                         schema=ImportTestStatus)
     datestarted = DateTimeCol(dbName='datestarted', notNull=False,
         default=None)
     datefinished = DateTimeCol(dbName='datefinished', notNull=False,
@@ -260,15 +269,95 @@ class SourceSourceSet(object):
     """The set of SourceSource's."""
     implements(ISourceSourceSet)
 
+    def __init__(self):
+        self.title = 'Bazaar Upstream Imports'
+
     def __getitem__(self, sourcesourcename):
-        # XXX Strangely, the sourcesourcename appears to have been quoted
-        # already. Quoting it again causes this query to break, though we
-        # are not sure why.
-        ss = SourceSource.select(SourceSource.q.name=="%s" % \
-                                    sourcesourcename)
+        ss = SourceSource.selectBy(name=sourcesourcename)
         return ss[0]
 
-    def filter(self, sync=None, process=None, 
+    def _querystr(self, ready=None, text=None, state=None):
+        """Return a querystring and clauseTables for use in a search or a
+        get or a query."""
+        query = '1=1'
+        clauseTables = Set()
+        clauseTables.add('SourceSource')
+        # deal with the cases which require project and product
+        if ( ready is not None ) or text:
+            if len(query) > 0:
+                query = query + ' AND\n'
+            query += "SourceSource.product = Product.id"
+            if text:
+                query += ' AND Product.fti @@ ftq(%s)' % quote(text)
+            if ready is not None:
+                query += ' AND '
+                query += 'Product.active IS TRUE AND '
+                query += 'Product.reviewed IS TRUE '
+            query += ' AND '
+            query += '( Product.project IS NULL OR '
+            query += '( Product.project = Project.id '
+            if text:
+                query += ' AND Project.fti @@ ftq(%s) ' % quote(text)
+            if ready is not None:
+                query += ' AND '
+                query += 'Project.active IS TRUE AND '
+                query += 'Project.reviewed IS TRUE'
+            query += ') )'
+            clauseTables.add('Project')
+            clauseTables.add('Product')
+        # now just add filters on sourcesource
+        if state == SourceSourceStatus.TESTING:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.processingapproved IS NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.autotested = 0'
+        elif state == SourceSourceStatus.TESTFAILED:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.processingapproved IS NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.autotested = 1'
+        elif state == SourceSourceStatus.AUTOTESTED:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.processingapproved IS NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.autotested = 2'
+        elif state == SourceSourceStatus.PROCESSING:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.processingapproved IS NOT NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NULL'
+        elif state == SourceSourceStatus.SYNCING:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NOT NULL'
+        elif state == SourceSourceStatus.STOPPED:
+            pass
+        return query, clauseTables
+
+    def search(self, ready=None, 
+                     text=None,
+                     state=None,
+                     start=None,
+                     length=None):
+        query, clauseTables = self._querystr(ready, text, state)
+        return SourceSource.select(query, distinct=True,
+                                   clauseTables=clauseTables)[start:length]
+        
+
+    # XXX Mark Shuttleworth 04/03/05 renamed to Xfilter to see if anything
+    # breaks. If nothing has broken by end April feel free to remove
+    # entirely.
+    def Xfilter(self, sync=None, process=None, 
                      tested=None, text=None,
                      ready=None, assigned=None):
         query = ''
@@ -285,6 +374,7 @@ class SourceSourceSet(object):
                                Product.active IS TRUE AND
                                Product.reviewed IS TRUE"""
             clauseTables.add('Project')
+            clauseTables.add('Product')
         if sync is not None:
             if len(query) > 0:
                 query = query + ' AND '
@@ -309,10 +399,12 @@ class SourceSourceSet(object):
             if len(query) > 0:
                 query = query + ' AND '                
             query = query + "Product.name != 'unassigned'"
+            clauseTables.add('Product')
         else:
             if len(query) > 0:
                 query = query + ' AND '                
             query = query + "Product.name = 'unassigned'"
+            clauseTables.add('Product')
         if text is not None:
             if len(query) > 0:
                 query = query + ' AND '

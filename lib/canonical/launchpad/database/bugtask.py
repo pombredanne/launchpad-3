@@ -1,31 +1,32 @@
-
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+
 from sets import Set
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR, IN
+from sqlobject import DateTimeCol, ForeignKey
+from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import table
 
-# Zope
 from zope.exceptions import NotFoundError
 from zope.security.interfaces import Unauthorized
-from zope.component import getUtility
+from zope.component import getUtility, getAdapter
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 from zope.interface import implements
 
 from canonical.lp import dbschema
+from canonical.lp.dbschema import EnumCol
 from canonical.launchpad.interfaces import IBugTask
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.database.constants import nowUTC, DEFAULT
+from canonical.database.constants import nowUTC
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.searchbuilder import any, NULL
 
 from canonical.launchpad.interfaces import IBugTasksReport, \
     IBugTaskSet, IEditableUpstreamBugTask, IReadOnlyUpstreamBugTask, \
-    IEditableDistroBugTask, IReadOnlyDistroBugTask, ILaunchBag
+    IEditableDistroBugTask, IReadOnlyDistroBugTask, IUpstreamBugTask, \
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization
 
 class BugTask(SQLBase):
     implements(IBugTask)
@@ -42,18 +43,24 @@ class BugTask(SQLBase):
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
+    distrorelease = ForeignKey(
+        dbName='distrorelease', foreignKey='DistroRelease',
+        notNull=False, default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None)
-    status = IntCol(
+    status = EnumCol(
         dbName='status', notNull=True,
-        default=int(dbschema.BugTaskStatus.NEW))
-    priority = IntCol(
+        schema=dbschema.BugTaskStatus,
+        default=dbschema.BugTaskStatus.NEW)
+    priority = EnumCol(
         dbName='priority', notNull=True,
-        default=int(dbschema.BugPriority.MEDIUM))
-    severity = IntCol(
+        schema=dbschema.BugPriority,
+        default=dbschema.BugPriority.MEDIUM)
+    severity = EnumCol(
         dbName='severity', notNull=True,
-        default=int(dbschema.BugSeverity.NORMAL))
+        schema=dbschema.BugSeverity,
+        default=dbschema.BugSeverity.NORMAL)
     binarypackagename = ForeignKey(
         dbName='binarypackagename', foreignKey='BinaryPackageName',
         notNull=False, default=None)
@@ -67,6 +74,7 @@ class BugTask(SQLBase):
 
     def bugtitle(self):
         return self.bug.title
+    bugtitle = property(bugtitle)
 
     def maintainer(self):
         if self.product:
@@ -79,120 +87,135 @@ class BugTask(SQLBase):
             except IndexError:
                 return None
         return None
+    maintainer = property(maintainer)
 
     def bugdescription(self):
         if self.bug.messages:
             return self.bug.messages[0].contents
-
-    maintainer = property(maintainer)
-    bugtitle = property(bugtitle)
     bugdescription = property(bugdescription)
 
+    def _title(self):
+        title = 'Malone Bug #' + str(self.bug.id)
+        title += ' (' + self.bug.title + ')' + ' on '
+        if self.distribution:
+            title += self.distribution.name + ' '
+            if self.distrorelease:
+                title += self.distrorelease.name + ' '
+            if self.sourcepackagename:
+                title += self.sourcepackagename.name + ' '
+            if self.binarypackagename:
+                title += self.binarypackagename.name
+        if self.product:
+            title += self.product.displayname
+        return title
+    title = property(_title)
+
+    def _init(self, *args, **kw):
+        """Marks the task when it's created or fetched from the database."""
+        SQLBase._init(self, *args, **kw)
+
+        if self.product is not None:
+            mark_task(self, IUpstreamBugTask)
+        elif self.distrorelease is not None:
+            mark_task(self, IDistroReleaseBugTask)
+        else:
+            mark_task(self, IDistroBugTask)
+
+        #XXX: Bjorn Tillenius, 2005-03-15, This decision should be moved to
+        #     some view class.
+        user = getUtility(ILaunchBag).user
+        if self.product:
+            # upstream self
+            checker = getAdapter(self, IAuthorization, 'launchpad.Edit') 
+            if user and checker.checkAuthenticated(user):
+                mark_task(self, IEditableUpstreamBugTask)
+            else:
+                mark_task(self, IReadOnlyUpstreamBugTask)
+        else:
+            # sourcepackage self
+            if user:
+                mark_task(self, IEditableDistroBugTask)
+            else:
+                mark_task(self, IReadOnlyDistroBugTask)
 
 class BugTaskSet:
 
     implements(IBugTaskSet)
 
-    table = BugTask
-
     def __init__(self, bug=None):
-        self.bug = bug
+        self.title = 'A Set of Bug Tasks'
 
     def __getitem__(self, id):
-        principal = _get_authenticated_principal()
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         try:
-            task = self.table.select(self.table.q.id == id)[0]
-            if task.product:
-                # upstream task
-                if principal and (
-                    (principal.id == task.product.owner.id) or
-                    (task.assignee and principal.id == task.assignee.id)):
-                    mark_as_editable_upstream_task(task)
-                else:
-                    mark_as_readonly_upstream_task(task)
-            else:
-                # sourcepackage task
-                if principal:
-                    mark_as_editable_sourcepackage_task(task)
-                else:
-                    mark_as_readonly_sourcepackage_task(task)
-
-            return task
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            task = BugTask.get(id)
+        except SQLObjectNotFound:
             raise KeyError, id
 
+        return task
+
     def __iter__(self):
-        principal = _get_authenticated_principal()
-
-        for row in self.table.select(self.table.q.bugID == self.bug):
-            if row.product:
-                # upstream task
-                if principal and principal.id == row.product.owner.id:
-                    mark_as_editable_upstream_task(row)
-                else:
-                    mark_as_readonly_upstream_task(row)
-            else:
-                # sourcepackage task
-                if principal:
-                    mark_as_editable_sourcepackage_task(task)
-                else:
-                    mark_as_readonly_sourcepackage_task(task)
-
-            yield row
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        for task in BugTask.select():
+            yield task
 
     def get(self, id):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         try:
-            bugtask = self.table.get(id)
-        except SQLObjectNotFound, err:
+            bugtask = BugTask.get(id)
+        except SQLObjectNotFound:
             raise NotFoundError("BugTask with ID %s does not exist" % str(id))
 
         return bugtask
 
     def search(self, bug=None, searchtext=None, status=None, priority=None,
-               severity=None, product=None, milestone=None, assignee=None,
+               severity=None, product=None, distribution=None,
+               distrorelease=None, milestone=None, assignee=None,
                submitter=None, orderby=None):
-        query = ""
-
-        if searchtext:
-            query += "Bug.fti @@ ftq(%s)" % quote(searchtext)
-
-        # build the part of the query for FK columns
-        for arg in ('bug', 'product', 'milestone', 'assignee', 'submitter'):
-            query_arg = eval(arg)
-            if query_arg is not None:
-                if query:
-                    query += " AND "
-
-                fragment = ""
-                if isinstance(query_arg, any):
-                    quoted_ids = [quote(obj.id) for obj in query_arg.query_values]
-                    query_values = ", ".join(quoted_ids)
-                    fragment = "(BugTask.%s IN (%s))" % (arg, query_values)
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        def build_where_condition_fragment(arg_name, arg_val, cb_arg_id):
+            fragment = ""
+            if isinstance(arg_val, any):
+                quoted_ids = [quote(cb_arg_id(obj)) for obj in query_arg.query_values]
+                query_values = ", ".join(quoted_ids)
+                fragment = "(BugTask.%s IN (%s))" % (arg_name, query_values)
+            else:
+                if query_arg == NULL:
+                    fragment = "(BugTask.%s IS NULL)" % (arg_name)
                 else:
-                    if query_arg == NULL:
-                        fragment = "(BugTask.%s IS NULL)" % (arg)
-                    else:
-                        fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg.id)))
+                    fragment = "(BugTask.%s = %s)" % (
+                        arg_name, str(quote(cb_arg_id(query_arg))))
 
-                query += fragment
+            return fragment
+
+        query = ""
+        # build the part of the query for FK columns
+        for arg_name in ('bug', 'product', 'distribution', 'distrorelease',
+                         'milestone', 'assignee', 'submitter'):
+            query_arg = eval(arg_name)
+            if query_arg is not None:
+                where_cond = build_where_condition_fragment(
+                    arg_name, query_arg, lambda obj: obj.id)
+                if where_cond:
+                    if query:
+                        query += " AND "
+                    query += where_cond
 
         # build the part of the query for the db schema columns
-        for arg in ('status', 'priority', 'severity'):
-            query_arg = eval(arg)
+        for arg_name in ('status', 'priority', 'severity'):
+            query_arg = eval(arg_name)
             if query_arg is not None:
-                if query:
-                    query += " AND "
+                where_cond = build_where_condition_fragment(
+                    arg_name, query_arg, lambda obj: obj)
+                if where_cond:
+                    if query:
+                        query += " AND "
+                    query += where_cond
 
-                fragment = ""
-                if isinstance(query_arg, any):
-                    quoted_ids = [quote(obj) for obj in query_arg.query_values]
-                    query_values = ", ".join(quoted_ids)
-                    fragment = "(BugTask.%s IN (%s))" % (arg, query_values)
-                else:
-                    fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg)))
-
-                query += fragment
+        if searchtext:
+            if query:
+                query += " AND "
+            query += "Bug.fti @@ ftq(%s)" % quote(searchtext)
 
         user = getUtility(ILaunchBag).user
 
@@ -202,7 +225,7 @@ class BugTaskSet:
         if user:
             query += "("
         query += "(BugTask.bug = Bug.id AND Bug.private = FALSE)"
-        
+
         # XXX: Brad Bollenbach, 2005-02-03: The subselect here is due to what
         # appears to be a bug in sqlobject not taking distinct into
         # consideration when doing counts.
@@ -213,9 +236,9 @@ class BugTaskSet:
                 "                (Bug.id = BugSubscription.bug) AND "
                 "                (BugSubscription.person = %(personid)d) AND "
                 "                (BugSubscription.subscription IN (%(cc)d, %(watch)d))))))") %
-                {'personid' : user.id,
-                 'cc' : dbschema.BugSubscription.CC.value,
-                 'watch' : dbschema.BugSubscription.WATCH.value})
+                {'personid': user.id,
+                 'cc': dbschema.BugSubscription.CC.value,
+                 'watch': dbschema.BugSubscription.WATCH.value})
 
         bugtasks = BugTask.select(
             query, clauseTables = ["Bug", "BugTask"])
@@ -224,136 +247,103 @@ class BugTaskSet:
 
         return bugtasks
 
-    def add(self, ob):
-        return ob
+    def createTask(self, bug, product=None, distribution=None, distrorelease=None,
+                   sourcepackagename=None, binarypackagename=None, status=None,
+                   priority=None, severity=None, assignee=None, owner=None,
+                   milestone=None):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        bugtask_args = {
+            'bug' : getattr(bug, 'id', None),
+            'product' : getattr(product, 'id', None),
+            'distribution' : getattr(distribution, 'id', None),
+            'distrorelease' : getattr(distrorelease, 'id', None),
+            'sourcepackagename' : getattr(sourcepackagename, 'id', None),
+            'binarypackagename' : getattr(binarypackagename, 'id', None),
+            'status' : status,
+            'priority' : priority,
+            'severity' : severity,
+            'assignee' : getattr(assignee, 'id', None),
+            'owner' : getattr(owner, 'id', None),
+            'milestone' : getattr(milestone, 'id', None)
+        }
 
-    def nextURL(self):
-        return '.'
-
-def _get_authenticated_principal():
-    # XXX, Brad Bollenbach, 2005-01-05: should possible move this into some api
-    # module that contains shortcut functions for getting at stuff in the
-    # launchbag
-    launchbag = getUtility(ILaunchBag)
-    if launchbag.login:
-        return launchbag.user
+        return BugTask(**bugtask_args)
 
 def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))
 
-def mark_as_editable_upstream_task(task):
-    mark_task(task, IEditableUpstreamBugTask)
-
-def mark_as_readonly_upstream_task(task):
-    mark_task(task, IReadOnlyUpstreamBugTask)
-
-def mark_as_editable_sourcepackage_task(task):
-    mark_task(task, IEditableDistroBugTask)
-
-def mark_as_readonly_sourcepackage_task(task):
-    mark_task(task, IReadOnlyDistroBugTask)
-
 def BugTaskFactory(context, **kw):
-    return BugTask(bugID=context.context.bug, **kw)
+    return BugTask(bugID = getUtility(ILaunchBag).bug.id, **kw)
 
 # REPORTS
-class BugTasksReport(object):
+class BugTasksReport:
 
     implements(IBugTasksReport)
 
     def __init__(self):
         # initialise the user to None, will raise an exception if the
         # calling class does not set this to a person.id
-        from canonical.launchpad.database import BugTask, Bug
         self.user = None
         self.minseverity = 0
         self.minpriority = 0
-        self.Bug = Bug
-        self.BT = BugTask
         self.showclosed = False
-        self._maintainedPackageBugs = None
-        self._maintainedProductBugs = None
-        self._productAssigneeBugs = None
-        self._packageAssigneeBugs = None
-        self._assignedBugs = None
 
     # bugs assigned (i.e. tasks) to packages maintained by the user
     def maintainedPackageBugs(self):
-        if self._maintainedPackageBugs is not None:
-            return self._maintainedPackageBugs
-        querystr = """
-            BugTask.sourcepackagename = SourcePackage.sourcepackagename AND 
-            BugTask.distribution = SourcePackage.distribution AND 
-            SourcePackage.maintainer=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-            """ % (self.user.id,
-                   self.minseverity,
-                   self.minpriority)
+        querystr = (
+            "BugTask.sourcepackagename = SourcePackage.sourcepackagename AND "
+            "BugTask.distribution = SourcePackage.distro AND "
+            "SourcePackage.maintainer = %s AND "
+            "BugTask.severity >= %s AND "
+            "BugTask.priority >= %s") % (
+            self.user.id, self.minseverity, self.minpriority)
         clauseTables = ('SourcePackage',)
 
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._maintainedPackageBugs = list(self.BT.select(querystr,
-        clauseTables=clauseTables))
-        return self._maintainedPackageBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(BugTask.select(querystr, clauseTables=clauseTables))
 
     # bugs assigned (i.e. tasks) to products owned by the user
     def maintainedProductBugs(self):
-        if self._maintainedProductBugs is not None:
-            return self._maintainedProductBugs
-        querystr = """
-            BugTask.product=Product.id AND
-            Product.owner=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-            """ % (self.user.id,
-                   self.minseverity,
-                   self.minpriority)
-        
+        querystr = (
+            "BugTask.product = Product.id AND "
+            "Product.owner = %s AND "
+            "BugTask.severity >= %s AND "
+            "BugTask.priority >= %s") % (
+            self.user.id, self.minseverity, self.minpriority)
+
         clauseTables = ('Product',)
 
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._maintainedProductBugs = list(self.BT.select(querystr,
-        clauseTables=clauseTables))
-        return self._maintainedProductBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(BugTask.select(querystr, clauseTables=clauseTables))
 
     # package bugs assigned specifically to the user
     def packageAssigneeBugs(self):
-        if self._packageAssigneeBugs is not None:
-            return self._packageAssigneeBugs
-        querystr = """
-            BugTask.assignee=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-            """ % (self.user.id, self.minseverity,
-                   self.minpriority)
+        querystr = (
+            "BugTask.sourcepackagename IS NOT NULL AND "
+            "BugTask.assignee = %s AND "
+            "BugTask.severity >= %s AND "
+            "BugTask.priority >= %s") % (
+            self.user.id, self.minseverity, self.minpriority)
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._packageAssigneeBugs = list(self.BT.select(querystr))
-        return self._packageAssigneeBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(BugTask.select(querystr))
 
     # product bugs assigned specifically to the user
     def productAssigneeBugs(self):
-        if self._productAssigneeBugs is not None:
-            return self._productAssigneeBugs
-        querystr = """
-            BugTask.assignee=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-                   """ % (self.user.id,
-                          self.minseverity,
-                          self.minpriority)
+        querystr = (
+            "BugTask.product IS NOT NULL AND "
+            "BugTask.assignee =%s AND "
+            "BugTask.severity >=%s AND "
+            "BugTask.priority >=%s") % (
+            self.user.id, self.minseverity, self.minpriority)
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._productAssigneeBugs = list(self.BT.select(querystr))
-        return self._productAssigneeBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(BugTask.select(querystr))
 
     # all bugs assigned to a user
     def assignedBugs(self):
-        if self._assignedBugs is not None:
-            return self._assignedBugs
         bugs = Set()
         for bugtask in self.maintainedPackageBugs():
             bugs.add(bugtask.bug)
@@ -363,9 +353,10 @@ class BugTasksReport(object):
             bugs.add(bugtask.bug)
         for bugtask in self.productAssigneeBugs():
             bugs.add(bugtask.bug)
-        buglistwithdates = [ (bug.datecreated, bug) for bug in bugs ]
+
+        buglistwithdates = [(bug.datecreated, bug) for bug in bugs]
         buglistwithdates.sort()
         buglistwithdates.reverse()
-        bugs = [ bug[1] for bug in buglistwithdates ]
-        self._assignedBugs = bugs
-        return self._assignedBugs
+        bugs = [bug for datecreated, bug in buglistwithdates]
+
+        return bugs

@@ -1,16 +1,19 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-# sqlobject/sqlos
-from sqlobject import LIKE, AND
+__metaclass__ = type
 
-# lp imports
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-from canonical.lp import dbschema                       
-
-# zope imports
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.component import getUtility
+
+from sqlobject import LIKE, AND
+
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
+from canonical.lp.dbschema import BugTaskStatus
+from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag, \
+    ITeamParticipationSet
+from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.helpers import is_maintainer
 
 BATCH_SIZE = 20
 
@@ -21,21 +24,27 @@ class DistroReleaseView(object):
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-distrorelease-actions.pt')
-    
+
     linksPortlet = ViewPageTemplateFile(
         '../templates/portlet-distrorelease-links.pt')
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        bugtasks_to_show = getUtility(IBugTaskSet).search(
+            status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
+            distrorelease = self.context, orderby = "-id")
+        self.batch = Batch(
+            list(bugtasks_to_show), int(request.get('batch_start', 0)))
+        self.batchnav = BatchNavigator(self.batch, request)
+        self.is_maintainer = is_maintainer(self.context)
 
-    def bugSourcePackagesBatchNavigator(self):
-        packages = list(self.context.getBugSourcePackages())
-        start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', BATCH_SIZE))
+    def task_columns(self):
+        return [
+            "id", "package", "title", "status", "submittedby", "assignedto"]
 
-        batch = Batch(list=packages, start=start, size=BATCH_SIZE)
-        return BatchNavigator(batch=batch, request=self.request)
+    def assign_to_milestones(self):
+        return []
 
 class ReleasesAddView(object):
 
@@ -45,7 +54,7 @@ class ReleasesAddView(object):
         self.results = []
 
     def add_action(self):
-        person = IPerson(self.request.principal, None)        
+        person = IPerson(self.request.principal, None)
         if not person:
             return False
 
@@ -79,7 +88,7 @@ class ReleaseEditView(object):
 
     def edit_action(self):
 
-        name = self.request.get("name", "")        
+        name = self.request.get("name", "")
         title = self.request.get("title", "")
         shortdesc = self.request.get("shortdesc", "")
         description = self.request.get("description", "")
@@ -87,7 +96,7 @@ class ReleaseEditView(object):
 
         if not (name or title or description or version):
             return False
-        
+
         ##XXX: (uniques) cprov 20041003
         self.context.release.name = name
         self.context.release.title = title

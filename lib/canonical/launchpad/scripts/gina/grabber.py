@@ -3,7 +3,7 @@
 import apt_pkg, tempfile, os, tempfile, shutil, sys
 
 from classes import SourcePackageRelease, BinaryPackageRelease
-from database import Launchpad, Katie
+from database import Launchpad, Katie, LaunchpadTester
 from library import attachLibrarian
 
 from traceback import print_exc as printexception
@@ -64,6 +64,14 @@ parser.add_option("-R", "--run", dest="run",
 
 parser.add_option("-n", "--dry-run", dest="dry_run",
                   help="don't commit changes to database",
+                  default=False, action='store_true')
+
+parser.add_option("-b", "--back-propagate", dest="back_propagate",
+                  help="Make package back propagation",
+                  default=False, action='store_true')
+
+parser.add_option("-s", "--source-only", dest="source_only",
+                  help="Import only Source Packages",
                   default=False, action='store_true')
 
 (options,args) = parser.parse_args()
@@ -131,12 +139,18 @@ def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
 
         sources = apt_pkg.ParseTagFile(srcfile)
         while sources.Step():
+##             # To start from a given letter.
+##             if dict(sources.Section)['Package'][0].lower()< 'p':
+##                 continue
             srcpkg = SourcePackageRelease(kdb, component=component, 
                                           **dict(sources.Section))
             source_map[srcpkg.package] = srcpkg
 
         binaries = apt_pkg.ParseTagFile(binfile)
         while binaries.Step():
+##             # To start from a given letter.
+##             if dict(binaries.Section)['Package'][0].lower()< 'p':
+##                 continue
             binpkg = BinaryPackageRelease(component=component, 
                                           **dict(binaries.Section))
             name = binpkg.package
@@ -149,6 +163,10 @@ def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
 
         dibins = apt_pkg.ParseTagFile(difile)
         while dibins.Step():
+##             # To start from a given letter.
+##             if dict(dibins.Section)['Package'][0].lower()< 'p':
+##                 continue
+
             binpkg = BinaryPackageRelease(component=component,
                                           filetype="udeb",
                                           **dict(dibins.Section))
@@ -180,20 +198,28 @@ def do_arch(lp, kdb, bin_map, source_map):
     bins.sort()
     count = 0
     for name, binpkg in bins:
-        print "- Evaluating %s (%s, %s) for %s" % (binpkg.package, 
-                                            binpkg.component, 
-                                            binpkg.version,
-                                            binpkg.architecture)
-        if not source_map.has_key(binpkg.source):
-            # We check if we have a source package or else
-            # binpkg.ensure_created() is going to die an ugly death
-            print "\t** No source package parsed for %s" % binpkg.package
-            continue
+        if not options.source_only:
+            print "- Evaluating %s (%s, %s) for %s" % (binpkg.package, 
+                                                       binpkg.component, 
+                                                       binpkg.version,
+                                                       binpkg.architecture)
+            if not source_map.has_key(binpkg.source):
+                # We check if we have a source package or else
+                # binpkg.ensure_created() is going to die an ugly death
+                print "\t** No source package parsed for %s" % binpkg.package
+                continue
 
-        if binpkg.is_created(lp):
-            continue
+            if binpkg.is_created(lp):
+                continue
 
         srcpkg = source_map[binpkg.source]
+
+        if options.source_only:
+            if srcpkg.is_created(lp):
+                print ('- SourcePackageRelease %s-%s already imported'
+                       % (srcpkg.package, srcpkg.version))
+                continue
+
         if not srcpkg.is_processed:
             if not srcpkg.description:
                 # if the source package hasn't had a description
@@ -202,12 +228,22 @@ def do_arch(lp, kdb, bin_map, source_map):
             # Tricky bit here: even if the source package exists, we
             # need to process it to ensure it has all the data inside it
             # or binary package won't create properly
-            try:
-                srcpkg.process_package(kdb, package_root, keyrings)
-                srcpkg.ensure_created(lp)
-            except Exception, e:
-                print "\t!! sourcepackage addition threw an error."
-                printexception(e)
+##            try:
+
+            # Daniel Debonzi 20050223
+            # process_package is false when a package was not
+            # found in katie db. AFAICS, there is not to do with
+            # this package. Just give up.
+            if not srcpkg.process_package(kdb, package_root, keyrings):
+                print ('\t\t** Process Package Failed.'
+                       ' Package not found in Katie DB')
+                ## break
+                continue
+
+            srcpkg.ensure_created(lp)
+##             except Exception, e:
+##                 print "\t!! sourcepackage addition threw an error."
+##                 printexception(e)
                 # Since we're importing universe which can cause issues,
                 # we don't exit
                 # sys.exit(0)
@@ -216,12 +252,27 @@ def do_arch(lp, kdb, bin_map, source_map):
         # stored in the BinaryPackage table
         binpkg.licence = srcpkg.licence
 
-        try:
-            binpkg.process_package(kdb, package_root, keyrings)
-            binpkg.ensure_created(lp)
-        except Exception, e:
-            print "\t!! binarypackage addition threw an error."
-            printexception(e)
+        # If in source-only mode does not import the binary package
+        # and does not create the build table.
+        if options.source_only:
+            continue
+
+##        try:
+
+        # Daniel Debonzi 20050223
+        # process_package is false when a package was not
+        # found in katie db. AFAICS, there is not to do with
+        # this package. Just give up. The same as srcpkg.proccess_package
+        # above.
+
+        if not binpkg.process_package(kdb, package_root, keyrings):
+                print '\t** Process Package Failed. Package not found in Katie DB'
+                ## break
+                continue
+        binpkg.ensure_created(lp)
+##         except Exception, e:
+##             print "\t!! binarypackage addition threw an error."
+##             printexception(e)
             # Since we're importing universe which can cause issues,
             # we don't exit
             # sys.exit(0)
@@ -294,30 +345,35 @@ if __name__ == "__main__":
         do_arch(lp[arch],kdb,bin_map[arch],source_map)
         lp[arch].commit()
 
-    print "@ Performing backpropogation of sourcepackagerelease..."
-    do_backpropogation(kdb, lp[archs[0]], source_map, keyrings)
+
+    if options.back_propagate:
+        print "@ Performing backpropogation of sourcepackagerelease..."
+        do_backpropogation(kdb, lp[archs[0]], source_map, keyrings)
 
     # Next empty the publishing tables...
     print "@ Emptying publishing tables..."
     src=True
     for arch in archs:
-        lp[arch].emptyPublishing(src)
+        lp[arch].emptyPublishing(src, options.source_only)
         lp[arch].commit()
         src=False
 
     print "@ Publishing source..."
     do_publishing(source_map, lp[archs[0]], True)
     lp[archs[0]].commit()
-    
-    for arch in archs:
-        print "@ Publishing %s binaries..." % arch
-        do_publishing(bin_map[arch], lp[arch], False)
-        lp[arch].commit()
+
+    # Source only mode. Does not mess with binary publishing.
+    if not options.source_only:
+        for arch in archs:
+            print "@ Publishing %s binaries..." % arch
+            do_publishing(bin_map[arch], lp[arch], False)
+            lp[arch].commit()
+
+    tester = LaunchpadTester(source_map, bin_map)
+    tester.run()
 
     print "@ Closing database connections..."
     
-    for arch in archs:
-        lp[arch].close()
     kdb.commit()
     kdb.close()
 

@@ -78,16 +78,16 @@ class CursorWrapper:
                 return self.orig.execute(*args, **kwargs)
             except (psycopg.ProgrammingError, psycopg.OperationalError), e:
                 msg = e.args[0]
-                if not msg.startswith(
-                        'server closed the connection unexpectedly'):
+                if not (msg.startswith(
+                            'server closed the connection unexpectedly') or
+                        msg.startswith('could not connect to server')):
                     raise
-            except psycopg.InterfaceError, e2:
+            except psycopg.InterfaceError, e:
                 # Our cursor might still be pointing to a connection closed
-                # during connection._reconnect. Catch this and retry - if
-                # the cursor *really* is closed, the exeption will still
-                # get raised.
-                msg = e2.args[0]
-                if not msg == 'already closed':
+                # during connection._reconnect.  Catch this and retry - unless
+                # the connection really was closed explicitly.
+                msg = e.args[0]
+                if msg != 'already closed' or self.connection.closed:
                     raise
 
             # Avoid looping insanely fast.
@@ -99,6 +99,13 @@ class CursorWrapper:
                 pass
 
     def _reconnect(self):
-        self.connection._reconnect()
-        self.orig = self.connection.orig.cursor(*self.args, **self.kwargs)
+        try:
+            # Try make a new cursor...
+            self.orig = self.connection.orig.cursor(*self.args, **self.kwargs)
+            # ...and check that it really works!
+            self.orig.execute('select 1;')
+        except psycopg.Error:
+            # If it fails, reconnect the connection, and try again.
+            self.connection._reconnect()
+            self.orig = self.connection.orig.cursor(*self.args, **self.kwargs)
 

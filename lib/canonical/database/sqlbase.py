@@ -6,7 +6,8 @@ from datetime import datetime, date, time
 from sqlobject import connectionForURI
 import thread, warnings
 
-__all__ = ['SQLBase', 'quote', 'quote_like', 'ZopelessTransactionManager']
+__all__ = ['SQLBase', 'quote', 'quote_like', 'ZopelessTransactionManager',
+           'ConflictingTransactionManagerError']
 
 class LaunchpadStyle(Style):
     """A SQLObject style for launchpad. 
@@ -120,6 +121,10 @@ class _ZopelessConnectionDescriptor(object):
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")
+
+
+class ConflictingTransactionManagerError(Exception):
+    pass
 
 
 class ZopelessTransactionManager(object):
@@ -302,6 +307,10 @@ def quote(x):
     '1.0'
     >>> quote("hello")
     "'hello'"
+    >>> quote("'hello'")
+    "'''hello'''"
+    >>> quote(r"\'hello")
+    "'\\\\''hello'"
 
     Timezone handling is not implemented, since all timestamps should
     be UTC anyway.

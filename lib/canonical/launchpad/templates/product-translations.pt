@@ -17,10 +17,12 @@
 
 <metal:leftportlets fill-slot="portlets_one">
         <div tal:replace="structure view/detailsPortlet" />
+        <div tal:replace="structure view/summaryPortlet" />
         <div tal:replace="structure view/projectPortlet" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+        <div tal:replace="structure view/prefLangsPortlet" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -29,43 +31,31 @@
         <span tal:replace="context/displayname" i18n:name="product_name">product
         displayname</span></h1>
 
-    <p class="documentDescription" tal:content="context/shortdesc">
-        The product summary.
-    </p>
-
     <!-- indicate if no templates are registered for this product that it is
     possible to upload a po template -->
     <tal:block condition="not: view/templates">
 
         <h2 i18n:translate="">Translation Setup Required</h2>
 
-        <p class="portalMessage" i18n:translate="">Advanced Users Only</p>
+        <p class="portalMessage" i18n:translate="">Administrator help needed</p>
 
         <p i18n:translate="">
         <span tal:replace="context/displayname" i18n:name="product_name">
         This product</span> has not yet been setup for translation through
         Rosetta. If you have the latest PO Template for <span
         tal:replace="context/displayname" i18n:name="product_name">this
-        product</span> then you can upload it and start translating
-        immediately. If not, you'll need to ask the product maintainer,
-        or lead translater, to upload it here. You can give them the URL
-        of this page for certainty. As soon as that has been done you
-        will be able to start translating.
+        product</span> then you should ask administrators to setup this
+        product sending an email to
+        <a href="mailto:rosetta-users@lists.ubuntu.com">Rosetta's mailing list
+        </a>. You should give them the URL to the .pot and .po files.
+        As soon as that has been done you will be able to start translating.
         </p>
 
-        <!-- the "add a template" link is in here because we don't really
-        want people to add multiple templates for the moment. so once there
-        is a template, don't display the link-->
-
-        <p>
-        <img src="/++resource++add.gif" />
-        <a href="+newpotemplate" i18n:translate="">Upload A PO Template</a>
-        </p>
     </tal:block>
 
     <tal:block condition="view/templates">
 
-        <p tal:condition="view/multitemplates" i18n:translate="">
+        <p tal:condition="view/has_multiple_templates" i18n:translate="">
         Below is a list of translation templates for <span
         tal:replace="context/displayname" i18n:name="product_name">this
         product</span>. Each template has a different purpose: some
@@ -82,11 +72,6 @@
             </ul>
         </div>
 
-        <p tal:condition="view/languages" i18n:translate="">We have determined
-        a short list of languages that you may be interested in translating,
-        and show the translation templates status in each of those languages
-        below:</p>
-
         <div tal:condition="view/languages" tal:repeat="template view/templates">
 
             <h2 tal:content="template/title">Template</h2>
@@ -94,7 +79,7 @@
             <p tal:content="template/template/description">
                 Template description
             </p>
-            
+
             <table class="listing rowNavigation" width="100%">
                 <thead>
                     <th i18n:translate="">Language</th>
@@ -173,13 +158,16 @@
 
             <div align="right">
                 [ <a tal:attributes="href string:${template/name}"
-                   i18n:translate="">More...</a> ]
+                   i18n:translate="">More languages...</a> ]
             </div>
 
-            <div tal:replace="structure view/statusLegend" tal:omit-tag />
 
         </div>
+
+      <div tal:replace="structure view/statusLegend" tal:omit-tag />
+
     </tal:block> <!-- condition="view/templates -->
+
 </div>
 
 </body>

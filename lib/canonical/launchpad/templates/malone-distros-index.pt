@@ -1,0 +1,49 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<head>
+    <title metal:fill-slot="title">File a Bug in a Distribution</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Registered Distributions</h1>
+    <p>Please select the distribution in which you want to file a bug.</p>
+    <table width="100%" class="listing rowNavigation">
+        <tr>
+            <th>Name</th>
+            <th>Title</th>
+        </tr>
+        <tr tal:repeat="distribution context"
+            tal:attributes="onclick
+                string:window.location='/malone/distros/${distribution/name}'">
+            <td>
+                <a tal:content="distribution/name" 
+	               tal:attributes="href
+                       distribution/name">
+	               distribution name
+	            </a>
+            </td>
+            <td tal:content="distribution/title">
+                distribution title
+            </td>
+        </tr>
+    </table>    
+
+    <div style="float: right;">
+        (<span tal:replace="view/count" /> distributions)
+    </div>
+</div>
+
+</body>
+</html>

@@ -31,6 +31,10 @@ class IPackagePublishing(Interface):
             title=_('The priority being published into'),
             required=False, readonly=False,
             )
+    datepublished = Datetime(
+            title=_('The date on which this record was published'),
+            required=False, readonly=False,
+            )
     scheduleddeletiondate = Datetime(
             title=_('The date on which this record is scheduled for deletion'),
             required=False, readonly=False,

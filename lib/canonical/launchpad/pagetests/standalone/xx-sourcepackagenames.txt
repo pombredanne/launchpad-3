@@ -1,0 +1,62 @@
+
+
+  >>> print http(r"""
+  ... GET /sourcepackagenames HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... GET /sourcepackagenames?name=firefox HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... Referer: http://localhost:9000/sourcepackagenames
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+
+  >>> print http(r"""
+  ... GET /sourcepackagenames/+new HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... Referer: http://localhost:9000/sourcepackagenames?name=firefox
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+
+  >>> print http(r"""
+  ... POST /sourcepackagenames/+new HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Content-Length: 309
+  ... Content-Type: multipart/form-data; boundary=---------------------------11675438401425451428302623455
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... Referer: http://localhost:9000/sourcepackagenames/+new
+  ... 
+  ... -----------------------------11675438401425451428302623455
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... ubuntu-libs
+  ... -----------------------------11675438401425451428302623455
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------11675438401425451428302623455--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+
+  >>> print http(r"""
+  ... GET /sourcepackagenames/?name=ubuntu-libs HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... Referer: http://localhost:9000/sourcepackagenames/+new
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

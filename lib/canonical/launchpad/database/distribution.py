@@ -1,46 +1,40 @@
-# Zope imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 from zope.interface import implements
 
-# SQLObject/SQLBase
-from sqlobject import MultipleJoin, SQLObjectNotFound
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
+from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound, \
+    StringCol, ForeignKey, MultipleJoin, BoolCol, DateTimeCol
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.lp import dbschema
-
-# interfaces and database 
-from canonical.launchpad.interfaces import IDistribution
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.interfaces import IDistroPackageFinder
+from canonical.launchpad.interfaces import IDistribution, IDistributionSet, \
+    IDistroPackageFinder
 
 __all__ = ['Distribution', 'DistributionSet']
 
 
 class Distribution(SQLBase):
-
+    """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(IDistribution)
 
-    _table = 'Distribution'
     _defaultOrder='name'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True, alternateID=True,
-                  unique=True),
-        StringCol('displayname', dbName='displayname'),
-        StringCol('title', dbName='title'),
-        StringCol('summary', dbName='summary'),
-        StringCol('description', dbName='description'),
-        StringCol('domainname', dbName='domainname'),
-        ForeignKey(name='owner', dbName='owner', foreignKey='Person',
-                   notNull=True)
-        ]
 
-    releases = MultipleJoin('DistroRelease', 
-                            joinColumn='distribution') 
-    role_users = MultipleJoin('DistributionRole', 
-                              joinColumn='distribution')
+    name = StringCol(notNull=True, alternateID=True, unique=True)
+    displayname = StringCol()
+    title = StringCol()
+    summary = StringCol()
+    description = StringCol()
+    domainname = StringCol()
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    releases = MultipleJoin('DistroRelease', joinColumn='distribution')
+    bounties = RelatedJoin(
+        'Bounty', joinColumn='distribution', otherColumn='bounty',
+        intermediateTable='DistroBounty')
+    bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
 
     def traverse(self, name):
         if name == '+packages':
@@ -76,14 +70,16 @@ class Distribution(SQLBase):
             counts.append(count)
 
         return counts
-
     bugCounter = property(bugCounter)
 
 
-class DistributionSet(object):
+class DistributionSet:
     """This class is to deal with Distribution related stuff"""
 
     implements(IDistributionSet)
+
+    def __init__(self):
+        self.title = "Launchpad Distributions"
 
     def __iter__(self):
         return iter(Distribution.select())
@@ -93,6 +89,10 @@ class DistributionSet(object):
             return Distribution.byName(name)
         except SQLObjectNotFound:
             raise KeyError, name
+
+    def get(self, distributionid):
+        """See canonical.launchpad.interfaces.IDistributionSet."""
+        return Distribution.get(distributionid)
 
     def count(self):
         return Distribution.select().count()
@@ -105,10 +105,10 @@ class DistributionSet(object):
         """Returns a Distribution with name = name"""
         return self[name]
 
-class DistroPackageFinder(object):
+
+class DistroPackageFinder:
 
     implements(IDistroPackageFinder)
 
     def __init__(self, distribution=None, processorfamily=None):
         self.distribution = distribution
-        # find the x86 processorfamily

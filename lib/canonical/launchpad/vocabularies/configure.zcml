@@ -21,6 +21,11 @@
         />
 
     <vocabulary
+        name="DistroRelease"
+        factory="canonical.launchpad.vocabularies.DistroReleaseVocabulary"
+        />
+
+    <vocabulary
         name="BinaryPackage"
         factory="canonical.launchpad.vocabularies.BinaryPackageVocabulary"
         />
@@ -38,6 +43,11 @@
     <vocabulary
         name="ValidPerson"
         factory="canonical.launchpad.vocabularies.ValidPersonVocabulary"
+        />
+
+    <vocabulary
+        name="TeamSubscriptionPolicy"
+        factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
         />
 
     <vocabulary
@@ -103,6 +113,11 @@
     <vocabulary
         name="Packaging"
         factory="canonical.launchpad.vocabularies.PackagingVocabulary"
+        />
+
+    <vocabulary
+        name="ValidGPGKey"
+        factory="canonical.launchpad.vocabularies.ValidGPGKeyVocabulary"
         />
 
     <!-- Define the widget used by Choice fields that use huge vocabularies -->

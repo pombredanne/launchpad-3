@@ -7,7 +7,7 @@ import re
 from apt_pkg import ParseSrcDepends
 
 # lp imports
-from canonical.lp import dbschema                       
+from canonical.lp import dbschema
 
 # zope imports
 from zope.component import getUtility
@@ -20,10 +20,10 @@ from canonical.launchpad.interfaces import IPerson,\
                                            IPersonSet, \
                                            IDistroTools, \
                                            ILaunchBag
+from canonical.launchpad.database import POTemplateSet
 
 # depending on apps
 from canonical.soyuz.generalapp import builddepsSet
-
 
 BATCH_SIZE = 40
 
@@ -34,6 +34,9 @@ class SourcePackageReleasePublishingView(object):
     lastversionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-sourcepackagerelease-lastversions.pt')
 
+    statusLegend = ViewPageTemplateFile(
+        '../templates/portlet-rosetta-status-legend.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -42,7 +45,7 @@ class SourcePackageReleasePublishingView(object):
     def builddepends(self):
         if not self.context.builddepends:
             return []
-        
+
         builddepends = []
 
         depends = ParseSrcDepends(self.context.builddepends)
@@ -54,13 +57,13 @@ class SourcePackageReleasePublishingView(object):
         if not self.context.builddependsindep:
             return []
         builddependsindep = []
-        
+
         depends = ParseSrcDepends(self.context.builddependsindep)
-        
+
         for dep in depends:
             builddependsindep.append(builddepsSet(*dep[0]))
         return builddependsindep
-                
+
     def linkified_changelog(self):
         # XXX: salgado: No bugtracker URL should be hardcoded.
         changelog = cgi.escape(self.context.changelog)
@@ -87,7 +90,7 @@ class SourcePackageReleasePublishingView(object):
         """Current SourcePackageRelease of a SourcePackage"""
         srelease = self.context.sourcepackage.current(self.bag.distrorelease)
         return srelease.version
-    
+
     def binaries(self):
         """Format binary packeges into binarypackagename and archtags"""
 
@@ -114,7 +117,7 @@ class SourcePackageReleasePublishingView(object):
                     results[bin.name].sort()
 
         return results
-                
+
 
 class SourcePackageInDistroSetView(object):
 
@@ -127,7 +130,7 @@ class SourcePackageInDistroSetView(object):
 
     def sourcePackagesBatchNavigator(self):
         name = self.request.get("name", "")
-        
+
 
         if not name:
             source_packages = []

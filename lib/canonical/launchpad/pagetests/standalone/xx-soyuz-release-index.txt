@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /soyuz/distros/ubuntu/warty HTTP/1.1
+  ... GET /distros/ubuntu/warty HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

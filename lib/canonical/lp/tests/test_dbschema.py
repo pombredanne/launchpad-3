@@ -6,6 +6,16 @@ from zope.testing.doctestunit import DocTestSuite
 
 def test_constructor():
     """
+    We're definitely intending to do something that we should be warned
+    about: compare an Item to an int.  So, disable these warnings for just
+    this module.
+
+    >>> import warnings
+    >>> warnings.filterwarnings("ignore", "comparison of DBSchema",
+    ...     module=__name__)
+
+    We can import Item.
+
     >>> from canonical.lp.dbschema import Item
 
     An Item can be created only within a class suite, and its first arg
@@ -42,30 +52,84 @@ def test_constructor():
     An Item can be cast into an int or a string, for use as a replacement in
     SQL statements.
 
-    >>> print "SELECT * from Foo where Foo.id = '%d';" % SomeClass.attribute
+    >>> print "SELECT * from Foo where Foo.id = '%d';" % (
+    ...     SomeClass.attribute.value)
     SELECT * from Foo where Foo.id = '2';
     >>> print "SELECT * from Foo where Foo.id = '%s';" % SomeClass.attribute
     SELECT * from Foo where Foo.id = '2';
+    >>> int(SomeClass.attribute)
+    Traceback (most recent call last):
+    ...
+    TypeError: Cannot cast Item to int.  Use item.value instead.
 
-    An Item is comparable to ints.
+    An Item is not particularly comparable to ints.  It always compares
+    unequal.
 
     >>> 1 == SomeClass.attribute
     False
-    >>> 2 == SomeClass.attribute
+    >>> 1 != SomeClass.attribute
     True
+    >>> 2 == SomeClass.attribute
+    False
     >>> SomeClass.attribute == 1
     False
     >>> SomeClass.attribute == 2
-    True
+    False
     >>> hash(SomeClass.attribute)
     2
     >>> SomeClass._items[2] is SomeClass.attribute
     True
 
+    An Item compares properly when security proxied.
+
+    >>> item = SomeClass.attribute
+    >>> from zope.security.checker import ProxyFactory, NamesChecker
+    >>> checker = NamesChecker(['value', 'schema'])
+    >>> proxied_item = ProxyFactory(item, checker=checker)
+    >>> proxied_item is item
+    False
+    >>> proxied_item == item
+    True
+    >>> item == proxied_item
+    True
+    >>> item.__ne__(proxied_item)
+    False
+
     An Item has an informative representation.
 
     >>> print repr(SomeClass.attribute)
     <Item attribute (2) from canonical.lp.tests.test_dbschema.SomeClass>
+
+    An Item can tell you its class.
+
+    >>> SomeClass.attribute.schema is SomeClass
+    True
+
+    An Item knows how to represent itself for use in SQL queries by SQLObject.
+    The 'None' value passed in is the database type (I think).
+
+    >>> SomeClass.attribute.__sqlrepr__(None)
+    '2'
+
+    An Item will not compare equal to an Item from a different schema.
+
+    To test this, we'll create another schema, then compare items.
+
+    >>> class SomeOtherClass:
+    ...    description = "Description of some other class"
+    ...    attr3 = Item(3, 'an other foo', 'description of an other foo')
+    ...
+    >>> SomeClass.attr3.value == SomeOtherClass.attr3.value
+    True
+    >>> SomeOtherClass.attr3 == SomeClass.attr3
+    False
+
+    An Item can be used as a key in a dict.
+
+    >>> d = {SomeClass.attribute: 'some class attribute',
+    ...      SomeClass.attr3: 'some other class attriubte'}
+    >>> d[SomeClass.attr3]
+    'some other class attriubte'
 
     """
 
@@ -89,6 +153,18 @@ def test_decorator():
 
     >>> BugSeverity.items[50].name
     'CRITICAL'
+
+    We can also retrieve an Item by name.
+
+    >>> BugSeverity.items['CRITICAL'].title
+    'Critical'
+
+    If we don't ask for the item by its name or its value, we get a KeyError.
+
+    >>> BugSeverity.items['foo']
+    Traceback (most recent call last):
+    ...
+    KeyError: 'foo'
 
     """
 

@@ -6,11 +6,17 @@ __metaclass__ = type
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol, IntCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from canonical.database.sqlbase import SQLBase, quote
 
 from canonical.launchpad.interfaces import IPackaging, IPackagingUtil
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import Packaging
+
+#
+#
+#
 
 class Packaging(SQLBase):
     """A Packaging relating a Sourcepackage and a Product"""
@@ -29,7 +35,7 @@ class Packaging(SQLBase):
                                dbName="sourcepackage",
                                notNull=True)
 
-    packaging = IntCol(dbName='packaging', notNull=True)
+    packaging = EnumCol(dbName='packaging', notNull=True,schema=Packaging)
 
 class PackagingUtil:
     """

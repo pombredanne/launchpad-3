@@ -7,6 +7,8 @@ from persistent import IPersistent
 # file, one of person, project, bug, etc.
 #
 
+from canonical.launchpad.interfaces.idatetime import *
+from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.project import *
 from canonical.launchpad.interfaces.product import *
@@ -14,7 +16,13 @@ from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.productseries import *
 from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.sourcesource import *
+from canonical.launchpad.interfaces.package import *
 from canonical.launchpad.interfaces.sourcepackage import *
+from canonical.launchpad.interfaces.sourcepackagename import *
+from canonical.launchpad.interfaces.sourcepackagerelease import *
+from canonical.launchpad.interfaces.sourcepackageindistro import *
+from canonical.launchpad.interfaces.general import *
+from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.milestone import *
 from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.message import *
@@ -34,10 +42,12 @@ from canonical.launchpad.interfaces.infestation import *
 from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.archuser import *
 from canonical.launchpad.interfaces.binarypackage import *
+from canonical.launchpad.interfaces.binarypackagename import *
 from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distrorelease import *
+from canonical.launchpad.interfaces.distroarchrelease import *
 from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
@@ -48,6 +58,7 @@ from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.bounty import *
+from canonical.launchpad.interfaces.bountysubscription import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.pyarch import *
 from canonical.launchpad.interfaces.queue import *
@@ -57,9 +68,10 @@ from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.karma import *
-
-# XXX this is old soyuz style and must go
-from canonical.launchpad.interfaces.soyuz import *
+from canonical.launchpad.interfaces.codeofconduct import *
+from canonical.launchpad.interfaces.distrotool import *
+from canonical.launchpad.interfaces.component import *
+from canonical.launchpad.interfaces.section import *
 
 class IAuthApplication(Interface):
     """ Interface for AuthApplication """

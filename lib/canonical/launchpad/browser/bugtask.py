@@ -91,14 +91,21 @@ class BugTasksReportView:
 class BugTasksView:
 
     DEFAULT_STATUS = (
-        int(dbschema.BugTaskStatus.NEW),
-        int(dbschema.BugTaskStatus.ACCEPTED))
+        dbschema.BugTaskStatus.NEW.value,
+        dbschema.BugTaskStatus.ACCEPTED.value)
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.batch = Batch(self.search(), int(request.get('batch_start', 0)))
+        self.batch = Batch(list(self.search()), 
+                           int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
+
+        # XXX: Brad Bollenbach, 2005-03-10: Effectively "disable"
+        # the Anorak Search Page for now by redirecting to the
+        # Malone front page. We'll reenable this page if user
+        # feedback necessitates.
+        self.request.response.redirect("/malone")
 
     def search(self):
         """Find the bug tasks the user wants to see."""

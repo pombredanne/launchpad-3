@@ -5,6 +5,10 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <content class="canonical.bazaar.BazaarApplication">
+        <allow interface="canonical.bazaar.IBazaarApplication" />
+    </content>
+
     <!-- This view registers 'bazaar' as a suburl of RootObject. -->
     <browser:suburl
         for="canonical.publication.RootObject"

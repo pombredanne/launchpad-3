@@ -1,24 +1,35 @@
+# Python imports
+from datetime import datetime
+
 # Zope imports
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol, BoolCol
+from sqlobject import StringCol, ForeignKey, DateTimeCol, BoolCol
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.interfaces import IBuild, IBuilder, IBuildSet, \
                                            IBuildQueue
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import BuildStatus
+
+#
+#
+#
 
 class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
 
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
+                              default=datetime.utcnow())
     processor = ForeignKey(dbName='processor', foreignKey='Processor', 
                            notNull=True)
     distroarchrelease = ForeignKey(dbName='distroarchrelease', 
                                    foreignKey='DistroArchRelease', 
                                    notNull=True)
-    buildstate = IntCol(dbName='buildstate', notNull=True)
+    buildstate = EnumCol(dbName='buildstate', notNull=True,
+                         schema=BuildStatus)
     datebuilt = DateTimeCol(dbName='datebuilt')
     buildduration = DateTimeCol(dbName='buildduration')
     buildlog = ForeignKey(dbName='buildlog', foreignKey='LibraryFileAlias')

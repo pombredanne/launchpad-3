@@ -1,0 +1,181 @@
+  'foo' is a dupe account for 'name16'. Let's merge them, and keep only
+  'name16'.
+
+
+  >>> print http(r"""
+  ... GET /people/+requestmerge HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>Request Merge of User Accounts</h1>...
+  ...
+
+
+  >>> print http(r"""
+  ... POST /people/+requestmerge HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: multipart/form-data; boundary=---------------------------153178557535218118471519623
+  ... 
+  ... -----------------------------153178557535218118471519623
+  ... Content-Disposition: form-data; name="field.dupeaccount"
+  ... 
+  ... foo
+  ... -----------------------------153178557535218118471519623
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Submit
+  ... -----------------------------153178557535218118471519623--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>Request Merge of User Accounts</h1>...
+  ...
+
+
+  Get the id of the newly created user account so we don't have problems if
+  our sampledata changes.
+  
+  >>> from canonical.launchpad.database import PersonSet
+  >>> id = PersonSet().getByName('foo')
+
+  >>> print http(r"""
+  ... GET /people/+requestmerge-multiple?dupe=%d HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % id)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...have more than one registered email...
+  ...
+
+
+  Get the id for the emails too.
+  >>> from canonical.launchpad.database import EmailAddressSet
+  >>> email1 = EmailAddressSet().getByEmail('foo@baz.com')
+  >>> email2 = EmailAddressSet().getByEmail('bar.foo@canonical.com')
+
+  >>> print http(r"""
+  ... POST /people/+requestmerge-multiple?dupe=%d HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... dupe=%d&selected=%d&selected=%d""" % (id, id, email1, email2))
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...An email message was sent to each email address you selected...
+  ...
+
+
+  Get the token we'll have to use to finish the registration process.
+
+  >>> import email, re
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> msg = email.message_from_string(raw_msg)
+  >>> body = msg.get_payload()
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+  >>> base_path = '/token/%s' % token
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>You're being redirected</h1>...
+  ...
+
+
+  >>> path = "%s/+accountmerge" % base_path
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...You're trying to merge the user account...
+  ...
+
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... password=test""" % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...more registered email addresses...
+  ...
+
+
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> msg = email.message_from_string(raw_msg)
+  >>> body = msg.get_payload()
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+  >>> base_path = '/token/%s' % token
+
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>You're being redirected</h1>...
+  ...
+
+
+  >>> path = "%s/+accountmerge" % base_path
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...You're trying to merge the user account...
+  ...
+
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... password=test""" % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...The merge you requested was concluded with success...
+  ...
+
+
+  XXX: As soon as stub finishes the code to reassign everything that's owned
+  by one person to another, we'll be able to check here if the team created by
+  'foo' is now owned by 'name16'.
+

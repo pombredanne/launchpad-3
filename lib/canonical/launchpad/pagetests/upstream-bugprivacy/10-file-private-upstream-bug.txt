@@ -1,0 +1,71 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/products/firefox/+filebug HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+
+  >>> print http(r"""
+  ... POST /malone/products/firefox/+filebug HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 696
+  ... Content-Type: multipart/form-data; boundary=---------------------------7564071467832000371737554862
+  ... Referer: http://localhost:9000/malone/products/firefox/+filebug
+  ... 
+  ... -----------------------------7564071467832000371737554862
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... this is a private bug
+  ... -----------------------------7564071467832000371737554862
+  ... Content-Disposition: form-data; name="field.comment"
+  ... 
+  ... very secret info here
+  ... -----------------------------7564071467832000371737554862
+  ... Content-Disposition: form-data; name="field.private.used"
+  ... 
+  ... 
+  ... -----------------------------7564071467832000371737554862
+  ... Content-Disposition: form-data; name="field.private"
+  ... 
+  ... on
+  ... -----------------------------7564071467832000371737554862
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------7564071467832000371737554862--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+
+  >>> print http(r"""
+  ... GET /malone/products/firefox/ HTTP/1.1
+  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/products/firefox/+filebug
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+      <h1>Upstream Bugs for:
+          Mozilla Firefox
+      </h1>
+  ...
+    <small>displaying matching bugs 1 to 5 of 5</small>
+  ...
+            <td onclick="window.location='/malone/tasks/16/+edit'">7</td>
+  ...
+            <td onclick="window.location='/malone/tasks/15/+edit'">6</td>
+  ...
+            <td onclick="window.location='/malone/tasks/14/+edit'">5</td>
+  ...
+            <td onclick="window.location='/malone/tasks/13/+edit'">4</td>
+  ...
+            <td onclick="window.location='/malone/tasks/2/+edit'">1</td>
+  ...

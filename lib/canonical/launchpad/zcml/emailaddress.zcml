@@ -7,17 +7,16 @@
 
     <content class="canonical.launchpad.database.EmailAddress">
         <allow interface="canonical.launchpad.interfaces.IEmailAddress"/>
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IEmailAddress" />
     </content>
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IPerson"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.EmailAddressEditView">
-        <browser:page
-            name="+emails"
-            template="../templates/person-emails.pt"
-            lp:url="foaf/people/$person.id/+emails" />
-    </browser:pages>
+    <securedutility
+        class="canonical.launchpad.database.EmailAddressSet"
+        provides="canonical.launchpad.interfaces.IEmailAddressSet">
+        <allow interface="canonical.launchpad.interfaces.IEmailAddressSet" />
+    </securedutility>
 
 </configure>
 
