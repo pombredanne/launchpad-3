@@ -1,10 +1,3 @@
-Update
-======
-
-We are now using launchpad-2-00-0.sql as our baseline, which is a
-schema dump of the production server. The old files have all been
-moved to the archive directory
-
 How to make database schema changes
 ===================================
 
@@ -59,63 +52,124 @@ Steps 6, 7 & 8 can be ommitted of course if no table modifications are being
 made (eg. just indexes being added).
 
 
-How to roll out a new database revision
-=======================================
+Production Database Upgrades
+============================
 
-1. Create a new database on emperor (or wherever) using the latest 
-    available dump. 
+Stop PostgreSQL:
 
-2. Check a checkout of the patches you need to roll out
+    % pg_ctl -m fast stop
 
-3. Connect to the the test database you setup.
+Start PostgreSQL without external connections
 
-4. Run the patches one at a time, in order, using `\i patch-2-01-0.sql`.
-    Ensure there are no errors. If things have been done right, there won't be
+    % pg_ctl start -o '--tcpip-socket=false'
 
-5. Get clients shutdown nicely
+Duplicate the launchpad_prod database
 
-6. Run 'pg_ctl -m fast stop' to drop any remaining connections
+    % createdb -E UNICODE --template=launchpad_prod launchpad_prod_20051225
 
-7. Turn off remote access in /etc/postgres/pg_hba.conf
+Restart PostgreSQL with external connections
 
-8. Run 'pg_ctl start' to start postgres
+    % pg_ctl -m fast stop
+    % pg_ctl start -l /var/log/postgresql/postgres.log
 
-9. Connect to the real database, and run the patches in order as before except
-    this time making sure it is done in a single transaction block (`BEGIN`
-    to start a transaction, `COMMIT` to save it and `ABORT` to rollback).
+At this point, services can be restarted that don't automatically reconnect,
+allowing a test upgrade to be done at leisure.
 
-10. Shutdown again. Revert changes to /etc/postgres/pg_hba.conf. Startup.
+Do a test upgrade
+-----------------
+
+Make a test database from the snapshot we just made. We don't use the
+snapshot in case we need a few attempts to get the upgrade running
+cleanly.
+
+    % createdb -E UNICODE --template=launchpad_prod_20051225 launchpad_tst
+
+We need a copy of the code about to be rolled out to production.
+You need to 'make build' in the root of this checkout or later steps will
+fail with weird ImportError exceptions. 
+
+    % make build
+
+This checkout contains the patches we need to run:
+
+First, determine the current patch level of the database
+
+    % psql -d launchpad_tst -c 'select * from launchpaddatabaserevision'
+    major | minor | patch
+    -------+-------+-------
+        6 |    25 |     0
+
+Then, see what patches need to be run:
+    % ls launchpad/database/schema/patch*.sql
+    database/schema/patch-6-00-0.sql  database/schema/patch-6-17-0.sql
+    database/schema/patch-6-01-0.sql  database/schema/patch-6-18-0.sql
+    database/schema/patch-6-02-0.sql  database/schema/patch-6-19-0.sql
+    database/schema/patch-6-03-0.sql  database/schema/patch-6-20-0.sql
+    database/schema/patch-6-04-0.sql  database/schema/patch-6-21-0.sql
+    database/schema/patch-6-05-0.sql  database/schema/patch-6-22-0.sql
+    database/schema/patch-6-06-0.sql  database/schema/patch-6-23-0.sql
+    database/schema/patch-6-07-0.sql  database/schema/patch-6-24-0.sql
+    database/schema/patch-6-08-0.sql  database/schema/patch-6-25-0.sql
+    database/schema/patch-6-09-0.sql  database/schema/patch-6-26-0.sql
+    database/schema/patch-6-10-0.sql  database/schema/patch-6-27-0.sql
+    database/schema/patch-6-11-0.sql  database/schema/patch-6-28-0.sql
+    database/schema/patch-6-12-0.sql  database/schema/patch-6-29-0.sql
+    database/schema/patch-6-13-0.sql  database/schema/patch-6-30-0.sql
+    database/schema/patch-6-14-0.sql  database/schema/patch-6-31-0.sql
+    database/schema/patch-6-15-0.sql  database/schema/patch-6-32-0.sql
+    database/schema/patch-6-16-0.sql
+
+First thing we need to do is recreate our stored procedures, as the patches
+might rely on new ones:
+
+    psql -d launchpad_tst -U postgres -f trusted.sql
+
+We need to run each patch with a higher revision in sequence. Also, a visual
+inspection of the patches doesn't hurt since it will be a pta to roll back
+these changes after they have been applied to production.
+
+
+    % psql -d launchpad_tst -U postgres
+    launchpad_tst=# \i patch-6-26-0.sql
+    SET
+    ALTER TABLE
+    UPDATE 1
+
+If you get errors, then there are issues with installing that patch with the
+production data. Fix the patch, and start again from a fresh copy of the
+database.
+
+You can rebuild the full text indexes - this step can be skipped if fti.py
+has not been modified since last rollout.
+
+    %  env PYTHONPATH=$HOME/dists/launchpad/lib LP_DBNAME=launchpad_tst \
+        LP_DBUSER=postgres python fti.py
+
+You should now rebuild the permissions. This step should not be skipped
+because it is quick.
+
+    % env PYTHONPATH=$HOME/dists/launchpad/lib LP_DBNAME=launchpad_tst \
+        LP_DBUSER=postgres python security.py
+
+For Real
+--------
+
+If all that worked correctly, do a few sanity checks on the database
+relating to the tables the patches modified. And if the visual inspection
+passes, you are ready to repeat the entire procedure again on the production
+database. Shut down postgres as before, restart it without external
+connections as before, and run all the patches as before (using
+launchpad_prod instead of launchpad_tst).
 
 Notes
 =====
-launchpad.sql has been moved from launchpad/database/launchpad.sql
-to launchpad/database/schema/launchpad-1-0-0.sql. This file should
-never be altered (if someone can tell me how to make arch throw a hissy
-fit is someone tries, please let me know).
-
-Alterations to the launchpad database schema need to be done as
-patches - you can see the first one in
-launchpad/database/schema/patch-1-1-0.sql.
-
-I think a good process for changes to the schema is to email requested
-changes to this mailing list (launchpad@lists.ubuntu.com)
-and the acting DBA will approve the changes and put them in the
-correct place. This is me this week, and Robert Collins for a few
-weeks following that. I think the public forum is good for this so
-everyone knows who is pissing in the pool and why. After a change,
-I don't think I can fix any breakage caused in any areas I'm not
-directly responsible or semi-responsible for, as this might cause
-conflicts with work-in-progress I'm not aware of. Does this all
-sound sane?
 
 There is a Makefile in launchpad/database/schema that will
 create the launchpad_test database (if it doesn't already exist),
 drop all your tables and create the current schema with all patches
-applied. The process to do this will become cleverer in the future
-and not cause your sample data to be reset. A number of the targets
-in the old Makefile (launchpad/database/Makefile) are now broken.
+applied.
 
 If you want to check anything into the launchpad/database/schema
-directory, please do not give it a .sql extension or you will confuse
-the simple Makefile.
+directory, please do not give it a .sql extension or you will might
+confuse the simple Makefile.
 

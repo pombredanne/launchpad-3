@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-02 13:24:34 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1271
+
+    Summary:
+      db security and production rollout docs update
+    Revision:
+      launchpad--devel--0--patch-1271
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-108
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-109
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-110
+       Update production database update docs
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-111
+       Security declaration for Milestone table
+    
+
+    modified files:
+     database/schema/README database/schema/security.cfg
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-108
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-109
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-110
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-111
+
+
 2005-02-02 09:57:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1270
 
     Summary:
