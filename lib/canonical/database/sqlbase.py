@@ -1,9 +1,12 @@
 from sqlos import SQLOS
+from sqlos.adapter import PostgresAdapter
 from sqlobject.sqlbuilder import sqlrepr
 from sqlobject.styles import Style
 from datetime import datetime, date, time
+from sqlobject import connectionForURI
+import thread
 
-__all__ = ['SQLBase', 'quote', 'quote_like']
+__all__ = ['SQLBase', 'quote', 'quote_like', 'ZopelessTransactionManager']
 
 class LaunchpadStyle(Style):
     """A SQLObject style for launchpad. 
@@ -42,33 +45,181 @@ class SQLBase(SQLOS):
     Architecture, i.e. the basic suite of services should be accessible via
     zope.component.getService)
 
-    By default, this will act just like SQLOS.  If the initZopeless class 
-    method is called, it will use the connection you pass to it, and disable 
-    all the tricksy per-thread connection stuff that SQLOS does.
+    By default, this will act just like SQLOS.  Use a
+    ZopelessTransactionManager object to disable all the tricksy
+    per-thread connection stuff that SQLOS does.
     """
     _style = LaunchpadStyle()
     
-    zope = True     # Default to behaving like SQLOS
+    def reset(self):
+        if not self._SO_createValues:
+            return
+        self._SO_writeLock.acquire()
+        try:
+            self.dirty = False
+            self._SO_createValues = {}
+        finally:
+            self._SO_writeLock.release()
 
-    def initZopeless(cls, connection):
-        # Ok, we've been given a plain old connection to use.  Use it, and
-        # forget about SQLOS's zope support.
-        cls._connection = connection
-        cls.zope = False
-        cls._lazyUpdate = False
-    initZopeless = classmethod(initZopeless)
+
+class _ZopelessConnectionDescriptor(object):
+    def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter):
+        self.connectionURI = connectionURI
+        self.sqlosAdapter = sqlosAdapter
+        self.transactions = {}
+
+    def __get__(self, inst, cls=None):
+        tid = thread.get_ident()
+        if tid not in self.transactions:
+            conn = connectionForURI(self.connectionURI).makeConnection()
+            adapted = self.sqlosAdapter(conn)
+            self.transactions[tid] = adapted.transaction()
+        return self.transactions[tid]
+
+    def __set__(self, inst, value):
+        # FIXME: Write a better warning
+        import warnings
+        warnings.warn("Something tried to set a _connection.  Ignored.")
+
+    def install(cls, connectionURI, sqlClass=SQLBase):
+        if isinstance(sqlClass.__dict__.get('_connection'),
+                _ZopelessConnectionDescriptor):
+            import warnings
+            warnings.warn("Already installed a _connection descriptor!  Overriding!")
+            #raise RuntimeError, "Already installed _connection descriptor."
+        cls.sqlClass = sqlClass
+        sqlClass._connection = cls(connectionURI)
+    install = classmethod(install)
+
+    def uninstall(cls):
+        # Assumes there was no _connection in this particular class to start
+        # with (which is true for SQLBase, but wouldn't be true for SQLOS)
+        del cls.sqlClass._connection
+    uninstall = classmethod(uninstall)
+        
+
+class ZopelessTransactionManager(object):
+    """Object to use in scripts and tests if you want transactions.
+    This behaviour used to be in SQLBase, but as more methods and
+    attributes became needed, a new class was created to avoid
+    namespace pollution.
+
+    Quick & dirty doctest:
+
+    >>> ztm = ZopelessTransactionManager('postgres:///launchpad_test')
+
+    The _connection attribute of SQLBase should now be a descriptor that returns
+    sqlobject.dbconnection.Transaction instances.
+
+    >>> from sqlobject.dbconnection import Transaction
+    >>> t1 = SQLBase._connection
+    >>> isinstance(t1, Transaction)
+    True
+
+    And it should give the same connection to the same thread over multiple
+    accesses.
     
-    def _set_dirty(self, value):
-        # If we're running without zope, our connections won't have an
-        # IDataManager attached to them.
-        if self.zope:
-            SQLOS._set_dirty(self, value)
-        else:
-            self._dirty = value
-    dirty = property(SQLOS._get_dirty, _set_dirty)
+    >>> t2 = SQLBase._connection
+    >>> t1 is t2
+    True
+
+    And different in different threads:
+
+    >>> from threading import Thread, Lock, Event
+    >>> l = []
+    >>> t = Thread(target=lambda: l.append(SQLBase._connection))
+    >>> t.start()
+    >>> t.join()
+    >>> l[0] is not t1
+    True
+
+    XXX: This bit is overly dependent on the db...
+    Show that concurrent transactions in different threads work correctly
+    #>>> from sqlobject import StringCol
+    #>>> class TestPerson(SQLBase):
+    #...     _table = 'Person'
+    #...     displayname = StringCol()
+    #...     givenname = StringCol()
+    #...
+    #>>> mark = TestPerson.selectBy(displayname='Mark Shuttleworth')[0]
+    #>>> mark.id == 1
+    #True
+    #>>> mark.givenname = 'Markk'
+    #>>> mark.givenname = 'Mark'
+    #>>> ztm.commit()
+    #>>> ztm.commit()
+    
+    #>>> event = Event()
+    #>>> event2 = Event()
+    #>>> def foo(TestPerson=TestPerson, ztm=ztm, event=event, event2=event2):
+    #...     andrew = TestPerson.selectBy(displayname='Andrew Bennetts')[0]
+    #...     
+    #...     andrew.givenname = 'Andreww'
+    #...     andrew.givenname = 'Andrew'
+    #...     event.set()
+    #...     event2.wait()
+    #...     ztm.commit()
+    #...
+    #>>> t = Thread(target=foo)
+    #>>> t.start()
+    #>>> event.wait()
+    #>>> mark = TestPerson.selectBy(displayname='Mark Shuttleworth')[0]
+    #>>> mark.id == 1
+    #True
+    #>>> mark.givenname = 'Markk'
+    #>>> mark.givenname = 'Mark'
+    #>>> ztm.commit()
+    #>>> event2.set()
+    #>>> 
+    #>>> t.join()
+
+    Cleanup -- make sure this doctest leaves things in the same state it found
+    them.
+
+    >>> ztm.uninstall()
+
+    """
+
+    def __init__(self, connectionURI, sqlClass=SQLBase):
+        # XXX: Importing a module-global and assigning it as an instance
+        #      attribute smells funny.  Why not just use transaction.manager
+        #      instead of self.manager?
+        from transaction import manager
+        self.manager = manager
+        _ZopelessConnectionDescriptor.install(connectionURI)
+        self.sqlClass = sqlClass
+        #self.cls._connection = adapter(self.connection.makeConnection())
+        #self.dm = self.cls._connection._dm
+        #self.begin()
+
+    def uninstall(self):
+        _ZopelessConnectionDescriptor.uninstall()
+        # We delete self.sqlClass to make sure this instance isn't still
+        # used after uninstall was called, which is a little bit of a hack.
+        del self.sqlClass 
+
+    def _dm(self):
+        return self.sqlClass._connection._dm
+
+    def begin(self):
+        self.manager.begin()
+        self.manager.get().join(self._dm())
+
+    def commit(self, sub=False):
+        self.manager.get().commit(sub)
+        self.begin()
+
+    def abort(self, sub=False):
+        objects = self._dm().objects[:]
+        self.manager.get().abort(sub)
+        for obj in objects:
+            obj.reset()
+            obj.expire()
+        self.begin()
 
     def __int__(self):
         '''Cast to integer, returning the primary key value'''
+        # XXX: WTF?  Where is self.id set?  Is this used anywhere?
         return self.id
 
 def quote(x):

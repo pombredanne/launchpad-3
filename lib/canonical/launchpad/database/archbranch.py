@@ -17,6 +17,11 @@ from canonical.launchpad.interfaces import CategoryAlreadyRegistered
 from zope.interface import implements
 from canonical.launchpad.interfaces import IBranch
 
+# XXX: This import is somewhat circular, but launchpad/database/__init__.py
+# imports archarchive before archbranch, so it should be ok...
+#  - Andrew Bennetts, 2004-10-20
+from canonical.launchpad.database import ArchiveMapper, ArchNamespace
+
 class Branch(SQLBase):
     """An ordered revision sequence in arch"""
 
@@ -111,11 +116,18 @@ class BranchMapper(object):
             visible=True,
         )
 
-        ArchNamespace._connection.query(
-            "DELETE FROM ArchNamespace "
-            "WHERE archarchive = %s AND category = %s AND branch IS NULL"
+        #ArchNamespace._connection.query(
+        #    "DELETE FROM ArchNamespace "
+        #    "WHERE archarchive = %s AND category = %s AND branch IS NULL"
+        #    % (quote(archive_id), quote(branch.category.name))
+        #)
+        query = (
+            "archarchive = %s AND category = %s AND branch IS NULL"
             % (quote(archive_id), quote(branch.category.name))
         )
+        for an in ArchNamespace.select(query):
+            print 'deleting %r (%d) from BM.insert' % (an, an.id)
+            an.destroySelf()
 
     def exists(self, branch):
         id = ArchiveMapper()._getId(branch.category.archive)
@@ -152,13 +164,22 @@ class VersionMapper(object):
             description='',
         )
 
-        ArchNamespace._connection.query(
-            "DELETE FROM ArchNamespace "
-            "WHERE archarchive = %s AND category = %s AND branch = %s "
+        #ArchNamespace._connection.query(
+        #    "DELETE FROM ArchNamespace "
+        #    "WHERE archarchive = %s AND category = %s AND branch = %s "
+        #    "AND version IS NULL"
+        #    % (quote(archive_id), quote(version.branch.category.name),
+        #       quote(version.branch.name))
+        #)
+        query = (
+            "archarchive = %s AND category = %s AND branch = %s "
             "AND version IS NULL"
             % (quote(archive_id), quote(version.branch.category.name),
                quote(version.branch.name))
         )
+        for an in ArchNamespace.select(query):
+            print 'deleting %r (%d) from VM.insert' % (an, an.id)
+            an.destroySelf()
 
     def exists(self, version):
         id = ArchiveMapper()._getId(version.branch.category.archive)

@@ -8,14 +8,13 @@ from zope.interface.advice import addClassAdvisor
 from zope.interface import classImplements
 
 from sqlobject import connectionForURI
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import ZopelessTransactionManager
 
 dbname = "launchpad_ftest"
 dbhost = ""
 
 def initZopeless():
-    SQLBase.initZopeless(connectionForURI('postgres://%s/%s' %
-        (dbhost, dbname)))
+    return ZopelessTransactionManager('postgres://%s/%s' % (dbhost, dbname))
 
 def decorates(interface, context='context'):
     """Make an adapter into a decorator.

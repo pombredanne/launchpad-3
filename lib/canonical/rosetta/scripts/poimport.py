@@ -28,15 +28,13 @@ translation in the PO file when we last parsed it: %d
 class PODBBridge(PlacelessSetup):
 
     def __init__(self):
-        canonical.lp.initZopeless()
-        self._transaction = Transaction(SQLBase._connection)
-        SQLBase._connection = self._transaction
+        self._tm = canonical.lp.initZopeless()
 
     def commit(self):
-        self._transaction.commit()
+        self._tm.commit()
 
-    def rollback(self):
-        self._transaction.rollback()
+    def abort(self):
+        self._tm.abort()
 
     def imports(self, person, fileHandle, projectName, productName, poTemplateName,
         languageCode=None):
@@ -135,11 +133,11 @@ if __name__ == '__main__':
                                 options.potemplate, options.language)
         except:
             print "aborting database transaction"
-            bridge.rollback()
+            bridge.abort()
             raise
         else:
             if options.noop:
-                bridge.rollback()
+                bridge.abort()
             else:
                 bridge.commit()
     else:
@@ -156,10 +154,10 @@ if __name__ == '__main__':
                            options.potemplate, options.language)
         except:
             print "aborting database transaction"
-            bridge.rollback()
+            bridge.abort()
             raise
         else:
             if options.noop:
-                bridge.rollback()
+                bridge.abort()
             else:
                 bridge.commit()

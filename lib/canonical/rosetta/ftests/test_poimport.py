@@ -28,9 +28,13 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         super(POImportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
         utilityService.provideUtility(ILanguageSet, LanguageSet(), '')
-        canonical.lp.initZopeless()
+        self.ztm = canonical.lp.initZopeless()
         self.pot = file(os.path.join(here, 'gnome-terminal.pot'))
         self.po = file(os.path.join(here, 'gnome-terminal-cy.po'))
+
+    def tearDown(self):
+        self.ztm.uninstall()
+        super(POImportTestCase, self).tearDown()
 
     def testTemplateImporter(self):
         try:
@@ -69,12 +73,11 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
                                     ownerID=XXXperson.id)
         importer = TemplateImporter(poTemplate, XXXperson)
         importer.doImport(self.pot)
-        get_transaction().commit()
+        self.ztm.commit()
         # try a second time to see if it breaks
         self.pot.seek(0)
         importer.doImport(self.pot)
-        get_transaction().commit()
-        POTMsgSet._connection.cache.clear()
+        self.ztm.commit()
         sets = POTMsgSet.select('potemplate=%d and sequence > 0' % poTemplate.id)
         assert sets.count() == 513, '%d message sets instead of 513' % sets.count()
         for msgset in list(sets):
@@ -142,12 +145,11 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
             poFile = poTemplate.newPOFile(XXXperson, 'cy')
         importer = POFileImporter(poFile, XXXperson)
         importer.doImport(self.po)
-        get_transaction().commit()
+        self.ztm.commit()
         # try a second time to see if it breaks
         self.po.seek(0)
         importer.doImport(self.po)
         # check that there aren't duplicates in the db
-        POMsgSet._connection.cache.clear()
         for message in importer.parser.messages:
             msgid = message._potmsgset.primemsgid_
             results = POMsgSet.select('''
