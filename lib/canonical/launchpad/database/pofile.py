@@ -1104,8 +1104,10 @@ class POMsgSet(SQLBase):
         # We set the fuzzy flag as needed:
         if fuzzy and self.fuzzy == False:
             self.fuzzy = True
+            has_changes = True
         elif not fuzzy and self.fuzzy == True:
             self.fuzzy = False
+            has_changes = True
         
         if not has_changes:
             # We don't change the statistics if we didn't had any change.
@@ -1136,6 +1138,14 @@ class POMsgSet(SQLBase):
                 else:
                     # It was lost inside Rosetta
                     self.pofile.rosettacount -= 1
+
+        # XXX: Carlos Perello Marin 10/12/2004 Sanity test, the statistics
+        # code is not as good as it should, we can get negative numbers, in
+        # case we reach that status, we just change that field to 0.
+        if self.pofile.currentcount < 0:
+            self.pofile.currentcount = 0
+        if self.pofile.rosettacount < 0:
+            self.pofile.rosettacount = 0
                 
                 
     def makeTranslationSighting(self, person, text, pluralForm,

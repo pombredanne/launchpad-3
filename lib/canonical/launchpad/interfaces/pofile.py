@@ -27,6 +27,8 @@ class IRosettaStats(Interface):
 class IPOTemplate(IRosettaStats):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
+    id = Attribute("The id of this POTemplate.")
+
     product = Attribute("The PO template's product.")
 
     priority = Attribute("The PO template priority.")
