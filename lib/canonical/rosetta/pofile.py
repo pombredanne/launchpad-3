@@ -445,6 +445,19 @@ class POParser(object):
             warnings.warn(POSyntaxWarning(self._lineno,
                                           'Header entry is not first entry'))
 
+    def to_unicode(self, text):
+        'Convert text to unicode'
+        if self.header: # header is stored as str, not unicode!
+            try:
+                return unicode(text, self.header.charset)
+            except UnicodeError:
+                warnings.warn(POSyntaxWarning(self._lineno,
+                                              'string is not in declared charset %r'
+                                              % self.header.charset))
+                return unicode(text, self.header.charset, 'replace')
+        else:
+            return text
+
     def parse_line(self, l):
         self._lineno += 1
         # Skip empty lines
@@ -474,18 +487,22 @@ class POParser(object):
         # Record that the message is known obsolete
         if obsolete:
             self._partial_transl['obsolete'] = True
-        # Record flags
-        if l[:2] == '#,':
-            self._partial_transl['flags'].update([flag.strip() for flag in l[2:].split(',')])
-            return
-        # Record comments
-        if l[:2] == '#:':
-            self._partial_transl['fileReferences'] += l[2:].strip() + '\n'
-            return
-        if l[:2] == '#.':
-            self._partial_transl['sourceComment'] += l[2:].strip() + '\n'
-            return
+
         if l[0] == '#':
+            l = self.to_unicode(l)
+            # Record flags
+            if l[:2] == '#,':
+                self._partial_transl['flags'].update([flag.strip() for flag in l[2:].split(',')])
+                return
+            # Record file references
+            if l[:2] == '#:':
+                self._partial_transl['fileReferences'] += l[2:].strip() + '\n'
+                return
+            # Record source comments
+            if l[:2] == '#.':
+                self._partial_transl['sourceComment'] += l[2:].strip() + '\n'
+                return
+            # Record comments
             self._partial_transl['commentText'] += l[1:] + '\n'
             return
         # Now we are in a msgid section, output previous section
@@ -538,16 +555,7 @@ class POParser(object):
         except ValueError:
             raise POSyntaxError(self._lineno)
 
-        # Convert to unicode
-        if self.header: # header is stored as str, not unicode!
-            try:
-                l = unicode(l, self.header.charset)
-            except UnicodeError:
-                warnings.warn(POSyntaxWarning(self._lineno,
-                                              'string is not in declared charset %r'
-                                              % self.header.charset))
-                l = unicode(l, self.header.charset, 'replace')
-
+        l = self.to_unicode(l)
 
         if self._section == 'msgid':
             self._partial_transl['msgid'] += l

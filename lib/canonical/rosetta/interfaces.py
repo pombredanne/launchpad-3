@@ -184,12 +184,12 @@ class IPOFile(Interface):
     # XXX: add a test for this
 
     def __iter__():
-        """Return an iterator over IPOMessageSets in this PO file."""
+        """Return an iterator over Current IPOMessageSets in this PO file."""
 
-    def __getitem__(IPOMessageSet):
-        """Returns the IPOMessageSet with the corresponding translations, if
-        it exists. The parameter should probably come from a template. We
-        think."""
+    def __getitem__(msgid):
+        """Get the IPOMessageSet for this template that has the
+        given primary message ID. Note that this will also find old
+        (not current) MessageSets"""
 
 
 class IEditPOFile(IPOFile):
@@ -200,8 +200,6 @@ class IEditPOFile(IPOFile):
 
 class IPOMessageSet(Interface):
     """A collection of message IDs and possibly translations."""
-
-    id = Attribute("""A unique ID for the message set.""")
 
     id = Attribute("""An identifier for this POMessageSet""")
 
