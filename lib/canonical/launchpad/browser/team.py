@@ -215,8 +215,9 @@ class TeamMembersView(object):
 
     def __init__(self, context, request):
         self.context = context
-        self.team = self.context.team
         self.request = request
+        self.team = self.context.team
+        self.tmsubset = ITeamMembershipSubset(self.team)
 
     def allMembersCount(self):
         return getUtility(ITeamMembershipSet).getTeamMembersCount(self.team.id)
@@ -232,24 +233,13 @@ class TeamMembersView(object):
                    self.team.deactivatedmembers)
 
     def activeMemberships(self):
-        status = TeamMembershipStatus.ADMIN
-        admins = self.team.getMembershipsByStatus(status)
-
-        status = TeamMembershipStatus.APPROVED
-        members = self.team.getMembershipsByStatus(status)
-        return admins + members
+        return self.tmsubset.getActiveMemberships()
 
     def proposedMemberships(self):
-        status = TeamMembershipStatus.PROPOSED
-        return self.team.getMembershipsByStatus(status)
+        return self.tmsubset.getProposedMemberships()
 
     def inactiveMemberships(self):
-        status = TeamMembershipStatus.EXPIRED
-        expired = self.team.getMembershipsByStatus(status)
-
-        status = TeamMembershipStatus.DEACTIVATED
-        deactivated = self.team.getMembershipsByStatus(status)
-        return expired + deactivated
+        return self.tmsubset.getInactiveMemberships()
 
 
 class ProposedTeamMembersEditView:

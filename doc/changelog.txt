@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-22 19:54:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1476
+
+    Summary:
+      Adding methods to get active/inactive/proposed memberships in ITeamMembershipSubset.
+    Revision:
+      launchpad--devel--0--patch-1476
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-210
+       Adding methods to get active/inactive/proposed memberships in ITeamMembershipSubset.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/components/teammembership.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-210
+
+
 2005-03-22 19:17:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1475
 
     Summary:

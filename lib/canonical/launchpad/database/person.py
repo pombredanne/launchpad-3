@@ -327,12 +327,6 @@ class Person(SQLBase):
 
         return True
 
-    def getMembershipsByStatus(self, status):
-        query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
-                 "AND Person.id = TeamMembership.person") % (
-                 self.id, status.value)
-        return list(TeamMembership.select(query, clauseTables=['Person']))
-
     def _getEmailsByStatus(self, status):
         query = AND(EmailAddress.q.personID==self.id,
                     EmailAddress.q.status==status)
@@ -900,6 +894,15 @@ class TeamMembershipSet(object):
 
     def getTeamMembersCount(self, teamID):
         return TeamMembership.selectBy(teamID=teamID).count()
+
+    def getMemberships(self, teamID, status):
+        assert isinstance(status, int)
+        assert isinstance(teamID, int)
+        query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
+                 "AND Person.id = TeamMembership.person") % (
+                 teamID, status)
+        return list(TeamMembership.select(query, clauseTables=['Person'],
+                                          orderBy='displayname'))
 
 
 class TeamParticipationSet(object):

@@ -152,9 +152,6 @@ class IPerson(Interface):
     def inTeam(team):
         """Return true if this person is in the given team."""
 
-    def getMembershipsByStatus(status):
-        """Return all TeamMembership rows with the given status for this team"""
-
     def hasMembershipEntryFor(team):
         """Tell if this person is a direct member of the given team."""
 
@@ -356,6 +353,10 @@ class ITeamMembership(Interface):
 class ITeamMembershipSet(Interface):
     """A Set for TeamMembership objects."""
 
+    def getMemberships(teamID, status):
+        """Return all TeamMembership objects for the given team with the given
+        status."""
+
     def getByPersonAndTeam(personID, teamID, default=None):
         """Return the TeamMembership object for the given person and team.
 
@@ -386,6 +387,29 @@ class ITeamMembershipSubset(Interface):
         If there's no TeamMembership for this person in this team, return the
         default value.
         """
+
+    def getMembershipsByStatus(status):
+        """All TeamMembership objects with the given status for this team."""
+
+    def getInactiveMemberships():
+        """Return all TeamMembership objects for inactive members of this team.
+
+        Inactive members are the ones with membership status of EXPIRED or 
+        DEACTIVATED.
+        """
+
+    def getActiveMemberships():
+        """Return all TeamMembership objects for active members of this team.
+
+        Active members are the ones with membership status of APPROVED or ADMIN.
+        """
+
+    def getProposedMemberships():
+        """Return all TeamMembership objects for proposed members of this team.
+
+        Proposed members are the ones with membership status of PROPOSED.
+        """
+
 
 
 class ITeamParticipation(Interface):
