@@ -139,6 +139,9 @@ class IPOTemplate(IRosettaStats):
 class IEditPOTemplate(IPOTemplate):
     """Edit interface for an IPOTemplate."""
 
+    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
+        imported, 2 failed.""")
+
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
@@ -353,6 +356,9 @@ class IPOFile(IRosettaStats):
 
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
+
+    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
+        imported, 2 failed.""")
 
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
