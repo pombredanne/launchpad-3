@@ -64,7 +64,7 @@ def getOwner():
 # before 16/10/04 then please remove these classes altogether.
 #
 
-class xSoyuzProject(object):
+class SoyuzProject(object):
     implements (IProject)
     def __init__(self, dbProject=None,name=None,title=None,url=None,description=None, shortDescription=None, displayname=None):
         if dbProject is not None:
@@ -120,7 +120,7 @@ class xSoyuzProject(object):
             self._shortDescription=aDesc
         return self._shortDescription
 
-class xSoyuzProduct(object):
+class SoyuzProduct(object):
     implements (IProduct)
     def __init__(self, dbProduct=None, project=None, name=None, title=None, description=None, url=None):
         assert (project)
