@@ -2,6 +2,64 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-22 18:59:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1474
+
+    Summary:
+      Call login() on teamparticipation.txt so we can now use getUtility() there. Set _defaultOrder to displayname on Person. Fixed People/Team/Ubuntite list to correctly display Persons without displayname. Fixed a problem when editing proposed/expired members of teams that don't have defaultmembershipperiod.
+    Revision:
+      launchpad--devel--0--patch-1474
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-202
+       Improved some queries on TeamParticipationSet.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-203
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-204
+       Call login() on teamparticipation.txt so we can now use getUtility() there and in methods called there. Set _defaultOrder on Person, so we don't need to provide orderBy on each query. Also fixed the queries which used to use orderBy.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-205
+       Duh! forgot to save one file before the last commit.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-206
+       Addind comments on places where I use flushUpdates().
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-207
+       People/Team/Ubuntite list were broken if we had Persons without displayname. Fixed it.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-208
+       Fixed a problem when editing proposed/expired members of teams that don't have defaultmembershipperiod.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-209
+       Fixing some pagetests I broke with last commits.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/teamparticipation.txt
+     lib/canonical/launchpad/pagetests/foaf/16-join-restricted-team.txt
+     lib/canonical/launchpad/pagetests/foaf/17-add-member.txt
+     lib/canonical/launchpad/pagetests/foaf/21-join-moderated-team.txt
+     lib/canonical/launchpad/pagetests/foaf/22-approve-proposed-member.txt
+     lib/canonical/launchpad/templates/people-list.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-202
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-203
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-204
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-205
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-206
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-207
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-208
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-209
+
+
 2005-03-22 18:47:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1473
 
     Summary:

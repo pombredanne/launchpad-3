@@ -287,6 +287,9 @@ class ProposedTeamMembersEditView:
 
             team.setMembershipStatus(person, status, reviewer=self.user)
 
+        # Need to flush all changes we made, so subsequent queries we make
+        # with this transaction will see this changes and thus they'll be
+        # displayed on the page that calls this method.
         flushUpdates()
 
 
@@ -478,12 +481,16 @@ class TeamMembershipEditView(object):
 
     def dateChooserForExpiredMembers(self):
         days = self.context.team.defaultrenewalperiod
-        expires = datetime.utcnow() + timedelta(days=days)
+        expires = None
+        if days is not None:
+            expires = datetime.utcnow() + timedelta(days=days)
         return self.buildDateChooser(expires)
 
     def dateChooserForProposedMembers(self):
         days = self.context.team.defaultmembershipperiod
-        expires = datetime.utcnow() + timedelta(days=days)
+        expires = None
+        if days is not None:
+            expires = datetime.utcnow() + timedelta(days=days)
         return self.buildDateChooser(expires)
 
     def dateChooserWithCurrentExpirationSelected(self):

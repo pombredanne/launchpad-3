@@ -52,6 +52,8 @@ class Person(SQLBase):
 
     implements(IPerson)
 
+    _defaultOrder = 'displayname'
+
     name = StringCol(dbName='name', alternateID=True)
     password = StringCol(dbName='password', default=None)
     givenname = StringCol(dbName='givenname', default=None)
@@ -327,7 +329,7 @@ class Person(SQLBase):
 
     def getMembershipsByStatus(self, status):
         query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
-                 "AND Person.id = TeamMembership.team") % (
+                 "AND Person.id = TeamMembership.person") % (
                  self.id, status.value)
         return list(TeamMembership.select(query, clauseTables=['Person']))
 
@@ -398,18 +400,12 @@ class Person(SQLBase):
     teams = property(_teams)
 
     def _superteams(self):
-        # XXX: salgado, 2005-02-22: Using getUtility() here is breaking the
-        # teamparticipation.txt doctest.
-        #teampart = getUtility(ITeamParticipationSet)
-        teampart = TeamParticipationSet()
+        teampart = getUtility(ITeamParticipationSet)
         return teampart.getSuperTeams(self)
     superteams = property(_superteams)
 
     def _subteams(self):
-        # XXX: salgado, 2005-02-22: Using getUtility() here is breaking the
-        # teamparticipation.txt doctest.
-        #teampart = getUtility(ITeamParticipationSet)
-        teampart = TeamParticipationSet()
+        teampart = getUtility(ITeamParticipationSet)
         return teampart.getSubTeams(self)
     subteams = property(_subteams)
 
@@ -568,24 +564,22 @@ class PersonSet(object):
             return default
 
     def getAllPersons(self):
-        return list(Person.select(Person.q.teamownerID==None,
-                                  orderBy='displayname'))
+        return list(Person.select(Person.q.teamownerID==None))
 
     def getAllTeams(self):
-        return list(Person.select(Person.q.teamownerID!=None,
-                                  orderBy='displayname'))
+        return list(Person.select(Person.q.teamownerID!=None))
 
     def findByName(self, name):
         query = "fti @@ ftq(%s)" % quote(name)
-        return list(Person.select(query, orderBy='displayname'))
+        return list(Person.select(query))
 
     def findPersonByName(self, name):
         query = "fti @@ ftq(%s) AND teamowner is NULL" % quote(name)
-        return list(Person.select(query, orderBy='displayname'))
+        return list(Person.select(query))
 
     def findTeamByName(self, name):
         query = "fti @@ ftq(%s) AND teamowner is not NULL" % quote(name)
-        return list(Person.select(query, orderBy='displayname'))
+        return list(Person.select(query))
 
     def get(self, personid, default=None):
         """See IPersonSet."""
@@ -596,7 +590,7 @@ class PersonSet(object):
 
     def getAll(self):
         """See IPersonSet."""
-        return Person.select(orderBy='displayname')
+        return Person.select()
 
     def getByEmail(self, email, default=None):
         """See IPersonSet."""
@@ -618,8 +612,8 @@ class PersonSet(object):
             POTranslationSighting.person = Person.id AND
             POTranslationSighting.pomsgset = POMsgSet.id AND
             POMsgSet.pofile = %d''' % pofile.id,
-            clauseTables=('POTranslationSighting', 'POMsgSet',),
-            distinct=True, orderBy='displayname')
+            clauseTables=('POTranslationSighting', 'POMsgSet'),
+            distinct=True)
 
     def isUbuntite(self, user):
         """See IPersonSet."""
@@ -639,12 +633,11 @@ class PersonSet(object):
 
         if sign.count():
             return True
-        
 
     def getUbuntites(self):
         """See IPersonSet."""
         
-        clauseTables = ['SignedCodeOfConduct',]
+        clauseTables = ['SignedCodeOfConduct']
 
         # XXX: cprov 20050226
         # Verify the the SignedCoC version too
@@ -653,8 +646,7 @@ class PersonSet(object):
         query = ('Person.id = SignedCodeOfConduct.person AND '
                  'SignedCodeOfConduct.active = True')
 
-        return Person.select(query, clauseTables=clauseTables,
-                             orderBy='displayname')
+        return Person.select(query, clauseTables=clauseTables)
     
 
 def createPerson(email, displayname=None, givenname=None, familyname=None,
@@ -915,22 +907,20 @@ class TeamParticipationSet(object):
     implements(ITeamParticipationSet)
 
     def getAllMembers(self, team):
-        return [t.person for t in TeamParticipation.selectBy(teamID=team.id)]
+        query = ('Person.id = TeamParticipation.person AND '
+                 'TeamParticipation.team = %d' % team.id)
+        return list(Person.select(query, clauseTables=['TeamParticipation']))
 
     def getSubTeams(self, team):
-        clauseTables = ('person',)
-        query = ("TeamParticipation.team = %d "
-                 "AND Person.id = TeamParticipation.person "
-                 "AND Person.teamowner IS NOT NULL" % team.id)
-        results = TeamParticipation.select(query, clauseTables=clauseTables)
-        return [t.person for t in results]
+        query = ('Person.id = TeamParticipation.person AND '
+                 'TeamParticipation.team = %d AND '
+                 'Person.teamowner IS NOT NULL' % team.id)
+        return list(Person.select(query, clauseTables=['TeamParticipation']))
 
     def getSuperTeams(self, team):
-        clauseTables = ('person',)
-        query = ("TeamParticipation.person = %d "
-                 "AND Person.id = TeamParticipation.team " % team.id)
-        results = TeamParticipation.select(query, clauseTables=clauseTables)
-        return [t.team for t in results]
+        query = ('Person.id = TeamParticipation.team AND '
+                 'TeamParticipation.person = %d' % team.id)
+        return list(Person.select(query, clauseTables=['TeamParticipation']))
 
 
 class TeamParticipation(SQLBase):
@@ -955,10 +945,7 @@ def _cleanTeamParticipation(person, team):
         # The given person is, in fact, a team, and in this case we must 
         # remove all of its members from the given team and from its 
         # superteams.
-        # XXX: salgado, 2005-02-22: Using getUtility() here is breaking the
-        # teamparticipation.txt doctest.
-        #teampart = getUtility(ITeamParticipationSet)
-        teampart = TeamParticipationSet()
+        teampart = getUtility(ITeamParticipationSet)
         members.extend(teampart.getAllMembers(person))
 
     for member in members:
@@ -986,10 +973,7 @@ def _fillTeamParticipation(person, team):
     if person.teamowner is not None:
         # The given person is, in fact, a team, and in this case we must 
         # add all of its members to the given team and to its superteams.
-        # XXX: salgado, 2005-02-22: Using getUtility() here is breaking the
-        # teamparticipation.txt doctest.
-        #teampart = getUtility(ITeamParticipationSet)
-        teampart = TeamParticipationSet()
+        teampart = getUtility(ITeamParticipationSet)
         members.extend(teampart.getAllMembers(person))
 
     for member in members:

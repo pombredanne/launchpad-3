@@ -412,6 +412,9 @@ class PersonEditView(object):
                         # one, so we can delete it.
                         email.destroySelf()
 
+        # Need to flush all changes we made, so subsequent queries we make
+        # with this transaction will see this changes and thus they'll be
+        # displayed on the page that calls this method.
         flushUpdates()
 
     def processValidationRequest(self):

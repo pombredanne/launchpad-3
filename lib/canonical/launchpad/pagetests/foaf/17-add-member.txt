@@ -21,7 +21,7 @@
   ... -----------------------------4242461020359353471242944195
   ... Content-Disposition: form-data; name="field.newmember"
   ... 
-  ... salgado
+  ... cprov
   ... -----------------------------4242461020359353471242944195
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
@@ -46,13 +46,13 @@
   ...
 
 
-  Let's make sure that 'salgado' is now an APPROVED member of 'myemail'
+  Let's make sure that 'cprov' is now an APPROVED member of 'myemail'
 
   >>> from canonical.launchpad.database import Person, TeamMembership
-  >>> salgado = Person.byName('salgado')
+  >>> cprov = Person.byName('cprov')
   >>> team = Person.byName('myemail')
-  >>> tm = TeamMembership.selectBy(personID=salgado.id, teamID=team.id)[0]
+  >>> tm = TeamMembership.selectBy(personID=cprov.id, teamID=team.id)[0]
   >>> tm.statusname
   'Approved Member'
-  >>> salgado.inTeam(team)
+  >>> cprov.inTeam(team)
   True

@@ -1,9 +1,9 @@
-  Now, 'myemail' is a MODERATED team, and 'name16' will join again.
+  Now, 'myemail' is a MODERATED team, and 'salgado' will join again.
 
 
   >>> print http(r"""
   ... GET /people/myemail/+join HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -15,7 +15,7 @@
 
   >>> print http(r"""
   ... POST /people/myemail/+join HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -28,7 +28,7 @@
 
   >>> print http(r"""
   ... GET /people/myemail/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -39,13 +39,13 @@
 
 
   >>> from canonical.launchpad.database import Person, TeamMembership
-  >>> foobar = Person.byName('name16')
+  >>> salgado = Person.byName('salgado')
   >>> team = Person.byName('myemail')
-  >>> tm = TeamMembership.selectBy(personID=foobar.id, teamID=team.id)[0]
+  >>> tm = TeamMembership.selectBy(personID=salgado.id, teamID=team.id)[0]
   >>> tm.statusname
   'Proposed Member'
 
   Proposed Members are not shown as "real" team members by our API.
 
-  >>> foobar.inTeam(team)
+  >>> salgado.inTeam(team)
   False

@@ -79,7 +79,12 @@ class ResetPasswordView(object):
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(self.context.email)
         emailaddress.status = EmailAddressStatus.VALIDATED
+
+        # Need to flush all changes we made, so subsequent queries we make
+        # with this transaction will see this changes and thus they'll be
+        # displayed on the page that calls this method.
         flushUpdates()
+
         person = emailaddress.person
         if (person.preferredemail is None and 
             len(person.validatedemails) == 1):
@@ -255,6 +260,10 @@ class MergePeopleView(object):
         email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
         email.person = self.context.requester.id
         email.status = EmailAddressStatus.VALIDATED
+
+        # Need to flush all changes we made, so subsequent queries we make
+        # with this transaction will see this changes and thus they'll be
+        # displayed on the page that calls this method.
         flushUpdates()
         
         # Now we must check if the dupe account still have registered email

@@ -1,21 +1,10 @@
-  'name16' tries to join 'myemail' again, but now it's a RESTRICTED team, and
+  'salgado' tries to join 'myemail', but now it's a RESTRICTED team, and
   nobody can ask to join.
-
-
-  First we completely remove 'name16' from the team.
-
-  >>> from canonical.launchpad.database import Person, TeamMembership
-  >>> foobar = Person.byName('name16')
-  >>> team = Person.byName('myemail')
-  >>> foobar.leave(team)
-  True
-  >>> tm = TeamMembership.selectBy(personID=foobar.id, teamID=team.id)[0]
-  >>> tm.destroySelf()
 
 
   >>> print http(r"""
   ... GET /people/myemail/+join HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -26,7 +15,7 @@
 
 
   >>> from canonical.launchpad.database import Person
-  >>> foobar = Person.byName('salgado')
+  >>> salgado = Person.byName('salgado')
   >>> team = Person.byName('myemail')
-  >>> foobar.hasMembershipEntryFor(team)
+  >>> salgado.hasMembershipEntryFor(team)
   False

@@ -23,8 +23,14 @@
 
   <table>
     <tr tal:repeat="person python:list(bn.currentBatch())">      
-     <td><a tal:content="person/displayname"
-	    tal:attributes="href person/name"/>
+      <td>
+        <a tal:condition="person/displayname"
+           tal:content="string: ${person/displayname} (${person/name})"
+           tal:attributes="href person/name" />
+
+        <a tal:condition="not: person/displayname"
+           tal:content="person/browsername"
+           tal:attributes="href person/name" />
      </td>
     </tr>    
     <tr>
@@ -33,7 +39,6 @@
     <div>
     	  <table>
 	  <tr>
-	  <!-- <th condition="not: prev_url"><< prev</th> -->
           <th tal:condition="prev_url">
 	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
 	  </th>
@@ -44,7 +49,6 @@
           <th tal:condition="next_url" >
 	     <a tal:attributes="href next_url"><b>Next >></b></a>
           </th>
-          <!-- <th condition="not: next_url">next >></th> -->
           </tr>
 	  </table>
      </div>

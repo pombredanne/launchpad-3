@@ -1,20 +1,20 @@
-  Let's approve 'name16' as a member of 'myemail'.
+  Let's approve 'salgado' as a member of 'myemail'.
 
 
   >>> print http(r"""
-  ... GET /people/myemail/members/name16 HTTP/1.1
+  ... GET /people/myemail/members/salgado HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...Foo Bar...
+  ...Guilherme Salgado...
   ...
 
 
   >>> print http(r"""
-  ... POST /people/myemail/members/name16 HTTP/1.1
+  ... POST /people/myemail/members/salgado HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -34,16 +34,16 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...Foo Bar...
+  ...Guilherme Salgado...
   ...
   ...Approved Member...
   ...
 
 
-  Now we make sure that 'name16' is really an active member of this team.
+  Now we make sure that 'salgado' is really an active member of this team.
 
   >>> from canonical.launchpad.database import Person, TeamMembership
-  >>> foobar = Person.byName('name16')
+  >>> salgado = Person.byName('salgado')
   >>> team = Person.byName('myemail')
-  >>> foobar.inTeam(team)
+  >>> salgado.inTeam(team)
   True
