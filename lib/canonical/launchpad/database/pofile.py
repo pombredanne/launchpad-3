@@ -24,6 +24,7 @@ from canonical.lp.dbschema import RosettaImportStatus
 from canonical.database.constants import DEFAULT, UTC_NOW
 
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
+from canonical.rosetta.pofile import POParser
 
 standardPOTemplateCopyright = 'Canonical Ltd'
 
@@ -1060,12 +1061,76 @@ class POFile(SQLBase, RosettaStats):
 
     def doRawImport(self):
         import logging
-        
-        importer = POFileImporter(self, self.rawimporter)
 
-        file = StringIO.StringIO(base64.decodestring(self.rawfile))
+        if self.rawfile is None:
+            # We don't have anything to import.
+            return
+        
+        rawdata = base64.decodestring(self.rawfile)
+        
+        # We need to parse the file to get the last translator information so
+        # the translations are not assigned to the person who imports the
+        # file.
+        parser = POParser()
+
+        try:
+            parser.write(rawdata)
+            parser.finish()
+        except:
+            # We should not get any exception here because we checked the file
+            # before being imported, but this could help prevent programming
+            # errors.
+            return
+        
+        last_translator = parser.header['Last-Translator']
+
+        # XXX: Carlos Perello Marin 20/12/2004 All this code should be moved
+        # into person.py, most of it comes from gina.
+        
+        first_left_angle = last_translator.find("<")
+        first_right_angle = last_translator.find(">")
+        name = last_translator[:first_left_angle].replace(",","_")
+        email = last_translator[first_left_angle+1:first_right_angle]
+        name = name.strip()
+        email = email.strip()
+
+        if email == 'EMAIL@ADDRESS':
+            # We don't have a real account, thus we just use the import person
+            # as the owner.
+            person = self.rawimporter
+        else:
+            person_set = getUtility(IPersonSet)
+
+            person = person_set.getByEmail(email)
+
+            if person is None:
+                items = name.split()
+                if len(items) == 1:
+                    givenname = name
+                    familyname = ""
+                elif not items:
+                    # No name, just an email
+                    givenname = email.split("@")[0]
+                    familyname = ""
+                else:
+                    givenname = items[0]
+                    familyname = " ".join(items[1:])
+
+                # We create a new user without a password.
+                person = person_set.createPerson(name, givenname,
+                    familyname, None, email)
+
+                if person is None:
+                    # XXX: Carlos Perello Marin 20/12/2004 We have already
+                    # that person in the database, we should get it instead of
+                    # use the importer one...
+                    person = self.rawimporter
+
+        importer = POFileImporter(self, person)
     
         try:
+            file = StringIO.StringIO(rawdata)
+
             importer.doImport(file)
                 
             self.rawimportstatus = RosettaImportStatus.IMPORTED.value

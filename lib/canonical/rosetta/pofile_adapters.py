@@ -480,12 +480,6 @@ class POFileImporter(object):
             except KeyError:
                 potmsgset = self.pofile.potemplate.createMessageSetFromText(msgid)
             pomsgset = self.pofile.createMessageSetFromMessageSet(potmsgset)
-#        else:
-            # it was in the db - update the timestamp
-            # XXX: Carlos Perello Marin 19/10/04: Not sure if we should do it
-            # anymore, the msgid are shared with the potemplate so I think it
-            # should be updated only when it's seen in a potemplate...
-#            msgset.potmsgset.getMessageIDSighting(SINGULAR, allowOld=True).dateLastSeen = "NOW"
         # set sequence
         self.len += 1
         pomsgset.sequence = self.len

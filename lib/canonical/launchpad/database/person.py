@@ -378,6 +378,13 @@ class PersonSet(object):
             clauseTables=('POTranslationSighting', 'POMsgSet',),
             distinct=True, orderBy='displayname')
 
+    # XXX: Carlos Perello Marin 20/12/2004 We need this method from
+    # pofile.py, I think we should remove the function and use it as this
+    # method always.
+    def createPerson(self, displayname, givenname, familyname, password, email):
+        """Creates a new person"""
+        return createPerson(displayname, givenname, familyname, password, email)
+
 
 def createPerson(displayname, givenname, familyname, password, email):
     """Creates a new person"""

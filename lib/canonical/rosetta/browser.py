@@ -14,6 +14,8 @@ from zope.i18n.interfaces import IUserPreferredLanguages
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from zope.publisher.browser import FileUpload
+
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, \
         IProjectSet, IProductSet, IPasswordEncryptor, \
@@ -262,21 +264,19 @@ class ProductView:
 
         file = self.form['file']
 
-        if file == '':
-            self.status_message = 'Please fill all the required fields.'
+        if type(file) is not FileUpload:
+            if file == '':
+                self.status_message = 'Please fill all the required fields.'
+            else:
+                # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
+                # aleatory bug with upload forms (or perhaps it's launchpad because
+                # I never had problems with bugzilla). The fact is that some uploads
+                # don't work and we get a unicode object instead of a file-like object
+                # in "file". We show an error if we see that behaviour.
+                # For more info, look at bug #116
+                self.status_message = 'There was an unknow error getting the file.'
             return
-
-        # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
-        # aleatory bug with upload forms (or perhaps it's launchpad because
-        # I never had problems with bugzilla). The fact is that some uploads
-        # don't work and we get a unicode object instead of a file-like object
-        # in "file". We show an error if we see that behaviour.
-        # For more info, look at bug #116
-
-        if isinstance(file, unicode):
-            self.status_message = 'There was an unknow error getting the file.'
-            return
-
+                    
         filename = file.filename
 
         if filename.endswith('.pot'):
@@ -478,21 +478,17 @@ class ViewPOTemplate:
 
         file = self.form['file']
 
-        if file == '':
-            # now redirect to view the potemplate. This lets us follow the
-            # template in case the user changed the name
-            self.request.response.redirect('../' + self.context.name)
-            return
-
-        # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
-        # aleatory bug with upload forms (or perhaps it's launchpad because
-        # I never had problems with bugzilla). The fact is that some uploads
-        # don't work and we get a unicode object instead of a file-like object
-        # in "file". We show an error if we see that behaviour.
-        # For more info, look at bug #116
-
-        if isinstance(file, unicode):
-            self.status_message = 'There was an unknow error getting the file.'
+        if type(file) is not FileUpload:
+            if file == '':
+                self.request.response.redirect('../' + self.context.name)
+            else:
+                # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
+                # aleatory bug with upload forms (or perhaps it's launchpad because
+                # I never had problems with bugzilla). The fact is that some uploads
+                # don't work and we get a unicode object instead of a file-like object
+                # in "file". We show an error if we see that behaviour.
+                # For more info, look at bug #116
+                self.status_message = 'There was an unknow error getting the file.'
             return
 
         filename = file.filename
@@ -563,19 +559,17 @@ class ViewPOFile:
             if self.request.method == "POST":
                 file = self.form['file']
 
-                if file == '':
-                    self.status_message = 'You forgot the file!'
-                    return
-
-                # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
-                # aleatory bug with upload forms (or perhaps it's launchpad because
-                # I never had problems with bugzilla). The fact is that some uploads
-                # don't work and we get a unicode object instead of a file-like object
-                # in "file". We show an error if we see that behaviour.
-                # For more info, look at bug #116
-
-                if isinstance(file, unicode):
-                    self.status_message = 'There was an unknow error getting the upload.'
+                if type(file) is not FileUpload:
+                    if file == '':
+                        self.status_message = 'You forgot the file!'
+                    else:
+                        # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
+                        # aleatory bug with upload forms (or perhaps it's launchpad because
+                        # I never had problems with bugzilla). The fact is that some uploads
+                        # don't work and we get a unicode object instead of a file-like object
+                        # in "file". We show an error if we see that behaviour.
+                        # For more info, look at bug #116
+                        self.status_message = 'There was an unknow error getting the file.'
                     return
 
                 filename = file.filename
@@ -595,7 +589,7 @@ class ViewPOFile:
                         self.status_message = "Please, review the po file seems to have a problem"
                         return
 
-                    self.context.rawfile = base64.encodestring(file.read())
+                    self.context.rawfile = base64.encodestring(pofile)
                     self.context.daterawimport = UTC_NOW
                     self.context.rawimporter = IPerson(self.request.principal, None)
                     self.context.rawimportstatus = RosettaImportStatus.PENDING.value
