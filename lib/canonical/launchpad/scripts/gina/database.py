@@ -365,7 +365,7 @@ class Launchpad(SQLThing):
         data = {
         "binarypackage": bp[0],
         "libraryfile": alias,
-        "filetype": 1, # XXX: File types?
+        "filetype": 1, # XXX Default to DEB/UDEB unless we get a better option
         }
         self._insert("binarypackagefile", data)
         pass
@@ -418,7 +418,7 @@ class Launchpad(SQLThing):
             "shortdesc":            short_desc,
             "description":          description,
             "build":                build[0],
-            "binpackageformat":     1, # XXX
+            "binpackageformat":     1, # Deb
             "section":              section,
             "priority":             prioritymap[bin.priority],
             "shlibdeps":            bin.shlibs,
@@ -435,6 +435,8 @@ class Launchpad(SQLThing):
         }
         if bin.architecture == "all":
             data["architecturespecific"] = False
+        if bin.filename.endswith(".udeb"):
+            data["binpackageformat"] = 2 # UDEB
         self._insert("binarypackage", data)
 
 

@@ -121,6 +121,9 @@ def do_arch(lp, kdb, bin_map, source_map):
             print "\t** No source package parsed for %s" % binpkg.package
             continue
 
+        if binpkg.is_created(lp):
+            continue
+
         srcpkg = source_map[binpkg.source]
         if not srcpkg.is_processed:
             if not srcpkg.description:
@@ -135,9 +138,8 @@ def do_arch(lp, kdb, bin_map, source_map):
                 srcpkg.ensure_created(lp)
             except Exception, e:
                 print "\t!! sourcepackage addition threw an error."
-
-        if binpkg.is_created(lp):
-            continue
+                print e
+                sys.exit(0)
 
         # we read the licence from the source package but it is
         # stored in the BinaryPackage table
@@ -146,9 +148,10 @@ def do_arch(lp, kdb, bin_map, source_map):
         try:
             binpkg.process_package(kdb, package_root, keyrings)
             binpkg.ensure_created(lp)
-        except:
+        except Exception, e:
             print "\t!! binarypackage addition threw an error."
-            sys.exit(0);
+            print e
+            sys.exit(0)
 
         count = count + 1
         if count == 10:
