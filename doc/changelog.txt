@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-31 18:51:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1531
+
+    Summary:
+      Improved the poimport script and applied some code review comments from Steve
+    Revision:
+      launchpad--devel--0--patch-1531
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-584
+       Improved poimport script so it does not breaks if it gets an unexpected exception
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-585
+       Fixes from Steve's review
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-586
+       Applied review comments. Thanks Steve
+    
+
+    modified files:
+     cronscripts/rosetta-poimport.py doc/changelog.txt
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-source-package-pots-redirect.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-584
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-585
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-586
+
+
 2005-03-31 15:50:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1530
 
     Summary:

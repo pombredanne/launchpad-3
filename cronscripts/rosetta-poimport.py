@@ -38,21 +38,36 @@ class ImportProcess:
             yield pofile
 
     def run(self):
-        try:
-            for object in self.getPendingImports():
-                # object could be a POTemplate or a POFile but both
-                # objects implement the doRawImport method so we don't
-                # need to care about it here.
+        for object in self.getPendingImports():
+            # object could be a POTemplate or a POFile but both
+            # objects implement the doRawImport method so we don't
+            # need to care about it here.
+            try:
                 object.doRawImport(logger)
+            except KeyboardInterrupt:
+                self.abort()
+                raise
+            except:
+                # If we have any exception, we log it before terminating
+                # the process.
+                logger.error('We got an unexpected exception while importing',
+                             exc_info = 1)
+                self.abort()
+                continue
 
-                # As soon as the import is done, we commit the transaction
-                # so it's not lost.
+            # As soon as the import is done, we commit the transaction
+            # so it's not lost.
+            try:
                 self.commit()
-        except:
-            # If we have any exception, we log it before terminating the
-            # process.
-            logger.error('We got an unexpected exception', exc_info = 1)
-            self.abort()
+            except KeyboardInterrupt:
+                self.abort()
+                raise
+            except:
+                # If we have any exception, we log it before terminating
+                # the process.
+                logger.error('We got an unexpected exception while committing'
+                             'the transaction', exc_info = 1)
+                self.abort()
 
 def parse_options():
     parser = OptionParser()

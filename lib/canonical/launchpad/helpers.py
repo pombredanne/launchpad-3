@@ -224,17 +224,19 @@ def getValidNameFromString(invalid_name):
     return name
 
 def requestCountry(request):
-    """Return the country from where the request was done."""
-    ip = request.get('HTTP_X_FORWARDED_FOR', None)
-    if ip is None:
-        ip = request.get('REMOTE_ADDR', None)
-    if ip is None:
+    """Return the Country object from where the request was done.
+
+    If the ipaddress is unknown or the country is not in our database,
+    return None.
+    """
+    ipaddress = request.get('HTTP_X_FORWARDED_FOR')
+    if ipaddress is None:
+        ipaddress = request.get('REMOTE_ADDR')
+    if ipaddress is None:
         return None
-    gi = getUtility(IGeoIP)
-    return gi.country_by_addr(ip)
+    return getUtility(IGeoIP).country_by_addr(ip)
 
 def browserLanguages(request):
     """Return a list of Language objects based on the browser preferences."""
-    request_preferred_languages = IRequestPreferredLanguages(request)
-    return request_preferred_languages.getPreferredLanguages()
+    return IRequestPreferredLanguages(request).getPreferredLanguages()
 

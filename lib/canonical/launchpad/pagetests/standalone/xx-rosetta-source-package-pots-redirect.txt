@@ -1,5 +1,4 @@
-Checks that the +pots/ page redirects always to +translations one.
-
+Checks that the '+pots/' page redirects always to the '+translations' one.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/ HTTP/1.1
@@ -13,8 +12,7 @@ Checks that the +pots/ page redirects always to +translations one.
   ../+translations
 
 
-Checks that the +pots page redirects always to +translations one.
-
+Checks that the '+pots' page redirects always to the '+translations' one.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution/+pots HTTP/1.1
