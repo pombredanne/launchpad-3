@@ -100,7 +100,7 @@ class DistroReleaseSourceReleaseApp(object):
         else:
             self.sourcepackagerelease = results[0]
         #self.sourcepackage = sourcepackage
-        #self.version = version
+        self.version = version
         # FIXME: stub
         self.archs = ['i386','AMD64']
         
