@@ -2,6 +2,47 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-01 17:24:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1350
+
+    Summary:
+      Fixed an error that breaks the import with dates that have a nonascii char + test. Reviewed by Steve
+    Revision:
+      launchpad--devel--0--patch-1350
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-27
+       Handled the problem with bad dates enconding
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-28
+       Handle dates error better
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-29
+       moved from a try/except to an if clause to improve the code clarity.
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-30
+       Added a test for dates in .po files with unicode chars
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-31
+       Merge with rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/doc/.arch-ids/porevisiondate.txt.id
+     lib/canonical/launchpad/doc/porevisiondate.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-27
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-28
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-29
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-30
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-31
+
+
 2005-03-01 17:04:34 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1349
 
     Summary:

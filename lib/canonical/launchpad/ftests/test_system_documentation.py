@@ -25,7 +25,8 @@ def tearDown(test):
 special = {
 
     # No setup or teardown at all, since it is demonstrating these features
-    'testing.txt': DocFileSuite('../doc/testing.txt')
+    'testing.txt': DocFileSuite('../doc/testing.txt'),
+    'porevisiondate.txt': DocFileSuite('../doc/porevisiondate.txt')
 
     }
 

@@ -847,17 +847,16 @@ def getPORevisionDate(poheader):
     if not isinstance(poheader, POHeader):
         raise TypeError, 'Expected a POHeader argument'
 
-    try:
-        date_string = poheader['PO-Revision-Date']
-        date = parseDatetimetz(date_string)
-    except KeyError:
-        # There is not PO-Revision-Date entry in poheader.
+    date_string = poheader.get('PO-Revision-Date')
+    if date_string is None:
         date = None
         date_string = 'Missing header'
-    except (SyntaxError, DateError, DateTimeError), e:
-        # The date format is not valid.
-        date = None
-        date_string = str(e)
+    else:
+        try:
+            date = parseDatetimetz(date_string)
+        except (SyntaxError, DateError, DateTimeError):
+            # The date format is not valid.
+            date = None
 
     return (date_string, date)
 
@@ -1653,5 +1652,3 @@ class POTranslation(SQLBase):
             # raise SQLObjectNotFound instead of KeyError
             raise SQLObjectNotFound(key)
     byTranslation = classmethod(byTranslation)
-
-
