@@ -2,12 +2,12 @@
 
 # Zope interfaces
 from zope.interface import implements
-from zope.component import ComponentLookupError
+from zope.component import ComponentLookupError, getUtility
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
