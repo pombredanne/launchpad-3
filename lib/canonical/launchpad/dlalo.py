@@ -1306,6 +1306,8 @@ class RosettaPerson(SQLBase):
                         description='A person with this label says that ' + \
                                     'knows how to translate into ' + \
                                     language.englishName)
+        else:
+            label = label[0]
         # This method comes from the RelatedJoin
         self.addLabel(label)
 
