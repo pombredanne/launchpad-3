@@ -16,6 +16,7 @@ from zope.security.management import system_user
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.launchpad.interfaces import IAuthorization, IObjectAuthorization
+from canonical.launchpad.interfaces import IPerson
 
 
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
@@ -70,11 +71,12 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             # Remove security proxies from object to authorize.
             objecttoauthorize = removeSecurityProxy(objecttoauthorize)
 
-
             # Get an IObjectAuthorization adapter.
             objectauthorization = IObjectAuthorization(objecttoauthorize, None)
             if objectauthorization is not None:
-                result = objectauthorization.checkPermission(user, permission)
+                person = IPerson(user, None)
+                result = objectauthorization.checkPermission(person,
+                                                             permission)
                 if result is not True and result is not False:
                     warnings.warn(
                         'object authorization returning non-bool value: %r' %
@@ -84,15 +86,18 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             # If there is no IObjectAuthorization adapter, we look for an
             # IAuthorization adapter.  If there is no such adapter, then
             # the permission is not granted.
+            # This is a named adapter from objecttoauthorize, providing
+            # IAuthorization, named after the permission.
             authorization = queryAdapter(
                 objecttoauthorize, IAuthorization, permission)
             if authorization is None:
                 return False
             else:
-                result = authorization.checkPermission(user)
+                person = IPerson(user, None)
+                result = authorization.checkPermission(person)
                 if result is not True and result is not False:
                     warnings.warn(
                         'authorization returning non-bool value: %r' %
-                        objectauthorization)
-                return bool(authorization.checkPermission(user, permission))
+                        authorization)
+                return bool(result)
 

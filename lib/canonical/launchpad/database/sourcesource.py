@@ -17,7 +17,7 @@ from canonical.database.sqlbase import SQLBase, quote
 # Launchpad interfaces
 # XXX: Daniel Debonzi 2004-11-25
 # Why RCSTypeEnum is inside launchpad.interfaces?
-from canonical.launchpad.interfaces import ISourceSource, ISourceSourceSet, \
+from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin, ISourceSourceSet, \
                                            RCSTypeEnum, RCSNames, IProductSet
 from canonical.lp.dbschema import ImportTestStatus
 
@@ -28,7 +28,8 @@ from sets import Set
 class SourceSource(SQLBase): 
     """SourceSource table"""
 
-    implements (ISourceSource)
+    implements (ISourceSource,
+                ISourceSourceAdmin)
     
     _table = 'SourceSource'
 
@@ -44,8 +45,10 @@ class SourceSource(SQLBase):
     cvstarfileurl = StringCol(dbName='cvstarfileurl', default=None)
     cvsbranch = StringCol(dbName='cvsbranch', default=None)
     svnrepository = StringCol(dbName='svnrepository', default=None)
+    # where are the tarballs released from this branch placed?
     releaseroot = StringCol(dbName='releaseroot', default=None)
     releaseverstyle = StringCol(dbName='releaseverstyle', default=None)
+    # what glob is used for the releases ?
     releasefileglob = StringCol(dbName='releasefileglob', default=None)
     releaseparentbranch = ForeignKey(foreignKey='Branch',
                    dbName='releaseparentbranch', default=None)
@@ -170,7 +173,7 @@ class SourceSource(SQLBase):
         from importd.Job import CopyJob
         job = CopyJob()
         job.repository = str(self.repository)
- #       if self.lastsynced is None:
+        #       if self.lastsynced is None:
         if self.syncingapproved is None:
 	#self.frequency is None or int(self.frequency) == 0:
             job.TYPE = 'import'
@@ -204,6 +207,9 @@ class SourceSource(SQLBase):
 
         job.description = self.description
         job.sourceID = self.id
+
+        job.releaseRoot = self.releaseroot
+        job.releaseFileGlob = self.releasefileglob
         return job
 
 
