@@ -45,6 +45,6 @@ class BugsAssignedReportView(object):
         return html
 
     def allPeople(self):
-        return Person.select()
+        return Person.select('password IS NOT NULL')
 
 

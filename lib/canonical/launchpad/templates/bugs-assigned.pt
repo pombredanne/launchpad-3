@@ -10,6 +10,7 @@
         <div tal:replace="structure view/userSelector" /><br />
         <b>Minimum Severity:</b><br />
         <div tal:replace="structure view/severitySelector" /><br />
+        <input type="submit" value="Update">
     </form>
 </metal:rightportlets>
 
@@ -31,7 +32,9 @@
             <tr tal:repeat="bug context/assignedBugs"
                 tal:attributes="onclick
                 string:window.location='/malone/bugs/${bug/id}'">
-                <td><span tal:replace="bug/id">$Bug.id</span></td>
+                <td><span tal:replace="bug/id">$Bug.id</span>
+                    <span tal:condition="bug/name">(<span
+                    tal:replace="bug/name">name</span>)</span></td>
                 <td tal:attributes="title bug/shortdesc">
                     <b><span tal:replace="bug/title">$Bug.title</span></b></td>
             </tr>

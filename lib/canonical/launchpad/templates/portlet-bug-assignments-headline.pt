@@ -31,7 +31,7 @@
             <td>
                 <a href=""
                    tal:attributes="href
-                   string:/doap/projects/${bugass/product/project/name}/${bugass/product/name}"
+                   string:/malone/projects/${bugass/product/project/name}/${bugass/product/name}"
                    tal:content="bugass/product/name">
                 $Product.name
                 </a>

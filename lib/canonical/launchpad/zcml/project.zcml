@@ -14,6 +14,10 @@
         />
     </content>
 
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProject"
+        getter="getProduct" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProject"
         name="+index" />
@@ -30,7 +34,10 @@
         <browser:page
             name="+index"
             template="../templates/project-index.pt"
-            lp:url="doap/projects/$Project.name/+index" />
+            lp:url="doap/projects/$Project.name/" />
+        <browser:page name="+malone-index"
+            template="../templates/project-bugs.pt"
+            lp:url="malone/projects/$Project.name/" />
     </browser:pages>
 
     <browser:pages
@@ -51,17 +58,18 @@
             lp:url="doap/projects/$Project.name/+newbugtracker" />
     </browser:pages>
 
-    <browser:pages
+    <browser:editform
+        name="+editme"
         for="canonical.launchpad.interfaces.IProject"
-        permission="zope.Public">
-        <browser:page name="+malone-index"
-            template="../templates/project-bugs.pt"
-            lp:url="malone/projects/$Project.name/index" />
-    </browser:pages>
+        schema="canonical.launchpad.interfaces.IProject"
+        label="Edit Upstream Project Details:"
+        fields="name title shortdesc description homepageurl wikiurl sourceforgeproject freshmeatproject"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-editform.pt"
+        lp:url="doap/projects/$Project.name/+editme">
+    </browser:editform>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProject"
-        getter="getProduct" />
+        
 
     <!-- ProjectContainer-->
     <content class="canonical.launchpad.database.ProjectContainer">
