@@ -48,6 +48,9 @@ all: drop create base
 	psql -d ${DBNAME} -f ../sampledata/current.sql | cat
 	psql -d ${DBNAME} -f comments.sql | cat
 
+doc:
+	postgresql_autodoc -d ${DBNAME} -f launchpad -t html
+
 newsample-foaf:
 	pg_dump -d ${DBNAME} -a -D -O --table=person | grep -v "\(SET \| TOC \)" > ../sampledata/new-foaf.sql
 	pg_dump -d ${DBNAME} -a -D -O --table=emailaddress | grep -v "\(SET \| TOC \)" >> ../sampledata/new-foaf.sql

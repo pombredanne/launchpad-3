@@ -1,0 +1,46 @@
+ALTER TABLE Bug DROP CONSTRAINT valid_name;
+ALTER TABLE Bug DROP CONSTRAINT "$3";
+
+/* These are NOT NULL, so we should have defaults */
+ALTER TABLE Bug ALTER COLUMN communityscore 
+    SET DEFAULT 0;
+ALTER TABLE Bug ALTER COLUMN communitytimestamp 
+    SET DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
+ALTER TABLE Bug ALTER COLUMN activityscore 
+    SET DEFAULT 0;
+ALTER TABLE Bug ALTER COLUMN activitytimestamp 
+    SET DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
+ALTER TABLE Bug ALTER COLUMN hits 
+    SET DEFAULT 0;
+ALTER TABLE Bug ALTER COLUMN hitstimestamp 
+    SET DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
+
+ALTER TABLE BugActivity ALTER COLUMN datechanged
+    SET DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
+
+ALTER TABLE Changeset ALTER COLUMN datecreated
+    SET DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
+
+/* Tidy some constraints */
+
+ALTER TABLE Coderelease DROP CONSTRAINT "$1";
+ALTER TABLE Coderelease DROP CONSTRAINT "$2";
+ALTER TABLE Coderelease ADD CONSTRAINT either_or
+    CHECK ((productrelease IS NULL) <> (sourcepackagerelease IS NULL));
+
+ALTER TABLE CodereleaseRelationship DROP CONSTRAINT "$1";
+ALTER TABLE CodereleaseRelationship ADD CONSTRAINT no_loops
+    CHECK (subject <> object);
+
+ALTER TABLE GPGKey DROP CONSTRAINT gpg_fingerprint_key; /* Dupe */
+
+ALTER TABLE Person ADD CONSTRAINT no_loops CHECK (id <> teamowner);
+
+ALTER TABLE Person ALTER COLUMN karma SET DEFAULT 0;
+UPDATE Person SET karma=DEFAULT WHERE karma IS NULL;
+ALTER TABLE Person ALTER COLUMN karma SET NOT NULL;
+
+ALTER TABLE Person ALTER COLUMN karmatimestamp
+    SET DEFAULT CURRENT_TIMESTAMP AT TIME ZONE 'UTC';
+UPDATE Person SET karmatimestamp = DEFAULT WHERE karmatimestamp IS NULL;
+ALTER TABLE Person ALTER COLUMN karmatimestamp SET NOT NULL;
