@@ -7,6 +7,11 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from zope.interface import implements
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent
+from zope.app.form.browser.add import AddView
+from schoolbell.interfaces import IEditCalendar
+from schoolbell.simple import SimpleCalendarEvent
 from canonical.launchpad.interfaces import ICalendarView, ICalendarWeekView
 from canonical.launchpad.interfaces import ICalendarDayView, ICalendarMonthView
 from canonical.launchpad.interfaces import ICalendarYearView
@@ -269,3 +274,20 @@ class YearView(CalendarView):
 
         self._setViewURLs(start)
 
+
+class CalendarEventAddView(AddView):
+
+    __used_for__ = IEditCalendar
+
+    def createAndAdd(self, data):
+        """Create a new calendar event.
+
+        `data` is a dictionary with the data entered in the form.
+        """
+        calendar = self.context
+        kw = dict([(str(k), v) for k, v in data.items()])
+        event = calendar.addEvent(SimpleCalendarEvent(**kw))
+        notify(ObjectCreatedEvent(event))
+
+    def nextURL(self):
+        return '.'

@@ -3,6 +3,7 @@ Simple calendar events and calendars.
 """
 
 import datetime
+import random
 import email.Utils
 from zope.interface import implements
 from schoolbell.interfaces import ICalendar, ICalendarEvent
@@ -40,7 +41,7 @@ class SimpleCalendarEvent(CalendarEventMixin):
         self.recurrence = recurrence
         self.unique_id = unique_id
         if not self.unique_id:
-            self.unique_id = new_unique_id(self)
+            self.unique_id = new_unique_id()
 
 
 class ImmutableCalendar(CalendarMixin):
@@ -69,16 +70,12 @@ class ImmutableCalendar(CalendarMixin):
         return iter(self._events)
 
 
-def new_unique_id(event):
+def new_unique_id():
     """Generate a new unique ID for a calendar event.
 
     UID is randomly generated and follows RFC 822 addr-spec:
 
-        >>> from datetime import datetime, timedelta
-        >>> e = SimpleCalendarEvent(datetime(2004, 12, 15, 18, 57),
-        ...                         timedelta(minutes=15),
-        ...                         'Work on schoolbell.simple')
-        >>> uid = new_unique_id(e)
+        >>> uid = new_unique_id()
         >>> '@' in uid
         True
 
@@ -90,11 +87,8 @@ def new_unique_id(event):
         True
 
     """
-    # & 0x7ffffff to avoid FutureWarnings with negative numbers
-    nonnegative_hash = hash((event.dtstart, event.title, event.duration,
-                             event.location)) & 0x7ffffff
-    more_uniqueness = '%d.%08X' % (datetime.datetime.now().microsecond,
-                                   nonnegative_hash)
+    more_uniqueness = '%d.%d' % (datetime.datetime.now().microsecond,
+                                 random.randrange(10 ** 6, 10 ** 7))
     # generate an rfc-822 style id and strip angle brackets
     unique_id = email.Utils.make_msgid(more_uniqueness)[1:-1]
     return unique_id

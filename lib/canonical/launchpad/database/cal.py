@@ -38,9 +38,11 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
             # indexes yet.
             self.find(event.unique_id)
         except:
-            CalendarEvent(calendar=self, dtstart=event.dtstart,
-                          duration=event.duration, title=event.title,
-                          location=event.location, unique_id=event.unique_id)
+            e = CalendarEvent(calendar=self, dtstart=event.dtstart,
+                              duration=event.duration, title=event.title,
+                              location=event.location,
+                              unique_id=event.unique_id)
+            return e
         else:
             raise ValueError('event %r already in calendar' % event.unique_id)
 
@@ -72,11 +74,14 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
     title = StringCol(dbName='title', notNull=True)
     location = StringCol(dbName='location', notNull=True, default='')
 
+    recurrence = None # TODO: implement this as a property
+
     # The following attributes are all used for recurring events
-    recurrence = EnumCol(dbName='recurrence', notNull=True,
-                         enumValues=['', 'SECONDLY', 'MINUTELY', 'HOURLY',
-                                     'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'],
-                         default='')
+    recurrence_type = EnumCol(dbName='recurrence', notNull=True,
+                              enumValues=['', 'SECONDLY', 'MINUTELY', 'HOURLY',
+                                          'DAILY', 'WEEKLY', 'MONTHLY',
+                                          'YEARLY'],
+                              default='')
     count = IntCol(dbName='count', default=None)
     until = DateTimeCol(dbName='until', default=None)
     exceptions = StringCol(dbName='exceptions', default=None)

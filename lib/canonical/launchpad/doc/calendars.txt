@@ -1,16 +1,20 @@
 Calendars
 =========
 
-Some object in the system have calendars.  Actually, currently only persons
+Some objects in Launchpad have calendars.  Actually, currently only persons
 (and teams) have calendars, but it is planned to add them to products and
-projects, at least.
+projects as well
 
-Calendaring code makes use of the SchoolBell library, which comes from the
-SchoolTool project (www.schooltool.org).  Calendars are stored in PostgreSQL
-database.
+Calendaring code makes use of the SchoolBell library (Python package
+`schoolbell`), which comes from the SchoolTool project (www.schooltool.org).
+
+Launchpad calendars have some additional attributes such as title and owner,
+defined in the ILaunchpadCalendar interface (that extends schoolbell's
+IEditCalendar).  Calendars are stored in the PostgreSQL database.
+
 
 Hooking up calendars to objects
-===============================
+-------------------------------
 
 Objects that have calendars can be adapted to ILaunchpadCalendar.  There is an
 adapter registered for ICalendarOwner that returns the 'calendar' attribute of
@@ -29,5 +33,32 @@ view looks up the calendar of the logged-in user.
       detailing that assertion in great detail), so we have to write custom
       traversers for ICalendarOwners.
 
-There is a set of views available for ICalendar.
+There is a set of views available for ICalendar, and a traverser that
+interprets URL segments as dates.
+
+
+Interoperability with calendaring clients
+-----------------------------------------
+
+Every calendar can be exported as an iCalendar file via HTTP.  You can
+subscribe to these calendars from Mozilla Calendar (or Sunbird), Evolution,
+KOrganizer, Apple's iCal, etc.  The get the URL for getting an iCalendar file
+just append '/calendar.ics' to the calendar URL, e.g.
+
+   http://localhost:8085/foaf/persons/test/calendar/calendar.ics
+
+The ability to upload iCalendar files (and thus modify calendars stored in
+Launchpad from these calendaring clients) is not hooked up yet.  There is
+an iCalendar parser in the schoolbell module, but the tricky part is to get
+Zope 3 traversal (which is heavily customized in Launchpad) to actually
+work for HTTP PUT requests.
+
+
+Security
+--------
+
+None so far.  All calendar content objects and views are protected with
+zope.Public, which means that, for example, anonymous users can alter any
+calendar in the system.  Obviously this needs to be changed before calendaring
+can be merged to the mainline.
 

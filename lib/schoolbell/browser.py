@@ -36,6 +36,9 @@ CalendarICalendarView can export calendars in iCalendar format
      'END:VEVENT\r\n',
      'END:VCALENDAR']
 
+XXX: Should the last line also end in '\r\n'?  Go read RFC 2445 and experiment
+with calendaring clients.
+
 Register the iCalendar read view in ZCML as
 
     <browser:page

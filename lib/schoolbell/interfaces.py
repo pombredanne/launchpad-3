@@ -76,6 +76,10 @@ class IEditCalendar(ICalendar):
         Raises ValueError if an event with the same unique_id already exists
         in the calendar.
 
+        Returns the newly added event (which may be a copy of the argument,
+        e.g. if the calendar needs its events to be instances of a particular
+        class).
+
         It is perhaps not a good idea to add calendar events that have no
         occurrences into calendars (see ICalendarEvent.hasOccurrences), as they
         will be invisible in date-based of calendar views.

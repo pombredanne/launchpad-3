@@ -149,7 +149,17 @@ def doctest_Calendar():
         >>> e = SimpleCalendarEvent(datetime.datetime(2004, 12, 15, 19, 48),
         ...         datetime.timedelta(hours=1), "Dinner, please!",
         ...         unique_id="new1")
-        >>> cal.addEvent(e)
+        >>> e2 = cal.addEvent(e)
+
+    The calendar actually makes a copy of the event (because it cannot store
+    arbitrary classes in the database), and returns that copy
+
+        >>> e2 is e
+        False
+        >>> e2 == e
+        True
+
+    The new event is visible in the calendar
 
         >>> [e.unique_id for e in cal]
         [u'e1', u'e2', u'new1']

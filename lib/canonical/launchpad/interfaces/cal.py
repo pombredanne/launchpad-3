@@ -3,8 +3,8 @@ _ = MessageIDFactory('launchpad')
 
 from zope.interface import Interface, Attribute
 from zope.schema import Int, Bool, Object, TextLine, Date, Datetime
-from canonical.launchpad.fields import Title
-from schoolbell.interfaces import IEditCalendar, ICalendarEvent
+from canonical.launchpad.fields import Title, TimeInterval
+from schoolbell.interfaces import IEditCalendar
 
 
 class ILaunchpadCalendar(IEditCalendar):
@@ -90,7 +90,7 @@ class ICalendarWeekView(ICalendarView):
     friday = Attribute(_("Information about Friday"))
     saturday = Attribute(_("Information about Saturday"))
     sunday = Attribute(_("Information about Sunday"))
-    
+
 class ICalendarMonthView(ICalendarView):
     """A month view of a calendar."""
     daynames = Attribute(_("Translated day names"))
@@ -127,3 +127,25 @@ class ICalendarEventInfo(Interface):
         description=_("The event start time in local time"))
     timestring = TextLine(
         title=_("The event start time as a string"))
+
+
+class ICalendarEventAddForm(Interface):
+    """Schema for the New Calendar Event form."""
+
+    title = TextLine(
+        title=_("Title"), required=True,
+        description=_("""Title of the event"""))
+
+    location = TextLine(
+        title=_("Location"), required=False,
+        description=_("""Location of the event"""))
+
+    dtstart = Datetime(
+        title=_("Start"), required=True,
+        description=_("""Date and time when the event starts."""))
+
+    duration = TimeInterval(
+        title=_("Duration"), required=True,
+        description=_("""Duration of the event."""))
+
+    # TODO: recurrence
