@@ -3,6 +3,9 @@
     <resource name="plone.css" file="styles/plone.css" />
     <resource name="launchpad.css" file="styles/launchpad.css" />
 
+    <!-- Javascript -->
+    <resource name="launchpad.js" file="javascripts/launchpad.js" />
+
     <!-- Images -->
     <resource name="green-bar.png" file="images/green-bar.png" />
     <resource name="blue-bar.png" file="images/blue-bar.png" />
@@ -15,6 +18,8 @@
     <resource name="arrowBottom.gif" file="images/arrowBottom.gif" />
     <resource name="arrowDown.gif" file="images/arrowDown.gif" />
     <resource name="arrowRight.gif" file="images/arrowRight.gif" />
+    <resource name="treeExpanded.gif" file="images/treeExpanded.gif" />
+    <resource name="treeCollapsed.gif" file="images/treeCollapsed.gif" />
 
 
     <resource name="print.gif" file="images/print.gif" />

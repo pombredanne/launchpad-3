@@ -18,11 +18,21 @@ label.language-code {
     width: 6em;
 }
 
+.collapsed {
+    border-style: dashed none none none;
+}
+
 fieldset.message-strings {
-    width: 43%;
-    float: left;
-    display: block;
-    margin-right: 1em;
+}
+
+fieldset.message-strings input {
+    width: 100%;
+}
+
+.messageSourceString {
+    padding: 0.5em 1em;
+    background-color: #dee7ec;
+    border: 1px solid #8cacbb;
 }
 
 fieldset.two-column {
@@ -32,9 +42,6 @@ fieldset.two-column {
     margin-right: 1em;
 }
 
-
-fieldset input {
-}
 
 
 /* Plone elements that should be changed */
@@ -86,14 +93,11 @@ label {
 
 /* highlight on hover in table */
 
-table.listing tr:hover {
+table.rowNavigation tr:hover {
     background-color: #dee7ec;
     cursor:pointer;
 }
 
-fieldset.collapsible legend {
-    cursor: pointer; 
-}
 
 /* Bug status markers */
 
@@ -162,3 +166,4 @@ fieldset.collapsible legend {
     float: right;
     clear: both;
 }
+

@@ -10,6 +10,8 @@
     <style type="text/css" media="screen">@import url(++resource++plone.css);</style>
     <!-- Rosetta style sheet -->
     <style type="text/css" media="screen">@import url(++resource++launchpad.css);</style>
+    <!-- Launchpad JS code -->
+    <script type="text/javascript" src="++resource++launchpad.js"></script>
   </head>
 
   <body>
@@ -114,9 +116,11 @@
                          title="Send this page to somebody" />
                 </a>
               </div>
-              <metal:main define-slot="main">
-              <p>Main content area.</p>
-              </metal:main>
+              <div id="region-content">
+                  <metal:main define-slot="main">
+                  <p>Main content area.</p>
+                  </metal:main>
+              </div>
             </td>
           </tr>
         </tbody>

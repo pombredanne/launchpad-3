@@ -78,11 +78,12 @@
                 <a tal:attributes="href view/endURL">End &raquo;</a>
             </span>
         </span>
+        &nbsp;
     </div>
 
     <!-- The actual translation form. -->
 
-    <form method="POST" tal:attributes="action request/URL">
+    <form method="post" tal:attributes="action request/URL">
     <tal:msgstring repeat="set view/messageSets">
         <fieldset class="message-strings">
             <legend>String #<span tal:replace="set/sequence">120</span></legend>
@@ -90,15 +91,15 @@
                 <!-- Simple message. -->
                 <span tal:condition="not:set/isPlural">
                     <div class="field">
-                        <label class="language-code">English</label>:
+                        <label class="language-code">English (Source)</label>
                         <!--
                         <span
                             tal:condition="not:set/messageID/isMultiline"><span
                             tal:content="set/messageID/text">text</span></span>
                         -->
-                        <div
-                            xtal:condition="set/messageID/isMultiline"><span
-                            tal:content="structure set/messageID/text">text</span></div>
+                        <div class="messageSourceString"
+                             xtal:condition="set/messageID/isMultiline"
+                             tal:content="structure set/messageID/text">text</div>
                     </div>
 
                     <div class="field" tal:repeat="language view/languages">
@@ -168,23 +169,17 @@
                     </fieldset>
                 </span>
 
-        </fieldset>
-
-        <fieldset class="message-strings">
-
-            <legend>String information</legend>
-
             <div class="field" tal:condition="set/commentText">
                 <label>Comment</label>
                 <img src="++resource++arrowDown.gif" />
                 <div class="discreet" tal:content="set/commentText">This refers to the content type.</div>
             </div>
 
-            <div class="field">
-                <label>From files:</label>
-                <span tal:content="set/fileReferences"
-                    >./plone_forms/discussion_reply_form.pt</span>
-            </div>
+            <fieldset class="collapsible collapsed">
+                <legend>Located in</legend>
+                <pre tal:content="set/fileReferences"
+                    >./plone_forms/discussion_reply_form.pt</pre>
+            </fieldset>
 
             <!--
             <div class="field">

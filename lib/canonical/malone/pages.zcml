@@ -16,7 +16,7 @@
          permission="zope.Public"
          lp:url="malone">
     <page name="index"
-          template="templates/malone-index.pt"
+          template="templates/projects-search.pt"
           lp:url="malone/index" />
     <page name="about"
           template="templates/malone-about.pt"
