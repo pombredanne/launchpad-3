@@ -47,6 +47,10 @@
         factory="canonical.launchpad.database.BugProductInfestationContainer"
         provides="canonical.launchpad.interfaces.IBugProductInfestationContainer" />
 
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
+        getter="__getitem__" />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
         name="+index" />
