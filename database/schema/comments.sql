@@ -541,3 +541,7 @@ COMMENT ON COLUMN Milestone.product IS 'The product for which this is a mileston
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
 COMMENT ON COLUMN Milestone.title IS 'The description of, e.g. "1.2."';
 
+    
+COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
+COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
+COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';

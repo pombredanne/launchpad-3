@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 13:26:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1228
+
+    Summary:
+      Fix database encoding test
+    Revision:
+      launchpad--devel--0--patch-1228
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-91
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-92
+       Fix database encoding test
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-93
+       PushMirrorAccess table for supermirror sftp server access
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-27-0.sql.id
+     database/schema/patch-6-27-0.sql
+
+    modified files:
+     database/schema/comments.sql database/schema/fti.py
+     database/schema/launchpad.html doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-91
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-92
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-93
+
+
 2005-01-21 13:18:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1227
 
     Summary:
