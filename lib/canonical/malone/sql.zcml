@@ -33,7 +33,9 @@
       provides=".interfaces.IBugAttachmentContainer" />
 
   <content class=".browser.BugExternalRefContainer">
-    <allow interface=".interfaces.IBugExternalRefContainer" />
+      <allow interface=".interfaces.IBugExternalRefContainer" />
+      <allow 
+          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
   </content>
 
   <utility

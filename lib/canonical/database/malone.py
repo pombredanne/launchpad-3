@@ -306,7 +306,7 @@ class IBugExternalRef(Interface):
             title=_('Date Created'), required=True, readonly=True,
             )
     owner = Int(
-            title=_('Owner'), required=False, readonly=False,
+            title=_('Owner'), required=False, readonly=True,
             )
 
     def url():

@@ -186,6 +186,7 @@
     label="Change Bug External Reference"
     permission="zope.View"
     template="templates/default-editform.pt"
+    fields="bugreftype data description"
     lp:url="malone/bugs/$Bug.id/references/$Reference.id/+edit" />
 
   <addform

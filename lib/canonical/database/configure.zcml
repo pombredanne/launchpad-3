@@ -16,6 +16,8 @@
 
     <content class="canonical.database.malone.BugExternalRef">
         <allow interface="canonical.database.malone.IBugExternalRef" />
+        <require permission="zope.View"
+            set_schema="canonical.database.malone.IBugExternalRef" />
     </content>
 
     <content class="canonical.database.malone.BugMessage">
@@ -25,7 +27,7 @@
     <content class="canonical.database.malone.BugAttachment">
         <allow interface="canonical.database.malone.IBugAttachment" />
         <require permission="zope.View"
-        set_schema="canonical.database.malone.IBugAttachment" />
+            set_schema="canonical.database.malone.IBugAttachment" />
     </content>
 
     <content class="canonical.database.malone.BugAttachmentContent">
