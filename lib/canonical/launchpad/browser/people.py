@@ -376,7 +376,17 @@ class EmailAddressEditView(object):
                 return
 
             results = EmailAddress.selectBy(email=newemail)
-            if results.count() > 0:
+            if results.count() > 0 and results[0].person.id == user.id:
+                self.message = ("The email address '%s' is already registered "
+                                "as your email address. This can be either "
+                                "because you already added this email address "
+                                "before or because it have been detected by "
+                                "our system as being yours. In case it was "
+                                "detected by our systeam, it's probably "
+                                "shown on this page, inside <em>Detected "
+                                "Emails</em>." % results[0].email)
+                return
+            elif results.count() > 0:
                 email = results[0]
                 self.message = ("The email address '%s' was already "
                                 "registered by user '%s'. If you think that "

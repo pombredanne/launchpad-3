@@ -17,7 +17,7 @@
     <adapter
         for="canonical.launchpad.interfaces.ITeam"
         provides="canonical.launchpad.interfaces.ITeamMembershipSubset"
-        factory="canonical.launchpad.components.teammembership.TeamMembershipSubsetAdapter"
+        factory="canonical.launchpad.components.teammembership.TeamMembershipSubset"
         permission="zope.Public" />
 
     <browser:defaultView
@@ -38,17 +38,21 @@
             lp:url="people/$team/members/+index" />
     </browser:pages>
 
-    <!-- XXX: salgado, 2005-03-11: Remember to change the permission used here
-    to launchpad.Edit. Need to sort this out with steve, because it can
-    require a new security adapter. -->
+    <browser:addform
+        name="+add"
+        for="canonical.launchpad.interfaces.ITeamMembershipSubset"
+        schema="canonical.launchpad.interfaces.ITeamMembershipSubset"
+        fields="newmember"
+        class="canonical.launchpad.browser.AddTeamMemberView"
+        permission="launchpad.Edit"
+        template="../templates/team-addmember.pt"
+        lp:url="people/$team/members/+add">
+    </browser:addform>
+
     <browser:pages
         for="canonical.launchpad.interfaces.ITeamMembershipSubset"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.TeamMembersEditView">
-        <browser:page
-            name="+add"
-            template="../templates/team-addmembers.pt"
-            lp:url="people/$team/members/+add" />
+        permission="launchpad.Edit"
+        class="canonical.launchpad.browser.ProposedTeamMembersEditView">
         <browser:page
             name="+editproposed"
             template="../templates/team-editproposed.pt"
@@ -62,7 +66,6 @@
             set_schema="canonical.launchpad.interfaces.ITeamMembership" />
     </content>
 
-    <!--
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITeamMembership"
         name="+index" />
@@ -70,11 +73,11 @@
     <browser:pages
         for="canonical.launchpad.interfaces.ITeamMembership"
         permission="launchpad.Edit"
-        class="canonical.launchpad.browser.TeamMembershipView">
+        class="canonical.launchpad.browser.TeamMembershipEditView">
         <browser:page
             name="+index"
             template="../templates/teammembership-index.pt"
             lp:url="foaf/people/$team/$member/+index" />
-    -->
+    </browser:pages>
 
 </configure>

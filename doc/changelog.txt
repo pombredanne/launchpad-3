@@ -2,6 +2,109 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-17 11:55:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1449
+
+    Summary:
+      Finished pages to manage team members. TeamMembership is now completely covered. Only some pagetests missing.
+    Revision:
+      launchpad--devel--0--patch-1449
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-168
+       New security adapter for TeamMembershipSubset.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-169
+       TeamMembershipSubset.getByPersonName() was broken.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-170
+       Fix EditTeamMembershipSubsetByTeamOwnerOrTeamAdminsOrAdmins.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-171
+       Finished page to edit active(APPROVED/ADMIN) members.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-172
+       Fix {EditPersonBySelfOrAdmins,EditTeamByTeamOwnerOrAdmins}.checkAuthenticated() which were trying to access self.user when they should be accessing user
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-173
+       Fix some stuff on Active and Inactive members pages and finish the Proposed members page.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-174
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-175
+       New pagetests: Approve proposed member, promote member to admin, demote member from admin.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-176
+       Fixed the expiration date chooser for the different subscription statuses, so each one comes with a different default. Never allow setting past dates on ITeamMembership.dateexpires.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-177
+       Don't need to fill teamparticipation when creating new Persons, stub did that for us as a database trigger.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-178
+       Display a better message when trying to add an email address that's already registered as being yours.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-179
+       Allow deactivation of active members.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-180
+       Fixed security adapters to allow members of a teamowner manage the team and team members.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-181
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-182
+       Fixing a typo in launchpad/security.py
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-183
+       Fixed page to add new members to a team. Now we have to add one member at a time, but at least it's more scallable and doesn't display a list with all persons in the database.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/22-approve-proposed-member.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/23-promote-member.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/24-demote-member.txt.id
+     lib/canonical/launchpad/pagetests/foaf/22-approve-proposed-member.txt
+     lib/canonical/launchpad/pagetests/foaf/23-promote-member.txt
+     lib/canonical/launchpad/pagetests/foaf/24-demote-member.txt
+     lib/canonical/launchpad/templates/.arch-ids/team-addmember.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/teammembership-index.pt.id
+     lib/canonical/launchpad/templates/team-addmember.pt
+     lib/canonical/launchpad/templates/teammembership-index.pt
+
+    removed files:
+     lib/canonical/launchpad/templates/.arch-ids/team-addmembers.pt.id
+     lib/canonical/launchpad/templates/team-addmembers.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/components/teammembership.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/templates/person-emails.pt
+     lib/canonical/launchpad/zcml/teammembership.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-168
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-169
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-170
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-171
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-172
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-173
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-174
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-175
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-176
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-177
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-178
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-179
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-180
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-181
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-182
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-183
+
+
 2005-03-17 04:14:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1448
 
     Summary:

@@ -212,10 +212,12 @@ class Person(SQLBase):
         assert status in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED]
 
+        now = datetime.utcnow()
         if expires is None and self.defaultmembershipperiod:
-            expires = datetime.utcnow() + \
-                      timedelta(self.defaultmembershipperiod)
-        
+            expires = now + timedelta(self.defaultmembershipperiod)
+        elif expires is not None:
+            assert expires > now
+
         TeamMembership(personID=person.id, teamID=self.id, status=status,
                        dateexpires=expires, reviewer=reviewer, 
                        reviewercomment=comment)
@@ -254,17 +256,20 @@ class Person(SQLBase):
         elif tm.status in [declined]:
             assert status in [proposed, approved]
 
+        now = datetime.utcnow()
         if expires is None and self.defaultmembershipperiod:
-            expires = datetime.utcnow() + \
-                      timedelta(self.defaultmembershipperiod)
+            expires = now + timedelta(self.defaultmembershipperiod)
+        elif expires is not None and expires <= now:
+            expires = now
+            status = expired
 
         tm.status = status
         tm.dateexpires = expires
         tm.reviewer = reviewer
         tm.reviewercomment = comment
 
-        if (status == approved and tm.status != admin) or \
-           (status == admin and tm.status != approved):
+        if ((status == approved and tm.status != admin) or
+            (status == admin and tm.status != approved)):
             _fillTeamParticipation(person, self)
         elif status in [deactivated, expired]:
             _cleanTeamParticipation(person, self)
@@ -546,15 +551,7 @@ class PersonSet(object):
             encryptor = SSHADigestEncryptor()
             kw['password'] = encryptor.encrypt(kw['password'])
 
-        person = Person(**kw)
-        # "Each Person is a member of their own Team effectively, so there is a
-        #  TeamParticipation entry for each person, with themselves as the
-        #  member."
-        # More info: TeamParticipationUsage spec.
-        # However, this is now done with a database trigger
-        #   -- StuartBishop 20050317
-        #_fillTeamParticipation(person, person)
-        return person
+        return Person(**kw)
 
     def getByName(self, name, default=None):
         """See IPersonSet."""

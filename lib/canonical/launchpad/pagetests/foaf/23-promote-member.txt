@@ -1,0 +1,54 @@
+  'name16' is doing an amazing job, so we promote him to administrator of this
+  team. 
+
+
+  >>> print http(r"""
+  ... GET /people/myemail/members/name16 HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...This is an active member...
+  ...
+
+
+  >>> print http(r"""
+  ... POST /people/myemail/members/name16 HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... admin=yes&day=14&month=4&year=2005&comment=&editactive=Change""")
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+
+
+  >>> print http(r"""
+  ... GET /people/myemail/members/ HTTP/1.1
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
+  ... Referer: http://localhost:9000/people/myemail/members/name16
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Foo Bar...
+  ...
+  ...Administrator...
+  ...
+
+
+  Let's make sure that 'name16' is really an admin of this team:
+
+  >>> from canonical.launchpad.database import Person, TeamMembership
+  >>> foobar = Person.byName('name16')
+  >>> team = Person.byName('myemail')
+  >>> tm = TeamMembership.selectBy(personID=foobar.id, teamID=team.id)[0]
+  >>> tm.statusname
+  'Administrator'
+  >>> foobar.inTeam(team)
+  True

@@ -12,7 +12,7 @@ from canonical.launchpad.interfaces import ITeamMembershipSet
 from canonical.launchpad.interfaces import ITeamMembershipSubset
 
 
-class TeamMembershipSubsetAdapter:
+class TeamMembershipSubset:
 
     implements(ITeamMembershipSubset)
 
@@ -22,6 +22,6 @@ class TeamMembershipSubsetAdapter:
     def getByPersonName(self, name, default=None):
         assert self.team is not None
         person = getUtility(IPersonSet).getByName(name)
-        membershipset = getUtility(ITeamMembershipSet)
-        return membershipset.getByPersonAndTeam(person.id, team.id, default)
+        mset = getUtility(ITeamMembershipSet)
+        return mset.getByPersonAndTeam(person.id, self.team.id, default)
 

@@ -308,7 +308,7 @@ class ITeamMembership(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
     team = Int(title=_("Team"), required=True, readonly=False)
-    person = Int(title=_("Owner"), required=True, readonly=False)
+    person = Int(title=_("Member"), required=True, readonly=False)
     reviewer = Int(title=_("Reviewer"), required=False, readonly=False)
 
     datejoined = Text(title=_("Date Joined"), required=True, readonly=True)
@@ -338,6 +338,11 @@ class ITeamMembershipSet(Interface):
 
 class ITeamMembershipSubset(Interface):
     """A Set for TeamMembership objects of a given team."""
+
+    newmember = Choice(title=_('New member'), required=True, 
+                       vocabulary='Person',
+                       description=_("The user or team which is going to be "
+                                     "added as the new member of this team."))
 
     team = Attribute(_("The team for which this subset is for."))
 

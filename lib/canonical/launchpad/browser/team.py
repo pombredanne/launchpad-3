@@ -72,7 +72,8 @@ class TeamView(object):
 
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
-        return self.context.teamowner == getUtility(ILaunchBag).user
+        user = getUtility(ILaunchBag).user
+        return user.inTeam(self.context.teamowner)
 
     def userHaveMembershipEntry(self):
         """Return True if the logged in user have a TeamMembership entry for
@@ -123,8 +124,8 @@ class TeamView(object):
         elif tm.status == TeamMembershipStatus.DECLINED:
             desc = ("Your subscription for this team is currently declined. "
                     "Clicking on the 'Join' button will put you on the "
-                    "proposed members queue, waiting for approval by one of "
-                    "the team's administrators")
+                    "proposed members queue, waiting for the approval of one "
+                    "of the team's administrators")
 
         return desc
 
@@ -245,15 +246,13 @@ class TeamMembersView(object):
         return expired + deactivated
 
 
-class TeamMembersEditView:
+class ProposedTeamMembersEditView:
 
     def __init__(self, context, request):
         self.context = context
         self.team = context.team
         self.request = request
         self.user = getUtility(ILaunchBag).user
-        self.addedMembers = []
-        self.alreadyMembers = []
 
     def allPeople(self):
         return getUtility(IPersonSet).getAll()
@@ -272,7 +271,7 @@ class TeamMembersEditView:
         team = self.team
         for person in team.proposedmembers:
             action = self.request.form.get('action_%d' % person.id)
-            membership = self._getMembership(person.id, team.id)
+            membership = _getMembership(person.id, team.id)
             if action == "approve":
                 status = TeamMembershipStatus.APPROVED
             elif action == "decline":
@@ -284,40 +283,243 @@ class TeamMembersEditView:
 
         flushUpdates()
 
-    def addMembers(self):
-        if self.request.method != "POST":
-            return
-        
-        team = self.team
-        names = self.request.form.get('people')
-        if not isinstance(names, (list, tuple)):
-            names = [names]
+
+def _getMembership(personID, teamID):
+    tms = getUtility(ITeamMembershipSet)
+    membership = tms.getByPersonAndTeam(personID, teamID)
+    assert membership is not None
+    return membership
+
+
+class AddTeamMemberView(AddView):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+        self.alreadyMember = None
+        self.addedMember = None
+        added = self.request.get('added')
+        notadded = self.request.get('notadded')
+        if added:
+            self.addedMember = getUtility(IPersonSet).get(added)
+        elif notadded:
+            self.alreadyMember = getUtility(IPersonSet).get(notadded)
+        AddView.__init__(self, context, request)
+
+    def nextURL(self):
+        if self.addedMember:
+            return '+add?added=%d' % self.addedMember.id
+        elif self.alreadyMember:
+            return '+add?notadded=%d' % self.alreadyMember.id
+        else:
+            return '+add'
+
+    def createAndAdd(self, data):
+        kw = {}
+        for key, value in data.items():
+            kw[str(key)] = value
+
+        team = self.context.team
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
-        personset = getUtility(IPersonSet)
-        for name in names:
-            person = personset.getByName(name)
-            if person == team:
-                # Do not add this team as a member of itself, please.
-                continue
 
-            if person.hasMembershipEntryFor(team):
-                membership = self._getMembership(person.id, team.id)
-                if membership.status in (approved, admin):
-                    self.alreadyMembers.append(person)
-                else:
-                    team.setMembershipStatus(person, approved,
-                                             reviewer=self.user)
-                    self.addedMembers.append(person)
+        member = kw['newmember']
+        if member.id == team.id:
+            # Do not add this team as a member of itself, please.
+            return
+
+        if member.hasMembershipEntryFor(team):
+            membership = _getMembership(member.id, team.id)
+            if membership.status in (approved, admin):
+                self.alreadyMember = member
             else:
-                team.addMember(person, approved, reviewer=self.user)
-                self.addedMembers.append(person)
+                team.setMembershipStatus(member, approved,
+                                         reviewer=self.user)
+                self.addedMember = member
+        else:
+            team.addMember(member, approved, reviewer=self.user)
+            self.addedMember = member
 
-    def _getMembership(self, personID, teamID):
-        tms = getUtility(ITeamMembershipSet)
-        membership = tms.getByPersonAndTeam(personID, teamID)
-        assert membership is not None
-        return membership
+class TeamMembershipEditView(object):
+
+    monthnames = {1: 'January', 2: 'February', 3: 'March', 4: 'April',
+                  5: 'May', 6: 'June', 7: 'July', 8: 'August', 9: 'September',
+                  10: 'October', 11: 'November', 12: 'December'}
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+        self.errormessage = ""
+
+    def userIsTeamOwner(self):
+        return self.user.inTeam(self.context.team.teamowner)
+
+    def isActive(self):
+        return self.context.status in [TeamMembershipStatus.APPROVED,
+                                       TeamMembershipStatus.ADMIN]
+
+    def isInactive(self):
+        return self.context.status in [TeamMembershipStatus.EXPIRED,
+                                       TeamMembershipStatus.DEACTIVATED]
+
+    def isAdmin(self):
+        return self.context.status == TeamMembershipStatus.ADMIN
+
+    def isProposed(self):
+        return self.context.status == TeamMembershipStatus.PROPOSED
+
+    def isExpired(self):
+        return self.context.status == TeamMembershipStatus.EXPIRED
+
+    def isDeactivated(self):
+        return self.context.status == TeamMembershipStatus.DEACTIVATED
+
+    def _getExpirationDate(self):
+        """Return a datetime with the expiration date selected on the form.
+
+        Return None if the selected date was empty. Also raises ValueError if
+        the date selected is invalid.
+        """
+        year = int(self.request.form.get('year'))
+        month = int(self.request.form.get('month'))
+        day = int(self.request.form.get('day'))
+        if year or month or day:
+            return datetime(year, month, day)
+        else:
+            return None
+
+    def _setMembershipData(self, status):
+        """Set all data specified on the form, for this TeamMembership.
+
+        Get all data from the form, together with the given status and set
+        them for this TeamMembership object.
+        """
+        team = self.context.team
+        member = self.context.person
+        comment = self.request.form.get('comment')
+        try:
+            date = self._getExpirationDate()
+        except ValueError, err:
+            self.errormessage = 'Expiration date: %s' % err
+            return
+
+        team.setMembershipStatus(member, status, expires=date,
+                                 reviewer=self.user, comment=comment)
+
+    def processInactiveMember(self):
+        assert self.context.status in (TeamMembershipStatus.EXPIRED,
+                                       TeamMembershipStatus.DEACTIVATED)
+
+        self._setMembershipData(TeamMembershipStatus.APPROVED)
+        self.request.response.redirect('../')
+
+    def processProposedMember(self):
+        assert self.context.status == TeamMembershipStatus.PROPOSED
+
+        action = self.request.form.get('editproposed')
+        if action == 'Decline':
+            status = TeamMembershipStatus.DECLINED
+        else:
+            status = TeamMembershipStatus.APPROVED
+        self._setMembershipData(status)
+        self.request.response.redirect('../')
+
+    def processActiveMember(self):
+        assert self.context.status in (TeamMembershipStatus.ADMIN,
+                                       TeamMembershipStatus.APPROVED)
+
+        if self.request.form.get('editactive') == 'Deactivate':
+            team = self.context.team
+            member = self.context.person
+            deactivated = TeamMembershipStatus.DEACTIVATED
+            comment = self.request.form.get('comment')
+            team.setMembershipStatus(member, deactivated, reviewer=self.user,
+                                     comment=comment)
+            self.request.response.redirect('../')
+            return
+            
+        # XXX: salgado, 2005-03-15: I would like to just write this as 
+        # "status = self.context.status", but it doesn't work because
+        # self.context.status is security proxied.
+        status = TeamMembershipStatus.items[self.context.status.value]
+
+        # XXX: salgado, 2005-03-15: This is a hack to make sure only the
+        # teamowner can promote a given member to admin, while we don't have a
+        # specific permission setup for this.
+        if self.context.status == TeamMembershipStatus.ADMIN:
+            if self.request.form.get('admin') == 'no':
+                status = TeamMembershipStatus.APPROVED
+        else:
+            if (self.request.form.get('admin') == 'yes' and 
+                self.userIsTeamOwner()):
+                status = TeamMembershipStatus.ADMIN
+
+        self._setMembershipData(status)
+        self.request.response.redirect('../')
+
+    def processForm(self):
+        if not self.request.method == 'POST':
+            return
+        
+        if self.request.form.get('editactive'):
+            self.processActiveMember()
+        elif self.request.form.get('editproposed'):
+            self.processProposedMember()
+        elif self.request.form.get('editinactive'):
+            self.processInactiveMember()
+
+    def dateChooserForExpiredMembers(self):
+        days = self.context.team.defaultrenewalperiod
+        expires = datetime.utcnow() + timedelta(days=days)
+        return self.buildDateChooser(expires)
+
+    def dateChooserForProposedMembers(self):
+        days = self.context.team.defaultmembershipperiod
+        expires = datetime.utcnow() + timedelta(days=days)
+        return self.buildDateChooser(expires)
+
+    def dateChooserWithCurrentExpirationSelected(self):
+        return self.buildDateChooser(self.context.dateexpires)
+
+    # XXX: salgado, 2005-03-15: This will be replaced as soon as we have
+    # browser:form.
+    def buildDateChooser(self, selected=None):
+        html = '<select name="day">'
+        html += '<option value="0"></option>'
+        for day in range(1, 32):
+            if selected and day == selected.day:
+                html += '<option selected value="%d">%d</option>' % (day, day)
+            else:
+                html += '<option value="%d">%d</option>' % (day, day)
+        html += '</select>'
+
+        html += '<select name=month>'
+        html += '<option value="0"></option>'
+        for month in range(1, 13):
+            monthname = self.monthnames[month]
+            if selected and month == selected.month:
+                html += ('<option selected value="%d">%s</option>' % 
+                         (month, monthname))
+            else:
+                html += ('<option value="%d">%s</option>' % 
+                         (month, monthname))
+        html += '</select>'
+
+        # XXX: salgado, 2005-03-16: We need to define it somewhere else, but
+        # it's not that urgent, so I'll leave it here for now.
+        max_year = 2050
+        html += '<select name="year">'
+        html += '<option value="0"></option>'
+        for year in range(datetime.utcnow().year, max_year):
+            if selected and year == selected.year:
+                html += '<option selected value="%d">%d</option>' % (year, year)
+            else:
+                html += '<option value="%d">%d</option>' % (year, year)
+        html += '</select>'
+
+        return html
 
 
 def traverseTeam(team, request, name):

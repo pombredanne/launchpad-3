@@ -82,8 +82,8 @@
 
   <tal:block define="notvalidatedemails context/notvalidatedemails">
   <fieldset tal:condition="notvalidatedemails">
-    <legend>Guessed Emails</legend>
-    <p>The following email addresses have been guessed by our system as 
+    <legend>Detected Emails</legend>
+    <p>The following email addresses have been detected by our system as 
     probably being yours. In order to use them on Launchpad, you must 
     validate them. To do so, just select one from the list below and 
     click on the Validate button.</p>

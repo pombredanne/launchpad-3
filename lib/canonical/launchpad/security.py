@@ -9,6 +9,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IAuthorization, IHasOwner
 from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
+from canonical.launchpad.interfaces import ITeamMembershipSubset
+from canonical.launchpad.interfaces import ITeamMembership
 from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin
 from canonical.launchpad.interfaces import IMilestone, IBug, IBugTask
 from canonical.launchpad.interfaces import IUpstreamBugTask, IDistroBugTask
@@ -96,7 +98,7 @@ class EditMilestoneByProductMaintainer(AuthorizationBase):
         return self.obj.product.owner.id == user.id
 
 
-class EditTeamByTeamOwnerOrAdmins(AuthorizationBase):
+class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ITeam
 
@@ -105,7 +107,37 @@ class EditTeamByTeamOwnerOrAdmins(AuthorizationBase):
 
         The admin team also has launchpad.Edit on all teams.
         """
-        return self.obj.teamowner.id == user.id or self.user.inTeam('admins')
+        admins = getUtility(IPersonSet).getByName('admins')
+        if user.inTeam(self.obj.teamowner) or user.inTeam(admins):
+            return True
+        else:
+            for team in self.obj.teamowner.administrators:
+                if user.inTeam(team):
+                    return True
+
+        return False
+
+
+class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ITeamMembership
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(IPersonSet).getByName('admins')
+        if user.inTeam(self.obj.team.teamowner) or user.inTeam(admins):
+            return True
+        else:
+            for team in self.obj.team.administrators:
+                if user.inTeam(team):
+                    return True
+
+        return False
+
+
+class EditTeamMembershipSubsetByTeamOwnerOrTeamAdminsOrAdmins(
+        EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = ITeamMembershipSubset
 
 
 class EditPersonBySelfOrAdmins(AuthorizationBase):
@@ -118,7 +150,7 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         The admin team can also edit any Person.
         """
         admins = getUtility(IPersonSet).getByName('admins')
-        return self.obj.id == user.id or self.user.inTeam(admins)
+        return self.obj.id == user.id or user.inTeam(admins)
 
 
 class EditUpstreamBugTask(AuthorizationBase):
