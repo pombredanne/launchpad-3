@@ -680,8 +680,8 @@ class Revision(VersionItem):
 
     def clone_files(self, iterator):
         """iterate over files, insert them"""
-        for i in iterator:
-            self.add_file(i.name, i.data, i.checksums)
+        for file in iterator:
+            self.add_file(file.name, file.data, file.checksums)
 
 class MissingRevision(Revision):
     def __init__(self, name, version):

@@ -242,7 +242,7 @@ class ArchiveMapper(object):
         
     def findByName(self, name):
         results = Archive.select('name = ' + quote(name))
-        count = results.count()
+        count = len(list(results))
         if count == 0:
             return broker.MissingArchive(name)
         if count == 1:
@@ -429,8 +429,7 @@ class RevisionMapper(object):
     def changeset(self, revision):
         """get a cset object"""
         mapper = VersionMapper()
-        version_id = mapper._getId(revision.version)
-#        print "%r exists" % revision
+        version_id = mapper._getDBBranchId(revision.version)
         where = 'name = ' + quote(revision.name) + ' and branch = ' + str(version_id)
         return Changeset.select(where)[0]
 
@@ -443,7 +442,6 @@ class RevisionMapper(object):
     def exists(self, revision):
         """does revision exist in the archice?"""
         mapper = VersionMapper()
-        version_id = mapper._getId(revision.version)
         version_id = mapper._getDBBranchId(revision.version)
         where = 'name = ' + quote(revision.name) + ' and branch = ' + str(version_id)
         return bool(Changeset.select(where).count())
