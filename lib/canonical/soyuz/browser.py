@@ -105,6 +105,8 @@ class TeamAddView(object):
         #FIXME: How to get the true DB result of the INSERT ?
         if displayname:
 
+            #FIXME the team is owned by the current ID now,
+            # but it should comes from authserver
             self.results = SoyuzPerson(displayname=displayname,
                                        givenname=None,
                                        familyname=None,
@@ -114,13 +116,52 @@ class TeamAddView(object):
                                        karma=None,
                                        karmatimestamp=None)
 
-            TeamParticipation(person=self.results.id,team=self.context.id)
+            TeamParticipation(personID=self.results.id,
+                              teamID=self.context.id)
 
             ##FIXME: what about Membership ? the owner should be always
-            ##       the admin ?
+            ##       the admin ? I supose not and 
             
             self.enable_added = True
 
+class TeamJoinView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+        self.enable_join = False
+
+        dummy_id = self.request.get("id", "")
+        proto_role = self.request.get("role", "")
+        proto_status = self.request.get("status", "")
+
+        role = dbschema.MembershipRole.MEMBER
+        for item in dbschema.MembershipRole.items:
+            if item.title == proto_role:
+                role = item.value
+
+        status = dbschema.MembershipStatus.PROPOSED
+        for item in dbschema.MembershipStatus.items:
+            if item.title == proto_status:
+                status = item.value
+
+
+        if dummy_id:
+            self.person = SoyuzPerson.get(dummy_id)
+            #FIXME: verify if the person is already a member 
+            self.results = Membership(personID=dummy_id,
+                                      team=self.context.id,
+                                      role=role,
+                                      status=status)
+            
+            #FIXME: How to do it recursively as it is suposed to be
+            self.results = TeamParticipation(personID=dummy_id,
+                                             teamID=self.context.id)
+            
+            self.enable_join = True
+
+            
 class PersonEditView(object):
 
     def __init__(self, context, request):
@@ -130,7 +171,7 @@ class PersonEditView(object):
         self.enable_edited = False
 
         displayname = self.request.get("displayname", "")
-        givenname = self.request.get("givename", "")
+        givenname = self.request.get("givenname", "")
         familyname = self.request.get("familyname", "")
         teamdescription = self.request.get("teamdescription", "")
 
@@ -152,7 +193,7 @@ class PersonEditView(object):
             self.enable_edited = True            
 
             #EmailAddress                
-            if self.context.email != None:
+            if self.context.email:
                 self.context.email.email = email
                 self.enable_edited = True
             else:
@@ -163,7 +204,7 @@ class PersonEditView(object):
                 except:
                     pass
             #WikiName
-            if self.context.wiki != None:
+            if self.context.wiki:
                 self.context.wiki.wiki = wiki
                 self.context.wiki.wikiname = wikiname
                 self.enable_edited = True
@@ -175,7 +216,7 @@ class PersonEditView(object):
                 except:
                     pass                
             #IrcID
-            if self.context.irc != None:
+            if self.context.irc:
                 self.context.irc.network = network
                 self.context.irc.nickname = nickname
                 self.enable_edited = True
@@ -187,7 +228,7 @@ class PersonEditView(object):
                 except IndexError:
                     pass
             #JabberID    
-            if self.context.jabber != None:
+            if self.context.jabber:
                 self.context.jabber.jabberid = jabberid
                 self.enable_edited = True
             else:
@@ -197,7 +238,7 @@ class PersonEditView(object):
                 except IndexError:
                     pass               
             #ArchUserID
-            if self.context.archuser != None:
+            if self.context.archuser:
                 self.context.archuser.archuserid = archuserid
                 self.enable_edited = True
             else:
@@ -210,8 +251,8 @@ class PersonEditView(object):
 
 
             #GPGKey
-            if self.context.gpg != None:
-                self.context.gpg.gpgid = gpgid
+            if self.context.gpg:
+                self.context.gpg.keyid = gpgid
                 self.enable_edited = True
             else:
                 try:

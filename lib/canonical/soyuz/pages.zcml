@@ -284,6 +284,14 @@
 	 name="+edit"
        />
 
+  <page for="canonical.soyuz.sql.PersonApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.TeamJoinView"
+	 template="templates/person-join.pt"
+         lp:url="Soyuz/people/$person.id/+join"
+	 name="+join"
+       />
+
 
 <traverse for="canonical.soyuz.sql.DistroBinariesApp" getter="__getitem__" />
 

@@ -245,9 +245,11 @@ class IPersonApp(Interface):
     distroreleaseroles = Attribute("Distrorelase Roles")
 
     packages = Attribute("A Selection of SourcePackageReleases")
-    
-# new people related table interfaces
 
+    roleset = Attribute("Possible Roles")
+    statusset = Attribute("Possible Status")
+
+# new people related table interfaces
 class ISoyuzEmailAddress(Interface):
     """Email aka our unique name"""
     person = Attribute("Owner")

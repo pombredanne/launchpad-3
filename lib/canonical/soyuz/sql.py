@@ -402,6 +402,17 @@ class PersonApp(object):
 
         self.packages = self._getsourcesByPerson()
 
+        self.roleset = []
+        self.statusset = []
+
+
+        #FIXME: Crap solution for <select> entity on person-join.pt
+        for item in dbschema.MembershipRole.items:
+            self.roleset.append(item.title)
+        for item in dbschema.MembershipStatus.items:
+            self.statusset.append(item.title)
+
+        
         # FIXME: Most of this code probably belongs as methods/properties of
         #        SoyuzPerson
 
