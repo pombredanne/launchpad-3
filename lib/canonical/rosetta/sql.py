@@ -417,9 +417,6 @@ class RosettaPOTemplate(SQLBase):
 
             return results[0]
 
-    def __getitem__(self, key):
-        return self.messageSet(key, onlyCurrent=True)
-
     # XXX: currentCount, updatesCount and rosettaCount should be updated with
     # a way that let's us query the database instead of use the cached value
 
@@ -456,6 +453,9 @@ class RosettaPOTemplate(SQLBase):
             ''' % self.id)
 
         return results.count() > 0
+
+    def __getitem__(self, key):
+        return self.messageSet(key, onlyCurrent=True)
 
     # IEditPOTemplate
 

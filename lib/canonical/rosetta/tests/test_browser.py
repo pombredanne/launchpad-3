@@ -330,7 +330,6 @@ def test_TranslatePOTemplate_URLs():
     >>> tearDown()
     '''
 
-
 def test_TranslatePOTemplate_messageSets():
     '''
     Test URL functions.
@@ -363,7 +362,54 @@ def test_TranslatePOTemplate_messageSets():
     True
     >>> x['translations'].values()[0]
     ['bar']
+
+    >>> tearDown()
     '''
+
+def test_TranslatePOemplate_mungeMessageID():
+    '''
+    Test message ID presentation munger.
+
+    First, boilerplate setup code.
+
+    >>> from zope.app.tests.placelesssetup import setUp, tearDown
+    >>> from zope.app.tests import ztapi
+    >>> from canonical.rosetta.browser import TranslatePOTemplate
+
+    >>> setUp()
+    >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+
+    >>> context = DummyPOTemplate()
+    >>> request = DummyRequest(DummyPerson())
+    >>> t = TranslatePOTemplate(context, request)
+
+    First, do no harm.
+
+    >>> t._mungeMessageID(u'foo bar')
+    u'foo bar'
+
+    Test replacement of leading and trailing spaces.
+
+    >>> t._mungeMessageID(u' foo bar')
+    u'\u2423foo bar'
+    >>> t._mungeMessageID(u'foo bar ')
+    u'foo bar\u2423'
+    >>> t._mungeMessageID(u'  foo bar  ')
+    u'\u2423\u2423foo bar\u2423\u2423'
+
+    Test replacement of newlines.
+
+    >>> t._mungeMessageID(u'foo\\nbar')
+    u'foo\u21b5<br/>\\nbar'
+
+    And both together.
+
+    >>> t._mungeMessageID(u'foo \\nbar')
+    u'foo\u2423\u21b5<br/>\\nbar'
+
+    >>> tearDown()
+    '''
+
 
 def test_suite():
     suite = DocTestSuite()

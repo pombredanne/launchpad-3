@@ -518,8 +518,26 @@ class TranslatePOTemplate:
         else:
             return self._makeURL(offset = self.offset + self.count)
 
-    def _munge(self, text):
-        return text.replace('\n', u'\u21b5<br/>\n')
+    def _mungeMessageID(self, text):
+        # Convert leading and trailing spaces on each line to open boxes.
+
+        lines = []
+
+        for line in text.split('\n'):
+            match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
+
+            if match:
+                lines.append(
+                    u'\u2423' * len(match.group(1)) +
+                    match.group(2) +
+                    u'\u2423' * len(match.group(3)))
+            else:
+                raise AssertionError(
+                    "Regular expression that should always match didn't.")
+
+        # Insert arrows and HTML line breaks at newlines.
+
+        return '\n'.join(lines).replace('\n', u'\u21b5<br/>\n')
 
     def _messageID(self, messageID):
         lines = count_lines(messageID.msgid)
@@ -528,7 +546,7 @@ class TranslatePOTemplate:
             'lines' : lines,
             'isMultiline' : lines > 1,
             'text' : messageID.msgid,
-            'displayText' : self._munge(messageID.msgid)
+            'displayText' : self._mungeMessageID(messageID.msgid)
         }
 
     def _messageSet(self, set):
