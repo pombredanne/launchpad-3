@@ -27,15 +27,14 @@ class Manifest(SQLBase):
 
     _table = 'Manifest'
 
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
-                default=datetime.utcnow())
+    datecreated = DateTimeCol(notNull=True, default=datetime.utcnow())
 
-    uuid = StringCol(dbName='uuid', notNull=True, default=uuidgen())
+    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+
+    uuid = StringCol(notNull=True, default=uuidgen(), alternateID=True)
 
     entries = MultipleJoin('ManifestEntry', joinColumn='manifest')
     
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
-
     def __iter__(self):
         return self.entries
 

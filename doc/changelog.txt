@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-08 11:16:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1382
+
+    Summary:
+      merge mark's gardening of manifest sqlobject
+    Revision:
+      launchpad--devel--0--patch-1382
+
+    Patches applied:
+    
+     * scott@canonical.com--2005/launchpad--devel--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1381
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-1
+       update Manifest SQLObject (mark gardening)
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/manifest.py
+
+    new patches:
+     scott@canonical.com--2005/launchpad--devel--0--base-0
+     scott@canonical.com--2005/launchpad--devel--0--patch-1
+
+
 2005-03-08 02:07:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1381
 
     Summary:
