@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Search Packages in
+    <h1>Search Binary Packages in
     <span tal:content="context/release/title"> TITLE </span>
     </h1>
 

@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Search Packages in
+    <h1>Search Source Packages in
     <span tal:content="context/release/title"> TITLE </span>
     </h1>
     <form name="search" action="" method="POST">
