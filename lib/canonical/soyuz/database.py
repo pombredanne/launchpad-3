@@ -209,6 +209,18 @@ class SoyuzSourcePackage(SQLBase):
         return self.shortdesc
     title = property(title)
 
+    def product(self):
+        try:
+            return SoyuzProduct.select(
+                "Product.id = Packaging.product AND "
+                "Packaging.sourcepackage = %d"
+                % self.id
+            )[0]
+        except IndexError:
+            # No corresponding product
+            return None
+    product = property(product)
+
     def getManifest(self):
         return self.manifest
 

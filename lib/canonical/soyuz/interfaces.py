@@ -358,6 +358,7 @@ class IProduct(Interface):
     """A Product.  For example 'firefox' in the 'mozilla' project."""
 
     name = Attribute("The product's name, unique within a project.")
+    displayname = Attribute("The product's display name.")
 
     title = Attribute("The product's title.")
 
@@ -470,6 +471,7 @@ class ISourcePackage(Interface):
     ##releases = Attribute("List of ISourcePackageRelease objects")
     proposed = Attribute("A source package release with upload status of "
                          "PROPOSED, else None")
+    product = Attribute("A Product, or None")
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""

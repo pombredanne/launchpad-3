@@ -27,6 +27,11 @@
     <p><h4>Maintainer:   </h4> 
         <tal:block tal:replace="context/sourcepackage/maintainer/displayname"/>
 
+    <p><h4>Product:   </h4> 
+        <tal:dummy tal:condition="context/sourcepackage/product">
+            <a href="no-url-yet" tal:content="context/sourcepackage/product/displayname" />
+        </tal:dummy>
+
     <tal:dummy tal:define="proposed context/proposed" tal:condition="proposed">
     <p><h4>Proposed:</h4>
       <a tal:content="proposed/version" tal:attributes="href proposed/version">
