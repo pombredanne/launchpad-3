@@ -2,6 +2,55 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-07 17:41:40 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1281
+
+    Summary:
+      bits'n'pieces
+    Revision:
+      launchpad--devel--0--patch-1281
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-119
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-120
+       Reenable postgresql reconnector tests now that PQM can run them. Fix explicit closure issues identified by the test runner paranoia checks
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-121
+       typo
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-122
+       Add admin group to security.cfg - should probably be automatic
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-123
+       Update database docs
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-124
+       Notes on pending db changes
+    
+
+    new files:
+     database/schema/pending/.arch-ids/stub-derivation.sql.id
+     database/schema/pending/stub-derivation.sql
+
+    modified files:
+     database/schema/launchpad.html database/schema/security.cfg
+     doc/changelog.txt
+     lib/canonical/database/ftests/test_disconnects.py
+     lib/canonical/database/ftests/test_disconnects.txt
+     lib/canonical/database/ftests/test_reconnector.txt
+     lib/canonical/database/reconnect.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-119
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-120
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-121
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-122
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-123
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-124
+
+
 2005-02-05 15:36:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1280
 
     Summary:
