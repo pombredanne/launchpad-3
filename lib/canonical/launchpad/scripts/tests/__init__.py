@@ -1,3 +1,3 @@
 # Copyright Canonical Ltd
-# Author Carlos Perelló Marín <carlos.perello@canonical.com>
+# Author Carlos Perello Marin <carlos.perello@canonical.com>
 # make this a package

@@ -268,7 +268,8 @@ class IEditPOTemplate(IPOTemplate):
         """Create and return a new po file in the given language. The
         variant is optional.
 
-        Raises an KeyError if a po file of that language already exists.
+        Raises LanguageNotFound if the language does not exist in the
+        database.
         """
 
     def createMessageSetFromMessageID(msgid):

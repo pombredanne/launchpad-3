@@ -15,7 +15,7 @@ owner by using is_maintainer():
 
 Let's create something that provides IHasOwner and set the owner to
 Sample Person:
-    
+
     >>> from zope.component import getUtility
     >>> from zope.interface import implements
     >>> from canonical.launchpad.interfaces import IPersonSet, IHasOwner
@@ -63,3 +63,34 @@ If hasowner wouldn't provide IHasOwner a TypeError is raised:
     Traceback (most recent call last):
     ...
     TypeError: hasowner doesn't provide IHasOwner
+
+
+Getting a valid name as our database asks for from a string
+-----------------------------------------------------------
+
+    >>> from canonical.launchpad.helpers import getValidNameFromString
+
+The string has capital letters.
+
+    >>> original_string = 'EvilStringNotFollowingOurRules'
+    >>> getValidNameFromString(original_string)
+    'evilstringnotfollowingourrules'
+
+The string has underscores.
+
+    >>> original_string = 'evil_string_not_following_our_rules'
+    >>> getValidNameFromString(original_string)
+    'evil-string-not-following-our-rules'
+
+The string has white spaces.
+
+    >>> original_string = 'evil string not following our rules'
+    >>> getValidNameFromString(original_string)
+    'evil-string-not-following-our-rules'
+
+A mix of all previous cases.
+
+    >>> original_string = 'Evil String Not_Following_our rUles'
+    >>> getValidNameFromString(original_string)
+    'evil-string-not-following-our-rules'
+

@@ -202,3 +202,21 @@ def getRosettaBestDomainPath(sequence):
     """
     return shortest(sequence)[0]
 
+def getValidNameFromString(invalid_name):
+    """Return a valid name based on a string.
+
+    A name in launchpad has a set of restrictions that not all strings follow.
+    This function converts any string in another one that follows our name
+    restriction rules.
+
+    To know more about all restrictions, please, look at valid_name function
+    in the database.
+    """
+    # All chars should be lower case.
+    name = invalid_name.lower()
+    # Underscore is not a valid char.
+    name = name.replace('_', '-')
+    # Spaces is not a valid char for a name.
+    name = name.replace(' ', '-')
+
+    return name

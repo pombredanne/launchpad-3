@@ -7,6 +7,7 @@ from sqlobject import StringCol, MultipleJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase
 
 # canonical imports
+from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import IPOTemplateName
 
 class POTemplateNameSet(object):
@@ -20,8 +21,11 @@ class POTemplateNameSet(object):
         for potemplatename in POTemplateName.select():
             yield potemplatename
 
-    def new(self, name, title):
-        return POTemplateName(name=name, title=title)
+    def new(self, translationdomain, title, name=None):
+        if name is None:
+            name = helpers.getValidNameFromString(translationdomain)
+        return POTemplateName(name=name, title=title,
+                              translationdomain=translationdomain)
 
 
 class POTemplateName(SQLBase):
@@ -32,5 +36,7 @@ class POTemplateName(SQLBase):
     name = StringCol(dbName='name', notNull=True, unique=True, alternateID=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=False, default=None)
+    translationdomain = StringCol(dbName='translationdomain', notNull=True,
+        unique=True, alternateID=True)
     potemplates = MultipleJoin('POTemplate', joinColumn='potemplatename')
 

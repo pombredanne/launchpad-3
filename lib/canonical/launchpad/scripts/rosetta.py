@@ -8,7 +8,7 @@ from StringIO import StringIO
 from canonical.launchpad import helpers
 from canonical.launchpad.database import DistributionSet, \
     SourcePackageNameSet, POTemplateSet, POTemplateNameSet, PersonSet, \
-    BinaryPackageNameSet
+    BinaryPackageNameSet, LanguageNotFound
 from canonical.sourcerer.deb.version import Version
 
 def fetch_date_list(archive_uri, logger):
@@ -145,7 +145,7 @@ def get_domain_binarypackages(tar):
 
 class TranslationDomain:
     def __init__(self, name):
-        self.name = name
+        self.domainname = name
         # The contents of the PO template.
         self.pot_contents = None
         # The contents of the PO files, indexed by language code.
@@ -159,6 +159,9 @@ class TranslationDomain:
         # domain.
         self.binary_packages = []
 
+class DomainTarballError(Exception):
+    """Raised when an error occurs when scanning a translation domain tarball.
+    """
 
 def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
                              existing_potemplates, tar):
@@ -170,6 +173,8 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
     tarball itself.
 
     Return a list of TranslationDomain objects.
+
+    Raise DomainTarballError if there is any error with the tarball structure.
 
     How PO templates are matched to translation domains:
 
@@ -215,10 +220,21 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
     # For each PO template, try to find a domain which matches it.
 
     found_domains = []
+    found_paths = []
 
     for pot_file in pot_files:
         pot_dirname, pot_filename = os.path.split(pot_file)
         domain_name = None
+
+        if pot_dirname in found_paths:
+            # We have alredy a .pot file in this path, we don't handle this
+            # situation yet, so the import is not done.
+            raise DomainTarballError("The sourcepackage %s for %s has more"
+                                     " than one .pot file inside %s. Ignoring"
+                                     " the tarball..." % (sourcepackage_name,
+                                     distrorelease_name, pot_dirname))
+
+        found_paths.append(pot_dirname)
 
         if pot_dirname == 'source/debian/po':
             # It's a Debian debconf .pot file.
@@ -233,7 +249,7 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
             for potemplate in existing_potemplates:
                 if ('source/' + potemplate.path == pot_dirname and
                     potemplate.filename == pot_filename):
-                    domain_name = potemplate.potemplatename.name
+                    domain_name = potemplate.potemplatename.translationdomain
 
             if domain_name is None:
                 # No PO templates in the database matched; check to see if
@@ -252,9 +268,10 @@ def get_domains_from_tarball(distrorelease_name, sourcepackage_name,
                     # Check if we already have a potemplatename with the same
                     # prefix so we don't mix two different .pot files when we
                     # don't know their real translation domain.
-                    if potemplate.potemplatename.name.startswith(prefix):
-                        number = int(
-                            potemplate.potemplatename.name[len(prefix):])
+                    potemplatename = potemplate.potemplatename
+                    translationdomain = potemplatename.translationdomain
+                    if translationdomain.startswith(prefix):
+                        number = int(translationdomain[len(prefix):])
                         if number >= suffix:
                             suffix = number + 1
                 domain_name = '%s%d' % (prefix, suffix)
@@ -313,7 +330,7 @@ class AttachTranslationCatalog:
             # We don't have this distribution in our database, print a
             # warning so we can add it later and return.
             self.logger.warning("No distribution called %s in the "
-                                "database" % catalogentry['Distribution'])
+                                "database" % distribution_name)
             return None
 
         # Check that we have the needed release for the current distribution
@@ -380,8 +397,13 @@ class AttachTranslationCatalog:
 
         tarball = helpers.string_to_tarfile(tarfile.read())
 
-        domains = get_domains_from_tarball(
-            release.name, sourcepackagename.name, potemplatesubset, tarball)
+        try:
+            domains = get_domains_from_tarball(
+                release.name, sourcepackagename.name, potemplatesubset,
+                tarball)
+        except DomainTarballError, e:
+            self.logger.warning("Error scanning tarball: %s" % str(e))
+            return
 
         potemplatenameset = POTemplateNameSet()
 
@@ -392,25 +414,27 @@ class AttachTranslationCatalog:
 
         for domain in domains:
             try:
-                template = potemplatesubset[domain.name]
+                template = potemplatesubset[domain.domainname]
             except KeyError:
                 # Get or create the PO template name.
                 try:
-                    name = potemplatenameset[domain.name]
+                    potemplatename = potemplatenameset[domain.domainname]
                 except KeyError:
                     self.logger.warning("Creating new PO template name '%s'" %
-                        domain.name)
-                    name = potemplatenameset.new(name=domain.name,
-                                                   title=domain.name)
+                        domain.domainname)
+                    potemplatename = potemplatenameset.new(
+                        translationdomain=domain.domainname,
+                        title=domain.domainname)
 
                 # Create the PO template.
                 self.logger.warning(
                     "Creating new PO template '%s' for %s/%s" % (
-                    domain.name, release.name, sourcepackagename.name))
+                    domain.domainname, release.name, sourcepackagename.name))
                 template = potemplatesubset.new(
-                    potemplatename=name,
+                    potemplatename=potemplatename,
                     title='%s template for %s in %s' % (
-                        name, sourcepackagename.name, release.displayname),
+                        potemplatename.name, sourcepackagename.name,
+                        release.displayname),
                     contents=domain.pot_contents,
                     owner=admins)
             else:
@@ -451,13 +475,12 @@ class AttachTranslationCatalog:
 
                 try:
                     pofile = template.getOrCreatePOFile(code, variant)
-                except ValueError, value:
+                except LanguageNotFound:
                     # The language code does not exist in our database.
                     # Usually, it's a translator error.
                     self.logger.warning(
                         "PO file with unknown language code '%s' for %s/%s"
-                        % (language_code, distrorelease.name,
-                           sourcepackagename.name))
+                        % (language_code, release.name, sourcepackagename.name))
                     continue
 
                 pofile.attachRawFileData(

@@ -2,6 +2,61 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 19:09:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1496
+
+    Summary:
+      Fixed all errors we detected about the LaunchpadPackagePoAttach spec implementation
+    Revision:
+      launchpad--devel--0--patch-1496
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-20
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-21
+       Added support for the new translationdomain field
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-22
+       Minor fixes after dogfood run
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-23
+       More changes to use the new database field
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-24
+       small fixes
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-25
+       Don't break if we find two .pot files inside the same directory
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-26
+       Review changes applied
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-27
+       Removed non ascii chars
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/potemplatename.py
+     lib/canonical/launchpad/doc/helpers.txt
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/interfaces/potemplatename.py
+     lib/canonical/launchpad/scripts/rosetta.py
+     lib/canonical/launchpad/scripts/tests/__init__.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-20
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-21
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-22
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-23
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-24
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-25
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-26
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-27
+
+
 2005-03-24 18:16:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1495
 
     Summary:

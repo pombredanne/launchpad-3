@@ -15,7 +15,7 @@ from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
 
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
+from sqlobject import MultipleJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, flushUpdates
 
 # canonical imports
@@ -259,6 +259,33 @@ class POTemplateSubset:
         else:
             return res[0]
 
+    def new(self, potemplatename, title, contents, owner):
+        if self.sourcepackagename is not None:
+            sourcepackagename_id = self.sourcepackagename.id
+        else:
+            sourcepackagename_id = None
+        if self.distrorelease is not None:
+            distrorelease_id = self.distrorelease.id
+        else:
+            distrorelease_id = None
+        if self.productrelease is not None:
+            productrelease_id = self.productrelease.id
+        else:
+            productrelease_id = None
+
+        encoded_file = base64.encodestring(contents)
+
+        return POTemplate(potemplatenameID=potemplatename.id,
+                          title=title,
+                          sourcepackagenameID=sourcepackagename_id,
+                          distroreleaseID=distrorelease_id,
+                          productreleaseID=productrelease_id,
+                          ownerID=owner.id,
+                          daterawimport=UTC_NOW,
+                          rawfile=encoded_file,
+                          rawimporterID=owner.id,
+                          rawimportstatus=RosettaImportStatus.PENDING)
+
 
 class POTemplateSet:
     implements(IPOTemplateSet)
@@ -310,6 +337,10 @@ class POTemplateSet:
             rawimportstatus=RosettaImportStatus.PENDING))
 
 
+class LanguageNotFound(ValueError):
+    """Raised when a a language does not exists in the database."""
+
+
 class POTemplate(SQLBase, RosettaStats):
     implements(IEditPOTemplate, IRawFileData)
 
@@ -329,8 +360,7 @@ class POTemplate(SQLBase, RosettaStats):
     path = StringCol(dbName='path', notNull=False, default=None)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False,
-        default=None)
+    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
     sourcepackageversion = StringCol(dbName='sourcepackageversion',
@@ -579,6 +609,7 @@ class POTemplate(SQLBase, RosettaStats):
             msgset.sequence = 0
 
     def getOrCreatePOFile(self, language_code, variant=None, owner=None):
+        """See IPOFile."""
         # see if one exists already
         existingpo = self.queryPOFileByLang(language_code, variant)
         if existingpo is not None:
@@ -588,7 +619,7 @@ class POTemplate(SQLBase, RosettaStats):
         try:
             language = Language.byCode(language_code)
         except SQLObjectNotFound:
-            raise ValueError, "Unknown language code '%s'" % language_code
+            raise LanguageNotFound(language_code)
 
         now = datetime.datetime.now()
         data = {
@@ -686,11 +717,11 @@ class POTemplate(SQLBase, RosettaStats):
 
     # Any use of this interface should adapt this object as an IRawFileData.
 
-    rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
+    rawfile = StringCol(dbName='rawfile', notNull=True)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
-        notNull=False, default=None)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
-        default=None)
+        notNull=True)
+    daterawimport = DateTimeCol(dbName='daterawimport', notNull=True,
+        default=UTC_NOW)
     rawimportstatus = EnumCol(dbName='rawimportstatus', notNull=True,
         schema=RosettaImportStatus, default=RosettaImportStatus.IGNORE)
 

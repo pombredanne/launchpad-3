@@ -10,4 +10,6 @@ class IPOTemplateName(Interface):
 
     description = Attribute("A brief description to show when showing it.")
 
+    translationdomain = Attribute("The translation domain name.")
+
     potemplates = Attribute("The list of PO templates that have this name.")
