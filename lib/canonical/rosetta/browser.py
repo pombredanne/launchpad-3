@@ -346,7 +346,7 @@ class TranslatorDashboard:
         elif "SAVE-PERSONAL" in self.request.form:
             if self.request.method == "POST":
                 # First thing to do, check the password if it's wrong we stop.
-                currentPassword = self.request.form['currentPassword'].encode('ASCII')
+                currentPassword = self.request.form['currentPassword']
                 ssha = SSHADigestEncryptor()
                 if currentPassword and ssha.validate(currentPassword, person.password):
                     # The password is valid
@@ -363,7 +363,7 @@ class TranslatorDashboard:
                     password2 = self.request.form['newPassword2']
                     if password1 and password1 == password2:
                         try:
-                            person.password = ssha.encrypt(password1.encode('ASCII'))
+                            person.password = ssha.encrypt(password1)
                         except UnicodeEncodeError:
                             print "ERROR"
                     elif password1 != "":
