@@ -1,13 +1,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="soyuz">
+      i18n:domain="launchpad">
 
 <head>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Rosetta style sheet -->
-  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+  <!-- Soyuz style sheet -->
+  <style type="text/css" media="screen">@import url(soyuz.css);</style>
 
 </head>
 
@@ -23,7 +23,7 @@
 
     <ul>
     <li> <a href="distros">Distributions</a> (<a href="distros/+search">Search</a>)</li>
-    <li> <a href="projects">Projects</a></li>
+    <li> <a class="dummy" href="projects">Projects (Obsolete)</a></li>
     <li> <a href="people">People</a></li>
     <ul>
    </div>

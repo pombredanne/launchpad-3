@@ -2,18 +2,6 @@
 
     <!-- TODO: These vocabularies should move to lib/canonical/database
     <vocabulary
-        name="Product"
-        factory=".vocabulary.ProductVocabulary" />
-
-    <vocabulary
-        name="Sourcepackage"
-        factory=".vocabulary.SourcepackageVocabulary" />
-
-    <vocabulary
-        name="Binarypackage"
-        factory=".vocabulary.BinarypackageVocabulary" />
-
-    <vocabulary
         name="BugTracker"
         factory=".vocabulary.BugTrackerVocabulary" />
 

@@ -1,13 +1,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="launchpad">
 
 <head>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
 </head>
 
 <body>
@@ -79,7 +79,7 @@
    tal:content="context/distribution/title"/></h4></legend>
     <tr>
       <th>Name</th>
-
+      <th>Short Description</th>
       <th>Description</th>
       <th>Version</th>
       <th>Packages</th>
@@ -93,6 +93,7 @@
 	   tal:attributes="href string:releases/${release/name}">
 	   distribution name</a>
       </td>
+      <td tal:content="release/shortdesc">SHORT DESCRIPTION</td>
       <td tal:content="release/description">DESCRIPTION</td>
       <td tal:content="release/version">VERSION</td>
       <td>

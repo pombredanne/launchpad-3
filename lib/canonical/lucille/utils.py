@@ -18,13 +18,13 @@ def prefix_multi_line_string(str, prefix, include_blank_lines=0):
 def extract_component_from_section(section, default_component = "main"):
     component = ""
     if section.find("/") != -1:
-        component,section = section.split("/")
+        component, section = section.split("/")
     else:
         component = default_component
 
     return (section,component)
 
-from canonical.lucille.TagFiles import ChangesParseError
+from canonical.lucille.TagFiles import TagFileParseError
 
 def build_file_list(tagfile, is_dsc = False, default_component = "main" ):
     files = {}
@@ -53,14 +53,14 @@ def build_file_list(tagfile, is_dsc = False, default_component = "main" ):
             else:
                 (md5, size, section, priority, name) = tokens
         except ValueError:
-            raise ChangesParseError(line)
+            raise TagFileParseError(line)
 
         if section == "":
             section = "-"
         if priority == "":
             priority = "-"
 
-        (section, component) = extract_component_from_section(section)
+        (section, component) = extract_component_from_section(section, default_component)
 
         files[name] = {
             "md5sum": md5,
@@ -116,10 +116,11 @@ class ParseMaintError(Exception):
     """
 
     def __init__(self, message):
+        Exception.__init__(self)
         self.args = message,;
         self.message = message;
 
-def fix_maintainer (maintainer):
+def fix_maintainer (maintainer, field_name = "Maintainer" ):
     """Parses a Maintainer or Changed-By field and returns:
   (1) an RFC822 compatible version,
   (2) an RFC2047 compatible version,
@@ -141,7 +142,7 @@ contains '.' or ',', (1) and (2) are switched to 'email (name)' format."""
     else:
         m = re_parse_maintainer.match(maintainer)
         if not m:
-            raise ParseMaintError, "%s: doesn't parse as a valid Maintainer field." % maintainer
+            raise ParseMaintError, "%s: doesn't parse as a valid %s field." % (maintainer, field_name)
         name = m.group(1)
         email = m.group(2)
         # Just in case the maintainer ended up with nested angles; check...

@@ -47,11 +47,6 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.Distribution">
-    <allow interface="canonical.launchpad.interfaces.IDistribution"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
   <content class="canonical.soyuz.sql.DistributionRole">
     <allow interface="canonical.launchpad.interfaces.IDistributionRole"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
@@ -76,8 +71,8 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzEmailAddress">
-    <allow interface="canonical.launchpad.interfaces.ISoyuzEmailAddress"/>
+  <content class="canonical.launchpad.database.EmailAddress">
+    <allow interface="canonical.launchpad.interfaces.IEmailAddress"/>
     <require
      permission="zope.Public"
      set_attributes="email status"
@@ -144,27 +139,22 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzBinaryPackage">
-    <allow interface="canonical.launchpad.interfaces.IBinaryPackage"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.soyuz.sql.SoyuzBuild">
+  <content class="canonical.soyuz.sql.Build">
     <allow interface="canonical.launchpad.interfaces.IBuild"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzBuilder">
+  <content class="canonical.launchpad.database.Builder">
     <allow interface="canonical.launchpad.interfaces.IBuilder"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzProcessor">
+  <content class="canonical.launchpad.database.Processor">
     <allow interface="canonical.launchpad.interfaces.IProcessor"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzProcessorFamily">
+  <content class="canonical.launchpad.database.ProcessorFamily">
     <allow interface="canonical.launchpad.interfaces.IProcessorFamily"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
@@ -199,16 +189,16 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
     <require
      permission="zope.Public"
-     set_attributes="name title description version"
+     set_attributes="name title shortdesc description version"
      />
   </content>
   
 
-  <content class="canonical.soyuz.sql.Release">
-    <allow interface="canonical.launchpad.interfaces.IRelease"/>
+  <content class="canonical.soyuz.sql.DistroRelease">
+    <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
     <require
      permission="zope.Public"
-     set_attributes="distribution name title description version components sections releasestate datereleased owner"
+     set_attributes="distribution name title shortdesc description version components sections releasestate datereleased owner"
      />
   </content>
 
@@ -222,42 +212,23 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.SoyuzDistribution">
+  <content class="canonical.soyuz.sql.Distribution">
     <allow interface="canonical.launchpad.interfaces.IDistribution"/>
     <require
      permission="zope.Public"
      set_attributes="name title description"
      />
-  </content>
-	
-  <content class="canonical.soyuz.sql.BinaryPackages">
-    <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.soyuz.sql.SourcePackages">
-    <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.soyuz.sql.SoyuzSourcePackage">
-    <allow interface="canonical.launchpad.interfaces.ISourcePackage"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
 
-  <content class="canonical.soyuz.sql.SoyuzSourcePackageRelease">
-    <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.soyuz.sql.SoyuzPerson">
-    <allow interface="canonical.launchpad.interfaces.ISoyuzPerson"/>
+  <content class="canonical.soyuz.sql.Person">
+    <allow interface="canonical.launchpad.interfaces.IPerson"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
     <require
      permission="zope.Public"
      set_attributes="displayname givenname familyname teamowner
-    teamdescription password karma karmatimestamp"
+     teamdescription password karma karmatimestamp"
     />
   </content>
 
@@ -266,12 +237,12 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzComponent">
+  <content class="canonical.launchpad.database.Component">
     <allow interface="canonical.launchpad.interfaces.IComponent"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzSection">
+  <content class="canonical.launchpad.database.Section">
     <allow interface="canonical.launchpad.interfaces.ISection"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
@@ -281,25 +252,17 @@
     <allow interface="canonical.launchpad.interfaces.IProjectSet"/>
   </content>
   
-  <content class="canonical.soyuz.importd.SoyuzProject">
+  <!-- removed SoyuzProject and SoyuzProduct because these should be handled
+  by DOAP
+  <content class="canonical.soyuz.importd.Project">
     <allow interface="canonical.launchpad.interfaces.IProject"/>
   </content>
   
-  <content class="canonical.soyuz.importd.SoyuzProduct">
+  <content class="canonical.soyuz.importd.Product">
     <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
+  -->
   
-  <content class="canonical.launchpad.database.SourceSource">
-    <allow interface="canonical.launchpad.interfaces.ISourceSource"/>
-    <require
-     permission="launchpad.AnyPerson"
-     set_attributes="title description cvsroot cvsbranch cvsmodule
-                     cvstarfileurl svnrepository releaseroot releaseverstyle
-                     releasefileglobe newarchive newbranchcategory
-                     newbranchbranch newbranchversion product"
-     />
-  </content>
-
 
 	
 <!--DUMMY CONTENT -->

@@ -1,0 +1,17 @@
+<div>
+    <table class="listing rowNavigation">
+        <tr>
+            <th>Product</th>
+            <th>Infestation</th>
+        </tr>
+        <tr tal:repeat="prodinfest context/productinfestations"
+            tal:attributes="onclick
+            string:window.location='productinfestations/${prodinfest/id}/+edit';">
+          <td tal:content="prodinfest/productrelease/version">Apache 1.3.0</td>
+          <td tal:content="prodinfest/infestationstatus/lp:BugInfestationStatus">
+            BugInfestationStatus
+          </td>
+        </tr>
+    </table>
+    [ <a href="productinfestations/+new">Add an Infested Product Release</a> ]
+</div>

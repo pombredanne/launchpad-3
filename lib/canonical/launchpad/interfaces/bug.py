@@ -9,16 +9,6 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.lp import dbschema
 
-# Vocabularies
-SubscriptionVocabulary = dbschema.vocabulary(dbschema.BugSubscription)
-InfestationVocabulary = dbschema.vocabulary(dbschema.BugInfestationStatus)
-BugStatusVocabulary = dbschema.vocabulary(dbschema.BugAssignmentStatus)
-BugPriorityVocabulary = dbschema.vocabulary(dbschema.BugPriority)
-BugSeverityVocabulary = dbschema.vocabulary(dbschema.BugSeverity)
-BugRefVocabulary = dbschema.vocabulary(dbschema.BugExternalReferenceType)
-#RemoteBugStatusVocabulary = dbschema.vocabulary(dbschema.RemoteBugStatus)
-
-
 class IBug(Interface):
     """The core bug entry."""
 
@@ -79,6 +69,8 @@ class IBug(Interface):
     sourceassignment = Attribute(
             'SQLObject.Multijoin of ISourcepackageBugAssignment'
             )
+    productinfestations = Attribute('List of product release infestations.')
+    packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
@@ -166,28 +158,6 @@ class IBugExternalRefContainer(Interface):
     def __iter__():
         """Iterate through BugExternalRefs for a given bug."""
 
-class IProductBugAssignmentContainer(Interface):
-    """A container for IProductBugAssignment objects."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get a ProductBugAssignment"""
-
-    def __iter__():
-        """Iterate through ProductBugAssignments for a given bug."""
-
-class ISourcepackageBugAssignmentContainer(Interface):
-    """A container for ISourcepackageBugAssignment objects."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get a SourcepackageBugAssignment"""
-
-    def __iter__():
-        """Iterate through SourcepackageBugAssignments for a given bug."""
-
 class IBugWatchContainer(Interface):
     """A container for IBugWatch objects."""
 
@@ -200,10 +170,10 @@ class IBugWatchContainer(Interface):
         """Iterate through BugWatches for a given bug."""
 
 class ISourcepackageContainer(Interface):
-    """A container for ISourcepackage objects."""
+    """A container for ISourcePackage objects."""
 
     def __getitem__(key):
-        """Get an ISourcepackage by name"""
+        """Get an ISourcePackage by name"""
 
     def __iter__():
         """Iterate through Sourcepackages."""
@@ -258,7 +228,7 @@ class IBugExternalRef(Interface):
             )
     bugreftype = Choice(
             title=_('Bug Ref Type'), required=True, readonly=False,
-            vocabulary=BugRefVocabulary
+            vocabulary='BugRef',
             )
     data = TextLine(
             title=_('Data'), required=True, readonly=False,
@@ -319,67 +289,8 @@ class IBugSubscription(Interface):
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
     subscription = Choice(
             title=_('Subscription'), required=True, readonly=False,
-            vocabulary=SubscriptionVocabulary
+            vocabulary='Subscription',
             )
-class IProductBugAssignment(Interface):
-    """The status of a bug with regard to a product."""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    product = Choice(
-            title=_('Product'), required=True,
-            vocabulary='Product'
-            )
-    bugstatus = Choice(title=_('Bug Status'),
-                       vocabulary=BugStatusVocabulary)
-    priority = Choice(title=_('Priority'),
-                      vocabulary=BugPriorityVocabulary)
-    severity = Choice(title=_('Severity'),
-                      vocabulary=BugSeverityVocabulary)
-    assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
-
-class ISourcepackageBugAssignment(Interface):
-    """The status of a bug with regard to a source package."""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    sourcepackage = Choice(
-            title=_('Source Package'), required=True, readonly=True,
-            vocabulary='Sourcepackage'
-            )
-    bugstatus = Choice(
-            title=_('Bug Status'), vocabulary=BugStatusVocabulary,
-            required=True, default=int(dbschema.BugAssignmentStatus.NEW),
-            )
-    priority = Choice(
-            title=_('Priority'), vocabulary=BugPriorityVocabulary,
-            required=True, default=int(dbschema.BugPriority.MEDIUM),
-            )
-    severity = Choice(
-            title=_('Severity'), vocabulary=BugSeverityVocabulary,
-            required=True, default=int(dbschema.BugSeverity.NORMAL),
-            )
-    binarypackagename = Choice(
-            title=_('Binary Package Name'), required=False,
-            vocabulary='BinarypackageName'
-            )
-    assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
-
-class IBugInfestation(Interface):
-    """The bug status scorecard."""
-
-    bug = Int(title=_('Bug ID'))
-    coderelease = Int(title=_('Code Release'))
-    explicit = Bool(title=_('Explicitly Created by a Human'))
-    infestation = Choice(title=_('Infestation'),
-                         vocabulary=InfestationVocabulary)
-    datecreated = Datetime(title=_('Date Created'))
-    creator = Int(title=_('Creator'))
-    dateverified = Datetime(title=_('Date Verified'))
-    verifiedby = Int(title=_('Verified By'))
-    lastmodified = Datetime(title=_('Last Modified'))
-    lastmodifiedby = Int(title=_('Last Modified By'))
-
 class IBugTrackerType(Interface):
     """A type of supported remote bug system, eg Bugzilla."""
 
@@ -446,12 +357,9 @@ class IBugsAssignedReport(Interface):
 
     user = Attribute("The user for whom this report will be generated")
 
-    def directAssignments():
-        """An iterator over the bugs directly assigned to the person."""
-
-    def sourcepackageAssignments():
-        """An iterator over bugs assigned to the person's source
-        packages."""
+    def assignedBugs():
+        """An iterator over ALL the bugs directly or indirectly assigned
+        to the person."""
 
 
-    
+

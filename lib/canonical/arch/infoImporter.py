@@ -5,9 +5,8 @@ It will create ArchArchive and Branch entries as needed.
 
 #from canonical.launchpad.database import Archive
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.soyuz.importd import SoyuzProduct
+from canonical.launchpad.database import Product, ArchArchive, Person, SourceSource
 import canonical.lp
-from canonical.launchpad.database import ArchArchive, Person, SourceSource
 
 from sqlobject import ForeignKey, IntCol, StringCol, DateTimeCol, BoolCol, \
                       EnumCol, connectionForURI
@@ -26,7 +25,7 @@ def make_lifeless():
     return query[0]
 
 def make_unassigned_product():
-    query = SoyuzProduct.select(SoyuzProduct.q.name == 'unassigned')
+    query = Product.select(Product.q.name == 'unassigned')
     assert query.count() == 1
     return query[0]
 

@@ -26,8 +26,8 @@
     <allow interface="canonical.launchpad.interfaces.IPOFile"/>
   </content>
 
-  <content class="canonical.rosetta.stub.Languages">
-    <allow interface="canonical.launchpad.interfaces.ILanguages"/>
+  <content class="canonical.rosetta.stub.LanguageSet">
+    <allow interface="canonical.launchpad.interfaces.ILanguageSet"/>
   </content>
 
   <content class="canonical.rosetta.stub.Language">
@@ -44,8 +44,8 @@
       />
 
   <utility
-      factory="canonical.rosetta.stub.Languages"
-      provides="canonical.launchpad.interfaces.ILanguages"
+      factory="canonical.rosetta.stub.LanguageSet"
+      provides="canonical.launchpad.interfaces.ILanguageSet"
       />
 
   <adapter for="zope.app.security.interfaces.IPrincipal"

@@ -1,9 +1,3 @@
-from canonical.launchpad.iandrew import *
-from canonical.launchpad.imark import *
-from canonical.launchpad.ikiko import *
-from canonical.launchpad.isteve import *
-#from canonical.launchpad.icelso import *
-
 # XXX from auth/interfaces
 from zope.interface import Interface, Attribute
 from persistent import IPersistent
@@ -14,8 +8,36 @@ from persistent import IPersistent
 #
 
 from canonical.launchpad.interfaces.project import *
+from canonical.launchpad.interfaces.product import *
+from canonical.launchpad.interfaces.productseries import *
+from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.sourcesource import *
+from canonical.launchpad.interfaces.sourcepackage import *
 from canonical.launchpad.interfaces.bug import *
+from canonical.launchpad.interfaces.bugassignment import *
+from canonical.launchpad.interfaces.schema import *
+from canonical.launchpad.interfaces.person import *
+from canonical.launchpad.interfaces.translationeffort import *
+from canonical.launchpad.interfaces.infestation import *
+from canonical.launchpad.interfaces.language import *
+from canonical.launchpad.interfaces.archuser import *
+from canonical.launchpad.interfaces.binarypackage import *
+from canonical.launchpad.interfaces.build import *
+from canonical.launchpad.interfaces.distro import *
+from canonical.launchpad.interfaces.gpg import *
+from canonical.launchpad.interfaces.irc import *
+from canonical.launchpad.interfaces.jabber import *
+from canonical.launchpad.interfaces.manifest import *
+from canonical.launchpad.interfaces.processor import *
+from canonical.launchpad.interfaces.team import *
+from canonical.launchpad.interfaces.wikiname import *
+from canonical.launchpad.interfaces.publishing import *
+from canonical.launchpad.interfaces.files import *
+
+# these will go...
+from canonical.launchpad.iandrew import *
+from canonical.launchpad.imark import *
+
 
 
 class IAuthApplication(Interface):
@@ -39,11 +61,3 @@ class IPasswordChangeApp(Interface):
     """Interface for PasswdChangeApp."""
     code = Attribute("The transaction code")
 
-class IPersonSet(Interface):
-    """The set of Persons."""
-
-    def __getitem__(personid):
-        """Returns the person with the given id.
-
-	Raises KeyError if there is no such person.
-	"""

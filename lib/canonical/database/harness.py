@@ -23,7 +23,7 @@ SQLBase.initZopeless(__connection__)
 #
 # get the database access classes ready
 #
-import canonical.launchpad.database
+from canonical.launchpad.database import *
 
 
 

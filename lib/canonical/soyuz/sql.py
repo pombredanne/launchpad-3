@@ -4,8 +4,9 @@
 """
 
 # Python standard library imports
-from string import split, join
+from string import split, strip, join
 from sets import Set
+from apt_pkg import ParseDepends, ParseSrcDepends
 
 # Zope imports
 from zope.interface import implements
@@ -22,13 +23,13 @@ from canonical.launchpad.interfaces import IBinaryPackage,IBinaryPackageBuild,\
                                            ISourcePackageSet,\
                                            IBranch, IChangeset 
 
-from canonical.launchpad.database import SoyuzBinaryPackage, SoyuzBuild, \
-                                         SoyuzSourcePackage, Manifest, \
-                                         ManifestEntry, Release, \
-                                         SoyuzSourcePackageRelease, \
-                                         SoyuzDistroArchRelease, \
-                                         SoyuzDistribution, SoyuzPerson, \
-                                         SoyuzEmailAddress, GPGKey, \
+from canonical.launchpad.database import BinaryPackage, Build, \
+                                         SourcePackage, Manifest, \
+                                         ManifestEntry, DistroRelease, \
+                                         SourcePackageRelease, \
+                                         DistroArchRelease, \
+                                         Distribution, Person, \
+                                         EmailAddress, GPGKey, \
                                          ArchUserID, WikiName, JabberID, \
                                          IrcID, Membership, TeamParticipation,\
                                          DistributionRole, DistroReleaseRole, \
@@ -41,19 +42,19 @@ from canonical.launchpad.database import SoyuzBinaryPackage, SoyuzBuild, \
 
 class DistrosApp(object):
     def __init__(self):
-        self.entries = SoyuzDistribution.select().count()
+        self.entries = Distribution.select().count()
 
     def __getitem__(self, name):
         return DistroApp(name)
 
     def distributions(self):
-        return SoyuzDistribution.select()
+        return Distribution.select()
 
     
 class DistroApp(object):
     def __init__(self, name):
-        self.distribution = SoyuzDistribution.selectBy(name=name)[0]
-        self.releases = Release.selectBy(distributionID=self.distribution.id)
+        self.distribution = Distribution.selectBy(name=name)[0]
+        self.releases = DistroRelease.selectBy(distributionID=self.distribution.id)
 
         if self.releases.count():
             self.enable_releases = True
@@ -92,9 +93,9 @@ class DistroReleaseApp(object):
 
     def _sourcequery(self):
         return (
-            'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
+            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-            'AND SourcePackageUpload.distrorelease = %d '
+            'AND SourcePackagePublishing.distrorelease = %d '
             'AND SourcePackage.sourcepackagename = SourcePackageName.id'
             % (self.release.id))
         
@@ -105,7 +106,7 @@ class DistroReleaseApp(object):
                  % quote('%%' + pattern + '%%')
                  + ' OR SourcePackage.shortdesc ILIKE %s)'
                  % quote('%%' + pattern + '%%'))        
-        return SoyuzSourcePackage.select(query)[:50]
+        return SourcePackage.select(query)[:500]
 
     where = (
         'PackagePublishing.binarypackage = BinaryPackage.id AND '
@@ -117,13 +118,19 @@ class DistroReleaseApp(object):
     def findBinariesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
         query = (self.where % self.release.id +
-                 'AND (BinarypackageName.name ILIKE %s '
+                 'AND (BinaryPackageName.name ILIKE %s '
                  % quote('%%' + pattern + '%%')
-                 + 'OR Binarypackage.shortdesc ILIKE %s)'
+                 + 'OR BinaryPackage.shortdesc ILIKE %s)'
                  % quote('%%' + pattern + '%%'))
         
-        ## FIXME: is those unique ?
-        return SoyuzBinaryPackage.select(query)[:50]
+        # FIXME: (SQLObject_Selection+batching) Daniel Debonzi - 2004-10-13
+        # The selection is limited here because batching and SQLObject
+        # selection still not working properly. Now the days for each
+        # page showing BATCH_SIZE results the SQLObject makes queries
+        # for all the related things available on the database which
+        # presents a very slow result.
+        # Is those unique ?
+        return BinaryPackage.select(query)[:500]
 
 
 class DistroReleasesApp(object):
@@ -131,11 +138,11 @@ class DistroReleasesApp(object):
         self.distribution = distribution
 
     def __getitem__(self, name):
-        return DistroReleaseApp(Release.selectBy(distributionID=
+        return DistroReleaseApp(DistroRelease.selectBy(distributionID=
                                                  self.distribution.id,
                                                  name=name)[0])
     def __iter__(self):
-    	return iter(Release.selectBy(distributionID=self.distribution.id))
+    	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
 
 
 # Source app component Section (src) 
@@ -145,31 +152,29 @@ class DistroReleaseSourceReleaseBuildApp(object):
         self.arch = arch
 
         query = ('Build.sourcepackagerelease = %i '
-                 'AND Build.distroarchrelease = Distroarchrelease.id '
-                 'AND Distroarchrelease.architecturetag = %s'
+                 'AND Build.distroarchrelease = DistroArchRelease.id '
+                 'AND DistroArchRelease.architecturetag = %s'
                  % (self.sourcepackagerelease.id, quote(self.arch))
                  )
 
-        build_results = SoyuzBuild.select(query)
+        build_results = Build.select(query)
 
         if build_results.count() > 0:
             self.build = build_results[0]
 
 class builddepsContainer(object):
-    def __init__(self, name, version):
+    def __init__(self, name, version, signal):
         self.name = name
-        tmp = split(version)
-        if len(tmp) <= 1:
-            self.signal = None
-            self.version = ''
-        else:
-            self.signal = tmp[0]
-            self.version = tmp[1][:-1]
+        self.version = version
+        if len(strip(signal)) == 0:
+            signal = None
+        self.signal = signal
+
 
 class DistroReleaseSourceReleaseApp(object):
     def __init__(self, sourcepackage, version, distrorelease):
         self.distroreleasename = distrorelease.name
-        results = SoyuzSourcePackageRelease.selectBy(
+        results = SourcePackageRelease.selectBy(
                 sourcepackageID=sourcepackage.id, version=version)
         if results.count() == 0:
             raise ValueError, 'No such version ' + repr(version)
@@ -181,7 +186,7 @@ class DistroReleaseSourceReleaseApp(object):
         query = sourceReleases.clause + \
                 ' AND SourcePackageRelease.version = %s' %quote(version)
 
-        sourceReleases = SoyuzSourcePackageRelease.select(query)
+        sourceReleases = SourcePackageRelease.select(query)
 
         self.archs = None
 
@@ -192,24 +197,22 @@ class DistroReleaseSourceReleaseApp(object):
 
         if self.sourcepackagerelease.builddepends:
             self.builddepends = []
-            builddepends = split(self.sourcepackagerelease.builddepends, ',')
-            for pack in builddepends:
-                tmp = split(pack)
-                self.builddepends.append(builddepsContainer(tmp[0],
-                                                            join(tmp[1:])))
+
+            depends = ParseSrcDepends(self.sourcepackagerelease.builddepends)
+            for dep in depends:
+                self.builddepends.append(builddepsContainer(*dep[0]))
+
         else:
             self.builddepends = None
 
 
         if self.sourcepackagerelease.builddependsindep:
             self.builddependsindep = []
-            builddependsindep = split(self.sourcepackagerelease.\
-                                      builddependsindep, ',')
-            for pack in builddependsindep:
-                tmp = split(pack)
-                self.builddependsindep.\
-                        append(builddepsContainer(tmp[0],
-                                                  join(tmp[1:])))
+
+            depends = ParseSrcDepends(self.sourcepackagerelease.builddependsindep)
+            for dep in depends:
+                self.builddependsindep.append(builddepsContainer(*dep[0]))
+
         else:
             self.builddependsindep = None
 
@@ -252,20 +255,16 @@ class DistroReleaseSourceApp(object):
     def currentversions(self):
         return [CurrentVersion(k, v) for k,v in self.currentReleases().\
                 iteritems()]
-
-        
-        # FIXME: Probably should be more than just PUBLISHED uploads (e.g.
+        # FIXME: (current_versions) Daniel Debonzi - 2004-10-13
+        # Probably should be more than just PUBLISHED uploads (e.g.
         # NEW + ACCEPTED + PUBLISHED?)
-        #If true, it is defined inside database.py
+        # If true, it is defined inside launchpad/database/package.py
 
     def lastversions(self):
         return self.sourcepackage.lastversions(self.release)
 
     lastversions = property(lastversions)
     
-    ##Does this relation SourcePackageRelease and Builds exists??
-    ##Is it missing in the database or shoult it be retrived
-    ##   using binarypackage table?
     def builds(self):
         return self.sourcepackage.builds
 
@@ -277,20 +276,18 @@ class DistroReleaseSourcesApp(object):
 
     Used for web UI.
     """
-    # FIXME:docstring says this contains SourcePackage objects, but it seems to
-    # contain releases.  Is this a bug or is the docstring wrong?
-    table = SoyuzSourcePackageRelease
-    clauseTables = ('SourcePackage', 'SourcePackageUpload')
+    table = SourcePackageRelease
+    clauseTables = ('SourcePackage', 'SourcePackagePublishing')
 
     def __init__(self, release):
         self.release = release
-        self.people = SoyuzPerson.select('teamowner IS NULL')
+        self.people = Person.select('teamowner IS NULL')
         
     def _query(self):
         return (
-            'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
+            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-            'AND SourcePackageUpload.distrorelease = %d '
+            'AND SourcePackagePublishing.distrorelease = %d '
             'AND SourcePackage.sourcepackagename = SourcePackageName.id'
             % (self.release.id))
         
@@ -300,12 +297,12 @@ class DistroReleaseSourcesApp(object):
                 (' AND SourcePackageName.name ILIKE %s'
                  % quote('%%' + pattern + '%%')
                  )
-        return SoyuzSourcePackage.select(query)[:50]
+        return SourcePackage.select(query)[:500]
 
     def __getitem__(self, name):
-        # XXX: What about multiple results?
-        #      (which shouldn't happen here...)
-
+        # XXX: (mult_results) Daniel Debonzi 2004-10-13
+        # What about multiple results?
+        #(which shouldn't happen here...)
         query = self._query() + \
                 (' AND SourcePackageName.name = '
                  '%s' % quote(name))
@@ -321,30 +318,37 @@ class DistroReleaseSourcesApp(object):
             return DistroReleaseSourceApp(self.release, sourcePackage)
 
 
-    ##FIXME: the results are NOT UNIQUE (DISTINCT)
-    ##FIXME: the results are LIMITED by hand
+    # FIXME: (distinct_query) Daniel Debonzi - 2004-10-13
+    # the results are NOT UNIQUE (DISTINCT)
+
+    # FIXME: (SQLObject_Selection+batching) Daniel Debonzi - 2004-10-13
+    # The selection is limited here because batching and SQLObject
+    # selection still not working properly. Now the days for each
+    # page showing BATCH_SIZE results the SQLObject makes queries
+    # for all the related things available on the database which
+    # presents a very slow result.
     def __iter__(self):
         query = self._query()
         return iter(self.table.select(query,
-                                      orderBy='sourcepackagename.name')[:50])
+                                      orderBy='sourcepackagename.name')[:500])
 
 class DistroSourcesApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
 
     def __getitem__(self, name):
-        return DistroReleaseSourcesApp(Release.selectBy(distributionID=\
+        return DistroReleaseSourcesApp(DistroRelease.selectBy(distributionID=\
                                                         self.distribution.id,
                                                         name=name)[0])
 
     def __iter__(self):
-    	return iter(Release.selectBy(distributionID=self.distribution.id))
+    	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
 
 class DistroReleaseTeamApp(object):
     def __init__(self, release):
         self.release = release
 
-        self.team=DistroReleaseRole.selectBy(distroreleaseID=
+        self.team=DistroReleaserole.selectBy(distroreleaseID=
                                              self.release.id)
         
 
@@ -355,21 +359,24 @@ class DistroTeamApp(object):
                                             self.distribution.id)
 
     def __getitem__(self, name):
-        return DistroReleaseTeamApp(Release.selectBy(distributionID=
+        return DistroReleaseTeamApp(DistroRelease.selectBy(distributionID=
                                                      self.distribution.id,
                                                      name=name)[0])
 
     def __iter__(self):
-    	return iter(Release.selectBy(distributionID=self.distribution.id))
+    	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
 
 
 class PeopleApp(object):
     def __init__(self):
-        #FIXME these names are totaly crap
-        self.p_entries = SoyuzPerson.select('teamowner IS NULL').count()
-        self.t_entries = SoyuzPerson.select('teamowner IS NOT NULL').count()
+        # FIXME: (tmp_names) Daniel Debonzi - 2004-10-13
+        # these names are totaly crap
+        self.p_entries = Person.select('teamowner IS NULL').count()
+        self.t_entries = Person.select('teamowner IS NOT NULL').count()
 
-    #FIXME: traverse by ID ?
+    # FIXME: (person_traverse) Daniel Debonzi - 2004-10-13
+    # The Person page still traversing person by id.
+    # Now it should be traversed by name
     def __getitem__(self, id):
         try:
             return PersonApp(int(id))
@@ -378,13 +385,15 @@ class PeopleApp(object):
             raise
 
     def __iter__(self):
-        #FIXME is that the only way to ORDER
-        return iter(SoyuzPerson.select('1=1 ORDER by displayname'))
+        # FIXME: (ordered_query) Daniel Debonzi 2004-10-13
+        # Is available in SQLObject a good way to get results
+        # ordered?
+        return iter(Person.select('1=1 ORDER by displayname'))
 
 class PersonApp(object):
     def __init__(self, id):
         self.id = id
-        self.person = SoyuzPerson.get(self.id)
+        self.person = Person.get(self.id)
 
         self.packages = self._getsourcesByPerson()
 
@@ -392,15 +401,18 @@ class PersonApp(object):
         self.statusset = []
 
 
-        #FIXME: Crap solution for <select> entity on person-join.pt
+        # FIXME: (dbschema_membershiprole) Daniel Debonzi
+        # 2004-10-13
+        # Crap solution for <select> entity on person-join.pt
         for item in dbschema.MembershipRole.items:
             self.roleset.append(item.title)
         for item in dbschema.MembershipStatus.items:
             self.statusset.append(item.title)
 
         
-        # FIXME: Most of this code probably belongs as methods/properties of
-        #        SoyuzPerson
+        # FIXME: Daniel Debonzi 2004-10-13
+        # Most of this code probably belongs as methods/properties of
+        # Person
 
         try:
             self.members = Membership.selectBy(teamID=self.id)
@@ -410,7 +422,8 @@ class PersonApp(object):
             self.members = None
 
         try:
-            #FIXME: My Teams should be:
+            # FIXME: (my_team) Daniel Debonzi 2004-10-13
+            # My Teams should be:
             # -> the Teams owned by me
             # OR
             # -> the Teams which I'm member (as It is)
@@ -441,7 +454,7 @@ class PersonApp(object):
             self.distroroles = None
 
         try:
-            self.distroreleaseroles = DistroReleaseRole.selectBy(personID=\
+            self.distroreleaseroles = DistroReleaserole.selectBy(personID=\
                                                                  self.id)
             if self.distroreleaseroles.count() == 0:
                 self.distroreleaseroles = None
@@ -449,8 +462,11 @@ class PersonApp(object):
             self.distroreleaseroles = None
             
         # Retrieve an email by person id
-        #FIXME: limited to one, solve the EDIT multi emails problem 
-        self.email = SoyuzEmailAddress.selectBy(personID=self.id)
+        
+        # FIXME: (multi_emails) Daniel Debonzi 2004-10-13
+        # limited to one, solve the EDIT multi emails problem
+        # Is it realy be editable ?
+        self.email = EmailAddress.selectBy(personID=self.id)
 
         try:
             self.wiki = WikiName.selectBy(personID=self.id)[0]
@@ -474,15 +490,18 @@ class PersonApp(object):
             self.gpg = None
 
     def _getsourcesByPerson(self):
-        query = ('SourcePackageUpload.sourcepackagerelease = '
+        query = ('SourcePackagePublishing.sourcepackagerelease = '
                  'SourcePackageRelease.id '
                  'AND SourcePackageRelease.sourcepackage = '
                  'SourcePackage.id '
                  'AND SourcePackage.maintainer = %i'
                  %self.id)
         
-##FIXME: ORDER by Sourcepackagename !!!
-        return Set(SoyuzSourcePackageRelease.select(query))
+        # FIXME: (sourcename_order) Daniel Debonzi 2004-10-13
+        # ORDER by SourcePackagename
+        # The result should be ordered by SourcePackageName
+        # but seems that is it not possible
+        return Set(SourcePackageRelease.select(query))
     
 
 
@@ -501,13 +520,12 @@ class DistroReleaseBinaryReleaseBuildApp(object):
     pkgformat = property(pkgformat)
 
     def _buildList(self, packages):
-        package_list = split(packages, ',') 
         blist = []
-        for pack in package_list:
-            tmp = split(pack)
-            if tmp:
-                blist.append(builddepsContainer(tmp[0],
-                                                join(tmp[1:])))
+        if packages:
+            packs = ParseDepends(packages)
+            for pack in packs:
+                blist.append(builddepsContainer(*pack[0]))
+                                          
         return blist
 
     def depends(self):
@@ -547,23 +565,23 @@ class DistroReleaseBinaryReleaseApp(object):
         except:
             self.binarypackagerelease = binarypackagerelease[0]
 
-        query = ('SourcePackageUpload.distrorelease = DistroRelease.id '
-                 'AND SourcePackageUpload.sourcepackagerelease = %i '
+        query = ('SourcePackagePublishing.distrorelease = DistroRelease.id '
+                 'AND SourcePackagePublishing.sourcepackagerelease = %i '
                  %(self.binarypackagerelease.build.sourcepackagerelease.id))
 
 
-        self.sourcedistrorelease = Release.select(query)[0]
+        self.sourcedistrorelease = DistroRelease.select(query)[0]
 
 
         binaryReleases = self.binarypackagerelease.current(distrorelease)
 
         query = binaryReleases.clause + \
-                (' AND Build.id = Binarypackage.build'
-                 ' AND Build.sourcepackagerelease = SourcepackageRelease.id'
+                (' AND Build.id = BinaryPackage.build'
+                 ' AND Build.sourcepackagerelease = SourcePackageRelease.id'
                  ' AND BinaryPackage.version = %s' %quote(version)
                 )
 
-        binaryReleases = SoyuzSourcePackageRelease.select(query)
+        binaryReleases = SourcePackageRelease.select(query)
 
         self.archs = None
 
@@ -575,7 +593,7 @@ class DistroReleaseBinaryReleaseApp(object):
     def __getitem__(self, arch):
         query = self.binselect.clause + \
                 ' AND DistroArchRelease.architecturetag = %s' %quote(arch)
-        binarypackage = SoyuzBinaryPackage.select(query)
+        binarypackage = BinaryPackage.select(query)
         return DistroReleaseBinaryReleaseBuildApp(binarypackage[0],
                                                   self.version, arch)
     
@@ -615,7 +633,7 @@ class DistroReleaseBinaryApp(object):
     def __getitem__(self, version):
         query = self.binselect.clause + \
                 ' AND BinaryPackage.version = %s' %quote(version)
-        self.binarypackage = SoyuzBinaryPackage.select(query)
+        self.binarypackage = BinaryPackage.select(query)
         return DistroReleaseBinaryReleaseApp(self.binarypackage,
                                              version, self.release)
 
@@ -632,17 +650,20 @@ class DistroReleaseBinariesApp(object):
     def findPackagesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
         query = (self.where % self.release.id + \
-                 'AND  BinaryPackage.binarypackagename = BinarypackageName.id '
-                 'AND  UPPER(BinarypackageName.name) LIKE UPPER(%s)'
+                 'AND  BinaryPackage.binarypackagename = BinaryPackageName.id '
+                 'AND  UPPER(BinaryPackageName.name) LIKE UPPER(%s)'
                  % quote('%%' + pattern + '%%'))
 
 
-        ## WTF ist That ?? I wonder how many copies of this code we will find !
-        ##FIXME: expensive routine
-        selection = Set(SoyuzBinaryPackage.select(query)[:50])
+        # WTF ist That ?? I wonder how many copies of this code we will find !
+        # Will be solved when bug #2094 is fixed
+        # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
+        # expensive routine
+        selection = Set(BinaryPackage.select(query)[:500])
 
-        ##FIXME: Dummy solution to avoid a binarypackage to be shown more
-        ##   then once
+        # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
+        # Dummy solution to avoid a binarypackage to be shown more
+        # then once
         present = []
         result = []
         for srcpkg in selection:
@@ -655,34 +676,35 @@ class DistroReleaseBinariesApp(object):
     def __getitem__(self, name):
         try:
             where = self.where % self.release.id + \
-                    ('AND Binarypackage.binarypackagename ='
-                     ' BinarypackageName.id '
-                     'AND BinarypackageName.name = ' + quote(name)
+                    ('AND BinaryPackage.binarypackagename ='
+                     ' BinaryPackageName.id '
+                     'AND BinaryPackageName.name = ' + quote(name)
                      )
-            return DistroReleaseBinaryApp(SoyuzBinaryPackage.select(where),
+            return DistroReleaseBinaryApp(BinaryPackage.select(where),
                                           self.release)
         except IndexError:
             raise KeyError, name
 
 
-    ##FIXME: The results are NOT UNIQUE (DISTINCT)
-    ##FIXME: they were LIMITED by hand
+    # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
+    # FIXME: (SQLObject_Selection+batching)
+    # they were LIMITED by hand
     def __iter__(self):
         query = self.where % self.release.id
-        return iter(SoyuzBinaryPackage.select(query, orderBy=\
-                                              'Binarypackagename.name')[:50])
+        return iter(BinaryPackage.select(query, orderBy=\
+                                              'BinaryPackagename.name')[:500])
 
 class DistroBinariesApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
         
     def __getitem__(self, name):
-        release = Release.selectBy(distributionID=self.distribution.id,
+        release = DistroRelease.selectBy(distributionID=self.distribution.id,
                                    name=name)[0]
         return DistroReleaseBinariesApp(release)
     
     def __iter__(self):
-      	return iter(Release.selectBy(distributionID=self.distribution.id))
+      	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
 
 # end of binary app component related data ....
   
@@ -694,21 +716,22 @@ class SourcePackages(object):
     """
     implements(ISourcePackageSet)
 
-    table = SoyuzSourcePackageRelease
-    clauseTables = ('SourcePackage', 'SourcePackageUpload',)
+    table = SourcePackageRelease
+    clauseTables = ('SourcePackage', 'SourcePackagePublishing',)
 
     def __init__(self, release):
         self.release = release
         
     def _query(self):
         return (
-            'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
+            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-            'AND SourcePackageUpload.distrorelease = %d '
+            'AND SourcePackagePublishing.distrorelease = %d '
             % (self.release.id))
         
     def __getitem__(self, name):
-        # XXX: What about multiple results?
+        # XXX: (mult_results) Daniel Debonzi 2004-10-13
+        # What about multiple results?
         #      (which shouldn't happen here...)
 
         query = self._query() + \
@@ -728,7 +751,7 @@ class SourcePackages(object):
 
 
 ## Doesn't work as expected !!!!
-## 
+## (Deprecated)
 class BinaryPackages(object):
     """Container of BinaryPackage objects.
 
@@ -749,8 +772,9 @@ class BinaryPackages(object):
             % (self.release.id))
         
     def __getitem__(self, name):
-        # XXX: What about multiple results?
-        #      (which shouldn't happen here...)
+        # XXX: (mult_results) Daniel Debonzi 2004-10-13
+        # What about multiple results?
+        #(which shouldn't happen here...)
 
         query = self._query() + \
                 (' AND BinaryPackageBuild.binarypackage = BinaryPackage.id'

@@ -2,16 +2,22 @@
 
 # Zope interfaces
 from zope.interface import implements
-from zope.component import ComponentLookupError
+from zope.component import ComponentLookupError, getUtility
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
+from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.constants import UTC_NOW
 
 # canonical imports
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces.person import IPerson, IPersonSet,  \
+                                                  IEmailAddress
+from canonical.launchpad.interfaces.language import ILanguageSet
+from canonical.launchpad.database.schema import Schema, Label
+from canonical.launchpad.database.pofile import POTemplate
+from canonical.lp import dbschema
 
 
 class Person(SQLBase):
@@ -20,21 +26,33 @@ class Person(SQLBase):
     implements(IPerson)
 
     _columns = [
-        StringCol('name', default=None),
+        StringCol('name'),
         StringCol('displayname', default=None),
         StringCol('givenname', default=None),
         StringCol('familyname', default=None),
         StringCol('password', default=None),
-        ForeignKey(name='teamowner', foreignKey='Person', dbName='teamowner'),
+        ForeignKey(name='teamowner', foreignKey='Person', dbName='teamowner',
+            default=None),
         StringCol('teamdescription', default=None),
-        IntCol('karma'),
-        DateTimeCol('karmatimestamp')
+        IntCol('karma', default=0),
+        DateTimeCol('karmatimestamp', default=UTC_NOW)
     ]
 
     _emailsJoin = MultipleJoin('RosettaEmailAddress', joinColumn='person')
 
     def emails(self):
         return iter(self._emailsJoin)
+
+    def browsername(self):
+        """Returns a name suitable for display on a web page."""
+        if self.displayname: return self.displayname
+        webname = ''
+        if self.familyname:
+            webname.append(string.upper(self.familyname))
+            if self.givenname: webname.append(' '+self.givenname)
+        if not webname:
+            webname = 'UNKNOWN USER #'+str(self.id)
+        return webname
 
     # XXX: not implemented
     def maintainedProjects(self):
@@ -61,6 +79,10 @@ class Person(SQLBase):
                     origin = 2
                 ORDER BY datefirstseen DESC))
         '''
+        # XXX: Dafydd Harries, 2004/10/13.
+        # Import done here as putting it at the top seems to break it and
+        # right now I'd rather have this working than spend time on working
+        # out the Right solution.
         return POTemplate.select('''
             id IN (SELECT potemplate FROM pomsgset WHERE
                 id IN (SELECT pomsgset FROM POTranslationSighting WHERE
@@ -72,7 +94,7 @@ class Person(SQLBase):
         otherColumn='label', intermediateTable='PersonLabel')
 
     def languages(self):
-        languages = getUtility(ILanguages)
+        languages = getUtility(ILanguageSet)
         try:
             schema = Schema.byName('translation-languages')
         except SQLObjectNotFound:
@@ -149,4 +171,103 @@ class EmailAddress(SQLBase):
             )
         ]
 
+    def _statusname(self):
+        for status in dbschema.EmailAddressStatus.items:
+            if status.value == self.status:
+                return status.title
+        return 'Unknown (%d)' %self.status
+    
+    statusname = property(_statusname)
+
+
+class GPGKey(SQLBase):
+    _table = 'GPGKey'
+    _columns = [
+        ForeignKey(name='person', foreignKey='Person', dbName='person',
+                   notNull=True),
+        StringCol('keyid', dbName='keyid', notNull=True),
+        StringCol('fingerprint', dbName='fingerprint', notNull=True),
+        StringCol('pubkey', dbName='pubkey', notNull=True),
+        BoolCol('revoked', dbName='revoked', notNull=True),
+        IntCol('algorithm', dbName='algorithm', notNull=True),
+        IntCol('keysize', dbName='keysize', notNull=True),
+        ]
+
+    def _algorithmname(self):
+        for algorithm in dbschema.GPGKeyAlgorithms.items:
+            if algorithm.value == self.algorithm:
+                return algorithm.title
+        return 'Unknown (%d)' %self.algorithm
+    
+    algorithmname = property(_algorithmname)
+
+class ArchUserID(SQLBase):
+    _table = 'ArchUserID'
+    _columns = [
+        ForeignKey(name='person', foreignKey='Person', dbName='person',
+                   notNull=True),
+        StringCol('archuserid', dbName='archuserid', notNull=True)
+        ]
+    
+class WikiName(SQLBase):
+    _table = 'WikiName'
+    _columns = [
+        ForeignKey(name='person', foreignKey='Person', dbName='person',
+                   notNull=True),
+        StringCol('wiki', dbName='wiki', notNull=True),
+        StringCol('wikiname', dbName='wikiname', notNull=True)
+        ]
+
+class JabberID(SQLBase):
+    _table = 'JabberID'
+    _columns = [
+        ForeignKey(name='person', foreignKey='Person', dbName='person',
+                   notNull=True),
+        StringCol('jabberid', dbName='jabberid', notNull=True)
+        ]
+
+class IrcID(SQLBase):
+    _table = 'IrcID'
+    _columns = [
+        ForeignKey(name='person', foreignKey='Person', dbName='person',
+                   notNull=True),
+        StringCol('network', dbName='network', notNull=True),
+        StringCol('nickname', dbName='nickname', notNull=True)
+        ]
+
+class Membership(SQLBase):
+    _table = 'Membership'
+    _columns = [
+        ForeignKey(name='person', foreignKey='Person', dbName='person',
+                   notNull=True),
+        ForeignKey(name='team', foreignKey='Person', dbName='team',
+                   notNull=True),
+        IntCol('role', dbName='role', notNull=True),
+        IntCol('status', dbName='status', notNull=True)
+        ]
+
+    def _rolename(self):
+        for role in dbschema.MembershipRole.items:
+            if role.value == self.role:
+                return role.title
+        return 'Unknown (%d)' %self.role
+    
+    rolename = property(_rolename)
+
+    def _statusname(self):
+        for status in dbschema.MembershipStatus.items:
+            if status.value == self.status:
+                return status.title
+        return 'Unknown (%d)' %self.status
+    
+    statusname = property(_statusname)
+
+class TeamParticipation(SQLBase):
+    _table = 'TeamParticipation'
+    _columns = [
+        ForeignKey(name='person', foreignKey='Person', dbName='person',
+                   notNull=True),
+        ForeignKey(name='team', foreignKey='Person', dbName='team',
+                   notNull=True)
+        ]
 

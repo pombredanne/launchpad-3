@@ -1,7 +1,7 @@
 # Twisted Application Configuration file.
 # Use with "twistd -y <file.tac>", e.g. "twistd -noy server.tac"
 
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase
 from sqlobject import connectionForURI
 
 from twisted.application import service, internet
@@ -23,6 +23,7 @@ internet.TCPServer(9090, f).setServiceParent(librarianService)
 
 root = fatweb.LibraryFileResource(storage)
 root.putChild('search', fatweb.DigestSearchResource(storage))
+root.putChild('byalias', fatweb.AliasSearchResource(storage))
 site = server.Site(root)
 site.displayTracebacks = False
 internet.TCPServer(8000, site).setServiceParent(librarianService)

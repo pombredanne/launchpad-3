@@ -38,6 +38,5 @@
   <include file="pages.zcml" />
   <include file="forms.zcml" />
   <include file="resources.zcml" />
-  <include file="vocabulary.zcml" />
 
 </configure>

@@ -7,9 +7,9 @@ from cStringIO import StringIO
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
 
-from canonical.launchpad.interfaces import ILanguages
+from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database import Person, POTemplate, \
-     Product, Languages, POMessageSet, POMessageIDSighting
+     Product, LanguageSet, POMessageSet, POMessageIDSighting
 from canonical.rosetta.pofile_adapters import MessageProxy, \
      TemplateImporter, POFileImporter
 from canonical.launchpad.database import Project
@@ -27,7 +27,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
     def setUp(self):
         super(POImportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
-        utilityService.provideUtility(ILanguages, Languages(), '')
+        utilityService.provideUtility(ILanguageSet, LanguageSet(), '')
         canonical.lp.initZopeless()
         self.pot = file(os.path.join(here, 'gnome-terminal.pot'))
         self.po = file(os.path.join(here, 'gnome-terminal-cy.po'))

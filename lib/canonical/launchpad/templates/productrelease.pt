@@ -1,0 +1,45 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1><span tal:replace="context/product/title">$Product.title</span></h1>
+    <h2><span tal:replace="context/version">Version</span>: 
+    "<span tal:replace="context/title">Title</span>"</h2>
+
+    <div class="documentDescription" tal:content="context/shortdesc">
+        $ProductRelease.shortdesc goes here. This should be quite short,
+        just a single paragraph of text really, giving a summary of
+        this release highlights.
+    </div>
+    <div>
+        [ <a href="+edit">Edit</a> ]
+    </div>
+
+    <div tal:content="context/description">
+        $ProductRelease.description goes here. This is longer, like the
+        product release notes.
+    </div>
+
+    <div tal:condition="context/changelog">
+        <h3>Changelog:</h3>
+        <pre tal:content="context/changelog">
+        </pre>
+    </div>
+
+</div>
+
+</body>
+</html>

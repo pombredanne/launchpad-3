@@ -1,0 +1,102 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <tal:dummy condition="view/newseries" />
+
+    <h1>Register a New Product Release Series for: <span
+    tal:content="context/displayname">$Product.displayname</span></h1>
+
+    <div class="documentDescription">
+    Please fill in the details below to register a new Product Release
+    Series for <span tal:content="context/displayname">$Product.displayname</span>.
+    A Product Release Series is a name for a set of releases. Examples
+    include the "unstable" or "dev" series, or a versioned series like "2.0"
+    or "2.4".
+    </div>
+
+    <fieldset>
+
+        <legend>Product Release Series Details</legend>
+
+        <form action="+addseries" method="post">
+
+        <div class="field">
+
+            <label>Series Name</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    The name of the series is a short name - a unique
+                    name that identifies the product, and is used in 
+                    URLs and references to the product. All lowercase,
+                    no special characters. For example, <i>2.0</i> or
+                    <i>head</i>.
+                  </div>
+
+                <input type="text" name="name" size="15"
+                       value="" style="text-transform: lowercase" />
+        </div>
+
+        <div class="field">
+
+            <label>Display Name</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    The "display name" of the Series is a short name,
+                    appropriately capitalised. It should make sense as part
+                    of a paragraph of text, and should convey slightly more
+                    information than the plain name. For example, <i>2.0
+                    (Stable)</i> or <i>HEAD (development)</i> or <i>1.3
+                    (Obsolete)</i>.
+                  </div>
+
+                <input type="text" name="displayname" size="20"
+                       value="" />
+        </div>
+
+        <div class="field">
+
+            <label>Short Description</label>
+
+                  <div class="formHelp">
+                    A single paragraph introduction or overview of this
+                    Series. For example: <i>The 2.0 series of Apache was
+                    initiated in July 2002. It represents the current stable
+                    release series, and is recommended for all new web
+                    server deployments.</i>
+                  </div>
+
+                <textarea cols="40" rows="4" name="shortdesc"></textarea>
+        </div>
+        
+        <div class="formControls">
+
+            <input class="context" type="submit"
+                   name="Register"
+                   value="Register Series" />
+
+        </div>
+        </form>
+
+    </fieldset>
+
+</div>
+
+</body>
+</html>

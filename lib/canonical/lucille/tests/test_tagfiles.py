@@ -10,7 +10,7 @@ class TestTagFiles(unittest.TestCase):
     def testImport(self):
         """canonical.lucille.TagFiles should be importable"""
         from canonical.lucille.TagFiles import TagFile, \
-             ChangesParseError, parse_changes
+             TagFileParseError, parse_tagfile
 
     def testTagFileOnSingular(self):
         """canonical.lucille.TagFiles.TagFile should parse a singular stanza"""
@@ -37,46 +37,46 @@ class TestTagFiles(unittest.TestCase):
         self.assertEquals( seen > 1, True )
 
     def testCheckParseChangesOkay(self):
-        """canonical.lucille.TagFiles.parse_changes should work on a good changes file"""
-        from canonical.lucille.TagFiles import parse_changes
-        p = parse_changes( "data/good-signed-changes" )
+        """canonical.lucille.TagFiles.parse_tagfile should work on a good changes file"""
+        from canonical.lucille.TagFiles import parse_tagfile
+        p = parse_tagfile( "data/good-signed-changes" )
 
     def testCheckParseBadChangesRaises(self):
-        """canonical.lucille.TagFiles.parse_chantges should raise ChangesParseError on failure"""
-        from canonical.lucille.TagFiles import parse_changes, ChangesParseError
-        self.assertRaises( ChangesParseError,
-                           parse_changes, "data/badformat-changes", 1 )
+        """canonical.lucille.TagFiles.parse_chantges should raise TagFileParseError on failure"""
+        from canonical.lucille.TagFiles import parse_tagfile, TagFileParseError
+        self.assertRaises( TagFileParseError,
+                           parse_tagfile, "data/badformat-changes", 1 )
         
     def testCheckParseEmptyChangesRaises(self):
-        """canonical.lucille.TagFiles.parse_chantges should raise ChangesParseError on empty"""
-        from canonical.lucille.TagFiles import parse_changes, ChangesParseError
-        self.assertRaises( ChangesParseError,
-                           parse_changes, "data/empty-file", 1 )
+        """canonical.lucille.TagFiles.parse_chantges should raise TagFileParseError on empty"""
+        from canonical.lucille.TagFiles import parse_tagfile, TagFileParseError
+        self.assertRaises( TagFileParseError,
+                           parse_tagfile, "data/empty-file", 1 )
         
     def testCheckParseMalformedSigRaises(self):
-        """canonical.lucille.TagFiles.parse_chantges should raise ChangesParseError on malformed signatures"""
-        from canonical.lucille.TagFiles import parse_changes, ChangesParseError
-        self.assertRaises( ChangesParseError,
-                           parse_changes, "data/malformed-sig-changes", 1 )
+        """canonical.lucille.TagFiles.parse_chantges should raise TagFileParseError on malformed signatures"""
+        from canonical.lucille.TagFiles import parse_tagfile, TagFileParseError
+        self.assertRaises( TagFileParseError,
+                           parse_tagfile, "data/malformed-sig-changes", 1 )
         
     def testCheckParseMalformedMultilineRaises(self):
-        """canonical.lucille.TagFiles.parse_chantges should raise ChangesParseError on malformed continuation lines"""
-        from canonical.lucille.TagFiles import parse_changes, ChangesParseError
-        self.assertRaises( ChangesParseError,
-                           parse_changes, "data/bad-multiline-changes", 1 )
+        """canonical.lucille.TagFiles.parse_chantges should raise TagFileParseError on malformed continuation lines"""
+        from canonical.lucille.TagFiles import parse_tagfile, TagFileParseError
+        self.assertRaises( TagFileParseError,
+                           parse_tagfile, "data/bad-multiline-changes", 1 )
         
     def testCheckParseUnterminatedSigRaises(self):
-        """canonical.lucille.TagFiles.parse_chantges should raise ChangesParseError on unterminated signatures"""
-        from canonical.lucille.TagFiles import parse_changes, ChangesParseError
-        self.assertRaises( ChangesParseError,
-                           parse_changes, "data/unterminated-sig-changes", 1 )
+        """canonical.lucille.TagFiles.parse_chantges should raise TagFileParseError on unterminated signatures"""
+        from canonical.lucille.TagFiles import parse_tagfile, TagFileParseError
+        self.assertRaises( TagFileParseError,
+                           parse_tagfile, "data/unterminated-sig-changes", 1 )
 
     def testParseChangesNotVulnerableToArchExploit(self):
-        """canonical.lucille.TagFiles.parse_changes should not be vulnerable to tags outside of the signed portion"""
-        from canonical.lucille.TagFiles import parse_changes
-        tf = parse_changes( "data/changes-with-exploit-top" )
+        """canonical.lucille.TagFiles.parse_tagfile should not be vulnerable to tags outside of the signed portion"""
+        from canonical.lucille.TagFiles import parse_tagfile
+        tf = parse_tagfile( "data/changes-with-exploit-top" )
         self.assertRaises( KeyError, tf.__getitem__, "you" )
-        tf = parse_changes( "data/changes-with-exploit-bottom" )
+        tf = parse_tagfile( "data/changes-with-exploit-bottom" )
         self.assertRaises( KeyError, tf.__getitem__, "you" )
         
 

@@ -1,6 +1,6 @@
 /*
    MALONE SAMPLE DATA
-   
+
    This is some sample data for Malone.  This requires the default
    data to be inserted first.
 */
@@ -8,28 +8,19 @@
 INSERT INTO BugSystemType (name, title, description, homepage, owner)
 VALUES ('bugzilla', 'BugZilla', 'Dave Miller\'s Labour of Love, '
 || 'the Godfather of Open Source project issue tracking.',
-'http://www.bugzilla.org/', 
+'http://www.bugzilla.org/',
 (SELECT id FROM Person WHERE displayname='Sample Person')
-);
-
-INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
-version, dateuploaded, urgency)
-VALUES (
-(SELECT id FROM Sourcepackage WHERE sourcepackagename=
-	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
-1, (SELECT id FROM Person WHERE displayname='Sample Person'),
-'0.9.1-1', timestamp '2004-06-29 00:00', 1
 );
 
 INSERT INTO Manifest (datecreated, owner)
 VALUES (
-timestamp '2004-06-29 00:00', 
+timestamp '2004-06-29 00:00',
 (SELECT id FROM Person WHERE displayname='Sample Person')
 );
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest)
 VALUES (
-(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+(SELECT id FROM Sourcepackage WHERE sourcepackagename =
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
 (SELECT max(id) FROM Manifest)
 );
@@ -51,18 +42,20 @@ timestamp '2004-06-28 00:00', 'mozilla-thunderbird-0.8.0',
 (SELECT id FROM Person WHERE displayname='Sample Person')
 );
 
+/*
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
 version, dateuploaded, urgency)
 VALUES (
-(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+(SELECT id FROM Sourcepackage WHERE sourcepackagename =
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird')),
 1, (SELECT id FROM Person WHERE displayname='Sample Person'),
 '0.8.0-1', timestamp '2004-06-29 00:00', 1
 );
+*/
 
 INSERT INTO Manifest (datecreated, owner)
 VALUES (
-timestamp '2004-06-29 00:00', 
+timestamp '2004-06-29 00:00',
 (SELECT id FROM Person WHERE displayname='Sample Person')
 );
 
@@ -85,7 +78,7 @@ VALUES ('bob', 'Firefox does not support SVG', 'Firefox needs to support embedde
 
 INSERT INTO Bug (name, title, shortdesc, description, owner, communityscore,
 communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp)
-VALUES ('blackhole', 'Blackhole Trash folder', 
+VALUES ('blackhole', 'Blackhole Trash folder',
 'Everything put into the folder "Trash" disappears!', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!',
 (SELECT id FROM Person WHERE displayname='Sample Person'),
 0, CURRENT_DATE, 0, CURRENT_DATE, 0, CURRENT_DATE
@@ -117,7 +110,7 @@ INSERT INTO SourcepackageBugAssignment (
     )
 VALUES (
     (SELECT id FROM Bug WHERE name='bob'),
-    (SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+    (SELECT id FROM Sourcepackage WHERE sourcepackagename =
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
     2, 4, 2,
     (SELECT id FROM BinaryPackage WHERE version='0.8' AND binarypackagename = (
@@ -148,6 +141,25 @@ VALUES (
     (SELECT id FROM Person WHERE displayname='Sample Person')
 );
 
+INSERT INTO SourcePackageRelease (
+    sourcepackage, srcpackageformat, creator, version, urgency, "section")
+VALUES (
+    (SELECT id FROM SourcePackage WHERE shortdesc = 'Mozilla Firefox Web Browser'),
+    1,
+    1,
+    'mozilla-firefox-0.9.1',
+    1,
+    (SELECT id FROM "section" WHERE name = 'default_section'));
+
+INSERT INTO SourcePackageRelease (
+    sourcepackage, srcpackageformat, creator, version, urgency, "section")
+VALUES (
+    (SELECT id FROM SourcePackage WHERE shortdesc = 'Mozilla Firefox Web Browser'),
+    1,
+    1,
+    'mozilla-thunderbird-0.9.0',
+    1,
+    (SELECT id FROM "section" WHERE name = 'default_section'));
 
 INSERT INTO BugMessage (bug, title, contents, rfc822msgid) VALUES (
     (SELECT id FROM Bug WHERE name='blackhole'),

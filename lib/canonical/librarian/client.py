@@ -108,9 +108,35 @@ class FileDownloadClient(object):
 
     def findLinksByDigest(self, hexdigest):
         """Return a list of URIs to file aliases matching 'hexdigest'"""
-        return [('http://%s:%d/%s' % (self.host, self.port, path)
+        return [('http://%s:%d/%s' % (self.host, self.port, path))
                 for path in self._findByDigest(hexdigest)]
 
+    def getURLForAlias(self, aliasID):
+        """Returns the url for talking to the librarian about the given
+        alias.
+
+        :param aliasID: A unique ID for the alias
+
+        :returns: String URL
+        """
+        url = ('http://%s:%d/byalias?alias=%s'
+               % (self.host, self.port, aliasID))
+        f = urllib2.urlopen(url)
+        l = f.read()[:-1] # Trim the newline
+        f.close()
+        url = ('http://%s:%d%s' % (self.host, self.port, l))
+        return url
+
+    def getFileByAlias(self, aliasID):
+        """Returns a fd to read the file from
+
+        :param aliasID: A unique ID for the alias
+
+        :returns: file-like object
+        """
+        url = self.getURLForAlias(aliasID)
+        return urllib2.urlopen(url)
+    
     
 if __name__ == '__main__':
     import os, sys, sha
@@ -124,9 +150,10 @@ if __name__ == '__main__':
     fileid, filealias = uploader.addFile(name, size, fileobj,
                                          contentType='test/test', digest=digest)
     print 'Done.  File ID:',  fileid
+    print 'File AliasID:', filealias
 
     downloader = FileDownloadClient('localhost', 8000)
     fp = downloader.getFile(fileid, filealias, name)
     print 'First 50 bytes:', repr(fp.read(50))
     print
-    print downloader.findByDigest('b61a38a7322e78fe54edf93eb4cc2747fda96678')
+    print downloader.findByDigest(digest)

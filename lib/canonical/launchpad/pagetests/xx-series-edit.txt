@@ -1,0 +1,32 @@
+
+
+  >>> print http(r"""
+  ... GET /doap/projects/mozilla/firefox/+series/1.0/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/doap/projects/mozilla/firefox/+series/1.0
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+      <h1>Edit ...
+      Release Series Details</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /doap/projects/mozilla/firefox/+series/1.0/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 236
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/doap/projects/mozilla/firefox/+series/1.0/+edit
+  ... 
+  ... displayname=1.0+Stable+Releases&shortdesc=This+is+the+1.0+release+series+of+Mozilla+Firefox.+The+1.0+series+is+the+first+%22stable%22+branch+that+is+considered+suitable+for+very+widespread+end-user+desktop+adoption.&Update=Update+Series""")
+  HTTP/1.1 303 See Other
+  ...
+  Content-Type: text/html;charset=utf-8
+  Location: http://localhost:9000/doap/projects/mozilla/firefox/+series/1.0
+  ...
+      <h1>Edit ...
+      Release Series Details</h1>
+  ...

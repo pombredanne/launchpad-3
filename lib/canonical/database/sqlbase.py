@@ -67,6 +67,9 @@ class SQLBase(SQLOS):
             self._dirty = value
     dirty = property(SQLOS._get_dirty, _set_dirty)
 
+    def __int__(self):
+        '''Cast to integer, returning the primary key value'''
+        return self.id
 
 def quote(x):
     r"""Quote a variable ready for inclusion into an SQL statement.

@@ -63,56 +63,6 @@
         />
     </content>
 
-    <content class="canonical.launchpad.database.ProjectSet">
-        <allow interface="canonical.launchpad.interfaces.IProjectSet" />
-    </content>
-
-    <utility
-        factory="canonical.launchpad.database.ProjectSet"
-        provides="canonical.launchpad.interfaces.IProjectSet"
-        />
-
-    <content class="canonical.launchpad.database.Project">
-        <allow interface="canonical.launchpad.interfaces.IProject" />
-        <require
-            permission="zope.View"
-            set_schema="canonical.launchpad.interfaces.IProject"
-        />
-    </content>
-
-    <content class="canonical.launchpad.database.Product">
-        <allow interface="canonical.launchpad.interfaces.IProduct" />
-        <require
-            permission="zope.View"
-            set_schema="canonical.launchpad.interfaces.IProduct"
-        />
-    </content>
-
-    <content class="canonical.launchpad.database.Sourcepackage">
-        <allow interface="canonical.launchpad.interfaces.ISourcepackage" />
-    </content>
-
-    <content class="canonical.launchpad.database.SourcepackageName">
-        <allow interface="canonical.launchpad.interfaces.ISourcepackageName" />
-    </content>
-
-    <content class="canonical.launchpad.database.Binarypackage">
-        <allow interface="canonical.launchpad.interfaces.IBinarypackage" />
-    </content>
-
-    <content class="canonical.launchpad.database.BinarypackageName">
-        <allow interface="canonical.launchpad.interfaces.IBinarypackageName" />
-    </content>
-
-    <content class="canonical.launchpad.database.Person">
-        <allow interface="canonical.launchpad.interfaces.IPerson"/>
-	<require
-	permission="zope.Public"
-	set_attributes="password"
-	/>
-
-    </content>
-
     <adapter for="canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal"
         provides="canonical.launchpad.interfaces.IPerson"
         factory="canonical.launchpad.database.personFromPrincipal" />

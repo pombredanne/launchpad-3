@@ -26,7 +26,7 @@
 <div class="portalMessage" tal:condition="result" tal:content="result"> MESSAGE </div>
 </tal:block>
 <br>
-<h2> Reset password</h2>
+<h1> Reset password</h1>
 <br>
 <div tal:condition="view/success" tal:content="result"> MESSAGE </div>
 
@@ -35,19 +35,20 @@
     Account details
   </legend>
   <form name="chpasswd" method="POST">
-    <label for="__ac_email">Email address</label>
+  <div class="field">
+    <label>Email address</label>
     <br>
     <div class="formHelp">Enter the email address you used to request a new password.</div>
     <input type="text" size="50" name="email" tal:attributes="value request/email|nothing" />
     <br>
 
-    <label for="__ac_email">Password</label>
+    <label>Password</label>
     <br>
     <div class="formHelp"> Type your new password </div>
     <input type="password" size="30" name="password" tal:attributes="value request/password|nothing" />
     <br>
 
-    <label for="__ac_email">Confirm password</label>
+    <label>Confirm password</label>
     <br>
     <div class="formHelp"> Re-type your new password </div>
     <input type="password" size="30" name="repassword" tal:attributes="value request/repassword|nothing" />
@@ -56,6 +57,7 @@
       <input class="context" tabindex="4" type="submit" value="Submit"/>
       <input class="context" tabindex="4" type="reset" value="Cancel"/>
     </div>
+  </div>
   </form>
 
 </fieldset>

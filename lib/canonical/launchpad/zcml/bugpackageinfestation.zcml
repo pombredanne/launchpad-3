@@ -1,0 +1,77 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- This is class BugPackageInfestation -->
+
+    <!-- CONTENT CLASSES -->
+    <content class="canonical.launchpad.database.BugPackageInfestation">
+        <allow interface="canonical.launchpad.interfaces.IBugPackageInfestation" />
+        <allow
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
+            />
+        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IBugPackageInfestation" />
+    </content>
+
+    <content class="canonical.malone.browser.BugPackageInfestationContainer">
+        <allow interface="canonical.launchpad.interfaces.IBugPackageInfestationContainer" />
+        <allow
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
+            />
+    </content>
+
+    <!-- UTILITY DECLARATION-->
+
+    <!-- VOCABULARIES -->
+
+    <!--TRAVERSALS-->
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
+        getter="__getitem__" />
+
+    <!--BROWSER DEFAULTVIEWS-->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugPackageInfestation"
+        name="+index" />
+
+    <browser:defaultView
+       for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
+       name="index" />
+
+    <!--PAGE DECLARATIONS-->
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
+        permission="zope.Public">
+        <browser:page name="index"
+            template="../templates/bugpackageinfestations-index.pt"
+            lp:url="malone/bugs/$Bug.id/bugpackageinfestations/index" />
+    </browser:pages>
+
+    <!--FORMS-->
+    <browser:addform
+        name="+new"
+        schema="canonical.launchpad.interfaces.IBugPackageInfestation"
+        for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
+        label="Add Infested Package Release"
+        fields="sourcepackagerelease infestationstatus"
+        content_factory="canonical.malone.browser.BugPackageInfestationFactory"
+        arguments=""
+        keyword_arguments="sourcepackagerelease infestationstatus"
+        permission="launchpad.AnyPerson"
+        template="../templates/default-addform.pt"
+        lp:url="malone/bugs/$Bug.id/packageinfestations/+new" />
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IBugPackageInfestation"
+        schema="canonical.launchpad.interfaces.IBugPackageInfestation"
+        fields="sourcepackagerelease infestationstatus"
+        label="Edit Infested Package Release"
+        permission="launchpad.AnyPerson"
+        template="../templates/default-editform.pt"
+        lp:url="malone/bugs/$Bug.id/packageinfestations/$BugPackageInfestation.id/+edit" />
+
+</configure>

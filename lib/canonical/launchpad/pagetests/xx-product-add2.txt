@@ -1,0 +1,45 @@
+
+
+  >>> print http(r"""
+  ... GET /doap/projects/mozilla/+newproduct HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/doap/projects/mozilla
+  ... """)
+  HTTP/1.1 200 Ok
+  ...	
+  Content-Type: text/html;charset=utf-8
+  ...
+      <h1>Register a New Product for: ...</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /doap/projects/mozilla/+newproduct HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 778
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/doap/projects/mozilla/+newproduct
+  ... 
+  ... name=test2&displayname=Test+2+Product&title=Title+of+Test+Test&shortdesc=short+description+of+the+thing+goes+here&description=this+is+a+longer+complete+description.+hslkj+hdjh+lkjd+kjh+lkjh+lkjhsdfsd+fdf+sdf+zsdf+sd+hslkj+hdjh+lkjd+kjh+lkjh+lkjhsdfsd+fdf+sdf+zsdf+sdhslkj+hdjh+lkjd+kjh+lkjh+lkjhsdfsd+fdf+sdf+zsdf+sdhslkj+hdjh+lkjd+kjh+lkjh+lkjhsdfsd+fdf+sdf+zsdf+sdhslkj+hdjh+lkjd+kjh+lkjh+lkjhsdfsd+fdf+sdf+zsdf+sdhslkj+hdjh+lkjd+kjh+lkjh+lkjhsdfsd+fdf+sdf+zsdf+sdhslkj+hdjh+lkjd+kjh+lkjh+lkjhsdfsd+fdf+sdf+zsdf+sdhslkj+hdjh+lkjd+kjh+lkjh+lkjhsdfsd+fdf+sdf+zsdf+sdhslkj+hdjh+lkjd+kjh+lkjh+lkjhsdfsd+fdf+sdf+zsdf+sdhslkj+hdjh+lkjd+kjh+lkjh+lkjhsdfsd+fdf+sdf+zsdf+sdhslkj+hdjh+lkjd+kjh+lkjh+lkjhsdfsd+fdf+sdf+zsdf+sd&homepageurl=http%3A%2F%2Furl.com%2F&Register=Register+Product""")
+  HTTP/1.1 303 See Other
+  ...
+  Content-Type: text/html;charset=utf-8
+  Location: test2
+  ...
+      <h1>Register a New Product for: ...</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /doap/projects/mozilla/test2 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/doap/projects/mozilla/+newproduct
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+      <h1>...</h1>
+  ...
+
+

@@ -8,10 +8,10 @@ import unittest
 
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.launchpad.interfaces import ILanguages
+from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database import Project
 from canonical.launchpad.database import Person, POTemplate, \
-    Product, Languages
+    Product, LanguageSet
 from canonical.rosetta.poexport import POExport
 import canonical.lp
 
@@ -154,7 +154,7 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
     def setUp(self):
         super(POExportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
-        utilityService.provideUtility(ILanguages, Languages(), '')
+        utilityService.provideUtility(ILanguageSet, LanguageSet(), '')
         canonical.lp.initZopeless()
 
     def testPoExportAdapter(self):

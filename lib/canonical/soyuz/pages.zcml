@@ -257,11 +257,16 @@
 	  allowed_attributes="results"
 	  permission="zope.Public">
 
-	<page  name="+list"
-          template="../launchpad/templates/people-list.pt"
-	  lp:url="Soyuz/people/+list"
-	/>
    </pages>
+
+  <page  for="canonical.soyuz.sql.PeopleApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.PeopleListView"
+	 name="+list"
+         template="../launchpad/templates/people-list.pt"
+	 lp:url="Soyuz/people/+list"
+       />
+
 
   <page for="canonical.soyuz.sql.PeopleApp"
          permission="zope.Public"
@@ -375,6 +380,11 @@
           template="../launchpad/templates/binarypackagerelease-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/index.html"
 	/>
+
+	<page  name="+license"
+          template="../launchpad/templates/binarypackagerelease-license.pt"
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/+license"
+	/>
    </pages>
 
    <pages for="canonical.soyuz.sql.DistroReleaseBinaryReleaseBuildApp"
@@ -383,7 +393,7 @@
 
 	<page  name="index.html"
           template="../launchpad/templates/binarypackagebuild-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/index.html"
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/$archtag/index.html"
 	/>
    </pages>
 

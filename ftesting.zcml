@@ -7,7 +7,6 @@
   <include package="canonical" />
 
   <include files="package-includes/*-meta.zcml" />
-
   <include files="package-includes/*-configure.zcml" />
   <!-- Don't want overrides - tests should run in a predictable environment -->
   <!-- <includeOverrides file="override-meta.zcml" /> -->
@@ -21,7 +20,7 @@
   <rdb:provideConnection
       name="launchpad"
       component="psycopgda.adapter.PsycopgAdapter"
-      dsn="dbi://launchpad_unittest" />
+      dsn="dbi://launchpad_test" />
 
   <sqlos:connectionName name="launchpad" />
 

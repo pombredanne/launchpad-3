@@ -1,0 +1,131 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<!-- This is an EXAMPLE of an EDIT page -->
+
+<div metal:fill-slot="main">
+
+    <!--
+    This tal:dummy block never turns into HTML, but it triggers the edit
+    method on the EXAMPLEView class. This checks to see if a form has been
+    submitted to it, and if so updates the product.
+    -->
+    <tal:dummy condition="view/edit" />
+
+    <h1>Edit "<span
+    tal:content="context/displayname">$EXAMPLE.displayname</span>" Example
+    Details</h1>
+
+    <div class="documentDescription">
+    Please edit the "example" details below for <span
+    tal:content="context/displayname">$Example.displayname</span>.
+    </div>
+
+    <fieldset>
+
+        <legend>Example Details</legend>
+
+        <form action="+edit" method="post">
+
+        <div class="field">
+
+            <label>Display Name</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    The "display name" of the EXAMPLE is a short name,
+                    appropriately capitalised, for this product. For
+                    example, if you were referring to this EXAMPLE in a
+                    paragraph of text, you would use this name. Examples:
+                    <i>EXAMPLE</i>, <i>Foo</i>, <i>Bar</i>.
+                  </div>
+
+                <input type="text" name="displayname" size="30"
+                       value="" tal:attributes="value context/displayname" />
+        </div>
+
+        <div class="field">
+
+            <label>Title</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    This is the full title of the EXAMPLE, can contain
+                    spaces, special characters etc. This is what you would
+                    imagine seeing at the top of a page about the EXAMPLE.
+                    For example, <i>The Apache Web Server</i>, <i>The
+                    Mozilla Firefox Web Browser</i>.
+                  </div>
+
+                <input type="text" name="title" size="50"
+                       value="" tal:attributes="value context/title" />
+        </div>
+
+        <div class="field">
+
+            <label>Short Description</label>
+
+                  <div class="formHelp">
+                    A single paragraph introduction or overview of this
+                    EXAMPLE. For example: <i>Mozilla Firefox is the most
+                    popular open source web browser, with excellent support
+                    for web standards as well as many extensions and
+                    plugins.</i>
+                  </div>
+
+                <textarea cols="40" rows="3" name="shortdesc" 
+                          tal:content="context/shortdesc">
+                </textarea>
+        </div>
+        
+        <div class="field">
+
+            <label>Complete Description</label>
+
+                  <div class="formHelp">
+                    A full description of the EXAMPLE. This should continue
+                    from the short description above, and add more details
+                    of the EXAMPLE highlights and features.
+                  </div>
+
+                <textarea cols="40" rows="7" name="description"
+                          tal:content="context/description">
+                </textarea>
+        </div>
+
+        <div class="formControls">
+
+            <!--
+            NB the name and value of the submit field below are essential to
+            clue the ProductView.edit() method in that the form has been
+            submitted.
+            -->
+            <input class="context" type="submit"
+                   name="Update"
+                   value="Update EXAMPLE" />
+
+        </div>
+        </form>
+
+
+    </fieldset>
+
+</div>
+
+</body>
+</html>

@@ -6,12 +6,13 @@
             <th>Priority</th>
             <th>Severity</th>
             <th>Binary</th>
+            <th>Assignee</th>
         </tr>
         <tr tal:repeat="bugass context/sourceassignment"
             tal:attributes="onclick string:window.location='sourcepackageassignments/${bugass/id}/+edit';">
-	    <td tal:content="bugass/sourcepackage/sourcepackagename/name">
-	    	$SourcepackageName.name
-	    </td>
+        <td tal:content="bugass/sourcepackage/sourcepackagename/name">
+            $SourcepackageName.name
+        </td>
             <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
                 $ProductBugAssignment.bugstatus
             </td>
@@ -23,17 +24,19 @@
             </td>
             <td>
                 <span
-                    tal:omit-tag="" tal:condition="bugass/binarypackagename"
-                    tal:content="bugass/binarypackagename">
+                    tal:omit-tag=""
+                    tal:condition="bugass/binarypackagename"
+                    tal:content="bugass/binarypackagename/name">
                     $BinarypackageName.name
                 </span>
-                <span tal:omit-tag=""
-                tal:condition="not:bugass/binarypackagename">
+                <span
+                    tal:omit-tag=""
+                    tal:condition="not:bugass/binarypackagename">
                     (none)
                 </span>
             </td>
         </tr>
     </table>
-    [ <a href="sourcepackageassignments/+new">Assign Bug to Source
-    Package</a> ]
+    [ <a href="sourcepackageassignments/+new">Assign Bug to Source Package</a> ]
 </div>
+

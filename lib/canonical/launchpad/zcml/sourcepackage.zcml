@@ -1,0 +1,41 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- This is class SourcePackageRelease -->
+    <!-- CONTENT CLASSES -->
+    <content class="canonical.soyuz.sql.SourcePackageRelease">
+      <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
+      <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+<!--
+    <content class="canonical.launchpad.database.SourcePackageRelease">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease" />
+        <allow
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+        <require
+            permission="zope.View"
+            set_schema="canonical.launchpad.interfaces.ISourcePackageRelease" />
+    </content>
+-->
+
+    <!-- UTILITY DECLARATION-->
+
+    <!-- VOCABULARIES -->
+    <vocabulary
+        name="PackageRelease"
+        factory="canonical.launchpad.vocabulary.PackageReleaseVocabulary" />
+
+    <!--TRAVERSALS-->
+
+    <!--BROWSER DEFAULTVIEWS-->
+
+    <!--PAGE DECLARATIONS-->
+
+    <!--FORMS-->
+
+</configure>

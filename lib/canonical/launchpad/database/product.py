@@ -11,13 +11,13 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
-import canonical.launchpad.interfaces as interfaces
 from canonical.launchpad.interfaces import *
 
-#
-# XXX Mark Shuttleworth 06/10/06 till we sort out database locations and
-#     import sequence
 from canonical.launchpad.database.sourcesource import SourceSource
+from canonical.launchpad.database.productseries import ProductSeries
+from canonical.launchpad.database.productrelease import ProductRelease
+from canonical.launchpad.database.pofile import POTemplate
+from canonical.launchpad.interfaces.product import IProduct
 
 class Product(SQLBase):
     """A Product."""
@@ -26,39 +26,69 @@ class Product(SQLBase):
 
     _table = 'Product'
 
-    _columns = [
-        ForeignKey(
-                name='project', foreignKey="Project", dbName="project",
-                notNull=True
-                ),
-        ForeignKey(
-                name='owner', foreignKey="Product", dbName="owner",
-                notNull=True
-                ),
-        StringCol('name', notNull=True),
-        StringCol('displayname', notNull=True),
-        StringCol('title', notNull=True),
-        StringCol('shortdesc', notNull=True),
-        StringCol('description', notNull=True),
-        DateTimeCol('datecreated', notNull=True),
-        StringCol('homepageurl', notNull=False, default=None),
-        StringCol('screenshotsurl', notNull=False, default=None),
-        StringCol('wikiurl', notNull=False, default=None),
-        StringCol('programminglang', notNull=False, default=None),
-        StringCol('downloadurl', notNull=False, default=None),
-        StringCol('lastdoap', notNull=False, default=None),
-        ]
+    #
+    # db field names
+    #
+    project = ForeignKey(foreignKey="Project", dbName="project",
+                         notNull=True)
+                         
+    owner = ForeignKey(foreignKey="Person", dbName="owner",
+                       notNull=True)
 
+    name = StringCol(dbName='name', notNull=True)
+
+    displayname = StringCol(dbName='displayname', notNull=True)
+
+    title = StringCol(dbName='title', notNull=True)
+
+    shortdesc = StringCol(dbName='shortdesc', notNull=True)
+
+    description = StringCol(dbName='description', notNull=True)
+
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+
+    homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
+    
+    screenshotsurl = StringCol(dbName='screenshotsurl', notNull=False, default=None)
+    
+    wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
+
+    programminglang = StringCol(dbName='programminglang', notNull=False, default=None)
+    
+    downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
+    
+    lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
+
+    #
+    # useful Joins
+    #
     _poTemplatesJoin = MultipleJoin('POTemplate', joinColumn='product')
 
     bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
 
     sourcesources = MultipleJoin('SourceSource', joinColumn='product')
 
-    sourcepackages = RelatedJoin('Sourcepackage', joinColumn='product',
+    sourcepackages = RelatedJoin('SourcePackage', joinColumn='product',
                            otherColumn='sourcepackage',
                            intermediateTable='Packaging')
 
+    serieslist = MultipleJoin('ProductSeries', joinColumn='product')
+
+    releases = MultipleJoin('ProductRelease', joinColumn='product',
+                             orderBy='-datereleased')
+
+
+    def newseries(self, form):
+        # Extract the details from the form
+        name = form['name']
+        displayname = form['displayname']
+        shortdesc = form['shortdesc']
+        # Now create a new series in the db
+        series = ProductSeries(name=name,
+                          displayname=displayname,
+                          shortdesc=shortdesc,
+                          product=self.id)
+        return series
 
 
     def newSourceSource(self, form, owner):
@@ -150,4 +180,8 @@ class Product(SQLBase):
         for t in self.poTemplates():
             count += t.rosettaCount(language)
         return count
+
+    def getRelease(self, version):
+        return ProductRelease.selectBy(productID=self.id, version=version)[0]
+
 

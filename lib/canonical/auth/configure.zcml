@@ -3,44 +3,81 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     >
 
-  <!-- Content directives.  We need to make sure SubURLs and other kinds of
-       traversal work properly.  We also need to make security declarations.
+  <!-- This directive says that the 'main_template' for the UbuntuLinuxLayer
+       will be the template ul-main-template.pt.
     -->
-  <content class="canonical.auth.AuthApplication">
-    <!--<allow attributes="__call__ foo"/>-->
-    <implements interface="canonical.publication.IHasSuburls"/>
-  </content>
-
-  <content class="canonical.auth.app.UbuntuLinuxSite">
-    <!--<allow attributes="__call__ foo"/>-->
-    <implements interface="canonical.publication.IHasSuburls"/>
-  </content>
-
   <browser:page
       for="*" 
       permission="zope.Public"
       name="main_template"
       template="../launchpad/templates/ul-main-template.pt"
-      layer="canonical.launchpad.skins.ubuntulinux"
-   />
+      layer="canonical.launchpad.layers.UbuntuLinuxLayer"
+     />
 
-  <!-- This view registers 'auth' as a suburl of RootObject. -->
+
+  <!-- UbuntuLinuxSite objects.
+       Within this site, the layer will be the UbuntuLinuxLayer.
+    -->
+  <content class="canonical.auth.UbuntuLinuxSite">
+    <implements interface="canonical.publication.IHasSuburls"/>
+  </content>
+
   <browser:suburl
       for="canonical.publication.RootObject"
-      class="canonical.auth.app.UbuntuLinuxSite"
+      class="canonical.auth.UbuntuLinuxSite"
       permission="zope.Public"
       name="ubuntulinux"
-      newskin="canonical.launchpad.skins.ubuntulinux"
+      newlayer="canonical.launchpad.layers.UbuntuLinuxLayer"
       />
 
+
+  <!-- AuthApplication objects. -->
+
+  <content class="canonical.auth.AuthApplication">
+    <allow interface="canonical.launchpad.interfaces.IAuthApplication"/>
+    <implements interface="canonical.publication.IHasSuburls"/>
+  </content>
+
   <browser:suburl
-      for="canonical.auth.app.UbuntuLinuxSite"
+      for="canonical.auth.UbuntuLinuxSite"
       class="canonical.auth.AuthApplication"
       permission="zope.Public"
       name="forgottenpassword"
       />
 
-  <include file="pages.zcml" />
-  <include file="app.zcml" />
+  <browser:traverse
+      for="canonical.auth.AuthApplication"
+      getter="__getitem__"
+      />
+
+  <browser:page
+      for="canonical.auth.AuthApplication"
+      name="index.html"
+      template="../launchpad/templates/auth-index.pt"
+      permission="zope.Public"
+      class="canonical.auth.browser.SendPasswordToEmail"
+      />
+
+
+  <!-- PasswordChangeApp objects. -->
+
+  <content class="canonical.auth.PasswordChangeApp">
+    <allow interface="canonical.launchpad.interfaces.IPasswordChangeApp"/>
+  </content>
+
+  <browser:page
+      for="canonical.auth.PasswordChangeApp"
+      name="index.html"
+      permission="zope.Public"
+      class="canonical.auth.browser.ChangeEmailPassword"
+      template="../launchpad/templates/passwd-change.pt"
+      />
+
+
+  <!-- PasswordResets objects. -->
+
+  <content class="canonical.auth.PasswordResets">
+    <allow interface="canonical.launchpad.interfaces.IPasswordResets"/>
+  </content>
 
 </configure>

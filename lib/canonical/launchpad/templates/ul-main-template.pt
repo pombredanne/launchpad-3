@@ -10,13 +10,6 @@
                       xml:lang default_language|default;">
   <head>
     <metal:block define-slot="title"></metal:block>
-    <!-- Plone style sheet -->
-    <!--     <style type="text/css" media="screen">@import url(++resource++plone.css);</style> -->
-    <!-- Rosetta style sheet -->
-    <!--     <style type="text/css" media="screen">@import url(++resource++launchpad.css);</style> -->
-    <!-- Launchpad JS code -->
-    <!--     <script type="text/javascript" src="++resource++launchpad.js"></script> -->
-
     <style type="text/css" media="all">@import url(http://www.ubuntulinux.org/ploneColumns.css);</style>
 
     <style type="text/css" media="screen"> @import url(http://www.ubuntulinux.org/plone.css);</style> 
@@ -36,21 +29,21 @@
 
     
           <li id="siteaction-small_text"><a
-	  href="javascript:setActiveStyleSheet('Small Text', 1);"
-	  title="Small Text">Small Text</a></li>
-	  <li id="siteaction-normal_text"><a
-	  href="javascript:setActiveStyleSheet('', 1);"
-	  title="Normal Text">Normal Text</a></li>
-	  <li id="siteaction-large_text"><a
-	  href="javascript:setActiveStyleSheet('Large Text', 1);"
-	  title="Large Text">Large Text</a></li>
+          href="javascript:setActiveStyleSheet('Small Text', 1);"
+          title="Small Text">Small Text</a></li>
+          <li id="siteaction-normal_text"><a
+          href="javascript:setActiveStyleSheet('', 1);"
+          title="Normal Text">Normal Text</a></li>
+          <li id="siteaction-large_text"><a
+          href="javascript:setActiveStyleSheet('Large Text', 1);"
+          title="Large Text">Large Text</a></li>
     
        </ul>
 
        <div id="portal-searchbox">
          <form name="searchform"
-	 action="http://www.ubuntulinux.org/search">
-	   <label for="searchGadget" class="hiddenStructure">Search</label>
+         action="http://www.ubuntulinux.org/search">
+           <label for="searchGadget" class="hiddenStructure">Search</label>
 
         <input id="searchGadget" name="SearchableText"
                type="text" size="20" alt="Search"
@@ -58,7 +51,7 @@
                class="visibility:visible" tabindex="30001" />
         <input class="searchButton" type="submit"
                value="Search" accesskey="s" tabindex="30002" />
-	 </form>
+         </form>
        </div>
 
        <h1 id="portal-logo">
@@ -69,24 +62,6 @@
 
     </div>
 
-
-
-<!--       <div id="portal-top" -->
-<!--            tal:define="path_info request/PATH_INFO"> -->
-<!--                <a href="/rosetta" -->
-<!--                   tal:condition="python:'/rosetta' in path_info"> -->
-<!--                    <img src="++resource++rosetta.png" alt="Rosetta" /> -->
-<!--                </a> -->
-<!--                <a href="/malone" -->
-<!--                   tal:condition="python:'/malone' in path_info"> -->
-<!--                    <img src="++resource++malone.png" alt="Malone" /> -->
-<!--                </a> -->
-<!--                <a href="/soyuz" -->
-<!--                   tal:condition="python:'/soyuz' in path_info"> -->
-<!--                    <img src="++resource++soyuz.png" alt="Soyuz" /> -->
-<!--                </a> -->
-<!--       </div> -->
-      
           <ul id="portal-globalnav"
               tal:define="path_info request/PATH_INFO">
 
@@ -120,23 +95,6 @@
 
           </ul>
 
-<!--       <div id="portal-personaltools"> -->
-
-<!--         <span tal:condition="request/lp:person"> -->
-<!--             Logged in as -->
-<!--             <span tal:replace="request/lp:person/displayname">NAME</span> -->
-<!--         </span> -->
-
-<!--         <span tal:condition="not: request/lp:person"> -->
-<!--             Not logged in. -->
-<!--             <a href="http://www.ubuntulinux.org/login_form" -->
-<!--                accesskey="u"> -->
-<!--                Log in -->
-<!--             </a> -->
-<!--         </span> -->
-
-<!--       </div> -->
-
      <ul id="portal-personaltools">
 
        <li class="portalNotLoggedIn">
@@ -144,26 +102,31 @@
        </li>
     
        <li>
-          <a href="http://www.ubuntulinux.org/login_form"
+          <a href="https://www.ubuntulinux.org/login_form"
              accesskey="u">
              Log in
           </a>
        </li>
 
      </ul>
-
       <div id="portal-breadcrumbs">
         You are here:
-        <span tal:define="parts python:request.get('PATH_INFO').split('/')"
-            tal:repeat="crumb parts">
+        <span>
 
-            <span tal:condition="
-                    python: crumb and not crumb.startswith('++')">
-                <a tal:attributes="href
-                        python:'/'.join(parts[0:repeat['crumb'].number()])"
-                    tal:content="crumb">home</a>
-                <span tal:condition="not:repeat/crumb/end"
-                    class="breadcrumbSeparator"> &raquo; </span>
+            
+        </span>
+
+        <span>
+
+            <span>
+                <a href="https://ubuntulinux.org/">ubuntulinux</a>
+                <span class="breadcrumbSeparator"> &raquo; </span>
+            </span>
+        </span>
+        <span>
+
+            <span>
+                <a href="https://ubuntulinux.org/forgottenpassword/">forgottenpassword</a>
             </span>
         </span>
       </div>
@@ -216,32 +179,32 @@
       <metal:block>
         <div id="portal-footer">
             &copy 
-	    2004
-	    <a href="http://www.canonical.com"> Canonical Ltd.</a> 
-	    Ubuntu and Canonical are trademarks of Canonical Ltd. <br />
-	    <a href=" http://www.ubuntulinux.org/feedback">Feedback</a> &mdash; 
-	    <a href=" http://www.ubuntulinux.org/legal">Legal</a> &mdash; 
-	    <a href=" http://www.ubuntulinux.org/sitemap">Site Map</a>
+            2004
+            <a href="http://www.canonical.com"> Canonical Ltd.</a> 
+            Ubuntu and Canonical are trademarks of Canonical Ltd. <br />
+            <a href=" http://www.ubuntulinux.org/feedback">Feedback</a> &mdash; 
+            <a href=" http://www.ubuntulinux.org/legal">Legal</a> &mdash; 
+            <a href=" http://www.ubuntulinux.org/sitemap">Site Map</a>
         </div>
 
    <div id="portal-colophon">
 
       <!--
 
-	Please keep the Plone Powered button (or a textual link to us) if you use
-	Plone on your site. It's a nice token of gratitude, and we appreciate your
-	help in promoting the Plone name.
+        Please keep the Plone Powered button (or a textual link to us) if you use
+        Plone on your site. It's a nice token of gratitude, and we appreciate your
+        help in promoting the Plone name.
 
-	Plone is powered by the combined forces of Zope and CMF, two absolutely
-	great systems made by Zope Corporation (http://zope.com) and they in turn
-	are based on the best programming language in the world - Python
-	(http://www.python.org). We owe these guys a lot, thanks for making Plone
-	possible!
+        Plone is powered by the combined forces of Zope and CMF, two absolutely
+        great systems made by Zope Corporation (http://zope.com) and they in turn
+        are based on the best programming language in the world - Python
+        (http://www.python.org). We owe these guys a lot, thanks for making Plone
+        possible!
 
       -->
 
       <a href="http://plone.org">
-	<img src="http://www.ubuntulinux.org/plone_powered.gif"
+        <img src="http://www.ubuntulinux.org/plone_powered.gif"
       height="15" width="80" alt="Powered by Plone"
       title="This Plone site was built using the Plone Content Management System. Click for more information." />
       </a>
@@ -249,49 +212,49 @@
       
 
       <p class="discreet">
-	This site conforms to the following standards:
+        This site conforms to the following standards:
       </p>
 
       <ul>
 
-	<li>
-	  <a href="http://www.section508.gov">
-	    <img src="http://www.ubuntulinux.org/colophon_sec508.gif"
+        <li>
+          <a href="http://www.section508.gov">
+            <img src="http://www.ubuntulinux.org/colophon_sec508.gif"
           height="15" width="80" alt="Section 508"
           title="This Plone site conforms to the US Government Section 508 Accessibility Guidelines." />
-	  </a>
-	</li>
-	<li>
-	  <a href="http://www.w3.org/WAI/WCAG1AA-Conformance"
+          </a>
+        </li>
+        <li>
+          <a href="http://www.w3.org/WAI/WCAG1AA-Conformance"
       title="Explanation of WCAG Conformance">
-	    <img src="http://www.ubuntulinux.org/colophon_wai-aa.gif"
+            <img src="http://www.ubuntulinux.org/colophon_wai-aa.gif"
           height="15" width="80" alt="WCAG"
           title="This Plone site conforms to the W3C-WAI Web Content Accessibility Guidelines." />
-	  </a>
+          </a>
 
-	</li>
-	<li>
-	  <a href="http://validator.w3.org/check/referer">
-	    <img src="http://www.ubuntulinux.org/colophon_xhtml.png"
+        </li>
+        <li>
+          <a href="http://validator.w3.org/check/referer">
+            <img src="http://www.ubuntulinux.org/colophon_xhtml.png"
           height="15" width="80" alt="Valid XHTML"
           title="This Plone site is valid XHTML." />
-	  </a>
-	</li>
-	<li>
-	  <a href="http://jigsaw.w3.org/css-validator/check/referer">
-	    <img src="http://www.ubuntulinux.org/colophon_css.png"
+          </a>
+        </li>
+        <li>
+          <a href="http://jigsaw.w3.org/css-validator/check/referer">
+            <img src="http://www.ubuntulinux.org/colophon_css.png"
           height="15" width="80" alt="Valid CSS"
           title="This Plone site was built with valid CSS." />
 
-	  </a>
-	</li>
-	<li>
-	  <a href="http://plone.org/browsersupport">
-	    <img src="http://www.ubuntulinux.org/colophon_anybrowser.png"
+          </a>
+        </li>
+        <li>
+          <a href="http://plone.org/browsersupport">
+            <img src="http://www.ubuntulinux.org/colophon_anybrowser.png"
           height="15" width="80" alt="Usable in any browser"
           title="This Plone site is usable in any web browser." />
-	  </a>
-	</li>
+          </a>
+        </li>
       </ul>
 
     </div>

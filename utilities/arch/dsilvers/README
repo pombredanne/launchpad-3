@@ -13,3 +13,5 @@ tla-mirror-here: finds the tree-version of the tree you're in and does a
 tla-star-merge-here: checks the tree is tree-lint clean. Then hives off any
                      uncommitted changes to an undo tree; does the star-merge
                      commits the star-merge and then redoes any undo it made.
+
+hive: Utility to handle multiple undo sets in a cute way

@@ -24,7 +24,7 @@ class RosettaProject:
         self.context = context
 
     def product(self, name):
-        for p in self.context.rosettaProducts():
+        for p in self.context.products():
             if p.name == name:
                 return p
 

@@ -1,0 +1,17 @@
+<div>
+    <table class="listing rowNavigation">
+        <tr>
+            <th>Source Package</th>
+            <th>Infestation</th>
+        </tr>
+        <tr tal:repeat="pkginfest context/packageinfestations"
+            tal:attributes="onclick
+            string:window.location='packageinfestations/${pkginfest/id}/+edit';">
+            <td tal:content="pkginfest/sourcepackagerelease/version">$Product.title</td>
+            <td tal:content="pkginfest/infestationstatus/lp:BugInfestationStatus">
+                $ProductBugAssignment.bugstatus
+            </td>
+        </tr>
+    </table>
+    [ <a href="packageinfestations/+new">Add an Infested Source Package Release</a> ]
+</div>

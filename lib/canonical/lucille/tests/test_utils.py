@@ -44,9 +44,9 @@ class TestUtilities(unittest.TestCase):
     def testBuildFileListFromChanges(self):
         """canonical.lucille.utils.build_file_list should be capable of reading changes files"""
         from canonical.lucille.utils import build_file_list
-        from canonical.lucille.TagFiles import parse_changes
+        from canonical.lucille.TagFiles import parse_tagfile
 
-        ch = parse_changes( "data/good-signed-changes" )
+        ch = parse_tagfile( "data/good-signed-changes" )
         fl = build_file_list( ch )
         self.assertEquals( "abiword_2.0.10-1.2_mips.deb" in fl, True )
 

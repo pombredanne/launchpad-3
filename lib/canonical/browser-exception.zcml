@@ -2,7 +2,7 @@
    xmlns:zope="http://namespaces.zope.org/zope"
    xmlns="http://namespaces.zope.org/browser">
 
-  <page 
+  <page
       for="zope.interface.common.interfaces.IException"
       name="index.html"
       template="launchpad/templates/default-error.pt"
@@ -30,6 +30,39 @@
       name="index.html"
       permission="zope.Public"
       template="launchpad/templates/notfound.pt"
+      />
+<!--
+   Commenting out the the debug view on Unauthorized, as we want it to prompt
+   for basic auth.
+
+   Instead, using the normal view on Unauthorized, but in the debug layer.
+
+  <page
+      for="zope.exceptions.IUnauthorized"
+      name="index.html"
+      permission="zope.Public"
+      template="launchpad/templates/debug-unauthorized.pt"
+      class="zope.app.exception.browser.unauthorized.Unauthorized"
+      layer="canonical.launchpad.skins.DebugLayer"
+      />
+  -->
+  <page
+      layer="canonical.launchpad.layers.DebugLayer"
+      for="zope.exceptions.IUnauthorized"
+      name="index.html"
+      permission="zope.Public"
+      template="launchpad/templates/unauthorized.pt"
+      class="zope.app.exception.browser.unauthorized.Unauthorized" 
+      />
+
+<!-- Note: debug view for exceptions. -->
+  <page
+      layer="canonical.launchpad.layers.DebugLayer"
+      name="index.html"
+      template="launchpad/templates/debug-error.pt"
+      for="zope.interface.common.interfaces.IException"
+      class="canonical.publication.DebugView"
+      permission="zope.Public"
       />
 
 </zope:configure>

@@ -2,6 +2,11 @@
 #
 # arch-tag: FA3333EC-E6E6-11D8-B7FE-000D9329A36C
 
+# XXX: 2004-10-08 Brad Bollenbach: I've noticed several hardcodings of
+# owner ID being set to 1 in this module (and to do some quick
+# testing, I've just done the same once more myself.) This needs
+# immediate fixing.
+
 from datetime import datetime
 from email.Utils import make_msgid
 
@@ -14,10 +19,11 @@ from zope.schema import TextLine, Int, Choice
 # Database access objects
 #
 from canonical.launchpad.database import \
-        Sourcepackage, SourcepackageName, Binarypackage, \
-        BugTracker, BugWatch, Product, Person, EmailAddress, \
+        SourcePackage, SourcePackageName, BinaryPackage, \
+        BugTracker, BugsAssignedReport, BugWatch, Product, Person, EmailAddress, \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
-        ProductBugAssignment, SourcepackageBugAssignment
+        ProductBugAssignment, SourcepackageBugAssignment, \
+        BugProductInfestation, BugPackageInfestation
 from canonical.database import sqlbase
 
 #
@@ -35,10 +41,10 @@ from canonical.launchpad.interfaces import \
         IBugMessagesView, IBugExternalRefsView, \
         IMaloneBug, IMaloneBugAttachment, \
         IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
-        IBugSubscriptionContainer, \
-        ISourcepackageContainer, IBugWatchContainer, \
-        IProductBugAssignmentContainer, \
-        ISourcepackageBugAssignmentContainer, IPerson
+        IBugSubscriptionContainer, ISourcepackageContainer, \
+        IBugWatchContainer, IProductBugAssignmentContainer, \
+        ISourcepackageBugAssignmentContainer, IBugProductInfestationContainer, \
+        IBugPackageInfestationContainer, IPerson
 
 
 def traverseBug(bug, request, name):
@@ -54,8 +60,18 @@ def traverseBug(bug, request, name):
         return ProductBugAssignmentContainer(bug=bug.id)
     elif name == 'sourcepackageassignments':
         return SourcepackageBugAssignmentContainer(bug=bug.id)
+    elif name == 'productinfestations':
+        return BugProductInfestationContainer(bug=bug.id)
+    elif name == 'packageinfestations':
+        return BugPackageInfestationContainer(bug=bug.id)
     else:
        raise KeyError, name
+
+def traverseBugs(bugcontainer, request, name):
+    if name == 'assigned':
+        return BugsAssignedReport()
+    else:
+        return BugContainer()[int(name)]
 
 
 def traverseBugAttachment(bugattachment, request, name):
@@ -123,12 +139,12 @@ class MaloneApplicationView(object):
         if self.request.form.has_key('query'):
             # TODO: Make this case insensitive
             s = self.request.form['query']
-            self.results = Sourcepackage.select(AND(
-                Sourcepackage.q.sourcepackagenameID == SourcepackageName.q.id,
+            self.results = SourcePackage.select(AND(
+                SourcePackage.q.sourcepackagenameID == SourcePackageName.q.id,
                 OR(
-                    CONTAINSSTRING(SourcepackageName.q.name, s),
-                    CONTAINSSTRING(Sourcepackage.q.shortdesc, s),
-                    CONTAINSSTRING(Sourcepackage.q.description, s)
+                    CONTAINSSTRING(SourcePackageName.q.name, s),
+                    CONTAINSSTRING(SourcePackage.q.shortdesc, s),
+                    CONTAINSSTRING(SourcePackage.q.description, s)
                     )
                 ))
             self.noresults = not self.results
@@ -150,7 +166,7 @@ class BugContainerBase(object):
             raise KeyError, id
 
     def __iter__(self):
-        for row in self.table.select(self.table.q.bug == self.bug):
+        for row in self.table.select(self.table.q.bugID == self.bug):
             yield row
 
     def add(self, ob):
@@ -190,11 +206,11 @@ class IMaloneBugAddForm(IMaloneBug):
             )
     sourcepackage = Choice(
             title=_("Source Package"), required=False,
-            vocabulary="Sourcepackage",
+            vocabulary="SourcePackage",
             )
     binarypackage = Choice(
             title=_("Binary Package"), required=False,
-            vocabulary="Binarypackage"
+            vocabulary="BinaryPackage"
             )
     owner = Int(title=_("Owner"), required=True)
 
@@ -211,21 +227,21 @@ class MaloneBugAddForm(object):
 class MaloneBugView(object):
     # XXX fix these horrific relative paths
     watchPortlet = ViewPageTemplateFile(
-            '../launchpad/templates/portlet-bug-watch.pt'
-            )
+        '../launchpad/templates/portlet-bug-watch.pt')
     productAssignmentPortlet = ViewPageTemplateFile(
-            '../launchpad/templates/portlet-bug-productassignment.pt'
-            )
+        '../launchpad/templates/portlet-bug-productassignment.pt')
     sourcepackageAssignmentPortlet = ViewPageTemplateFile(
-            '../launchpad/templates/portlet-bug-sourcepackageassignment.pt'
-            )
+        '../launchpad/templates/portlet-bug-sourcepackageassignment.pt')
+    productInfestationPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-bug-productinfestation.pt')
+    packageInfestationPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-bug-sourcepackageinfestation.pt')
     referencePortlet = ViewPageTemplateFile(
             '../launchpad/templates/portlet-bug-reference.pt'
             )
     peoplePortlet = ViewPageTemplateFile(
             '../launchpad/templates/portlet-bug-people.pt'
             )
-
 
 class MaloneBugAttachment(BugAttachment, BugContainerBase):
     implements(IMaloneBugAttachment)
@@ -272,7 +288,7 @@ class BugContainer(BugContainerBase):
     def __iter__(self):
         for row in self.table.select():
             yield row
-    
+
     def add(self, ob):
         '''Add a bug from an IMaloneBugAddForm'''
         kw = {}
@@ -289,20 +305,20 @@ class BugContainer(BugContainerBase):
             product = Product.get(productid)
             pba = ProductBugAssignment(bug=bug, product=product)
 
-        # If the user has specified a sourcepackage, create the 
+        # If the user has specified a sourcepackage, create the
         # SourcepackageBugAssignment. This might also link to the
         # binary package if it was specified.
         sourcepkgid = getattr(ob, 'sourcepackage', None)
         binarypkgid = getattr(ob, 'binarypackage', None)
         if sourcepkgid:
-            sourcepkg = Sourcepackage.get(sourcepkgid)
+            sourcepkg = SourcePackage.get(sourcepkgid)
             if binarypkgid:
-                binarypkg = Binarypackage.get(binarypkgid)
+                binarypkg = BinaryPackage.get(binarypkgid)
             else:
                 binarypkg = None
-            sba = SourcepackageBugAssignment(
+            sba = SourcePackageBugAssignment(
                     bug=bug, sourcepackage=sourcepkg,
-                    binarypackage=binarypkg,
+                    binarypackagename=binarypkg,
                     )
 
         return ob # Return this rather than the bug we created from it,
@@ -313,7 +329,6 @@ class BugContainer(BugContainerBase):
 def BugAdder(object):
     def createAndAdd(self, *args, **kw):
         '''Add a bug from an IMaloneBugAddForm'''
-        import pdb; pdb.set_trace()
         kw = {}
         attrs = ['name', 'title', 'shortdesc', 'description', 'duplicateof',]
         for a in attrs:
@@ -327,15 +342,15 @@ def BugAdder(object):
             product = Product.get(productid)
             pba = ProductBugAssignment(bug=bug, product=product)
 
-        # If the user has specified a sourcepackage, create the 
+        # If the user has specified a sourcepackage, create the
         # SourcepackageBugAssignment. This might also link to the
         # binary package if it was specified.
         sourcepkgid = getattr(ob, 'sourcepackage', None)
         binarypkgid = getattr(ob, 'binarypackage', None)
         if sourcepkgid:
-            sourcepkg = Sourcepackage.get(sourcepkgid)
+            sourcepkg = SourcePackage.get(sourcepkgid)
             if binarypkgid:
-                binarypkg = Binarypackage.get(binarypkgid)
+                binarypkg = BinaryPackage.get(binarypkgid)
             else:
                 binarypkg = None
             sba = SourcepackageBugAssignment(
@@ -381,20 +396,20 @@ def MaloneBugFactory(context, **kw):
 
 class BugAttachmentContainer(BugContainerBase):
     """A container for bug attachments."""
- 
+
     implements(IBugAttachmentContainer)
     table = MaloneBugAttachment
- 
+
     def __init__(self, bug=None):
         self.bug = bug
- 
+
     def __getitem__(self, id):
         try:
             return self.table.select(self.table.q.id == id)[0]
         except IndexError:
             # Convert IndexError to KeyErrors to get Zope's NotFound page
             raise KeyError, id
- 
+
     def __iter__(self):
         for row in self.table.select(self.table.q.bug == self.bug):
             yield row
@@ -449,6 +464,65 @@ def ProductBugAssignmentFactory(context, **kw):
     pba = ProductBugAssignment(bug=context.context.bug, **kw)
     return pba
 
+class BugProductInfestationContainer(BugContainerBase):
+    """A container for BugProductInfestation."""
+    implements(IBugProductInfestationContainer)
+    table = BugProductInfestation
+
+    def __getitem__(self, id):
+        try:
+            return self.table.select(self.table.q.id == id)[0]
+        except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select(self.table.q.bugID == self.bug):
+            yield row
+
+def BugProductInfestationFactory(context, **kw):
+    now = datetime.utcnow()
+    bpi = BugProductInfestation(
+        bug=context.context.bug,
+        explicit=True,
+        datecreated=now,
+        creatorID=1, # XXX: (2004-10-08) Brad Bollenbach: Should be the real owner ID
+        dateverified=now,
+        verifiedbyID=1,
+        lastmodified=now,
+        lastmodifiedbyID=1,
+        **kw)
+    return bpi
+
+class BugPackageInfestationContainer(BugContainerBase):
+    """A container for BugPackageInfestation."""
+    implements(IBugPackageInfestationContainer)
+    table = BugPackageInfestation
+
+    def __getitem__(self, id):
+        try:
+            return self.table.select(self.table.q.id == id)[0]
+        except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select(self.table.q.bugID == self.bug):
+            yield row
+
+def BugPackageInfestationFactory(context, **kw):
+    now = datetime.utcnow()
+    bpi = BugPackageInfestation(
+        bug=context.context.bug,
+        explicit=True,
+        datecreated=now,
+        creatorID=1, # XXX: (2004-10-11) Brad Bollenbach: Should be the real owner ID
+        dateverified=now,
+        verifiedbyID=1,
+        lastmodified=now,
+        lastmodifiedbyID=1,
+        **kw)
+    return bpi
 
 class SourcepackageBugAssignmentContainer(BugContainerBase):
     """A container for SourcepackageBugAssignment"""
@@ -507,13 +581,13 @@ class BugSubscriptionContainer(BugContainerBase):
         conn = BugSubscription._connection
         # I want an exception raised if id can't be converted to an int
         conn.query('DELETE FROM BugSubscription WHERE id=%d' % int(id))
-  
+
 
 class SourcepackageContainer(object):
     """A container for Sourcepackage objects."""
 
     implements(ISourcepackageContainer)
-    table = Sourcepackage
+    table = SourcePackage
 
     #
     # We need to return a Sourcepackage given a name. For phase 1 (warty)
@@ -522,8 +596,8 @@ class SourcepackageContainer(object):
     # the same name.
     #
     def __getitem__(self, name):
-        return self.table.select("Sourcepackage.sourcepackagename = \
-        SourcepackageName.id AND SourcepackageName.name = %s" %     \
+        return self.table.select("SourcePackage.sourcepackagename = \
+        SourcePackageName.id AND SourcePackageName.name = %s" %     \
         sqlbase.quote(name))[0]
 
     def __iter__(self):
@@ -541,7 +615,7 @@ class SourcepackageContainer(object):
     # which in future might be limited by distro, for example
     #
     def withBugs(self):
-        return self.table.select("Sourcepackage.id = \
+        return self.table.select("SourcePackage.id = \
         SourcepackageBugAssignment.sourcepackage")
 
 
@@ -586,7 +660,7 @@ class BugTrackerSetView(object):
         self.context = context
         self.request = request
         self.form = request.form
-        
+
     def newBugTracker(self):
         """This method is triggered by a tal:dummy element in the page
         template, so it is run even when the page is first displayed. It
@@ -605,8 +679,6 @@ class BugTrackerSetView(object):
         if not bugtracker: return
         # Now redirect to view it again
         self.request.response.redirect(self.request.URL[-1])
-
-
 
 class BugTrackerView(object):
     def __init__(self, context, request):
@@ -641,20 +713,54 @@ class BugTrackerView(object):
         self.request.response.redirect(self.request.URL[-1])
 
 
-#
 # Bug Reports
-#
 class BugsAssignedReportView(object):
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.form = self.request.form
-
-    def update(self):
-        #
         # Default to showing bugs assigned to the logged in user.
-        #
-        user = IPerson(self.request.principal).id
-        self.context.user = user
+        username = self.form.get('user', None)
+        if username: self.user = Person.selectBy(name=username)[0]
+        else:
+            try: self.user = IPerson(self.request.principal)
+            except TypeError: self.user = None
+        self.context.user = self.user
 
+    def userSelector(self):
+        html = '<select name="user" onclick="form.submit()">\n'
+        for person in self.allPeople():
+            html = html + '<option value="'+person.name+'"'
+            if person==self.user: html = html + ' selected="yes"'
+            html = html + '>'
+            html = html + person.browsername() + '</option>\n'
+        html = html + '</select>\n'
+        return html
+
+    def allPeople(self):
+        return Person.select()
+
+
+class BugsCreatedByView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def getAllPeople(self):
+        return Person.select()
+
+    def _getBugsForOwner(self, owner):
+        bugs_created_by_owner = []
+        if owner:
+            persons = Person.select(Person.q.name == owner)
+            if persons:
+                person = persons[0]
+                bugs_created_by_owner = Bug.select(Bug.q.ownerID == person.id)
+        else:
+            bugs_created_by_owner = Bug.select()
+
+        return bugs_created_by_owner
+
+    def getBugs(self):
+        bugs_created_by_owner = self._getBugsForOwner(self.request.get("owner", ""))
+        return bugs_created_by_owner

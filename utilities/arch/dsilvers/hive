@@ -1,0 +1,278 @@
+#!/usr/bin/env python
+# Copyright Daniel Silverstone <daniel.silverstone@canonical.com>
+# arch-tag: e5ca1444-d79b-4e8b-ab53-d1709325c28f
+#
+# Just copy me to ~/bin
+# Then run 'hive'
+# Create the config as per its request
+# To extract changes into the hive do:
+#    hive out <some name> <some summary>
+# To restore a changeset do:
+#    hive in <some name>
+# 'hive help' will provide a list of commands and 'hive help foo' lists help
+#    on the foo command
+
+import sys
+from posix import listdir, stat
+from os import getenv, system
+from ConfigParser import ConfigParser
+from commands import getstatusoutput
+
+class HiveError(Exception):
+    pass
+
+class HiveElement(object):
+    """Representation of a single element in the hive"""
+
+    def __init__(self, hive, element):
+        self._hive = hive
+        self._element = element
+        self._origin = None
+        self._subject = None
+
+        if self.exists():
+            self._loadMetaData()
+
+    def getName(self):
+        return self._element
+
+    def _elementDir(self, s = None):
+        if s is None:
+            return "%s/%s" % (self._hive.baseDir(), self._element)
+        else:
+            return "%s/%s/%s" % (self._hive.baseDir(), self._element, s)
+
+    def _loadMetaData(self):
+        f = open( self._elementDir("++metadata"), "r" )
+        self._origin = f.readline()[:-1]
+        self._subject = "".join(f.readlines())
+        f.close()
+
+    def exists(self):
+        try:
+            stat( self._elementDir() )
+            return True
+        except OSError:
+            return False
+
+    def remove(self):
+        if not self.exists():
+            raise HiveError( "Cannot remove an element which doesn't exist" )
+        system("rm -rf '%s'" % self._elementDir())
+        self._origin = None
+        self._subject = None
+
+    def reapplyChangeset(self):
+        if not self.exists():
+            raise HiveError( "Cannot apply an element which doesn't exist" )
+        ret = system("tla redo -k '%s'" % self._elementDir("++undo"))
+        if ret != 0:
+            raise HiveError( "Could not redo changeset cleanly" )
+
+    def _saveMetaData(self):
+        if self.exists() and self._origin is not None and self._subject is not None:
+            f = open( self._elementDir("++metadata") , "w")
+            f.write( "%s\n%s" % (self._origin, self._subject) )
+            f.close()
+
+    def origin(self, repl = None):
+        if repl is not None:
+            self._origin = repl;
+            self._saveMetaData()
+        return self._origin
+
+    def subject(self, repl = None):
+        if repl is not None:
+            self._subject = repl
+            self._saveMetaData()
+
+        return self._subject
+
+    def extractChangeset(self):
+        if self.exists():
+            raise HiveError( "Cannot perform an undo into a changeset which exists" )
+        if self._origin is None or self._subject is None:
+            raise HiveError( "Cannot perform an undo without an origin and subject" )
+        system("mkdir '%s'" % (self._elementDir()))
+        self._saveMetaData()
+        ret = system("tla undo -o '%s'" % self._elementDir("++undo"))
+        if ret != 0:
+            self.remove()
+            raise HiveError( "Could not perform tla undo." )
+        
+
+class Hive(object):
+    """Representation of a set of tla undoes and information about them"""
+
+    def __init__(self, dirname):
+        if type(dirname) != str:
+            raise ValueError, dirname
+        self._dir = dirname
+
+    def getHiveElements(self):
+        """Return a list of the names of the hiveelements available"""
+        return [ k for k in listdir(self._dir) if not k.startswith(".") ]
+            
+    def getHiveElement(self, hivename):
+        """Return a specific hiveelement"""
+        return HiveElement( self, hivename )
+
+    def __iter__(self):
+        """Iterate across the available hiveelements"""
+        for name in self.getHiveElements():
+            yield HiveElement( self, name )
+            
+    def __getitem__(self, hivename):
+        """Get a specific hiveelement"""
+        return self.getHiveElement(hivename)
+
+    def baseDir(self):
+        return self._dir
+
+#########################################################################
+
+def cmd_help(hive, args):
+    """Provides a list of commands
+You may specify a command name to get extended help on that command
+    """
+    g = globals()
+    if len(args) == 0:
+        n = []
+        for k in g:
+            if k.startswith("cmd_"):
+                n.append(k)
+        n.sort()
+        for f in n:
+            print "%10s : %s" % (f[4:], g[f].__doc__.split("\n")[0])
+    else:
+        if 'cmd_%s' % args[0] in g:
+            d = g['cmd_%s'%args[0]].__doc__
+            print "%10s : %s" % (args[0], d)
+            
+        else:
+            print "Unknown command %s\nTry 'hive help' for a list" % args[0]
+            return 1
+    return 0
+
+def cmd_list(hive, args):
+    """List the hive elements in the hive
+Specify an element name to get the full summary of the hive element
+    """
+    if len(args) == 0:
+        for element in hive:
+            print "%15s : %s" % (element.getName(), element.subject().split("\n")[0])
+    else:
+        element = hive[args[0]]
+        if element.exists():
+            print "%15s : %s\n%s" % (element.getName(), element.origin(), element.subject())
+        else:
+            print "Element %s does not exist" % element.getName()
+            return 1
+    return 0
+
+def cmd_in(hive, args):
+    """Load a hive element into the current tree
+Usage: hive in <hivename>
+    """
+    if len(args) != 1:
+        cmd_help(hive, [ "in" ])
+        return 1
+
+    e = hive[args[0]]
+    if e.exists():
+        (status, origin) = getstatusoutput("tla tree-version")
+        if status != 0:
+            print "Unable to get tree-version"
+            return 1
+        if e.origin() != origin:
+            print >> sys.stderr, "Tree version here (%s) does not match element origin (%s)" % (origin, e.origin())
+            return 1
+        try:
+            e.reapplyChangeset()
+        except HiveError, er:
+            print "Problem while applying changeset: %s" % er
+        else:
+            e.remove()
+            
+    else:
+        print "Element %s does not exit" % e.getName()
+        return 1
+    
+    return 0
+
+def cmd_out(hive, args):
+    """Take the changes in the current tree and save them out
+Usage: hive out <hivename> <summary>
+    """
+
+    if len(args) == 0:
+        cmd_help(hive, ["out"])
+        return 1
+
+    e = hive[args[0]]
+    if e.exists():
+        print "Element %s already exists" % args[0]
+        return 1
+
+    (status, origin) = getstatusoutput("tla tree-version")
+    if status != 0:
+        print "Unable to get tree-version"
+        return 1
+    e.origin(origin)
+    e.subject(" ".join(args[1:]))
+    try:
+        e.extractChangeset()
+    except HiveError, er:
+        print "Problem extracting changeset: %s" % er
+
+    return 0
+
+def cmd_obliterate(hive, args):
+    """Obliterate a hive element
+Usage: hive obliterate <element>
+"""
+
+    if len(args) != 1:
+        cmd_help(hive,["obliterate"])
+        return 1
+
+    e = hive[args[0]]
+    if e.exists():
+        e.remove()
+    else:
+        print "Unknown hive element %s" % e.getName()
+        return 1
+
+    return 0
+    
+############################################################################
+
+def usage():
+    print >> sys.stderr, "Usage: hive command <command args>.\nTry 'hive help' for more info"
+
+def dispatch(hive, cmd, args):
+    g = globals()
+    if 'cmd_%s' % cmd in g:
+        return g['cmd_%s'%cmd](hive,args)
+    else:
+        print "Unknown command %s\nTry 'hive help' for more info" % cmd
+        return 1
+
+
+def main(argv):
+    c = ConfigParser()
+    c.read( "%s/.hiverc" % getenv("HOME") )
+
+    if not c.has_option( "Hive", "Root" ):
+        print "Please create ~/.hiverc with something like:\n[Hive]\nRoot=/path/to/a/hive\n... in it"
+        sys.exit(1)
+
+    if len(argv) == 0:
+        usage()
+        sys.exit(1)
+
+    sys.exit( dispatch( Hive( c.get("Hive", "Root") ), argv[0], argv[1:] ) )
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
+    

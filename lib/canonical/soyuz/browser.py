@@ -13,16 +13,20 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 # database imports
-from canonical.launchpad.database import SoyuzSourcePackage, WikiName
-from canonical.launchpad.database import SoyuzBinaryPackage, JabberID 
+from canonical.launchpad.database import SourcePackage, WikiName
+from canonical.launchpad.database import JabberID 
 from canonical.launchpad.database import TeamParticipation, Membership
-from canonical.launchpad.database import SoyuzEmailAddress, IrcID
+from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID 
 
 # app components
-from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
+from canonical.soyuz.sql import Distribution, DistroRelease, Person
 from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
+
+##XXX: (batch_size+global) cprov 20041003
+## really crap constant definition for BatchPages 
+BATCH_SIZE = 40
 
 class DistrosSearchView(object):
     """
@@ -49,11 +53,11 @@ class DistrosSearchView(object):
             title = title.replace('%', '%%')
             description = description.replace('%', '%%')
 
-            name_like = LIKE(SoyuzDistribution.q.name,
+            name_like = LIKE(Distribution.q.name,
                              "%%" + name + "%%")
-            title_like = LIKE(SoyuzDistribution.q.title,
+            title_like = LIKE(Distribution.q.title,
                               "%%" + title + "%%")
-            description_like = LIKE(SoyuzDistribution.q.\
+            description_like = LIKE(Distribution.q.\
                                     description,
                                     "%%" + description + "%%")
 
@@ -69,12 +73,28 @@ class DistrosSearchView(object):
 
             query = AND(name_like, title_like, description_like) 
 
-            self.results = SoyuzDistribution.select(query)
+            self.results = Distribution.select(query)
             self.entries = self.results.count()
             enable_results = True                
 
         return enable_results
 
+class PeopleListView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def viewPeopleBatchNavigator(self):
+        people = list(Person.select())
+        start = int(self.request.get('batch_start', 0))
+        end = int(self.request.get('batch_end', BATCH_SIZE))
+        batch_size = BATCH_SIZE
+        batch = Batch(list = people, start = start,
+                      size = batch_size)
+        return BatchNavigator(batch = batch,
+                              request = self.request)
+    
     
 class PeopleSearchView(object):
 
@@ -84,24 +104,30 @@ class PeopleSearchView(object):
         self.results = []
 
 
-    def search_action(self):
-        enable_results = False       
+    def searchPeopleBatchNavigator(self):
         name = self.request.get("name", "")
 
         if name:
-            name = name.replace('%', '%%')
-            query = quote('%%'+ name.upper() + '%%')
+            people = list(self._findPeopleByName(name))
+            start = int(self.request.get('batch_start', 0))
+            end = int(self.request.get('batch_end', BATCH_SIZE))
+            batch_size = BATCH_SIZE
+            batch = Batch(list = people, start = start,
+                          size = batch_size)
+            return BatchNavigator(batch = batch,
+                                  request = self.request)
+        else:
+            return None
 
-            #XXX: (order) cprov 20041003
-            ##  Order all results alphabetically,
-            ## btw, 'ORDER by displayname' doesn't work properly here 
-            self.results = SoyuzPerson.select('UPPER(displayname) LIKE %s OR \
-            UPPER(teamdescription) LIKE %s'%(query,query))
+    def _findPeopleByName(self, name):
+        name = name.replace('%', '%%')
+        query = quote('%%'+ name.upper() + '%%')
+        #XXX: (order) cprov 20041003
+        ##  Order all results alphabetically,
+        ## btw, 'ORDER by displayname' doesn't work properly here and should
+        ## be moved to Person SQLBASE class
+        return Person.select("""UPPER(displayname) LIKE %s OR UPPER(teamdescription) LIKE %s"""%(query, query))
 
-            self.entries = self.results.count()
-            enable_results = True
-
-        return enable_results
 
 class PeopleAddView(object):
 
@@ -125,7 +151,7 @@ class PeopleAddView(object):
         ## otherwise we will get an exception 
         if displayname:
             
-            self.results = SoyuzPerson(displayname=displayname,
+            self.results = Person(displayname=displayname,
                                        givenname=givenname,
                                        familyname=familyname,
                                        password=password,
@@ -134,7 +160,7 @@ class PeopleAddView(object):
                                        karma=None,
                                        karmatimestamp=None)
             
-            SoyuzEmailAddress(person=self.results.id,
+            EmailAddress(person=self.results.id,
                          email=email,
                          status=int(dbschema.EmailAddressStatus.NEW))
             
@@ -163,7 +189,7 @@ class TeamAddView(object):
             #XXX: (team+authserver) cprov 20041003
             ##  The team is owned by the current ID now,
             ##  but it should comes from authserver
-            self.results = SoyuzPerson(displayname=displayname,
+            self.results = Person(displayname=displayname,
                                        givenname=None,
                                        familyname=None,
                                        password=None,
@@ -200,7 +226,7 @@ class TeamJoinView(object):
         status = dbschema.MembershipStatus.PROPOSED.value
 
         if dummy_id:
-            self.person = SoyuzPerson.get(dummy_id)
+            self.person = Person.get(dummy_id)
             ##XXX: (uniques) cprov 20041003
             self.results = Membership(personID=dummy_id,
                                       team=self.context.id,
@@ -362,7 +388,7 @@ class DistrosAddView(object):
             ##XXX: (authserver) cprov 20041003
             ## The owner is hardcoded to Mark.
             ## Authserver Security/Authentication Issues ?!?!
-            self.results = SoyuzDistribution(name=name, title=title, \
+            self.results = Distribution(name=name, title=title, \
                                              description=description,\
                                              domainname='domain', owner=1)
             ##XXX: (results) cprov 20041003
@@ -405,6 +431,7 @@ class ReleasesAddView(object):
 
         name = self.request.get("name", "")
         title = self.request.get("title", "")
+        shortdesc = self.request.get("shortdesc", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
 
@@ -423,12 +450,13 @@ class ReleasesAddView(object):
             ## Parentrelease is hardcoded to "warty", should the users
             ## be able to select then now ??
             
-            self.results = Release(distribution=self.context.distribution.id,\
-                                   name=name, title=title, \
-                                   description=description,version=version,\
-                                   components=1, releasestate=1,sections=1,\
-                                   datereleased='2004-08-15 10:00', owner=1,
-                                   parentrelease=1)
+            self.results = DistroRelease(distribution=self.context.distribution.id,
+                                         name=name, title=title,
+                                         shortdesc=shortdesc,
+                                         description=description,version=version,
+                                         components=1, releasestate=1,sections=1,
+                                         datereleased='2004-08-15 10:00', owner=1,
+                                         parentrelease=1, lucilleconfig='')
             ##XXX: (results) cprov 20041003
             ## again
             enable_added = True
@@ -438,9 +466,6 @@ class ReleasesAddView(object):
 ## The two following classes are almost like a duplicated piece
 ## of code. We should look for a better way for use Batching Pages
 class DistroReleaseSourcesView(object):
-
-    BATCH_SIZE = 20
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -448,17 +473,15 @@ class DistroReleaseSourcesView(object):
     def sourcePackagesBatchNavigator(self):
         source_packages = list(self.context)
         start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', self.BATCH_SIZE))
-        batch_size = self.BATCH_SIZE
+        end = int(self.request.get('batch_end', BATCH_SIZE))
+        batch_size = BATCH_SIZE
         batch = Batch(list = source_packages, start = start,
                       size = batch_size)
 
         return BatchNavigator(batch = batch, request = self.request)
 
 class DistroReleaseBinariesView(object):
-
-    BATCH_SIZE = 20
-
+    
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -466,8 +489,8 @@ class DistroReleaseBinariesView(object):
     def binaryPackagesBatchNavigator(self):
         binary_packages = list(self.context)
         start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', self.BATCH_SIZE))
-        batch_size = self.BATCH_SIZE
+        end = int(self.request.get('batch_end', BATCH_SIZE))
+        batch_size = BATCH_SIZE
         batch = Batch(list = binary_packages, start = start,
                       size = batch_size)
 
@@ -484,6 +507,7 @@ class ReleaseEditView(object):
         enable_edited = False
         name = self.request.get("name", "")
         title = self.request.get("title", "")
+        shortdesc = self.request.get("shortdesc", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
 
@@ -491,6 +515,7 @@ class ReleaseEditView(object):
             ##XXX: (uniques) cprov 20041003
             self.context.release.name = name
             self.context.release.title = title
+            self.context.release.shortdesc = shortdesc
             self.context.release.description = description
             self.context.release.version = version
             ##XXX: (results) cprov 20041003
@@ -524,9 +549,6 @@ class ReleaseSearchView(object):
 ## AGAIN !!!
 
 class DistrosReleaseSourcesSearchView(object):
-
-    BATCH_SIZE = 20
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -538,8 +560,8 @@ class DistrosReleaseSourcesSearchView(object):
         if name:
             binary_packages = list(self.context.findPackagesByName(name))
             start = int(self.request.get('batch_start', 0))
-            end = int(self.request.get('batch_end', self.BATCH_SIZE))
-            batch_size = self.BATCH_SIZE
+            end = int(self.request.get('batch_end', BATCH_SIZE))
+            batch_size = BATCH_SIZE
             batch = Batch(list = binary_packages, start = start,
                           size = batch_size)
             return BatchNavigator(batch = batch,
@@ -547,11 +569,7 @@ class DistrosReleaseSourcesSearchView(object):
         else:
             return None
 
-
 class DistrosReleaseBinariesSearchView(object):
-
-    BATCH_SIZE = 20
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -563,8 +581,8 @@ class DistrosReleaseBinariesSearchView(object):
         if name:
             binary_packages = list(self.context.findPackagesByName(name))
             start = int(self.request.get('batch_start', 0))
-            end = int(self.request.get('batch_end', self.BATCH_SIZE))
-            batch_size = self.BATCH_SIZE
+            end = int(self.request.get('batch_end', BATCH_SIZE))
+            batch_size = BATCH_SIZE
             batch = Batch(list = binary_packages, start = start,
                           size = batch_size)
             return BatchNavigator(batch = batch,
@@ -613,8 +631,9 @@ class SourceSourceView(object):
         releaseroot = self.form.get('releaseroot', None)
         releaseverstyle = self.form.get('releaseverstyle', None)
         releasefileglob = self.form.get('releasefileglob', None)
-        archarchive = self.form.get('newarchive', None)
+        newarchive = self.form.get('newarchive', None)
         archversion = self.form.get('newbranchcategory', None)
+        newbranchcategory = self.form.get('newbranchcategory', None)
         newbranchbranch = self.form.get('newbranchbranch', None)
         newbranchversion = self.form.get('newbranchversion', None)
         product = self.form.get('product', None)
@@ -628,8 +647,8 @@ class SourceSourceView(object):
         if releaseroot: self.context.releaseroot = releaseroot
         if releaseverstyle: self.context.releaseverstyle = releaseverstyle
         if releasefileglob: self.context.releasefileglob = releasefileglob
-        if archarchive: self.context.archarchive = archarchive
-        if archversion: self.context.archversion = archversion
+        if newarchive: self.context.newarchive = newarchive
+        if newbranchcategory: self.context.newbranchcategory = newbranchcategory
         if newbranchbranch: self.context.newbranchbranch = newbranchbranch
         if newbranchversion: self.context.newbranchversion = newbranchversion
         if self.form.get('syncCertified', None):

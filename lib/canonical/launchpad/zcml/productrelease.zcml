@@ -1,0 +1,38 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:zope="http://namespaces.zope.org/zope"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+
+    <!-- This is class ProductRelease -->
+    <content class="canonical.launchpad.database.ProductRelease">
+        <allow interface="canonical.launchpad.interfaces.IProductRelease" />
+        <require
+            permission="zope.View"
+            set_schema="canonical.launchpad.interfaces.IProductRelease" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductRelease"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductRelease"
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/productrelease.pt" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductRelease"
+        class="canonical.launchpad.browser.ProductReleaseView"
+        permission="launchpad.AnyPerson">
+        <browser:page
+            name="+edit"
+            template="../templates/productrelease-edit.pt" />
+    </browser:pages>
+
+</configure>

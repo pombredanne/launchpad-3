@@ -1,13 +1,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="launchpad">
 
 <head>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
 </head>
 
 <body>
@@ -23,7 +23,7 @@
   </div>
  
  <div>
-    <form name="search" action="" method="POST">
+    <form name="search" action="" method="GET">
     <fieldset>
     	<legend><h3>Search Soyuz People</h3></legend>
 	<table>
@@ -33,7 +33,8 @@
 	    <div class="formHelp">
 	    Enter the person Name .
             </div>
-	    <input type="text" name="name" tal:attributes="value request/name|nothing"/>
+	    <input type="text" name="name" 
+	           tal:attributes="value request/name|nothing"/>
 	 </div>
 	 <div class="formControls">
 	    <input type="submit" value="Search"/>
@@ -60,19 +61,46 @@
   </div>
 
 
-  <tal:block tal:condition="view/search_action">
-  <div>
-  <h3>Results</h3>
-  <h4><span tal:content="view/entries"/> entries found</h4>
-  <ul>
-  
-  <li tal:repeat="person view/results"> 
-      <a tal:attributes="href person/id"
-         tal:content="person/displayname"></a>
-  </li>
+  <tal:block tal:condition="view/searchPeopleBatchNavigator">
 
-  </ul>
-  </div>
+  <tal:block tal:define="bn view/searchPeopleBatchNavigator;
+                         prev_url bn/prevBatchURL;
+                         next_url bn/nextBatchURL;">
+
+  <table>
+
+    <tr tal:repeat="person python:list(bn.currentBatch())">      
+     <td><a tal:content="person/displayname"
+	    tal:attributes="href person/id"/>
+     </td>
+    </tr>    
+
+    <tr>
+    <td align="center">
+    <fieldset>
+    <div>
+    	  <table>
+	  <tr>
+	  <!-- <th condition="not: prev_url"><< prev</th> -->
+          <th tal:condition="prev_url">
+	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
+	  </th>
+          <th tal:repeat="page_link bn/batchPageURLs">
+	     <a tal:attributes="href python:page_link.values()[0]"
+                tal:content="python:page_link.keys()[0]"></a>
+	  </th>
+          <th tal:condition="next_url" >
+	     <a tal:attributes="href next_url"><b>Next >></b></a>
+          </th>
+          <!-- <th condition="not: next_url">next >></th> -->
+          </tr>
+	  </table>
+     </div>
+     </fieldset>
+    </td>
+    </tr>
+  </table>
+  </tal:block>
   </tal:block>
 
 

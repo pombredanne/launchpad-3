@@ -35,8 +35,8 @@
   </content>
 
   <utility
-      factory="canonical.launchpad.database.Languages"
-      provides="canonical.launchpad.interfaces.ILanguages"
+      factory="canonical.launchpad.database.LanguageSet"
+      provides="canonical.launchpad.interfaces.ILanguageSet"
       />
 
   <adapter for="zope.app.security.interfaces.IPrincipal"

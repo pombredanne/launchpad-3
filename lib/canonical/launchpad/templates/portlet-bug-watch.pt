@@ -1,21 +1,25 @@
-<div>
-    <table class="listing rowNavigation">
-        <tr>
-            <th>Bug System</th>
-            <th>Remote Bug</th>
-            <th>Remote Status</th>
-        </tr>
-        <tr tal:repeat="watch context/watches"
-            tal:attributes="onclick 
-                string:window.location='watches/${watch/id}/+edit';">
-            <td tal:content="watch/bugtracker/title">$BugTracker.title</td>
-            <td tal:content="watch/remotebug">$BugWatch.remotebug</td>
-            <td tal:content="watch/remotestatus">
-               $BugWatch.remotestatus 
-            </td>
-        </tr>
-    </table>
-    <form action="watches/+new" method="post">
-        <input type="submit" value="New" />
-    </form>
+<div class="portlet">
+    <h6 title="Bug watches keep track of this bug in external bug trackers.">
+    Bug Watches
+    </h6>
+    
+    <div class="portletBody">
+        <div class="portletContent odd"
+             tal:repeat="watch context/watches">
+            
+            <a tal:attributes="href string:watches/${watch/id}/+edit">
+                #<span tal:replace="watch/remotebug" />,
+                 <span tal:replace="watch/bugtracker/title" />
+                <div class="portletDetails"
+                     tal:content="watch/remotestatus" />
+            </a>
+
+        </div>
+        
+        <div class="portletContent even">
+            <form action="watches/+new" method="post">
+                <input type="submit" value="Add Watch" />
+            </form>
+        </div> 
+    </div>
 </div>

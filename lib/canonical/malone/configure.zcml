@@ -32,23 +32,13 @@
       utility="canonical.launchpad.interfaces.IProjectContainer"
       permission="zope.Public"
       name="projects" />
-  
-  <browser:suburl
-      for="canonical.malone.IMaloneApplication"
-      utility="canonical.launchpad.interfaces.IBugsAssignedReport"
-      permission="launchpad.AnyPerson"
-      name="assignedto" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugsAssignedReport"
-      name="+index" />
 
   <browser:suburl
       for="canonical.malone.IMaloneApplication"
       utility="canonical.launchpad.interfaces.ISourcepackageContainer"
       permission="zope.Public"
       name="sourcepackage" />
-  
+
   <browser:suburl
       for="canonical.malone.IMaloneApplication"
       utility="canonical.launchpad.interfaces.IBugTrackerSet"
@@ -60,12 +50,12 @@
       name="+index" />
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugTracker"
+      for="canonical.launchpad.interfaces.IBugsAssignedReport"
       name="+index" />
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.ISourcepackageContainer"
-      name="index" />
+      for="canonical.launchpad.interfaces.IBugTracker"
+      name="+index" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBugContainer"
@@ -88,10 +78,6 @@
       name="index" />
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.ISourcepackage"
-      name="+malone-index" />
-
-  <browser:defaultView
       for="canonical.launchpad.interfaces.IBugExternalRefContainer"
       name="index" />
 
@@ -112,6 +98,10 @@
       name="index" />
 
   <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
+      name="index" />
+
+  <browser:defaultView
       for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
       name="index" />
 
@@ -122,6 +112,5 @@
   <include file="pages.zcml" />
   <include file="forms.zcml" />
   <include file="resources.zcml" />
-  <include file="vocabulary.zcml" />
 
 </configure>

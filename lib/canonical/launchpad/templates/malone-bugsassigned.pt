@@ -3,44 +3,55 @@
     metal:use-macro="context/@@malone_template/master"
     i18n:domain="malone">
 <body>
+
 <div metal:fill-slot="main">
 
-    <tal:block condition="view/update" />
-
-    <h1>Bugs Assigned to Mark Shuttleworth</h1>
+    <h1>Bugs Assigned to <span tal:content="context/user/browsername">The
+    Person</span></h1>
+    
+    <form method="POST" action="">
+    
+        <b>Show bugs for:</b>
+        <div tal:replace="structure view/userSelector" />
+        
+    </form>
 
     <h3>Direct Assignments</h3>
 
-    <form method="post">
-        <fieldset>
-            <legend>Search details</legend>
-
-            <div class="field">
-                <input name="query" />
-            </div>
-
-            <div class="formControls">
-                <input type="submit" value="Search" />
-            </div>
-        </fieldset>
-    </form>
+    <p>These bugs have been assigned directly to <span
+    tal="content/user/browsername">the user</span>.</p>
 
     <div>
+    
         <table class="listing rowNavigation">
+        
             <tr>
-                <th>Bug</th>
+                <th>Bug #</th>
+                <th>Details</th>
             </tr>
-            <tr tal:repeat="assignment context/directAssignments"
+            
+            <tr tal:repeat="bug context/assignedBugs"
                 tal:attributes="onclick
-                       string:window.location='/malone/bugs/${assignment/bug/id}'">
+                       string:window.location='/malone/bugs/${bug/id}'">
                 <td>
-                     <span tal:content="assignment/bug/title">
-                         $SourcepackageName.name</span>
+                     <span tal:content="bug/id">
+                         $Bug.id</span>
+                </td>
+                <td>
+                     <span tal:content="bug/title">
+                         $Bug.title</span><br>
+                     <span tal:content="bug/shortdesc">
+                         $Bug.shortdesc</span>
                 </td>
             </tr>
+            
         </table>
+        
     </div>
   
+
 </div>
+
 </body>
+
 </html>

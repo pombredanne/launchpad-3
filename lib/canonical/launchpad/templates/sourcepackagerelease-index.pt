@@ -1,13 +1,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="soyuz">
+      i18n:domain="launchpad">
 
 <head>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Rosetta style sheet -->
-  <style type="text/css" media="screen">@import url(rosetta.css);</style>
+  <!-- Soyuz style sheet -->
+  <style type="text/css" media="screen">@import url(soyuz.css);</style>
 </head>
 
 <body>
@@ -54,8 +54,12 @@
          <li tal:repeat="binary context/build/sourcepackagerelease/binaries" >
           <a tal:content="binary/name"
 	  tal:attributes="href 
+	  string:../../../../bin/${context/distroreleasename}/${binary/name}"
+	  /> ( 
+          <a tal:content="binary/version"
+	  tal:attributes="href 
 	  string:../../../../bin/${context/distroreleasename}/${binary/name}/${binary/version}"
-	  /> : <span tal:content="binary/shortdesc"/>
+	  /> ): <span tal:content="binary/shortdesc"/>
          </li>
        </ul>
 
@@ -90,7 +94,7 @@
 	        <a tal:content="builddepends/name" tal:attributes="href
 		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
 		<tal:dummy condition="builddepends/signal">
-		  <span tal:content="builddepends/signal" /> 
+		  (<span tal:content="builddepends/signal" /> 
 		  <a tal:content="builddepends/version" 
 		  tal:attributes="href 
 		  string:../../../../bin/${context/distroreleasename}/${builddepends/name}/${builddepends/version}"/> )
@@ -117,7 +121,7 @@
 	        <a tal:content="builddepends/name" tal:attributes="href
 		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/>
 		<tal:dummy condition="builddepends/signal">
-		  <span tal:content="builddepends/signal" />
+		  (<span tal:content="builddepends/signal" />
 		  <a tal:content="builddepends/version"
 		  tal:attributes="href
 		  string:../../../../bin/${context/distroreleasename}/${builddepends/name}/${builddepends/version}"/> )

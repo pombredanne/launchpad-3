@@ -2,7 +2,7 @@
 #
 # arch-tag: f230218f-d4b6-42f6-ac6a-0f15373476da
 
-import sys, re, os, select
+import re, os, select
 
 from canonical.lucille.utils import prefix_multi_line_string
 

@@ -28,22 +28,21 @@ class Project(SQLBase):
 
     _table = "Project"
 
-    _columns = [
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner', \
-            notNull=True),
-        StringCol('name', notNull=True),
-        StringCol('displayname', notNull=True),
-        StringCol('title', notNull=True),
-        StringCol('shortdesc', notNull=True),
-        StringCol('description', notNull=True),
-        # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
-        DateTimeCol('datecreated', notNull=True),
-        StringCol('homepageurl', notNull=False, default=None),
-        StringCol('wikiurl', notNull=False, default=None),
-        StringCol('lastdoap', notNull=False, default=None)
-    ]
-
-    products = MultipleJoin('Product', joinColumn='project')
+    # db field names
+    owner= ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+    name = StringCol(dbName='name', notNull=True)
+    displayname = StringCol(dbName='displayname', notNull=True)
+    title = StringCol(dbName='title', notNull=True)
+    shortdesc = StringCol(dbName='shortdesc', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
+    # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+    homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
+    wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
+    lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
+    
+    # convenient joins
+    _products = MultipleJoin('Product', joinColumn='project')
 
     _bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
                                            otherColumn='bugtracker',
@@ -53,8 +52,9 @@ class Project(SQLBase):
         for bugtracker in self._bugtrackers:
             yield bugtracker
 
-    def rosettaProducts(self):
-        return iter(self.products)
+    def products(self):
+        for product in self._products:
+            yield product
 
     def getProduct(self, name):
         try:

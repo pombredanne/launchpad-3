@@ -1,0 +1,31 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+    
+    <vocabulary
+        name="BugTracker"
+        factory="canonical.launchpad.vocabulary.BugTrackerVocabulary" />
+
+    <vocabulary
+        name="SourcePackage"
+        factory="canonical.launchpad.vocabulary.SourcepackageVocabulary" />
+
+    <vocabulary
+        name="BinaryPackage"
+        factory="canonical.launchpad.vocabulary.BinarypackageVocabulary" />
+
+    <vocabulary
+        name="BinaryPackageName"
+        factory="canonical.launchpad.vocabulary.BinarypackageNameVocabulary" />
+
+    <vocabulary
+        name="Person"
+        factory="canonical.launchpad.vocabulary.PersonVocabulary" />
+
+    <vocabulary
+        name="ProductRelease"
+        factory="canonical.launchpad.vocabulary.ProductReleaseVocabulary" />
+
+    <vocabulary
+        name="Product"
+        factory="canonical.launchpad.vocabulary.ProductVocabulary" />
+
+</configure>

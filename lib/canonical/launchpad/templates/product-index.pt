@@ -17,9 +17,17 @@
     <h1><span tal:replace="context/title">$Product.title</span></h1>
 
     <div style="float: right; clear: both; margin-top: 0.25em;">
-    Product home page:
-    <a tal:content="context/homepageurl|default"
-       tal:attributes="href context/homepageurl|nothing">(none supplied)</a>
+
+        Product home page:
+        <a tal:content="context/homepageurl|default"
+           tal:attributes="href context/homepageurl|nothing">(none
+        supplied)</a><br />
+        [ <a href="+edit">Edit Product Details</a> ]<br />
+        [ <a href="+addsources">Add Revision Control System</a> ]<br />
+        [ TODO: allow creation of link to packages ]<br />
+        [ <a href="+addseries">Add a Release Series</a> ]<br />
+        [ <a href="+addrelease">Register a New Release</a> ]
+
     </div>
 
     <div class="documentDescription" tal:content="context/shortdesc">
@@ -27,6 +35,7 @@
         just a single paragraph of text really, giving the product
         highlights.
     </div>
+
     <div tal:content="context/description">
         $Product.description goes here. This should be a longer piece of
         text, up to three paragraphs in length, which gives much more
@@ -35,12 +44,9 @@
         which we have not yet determined (HTML, reStructuredText or
         something else, for example).
     </div>
-    <div>
-        [ <a href="+edit">Edit</a> ]
-    </div>
 
+    <div tal:condition="context/sourcesources">
 
-    <div>
         <h2>Revision Control System</h2>
 
         <dl tal:repeat="source context/sourcesources">
@@ -51,10 +57,9 @@
             <dd tal:content="source/description"></dd>
         </dl>
 
-        [ <a href="+addsources">Add SourceSource</a> ]
     </div>
 
-    <div>
+    <div tal:condition="context/sourcepackages">
 
         <h2>Distro Packages</h2>
 
@@ -64,10 +69,50 @@
 
         <ul tal:repeat="package context/sourcepackages">
 
-            <li><span
-            tal:content="package/name">$Sourcepackage.name</span></li>
+            <li><a tal:content="package/name"
+	           tal:attributes="href string:/soyuz/distros/ubuntu/src/warty/${package/name}">$Sourcepackage.name
+	    </a>
+	    </li>
             
         </ul>
+
+    </div>
+
+    <div tal:condition="context/serieslist">
+
+        <h2>Release Series (or "Branches")</h2>
+
+        <p>Most open source projects issue releases as part of a "series".
+        For example, some releases are from their "unstable" or "head" or
+        "cvs" or "dev" series. Some are from a versioned series, like the "2.0"
+        series might have releases numbered "2.0.0", "2.0.1" and
+        "2.0.2".</p>
+
+        <ul tal:repeat="series context/serieslist">
+
+            <li><a
+                tal:content="series/name"
+	            tal:attributes="href python:string('+series/'+series.name)">$Series.name
+	            </a></li>
+            
+        </ul>
+    </div>
+
+    <div tal:condition="context/releases">
+
+        <h2>Releases of <span
+        tal:replace="context/displayname">$Product.displayname</span></h2>
+
+        <ol>
+        
+            <li tal:repeat="release context/releases">
+                <b><span tal:content="release/version">version</span></b>: 
+                "<span tal:content="release/title">title</span>"
+                [ <a href="" tal:attributes="href release/version">View</a>
+                ]<br />
+                <span tal:replace="release/shortdesc">feature summary</span></li>
+
+        </ol>
 
     </div>
 

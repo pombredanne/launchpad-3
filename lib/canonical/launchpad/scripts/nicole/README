@@ -1,0 +1,50 @@
+Nicole: Nicole grabs Open Source Project Information from the Web
+
+Nicole is a Python Script that grabs information about an Open 
+Source Project in SourceForge and FreshMeat Hosts. it return 
+structured data as a tupples that can easily be formated and 
+shown in many different ways, eg. :
+	 ['description': 'description text',
+	  'xxx': ...,
+	  'homepage': 'http://www.xxx.com',
+	  ]
+
+
+Dependencies:
+
+     -> database.py: modified database class from Gina
+     -> nickname.py: unique/nick name factory from Gina (static)
+     -> sourceforge.py: A proto WebBot able to acquice information 
+     	                 from SF and FM (static)
+			 
+Configuring:
+
+You can configure the following parameters on Nicole: 
+
+    -> DOAPDB: Local DOAP database name
+
+    -> UPDATE: Running mode True for updating info anyway and False for skip
+                existent projects (Not implemented yet)
+
+    -> SLEEP:  Interval in seconds between the Web Requests (values as 20
+                prevent the Server Side to block you by Web Attack)
+
+    -> LIST:   Filename where you be stored the missed packages
+    
+    -> PACKAGES: Debian like Packages (gunziped) filename 
+    
+Running:
+
+$ dropdb <lp-db>  
+$ createdb -E UNICODE <lp-db>
+$ psql -f <gina_dump> <lp-db>  # contact me if you don't have a gina_dump
+$ python nicole.py             # it takes a long time, but isn't cpu-expensive
+
+
+Developer: Celso Providelo <cprov@gwyddion.com>
+
+Contributors: Christian Reis <kiko@async.com.br>
+	      Daniel Debonzi <debonzi@gwyddion.com>
+	      Morgan Collett <morgan@mcode.co.za>
+
+Release Date: 2004-10-05 

@@ -1,0 +1,80 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+    
+    <!-- This is class SourceSource-->
+    <!-- CONTENT CLASSES -->
+    <content class="canonical.launchpad.database.SourceSource">
+        <allow interface="canonical.launchpad.interfaces.ISourceSource"/>
+        <require
+            permission="launchpad.AnyPerson"
+            set_attributes="title description cvsroot cvsbranch cvsmodule
+                            cvstarfileurl svnrepository releaseroot releaseverstyle
+                            releasefileglobe newarchive newbranchcategory
+                            newbranchbranch newbranchversion product"
+            />
+    </content>
+
+
+    <!-- UTILITY DECLARATION-->
+
+    <!-- VOCABULARIES -->
+
+    <!--TRAVERSALS-->
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ISourceSourceSet"
+        getter="__getitem__" />
+
+    
+    <!--BROWSER DEFAULTVIEWS-->
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourceSource"
+        name="+index" />
+
+
+    <!--PAGE DECLARATIONS-->
+    <browser:pages 
+        for="canonical.launchpad.interfaces.ISourceSource"
+        permission="launchpad.AnyPerson"
+        class="canonical.soyuz.browser.SourceSourceView" >
+        <browser:page
+            name="+index"
+            template="../templates/sourcesource-index.pt"
+            lp:url="Doap/project/$Project.name/$Product.name/+sources/$SourceSource.name/"
+            />
+    </browser:pages>
+
+
+    <!--FORMS-->
+
+    <!-- This is class SourceSourceSet -->
+    <!-- CONTENT CLASSES -->
+    <content class="canonical.launchpad.database.SourceSourceSet">
+        <allow interface="canonical.launchpad.interfaces.ISourceSourceSet" />
+        <require permission="zope.View"
+        set_schema="canonical.launchpad.interfaces.ISourceSourceSet" />
+    </content>
+
+
+    <!-- UTILITY DECLARATION-->
+
+    <!-- VOCABULARIES -->
+
+    <!--TRAVERSALS-->
+    
+    <!--BROWSER DEFAULTVIEWS-->
+
+    <!--PAGE DECLARATIONS-->
+    <browser:pages
+        for ="canonical.launchpad.interfaces.ISourceSourceSet"
+        permission="zope.Public">
+    </browser:pages>
+
+
+    <!--FORMS-->
+
+
+</configure>

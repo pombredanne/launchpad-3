@@ -12,20 +12,23 @@ Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
 
 check:
-	@
+	$(MAKE) -C sourcecode build
+	# Run the pagetests.  Ensure that launchpad is not running using
+	# the launchpad_test database, and that nothing else is using that
+	# database, or the tests will hang until these processes exit.
+	./test_on_merge.py -f canonical.launchpad.ftest
 
 XXXcheck: build
 	$(MAKE) -C sourcecode check
 	PYTHONPATH=$(HERE)/lib ./test.py
 
 debugging-on:
-	ln -s ../lib/canonical/canonical.debugskin-configure.zcml ./package-includes/+canonical.debugskin-configure.zcml
 	ln -s ../lib/canonical/canonical.apidoc-configure.zcml ./package-includes/+canonical.apidoc-configure.zcml
 
 debugging-off:
-	rm -f ./package-includes/+canonical.debugskin-configure.zcml
 	rm -f ./package-includes/+canonical.apidoc-configure.zcml
 	# backwards compatibility for old style
+	rm -f ./package-includes/+canonical.debugskin-configure.zcml
 	rm -f ./package-includes/canonical.debugskin-configure.zcml
 	rm -f ./package-includes/canonical.apidoc-configure.zcml
 
