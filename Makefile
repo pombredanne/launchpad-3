@@ -21,12 +21,12 @@ check_merge: build
 	# finer grained testing anyway.
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	${PYTHON} -t ./test_on_merge.py --dir canonical --dir hct --dir sourcerer --dir banzai
+	${PYTHON} -t ./test_on_merge.py --dir hct --dir sourcerer --dir banzai
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	${PYTHON} -t ./test_on_merge.py --dir canonical
+	${PYTHON} -t ./test_on_merge.py 
 
 pagetests:
 	$(MAKE) -C sourcecode build
