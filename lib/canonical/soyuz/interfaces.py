@@ -243,6 +243,8 @@ class IPersonApp(Interface):
     subteams = Attribute("Sub Teams")
     distroroles = Attribute("Distribution Roles")
     distroreleaseroles = Attribute("Distrorelase Roles")
+
+    packages = Attribute("A Selection of SourcePackageReleases")
     
 # new people related table interfaces
 

@@ -400,6 +400,8 @@ class PersonApp(object):
         self.id = id
         self.person = SoyuzPerson.get(self.id)
 
+        self.packages = self._getsourcesByPerson()
+
         # FIXME: Most of this code probably belongs as methods/properties of
         #        SoyuzPerson
 
@@ -483,6 +485,17 @@ class PersonApp(object):
             self.gpg = GPGKey.selectBy(personID=self.id)[0]
         except IndexError:
             self.gpg = None
+
+    def _getsourcesByPerson(self):
+        clauseTables = ('SourcePackage', 'SourcePackageUpload',)
+        pid = str(self.id)
+        query = ('SourcePackageUpload.sourcepackagerelease = SourcePackageRelease.id '
+                 'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+                 'AND SourcePackage.maintainer = %i'
+                 %self.id
+                 )
+
+        return Set(SoyuzSourcePackageRelease.select(query))
 
 ################################################################
 
