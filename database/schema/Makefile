@@ -10,7 +10,7 @@ base:
 	@ echo "* Patching the database schema"
 	ls -1 patch*.sql | sort | xargs -n 1 psql -d ${DBNAME} -f
 	@ echo "* Loading language data"
-	psql -d ${DBNAME} -f ../languages.sql
+	psql -d ${DBNAME} -f ../languages.sql | cat
 
 create: drop
 	@ echo "* If this fails you need to run as the postgresql superuser"
@@ -45,8 +45,8 @@ all: drop create base
 #	psql -d ${DBNAME} -f ../sampledata/malone.sql
 #	psql -d ${DBNAME} -f ../sampledata/rosetta.sql
 #	psql -d ${DBNAME} -f ../sampledata/soyuz-extra.sql
-	psql -d ${DBNAME} -f ../sampledata/current.sql
-	psql -d ${DBNAME} -f comments.sql
+	psql -d ${DBNAME} -f ../sampledata/current.sql | cat
+	psql -d ${DBNAME} -f comments.sql | cat
 
 newsample-foaf:
 	pg_dump -d ${DBNAME} -a -D -O --table=person | grep -v "\(SET \| TOC \)" > ../sampledata/new-foaf.sql
