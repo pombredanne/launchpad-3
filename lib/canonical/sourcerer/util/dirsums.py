@@ -16,7 +16,11 @@ import os
 import md5
 
 
-def calculate(path):
+def never(*args, **kwargs):
+    """always returns False not matter what the parameters"""
+    return False
+
+def calculate(path, filter=never):
     """Calculate the MD5 sums of the contents of a directory.
 
     A dictionary containing an entry for each file and subdirectory will be
@@ -31,10 +35,12 @@ def calculate(path):
             subdir = subdir[1:]
 
         if len(subdir):
+            if filter(subdir): continue
             sums[subdir] = None
 
         for filename in filenames:
             filepath = os.path.join(dirpath, filename)
+            if filter(filename): continue
             if os.path.islink(filepath):
                 md5sum = "link:" + os.readlink(filepath)
             else:
@@ -46,19 +52,27 @@ def calculate(path):
 
     return sums
 
-def calculate_from(path, iterable):
+def calculate_from(path, iterable, filter=never):
     """Calculate the MD5 sums of files returned by a list or iterable.
 
     The iteratable should return directory and file entries relative
     to path, optionally excluding the root element which will be
     ignored anyway.
 
+    filter is used to optionally exclude files from the dirsum
+
     The return value is the same form as calculate().
     """
     sums = {}
+    excludes = {}
 
     for filename in iterable:
         filepath = os.path.join(path, filename)
+        if excluded(excludes, filename):
+            continue
+        if filter(os.path.basename(filename)): 
+            excludes[filename]=None
+            continue
         if os.path.isdir(filepath):
             if len(filepath) and filepath != ".":
                 sums[filename] = None
@@ -74,6 +88,12 @@ def calculate_from(path, iterable):
             sums[filename] = md5sum
 
     return sums
+
+def excluded(excludes, filename):
+    for file,junk in excludes.items():
+        if filename.startswith(file):
+            return True
+    return False
 
 def compare(sums1, sums2):
     """Compare two directory sums.
