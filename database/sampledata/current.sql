@@ -1,52 +1,31 @@
---
--- PostgreSQL database dump
---
 
 
 
---
--- Name: launchpadfile; Type: TABLE DATA; Schema: public; Owner: carlos
---
+
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', NULL, NULL, NULL, NULL, NULL, 'name1');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (2, 'Robert Collins', 'Robert', 'Collins', NULL, NULL, NULL, NULL, NULL, 'name2');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, NULL, NULL, 'name3');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (4, 'Colin Watson', 'Colin', 'Watson', NULL, NULL, NULL, NULL, NULL, 'name4');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, NULL, NULL, 'name5');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', NULL, NULL, NULL, NULL, NULL, 'name6');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (7, 'Andrew Bennetts', 'Andrew', 'Bennetts', NULL, NULL, NULL, NULL, NULL, 'name7');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (8, 'James Blackwell', 'James', 'Blackwell', NULL, NULL, NULL, NULL, NULL, 'name8');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, NULL, NULL, 'name9');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, NULL, NULL, 'name10');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, NULL, NULL, 'name11');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, NULL, NULL, 'name12');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, NULL, NULL, 'name13');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, NULL, NULL, 'name14');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (15, 'Lalo Martins', 'Lalo', 'Martins', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, NULL, NULL, 'name15');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, NULL, NULL, 'name16');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', NULL, NULL, 'name17');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (18, 'Ubuntu Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', NULL, NULL, 'name18');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', NULL, NULL, 'name19');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', NULL, NULL, 'name20');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (21, 'Hoary Gnome Team', NULL, NULL, NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', NULL, NULL, 'name21');
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (22, 'Stuart Bishop', 'Stuart', 'Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, NULL, NULL, 'name22');
 
 
-
---
--- Name: launchpadfilehash; Type: TABLE DATA; Schema: public; Owner: carlos
---
-
-
-
---
--- Name: person; Type: TABLE DATA; Schema: public; Owner: carlos
---
-
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (2, 'Robert Collins', 'Robert', 'Collins', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (4, 'Colin Watson', 'Colin', 'Watson', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (7, 'Andrew Bennetts', 'Andrew', 'Bennetts', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (8, 'James Blackwell', 'James', 'Blackwell', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (15, 'Lalo Martins', 'Lalo', 'Martins', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (18, 'Ubuntu Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (21, 'Hoary Gnome Team', NULL, NULL, NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp) VALUES (22, 'Stuart Bishop', 'Stuart', 'Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, NULL, NULL);
-
-
---
--- Name: emailaddress; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO emailaddress (id, email, person, status) VALUES (1, 'mark@hbd.com', 1, 2);
 INSERT INTO emailaddress (id, email, person, status) VALUES (2, 'robertc@robertcollins.net', 2, 2);
@@ -70,9 +49,6 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (19, 'testing@canoni
 INSERT INTO emailaddress (id, email, person, status) VALUES (20, 'stuart.bishop@canonical.com', 22, 1);
 
 
---
--- Name: gpgkey; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO gpgkey (id, person, keyid, fingerprint, pubkey, revoked) VALUES (1, 1, '1024D/09F89725', 'XVHJ OU77 IYTD 0982 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false);
 INSERT INTO gpgkey (id, person, keyid, fingerprint, pubkey, revoked) VALUES (2, 11, '1024D/09F89890', 'XVHJ OU77 IYTD 0981 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false);
@@ -86,9 +62,6 @@ INSERT INTO gpgkey (id, person, keyid, fingerprint, pubkey, revoked) VALUES (9, 
 INSERT INTO gpgkey (id, person, keyid, fingerprint, pubkey, revoked) VALUES (10, 6, '1024D/09F89120', 'XVHJ OU77 IYTP 0985 FTG6 OQFC 0GF8 09PO QW45 MJ76', '<-- sample pubkey ??? -->', false);
 
 
---
--- Name: archuserid; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO archuserid (id, person, archuserid) VALUES (1, 1, 'mark.shuttleworth');
 INSERT INTO archuserid (id, person, archuserid) VALUES (2, 11, 'steve.alexander');
@@ -102,9 +75,6 @@ INSERT INTO archuserid (id, person, archuserid) VALUES (9, 3, 'dave.miller');
 INSERT INTO archuserid (id, person, archuserid) VALUES (10, 6, 'jeff.waugh');
 
 
---
--- Name: wikiname; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (1, 1, 'http://www.ubuntulinux.com/wiki/', 'MarkShuttleworth');
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (2, 11, 'http://www.ubuntulinux.com/wiki/', 'SteveAlexander');
@@ -118,9 +88,6 @@ INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (9, 3, 'http://www.ubun
 INSERT INTO wikiname (id, person, wiki, wikiname) VALUES (10, 6, 'http://www.ubuntulinux.com/wiki/', 'JeffWaugh');
 
 
---
--- Name: jabberid; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO jabberid (id, person, jabberid) VALUES (1, 1, 'markshuttleworth@jabber.org');
 INSERT INTO jabberid (id, person, jabberid) VALUES (2, 11, 'stevea@jabber.org');
@@ -134,9 +101,6 @@ INSERT INTO jabberid (id, person, jabberid) VALUES (9, 3, 'justdave@jabber.org')
 INSERT INTO jabberid (id, person, jabberid) VALUES (10, 6, 'jeff@jabber.org');
 
 
---
--- Name: ircid; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO ircid (id, person, network, nickname) VALUES (1, 1, 'irc.freenode.net', 'mark');
 INSERT INTO ircid (id, person, network, nickname) VALUES (2, 11, 'irc.freenode.net', 'SteveA');
@@ -149,9 +113,6 @@ INSERT INTO ircid (id, person, network, nickname) VALUES (8, 5, 'irc.freenode.ne
 INSERT INTO ircid (id, person, network, nickname) VALUES (9, 6, 'irc.freenode.net', 'jeff');
 
 
---
--- Name: membership; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO membership (id, person, team, role, status) VALUES (1, 1, 17, 1, 2);
 INSERT INTO membership (id, person, team, role, status) VALUES (2, 11, 17, 2, 2);
@@ -163,9 +124,6 @@ INSERT INTO membership (id, person, team, role, status) VALUES (7, 1, 18, 1, 2);
 INSERT INTO membership (id, person, team, role, status) VALUES (8, 6, 18, 2, 2);
 
 
---
--- Name: teamparticipation; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO teamparticipation (id, team, person) VALUES (1, 17, 1);
 INSERT INTO teamparticipation (id, team, person) VALUES (2, 17, 11);
@@ -180,20 +138,14 @@ INSERT INTO teamparticipation (id, team, person) VALUES (10, 18, 19);
 INSERT INTO teamparticipation (id, team, person) VALUES (11, 18, 21);
 
 
---
--- Name: schema; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
-INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (1, 'Mark schema', 'TITLE', 'description', 1, true);
 INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (2, 'schema', 'SCHEMA', 'description', 1, true);
 INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (3, 'trema', 'XCHEMA', 'description', 1, true);
 INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (4, 'enema', 'ENHEMA', 'description', 1, true);
 INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (5, 'translation-languages', 'Translation Languages', 'Languages that a person can translate into', 13, false);
+INSERT INTO "schema" (id, name, title, description, "owner", extensible) VALUES (1, 'mark', 'TITLE', 'description', 1, true);
 
 
---
--- Name: label; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO label (id, "schema", name, title, description) VALUES (1, 1, 'blah', 'blah', 'blah');
 INSERT INTO label (id, "schema", name, title, description) VALUES (2, 5, 'ca', 'Translates into Catalan', 'A person with this label says that knows how to translate into Catalan');
@@ -205,9 +157,6 @@ INSERT INTO label (id, "schema", name, title, description) VALUES (7, 5, 'cy', '
 INSERT INTO label (id, "schema", name, title, description) VALUES (8, 5, 'zun', 'Translates into Zuni', 'A person with this label says that knows how to translate into Zuni');
 
 
---
--- Name: personlabel; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO personlabel (person, label) VALUES (13, 2);
 INSERT INTO personlabel (person, label) VALUES (13, 6);
@@ -217,9 +166,6 @@ INSERT INTO personlabel (person, label) VALUES (14, 7);
 INSERT INTO personlabel (person, label) VALUES (15, 5);
 
 
---
--- Name: project; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap) VALUES (1, 1, 'ubuntu', 'Ubuntu', 'The Ubuntu Project', 'A community Linux distribution building building a slick desktop for the global market.', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community. Ubuntu also includes work to unify the translation of common opens source desktop applications and the tracking of bugs across multiple distributions.', '2004-09-24 20:58:00.633513', 'http://www.no-name-yet.com/', NULL, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap) VALUES (2, 2, 'do-not-use-info-imports', 'DO NOT USE', 'DO NOT USE', 'DO NOT USE', 'TEMPORARY project till mirror jobs are assigned to correct project', '2004-09-24 20:58:00.637677', 'http://arch.ubuntu.com/', NULL, NULL);
@@ -229,21 +175,12 @@ INSERT INTO project (id, "owner", name, displayname, title, shortdesc, descripti
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap) VALUES (6, 12, 'iso-codes', 'iso-codes', 'iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.238443', 'http://www.gnome.org/', NULL, NULL);
 
 
---
--- Name: projectrelationship; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: projectrole; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: product; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap) VALUES (1, 1, 1, 'ubuntu', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is avaialble everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real proejcts ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL);
@@ -255,53 +192,29 @@ INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, 
 INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap) VALUES (8, 4, 12, 'thunderbird', 'Mozilla Thunderbird', 'Mozilla Thunderbird', 'The Mozilla Thunderbird email client', 'The Mozilla Thunderbird email client', '2004-09-24 20:58:04.478988', NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
---
--- Name: productlabel; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: productrole; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: productseries; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: productrelease; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner") VALUES (1, 4, '2004-06-28 00:00:00', 'mozilla-firefox-0.9.1', NULL, NULL, NULL, 12);
 INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner") VALUES (2, 8, '2004-06-28 00:00:00', 'mozilla-thunderbird-0.8.0', NULL, NULL, NULL, 12);
 
 
---
--- Name: productcvsmodule; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: productbkbranch; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: productsvnmodule; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: archarchive; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (1, 'mozilla', 'Mozilla', 'text', false, NULL);
 INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (2, 'thunderbird', 'Thunderbid', 'text', false, NULL);
@@ -314,21 +227,12 @@ INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES 
 INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (9, 'iso-codes', 'iso-codes', 'The iso-codes', false, NULL);
 
 
---
--- Name: archarchivelocation; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: archarchivelocationsigner; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: archnamespace; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (1, 1, 'mozilla', NULL, NULL, true);
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (2, 2, 'tunderbird', NULL, NULL, true);
@@ -341,9 +245,6 @@ INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (9, 9, 'iso-codes', 'iso-codes', '0.35', false);
 
 
---
--- Name: branch; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (1, 1, 'Mozilla Firefox 0.9.1', 'text', 1, NULL);
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (2, 2, 'Mozilla Thunderbird 0.9.1', 'text', 11, NULL);
@@ -356,51 +257,27 @@ INSERT INTO branch (id, archnamespace, title, description, "owner", product) VAL
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (9, 9, 'Iso-codes 0.35', 'text', 13, NULL);
 
 
---
--- Name: changeset; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: changesetfilename; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: changesetfile; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: changesetfilehash; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: branchrelationship; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: branchlabel; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: productbranchrelationship; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: manifest; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO manifest (id, datecreated, "owner") VALUES (1, '2004-06-29 00:00:00', 1);
 INSERT INTO manifest (id, datecreated, "owner") VALUES (2, '2004-06-30 00:00:00', 11);
@@ -413,61 +290,34 @@ INSERT INTO manifest (id, datecreated, "owner") VALUES (8, '2004-06-29 00:00:00'
 INSERT INTO manifest (id, datecreated, "owner") VALUES (9, '2004-06-29 00:00:00', 12);
 
 
---
--- Name: manifestentry; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: archconfig; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: archconfigentry; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: processorfamily; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO processorfamily (id, name, title, description, "owner") VALUES (1, 'x86', 'Intel 386 compatible chips', 'Bring back the 8086!', 1);
 
 
---
--- Name: processor; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO processor (id, family, name, title, description, "owner") VALUES (1, 1, '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family', 1);
 
 
---
--- Name: builder; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: component; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO component (id, name) VALUES (1, 'default_component');
 
 
---
--- Name: section; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO section (id, name) VALUES (1, 'default_section');
 
 
---
--- Name: distribution; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO distribution (id, name, title, description, domainname, "owner") VALUES (1, 'ubuntu', 'Ubuntu', 'Ubuntu is a new concept of GNU/Linux Distribution based on Debian GNU/Linux.', 'domain', 1);
 INSERT INTO distribution (id, name, title, description, domainname, "owner") VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of GNU/Linux Operating System.', 'domain', 1);
@@ -476,9 +326,6 @@ INSERT INTO distribution (id, name, title, description, domainname, "owner") VAL
 INSERT INTO distribution (id, name, title, description, domainname, "owner") VALUES (5, 'porkypigpolka', 'Porky Pig Polka Distribution', 'Should be near the Spork concept of GNU/Linux Distribution', 'domain', 1);
 
 
---
--- Name: distributionrole; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO distributionrole (person, distribution, role, id) VALUES (1, 1, 1, 1);
 INSERT INTO distributionrole (person, distribution, role, id) VALUES (11, 1, 1, 2);
@@ -489,9 +336,6 @@ INSERT INTO distributionrole (person, distribution, role, id) VALUES (17, 1, 3, 
 INSERT INTO distributionrole (person, distribution, role, id) VALUES (18, 1, 3, 7);
 
 
---
--- Name: distrorelease; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner") VALUES (1, 1, 'warty', 'Warty', 'This is the first stable release of Ubuntu', '1.0.0', 1, 1, 3, '2004-08-20 00:00:00', NULL, 1);
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner") VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 1, 1, 4, '2004-03-21 00:00:00', NULL, 8);
@@ -503,9 +347,6 @@ INSERT INTO distrorelease (id, distribution, name, title, description, "version"
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner") VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, 1, 1, '2004-12-29 00:00:00', 6, 6);
 
 
---
--- Name: distroreleaserole; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (1, 1, 1, 1);
 INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (1, 3, 1, 2);
@@ -518,34 +359,19 @@ INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (19, 1, 4
 INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (21, 3, 4, 9);
 
 
---
--- Name: distroarchrelease; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner") VALUES (1, 1, 1, 'warty--x86--devel--0', 1);
 
 
---
--- Name: libraryfilecontent; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: libraryfilealias; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: productreleasefile; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: sourcepackagename; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO sourcepackagename (id, name) VALUES (1, 'mozilla-firefox');
 INSERT INTO sourcepackagename (id, name) VALUES (2, 'mozilla-thunderbird');
@@ -557,9 +383,6 @@ INSERT INTO sourcepackagename (id, name) VALUES (7, 'plone');
 INSERT INTO sourcepackagename (id, name) VALUES (8, 'evolution');
 
 
---
--- Name: sourcepackage; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename) VALUES (1, 1, 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
 	K-Meleon and Camino, but written using the XUL user interface language and 
@@ -592,28 +415,16 @@ INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, dis
 	distributed suite from Ximian, Inc.', NULL, 1, 8);
 
 
---
--- Name: sourcepackagerelationship; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: sourcepackagelabel; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: packaging; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO packaging (sourcepackage, packaging, product) VALUES (1, 1, 4);
 
 
---
--- Name: sourcepackagerelease; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO sourcepackagerelease (id, sourcepackage, srcpackageformat, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc) VALUES (7, 3, 1, 7, '0.9.1-3', '2004-07-01 00:00:00', 1, NULL, NULL, NULL, 'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch', 'kiwi (>= 2.0),python-twisted , bugzilla, plone', NULL, NULL);
 INSERT INTO sourcepackagerelease (id, sourcepackage, srcpackageformat, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc) VALUES (8, 4, 1, 3, '0.9.1-4', '2004-07-02 00:00:00', 1, NULL, NULL, NULL, 'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch', 'kiwi (>= 2.0),python-twisted , bugzilla, plone', NULL, NULL);
@@ -971,15 +782,9 @@ INSERT INTO sourcepackagerelease (id, sourcepackage, srcpackageformat, creator, 
 INSERT INTO sourcepackagerelease (id, sourcepackage, srcpackageformat, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc) VALUES (13, 2, 1, 12, '0.8.0-1', '2004-06-29 00:00:00', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
---
--- Name: sourcepackagereleasefile; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: sourcepackageupload; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO sourcepackageupload (distrorelease, sourcepackagerelease, uploadstatus) VALUES (1, 11, 1);
 INSERT INTO sourcepackageupload (distrorelease, sourcepackagerelease, uploadstatus) VALUES (1, 10, 1);
@@ -996,16 +801,10 @@ INSERT INTO sourcepackageupload (distrorelease, sourcepackagerelease, uploadstat
 INSERT INTO sourcepackageupload (distrorelease, sourcepackagerelease, uploadstatus) VALUES (5, 9, 1);
 
 
---
--- Name: build; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (1, '2004-08-24 00:00:00', 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, 5);
 
 
---
--- Name: binarypackagename; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO binarypackagename (id, name) VALUES (1, 'mozilla-firefox');
 INSERT INTO binarypackagename (id, name) VALUES (2, 'mozilla-thunderbird');
@@ -1016,9 +815,6 @@ INSERT INTO binarypackagename (id, name) VALUES (6, 'kiwi');
 INSERT INTO binarypackagename (id, name) VALUES (7, 'plone');
 
 
---
--- Name: binarypackage; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (1, 1, '0.9.1-1', 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
 	K-Meleon and Camino, but written using the XUL user interface language and 
@@ -1061,15 +857,9 @@ INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, descript
 	 tool for collaboration between separately located entities.', 1, 1, 1, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
---
--- Name: binarypackagefile; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: packagepublishing; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO packagepublishing (id, binarypackage, distroarchrelease, component, section, priority) VALUES (1, 1, 1, 1, 1, 3);
 INSERT INTO packagepublishing (id, binarypackage, distroarchrelease, component, section, priority) VALUES (2, 2, 1, 1, 1, 3);
@@ -1081,15 +871,9 @@ INSERT INTO packagepublishing (id, binarypackage, distroarchrelease, component, 
 INSERT INTO packagepublishing (id, binarypackage, distroarchrelease, component, section, priority) VALUES (8, 10, 1, 1, 1, 3);
 
 
---
--- Name: packageselection; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: coderelease; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO coderelease (id, productrelease, sourcepackagerelease, manifest) VALUES (1, NULL, 5, 1);
 INSERT INTO coderelease (id, productrelease, sourcepackagerelease, manifest) VALUES (2, NULL, 6, 2);
@@ -1102,27 +886,15 @@ INSERT INTO coderelease (id, productrelease, sourcepackagerelease, manifest) VAL
 INSERT INTO coderelease (id, productrelease, sourcepackagerelease, manifest) VALUES (9, NULL, 2, 9);
 
 
---
--- Name: codereleaserelationship; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: osfile; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: osfileinpackage; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: pomsgid; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO pomsgid (id, msgid) VALUES (1, 'evolution addressbook');
 INSERT INTO pomsgid (id, msgid) VALUES (2, 'current addressbook folder');
@@ -1234,9 +1006,6 @@ Do you really want to display all of these contacts?');
 INSERT INTO pomsgid (id, msgid) VALUES (97, '_Add Group');
 
 
---
--- Name: potranslation; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO potranslation (id, translation) VALUES (1, 'libreta de direcciones de Evolution');
 INSERT INTO potranslation (id, translation) VALUES (2, 'carpeta de libretas de direcciones actual');
@@ -1253,42 +1022,24 @@ INSERT INTO potranslation (id, translation) VALUES (8, 'Abrir %d contactos abrir
 INSERT INTO potranslation (id, translation) VALUES (9, '_Añadir grupo');
 
 
---
--- Name: language; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: country; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: spokenin; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: license; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO license (id, legalese) VALUES (1, 'GPL-2');
 
 
---
--- Name: potemplate; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO potemplate (id, product, priority, branch, changeset, name, title, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner") VALUES (1, 5, 2, 8, NULL, 'evolution-2.0', 'Main POT file for the Evolution 2.0 development branch', 'I suppose we should create a long description here....', 'Copyright (C) 2003  Ximian Inc.', 1, '2004-08-17 09:10:00', 'po/', true, 3, 13);
 INSERT INTO potemplate (id, product, priority, branch, changeset, name, title, description, copyright, license, datecreated, "path", iscurrent, messagecount, "owner") VALUES (2, 7, 2, 9, NULL, 'languages', 'POT file for the iso_639 strings', 'I suppose we should create a long description here....', 'Copyright', 1, '2004-08-17 09:10:00', 'iso_639/', true, 3, 13);
 
 
---
--- Name: pofile; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO pofile (id, potemplate, "language", title, description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename) VALUES (1, 1, 387, NULL, NULL, ' traducción de es.po al Spanish
  translation of es.po to Spanish
@@ -1318,9 +1069,6 @@ Plural-Forms: nplurals=2; plural=(n != 1);
 ', false, 13, NULL, 2, 0, 1, NULL, NULL, 2, NULL, NULL);
 
 
---
--- Name: pomsgset; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO pomsgset (id, primemsgid, "sequence", potemplate, pofile, iscomplete, obsolete, fuzzy, commenttext, filereferences, sourcecomment, flagscomment) VALUES (1, 1, 1, 1, NULL, false, false, false, NULL, 'a11y/addressbook/ea-addressbook-view.c:94
 a11y/addressbook/ea-addressbook-view.c:103
@@ -1350,9 +1098,6 @@ INSERT INTO pomsgset (id, primemsgid, "sequence", potemplate, pofile, iscomplete
 INSERT INTO pomsgset (id, primemsgid, "sequence", potemplate, pofile, iscomplete, obsolete, fuzzy, commenttext, filereferences, sourcecomment, flagscomment) VALUES (23, 97, 7, 1, 1, true, true, false, NULL, NULL, NULL, NULL);
 
 
---
--- Name: pomsgidsighting; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO pomsgidsighting (id, pomsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (1, 1, 1, '2004-09-24 21:58:04.969875', '2004-09-24 21:58:04.969875', true, 0);
 INSERT INTO pomsgidsighting (id, pomsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (2, 2, 2, '2004-09-24 21:58:05.005673', '2004-09-24 21:58:05.005673', true, 0);
@@ -1383,9 +1128,6 @@ INSERT INTO pomsgidsighting (id, pomsgset, pomsgid, datefirstseen, datelastseen,
 INSERT INTO pomsgidsighting (id, pomsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (27, 23, 97, '2004-09-24 21:58:06.306292', '2004-09-24 21:58:06.306292', true, 0);
 
 
---
--- Name: potranslationsighting; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (1, 17, 1, 1, '2004-09-24 21:58:05.989829', '2004-09-24 21:58:05.989829', true, 0, true, 0, 13);
 INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (2, 18, 2, 1, '2004-09-24 21:58:06.036589', '2004-09-24 21:58:06.036589', true, 0, true, 0, 13);
@@ -1398,123 +1140,69 @@ INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefir
 INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (9, 23, 9, 1, '2004-09-24 21:58:06.307785', '2004-09-24 21:58:06.307785', true, 0, true, 0, 13);
 
 
---
--- Name: pocomment; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: translationeffort; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: translationeffortpotemplate; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: posubscription; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: bug; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc) VALUES (2, '2004-09-24 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 'Everything put into the folder "Trash" disappears!');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc) VALUES (1, '2004-09-24 20:58:04.553583', NULL, 'Firefox does not support SVG', 'The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 'Firefox needs to support embedded SVG images, now that the standard has been finalised.');
 
 
---
--- Name: bugsubscription; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: buginfestation; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: sourcepackagebugassignment; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackage, assignee) VALUES (1, 1, 1, 2, 4, 2, NULL, NULL);
 INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackage, assignee) VALUES (2, 2, 8, 2, 4, 2, NULL, 12);
 
 
---
--- Name: productbugassignment; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (1, 1, 4, 1, 2, 2, NULL);
 INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (2, 2, 8, 1, 2, 2, NULL);
 
 
---
--- Name: bugactivity; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (1, 1, '2004-09-24 00:00:00', 1, 'title', 'A silly problem', 'An odd problem', 'Decided problem wasn''t silly after all');
 
 
---
--- Name: bugexternalref; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated, "owner") VALUES (1, 2, 1, '45', 'Some junk has to go here because the field is NOT NULL', '2004-09-24 20:58:04.702498', 12);
 INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated, "owner") VALUES (2, 2, 2, 'http://www.mozilla.org', 'The homepage of the project this bug is on, for no particular reason', '2004-09-24 20:58:04.720774', 12);
 
 
---
--- Name: bugsystemtype; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO bugsystemtype (id, name, title, description, homepage, "owner") VALUES (1, 'bugzilla', 'BugZilla', 'Dave Miller''s Labour of Love, the Godfather of Open Source project issue tracking.', 'http://www.bugzilla.org/', 12);
 
 
---
--- Name: bugsystem; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO bugsystem (id, bugsystemtype, name, title, shortdesc, baseurl, "owner", contactdetails) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker', 'http://www.example.com/bugtracker', 12, 'Carrier pidgeon only');
 
 
---
--- Name: bugwatch; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO bugwatch (id, bug, bugsystem, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12);
 
 
---
--- Name: projectbugsystem; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: buglabel; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: bugrelationship; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: bugmessage; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 INSERT INTO bugmessage (id, bug, datecreated, title, contents, "owner", parent, distribution, rfc822msgid) VALUES (1, 2, '2004-09-24 20:58:04.684057', 'PEBCAK', 'Problem exists between chair and keyboard', NULL, NULL, NULL, 'foo@example.com-332342--1231');
 INSERT INTO bugmessage (id, bug, datecreated, title, contents, "owner", parent, distribution, rfc822msgid) VALUES (3, 1, '2004-09-24 21:17:17.153792', 'Reproduced on AIX', 'We''ve seen something very similar on AIX with Gnome 2.6 when it is compiled with XFT support. It might be that the anti-aliasing is causing loopback devices to degrade, resulting in a loss of transparency at the system cache level and decoherence in the undelete function. This is only known to be a problem when the moon is gibbous.', 12, NULL, NULL, 'sdsdfsfd');
@@ -1523,621 +1211,350 @@ INSERT INTO bugmessage (id, bug, datecreated, title, contents, "owner", parent, 
 INSERT INTO bugmessage (id, bug, datecreated, title, contents, "owner", parent, distribution, rfc822msgid) VALUES (6, 2, '2004-09-24 21:35:20.125564', 'Strange bug with duplicate messages.', 'Oddly enough the bug system seems only capable of displaying the first two comments that are made against a bug. I wonder why that is? Lets have a few more decent legth comments in here so we can see what the spacing is like. Also, at some stage, we''ll need a few comments that get displayed in a fixed-width font, so we have a clue about code-in-bug-comments etc.', 12, NULL, NULL, 'sdfsfwew');
 
 
---
--- Name: bugattachment; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: sourcesource; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: componentselection; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: sectionselection; Type: TABLE DATA; Schema: public; Owner: carlos
---
 
 
 
---
--- Name: launchpadfile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
-
-SELECT pg_catalog.setval('launchpadfile_id_seq', 1, false);
-
-
---
--- Name: person_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('person_id_seq', 22, true);
 
 
---
--- Name: emailaddress_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('emailaddress_id_seq', 20, true);
 
 
---
--- Name: gpgkey_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('gpgkey_id_seq', 10, true);
 
 
---
--- Name: archuserid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('archuserid_id_seq', 10, true);
 
 
---
--- Name: wikiname_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('wikiname_id_seq', 10, true);
 
 
---
--- Name: jabberid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('jabberid_id_seq', 10, true);
 
 
---
--- Name: ircid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('ircid_id_seq', 9, true);
 
 
---
--- Name: membership_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('membership_id_seq', 8, true);
 
 
---
--- Name: teamparticipation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('teamparticipation_id_seq', 11, true);
 
 
---
--- Name: schema_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('schema_id_seq', 5, true);
 
 
---
--- Name: label_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('label_id_seq', 8, true);
 
 
---
--- Name: project_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('project_id_seq', 6, true);
 
 
---
--- Name: projectrelationship_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('projectrelationship_id_seq', 1, false);
 
 
---
--- Name: projectrole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('projectrole_id_seq', 1, false);
 
 
---
--- Name: product_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('product_id_seq', 8, true);
 
 
---
--- Name: productlabel_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('productlabel_id_seq', 1, false);
 
 
---
--- Name: productrole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('productrole_id_seq', 1, false);
 
 
---
--- Name: productseries_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('productseries_id_seq', 1, false);
 
 
---
--- Name: productrelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('productrelease_id_seq', 2, true);
 
 
---
--- Name: productcvsmodule_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('productcvsmodule_id_seq', 1, false);
 
 
---
--- Name: productbkbranch_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('productbkbranch_id_seq', 1, false);
 
 
---
--- Name: productsvnmodule_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('productsvnmodule_id_seq', 1, false);
 
 
---
--- Name: archarchive_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('archarchive_id_seq', 9, true);
 
 
---
--- Name: archarchivelocation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('archarchivelocation_id_seq', 1, false);
 
 
---
--- Name: archnamespace_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('archnamespace_id_seq', 9, true);
 
 
---
--- Name: branch_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('branch_id_seq', 9, true);
 
 
---
--- Name: changeset_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('changeset_id_seq', 1, false);
 
 
---
--- Name: changesetfilename_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('changesetfilename_id_seq', 1, false);
 
 
---
--- Name: changesetfile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('changesetfile_id_seq', 1, false);
 
 
---
--- Name: changesetfilehash_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('changesetfilehash_id_seq', 1, false);
 
 
---
--- Name: productbranchrelationship_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('productbranchrelationship_id_seq', 1, false);
 
 
---
--- Name: manifest_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('manifest_id_seq', 9, true);
 
 
---
--- Name: manifestentry_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('manifestentry_id_seq', 1, false);
 
 
---
--- Name: archconfig_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('archconfig_id_seq', 1, false);
 
 
---
--- Name: processorfamily_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('processorfamily_id_seq', 1, true);
 
 
---
--- Name: processor_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('processor_id_seq', 1, true);
 
 
---
--- Name: builder_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('builder_id_seq', 1, false);
 
 
---
--- Name: component_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('component_id_seq', 1, true);
 
 
---
--- Name: section_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('section_id_seq', 1, true);
 
 
---
--- Name: distribution_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('distribution_id_seq', 5, true);
 
 
---
--- Name: distrorelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('distrorelease_id_seq', 8, true);
 
 
---
--- Name: distroarchrelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('distroarchrelease_id_seq', 1, true);
 
 
---
--- Name: libraryfilecontent_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('libraryfilecontent_id_seq', 1, false);
 
 
---
--- Name: libraryfilealias_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('libraryfilealias_id_seq', 1, false);
 
 
---
--- Name: sourcepackagename_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('sourcepackagename_id_seq', 8, true);
 
 
---
--- Name: sourcepackage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('sourcepackage_id_seq', 8, true);
 
 
---
--- Name: sourcepackagerelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('sourcepackagerelease_id_seq', 13, true);
 
 
---
--- Name: build_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('build_id_seq', 1, true);
 
 
---
--- Name: binarypackagename_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('binarypackagename_id_seq', 7, true);
 
 
---
--- Name: binarypackage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('binarypackage_id_seq', 11, true);
 
 
---
--- Name: packagepublishing_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('packagepublishing_id_seq', 8, true);
 
 
---
--- Name: packageselection_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('packageselection_id_seq', 1, false);
 
 
---
--- Name: coderelease_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('coderelease_id_seq', 9, true);
 
 
---
--- Name: osfile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('osfile_id_seq', 1, false);
 
 
---
--- Name: pomsgid_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('pomsgid_id_seq', 97, true);
 
 
---
--- Name: potranslation_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('potranslation_id_seq', 9, true);
 
 
---
--- Name: language_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('language_id_seq', 632, true);
 
 
---
--- Name: country_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('country_id_seq', 240, true);
 
 
---
--- Name: license_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('license_id_seq', 1, true);
 
 
---
--- Name: potemplate_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('potemplate_id_seq', 2, true);
 
 
---
--- Name: pofile_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('pofile_id_seq', 1, true);
 
 
---
--- Name: pomsgset_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('pomsgset_id_seq', 23, true);
 
 
---
--- Name: pomsgidsighting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('pomsgidsighting_id_seq', 27, true);
 
 
---
--- Name: potranslationsighting_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('potranslationsighting_id_seq', 9, true);
 
 
---
--- Name: pocomment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('pocomment_id_seq', 1, false);
 
 
---
--- Name: translationeffort_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('translationeffort_id_seq', 1, false);
 
 
---
--- Name: posubscription_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('posubscription_id_seq', 1, false);
 
 
---
--- Name: bug_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('bug_id_seq', 2, true);
 
 
---
--- Name: bugsubscription_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('bugsubscription_id_seq', 1, false);
 
 
---
--- Name: sourcepackagebugassignment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('sourcepackagebugassignment_id_seq', 2, true);
 
 
---
--- Name: productbugassignment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('productbugassignment_id_seq', 2, true);
 
 
---
--- Name: bugactivity_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('bugactivity_id_seq', 1, true);
 
 
---
--- Name: bugexternalref_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('bugexternalref_id_seq', 2, true);
 
 
---
--- Name: bugsystemtype_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('bugsystemtype_id_seq', 1, true);
 
 
---
--- Name: bugsystem_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('bugsystem_id_seq', 1, true);
 
 
---
--- Name: bugwatch_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('bugwatch_id_seq', 1, true);
 
 
---
--- Name: bugmessage_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('bugmessage_id_seq', 6, true);
 
 
---
--- Name: bugattachment_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('bugattachment_id_seq', 1, false);
 
 
---
--- Name: sourcesource_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('sourcesource_id_seq', 1, false);
 
 
---
--- Name: projectbugsystem_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('projectbugsystem_id_seq', 1, false);
 
 
---
--- Name: distributionrole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('distributionrole_id_seq', 7, true);
 
 
---
--- Name: distroreleaserole_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('distroreleaserole_id_seq', 9, true);
 
 
---
--- Name: componentselection_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('componentselection_id_seq', 1, false);
 
 
---
--- Name: sectionselection_id_seq; Type: SEQUENCE SET; Schema: public; Owner: carlos
---
 
 SELECT pg_catalog.setval('sectionselection_id_seq', 1, false);
 
