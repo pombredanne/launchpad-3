@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-22 22:23:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1479
+
+    Summary:
+      Fix AttributeError in Transaction.__del__.
+    Revision:
+      launchpad--devel--0--patch-1479
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--AttributeErrorAtTheEndOfTheWorld--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1476
+    
+     * steve.alexander@canonical.com/launchpad--AttributeErrorAtTheEndOfTheWorld--0--patch-1
+       Fix to AttributeError raised in Transaction.__del__.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/ftests/pgsql.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--AttributeErrorAtTheEndOfTheWorld--0--base-0
+     steve.alexander@canonical.com/launchpad--AttributeErrorAtTheEndOfTheWorld--0--patch-1
+
+
 2005-03-22 21:38:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1478
 
     Summary:

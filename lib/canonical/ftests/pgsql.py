@@ -27,15 +27,20 @@ class ConnectionWrapper(object):
             PgTestSetup.connections.remove(self)
             self.__dict__['real_connection'].close()
 
-    def rollback(self):
+    def rollback(self, InterfaceError=psycopg.InterfaceError):
         # In our test suites, rollback ends up being called twice in some
         # circumstances. Silently ignoring this is probably not correct,
         # but the alternative is wasting further time chasing this 
         # and probably refactoring sqlos and/or zope3
         # -- StuartBishop 2005-01-11
+        # Need to store InterfaceError cleverly, otherwise it may have been
+        # GCed when the world is being destroyed, leading to an odd
+        # AttributeError with
+        #   except psycopg.InterfaceError:
+        # -- SteveAlexander 2005-03-22
         try:
             self.__dict__['real_connection'].rollback()
-        except psycopg.InterfaceError:
+        except InterfaceError:
             pass
 
     def commit(self):
