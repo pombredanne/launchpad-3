@@ -59,20 +59,20 @@ class ProductReleaseImporter:
         # We need to construct a product release file.  Figure out if we need to
         # construct a product release as well.
         version = extractVersionFromFilename(filename)
-        existingReleases = ProductRelease.selectBy(productID=self.product,
+        existingReleases = ProductRelease.selectBy(productID=self.product.id,
                                                    version=version)
         if existingReleases.count() == 0:
             # Yep, we do need to create a product release.
             # FIXME: We probably ought to use the last-modified-time reported by
             # the download, rather than just UTC_NOW.
-            pr = ProductRelease(productID=product, datereleased=UTC_NOW,
-                                version=version, ownerID=product.owner)
+            pr = ProductRelease(productID=self.product.id, datereleased=UTC_NOW,
+                                version=version, ownerID=self.product.owner)
         else:
             # The db schema guarantees there cannot be more than one result
             pr = existingReleases[0]
 
         # Now create the release file
-        ProductReleaseFile(productreleaseID=pr, libraryfile=aliasID, 
+        ProductReleaseFile(productreleaseID=pr.id, libraryfile=aliasID, 
                            filetype=dbschema.UpstreamFileType.CODETARBALL)
 
         # ...and we're done!
