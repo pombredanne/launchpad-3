@@ -472,7 +472,7 @@ class ViewProject(View):
         
 class ViewProduct(View):
     def syncs(self):
-        return iter(self.context.syncs())
+        return self.context.syncs
     def handle_submit(self):
         if not self.request.form.get("Register", None)=="Register":
             return

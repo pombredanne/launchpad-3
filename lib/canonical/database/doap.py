@@ -103,6 +103,9 @@ class IProject(Interface):
     def products():
         """Return Products for this Project."""
 
+    def getProduct(name):
+        """Get a product with name `name`."""
+    
     def rosettaProducts():
         """Iterates over RosettaProducts in this project."""
 
@@ -145,7 +148,15 @@ class DBProject(SQLBase):
     def rosettaProducts(self):
         return iter(self._productsJoin)
 
+    def getProduct(self, name):
+        try:
+            return Product.selectBy(projectID=self.id, name=name)[0]
+        except IndexError:
+            return None
+
     def poTemplate(self, name):
+        # XXX: What does this have to do with DBProject?  This function never
+        # uses self.  I suspect this belongs somewhere else.
         results = RosettaPOTemplate.selectBy(name=name)
         count = results.count()
 
@@ -166,6 +177,7 @@ class IProduct(Interface):
     description = Text(title=_('Description'))
     homepageurl = TextLine(title=_('Homepage URL'))
     manifest = TextLine(title=_('Manifest'))
+    syncs = Attribute(_('Sync jobs'))
 
     def bugs():
         """Return ProductBugAssignments for this Product."""
@@ -199,6 +211,8 @@ class Product(SQLBase):
         ]
 
     bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
+
+    syncs = MultipleJoin('SourceSource', joinColumn='product')
 
 
 #
