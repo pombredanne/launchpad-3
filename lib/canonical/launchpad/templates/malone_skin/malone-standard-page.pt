@@ -1,0 +1,28 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Strict//EN"
+    "http://www.w3.org/TR/html4/strict.dtd">
+<html metal:define-macro="standard_page">
+	<head>
+		<title>Malone on Ubuntu Launchpad</title>
+		<link rel="stylesheet" type="text/css"
+              tal:attributes="href context/++resource++malone.css" />
+	</head>
+	<body>
+		<div class="user">
+			Welcome, <a href="prefs">kiko</a> &bull;
+			<a href="logout">Log out</a>
+		</div>
+		<div class="id">
+			<address class="ubuntu launchpad">Ubuntu Launchpad</address>
+			<address class="app">Malone</address>			
+		</div>
+		<ul class="navigation tabs">
+			<li class="current">Ubuntu Bugs</li>
+			<li><a href="report">Report a Bug</a></li>
+			<li><a href="search">Show Bugs</a></li>
+			<li><a href="admin">Admin</a></li>
+		</ul>
+        <metal:block define-slot="main">
+            Main body text goes here.
+        </metal:block>
+	</body>
+</html>

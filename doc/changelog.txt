@@ -2,6 +2,61 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-08 20:48:20 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1293
+
+    Summary:
+      add a skin called 'newlook', with just one layer, 'malone',
+ right now. hang the new index page in this skin at /malone/products/.name. I'm
+ not sure what our policy is for where to define skins, layers,
+ and resources for this skin, so everything's currently in skins.zcml and all
+ the relevant template files are in templates/malone_skin/.
+    Revision:
+      launchpad--devel--0--patch-1293
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-339
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-340
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-341
+       add a skin called 'newlook', with just one layer, 'malone', right now. hang the new index page in this skin at /malone/products/.name. I'm not sure what our policy is for where to define skins, layers, and resources for this skin, so everything's currently in skins.zcml and all the relevant template files are in templates/malone_skin/.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-342
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/templates/malone_skin/.arch-ids/=id
+     lib/canonical/launchpad/templates/malone_skin/.arch-ids/malone-index.pt.id
+     lib/canonical/launchpad/templates/malone_skin/.arch-ids/malone-standard-page.pt.id
+     lib/canonical/launchpad/templates/malone_skin/css/.arch-ids/=id
+     lib/canonical/launchpad/templates/malone_skin/css/.arch-ids/malone.css.id
+     lib/canonical/launchpad/templates/malone_skin/css/malone.css
+     lib/canonical/launchpad/templates/malone_skin/malone-index.pt
+     lib/canonical/launchpad/templates/malone_skin/malone-standard-page.pt
+     lib/canonical/launchpad/zcml/.arch-ids/skins.zcml.id
+     lib/canonical/launchpad/zcml/skins.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+
+    new directories:
+     lib/canonical/launchpad/templates/malone_skin
+     lib/canonical/launchpad/templates/malone_skin/.arch-ids
+     lib/canonical/launchpad/templates/malone_skin/css
+     lib/canonical/launchpad/templates/malone_skin/css/.arch-ids
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-339
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-340
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-341
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-342
+
+
 2005-02-08 20:05:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1292
 
     Summary:

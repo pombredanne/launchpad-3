@@ -1,0 +1,30 @@
+<html metal:use-macro="views/standard_macros/standard_page">
+<metal:block fill-slot="main">
+    <form class="central">
+        <div>
+            <label for="q">
+                Search Ubuntu bug reports:
+            </label>
+        </div>
+        <div>
+            <input type="text" id="q" size="36">
+        </div>
+        <ul class="navigation">
+            <li>
+                <a href="search">Advanced Search</a>
+            </li>
+            <li>
+                <a href="help">Help</a>
+            </li>
+        </ul>
+    </form>
+    <div class="stats">
+        <div>
+            48 974 bugs and 110 092 tasks filed
+        </div>
+        <div>
+            Last 24 hours: 3402 bugs and 2778 tasks filed, 23 tasks reopened, 1104 resolved
+        </div>
+    </div>
+</metal:block>
+</html>

@@ -26,6 +26,11 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
+        layer="malone"
+        name="+malone-index" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.RosettaLayer"
         name="+rosetta-index"
         />
@@ -46,6 +51,16 @@
         <browser:page name="+index"
             template="../templates/product-index.pt"
             lp:url="doap/projects/$Project.name/$Product.name/" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProductView" 
+        layer="malone">
+        <browser:page name="+malone-index"
+            template="../templates/malone_skin/malone-index.pt"
+            lp:url="malone/products/$Product.name/" />
     </browser:pages>
 
     <browser:pages
