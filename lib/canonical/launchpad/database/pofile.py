@@ -16,7 +16,7 @@ from sets import Set
 from canonical.launchpad.interfaces import IPOTemplate, IPOTMsgSet, \
     IEditPOTemplate, IEditPOTMsgSet, IPOMsgID, IPOMsgIDSighting, IPOFile, \
     IEditPOFile, IPOMsgSet, IEditPOMsgSet, IPOTranslation, \
-    IPOTranslationSighting, IPersonSet
+    IPOTranslationSighting, IPersonSet, IRosettaStats
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language
 from canonical.lp.dbschema import RosettaTranslationOrigin
@@ -69,8 +69,93 @@ standardPOFileHeader = (
 "Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n"
 )
 
+class RosettaStats(object):
+    implements(IRosettaStats)
 
-class POTemplate(SQLBase):
+    def messageCount(self):
+        # This method should be overrided by the objects that inherit from
+        # this object.
+        return 0
+
+    def currentCount(self, language=None):
+        # This method should be overrided by the objects that inherit from
+        # this object.
+        return 0
+
+    def currentPercent(self, language=None):
+        try:
+            percent = float(self.currentCount(language)) / self.messageCount()
+            percent *= 100
+        except ZeroDivisionError:
+            percent = 0
+        percent = round(percent, 2)
+        # We use float(str()) to prevent problems with some floating point
+        # representations that could give us:
+        # >>> x = 3.141592
+        # >>> round(x, 2)
+        # 3.1400000000000001
+        # >>>
+        return float(str(percent))
+
+    def updatesCount(self, language=None):
+        # This method should be overrided by the objects that inherit from
+        # this object.
+        return 0
+
+    def updatesPercent(self, language=None):
+        try:
+            percent = float(self.updatesCount(language)) / self.messageCount()
+            percent *= 100
+        except ZeroDivisionError:
+            percent = 0
+        percent = round(percent, 2)
+        return float(str(percent))
+
+    def rosettaCount(self, language=None):
+        # This method should be overrided by the objects that inherit from
+        # this object.
+        return 0
+
+    def rosettaPercent(self, language=None):
+        try:
+            percent = float(self.rosettaCount(language)) / self.messageCount()
+            percent *= 100
+        except ZeroDivisionError:
+            percent = 0
+        percent = round(percent, 2)
+        return float(str(percent))
+
+    def translatedCount(self, language=None):
+        return self.currentCount(language) + self.rosettaCount(language)
+
+    def translatedPercent(self, language=None):
+        try:
+            percent = float(self.translatedCount(language)) / self.messageCount()
+            percent *= 100
+        except ZeroDivisionError:
+            percent = 0
+        percent = round(percent, 2)
+        return float(str(percent))
+
+    def untranslatedCount(self, language=None):
+        untranslated = self.messageCount() - self.translatedCount(language)
+        # We do a small sanity check so we don't return negative numbers.
+        if untranslated < 0:
+            return 0
+        else:
+            return untranslated
+
+    def untranslatedPercent(self, language=None):
+        try:
+            percent = float(self.untranslatedCount(language)) / self.messageCount()
+            percent *= 100
+        except ZeroDivisionError:
+            percent = 100
+        percent = round(percent, 2)
+        return float(str(percent))
+
+
+class POTemplate(SQLBase, RosettaStats):
     implements(IEditPOTemplate)
 
     _table = 'POTemplate'
@@ -114,9 +199,7 @@ class POTemplate(SQLBase):
 
     def __len__(self):
         '''Return the number of CURRENT POTMsgSets in this POTemplate.'''
-        # XXX: Carlos Perello Marin XX/XX/04 Should we use the cached value
-        # POTemplate.messageCount instead?
-        return self.currentMessageSets().count()
+        return self.messageCount()
 
     def __iter__(self):
             return iter(self.currentMessageSets())
@@ -295,10 +378,6 @@ class POTemplate(SQLBase):
         except KeyError:
             return None
 
-    # XXX: Carlos Perello Marin: currentCount, updatesCount and rosettaCount
-    # should be updated with a way that let's us query the database instead
-    # of use the cached value
-
     def messageCount(self):
         return self.messagecount
 
@@ -451,7 +530,7 @@ class POTemplate(SQLBase):
 
         # We update the cached value that tells us the number of msgsets this
         # .pot file has
-        self.messagecount = len(self)
+        self.messagecount = self.currentMessageSets().count()
 
         # And now, we should update the statistics for all po files this .pot
         # file has because a number of msgsets could have change.
@@ -662,7 +741,7 @@ class POMsgID(SQLBase):
         alternateID=True)
 
 
-class POFile(SQLBase):
+class POFile(SQLBase, RosettaStats):
     implements(IEditPOFile)
 
     _table = 'POFile'
@@ -745,18 +824,7 @@ class POFile(SQLBase):
     # it makes no sense to have such information or perhaps we should have it
     # as pot's len + the obsolete msgsets from this .po file.
     def __len__(self):
-        '''Count of __iter__.'''
-#        return self.currentMessageSets().count()
-        return self.currentcount + self.rosettacount
-
-    # XXX: Carlos Perello Marin XX/XX/04: This is implemented using the cache,
-    # we should add an option to get the real count.
-    # The number of translated are the ones from the .po file + the ones that
-    # are only translated in Rosetta.
-    def translatedCount(self):
-        '''Returns the cached count of translated strings where translations
-        exist in the files or in the database.'''
-        return self.currentCount() + self.rosettaCount()
+        return self.translatedCount()
 
     def translated(self):
         return iter(POMsgSet.select('''
@@ -767,14 +835,6 @@ class POFile(SQLBase):
             clauseTables = [
                 'POMsgSet',
                 ]))
-
-    # XXX: Carlos Perello Marin XX/XX/04: This is implemented using the cache,
-    # we should add an option to get the real count.
-    # The number of untranslated are the ones from the .pot file - the ones
-    # that we have already translated.
-    def untranslatedCount(self):
-        '''Same as untranslated(), but with COUNT.'''
-        return len(self.potemplate) - self.translatedCount()
 
     def untranslated(self):
         '''XXX'''
@@ -849,13 +909,13 @@ class POFile(SQLBase):
     def messageCount(self):
         return self.potemplate.messageCount()
 
-    def currentCount(self):
+    def currentCount(self, language=None):
         return self.currentcount
 
-    def updatesCount(self):
+    def updatesCount(self, language=None):
         return self.updatescount
 
-    def rosettaCount(self):
+    def rosettaCount(self, language=None):
         return self.rosettacount
 
     def getContributors(self):
@@ -977,6 +1037,9 @@ class POFile(SQLBase):
 
     def doRawImport(self):
         importer = POFileImporter(self, self.rawimporter)
+
+        import pdb
+        pdb.set_trace()
     
         file = StringIO.StringIO(base64.decodestring(self.rawfile))
     
@@ -1199,9 +1262,7 @@ class POMsgSet(SQLBase):
                 pluralform=pluralForm,
                 active=True,
                 personID=person.id,
-                origin=origin,
-                # XXX: FIXME
-                license=1)
+                origin=origin)
 
         # Make all other sightings inactive.
 
