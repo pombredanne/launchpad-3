@@ -13,8 +13,8 @@
       Sorry, you don't have permission to access this page.
       </h1>
       <p>You are logged in as
-        <span tal:content="request/lp:person/title">
-          $User.title
+        <span tal:content="request/lp:person/title|default">
+          No user is logged in
         </span>
       </p>
     </div>

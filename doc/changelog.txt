@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-05 16:07:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1563
+
+    Summary:
+      Restored +basiclogin page to do basic auth.  This is available only on the DebugLayer or port 8086.
+    Revision:
+      launchpad--devel--0--patch-1563
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-358
+       make +basiclogin work as intended.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/launchpad-forbidden.pt
+     lib/canonical/launchpad/webapp/login.py
+     lib/canonical/launchpad/zcml/launchpad.zcml
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-358
+
+
 2005-04-05 15:56:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1562
 
     Summary:

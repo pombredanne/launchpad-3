@@ -9,6 +9,7 @@ from zope.component import getUtility
 from zope.app.session.interfaces import ISession
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
+from zope.app.security.interfaces import IAuthenticationService
 
 from canonical.launchpad.helpers import well_formed_email
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
@@ -43,6 +44,10 @@ class BasicLoginPage:
         return url.startswith(self.request.getApplicationURL())
 
     def login(self):
+        if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+            self.request.principal.__parent__.unauthorized(
+                self.request.principal.id, self.request)
+            return 'Launchpad basic auth login page'
         referer = self.request.getHeader('referer')  # Traditional w3c speling
         if referer and self.isSameHost(referer):
             self.request.response.redirect(referer)
