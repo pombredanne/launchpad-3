@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 import os
-import apt_pkg
 
 from sets import Set
 from datetime import datetime
@@ -14,6 +13,8 @@ from zope.exceptions import NotFoundError
 from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
+
+import canonical.sourcerer.deb.version
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp.dbschema import BugSeverity, BugTaskStatus
@@ -291,13 +292,8 @@ class Product(SQLBase):
             if (pot.distrorelease == distrorelease and
                 version is not None and
                 pot.sourcepackageversion is not None):
-                # Initialization of apt_pkg to be able to compare two .deb
-                # versions:
-                apt_pkg.InitSystem()
-                if apt_pkg.VersionCompare(
-                    version, pot.sourcepackageversion) != 1:
-                    # The version we are importing is minor or equal to
-                    # last one imported. The tarball is ignored.
+                deb = canonical.sourcerer.deb
+                if deb.version.Version(version) <= pot.sourcepackageversion:
                     if logger is not None:
                         logger.info("This tarball or a newer one is already"
                                     " imported. Ignoring it...")

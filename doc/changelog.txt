@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-17 15:20:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1327
+
+    Summary:
+      remove dependency on python-apt from launchpad.database.product
+    Revision:
+      launchpad--devel--0--patch-1327
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-61
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-62
+       remove dependency on python-apt from launchpad.database.product
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/product.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-61
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-62
+
+
 2005-02-17 13:25:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1326
 
     Summary:
