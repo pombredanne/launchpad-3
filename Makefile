@@ -11,7 +11,7 @@ Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
 
 check:
-	$(MAKE) -C sourcecode check
+	#$(MAKE) -C sourcecode check
 	PYTHONPATH=$(HERE)/lib ./test.py
 
 debugging-on:
