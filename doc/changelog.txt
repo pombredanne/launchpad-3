@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-09 19:21:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1399
+
+    Summary:
+      EnumCol for DBSchema columns.
+    Revision:
+      launchpad--devel--0--patch-1399
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-03-09 18:26:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1398
 
     Summary:
