@@ -1,0 +1,132 @@
+Bugs in Malone
+==============
+
+This document describes what a Bug is in Malone, and provides some (currently
+rather incomplete) info on how to poke at bugs through the Component
+Architecture.
+
+Working with Bugs
+=================
+
+Bugs are created and retrieved via IBugSet.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bugset = getUtility(IBugSet)
+
+To demonstrate how to retrieve a specific bug, let's simulate that we're
+interacting with the system as an anonymous user:
+
+    >>> import zope.security.management
+    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from canonical.launchpad.database import Person
+    >>> class Principal:
+    ...     def __init__(self, id):
+    ...         self.id = id
+    ...         self.groups = []
+    >>> principal = Principal('launchpad.anonymous')
+
+    >>> class Participation:
+    ...     interaction = None
+    >>> anon_participation = Participation()
+    >>> anon_participation.principal = principal
+
+    >>> zope.security.management.newInteraction(anon_participation)
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from zope.app.tests import ztapi
+    >>> from zope.interface import implements
+    >>> class MockLaunchBag(object):
+    ...     implements(ILaunchBag)
+    ...     def __init__(self, login=None, user=None):
+    ...         self.login = login
+    ...         self.user = user
+    >>> ztapi.provideUtility(ILaunchBag, MockLaunchBag())
+
+To retrieve a specific Bug, use IBugSet.get:
+
+    >>> firefox_crashes = bugset.get(6)
+    >>> print firefox_crashes.title 
+    Firefox crashes when Save As dialog for a nonexistent window is closed
+
+Bug Privacy
+===========
+
+A Bug has a "private" field. If Bug.private is False, the bug is publicly
+visible. If Bug.private is True, only people who are explicitly subscribed to
+the bug can see it.
+
+For the purposes of demonstration, we should make this bug private. A bug
+cannot be made private by an anonymous user.
+
+    >>> firefox_crashes.private = True
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('private', 'launchpad.AnyPerson') 
+
+We have to be logged in, so let's do that (or pretend to do that, anyway :):
+
+    >>> from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
+    >>> firefox_maintainer = LaunchpadPrincipal(
+    ...     12, "firefox maintainer",
+    ...     "i can't think of a description to write here")
+    >>> firefox_maintainer_participation = Participation()
+    >>> firefox_maintainer_participation.principal = firefox_maintainer
+    >>> zope.security.management.endInteraction()
+    >>> zope.security.management.newInteraction(
+    ...     firefox_maintainer_participation)
+    >>> ztapi.provideUtility(
+    ...     ILaunchBag,
+    ...     MockLaunchBag("test@canonical.com", firefox_maintainer))
+
+Now we can toggle the privacy flag on a bug, but before we do, let's note what
+happens to subscriptions on a bug before and after it's marked private. So,
+when a bug is first filed, there are no explicit subscripitions to that bug.
+
+    >>> print firefox_crashes.subscriptions
+    []
+
+The maintainer and submitter are "implicitly" subscribed to the bug. However,
+the rule with private bugs is that only explicit subscribers can view the bug
+after it's been marked private. So, when we mark bug #15 private:
+
+    >>> from zope.event import notify
+    >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> def capture_state(obj, *fields):
+    ...     class State: pass
+    ...     state = State()
+    ...     for field in fields:
+    ...         setattr(state, field, getattr(obj, field))
+    ...     return state
+
+    >>> old_state = capture_state(
+    ...     firefox_crashes, "id", "title", "private")
+    >>> firefox_crashes.private = True
+    >>> bug_set_private = SQLObjectModifiedEvent(
+    ...     firefox_crashes, old_state,
+    ...     ["id", "title", "private"],
+    ...     getUtility(IPersonSet).get(12))
+    >>> notify(bug_set_private)
+
+The submitter and the maintainer are automatically explicitly subscribed.
+
+    >>> people_ids_subscribed = [
+    ...     subscription.person.id
+    ...     for subscription in list(firefox_crashes.subscriptions)]
+    >>> people_ids_subscribed.sort()
+    >>> print people_ids_subscribed
+    [12]
+
+In this case, the submitter happened to be the same as the maintainer. Note
+that when a new task is filed against this bug:
+
+    XXX: Brad Bollenbach, 2005-02-04: code to file a task against a bug
+
+no new subscribers are added:
+
+    XXX: Brad Bollenbach, 2005-02-04: code to show that the subscription list
+    has not changed
+
+    >>> ztapi.unprovideUtility(ILaunchBag)
+    >>> zope.security.management.endInteraction()

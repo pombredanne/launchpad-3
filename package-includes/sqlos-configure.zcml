@@ -64,10 +64,23 @@
         />
   </class>
 
+  <!-- XXX: Brad Bollenbach, 2005-02-03: This is a custom hack workaround
+  until the __getslice__ bug is fixed:
+
+      https://launchpad.ubuntu.com/malone/bugs/121
+
+  spiv is the guy who can fix and push this change upstream.
   <class class="sqlobject.main.SelectResults">
     <require
         permission="zope.Public"
         interface=".interfaces.ISelectResults"
+        />
+  </class>
+  -->
+  <class class="sqlobject.main.SelectResults">
+    <require
+        permission="zope.Public"
+        interface="canonical.launchpad.interfaces.ISelectResultsSlicable"
         />
   </class>
 

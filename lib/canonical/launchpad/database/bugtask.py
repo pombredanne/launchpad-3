@@ -21,8 +21,7 @@ from canonical.launchpad.interfaces import IBugTask
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import nowUTC, DEFAULT
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.searchbuilder import any
-
+from canonical.launchpad.searchbuilder import any, NULL
 
 from canonical.launchpad.interfaces import IBugTasksReport, \
     IBugTaskSet, IEditableUpstreamBugTask, IReadOnlyUpstreamBugTask, \
@@ -150,10 +149,13 @@ class BugTaskSet:
 
         return bugtask
 
-    def search(self, bug=None, status=None, priority=None, severity=None,
-               product=None, milestone=None, assignee=None, submitter=None,
-               orderby=None):
+    def search(self, bug=None, searchtext=None, status=None, priority=None,
+               severity=None, product=None, milestone=None, assignee=None,
+               submitter=None, orderby=None):
         query = ""
+
+        if searchtext:
+            query += "Bug.fti @@ ftq(%s)" % quote(searchtext)
 
         # build the part of the query for FK columns
         for arg in ('bug', 'product', 'milestone', 'assignee', 'submitter'):
@@ -168,7 +170,10 @@ class BugTaskSet:
                     query_values = ", ".join(quoted_ids)
                     fragment = "(BugTask.%s IN (%s))" % (arg, query_values)
                 else:
-                    fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg.id)))
+                    if query_arg == NULL:
+                        fragment = "(BugTask.%s IS NULL)" % (arg)
+                    else:
+                        fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg.id)))
 
                 query += fragment
 
@@ -185,7 +190,7 @@ class BugTaskSet:
                     query_values = ", ".join(quoted_ids)
                     fragment = "(BugTask.%s IN (%s))" % (arg, query_values)
                 else:
-                    fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg.id)))
+                    fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg)))
 
                 query += fragment
 
@@ -197,19 +202,23 @@ class BugTaskSet:
         if user:
             query += "("
         query += "(BugTask.bug = Bug.id AND Bug.private = FALSE)"
+        
+        # XXX: Brad Bollenbach, 2005-02-03: The subselect here is due to what
+        # appears to be a bug in sqlobject not taking distinct into
+        # consideration when doing counts.
         if user:
             query += ((
                 " OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND "
-                "     (Bug.id = BugSubscription.bug) AND "
-                "     (BugSubscription.person = %(personid)d ) AND "
-                "     (BugSubscription.subscription IN (%(cc)d, %(watch)d))))") %
+                "     (Bug.id in (SELECT Bug.id FROM Bug, BugSubscription WHERE "
+                "                (Bug.id = BugSubscription.bug) AND "
+                "                (BugSubscription.person = %(personid)d) AND "
+                "                (BugSubscription.subscription IN (%(cc)d, %(watch)d))))))") %
                 {'personid' : user.id,
                  'cc' : dbschema.BugSubscription.CC.value,
                  'watch' : dbschema.BugSubscription.WATCH.value})
 
         bugtasks = BugTask.select(
-            query, clauseTables = ["Bug", "BugTask", "BugSubscription"],
-            distinct = True)
+            query, clauseTables = ["Bug", "BugTask"])
         if orderby:
             bugtasks = bugtasks.orderBy(orderby)
 

@@ -13,16 +13,23 @@
 
   <adapter
       provides="canonical.launchpad.interfaces.IAuthorization"
+      for="canonical.launchpad.interfaces.IBug"
+      name="launchpad.View"
+      factory="canonical.launchpad.security.BugPublicToAllOrPrivateToExplicitSubscribers"
+      />
+
+  <adapter
+      provides="canonical.launchpad.interfaces.IAuthorization"
       for="canonical.launchpad.interfaces.IBugTask"
       name="launchpad.View"
-      factory="canonical.launchpad.security.PublicToAllOrPrivateToExplicitSubscribers"
+      factory="canonical.launchpad.security.TaskPublicToAllOrPrivateToExplicitSubscribers"
       />
 
   <adapter
       provides="canonical.launchpad.interfaces.IAuthorization"
       for="canonical.launchpad.interfaces.IReadOnlyUpstreamBugTask"
       name="launchpad.View"
-      factory="canonical.launchpad.security.PublicToAllOrPrivateToExplicitSubscribers"
+      factory="canonical.launchpad.security.TaskPublicToAllOrPrivateToExplicitSubscribers"
       />
 
   <adapter

@@ -2,27 +2,24 @@
 
 __metaclass__ = type
 
-# Zope interfaces
-from zope.interface import implements
+from sets import Set
+from datetime import datetime
 
-# SQL imports
+from zope.interface import implements
+from zope.exceptions import NotFoundError
+
 from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
-from canonical.database.sqlbase import SQLBase, quote
+from sqlobject import SQLObjectNotFound
 
-# canonical imports
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp.dbschema import BugSeverity, BugTaskStatus
 from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
-
 from canonical.launchpad.database.sourcesource import SourceSource
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.pofile import POTemplate
-
 from canonical.launchpad.interfaces import IProduct, IProductSet
-
-from sets import Set
-from datetime import datetime
 
 class Product(SQLBase):
     """A Product."""
@@ -272,21 +269,33 @@ class ProductSet:
     implements(IProductSet)
 
     def __iter__(self):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
         return iter(Product.select())
 
     def __getitem__(self, name):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
         ret = Product.selectBy(name=name)
         if ret.count() == 0:
             raise KeyError, name
         else:
             return ret[0]
 
+    def get(self, productid):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
+        try:
+            product = Product.get(productid)
+        except SQLObjectNotFound, err:
+            raise NotFoundError("Product with ID %s does not exist" %
+                                str(productid))
+
+        return product
+
     def createProduct(self, owner, name, displayname, title, shortdesc,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None):
-        """Create a new Product"""
+        """See canonical.launchpad.interfaces.product.IProductSet."""
         return Product(owner=owner, name=name, displayname=displayname,
                        title=title, project=project, shortdesc=shortdesc,
                        description=description,
@@ -298,12 +307,14 @@ class ProductSet:
                        sourceforgeproject=sourceforgeproject)
     
     def forReview(self):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
         return Product.select("reviewed IS FALSE")
 
     def search(self, text=None, soyuz=None,
                rosetta=None, malone=None,
                bazaar=None,
                show_inactive=False):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
         clauseTables = Set()
         clauseTables.add('Product')
         query = '1=1 '
@@ -327,9 +338,11 @@ class ProductSet:
         return Product.select(query, distinct=True, clauseTables=clauseTables)
 
     def translatables(self, translationProject=None):
-        """This will give a list of the translatables in the given
-        Translation Project. For the moment it just returns every
-        translatable product."""
+        """See canonical.launchpad.interfaces.product.IProductSet.
+        
+        This will give a list of the translatables in the given Translation
+        Project. For the moment it just returns every translatable product.
+        """
         clauseTables = ['Product', 'POTemplate']
         query = """POTemplate.product=Product.id"""
         return Product.select(query, distinct=True,

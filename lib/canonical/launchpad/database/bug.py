@@ -101,6 +101,7 @@ def BugFactory(*args, **kw):
         title = kw['title'],
         shortdesc = summary,
         description = description,
+        private = kw.get("private", False),
         owner = kw['owner'],
         datecreated=datecreated)
 
@@ -155,6 +156,7 @@ class BugSet(BugSetBase):
     table = Bug
 
     def __getitem__(self, id):
+        """See canonical.launchpad.interfaces.bug.IBugSet."""
         try:
             return self.table.select(self.table.q.id==id)[0]
         except IndexError:
@@ -162,6 +164,10 @@ class BugSet(BugSetBase):
             raise KeyError, id
 
     def __iter__(self):
+        """See canonical.launchpad.interfaces.bug.IBugSet."""
         for row in self.table.select():
             yield row
 
+    def get(self, bugid):
+        """See canonical.launchpad.interfaces.bug.IBugSet."""
+        return self.table.get(bugid)

@@ -2,6 +2,101 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-05 02:36:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1278
+
+    Summary:
+      add the rest of the hard bits of implementing bug privacy. grow the
+ remaining bits of the CA needed to support this functionality and doctest it
+ in all its glory. there remain small issues to sort out specific to privacy,
+ namely making sure this works correctly when adding a bug,
+ and tweaking the notification machinery. this work will also make a lot more
+ sense once we have a well thought-out workflow in place for package/upstream
+ (re)assignments, and once we've decided what a 'maintainer' is for a distro
+ bugtask.
+    Revision:
+      launchpad--devel--0--patch-1278
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-325
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-326
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-327
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-328
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-329
+       collect bug privacy info on the upstream file bug and bug edit forms
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-330
+       checkpoint commit. this patch includes most of the integration of bug privacy. i've also grown and documented some bits on the CA, that are related to making privacy work.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-331
+       fix the doctests that use interactions, so that the interactions are teared down correctly
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-332
+       more bug privacy implementation, mainly dealing with getting subscriptions right, growing more bits of the CA to suit, and doctesting this new behaviour.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-333
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-334
+       resolve a conflict overlooked after merging
+    
+
+    new files:
+     lib/canonical/launchpad/doc/.arch-ids/bug.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/milestone.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/upstream.txt.id
+     lib/canonical/launchpad/doc/bug.txt
+     lib/canonical/launchpad/doc/milestone.txt
+     lib/canonical/launchpad/doc/upstream.txt
+     lib/canonical/launchpad/subscribers/.arch-ids/bugprivacy.py.id
+     lib/canonical/launchpad/subscribers/bugprivacy.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/components/bugsubscription.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugsubscription.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/milestone.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/doc/bugsubscription.txt
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/interfaces/bugsubscription.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/interfaces/milestone.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/searchbuilder.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/security.zcml
+     lib/canonical/launchpad/zcml/bug-events.zcml
+     lib/canonical/launchpad/zcml/bug.zcml
+     lib/canonical/launchpad/zcml/bugsubscription.zcml
+     lib/canonical/launchpad/zcml/milestone.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+     package-includes/sqlos-configure.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-325
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-326
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-327
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-328
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-329
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-330
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-331
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-332
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-333
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-334
+
+
 2005-02-04 23:20:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1277
 
     Summary:

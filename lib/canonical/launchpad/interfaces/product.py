@@ -183,6 +183,13 @@ class IProductSet(Interface):
     def __getitem__(name):
         """Get a product by its name."""
 
+    def get(productid):
+        """Get a product by its id.
+        
+        If the product can't be found a zope.exceptions.NotFoundError will be
+        raised.
+        """
+
     def createProduct(owner, name, displayname, title, shortdesc,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
