@@ -11,7 +11,7 @@
     <h1>Search packages</h1>
 
     <form method="post">
-        <fieldset tal:condition="not:exists:request/query">
+        <fieldset>
             <legend>Search details</legend>
 
             <div class="field">
@@ -24,25 +24,33 @@
         </fieldset>
     </form>
 
-    <div tal:condition="view/noresults">
-        No results were returned from your query
+    <div tal:condition="exists:request/query">
+        <span tal:condition="not:view/results">
+            No results were returned from your query
+        </span>
+        <table tal:condition="view/results" class="listing rowNavigation">
+            <tr>
+                <th>Name</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Distribution</th>
+            </tr>
+            <tr tal:repeat="result view/results" tal:attributes="onclick 
+                string:window.location='sourcepackages/${result/name}'">
+                <td>
+                    <a href="#" tal:content="result/name"
+                        tal:attributes="href 
+                        string:sourcepackages/${result/name}">
+                        $Sourcepackage.name
+                    </a>
+                </td>
+                <td tal:content="result/title">$Sourcepackage.title</td>
+                <td tal:content="result/description">
+                    $Sourcepackage.description</td>
+                <td tal:content="result/distro">$Sourcepackage.distro</td>
+            </tr>
+        </table>
     </div>
-
-    <table tal:condition="view/results" class="listing">
-        <tr>
-            <th>Name</th>
-            <th>Title</th>
-            <th>Description</th>
-            <th>Distribution</th>
-        </tr>
-        <tr tal:repeat="result view/results">
-            <td tal:content="result/name">$Sourcepackage.name</td>
-            <td tal:content="result/title">$Sourcepackage.title</td>
-            <td tal:content="result/description">
-                $Sourcepackage.description</td>
-            <td tal:content="result/distro">$Sourcepackage.distro</td>
-        </tr>
-    </table>
   
     <ul>
         <li><a href="bugs">See the bug list</a></li>

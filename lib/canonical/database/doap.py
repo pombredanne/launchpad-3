@@ -8,7 +8,7 @@
 # Zope/Python standard libraries
 from datetime import datetime
 from email.Utils import make_msgid
-from zope.interface import implements, Interface
+from zope.interface import implements, Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('canonical')
 
@@ -104,7 +104,10 @@ class ISourcepackage(Interface):
     manifest = Int(title=_("Manifest"), required=False)
     distro = Int(title=_("Distribution"), required=False)
 
+    bugs = Attribute('bugs')
+
 class Sourcepackage(SQLBase):
+    implements(ISourcepackage)
     _columns = [
         ForeignKey(
                 name='maintainer', dbName='maintainer', foreignKey='Person',
@@ -122,6 +125,10 @@ class Sourcepackage(SQLBase):
                 notNull=False,
                 ),
         ]
+
+    bugs = MultipleJoin(
+            'SourcepackageBugAssignment', joinColumn='sourcepackage'
+            )
 
 class IBinarypackage(Interface):
     id = Int(title=_('ID'), required=True)
@@ -147,6 +154,7 @@ class IBinarypackage(Interface):
     licence = Text(required=False)
 
 class Binarypackage(SQLBase):
+    implements(IBinarypackage)
     _columns = [
         ForeignKey(
                 name='sourcepackagerelease', dbName='sourcepackagerelease',

@@ -1,0 +1,1 @@
+<tal:x replace="python:request.response.redirect('..')" />

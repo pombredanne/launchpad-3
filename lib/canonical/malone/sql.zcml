@@ -56,4 +56,12 @@
       factory=".browser.ProjectContainer"
       provides=".interfaces.IProjectContainer" />
 
+  <content class=".browser.SourcepackageContainer">
+      <allow interface=".interfaces.ISourcepackageContainer" />
+  </content>
+
+  <utility
+      factory=".browser.SourcepackageContainer"
+      provides=".interfaces.ISourcepackageContainer" />
+
 </configure>

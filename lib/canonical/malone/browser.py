@@ -21,13 +21,14 @@ from interfaces import \
         IBugMessagesView, IBugExternalRefsView, \
         IMaloneBug, IMaloneBugAttachment, \
         IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
-        IBugSubscriptionContainer, IProjectContainer
+        IBugSubscriptionContainer, IProjectContainer, \
+        ISourcepackageContainer
 
 # TODO: Anything that relies on these imports should not be in this file!
 from canonical.database.malone import \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
         ProductBugAssignment, SourcepackageBugAssignment
-from canonical.database.doap import Project
+from canonical.database.doap import Project, Sourcepackage
 from canonical.database.foaf import Person, EmailAddress
 
 def traverseBug(bug, request, name):
@@ -69,11 +70,10 @@ class MaloneApplicationView(object):
             q = (
                 r"lower(name) LIKE %(query)s "
                 r"OR lower(title) LIKE %(query)s "
-                r"OR lower(description) LIKE %(query)s"
+                #r"OR lower(description) LIKE %(query)s"
                 ) % vars()
-            print repr(q)
             self.results = Sourcepackage.select(q)
-            self.noresults = bool(self.results)
+            self.noresults = not self.results
         else:
             self.noresults = False
             self.results = []
@@ -360,9 +360,9 @@ class ProjectContainer(object):
     implements(IProjectContainer)
     table = Project
 
-    def __getitem__(self, id):
+    def __getitem__(self, name):
         try:
-            return self.table.select(self.table.q.id == id)[0]
+            return self.table.select(self.table.q.name == name)[0]
         except IndexError:
             # Convert IndexError to KeyErrors to get Zope's NotFound page
             raise KeyError, id
@@ -381,6 +381,25 @@ class ProjectContainer(object):
             return Project.select(LIKE(Project.q.title, '%%' + title + '%%'))
         else:
             return []
+
+
+class SourcepackageContainer(object):
+    """A container for Sourcepackage objects."""
+
+    implements(ISourcepackageContainer)
+    table = Sourcepackage
+
+    def __getitem__(self, name):
+        print '-===== %s ==== ' % name
+        try:
+            return self.table.select(self.table.q.name == name)[0]
+        except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select():
+            yield row
 
 
 class BugExternalRefsView(object):

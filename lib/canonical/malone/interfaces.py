@@ -56,13 +56,22 @@ class IProjectContainer(Interface):
     """A container for IProject objects."""
 
     def __getitem__(key):
-        """Get a Project."""
+        """Get a Project by name."""
 
     def __iter__():
         """Iterate through Projects."""
 
     def search(name, title):
         """Search through Projects."""
+
+class ISourcepackageContainer(Interface):
+    """A container for ISourcepackage objects."""
+
+    def __getitem__(key):
+        """Get an ISourcepackage by name"""
+
+    def __iter__():
+        """Iterate through Sourcepacages."""
 
 class IBugSubscriptionContainer(Interface):
     """A container for IBugSubscription objects."""

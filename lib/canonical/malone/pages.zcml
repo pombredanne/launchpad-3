@@ -80,9 +80,9 @@
 
   <pages for="canonical.malone.interfaces.IProjectContainer"
          permission="zope.Public">
-    <page name="search"
-          template="templates/projects-search.pt"
-          lp:url="malone/projects/search" />
+    <page name="index"
+          template="templates/projects-index.pt"
+          lp:url="malone/projects/index" />
   </pages>
 
   <traverse for="canonical.malone.interfaces.IProjectContainer"
@@ -92,7 +92,21 @@
          permission="zope.Public">
     <page name="index"
           template="templates/project-index.pt"
-          lp:url="malone/projects/$Project.name" />
+          lp:url="malone/projects/$Project.name/index" />
+  </pages>
+
+  <pages for="canonical.malone.interfaces.ISourcepackageContainer"
+      permission="zope.Public">
+      <page name="index" template="templates/sourcepackages-index.pt"
+          lp:url="malone/sourcepackages/index" />
+  </pages>
+
+  <traverse for="canonical.malone.interfaces.ISourcepackageContainer"
+      getter="__getitem__" />
+
+  <pages for="canonical.database.doap.ISourcepackage" permission="zope.Public">
+      <page name="index" template="templates/sourcepackage-index.pt"
+          lp:url="malone/sourcepackage/$Sourcepackage.name/index" />
   </pages>
 
   <pages for="canonical.malone.interfaces.IBugExternalRefContainer"

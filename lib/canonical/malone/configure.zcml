@@ -29,6 +29,12 @@
       permission="zope.Public"
       name="projects" />
 
+  <browser:suburl
+      for="canonical.malone.IMaloneApplication"
+      utility="canonical.malone.interfaces.ISourcepackageContainer"
+      permission="zope.Public"
+      name="sourcepackages" />
+
   <browser:defaultView
       for="canonical.malone.interfaces.IMaloneApplication"
       name="index" />
@@ -55,10 +61,18 @@
 
   <browser:defaultView
       for="canonical.malone.interfaces.IProjectContainer"
-      name="search" />
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.malone.interfaces.ISourcepackageContainer"
+      name="index" />
 
   <browser:defaultView
       for="canonical.database.doap.IProject"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.database.doap.ISourcepackage"
       name="index" />
 
   <browser:defaultView
