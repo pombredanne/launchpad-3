@@ -1,0 +1,6 @@
+<configure xmlns="http://namespaces.zope.org/browser">
+
+    <resource name="malone.png" file="images/malone.png" />
+
+</configure>
+<!-- arch-tag: eb5fb4fb-35e4-4fec-8294-6901d935f6bf -->

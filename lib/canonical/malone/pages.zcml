@@ -1,0 +1,118 @@
+<configure
+  xmlns="http://namespaces.zope.org/browser"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:zope="http://namespaces.zope.org/zope"
+  xmlns:lp="http://launchpad.canonical.com">
+
+
+  <!-- general template for everything in malone -->
+  <pages for="*" permission="zope.Public">
+    <page name="malone_template"
+          template="../lp/templates/main_template.pt" />
+  </pages>
+
+  <!-- pages for the malone application -->
+  <pages for="canonical.malone.interfaces.IMaloneApplication"
+         permission="zope.Public"
+         lp:url="malone">
+    <page name="index"
+          template="templates/malone-index.pt"
+          lp:url="malone/index" />
+    <page name="about"
+          template="templates/malone-about.pt"
+          lp:url="malone/+about" />
+    <page name="dashboard"
+          template="templates/malone-dashboard.pt"
+          lp:url="malone/dashboard" />
+    <page name="to-do"
+          template="templates/malone-to-do.pt"
+          lp:url="malone/to-do" />
+  </pages>
+
+  <pages for="canonical.malone.interfaces.IBugContainer"
+         permission="zope.Public"
+         lp:url="malone/bugs/$Bug.id">
+    <page name="index"
+          template="templates/bugs-index.pt"
+          lp:url="malone/bugs/$Bug.id/index" />
+  </pages>
+
+  <traverse for="canonical.malone.interfaces.IBugContainer"
+            getter="__getitem__" />
+
+  <pages for="canonical.malone.interfaces.IBug"
+         permission="zope.Public"
+         lp:url="malone/bugs/$Bugs.id">
+    <page name="index"
+          template="templates/bug-index.pt"
+          lp:url="malone/bugs/$Bugs.id/index" />
+    <page name="activity"
+          template="templates/bug-activity.pt"
+          lp:url="malone/bugs/$Bugs.id/activity" />
+    <page name="assignments"
+          template="templates/bug-assignment.pt" />
+  </pages>
+
+  <pages for="canonical.malone.interfaces.IBugAttachmentContainer"
+         permission="zope.Public"
+         lp:url="malone/bugs/$Bugs.id/attachments">
+    <page name="index"
+          template="templates/attachments-index.pt"
+          lp:url="malone/bugs/$Bugs.id/attachments/index" />
+  </pages>
+
+  <traverse for="canonical.malone.interfaces.IBugAttachmentContainer"
+            getter="__getitem__" />
+
+  <pages for="canonical.malone.interfaces.IBugAttachment"
+         permission="zope.Public"
+         lp:url="malone/bugs/$Bugs.id/attachments/$Attachment.id">
+    <page name="index"
+          template="templates/attachment-index.pt" />
+  </pages>
+
+  <pages for="canonical.malone.interfaces.IProjectContainer"
+         permission="zope.Public">
+    <page name="search"
+          template="templates/projects-search.pt"
+          lp:url="malone/projects/search" />
+  </pages>
+
+  <traverse for="canonical.malone.interfaces.IProjectContainer"
+            getter="__getitem__" />
+
+  <pages for="canonical.malone.interfaces.IProject"
+         permission="zope.Public">
+    <page name="index"
+          template="templates/project-index.pt"
+          lp:url="malone/projects/$Project.name" />
+  </pages>
+
+  <pages for="canonical.malone.interfaces.IBugExternalRefContainer"
+         permission="zope.Public">
+    <page name="index"
+          template="templates/references-index.pt"
+          lp:url="malone/bugs/$Bug.id/references" />
+  </pages>
+
+  <traverse for="canonical.malone.interfaces.IBugExternalRefContainer"
+            getter="__getitem__" />
+
+  <pages for="canonical.malone.interfaces.IBugSubscriptionContainer"
+         permission="zope.Public">
+    <page name="index"
+          template="templates/bug-people.pt"
+          lp:url="malone/bugs/$Bug.id/people" />
+  </pages>
+
+  <traverse for="canonical.malone.interfaces.IBugSubscriptionContainer"
+            getter="__getitem__" />
+
+  <pages for="canonical.malone.interfaces.IBugExternalRef"
+         permission="zope.Public">
+    <page name="index"
+          template="templates/reference-index.pt"
+          lp:url="malone/bugs/$Bug.id/reference/$Reference.id" />
+  </pages>
+
+</configure>

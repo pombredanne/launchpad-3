@@ -1,0 +1,30 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="rosetta">
+<body>
+
+<div metal:fill-slot="main">
+  <h1>Bug Activity</h1>
+  <table class="listing">
+    <tr>
+      <th>Date</th>
+      <th>What changed</th>
+      <th>Old value</th>
+      <th>New value</th>
+      <th>Message</th>
+    </tr>
+    <tr tal:repeat="log context/activity">
+      <td tal:content="python:log.datechanged.strftime('%d %b %y %H:%M')">
+        13 Sep 04 14:15
+      </td>
+      <td tal:content="log/whatchanged/capitalize">description</td>
+      <td tal:content="log/oldvalue">this</td>
+      <td tal:content="log/newvalue">that</td>
+      <td tal:content="log/message">message</td>
+    </tr>
+  </table>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,36 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="rosetta">
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Bugs</h1>
+  <table class="listing">
+    <tr>
+      <th>Bug</th>
+      <th>Nickname</th>
+      <th>Title</th>
+      <th>Date Created</th>
+      <th>Owner</th>
+    </tr>
+    <tr tal:repeat="bug context">
+      <td>
+        <a href="$Bug.id" tal:attributes="href bug/id" tal:content="bug/id">
+          $Bug.title
+        </a>
+      </td>
+      <td tal:content="bug/nickname">nickname</td>
+      <td tal:content="bug/title">title</td>
+      <td tal:content="python:bug.datecreated.strftime('%d %b %y')">date</td>
+      <td tal:content="bug/owner/presentationname">name</td>
+    </tr>
+  </table>
+  <input type="submit" value="Add" onclick="window.open('+new','_top')" />
+
+</div>
+
+</body>
+</html>
