@@ -146,11 +146,11 @@ class DistroRelease(SQLBase):
     def getBugSourcePackages(self):
         """Get SourcePackages in a DistroRelease with BugAssignement"""
 
-        clauseTables=["SourcePackageBugAssignment",]
+        clauseTables=["BugTask",]
         query = ("VSourcePackageInDistro.distrorelease = %i AND "
-                 "VSourcePackageInDistro.id = SourcePackageBugAssignment.sourcepackage AND "
-                 "(SourcePackageBugAssignment.bugstatus != %i OR "
-                 "SourcePackageBugAssignment.bugstatus != %i)"
+                 "VSourcePackageInDistro.distro = BugTask.distribution AND "
+                 "VSourcePackageInDistro.name = BugTask.sourcepackagename AND "
+                 "(BugTask.status != %i OR BugTask.status != %i)"
                  %(self.id,
                    int(dbschema.BugAssignmentStatus.FIXED),
                    int(dbschema.BugAssignmentStatus.REJECTED)))

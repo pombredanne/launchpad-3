@@ -28,7 +28,7 @@
 
     <tbody>
         <!-- Upstream Assignments -->
-        <tr tal:repeat="bugass context/productassignments">
+        <tr tal:repeat="bugass context/tasks">
            
             <td tal:attributes="class string:packageName severity${bugass/severity/lp:BugSeverity}Row">
                 <img src="/++resource++product_icon.gif" 

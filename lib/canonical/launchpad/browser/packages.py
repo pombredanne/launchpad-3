@@ -9,7 +9,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.lp.dbschema import BugSeverity
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.launchpad.database import IPerson, SourcePackageBugAssignment
+from canonical.launchpad.database import IPerson
 
 # XXX: Daniel Debonzi
 # Importing stuff from Soyuz directory

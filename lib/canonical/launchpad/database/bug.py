@@ -6,24 +6,25 @@ Part of the Launchpad system.
 """
 
 from datetime import datetime
+from warnings import warn
 
 from zope.interface import implements
 
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import IBug, IBugAddForm, IBugSet
+from canonical.launchpad.interfaces import IBug, IBugAddForm, IBugSet, \
+    IBugTask
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
 
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.launchpad.database.bugassignment \
-        import SourcePackageBugAssignment, ProductBugAssignment
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.lp.dbschema import BugSubscription as BugSubscriptionVocab
+from canonical.lp import dbschema
 
 class Bug(SQLBase):
     """A bug."""
@@ -56,9 +57,9 @@ class Bug(SQLBase):
     messages = RelatedJoin('Message', joinColumn='bug',
                            otherColumn='message',
                            intermediateTable='BugMessage')
-    productassignments = MultipleJoin('ProductBugAssignment', joinColumn='bug')
-    packageassignments = MultipleJoin('SourcePackageBugAssignment',
-                                    joinColumn='bug')
+    tasks = MultipleJoin('BugTask', joinColumn='bug')
+    productassignments = MultipleJoin('BugTask', joinColumn='bug')
+    packageassignments = MultipleJoin('BugTask', joinColumn='bug')
     productinfestations = MultipleJoin('BugProductInfestation', joinColumn='bug')
     packageinfestations = MultipleJoin('BugPackageInfestation', joinColumn='bug')
     watches = MultipleJoin('BugWatch', joinColumn='bug')
@@ -77,16 +78,18 @@ def BugFactory(*args, **kw):
         description = kw['description'],
         owner = kw['owner'])
 
-    # If the user has specified a product, create the ProductBugAssignment
     if kw.get('product', None):
-        ProductBugAssignment(bug=bug,
-                             product=kw['product'].id, owner=kw['owner'])
+        BugTask(
+            bug = bug, product = kw['product'].id, owner = kw['owner'].id)
 
-    if kw.get('sourcepackage', None):
-        SourcePackageBugAssignment(
-            bug=bug, sourcepackage=kw['sourcepackage'], binarypackagename=None,
-            owner=kw['owner'])
+    if kw.get('sourcepackagename', None):
+        warn("Distribution name is hardcoded to 1")
+        BugTask(
+            bug = bug, sourcepackagename = kw['sourcepackagename'],
+            binarypackagename = None, owner = kw['owner'].id,
+            distribution = 1)
 
+    # auto-Cc the person who submitted the bug
     BugSubscription(
         person = kw['owner'], bugID = bug.id,
         subscription = BugSubscriptionVocab.CC.value)
@@ -118,4 +121,39 @@ class BugSet(BugSetBase):
     def __iter__(self):
         for row in self.table.select():
             yield row
+
+class BugTask(SQLBase):
+    implements(IBugTask)
+    _table = "BugTask"
+    _defaultOrder = "bug"
+
+    bug = ForeignKey(dbName='bug', foreignKey='Bug')
+    product = ForeignKey(
+        dbName='product', foreignKey='Product',
+        notNull=False, default=None)
+    sourcepackagename = ForeignKey(
+        dbName='sourcepackagename', foreignKey='SourcePackageName',
+        notNull=False, default=None)
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution',
+        notNull=False, default=None)
+    status = IntCol(
+        dbName='status', notNull=True,
+        default=int(dbschema.BugAssignmentStatus.NEW))
+    priority = IntCol(
+        dbName='priority', notNull=True,
+        default=int(dbschema.BugPriority.MEDIUM))
+    severity = IntCol(
+        dbName='severity', notNull=True,
+        default=int(dbschema.BugSeverity.NORMAL))
+    binarypackagename = ForeignKey(
+        dbName='binarypackagename', foreignKey='BinaryPackageName',
+        notNull=False, default=None)
+    assignee = ForeignKey(
+        dbName='assignee', foreignKey='Person',
+        notNull=False, default=None)
+    dateassigned = DateTimeCol(notNull=False, default=nowUTC)
+    datecreated  = DateTimeCol(notNull=False, default=nowUTC)
+    owner = ForeignKey(
+        foreignKey='Person', dbName='owner', notNull=False, default=None)
 

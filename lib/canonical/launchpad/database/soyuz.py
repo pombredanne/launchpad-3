@@ -27,7 +27,6 @@ from canonical.launchpad.database.sourcepackage import SourcePackageInDistro
 from canonical.launchpad.database.binarypackage import BinaryPackage
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.project import Project
-from canonical.launchpad.database.bugassignment import SourcePackageBugAssignment
 
 class DistroArchRelease(SQLBase):
 

@@ -28,19 +28,16 @@ class IBugSubscriptionSetAdapter:
                 if best_email:
                     emails.add(best_email)
 
-        for prod_ass in self.bug.productassignments:
-            best_email = _get_best_email_address(prod_ass.assignee)
-            if best_email:
-                emails.add(best_email)
-            best_email = _get_best_email_address(prod_ass.product.owner)
+        for task in self.bug.tasks:
+            best_email = _get_best_email_address(task.assignee)
             if best_email:
                 emails.add(best_email)
 
-        for pack_ass in self.bug.packageassignments:
-            best_email = _get_best_email_address(pack_ass.assignee)
-            if best_email:
-                emails.add(best_email)
-            best_email = _get_best_email_address(pack_ass.sourcepackage.maintainer)
+            if task.product:
+                best_email = _get_best_email_address(task.product.owner)
+            else:
+                pass
+                #best_email = _get_best_email_address(task.)
             if best_email:
                 emails.add(best_email)
 

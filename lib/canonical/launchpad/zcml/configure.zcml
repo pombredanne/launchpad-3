@@ -30,11 +30,11 @@
     <include file="productrelease.zcml" />
     <include file="bugpackageinfestation.zcml" />
     <include file="bugactivity.zcml" />
+    <include file="bugassignment.zcml" />
     <include file="bugsubscription.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="bug.zcml" />
     <include file="bugwatch.zcml" />
-    <include file="bugassignment.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugextref.zcml" />
     <include file="cveref.zcml" />

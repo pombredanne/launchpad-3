@@ -83,7 +83,7 @@ class Product(SQLBase):
     #
     potemplates = MultipleJoin('POTemplate', joinColumn='product')
 
-    bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
+    bugs = MultipleJoin('BugTask', joinColumn='product')
 
     branches = MultipleJoin('Branch', joinColumn='product')
 

@@ -1,9 +1,10 @@
+__metaclass__ = type
 
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
 from canonical.launchpad.interfaces import IBugSet
 
-class BugSetBase(object):
+class BugSetBase:
     implements(IBugSet, IAddFormCustomization)
     def __init__(self, bug=None):
         self.bug = bug

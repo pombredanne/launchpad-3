@@ -38,16 +38,16 @@
           <a tal:content="bug/title" tal:attributes="href bug/id">title</a>
         </td>
         <td valign="top">
-          <div tal:repeat="spa sp_assignments"
-               tal:content="python: '(s) ' + spa.sourcepackage.sourcepackagename.name"></div>
-          <div tal:repeat="pa p_assignments"
+          <div tal:repeat="spa python:[s for s in sp_assignments if not s.product]"
+               tal:content="python: '(s) ' + spa.sourcepackagename.name"></div>
+          <div tal:repeat="pa python:[p for p in p_assignments if p.product]"
                tal:content="python: '(p) ' + pa.product.title"></div>
         </td>
         <td valign="top">
           <div tal:repeat="spa sp_assignments"
-               tal:content="spa/bugstatus/lp:BugAssignmentStatus"></div>
+               tal:content="spa/status/lp:BugAssignmentStatus"></div>
           <div tal:repeat="pa p_assignments"
-               tal:content="pa/bugstatus/lp:BugAssignmentStatus"></div>
+               tal:content="pa/status/lp:BugAssignmentStatus"></div>
         </td>
         <td valign="top" nowrap>
           <div tal:repeat="spa sp_assignments"
@@ -66,63 +66,6 @@
       </span>
     </tr>
   </table>
-
-<!--
-  <h2>Source Package Bug Assignments</h2>
-  <table class="listing rowNavigation">
-    <tr>
-      <th>Bug</th>
-      <th>Title</th>
-      <th>Source Package</th>
-      <th>Status</th>
-      <th>Priority</th>
-      <th>Severity</th>
-      <th>Date Created</th>
-      <th tal:condition="not:owner">Owner</th>
-    </tr>
-    <span tal:repeat="bug view/getBugsAssignedToSourcePackages">
-      <tr tal:repeat="bugass bug/packageassignments" tal:attributes="onclick string:window.location='${bug/id}';">
-        <td tal:content="bug/id">$Bug.title</td>
-        <td><a tal:content="bug/title"
-               tal:attributes="href bug/id">title</a></td>
-        <td tal:content="bugass/sourcepackage/sourcepackagename/name">libneon</td>
-        <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">New</td>
-        <td tal:content="bugass/priority/lp:BugPriority">High</td>
-        <td tal:content="bugass/severity/lp:BugSeverity">Critical</td>
-        <td tal:content="python:bug.datecreated.strftime('%d %b %y')">date</td>
-        <td tal:condition="not:owner" tal:content="bug/owner/name"></td>
-      </tr>
-    </span>
-  </table>
-
-  <h2>Product Bug Assignments</h2>
-  <table class="listing rowNavigation">
-    <tr>
-      <th>Bug</th>
-      <th>Title</th>
-      <th>Product</th>
-      <th>Status</th>
-      <th>Priority</th>
-      <th>Severity</th>
-      <th>Date Created</th>
-      <th tal:condition="not:owner">Owner</th>
-    </tr>
-    <span tal:repeat="bug view/getBugsAssignedToProducts">
-      <tr tal:repeat="bugass bug/productassignments"
-          tal:attributes="onclick string:window.location='${bug/id}';">
-        <td tal:content="bug/id">$Bug.title</td>
-        <td><a tal:content="bug/title"
-               tal:attributes="href bug/id">title</a></td>
-        <td tal:content="bugass/product/title">libneon</td>
-        <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">Deferred</td>
-        <td tal:content="bugass/priority/lp:BugPriority">Low</td>
-        <td tal:content="bugass/severity/lp:BugSeverity">Low</td>
-        <td tal:content="python:bug.datecreated.strftime('%d %b %y')">date</td>
-        <td tal:condition="not:owner" tal:content="bug/owner/name"></td>
-      </tr>
-    </span>
-  </table>
--->
 
   <input type="submit" value="Add" onclick="window.open('+new','_top')" />
 
