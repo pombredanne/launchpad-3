@@ -10,8 +10,7 @@ from datetime import datetime
 from zope.component.tests.placelesssetup import PlacelessSetup
 
 import canonical.lp
-from canonical.launchpad.database import Project
-from canonical.launchpad.database import RosettaPerson
+from canonical.launchpad.database import Person, Project
 
 if __name__ == '__main__':
     parser = OptionParser()
@@ -40,9 +39,9 @@ if __name__ == '__main__':
         if getattr(options, name) is None:
             raise RuntimeError("No %s specified." % name)
 
-    canonical.lp.initZopeless()
+    ztm = canonical.lp.initZopeless()
 
-    person = RosettaPerson.get(int(options.owner))
+    person = Person.get(int(options.owner))
     if person is None:
         raise RuntimeError("The person %s does not exists." % options.owner)
 
@@ -61,3 +60,6 @@ if __name__ == '__main__':
                            options.name)
     else:
         print "Project %s created." % options.name
+
+        ztm.commit()
+

@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     products = list(Product.selectBy(name = options.product))
 
-    if products == 0:
+    if len(products) == 0:
         raise RuntimeError("The product %s does not exist." %
             options.product)
 
