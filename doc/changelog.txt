@@ -2,6 +2,44 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-17 12:07:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1206
+
+    Summary:
+      Little Soyuz Fixes. Tested with gina-dumop4.gz db dump from kiko. Seems to be all ok.
+    Revision:
+      launchpad--devel--0--patch-1206
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-418
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-419
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-420
+       Soyuz fixes pointed by SteveA.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-421
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-422
+       star-merge from rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/distro-index.pt
+     lib/canonical/launchpad/zcml/distribution.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-418
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-419
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-420
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-421
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-422
+
+
 2005-01-15 13:13:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1205
 
     Summary:

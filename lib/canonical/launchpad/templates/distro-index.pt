@@ -54,24 +54,23 @@
             <th>Version</th>
             <th>Status</th>
         </tr>
-        <tr tal:condition="not: context/releases">
-            <td></td>
-            <td>No Releases Yet... please create one below.</td>
-            <td></td>
-            <td></td>
-        </tr>
         <tr tal:repeat="release context/releases"
             tal:attributes="onclick
                 string:window.location='${release/name}'">
             <td tal:content="release/displayname">displayname</td>
             <td><a tal:content="release/title"
-	               tal:attributes="href string:${release/name}">
-	               distribution name</a>
+                   tal:attributes="href string:${release/name}">
+                   distribution name</a>
             </td>
             <td tal:content="release/version">VERSION</td>
             <td tal:content="release/state">RELEASESTATE</td>
         </tr>
     </table>
+    
+    <!--It is not inside the table because this table rows behave like links-->
+    <i tal:condition="not: context/releases">
+      &nbsp&nbsp&nbsp No Releases Yet.
+    </i>
 
   </div>
  </div>

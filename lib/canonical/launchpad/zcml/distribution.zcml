@@ -34,14 +34,16 @@
             lp:url="Soyuz/distros/$Distribution.name/" />
 
         <!-- XXX sabdfl moved this here, need to reactivate search tools -->
-	<!-- XXX: Daniel Debonzi 20050105 -->
-	<!-- Does it still useful? don't we have enought and better -->
-	<!-- search places?	 -->
-	<browser:page
+        <!-- 
+        XXX: Daniel Debonzi 20050105 
+        Does it still useful? don't we have enought and better 
+        search places? 
+        -->
+        <browser:page
             name="+sources"
             template="../templates/distro-sources.pt"
-	        lp:url="Soyuz/distros/$Distribution.name/+sources"
-	        />
+            lp:url="Soyuz/distros/$Distribution.name/+sources"
+                />
         <browser:page
             name="+binaries"
             template="../templates/binary-index.pt"
@@ -96,10 +98,10 @@
     <browser:page
         for="canonical.launchpad.interfaces.IDistributionSet"
         permission="zope.Public"
-	    class="canonical.launchpad.browser.DistributionSetSearchView"
-	    template="../templates/distro-search.pt"
-        lp:url="Soyuz/distros/+search"
-	    name="+search"
+            class="canonical.launchpad.browser.DistributionSetSearchView"
+            template="../templates/distro-search.pt"
+            lp:url="Soyuz/distros/+search"
+            name="+search"
         />
 
     <browser:addform
