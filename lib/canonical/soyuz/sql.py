@@ -120,11 +120,11 @@ class DistroReleaseSourceApp(object):
         # FIXME: sourcepackage is currently a sourcepackagerelease!
         self.sourcepackage = sourcepackage
         # FIXME: stub
-        self.lastversions = ['1.2.3-4',
-                             '1.2.3-5',
-                             '1.2.3-6',
-                             '1.2.4-0',
-                             '1.2.4-1']
+        #         self.lastversions = ['1.2.3-4',
+        #                              '1.2.3-5',
+        #                              '1.2.3-6',
+        #                              '1.2.4-0',
+        #                              '1.2.4-1']
 
         #self.currentversions = [currentVersion('1.2.4-0',['i386', 'AMD64']),
         #                        currentVersion('1.2.3-6',['PPC'])
@@ -142,11 +142,26 @@ class DistroReleaseSourceApp(object):
     def currentversions(self):
         # FIXME: Probably should be more than just PUBLISHED uploads (e.g.
         # NEW + ACCEPTED + PUBLISHED?)
-        return self.sourcepackage.sourcepackage.uploadsByStatus(self.release,
-                                                                self.sourcepackage,
-                dbschema.SourceUploadStatus.PUBLISHED)
+        #If true, it is defined inside database.py
+        currents = self.sourcepackage.sourcepackage.current(self.release)
+        if currents:
+            currents_list = []
+            for crts in currents:
+                currents_list.append(currentVersion(crts.version,['i386', 'AMD64']))
+            return currents_list
+        else:
+            return None
+
     currentversions = property(currentversions)
 
+    def lastversions(self):
+        return self.sourcepackage.sourcepackage.lastversions(self.release)
+
+    lastversions = property(lastversions)
+    
+
+    ##Does this relation SourcePackageRelease and Builds exists??
+    ##Is it missing in the database or shoult it be retrived using binarypackage table?
     def builds(self):
         return self.sourcepackage.builds
     builds = property(builds)
@@ -190,9 +205,13 @@ class DistroReleaseSourcesApp(object):
 
 
     def __iter__(self):
+        #FIXME: Dummy solution to avoid a sourcepackage to be shown more then once
+        present = []
         for bp in self.table.select(self._query(),
                                     clauseTables=self.clauseTables):
-            yield bp
+            if bp.sourcepackage.name not in present:
+                present.append(bp.sourcepackage.name)
+                yield bp
 
 
 class DistroSourcesApp(object):

@@ -154,6 +154,35 @@ class SoyuzSourcePackage(SQLBase):
                                     sourcepackageRelease,
                                     dbschema.SourceUploadStatus.PROPOSED)
 
+    def current(self, distroRelease):
+        sourcepackagereleases = list(SoyuzSourcePackageRelease.select(
+            'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
+            ' AND SourcepackageUpload.distrorelease = %d'
+            ' AND SourcepackageRelease.sourcepackage = %d'
+            ' AND SourcePackageUpload.uploadstatus = %d'
+            % (distroRelease.id, self.id, dbschema.SourceUploadStatus.PUBLISHED)
+        ))
+
+        if sourcepackagereleases:
+            return sourcepackagereleases
+        else:
+            return None
+
+    def lastversions(self, distroRelease):
+        last = list(SoyuzSourcePackageRelease.select(
+            'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
+            ' AND SourcepackageUpload.distrorelease = %d'
+            ' AND SourcePackageRelease.sourcepackage = %d'
+            ' AND SourcePackageUpload.uploadstatus = %d'
+            ' ORDER BY sourcePackageRelease.dateuploaded DESC'
+            % (distroRelease.id, self.id,dbschema.SourceUploadStatus.SUPERCEDED)
+        ))
+
+        if last:
+            return last
+        else:
+            return None
+
 class SoyuzSourcePackageRelease(SQLBase):
     """A source package release, e.g. apache 2.0.48-3"""
     

@@ -35,12 +35,12 @@
 
     <tal:block tal:repeat="current context/currentversions">
 
-      <a tal:content="current/version" 
-      tal:attributes="href current/version">
+      <a tal:content="current/currentversion" 
+      tal:attributes="href current/currentversion">
       CURRENTVERSION
       </a>( 
 
-    <tal:block tal:repeat="currentbuild current/builds">
+    <tal:block tal:repeat="currentbuild current/currentbuilds">
       [
       <a tal:content="currentbuild" tal:attributes="href
       string:${current/currentversion}/${currentbuild}">
@@ -59,8 +59,8 @@
     <br>
     <br>
     <b>Last Packages:</b>
-    <li tal:repeat="version context/lastversions">
-    <a tal:content="version" tal:attributes="href version">
+    <li tal:repeat="lastversion context/lastversions">
+    <a tal:content="lastversion/version" tal:attributes="href lastversion/version">
     0.0.0-0
     </a>
     </li>
