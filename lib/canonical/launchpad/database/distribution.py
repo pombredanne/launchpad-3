@@ -12,7 +12,7 @@ from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.lp import dbschema
 from canonical.launchpad.interfaces import IDistribution, IDistributionSet, \
-    IDistroPackageFinder
+    IDistroPackageFinder, ITeamMembershipSubset, ITeam
 
 __all__ = ['Distribution', 'DistributionSet']
 
@@ -30,11 +30,17 @@ class Distribution(SQLBase):
     description = StringCol()
     domainname = StringCol()
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     releases = MultipleJoin('DistroRelease', joinColumn='distribution')
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
+
+    def memberslist(self):
+        if not ITeam.providedBy(self.members):
+            return
+        return ITeamMembershipSubset(self.members).getActiveMemberships()
 
     def traverse(self, name):
         if name == '+packages':

@@ -2,6 +2,77 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-28 14:13:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1504
+
+    Summary:
+      DistributionMembership implementation
+    Revision:
+      launchpad--devel--0--patch-1504
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-493
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-494
+       merge from distromembership--0. Distribution member ship implementation
+    
+     * daniel.debonzi@canonical.com/launchpad--distromembership--0--base-0
+       tag of daniel.debonzi@canonical.com/launchpad--devel--0--patch-480
+    
+     * daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-1
+       Member attribute added in Ditribution database and interface
+    
+     * daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-2
+       First implementation of DistributionMemberShip.
+    
+     * daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-3
+       merge from devel--0
+    
+     * daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-4
+       Better Distribution.memberlist method implementation using stuff from ITeamMembershipSubset from salgado. Missing template added.
+    
+     * daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-5
+       merge from devel--0
+    
+     * daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-6
+       Fix for cases where members is a person instead of a team
+    
+     * daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-7
+       merge from devel--0
+    
+     * daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-8
+       page tests for distribution membership pages added.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-distribution-membership.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-distribution-membership.txt
+     lib/canonical/launchpad/templates/.arch-ids/distro-members.pt.id
+     lib/canonical/launchpad/templates/distro-members.pt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/interfaces/distribution.py
+     lib/canonical/launchpad/templates/portlet-distro-actions.pt
+     lib/canonical/launchpad/templates/portlet-distro-details.pt
+     lib/canonical/launchpad/zcml/distribution.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-493
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-494
+     daniel.debonzi@canonical.com/launchpad--distromembership--0--base-0
+     daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-1
+     daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-2
+     daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-3
+     daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-4
+     daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-5
+     daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-6
+     daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-7
+     daniel.debonzi@canonical.com/launchpad--distromembership--0--patch-8
+
+
 2005-03-27 09:05:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1503
 
     Summary:

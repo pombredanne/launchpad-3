@@ -14,6 +14,11 @@
             <a tal:attributes="href string:/people/${context/owner/name}"
                tal:content="context/owner/displayname">owner name</a><br /> 
 
+            <b>Members:</b><br />
+            <img src="/++resource++user.gif">
+            <a href="+members"
+               tal:content="context/members/displayname">owner name</a><br /> 
+
             <span tal:condition="context/releases" tal:omit-tag>
                 <b>Releases:</b><br />
                 <span tal:repeat="release context/releases" tal:omit-tag>

@@ -36,10 +36,17 @@ class IDistribution(IHasOwner):
     owner = Int(
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
+    members = Choice(
+        title=_("Members"),
+        description=_("The distro's members team."), required=True,
+        vocabulary='Person')
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugtasks = Attribute("The bug tasks filed in this distro.")
     bugCounter = Attribute("The distro bug counter")
+
+    def memberslist():
+        """A list with members person objects"""
 
     def traverse(name):
         """Traverse the distribution. Check for special names, and return
