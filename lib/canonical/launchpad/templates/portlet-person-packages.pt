@@ -10,13 +10,13 @@
 	 distrorelease package/distrorelease/name;
 	 distro package/distrorelease/distribution/name; ">
 	  
-	  <a tal:attributes="href string:../../distros/${distro}"
+	  <a tal:attributes="href string:/soyuz/distros/${distro}"
              tal:content="package/distrorelease/distribution/title">DISTRO</a>
            -&gt
-	  <a tal:attributes="href string:../../distros/${distro}/src/${distrorelease}/"
+	  <a tal:attributes="href string:/soyuz/distros/${distro}/src/${distrorelease}/"
 	     tal:content="package/distrorelease/title">DISTRORELASE</a>
 	  -&gt
-	  <a tal:attributes="href string:../../distros/${distro}/src/${distrorelease}/${name}"
+	  <a tal:attributes="href string:/soyuz/distros/${distro}/src/${distrorelease}/${name}"
              tal:content="string:${name}">PACKAGES</a>
        </td>
      </tr>

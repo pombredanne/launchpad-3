@@ -34,7 +34,7 @@
        <a
        tal:content="context/sourcepackagerelease/creator/displayname" 
        tal:attributes="href 
-       string:../../../../../../people/${context/sourcepackagerelease/creator/name}"
+       string:/foaf/people/${context/sourcepackagerelease/creator/name}"
        />
 
     <p><b>Upload Date (UTC):</b> 

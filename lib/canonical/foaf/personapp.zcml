@@ -4,12 +4,12 @@
     xmlns:rdb="http://namespaces.zope.org/rdb"
     >
 
-  <content class="canonical.soyuz.personapp.PeopleApp">
+  <content class="canonical.foaf.personapp.PeopleApp">
     <allow interface="canonical.launchpad.interfaces.IPeopleApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.personapp.PersonApp">
+  <content class="canonical.foaf.personapp.PersonApp">
     <allow interface="canonical.launchpad.interfaces.IPersonApp"/>
     <require
      permission="zope.Public"

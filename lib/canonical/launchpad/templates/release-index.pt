@@ -62,7 +62,7 @@
          <table width="100%">
          <tr><td>Owner</td>
          <th align="right"> 
-           <a tal:attributes="href string:../../../../people/${context/release/owner/name}"
+           <a tal:attributes="href string:/foaf/people/${context/release/owner/name}"
 	      tal:content="context/release/owner/displayname">OWNER</a>
          </th></tr> 
          <tr><td>State</td>
@@ -140,7 +140,7 @@
 	<table>
 	<tr tal:repeat="role context/roles">
 	 <td>
-	  <a tal:attributes="href string:../../../../people/${role/person/name}"
+     <a tal:attributes="href string:/foaf/people/${role/person/name}"
 	     tal:content="role/person/displayname">TEAM</a>
          </td>
 	 <td tal:content="role/rolename">ROLE</td>

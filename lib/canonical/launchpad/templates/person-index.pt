@@ -123,7 +123,7 @@
                   <tr tal:condition="context/distroroles"
                   tal:repeat="role context/distroroles">
                 <td><span tal:content="role/rolename">ROLENAME</span> on 
-                  <a tal:attributes="href string:../../distros/${role/distribution/name}"
+                  <a tal:attributes="href string:/soyuz/distros/${role/distribution/name}"
                          tal:content="role/distribution/title">DISTRO</a></td>
               </tr>
                   </table>
@@ -141,7 +141,7 @@
               <tr tal:condition="context/distroreleaseroles"
                       tal:repeat="role context/distroreleaseroles">
                   <td><span tal:content="role/rolename">ROLENAME</span> on 
-                      <a tal:attributes="href string:../../distros/${role/distrorelease/distribution/name}/releases/${role/distrorelease/name}"
+                      <a tal:attributes="href string:/soyuz/distros/${role/distrorelease/distribution/name}/releases/${role/distrorelease/name}"
                          tal:content="role/distrorelease/displayname">RELEASE</a>
                       </td>
               </tr>

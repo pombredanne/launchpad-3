@@ -1,6 +1,7 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="foaf"
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
@@ -20,6 +21,13 @@
       permission="zope.Public"
       name="projects" />
 
+  <!-- This view registers 'people' as a suburl of RootObject/foaf/. -->
+  <browser:suburl
+      for="canonical.foaf.FOAFApplication"
+      class="canonical.foaf.personapp.PeopleApp"
+      permission="zope.Public"
+      name="people" />
+
   <content class="canonical.launchpad.database.PersonSet">
       <allow interface="canonical.launchpad.interfaces.IPersonSet" />
   </content>
@@ -31,5 +39,6 @@
   <include file="pages.zcml" />
   <include file="forms.zcml" />
   <include file="resources.zcml" />
+  <include file="personapp.zcml" />
 
 </configure>
