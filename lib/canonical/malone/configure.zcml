@@ -6,6 +6,9 @@
     i18n_domain="launchpad">
 
     <browser:resource
+        name="bullet.gif" file="../launchpad/images/bullet.gif" />
+  
+    <browser:resource
         name="malone.png" file="images/malone.png" />
   
     <!-- This view registers 'malone' as a suburl of RootObject. -->
@@ -40,7 +43,7 @@
         for="canonical.malone.IMaloneApplication"
         utility="canonical.launchpad.interfaces.ISourcePackageContainer"
         permission="zope.Public"
-        name="sourcepackage" />
+        name="package" />
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"

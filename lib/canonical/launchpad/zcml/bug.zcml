@@ -5,6 +5,16 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <!-- Widgets -->
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.interfaces.IBugSummary"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.launchpad.browser.BugSummaryWidget"
+        permission="zope.Public"
+        />
+
     <!-- MaloneBug (this must disappear!) -->
     <content class="canonical.launchpad.database.MaloneBug">
         <allow interface="canonical.launchpad.interfaces.IMaloneBug" />
@@ -76,7 +86,7 @@
         name="+new"
         for="canonical.launchpad.interfaces.IBugContainer"
         schema="canonical.launchpad.interfaces.IMaloneBugAddForm"
-        label="Add a Bug"
+        label="Record a New Bug"
         fields="title shortdesc description sourcepackage owner"
         content_factory="canonical.launchpad.database.MaloneBugAddForm"
         arguments=""

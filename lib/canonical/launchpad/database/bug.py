@@ -26,8 +26,12 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.bugactivity import BugActivity
 
 # Python
-from sets import Set
 from datetime import datetime
+from sets import Set
+
+#
+# CONTENT CLASSES
+#
 
 class Bug(SQLBase):
     """A bug."""
@@ -56,7 +60,7 @@ class Bug(SQLBase):
     messages = MultipleJoin('BugMessage', joinColumn='bug')
     # TODO: Standardize on pluralization and naming for table relationships
     productassignment = MultipleJoin('ProductBugAssignment', joinColumn='bug')
-    sourceassignment = MultipleJoin('SourcePackageBugAssignment',
+    packageassignment = MultipleJoin('SourcePackageBugAssignment',
                                     joinColumn='bug')
     productinfestations = MultipleJoin('BugProductInfestation', joinColumn='bug')
     packageinfestations = MultipleJoin('BugPackageInfestation', joinColumn='bug')
@@ -240,6 +244,10 @@ def MaloneBugFactory(context, **kw):
 
 
 # REPORTS
+# TODO: Mark Shuttleworth 24/10/04 this should be in bugassignment.py but
+# it creates circular imports
+
+
 class BugsAssignedReport(object):
 
     implements(IBugsAssignedReport)
@@ -248,22 +256,52 @@ class BugsAssignedReport(object):
         # initialise the user to None, will raise an exception if the
         # calling class does not set this to a person.id
         self.user = None
+        self.minseverity = 0
         self.BSA = SourcePackageBugAssignment
         self.BPA = ProductBugAssignment
 
+    # bugs on packages maintained by the user
+    def maintainedPackageBugs(self):
+        return Bug.select("""Bug.id=SourcePackageBugAssignment.bug AND
+                             SourcePackageBugAssignment.sourcepackage=SourcePackage.id AND
+                             SourcePackage.maintainer=%s AND
+                             SourcePackageBugAssignment.severity>=%s""" % (self.user.id,
+                             self.minseverity))
+
+    # bugs on products owned by the user
+    def maintainedProductBugs(self):
+        return Bug.select("""Bug.id=ProductBugAssignment.bug AND
+                             ProductBugAssignment.product=Product.id AND
+                             Product.owner=%s AND
+                             ProductBugAssignment.severity>=%s""" % (self.user.id,
+                             self.minseverity))
+
+    # package bugs assigned specifically to the user
+    def packageAssigneeBugs(self):
+        return Bug.select("""Bug.id=SourcePackageBugAssignment.bug AND
+                             SourcePackageBugAssignment.assignee=%s AND
+                             SourcePackageBugAssignment.severity>=%s""" %
+                             (self.user.id, self.minseverity))
+
+    # product bugs assigned specifically to the user
+    def productAssigneeBugs(self):
+        return Bug.select("""Bug.id=ProductBugAssignment.bug AND
+                             ProductBugAssignment.assignee=%s AND
+                             ProductBugAssignment.severity>=%s""" %
+                             (self.user.id, self.minseverity))
+
+
+    # all bugs assigned to a user
     def assignedBugs(self):
         bugs = Set()
-        buglist = Bug.select(OR(AND(Bug.q.id==self.BSA.q.bugID,
-                                    self.BSA.q.assigneeID==self.user.id),
-                                AND(Bug.q.id==self.BPA.q.bugID,
-                                    self.BPA.q.assigneeID==self.user.id),
-                                AND(Bug.q.id==self.BSA.q.bugID,
-                                    self.BSA.q.sourcepackageID==SourcePackage.q.id,
-                                    SourcePackage.q.maintainerID==self.user.id),
-                                AND(Bug.q.id==self.BPA.q.bugID,
-                                    self.BPA.q.productID==Product.q.id,
-                                    Product.q.ownerID==self.user.id),
-                                ))
-        for bug in buglist:
+        for bug in self.maintainedPackageBugs():
+            bugs.add(bug)
+        for bug in self.maintainedProductBugs():
+            bugs.add(bug)
+        for bug in self.packageAssigneeBugs():
+            bugs.add(bug)
+        for bug in self.productAssigneeBugs():
             bugs.add(bug)
         return bugs
+
+

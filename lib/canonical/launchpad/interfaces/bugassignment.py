@@ -78,3 +78,20 @@ class ISourcePackageBugAssignmentContainer(Interface):
         """Iterate through SourcePackageBugAssignments for a given bug."""
 
 
+#
+# Bug Report Objects
+#
+
+
+class IBugsAssignedReport(Interface):
+
+    user = Attribute(_("The user for whom this report will be generated"))
+
+    minseverity = Attribute(_("""The minimum severity of assignments to
+        display in this report."""))
+
+    def assignedBugs():
+        """An iterator over ALL the bugs directly or indirectly assigned
+        to the person."""
+
+

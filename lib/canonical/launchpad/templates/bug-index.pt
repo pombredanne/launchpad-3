@@ -56,7 +56,7 @@
                 '%d %b %y %H:%M')">13 Sep 04 12:15</span>.
         </div>
 
-        <div tal:replace="structure view/sourcepackageAssignmentPortlet" />
+        <div tal:replace="structure view/assignmentsHeadline" />
 
         <div class="documentDescription" tal:content="context/shortdesc">
             $Bug.shortdesc
@@ -65,9 +65,6 @@
         <div tal:content="context/description">
             $Bug.description
         </div>
-
-        <div tal:replace="structure view/productAssignmentPortlet" />
-
 
         <h2>Comments</h2>
 

@@ -46,13 +46,13 @@ class Person(SQLBase):
     def browsername(self):
         """Returns a name suitable for display on a web page."""
         if self.displayname: return self.displayname
-        webname = ''
+        browsername = ''
         if self.familyname:
-            webname.append(string.upper(self.familyname))
-            if self.givenname: webname.append(' '+self.givenname)
-        if not webname:
-            webname = 'UNKNOWN USER #'+str(self.id)
-        return webname
+            browsername.append(string.upper(self.familyname))
+            if self.givenname: browsername.append(' '+self.givenname)
+        if not browsername:
+            browsername = 'UNKNOWN USER #'+str(self.id)
+        return browsername
 
     # XXX: not implemented
     def maintainedProjects(self):

@@ -1,6 +1,10 @@
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from zope.interface import implements
+from zope.schema.interfaces import IText
+from zope.app.form.browser import TextAreaWidget
+
 from canonical.launchpad.database import BugAttachmentContainer, \
         BugExternalRefContainer, BugSubscriptionContainer, \
         BugWatchContainer, ProductBugAssignmentContainer, \
@@ -10,7 +14,8 @@ from canonical.launchpad.database import BugAttachmentContainer, \
         BugsAssignedReport, BugContainer
 
 from canonical.launchpad.interfaces import IPerson
-        
+
+from canonical.lp import dbschema
 
 def traverseBug(bug, request, name):
     if name == 'attachments':
@@ -23,7 +28,7 @@ def traverseBug(bug, request, name):
         return BugWatchContainer(bug=bug.id)
     elif name == 'productassignments':
         return ProductBugAssignmentContainer(bug=bug.id)
-    elif name == 'sourcepackageassignments':
+    elif name == 'packageassignments':
         return SourcePackageBugAssignmentContainer(bug=bug.id)
     elif name == 'productinfestations':
         return BugProductInfestationContainer(bug=bug.id)
@@ -57,34 +62,8 @@ class MaloneBugView(object):
         '../templates/portlet-bug-reference.pt')
     peoplePortlet = ViewPageTemplateFile(
         '../templates/portlet-bug-people.pt')
-
-
-# Bug Reports
-class BugsAssignedReportView(object):
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form = self.request.form
-        # Default to showing bugs assigned to the logged in user.
-        username = self.form.get('user', None)
-        if username: self.user = Person.selectBy(name=username)[0]
-        else:
-            try: self.user = IPerson(self.request.principal)
-            except TypeError: self.user = None
-        self.context.user = self.user
-
-    def userSelector(self):
-        html = '<select name="user" onclick="form.submit()">\n'
-        for person in self.allPeople():
-            html = html + '<option value="'+person.name+'"'
-            if person==self.user: html = html + ' selected="yes"'
-            html = html + '>'
-            html = html + person.browsername() + '</option>\n'
-        html = html + '</select>\n'
-        return html
-
-    def allPeople(self):
-        return Person.select()
+    assignmentsHeadline = ViewPageTemplateFile(
+        '../templates/portlet-bug-assignments-headline.pt')
 
 
 class BugsCreatedByView(object):
@@ -110,5 +89,23 @@ class BugsCreatedByView(object):
     def getBugs(self):
         bugs_created_by_owner = self._getBugsForOwner(self.request.get("owner", ""))
         return bugs_created_by_owner
+
+
+
+#
+# WIDGETS
+#
+
+# BugSummaryWidget
+# A widget to capture a bug summary
+class BugSummaryWidget(TextAreaWidget):
+
+    implements (IText)
+    
+    width = 60
+    height = 5
+
+    def _validate(self, value):
+        pass
 
 

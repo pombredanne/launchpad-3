@@ -19,7 +19,7 @@
         </tr> 
         <tr tal:repeat="pkg context/withBugs"
             tal:attributes="onclick
-                string:window.location='../sourcepackage/${pkg/name}';">
+                string:window.location='../package/${pkg/name}';">
             <td>
                 <a href="#" 
                     tal:attributes="href string:../sourcepackage/${pkg/name}/"

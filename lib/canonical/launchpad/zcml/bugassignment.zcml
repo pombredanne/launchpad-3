@@ -103,9 +103,13 @@
         lp:url="malone/bugs/$Bug.id/sourcepackageassignments/$SourcePackageBugAssignment.id/+edit" />
 
     <!-- BugsAssignedReport -->
+    <!-- TODO: figure out why we need to give explicit attributes instead of
+               using set_schema-->
     <content class="canonical.launchpad.database.BugsAssignedReport">
         <allow interface="canonical.launchpad.interfaces.IBugsAssignedReport" />
-        <require permission="zope.View" set_attributes="user" />
+        <require
+            permission="zope.View"
+            set_attributes="user minseverity" />
     </content>
 
     <utility

@@ -1,0 +1,33 @@
+#! /bin/sh
+
+if [[ ! "$1" ]]; then
+  echo "Usage: launch \"commit message\""
+  exit 1
+fi
+
+# move into position
+cd ~/projects/ubuntu/launchpad
+
+# check for loose files
+tla tree-lint -t --strict
+if [ $? -gt 0 ]; then
+  echo "You have untagged files. Please add and commit before refueling."
+  exit 1
+fi
+
+# then check if there are unmerged changes
+tla changes 
+if [ $? -gt 0 ]; then
+    echo "You've got changes! Please commit them before refueling"
+    exit 1
+fi;
+
+
+# run tests
+make check
+if [ $? -gt 0 ]; then
+  echo "Page tests failed, cannot launch."
+  exit 1
+fi
+
+/home/mark/projects/ubuntu/arch-pqm/bin/arch-submit-merge "$1" pqm@chinstrap.warthogs.hbd.com
