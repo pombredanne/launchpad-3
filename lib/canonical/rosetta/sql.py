@@ -393,7 +393,6 @@ class RosettaPOFile(SQLBase):
                                ' WHERE pofile = %d'
                                % self.id)
 
-
 class RosettaPOMessageSet(SQLBase):
     implements(IEditPOMessageSet)
 

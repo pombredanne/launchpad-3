@@ -31,9 +31,8 @@ class POExport:
         header.finish()
 
         messages = []
-        for msgid in self.potfile:
-            translation = poFile[msgid]
-            messages.append(MessageProxy(translation))
+        for msgset in self.potfile:
+            messages.append(MessageProxy(msgset))
 
         output = StringIO()
         writer = codecs.getwriter(header.charset)(output, 'strict')

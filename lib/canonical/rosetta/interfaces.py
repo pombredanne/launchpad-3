@@ -190,14 +190,6 @@ class IEditPOFile(IPOFile):
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
 
-    def newTranslation(IPOTSighting_or_msgid):
-        """Create and return a new IPOTranslation.
-
-        Use either the IPOTSighting or, if this message doesn't already
-        occur in the POTFile, use the msgid.
-        """
-
-
 class IPOMessageSet(Interface):
     """A collection of message IDs and possibly translations."""
 
