@@ -14,33 +14,39 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:content="context/release/title" /> Team Overview</h1>
+  <h1><span tal:content="context/release/displayname" /> Team Overview</h1>
 
-  <div>
-  <h3><span tal:content="context/release/title" /> Description </h3>
-  <p> <span tal:content="context/release/description" />
 
-  <h3><span tal:content="context/release/title" /> State </h3>
-  <p> <span tal:content="context/release/state" />
+  <p>Go to 
+     <a tal:attributes="href string:../../releases/${context/release/name}">
+     <span tal:content="context/release/displayname"/> Release Page</a>
+     for more Information about the Release itself.
 
-  <h3><span tal:content="context/release/title" /> Datereleased </h3>
-  <p> <span tal:content="context/release/datereleased" />
+  <div class="dummy">
+  <p> Back to 
+     <a href="../">
+     <span tal:content="context/release/distribution/title"/> Team Page</a>
+     for more Information about the Distribution Teams.
   </div>
 
   <table width="50%">
    <tr>
       <td>
-      <h4><span tal:content="context/release/title" /> Team</h4>
+      <h4>Teams</h4>
       </td>
   </tr>
   <tr>
   <td>
-  <div class="dummy">
+  <div>
   <table class="listing">	
    <tr> <th> Name</th> <th> Role</th> </tr>
     <tal:block tal:repeat="team context/team">
-      <tr><td><span tal:content="team/displayname">Displayname</span></td>
-	<td><span tal:content="team/role">ROLE</span></td></tr>
+      <tr>
+      <td><a tal:attributes="href string:../../../../people/${team/person/id}"
+             tal:content="team/person/displayname">
+             Displayname</a></td>
+      <td><span tal:content="team/rolename">ROLE</span>
+          (<span tal:content="team/role">ROLE</span>)</td></tr>
     </tal:block>
   </table>
   </div>
@@ -49,7 +55,7 @@
   </table>
 
   <div class="dummy">
-  <h3>Package Maintainers for <span tal:content="context/release/title"/></h3>
+  <h3>Package Maintainers for <span tal:content="context/release/displayname"/></h3>
     <form name="add" action="" method="POST">
     	<table>
 	<tr><td>Maintainer</td> 

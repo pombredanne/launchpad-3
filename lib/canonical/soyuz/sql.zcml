@@ -57,11 +57,6 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.Team">
-    <allow interface="canonical.soyuz.interfaces.ITeam"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
   <content class="canonical.soyuz.sql.PeopleApp">
     <allow interface="canonical.soyuz.interfaces.IPeopleApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>

@@ -25,7 +25,6 @@ from canonical.soyuz.interfaces import IBinaryPackageSet, ISourcePackageSet
 from canonical.soyuz.interfaces import ISourcePackage, ISoyuzPerson, IProject
 from canonical.soyuz.interfaces import IProjects, IProduct
 from canonical.soyuz.interfaces import ISync, IDistribution, IRelease
-from canonical.soyuz.interfaces import IDistributionRole, IDistroReleaseRole
 
 from canonical.soyuz.interfaces import IDistroBinariesApp
 
@@ -51,6 +50,8 @@ from canonical.arch.database import Branch, Changeset
 
 from canonical.soyuz.database import SoyuzEmailAddress, GPGKey, ArchUserID, \
      WikiName, JabberID, IrcID, Membership, TeamParticipation
+
+from canonical.soyuz.database import DistributionRole, DistroReleaseRole
 
 from string import split, join
 
@@ -342,67 +343,24 @@ class DistroSourcesApp(object):
 
 # Team app component (team)
 #FIXME: I shouls be moved to database.py !! and work for instance 
-class DistributionRole(SQLBase):
-
-    implements(IDistributionRole)
-
-    _table = 'Distributionrole'
-    _columns = [
-        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
-                   notNull=True),
-        ForeignKey(name='distribution', dbName='distribution',
-                   foreignKey='Distribution', notNull=True),
-        IntCol('role', dbName='role')
-        ]
-
-
-class DistroReleaseRole(SQLBase):
-
-    implements(IDistroReleaseRole)
-
-    _table = 'Distroreleaserole'
-    _columns = [
-        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
-                   notNull=True),
-        ForeignKey(name='distrorelease', dbName='distrorelease',
-                   foreignKey='Release',
-                   notNull=True),
-        IntCol('role', dbName='role')
-        ]
-
-#FIXME: just usefull for STUBs
-class Team(object):
-    def __init__(self, displayname, role):
-        self.displayname = displayname
-        self.role = role
-
 
 class DistroReleaseTeamApp(object):
     def __init__(self, release):
         self.release = release
 
-#FIXME: STUB sucks         
-#        self.team=DistroReleaseRole.select()
-        self.team = [Team('Matt Zimmerman', 'Maintainer'),
-                       Team('Robert Collins', 'Translator'),
-                       Team('Lalo Martins', 'Contributors')
-                       ]
+        self.team=DistroReleaseRole.selectBy(distroreleaseID=
+                                             self.release.id)
         
 
 class DistroTeamApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
-#FIXME: STUB sucks         
-#        self.team=DistributionRole.select()
-
-        self.team = [Team('Mark Shuttleworth', 'Maintainer'),
-                     Team('James Blackwell', 'Translator'),
-                     Team('Steve Alexander', 'Contributors')
-                     ]
+        self.team = DistributionRole.selectBy(distributionID=
+                                            self.distribution.id)
 
     def __getitem__(self, name):
         return DistroReleaseTeamApp(Release.selectBy(distributionID=
-                                                       self.distribution.id,
+                                                     self.distribution.id,
                                                      name=name)[0])
 
     def __iter__(self):

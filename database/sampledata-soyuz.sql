@@ -38,6 +38,17 @@ INSERT INTO Person (teamowner, teamdescription) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
 	'Ubuntu Gnome Team');
 
+INSERT INTO Person (teamowner, teamdescription) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'Warty Gnome Team');
+
+INSERT INTO Person (teamowner, teamdescription) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'Warty Security Team');
+
+INSERT INTO Person (teamowner, teamdescription) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'Hoary Gnome Team');
 
 -- EmailAdress
 
@@ -967,7 +978,7 @@ INSERT INTO Distrorelease (name, title, description, distribution, version,
 	(SELECT id FROM Distrorelease WHERE name = 'woody'),
 	6);
 
---Distroreleaserole
+--Distroreleaserole Persons ?!
 
 INSERT INTO Distroreleaserole (person, distrorelease, role) 
 	VALUES(
@@ -1001,8 +1012,28 @@ INSERT INTO Distroreleaserole (person, distrorelease, role)
 	(SELECT id from Distrorelease WHERE name = 'grumpy'),
 	3);
 
+-- Distroreleaserole Teams ?!
 
---Distributionrole
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE teamdescription = 'Warty Security Team'),
+	(SELECT id from Distrorelease WHERE name = 'warty'),
+	4);
+
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE teamdescription = 'Warty Gnome Team'),
+	(SELECT id from Distrorelease WHERE name = 'warty'),
+	4);
+
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE teamdescription = 'Hoary Gnome Team'),
+	(SELECT id from Distrorelease WHERE name = 'hoary'),
+	4);
+
+
+--Distributionrole Persons ?!
 
 INSERT INTO Distributionrole (person, distribution, role) 
 	VALUES(
@@ -1033,6 +1064,21 @@ INSERT INTO Distributionrole (person, distribution, role)
 	(SELECT id from Person WHERE displayname = 'Scott James Remnant'),
 	(SELECT id from Distribution WHERE name = 'ubuntu'),
 	1);
+
+-- DistributionRole Teams ?!
+
+INSERT INTO Distributionrole (person, distribution, role) 
+	VALUES(
+	(SELECT id from Person WHERE teamdescription='Ubuntu Security Team'),
+	(SELECT id from Distribution WHERE name = 'ubuntu'),
+	3);
+
+INSERT INTO Distributionrole (person, distribution, role) 
+	VALUES(
+	(SELECT id from Person WHERE teamdescription = 'Ubuntu Gnome Team'),
+	(SELECT id from Distribution WHERE name = 'ubuntu'),
+	3);
+
 
 --DistroArchrelease
 INSERT INTO Distroarchrelease(distrorelease, processorfamily, architecturetag, 

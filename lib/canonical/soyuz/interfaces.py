@@ -202,28 +202,19 @@ class IDistroReleaseTeamApp(Interface):
     release= Attribute("Release")
     team = Attribute("Team")
 
-
-# it is deprecated BTW !!!
-class ITeam(Interface):
-     """auxiliar object to receive STUB person"""
-     displayname = Attribute("name")
-     role = Attribute("role")
-
-
-# they didn't work as expected. spiv: help :)
 class IDistroReleaseRole(Interface):
     """A DistroReleaseRole Object """
     release= Attribute("Release")
     person = Attribute("Person")
     role = Attribute("Role")
-
+    rolename = Attribute("Rolename")
+    
 class IDistributionRole(Interface):
     """A Distribution Role Object"""
     distribution = Attribute("Distribution")
     person = Attribute("Person")
     role = Attribute("Role")
-
-#########################################
+    rolename = Attribute("Rolename")
 
 class IPeopleApp(Interface):
     """A People Tag """
@@ -290,7 +281,9 @@ class IMembership(Interface):
     team = Attribute("Team")
     role= Attribute("Role on Team")
     status= Attribute("Status of this Relation")
-
+    rolename = Attribute("Role Name")
+    statusname = Attribute("Status Name")
+    
 class ITeamParticipation(Interface):
     """Team Participation for Users"""
     person = Attribute("Owner")

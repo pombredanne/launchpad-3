@@ -13,6 +13,53 @@ from canonical.soyuz.interfaces import ISourcePackageRelease, IManifestEntry
 from canonical.soyuz.interfaces import IBranch, IChangeset
 from canonical.soyuz.interfaces import ISourcePackage, ISoyuzPerson
 from canonical.soyuz.interfaces import IBinaryPackage
+from canonical.soyuz.interfaces import IDistributionRole, IDistroReleaseRole
+
+
+class DistributionRole(SQLBase):
+
+    implements(IDistributionRole)
+
+    _table = 'Distributionrole'
+    _columns = [
+        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
+                   notNull=True),
+        ForeignKey(name='distribution', dbName='distribution',
+                   foreignKey='Distribution', notNull=True),
+        IntCol('role', dbName='role')
+        ]
+
+    def _rolename(self):
+        for role in dbschema.DistributionRole.items:
+            if role.value == self.role:
+                return role.title
+        return 'Unknown'
+    
+    rolename = property(_rolename)
+        
+
+class DistroReleaseRole(SQLBase):
+
+    implements(IDistroReleaseRole)
+
+    _table = 'Distroreleaserole'
+    _columns = [
+        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
+                   notNull=True),
+        ForeignKey(name='distrorelease', dbName='distrorelease',
+                   foreignKey='Release',
+                   notNull=True),
+        IntCol('role', dbName='role')
+        ]
+
+    def _rolename(self):
+        # FIXME: using DistributionRole dbschema instead of DistroRelease
+        for role in dbschema.DistributionRole.items:
+            if role.value == self.role:
+                return role.title
+        return 'Unknown'
+
+    rolename = property(_rolename)
 
 
 class Distribution(SQLBase):
@@ -488,6 +535,22 @@ class Membership(SQLBase):
         IntCol('role', dbName='role', notNull=True),
         IntCol('status', dbName='status', notNull=True)
         ]
+
+    def _rolename(self):
+        for role in dbschema.MembershipRole.items:
+            if role.value == value:
+                return role.title
+        return 'Unknown'
+    
+    rolename = property(_rolename)
+
+    def _statusname(self):
+        for status in dbschema.MembershipRole.items:
+            if status.value == value:
+                return status.title
+        return 'Unknown'
+    
+    statusname = property(_statusname)
 
 class TeamParticipation(SQLBase):
     _table = 'TeamParticipation'
