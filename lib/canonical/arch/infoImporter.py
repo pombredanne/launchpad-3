@@ -5,7 +5,7 @@ It will create ArchArchive and Branch entries as needed.
 
 #from canonical.arch.database import Archive
 from canonical.arch.sqlbase import SQLBase, quote
-from canonical.soyuz.database import SoyuzProject, SoyuzProduct
+from canonical.soyuz.database import SoyuzProduct
 import canonical.lp
 
 from sqlobject import ForeignKey, IntCol, StringCol, DateTimeCol, BoolCol, \
@@ -51,7 +51,7 @@ class SourceSource(SQLBase, importd.Job.Job):
         StringCol('name', dbName='name', notNull=True),
         StringCol('title', dbName='title', notNull=True),
         StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='product', foreignKey='Product', dbName='product',
+        ForeignKey(name='product', foreignKey='SoyuzProduct', dbName='product',
                    default=1),
         StringCol('cvsroot', dbName='cvsroot', default=None),
         StringCol('cvsmodule', dbName='cvsmodule', default=None),
@@ -179,7 +179,7 @@ def make_lifeless():
     return query[0]
 
 def make_unassigned_product():
-    query = Product.select(Product.q.name == 'unassigned')
+    query = SoyuzProduct.select(SoyuzProduct.q.name == 'unassigned')
     assert query.count() == 1
     return query[0]
 
