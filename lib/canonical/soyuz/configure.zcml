@@ -33,6 +33,10 @@
             template="../launchpad/templates/soyuz-index.pt"
             lp:url="Soyuz/index.html"
             />
+        <browser:page name="+about"
+            template="../launchpad/templates/soyuz-about.pt"
+            lp:url="Soyuz/+about"
+            />
     </browser:pages>
 
   <!--  packages should be applied over releases  --> 

@@ -124,52 +124,41 @@
         </ul>
       </ul>
 
-      <div class="dummy">
-       <h4>Build Dependencies</h4>
-       <table width="100%">
+     <div>
 
-<!-- XXX:  cprov 20041210
-     Repair the Builds schema !!!!
-         <tr tal:condition="python: len(view.builddepends) > 0">
-           <td valign="top" tal:repeat="index python:range(3)">
-             <ul>
-               <span tal:repeat="builddepends python:view.builddepends[index]">
-                 <li>
-                   <a tal:content="builddepends/name" tal:attributes="href
-               string:../../../../bin/${context/distrorelease/name}/${builddepends/name}"/> 
-               <tal:dummy condition="builddepends/signal">
-                 (<span tal:content="builddepends/signal" /> 
-                 <span tal:content="builddepends/version" />)
-               </tal:dummy>
-                 </li>
-               </span>
-             </ul>
-           </td>
-         </tr>
-           <tr tal:condition="python: len(view.builddependsindep) >0">
-           <td colspan="3">
-             <h5>Plataform Independent Dependencies</h5>
-           </td>
-         </tr>
-         <tr tal:condition="python: len(view.builddependsindep) > 0">
-           <td valign="top" tal:repeat="index python:range(3)">
-             <ul>
-               <span tal:repeat="builddependsindep python:view.builddependsindep[index]">
-                 <li>
-                   <a tal:content="builddependsindep/name" tal:attributes="href
-                      string:../../../../bin/${context/distrorelease/name}/${builddependsindep/name}"/> 
-                     <tal:dummy condition="builddependsindep/signal">
-                       (<span tal:content="builddependsindep/signal" /> 
-                       <span tal:content="builddependsindep/version" />)
-                     </tal:dummy>
-                  </li>
-                </span>
-              </ul>
-            </td>
-          </tr>
--->
-        </table> 
-      </div>
+     <table width="100%">
+     <tr><td valign="top">
+
+       <h4>Build Dependencies</h4>
+       <table>
+        <tr tal:condition="not:view/builddepends"><td>No Dependencies</td></tr>
+        <tr tal:repeat="dep view/builddepends">
+	 <td> <a tal:content="dep/name" tal:attributes="href
+           string:../../../../bin/${context/distrorelease/name}/${dep/name}"/> 
+	   <span tal:condition="dep/signal" 
+	         tal:content="string:(${dep/signal} ${dep/version})"/>
+         </td>
+        </tr>
+      </table>
+      </td><td valign="top">
+
+       <h4>Build Dependencies Indep</h4>
+       <table>		
+        <tr tal:condition="not:view/builddependsindep"><td>No
+       Platform Independent Dependencies</td></tr>
+        <tr tal:repeat="dep view/builddependsindep">
+	 <td> <a tal:content="dep/name" tal:attributes="href
+           string:../../../../bin/${context/distrorelease/name}/${dep/name}"/> 
+	   <span tal:condition="dep/signal" 
+	         tal:content="string:(${dep/signal} ${dep/version})"/>
+         </td>
+        </tr>
+       </table>
+
+      </td></tr>   
+      </table> 
+
+     </div>
     </div>
   </div>
 </body>

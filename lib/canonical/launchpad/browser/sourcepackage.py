@@ -28,28 +28,25 @@ class SourcePackageReleaseView(object):
 
     def builddepends(self):
         if not self.context.sourcepackagerelease.builddepends:
-            return None
+            return []
         
-        builddepends = ([], [], [])
+        builddepends = []
 
         depends = ParseSrcDepends(self.context.sourcepackagerelease.builddepends)
-
-        for i in range(len(depends)):
-            dep = depends[i]
-            builddepends[i % 3].append(builddepsSet(*dep[0]))
+        for dep in depends:
+            builddepends.append(builddepsSet(*dep[0]))
         return builddepends
 
 
     def builddependsindep(self):
         if not self.context.sourcepackagerelease.builddependsindep:
-            return None
-        builddependsindep = ([], [], [])
+            return []
+        builddependsindep = []
         
         depends = ParseSrcDepends(self.context.sourcepackagerelease.builddependsindep)
         
-        for i in range(len(depends)):
-            dep = depends[i]
-            builddependsindep[i % 3].append(builddepsSet(*dep[0]))
+        for dep in depends:
+            builddependsindep.append(builddepsSet(*dep[0]))
         return builddependsindep
                 
 

@@ -83,7 +83,6 @@ class DistrosAddView(object):
         domain = self.request.get("domain", "")
         person = IPerson(self.request.principal, None)
 
-        dt = getUtility(IDistroTools)
         
         if not person:
             return False
@@ -91,6 +90,7 @@ class DistrosAddView(object):
         if not title:
             return False
 
+        dt = getUtility(IDistroTools)
         res = dt.createDistro(person.id, title, description, domain)
         self.results = res
         return res
