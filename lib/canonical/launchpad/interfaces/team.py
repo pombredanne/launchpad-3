@@ -26,7 +26,7 @@ class ITeamParticipation(Interface):
 class ITeamParticipationSet(Interface):
     """A set for ITeamParticipation objects."""
 
-    def getSubTeams(self, teamID):
+    def getSubTeams(teamID):
         """Return all subteams for the specified team."""
 
 #

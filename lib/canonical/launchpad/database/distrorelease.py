@@ -154,7 +154,9 @@ class DistroRelease(SQLBase):
                    int(dbschema.BugAssignmentStatus.FIXED),
                    int(dbschema.BugAssignmentStatus.REJECTED)))
 
-        return SourcePackageInDistro.select(query, clauseTables=clauseTables)
+        return SourcePackageInDistro.select(query,
+                                            clauseTables=clauseTables,
+                                            distinct=True)
 
     def findSourcesByName(self, pattern):
         srcset = getUtility(ISourcePackageUtility)

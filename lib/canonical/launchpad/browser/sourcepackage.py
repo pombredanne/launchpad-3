@@ -26,11 +26,13 @@ from canonical.soyuz.generalapp import builddepsSet
 BATCH_SIZE = 40
 
 class SourcePackageReleasePublishingView(object):
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-sourcepackagerelease-actions.pt')
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
+        self.bag = getUtility(ILaunchBag)
 
     def builddepends(self):
         if not self.context.builddepends:

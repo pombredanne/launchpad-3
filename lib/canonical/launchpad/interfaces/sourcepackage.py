@@ -90,9 +90,7 @@ class ISourcePackageSet(Interface):
     def __iter__():
         """Iterate through SourcePackages."""
 
-    # XXX: WTF is self doing here?
-    # -- Steve Alexander, Fri Dec 10 14:42:08 UTC 2004
-    def withBugs(self):
+    def withBugs():
         """Return a sequence of SourcePackage, that have bugs assigned to
         them. In future, we might pass qualifiers to further limit the list
         that is returned, such as a name filter, or a bug assignment status
@@ -126,12 +124,8 @@ class ISourcePackageUtility(Interface):
     def getByNameInDistroRelease(distroreleaseID, name):
         """Returns a SourcePackage by its name"""
 
-    # XXX: What do the following methods and attributes do?
-    #      These were missing from the interfaces, but being used
-    #      in application code.
-    #      -- Steve Alexander, Fri Dec 10 14:28:41 UTC 2004
     def getSourcePackageRelease(sourcepackageid, version):
-        """XXX"""
+        """Get an Specific SourcePackageRelease by sourcepackageID and Version"""
 
 
 class ISourcePackageRelease(Interface):

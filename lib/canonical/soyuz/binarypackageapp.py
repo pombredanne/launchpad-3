@@ -176,35 +176,3 @@ class DistroReleaseBinaryReleaseBuildApp(object):
         return 'Unknown (%d)' %self.binarypackagerelease.binpackageformat
     pkgformat = property(pkgformat)
 
-    def _buildList(self, packages):
-        blist = []
-        if packages:
-            packs = ParseDepends(packages)
-            for pack in packs:
-                blist.append(builddepsSet(*pack[0]))
-                                          
-        return blist
-
-    def depends(self):
-        return self._buildList(self.binarypackagerelease.depends)
-    depends = property(depends)
-
-    def recommends(self):
-        return self._buildList(self.binarypackagerelease.recommends)
-    recommends = property(recommends)
-
-    def conflicts(self):
-        return self._buildList(self.binarypackagerelease.conflicts)
-    conflicts = property(conflicts)
-
-    def replaces(self):
-        return self._buildList(self.binarypackagerelease.replaces)
-    replaces = property(replaces)
-
-    def suggests(self):
-        return self._buildList(self.binarypackagerelease.suggests)
-    suggests = property(suggests)
-
-    def provides(self):
-        return self._buildList(self.binarypackagerelease.provides)
-    provides = property(provides)

@@ -21,12 +21,16 @@ class PackagePublishing(SQLBase):
 
     implements(IPackagePublishing)
 
-    binarypackage = ForeignKey(foreignKey='BinaryPackage')
-    distroarchrelease = ForeignKey(foreignKey='DistroArchRelease')
-    component = ForeignKey(foreignKey='Component')
-    section = ForeignKey(foreignKey='Section')
-    priority = IntCol()
-    status = IntCol()
+    binarypackage = ForeignKey(foreignKey='BinaryPackage',
+                               dbName='binarypackage')
+    distroarchrelease = ForeignKey(foreignKey='DistroArchRelease',
+                                   dbName='distroarchrelease')
+    component = ForeignKey(foreignKey='Component',
+                           dbName='component')
+    section = ForeignKey(foreignKey='Section',
+                         dbName='section')
+    priority = IntCol(dbName='priority')
+    status = IntCol(dbName='status')
     scheduleddeletiondate = DateTimeCol(default=None)
 
 

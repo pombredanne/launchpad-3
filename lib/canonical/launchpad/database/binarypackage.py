@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces import IBinaryPackage, \
                                            ISourcePackageUtility, \
                                            IBinaryPackageName,\
                                            IBinaryPackageNameSet
+from canonical.launchpad.database.publishing import PackagePublishing
 
 # The import is done inside BinaryPackage.maintainer to avoid circular import
 ##from canonical.launchpad.database.sourcepackage import SourcePackageRelease
@@ -79,31 +80,25 @@ class BinaryPackage(SQLBase):
 
         return self.build.sourcepackagerelease.sourcepackage.current(distroRelease)
 
-    def lastversions(self, distroRelease):
-        # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.sourcepackage import \
-             SourcePackageRelease
-        clauseTables = ('SourcePackagePublishing',)
-        
-        # XXX: Daniel Debonzi 2004-12-03
-        # Check if the orderBy is working properly
-        # as soon as we have enought data in db.
-        # Anyway, seems to be ok
-        last = list(SourcePackageRelease.select(
-            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
-            ' AND SourcePackagePublishing.distrorelease = %d'
-            ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcePackagePublishing.status = %d'
-            % (distroRelease.id,
-               self.build.sourcepackagerelease.sourcepackage.id,
-               dbschema.PackagePublishingStatus.SUPERCEDED),
-            clauseTables=clauseTables,
-            orderBy='sourcePackageRelease.dateuploaded'))
-        if last:
-            return last
-        else:
-            return None
+    def lastversions(self):
+        """Return the SUPERCEDED BinaryPackages in a DistroRelease
+           that comes from the same SourcePackage"""
 
+        clauseTable = ('PackagePublishing', 'BinaryPackageName',)
+        query = ('PackagePublishing.binarypackage = BinaryPackage.id '
+                 'AND BinaryPackage.binarypackagename = BinaryPackageName.id '
+                 'AND BinaryPackageName.id = %d '
+                 'AND PackagePublishing.distroarchrelease = %d '
+                 'AND PackagePublishing.status = %d'
+                 %(self.binarypackagename.id,
+                   self.build.distroarchrelease.id,
+                   dbschema.PackagePublishingStatus.SUPERCEDED,
+                   ))
+
+        return list(BinaryPackage.select(query,
+                                         clauseTables=clauseTable,
+                                         distinct=True))
+                    
     def _priority(self):
         for priority in dbschema.BinaryPackagePriority.items:
             if priority.value == self.priority:
@@ -112,6 +107,23 @@ class BinaryPackage(SQLBase):
 
     pkgpriority = property(_priority)
 
+    def _status(self):
+        """Get the BinaryPackage Status"""
+
+        try:
+            packagepublishing = PackagePublishing.select('binarypackage=%d '
+                                                         'AND distroarchrelease=%d '
+                                                         %(self.id,
+                                                           self.build.distroarchrelease.id))[0];
+        except IndexError:
+            raise KeyError, 'BinaryPackage not found in PackagePublishing'
+        
+        try:
+            return dbschema.PackagePublishingStatus.items[packagepublishing.status].title
+        except KeyError:
+            return 'Unknow'
+
+    status = property(_status)
 
 
 class BinaryPackageSet(object):

@@ -46,11 +46,11 @@ class IDistroRelease(Interface):
     binarycount = Attribute("Binary Packages Counter")
     architectures = Attribute("The Architecture-specific Releases")
 
-    def getBugSourceRelease():
-        """ xxx """
-
     def architecturecount():
         """Return the number of architectures in this release."""
+
+    def getBugSourcePackages():
+        """Get SourcePackages in a DistroRelease with BugAssignement"""
 
 #    def getSourceByName(name):
 #        """Return the latest source package of this name uploaded to this

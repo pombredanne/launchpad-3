@@ -15,6 +15,13 @@
 
 <body>
 
+  <metal:leftportlets fill-slot="portlets_one">
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+  </metal:rightportlets>
+
   <div metal:fill-slot="main" id="content" class="documentEditable">
     <div class="documentContent" id="region-content">
 

@@ -19,37 +19,26 @@
 
 
 <metal:leftportlets fill-slot="portlets_one">
-
-<div tal:replace="structure view/detailsPortlet" />
-
- <div class="portlet">
-  <h4>Local Links</h4>
-   <div class="portletBody">
-     <div class="portletContent even">
-     <ul>
-     <li><a href="+bugs">Packages with Open Bugs</a></li>
-     <li><a href="+deliver">Deliver this Release</a></li>
-     <li><a href="+edit">Edit Release Information</a></li>
-     </ul>
-     </div>
-   </div>  
- </div>
-
+  <div tal:replace="structure view/detailsPortlet" /> <br />
+  <div tal:replace="structure view/linksPortlet" />
 </metal:leftportlets>
 
-
 <metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure view/actionsPortlet" />
 </metal:rightportlets>
-
-
 
 <div metal:fill-slot="main" tal:define="distro context/distribution">
   <div id="content" class="documentEditable">
     <div class="documentContent" id="region-content"/>    
 
-    <h1><span tal:replace="distro/displayname">Distribution
-    displayname</span>:</h1>
-    <h2><span tal:replace="context/title">title</span></h2> 
+    
+    <h1>
+      <span tal:replace="distro/title">
+        Distribution displayname
+      </span>: <span tal:replace="context/title">
+        title
+      </span>
+    </h1> 
 
         <div class="documentDescription"
              tal:content="context/shortdesc">
@@ -71,14 +60,12 @@
 
       <ul>
           <li tal:repeat="arch context/architectures">
+	    <a tal:attributes="href arch/architecturetag">
 	      <span tal:replace="arch/processorfamily/name" />:
               <span tal:replace="arch/processorfamily/title" />
-             (<a tal:content="arch/architecturetag" 
-	         tal:attributes="href arch/architecturetag" />) 
+            </a>
+             (<span tal:replace="arch/architecturetag"/>) 
           </li>
-	  <li>
-	    Source Packages: ( <a href="sources">src</a> )
-	  </li>
       </ul>
       </tal:block>
 
@@ -96,7 +83,7 @@
 
           <div tal:condition="sourcecount" align="center">
 
-              <form name="search" method="POST" action="+search">
+              <form name="search" method="GET" action="+search">
                <div class="formControls">
                 <label>Search:</label>
                 <input title="Search for a package" size="30"
@@ -106,12 +93,6 @@
               </form>
  
               <table>
-              <tr><td><a 
-                tal:attributes="href string:../../src/${context/name}?showall=1">
-                View All 
-                (<span tal:content="sourcecount"/> Packages)
-                </a></td>
-              </tr>
               </table>
 
           </div>

@@ -18,7 +18,8 @@
 </content>
 
 <browser:page
-   for="canonical.launchpad.database.BinaryPackage" 
+   for="canonical.launchpad.interfaces.IBinaryPackage" 
+   class="canonical.launchpad.browser.BinaryPackageView"
    permission="zope.Public"
    name="index.html"
    template="../templates/binarypackage-index.pt"
