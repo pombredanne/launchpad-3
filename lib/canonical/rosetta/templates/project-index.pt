@@ -21,8 +21,8 @@
     <div style="float: right; clear: both; margin-top: 0.25em;">
     Project home page:
     <a href="http://project.home/page"
-       tal:content="context/url|default"
-       tal:attributes="href context/url|nothing">(None supplied)</a>
+       tal:content="context/homepageurl|default"
+       tal:attributes="href context/homepageurl|nothing">(None supplied)</a>
     </div>
 
     <p tal:content="context/description">
@@ -51,56 +51,51 @@
         pulldown, and click a product.
         </div>
 
-        <div tal:repeat="LT view/languageProducts">
+        <table class="listing">
+            <thead>
+                <th>Product</th>
+                <th>Translated</th>
+                <th>Untranslated</th>
+                <th>Graph</th>
+            </thead>
 
-            <h2 tal:content="LT/language/englishName">Language</h2>
+            <tbody>
+                <tr tal:repeat="product view/products">
+                    <td><a tal:attributes="href
+                        string:${product/name}/"
+                        tal:content="product/title">Product Name</a></td>
+                    <td><span tal:replace="product/poTranslated">0</span></td>
+                    <td><span tal:replace="product/poUntranslated">0</span></td>
+                    <td>
+	                <img src="++resource++green-bar.png"
+                             height="15"
+                             alt="Translated & non updated graph"
+                             tal:condition="product/poNonUpdatesCount"
+                             tal:attributes="width product/poNonUpdatesPercent;
+                                             title string: Translated: ${product/poNonUpdatesPercent}%"
+                        /><img src="++resource++blue-bar.png"
+                               height="15"
+                               alt="Updated graph"
+                               tal:condition="product/poUpdatesCount"
+                               tal:attributes="width product/poUpdatesPercent;
+                                               title string: Updates: ${product/poUpdatesPercent}%"
+			/><img src="++resource++dwelled-bar.png"
+                               height="15"
+                               alt="Rosetta additions graph"
+                               tal:condition="product/poRosettaCount"
+                               tal:attributes="width product/poRosettaPercent;
+                                               title string: Rosetta additions: ${product/poRosettaPercent}%"
+			/><img src="++resource++red-bar.png"
+                               height="15"
+                               alt="Fuzzy graph"
+                               tal:condition="product/poUntranslated"
+                               tal:attributes="width product/poUntranslatedPercent;
+                                               title string: Untranslated: ${product/poUntranslatedPercent}%" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 
-            <table class="listing">
-                <thead>
-                    <th>Product</th>
-                    <th>Translated</th>
-                    <th>Untranslated</th>
-                    <th>Graph</th>
-                </thead>
-
-                <tbody>
-                    <tr tal:repeat="product LT/products">
-                        <td><a tal:attributes="href
-                            string:${product/name}/"
-                            tal:content="product/title">Product Name</a></td>
-                        <td><span tal:replace="product/poTranslated">0</span></td>
-                        <td><span tal:replace="product/poUntranslated">0</span></td>
-                        <td>
-			    <img src="++resource++green-bar.png"
-                                height="15"
-                                alt="Translated & non updated graph"
-                                tal:condition="product/poNonUpdatesCount"
-                                tal:attributes="width product/poNonUpdatesPercent;
-                                                title string: Translated: ${product/poNonUpdatesPercent}%"
-                            /><img src="++resource++blue-bar.png"
-                                height="15"
-                                alt="Updated graph"
-                                tal:condition="product/poUpdatesCount"
-                                tal:attributes="width product/poUpdatesPercent;
-                                                title string: Updates: ${product/poUpdatesPercent}%"
-			    /><img src="++resource++dwelled-bar.png"
-                                height="15"
-                                alt="Rosetta additions graph"
-                                tal:condition="product/poRosettaCount"
-                                tal:attributes="width product/poRosettaPercent;
-                                                title string: Rosetta additions: ${product/poRosettaPercent}%"
-			    /><img src="++resource++red-bar.png"
-                                height="15"
-                                alt="Fuzzy graph"
-                                tal:condition="product/poUntranslated"
-                                tal:attributes="width product/poUntranslatedPercent;
-                                                title string: Untranslated: ${product/poUntranslatedPercent}%" />
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-
-        </div>
     </div> <!-- tal:condition="view/thereAreProducts -->
   
     <div tal:condition="not: view/thereAreProducts">

@@ -37,13 +37,13 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.DistroPeopleApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroPeopleApp"/>
+  <content class="canonical.soyuz.sql.DistroTeamApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroTeamApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.DistroReleasePeopleApp">
-    <allow interface="canonical.soyuz.interfaces.IDistroReleasePeopleApp"/>
+  <content class="canonical.soyuz.sql.DistroReleaseTeamApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleaseTeamApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
@@ -57,8 +57,58 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.People">
-    <allow interface="canonical.soyuz.interfaces.IPeople"/>
+  <content class="canonical.soyuz.sql.Team">
+    <allow interface="canonical.soyuz.interfaces.ITeam"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.PeopleApp">
+    <allow interface="canonical.soyuz.interfaces.IPeopleApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.PersonApp">
+    <allow interface="canonical.soyuz.interfaces.IPersonApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.SoyuzEmailAddress">
+    <allow interface="canonical.soyuz.interfaces.ISoyuzEmailAddress"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.GPGKey">
+    <allow interface="canonical.soyuz.interfaces.IGPGKey"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.ArchUserID">
+    <allow interface="canonical.soyuz.interfaces.IArchUserID"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.WikiName">
+    <allow interface="canonical.soyuz.interfaces.IWikiName"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.JabberID">
+    <allow interface="canonical.soyuz.interfaces.IJabberID"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.IrcID">
+    <allow interface="canonical.soyuz.interfaces.IIrcID"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.Membership">
+    <allow interface="canonical.soyuz.interfaces.IMembership"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.TeamParticipation">
+    <allow interface="canonical.soyuz.interfaces.ITeamParticipation"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
@@ -66,8 +116,6 @@
     <allow interface="canonical.soyuz.interfaces.IBinaryPackage"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
-
-
 
  <content class="canonical.soyuz.sql.DistroBinariesApp">
     <allow interface="canonical.soyuz.interfaces.IDistroBinariesApp"/>
@@ -117,6 +165,10 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.soyuz.sql.DistroApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
 
   <content class="canonical.soyuz.sql.SoyuzDistribution">
     <allow interface="canonical.soyuz.interfaces.IDistribution"/>
@@ -197,8 +249,8 @@
       />
 
 <!--DUMMY CONTENT -->
-  <content class="canonical.soyuz.sql.currentVersion">
-    <allow interface="canonical.soyuz.interfaces.IcurrentVersion"/>
+  <content class="canonical.soyuz.sql.CurrentVersion">
+    <allow interface="canonical.soyuz.interfaces.ICurrentVersion"/>
   </content>
 
 

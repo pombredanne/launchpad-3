@@ -52,8 +52,10 @@ COMMENT ON COLUMN Bug.name IS
   Soyuz
 */
 -- Are these soyuz or butress?
-COMMENT ON COLUMN Sourcepackage.name IS 
-    'A lowercase name uniquely identifying the sourcepackage';
+COMMENT ON COLUMN Sourcepackage.sourcepackagename IS 
+    'A lowercase name identifying the sourcepackage';
+COMMENT ON COLUMN SourcepackageName.name IS
+    'A lowercase name identifying one or more sourcepackages';
 COMMENT ON COLUMN BinarypackageName.name IS
     'A lowercase name identifying one or more binarypackages';
 

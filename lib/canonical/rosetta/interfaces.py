@@ -1,4 +1,12 @@
+# Copyright 2004 Canonical Ltd.  All rights reserved.
+#
+# arch-tag: e6c8f5bd-3c7d-4ec1-8997-586e5f8f7f6d
+
+__metaclass__ = type
+
+
 from zope.interface import Interface, Attribute
+import canonical.database.doap as doap
 
 # Note: When creating a new interface here, the test generation script
 # (scripts/generate_sql_tests.py) should also be updated.
@@ -7,56 +15,8 @@ class IRosettaApplication(Interface):
     """Rosetta application class."""
 
 
-class IProjects(Interface):
-    """The collection of projects."""
-
-    def __iter__():
-        """Return an iterator over all the projects."""
-
-    def __getitem__(name):
-        """Get a project by its name."""
-
-    def new(name, title, url, description, owner):
-        """Creates a new project with the given name.
-
-        Returns that project.
-
-        Raises an KeyError if a project with that name already exists.
-        """
-
-    def search(query):
-        """Search for projects matching a certain strings."""
-
-
-class IProject(Interface):
-    """A Project.  For example 'mozilla'."""
-
-    name = Attribute("The project's name. (unique within IProjects)")
-
-    displayName = Attribute("The Project's name that will be showed.")
-
-    title = Attribute("The project's title.")
-
-    url = Attribute("The URL of the project's website.")
-
-    description = Attribute("The project's description.")
-
-    owner = Attribute("The Person who owns this project.")
-
-    # XXX: poTemplate() will go away once we move to
-    # project->product->potemplate traversal rather than project->potemplate
-    # traversal.
-
-    def poTemplate(name):
-        """Returns the PO template with the given name."""
-
-    def poTemplates():
-        """Returns an iterator over this project's PO templates."""
-
-    def product(name):
-        """Returns the product with the given name."""
-    def products():
-        """Returns an iterator over this projects products."""
+class IRosettaStats(Interface):
+    """Rosetta-related statistics."""
 
     def messageCount():
         """Returns the number of Current IPOMessageSets in all templates
@@ -76,6 +36,19 @@ class IProject(Interface):
         """Returns the number of msgsets where we have a translation in rosetta
         but there was no translation in the PO file for this language when we
         last parsed it."""
+
+
+class IRosettaProject(IRosettaStats, doap.IProject):
+    """The rosetta interface to a project."""
+
+    displayName = Attribute("The Project's name that will be showed.")
+
+    def poTemplates():
+        """Returns an iterator over this project's PO templates."""
+
+    def product(name):
+        """Return the product belonging to this project with the given
+        name."""
 
 
 class IProduct(Interface):
@@ -159,7 +132,7 @@ class IPOTemplate(Interface):
     def __iter__():
         """Return an iterator over Current IPOMessageSets in this template."""
 
-    def __getitem__(key):
+    def messageSet(key, onlyCurrent=False):
         """Extract one or several POMessageSets from this template.
 
         If the key is a string or a unicode object, returns the
@@ -168,6 +141,12 @@ class IPOTemplate(Interface):
 
         If the key is a slice, returns the message IDs by sequence within the
         given slice.
+
+        If onlyCurrent is True, then get only current message sets.
+        """
+
+    def __getitem__(key):
+        """Same as messageSet(), with onlyCurrent=True
         """
 
     def languages():
@@ -208,7 +187,11 @@ class IPOTemplate(Interface):
 
     def hasMessageID(msgid):
         """Check whether a message set with the given message ID exists within
-        this PO file."""
+        this template."""
+
+    def hasPluralMessage():
+        """Test whether this template has any message sets which are plural
+        message sets."""
 
     # TODO provide a way to look through non-current message ids.
 
@@ -364,7 +347,7 @@ class IPOMessageSet(Interface):
     def messageIDs():
         """Return an iterator over this set's message IDs."""
 
-    def getMessageIDSighting(plural_form):
+    def getMessageIDSighting(pluralForm):
         """Return the message ID sighting that is current and has the
         plural form provided."""
 
@@ -372,7 +355,7 @@ class IPOMessageSet(Interface):
 class IEditPOMessageSet(IPOMessageSet):
     """Interface for editing a MessageSet."""
 
-    def makeMessageIDSighting(text, plural_form, update=False):
+    def makeMessageIDSighting(text, pluralForm, update=False):
         """Return a new message ID sighting that points back to us.
         If one already exists, behaviour depends on 'update'; if update
         is allowed, the existing one is "touched" and returned.  If it
@@ -436,14 +419,17 @@ class IPOFileMessageSet(IPOMessageSet):
         Flags for this set.
         """)
 
-    def nplurals():
-        """Number of message IDs that have to point to this message set
+    def templateMessageSet():
+        """Return the corresponding IPOTemplateMessageSet."""
+
+    def pluralForms():
+        """Number of translations that have to point to this message set
         for it to be complete."""
 
     def translations():
         """Return an iterator over this set's translations."""
 
-    def getTranslationSighting(plural_form, allowOld=False):
+    def getTranslationSighting(pluralForm, allowOld=False):
         """Return the translation sighting that is current and has the
         plural form provided.  If allowOld is True, include non-current."""
 
@@ -454,7 +440,7 @@ class IPOFileMessageSet(IPOMessageSet):
 class IEditPOFileMessageSet(IPOFileMessageSet):
     """Interface for editing a MessageSet."""
 
-    def makeTranslationSighting(person, text, plural_form, update=False, fromPOFile=False):
+    def makeTranslationSighting(person, text, pluralForm, update=False, fromPOFile=False):
         """Return a new translation sighting that points back to us.
         If one already exists, behaviour depends on 'update'; if update
         is allowed, the existing one is "touched" and returned.  If it
@@ -574,6 +560,12 @@ class IPerson(Interface):
     def languages():
         """The languages a person has expressed interest in."""
 
+    def addLanguage(language):
+        """Adds the language to its list of interested languages."""
+
+    def removeLanguage(language):
+        """Removes the language from the list on interested ones."""
+
 
 class ILanguage(Interface):
     """A Language."""
@@ -589,9 +581,19 @@ class ILanguage(Interface):
     pluralExpression = Attribute("""The expression that relates a number of
         items to the appropriate plural form.""")
 
+    # XXX: Review. Do you think this method is good for the interface?.
+    def translateLabel():
+        """The ILabel used to say that some is interested on ILanguage"""
+
+    def translators():
+        """The Persons that are interested on translate into this language."""
+
 
 class ILanguages(Interface):
     """The collection of languages."""
+
+    def __iter__():
+        """Returns an iterator over all languages."""
 
     def __getitem__(code):
         """Get a language by its code."""
@@ -605,6 +607,17 @@ class IPOExport(Interface):
 
     def export(language):
         """Exports the .po file for the specific language"""
+
+
+
+class ISchemas(Interface):
+    """The collection of schemas."""
+
+    def __getitem__(name):
+        """Get a schema by its name."""
+
+    def keys():
+        """Return an iterator over the schemas names."""
 
 
 class ISchema(Interface):
@@ -635,6 +648,9 @@ class ILabel(Interface):
     title = Attribute("The title of this schema.")
 
     description = Attribute("The description of this schema.")
+
+    def persons():
+        """Returns an iterator over all persons associated with this Label."""
 
 
 class ICategory(ILabel):
@@ -736,7 +752,7 @@ class ITranslationEffort(Interface):
 
 # XXX: I think we could hide this object from the Interface
 class ITranslationEffortPOTemplate(Interface):
-    """The object that relations a POTemplate with a Translation Effort."""
+    """The object that relates a POTemplate with a Translation Effort."""
 
     poTemplate = Attribute("The POTemplate we are refering.")
 

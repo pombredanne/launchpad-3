@@ -1,5 +1,0 @@
-/* Ensure a bug is not a duplicate of itself */
-ALTER TABLE Bug ADD CONSTRAINT notduplicateofself CHECK (not id = duplicateof);
-
-/* BugSystem names must be lower case */
-ALTER TABLE BugSystem ADD CHECK (name = lower(name));

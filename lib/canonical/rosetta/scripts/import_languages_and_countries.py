@@ -162,6 +162,7 @@ def insert_language(cnx, data, plural_forms):
 
     cr = cnx.cursor()
     rosetta_trans = cnx.cursor()
+    schemacr = cnx.cursor()
 
     # We check first if the entry already exists.
     # We assume that all countries have an iso3166code2 code
@@ -249,6 +250,7 @@ def insert_language(cnx, data, plural_forms):
                     data['englishname'].encode('utf-8'),
                     data['code']))
             print ("%r has been updated" % data)
+            rosetta_trans.close()
         elif 'nativename' in data:
             # We update all language names
             # XXX: We should check if it has changed and only update it in
@@ -265,6 +267,27 @@ def insert_language(cnx, data, plural_forms):
             cr.execute(
                 """UPDATE Language SET pluralforms=%(pluralforms)d,
                     pluralexpression=%(pluralexpression)s WHERE code=%(code)s""", data)
+
+    cr.execute("""SELECT * FROM Label WHERE name='%s'""" % data['code'])
+    
+    # If it does not exists, it's inserted
+    if cr.rowcount < 1:
+        # XXX: We assume that the schema is already present.
+        schemacr.execute("""SELECT id FROM Schema
+                            WHERE name='translation-languages'""")
+        schema = int(schemacr.fetchone()[0])
+
+        schemacr.close()
+
+        cr.execute(
+            """INSERT INTO Label (schema, name, title, description)
+               VALUES (%(schema)d, %(name)s, %(title)s, %(description)s)""", {
+                'schema': schema,
+                'name' : data['code'],
+                'title' : 'Translates into ' + data['englishname'].encode('utf-8'),
+                'description' : 'A person with this label says that knows ' \
+                                'how to translate into ' +
+                                data['englishname'].encode('utf-8') })
 
     cnx.commit()
     cr.close()

@@ -20,7 +20,71 @@ from zope.schema import Password, Bool
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 # TODO: Move this wrapper here
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote
+
+
+class IProjects(Interface):
+    """The collection of projects."""
+
+    def __iter__():
+        """Return an iterator over all the projects."""
+
+    def __getitem__(name):
+        """Get a project by its name."""
+
+    # XXX needs displayname, shortdesc, NO url
+    def new(name, title, url, description, owner):
+        """Creates a new project with the given name.
+
+        Returns that project.
+
+        Raises an KeyError if a project with that name already exists.
+        """
+
+    def search(query):
+        """Search for projects matching a certain strings."""
+
+
+class DBProjects:
+    implements(IProjects)
+
+    def __iter__(self):
+        return iter(DBProject.select())
+
+    def __getitem__(self, name):
+        ret = DBProject.selectBy(name=name)
+
+        if ret.count() == 0:
+            raise KeyError, name
+        else:
+            return ret[0]
+
+    def new(self, name, title, url, description, owner):
+        name = name.encode('ascii')
+        # XXX: where did displayName come from?
+        ##displayName = displayName.encode('ascii')
+        title = title.encode('ascii')
+        if type(url) != NoneType:
+            url = url.encode('ascii')
+        description = description.encode('ascii')
+
+        if Project.selectBy(name=name).count():
+            raise KeyError, "There is already a project with that name"
+
+        return Project(name=name,
+                       ##displayName=displayName,
+                       title=title,
+                       url=url,
+                       description=description,
+                       owner=owner,
+                       datecreated='now')
+
+    def search(self, query):
+        query = quote('%%' + query + '%%')
+        #query = quote(query)
+        return DBProject.select(
+            'title ILIKE %s OR description ILIKE %s' % (query, query))
+
 
 class IProject(Interface):
     """A Project."""
@@ -35,21 +99,49 @@ class IProject(Interface):
     def products():
         """Return Products for this Project."""
 
-class Project(SQLBase):
+    def rosettaProducts():
+        """Iterates over RosettaProducts in this project."""
+
+    # XXX: This will go away once we move to project->product->potemplate
+    #      traversal rather than project->potemplate traversal.
+    def poTemplate(name):
+        """Returns the RosettaPOTemplate with the given name."""
+
+
+class DBProject(SQLBase):
     """A Project"""
 
     implements(IProject)
 
+    _table = "Project"
+
     _columns = [
-        IntCol('owner'),
-        StringCol('name'),
-        StringCol('title'),
-        StringCol('description'),
-        DateTimeCol('datecreated'),
+        IntCol('owner', notNull=True),
+        # Rosetta defines 'owner' as a Person not an int, but doesn't use it.
+        ##ForeignKey(name='owner', foreignKey='RosettaPerson', notNull=True),
+        StringCol('name', notNull=True),
+        StringCol('title', notNull=True),
+        StringCol('description', notNull=True),
+        DateTimeCol('datecreated', notNull=True),
         StringCol('homepageurl')
     ]
 
     products = MultipleJoin('Product', joinColumn='project')
+    _productsJoin = MultipleJoin('RosettaProduct', joinColumn='project')
+
+    def rosettaProducts(self):
+        return iter(self._productsJoin)
+
+    def poTemplate(self, name):
+        results = RosettaPOTemplate.selectBy(name=name)
+        count = results.count()
+
+        if count == 0:
+            raise KeyError, name
+        elif count == 1:
+            return results[0]
+        else:
+            raise AssertionError("Too many results.")
 
 
 class IProduct(Interface):

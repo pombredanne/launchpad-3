@@ -1,0 +1,97 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+   <h1>Create New <span
+   tal:content="context/distribution/name">Distro</span> 
+   Release</h1>
+
+
+    <div class="documentDescription">	
+    <p> Here you can create a new release of <span
+    tal:content="context/distribution/title">Distro</span>
+    Distribution
+    </div>
+    
+    <div>
+    <form name="add" action="" method="POST">
+    <fieldset>
+    <legend><h3>Create a New Release</h3><legend>
+	<table>
+	<tr><td>
+	<div class="field">
+	    <label>Name</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter the Release Name.
+            </div>
+	    <input type="text" name="name"
+	    tal:attributes="value request/name|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Title</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter the Release Title.
+            </div>
+	    <input type="text" name="title"
+	    tal:attributes="value request/title|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Description</label>
+	    <div class="formHelp">
+	    Enter the Release Description.
+            </div>
+	    <input type="text" name="description"
+	    tal:attributes="value request/description|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Version</label>
+	    <div class="formHelp">
+	    Enter the Release Version.
+            </div>
+	    <input type="text" name="version"
+	    tal:attributes="value request/version|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="formControls">
+	  <input type="submit" value="Create"/>
+	</div>
+	</td></tr>
+	</table>
+  </form>
+  </div>
+
+  <tla:block tal:condition="view/enable_added">
+  <div>
+  <h4><a tal:attributes="href view/results/name">
+  <span tal:content="view/results/title"/></a> Release added</h4>
+  </div>
+  </tla:block>
+
+
+
+
+</div>
+
+</body>
+</html>

@@ -13,19 +13,29 @@ class IPackages(Interface):
 
 class IDistributions(Interface):
     """Root object for collection of Distributions"""
+    entries = Attribute('number of distributions')
+    
     def __getitem__(name):
         """retrieve distribution by name"""
-    def distributions():
-        """retrieve all projects"""
 
-    def __iter__():
-        """retrieve an iterator"""
+    def distributions():
+        """retrieve all Distribution"""
 
     def new(name, title, description, url):
         """Creates a new distribution with the given name.
 
         Returns that project.
         """
+    
+class IDistroApp(Interface):
+    distribution = Attribute("Distribution")
+    releases = Attribute("Distribution releases")
+    enable_releases = Attribute("Enable Distribution releases Features")
+    
+    def getReleaseContainer(name):
+        """Returns an associated IReleaseContainer"""
+
+
 class IDistribution(Interface):
     """A Distribution Object"""
     id = Attribute("The distro's unique number.")
@@ -35,8 +45,7 @@ class IDistribution(Interface):
     domainname = Attribute("The distro's domain name.")
     owner = Attribute("The distro's owner.")
 
-    def getReleaseContainer(name):
-        """Returns an associated IReleaseContainer"""
+
 
 class IDistroReleasesApp(Interface):
     """Root object for collection of Releases"""
@@ -65,6 +74,8 @@ class IDistroReleaseSourcesApp(Interface):
         """Retrieve a package by name."""
     def __iter__():
         """Iterate over names"""
+    def findPackagesByName():
+        """Find packages by name"""
 
     
 class IDistroReleaseSourceApp(Interface):
@@ -79,13 +90,11 @@ class IDistroReleaseSourceApp(Interface):
 
 class IDistroReleaseSourceReleaseBuildApp(Interface):
         sourcepackagerelease = Attribute("SourcePackageRelease")
-        version = Attribute("SourcePackageRelease Version ?!?!")
         arch = Attribute("Builded arch")
 
 class IDistroReleaseSourceReleaseApp(Interface):
     """A SourcePackageRelease Proxy """
     sourcepackagerelease = Attribute("SourcePackageRelease")
-    version = Attribute("SourcePackageRelease Version ?!?!")
     archs = Attribute("Builded archs")
 
     def __getitem__(name):
@@ -123,6 +132,10 @@ class IDistroReleaseBinariesApp(Interface):
 
     def __iter__():
         """retrieve an iterator"""
+
+    def findPackagesByName():
+        """Find packages by name"""
+
 
 class IDistroReleaseBinaryReleaseBuildApp(Interface):
     binarypackagerelease = Attribute("Release")
@@ -162,32 +175,31 @@ class IDistroSourcesApp(Interface):
     def __iter__():
         """retrieve an iterator"""
      
-class IDistroPeopleApp(Interface):
-    """A Distribution People Tag """
+class IDistroTeamApp(Interface):
+    """A Distribution Team Tag """
     distribution = Attribute("Distribution")
-    people = Attribute("People")
+    team = Attribute("Team")
 
     def __getitem__(release):
-        """retrieve people by release"""
+        """retrieve team by release"""
 
     def __iter__():
         """retrieve an iterator"""
 
-class IDistroReleasePeopleApp(Interface):
+class IDistroReleaseTeamApp(Interface):
     """A DistroRelease People Tag """
     release= Attribute("Release")
-    people = Attribute("People")
+    team = Attribute("Team")
 
 
 # it is deprecated BTW !!!
-class IPeople(Interface):
-     """auxiliar object to receive STUB persons"""
+class ITeam(Interface):
+     """auxiliar object to receive STUB person"""
      displayname = Attribute("name")
      role = Attribute("role")
 
 
 # they didn't work as expected. spiv: help :)
-
 class IDistroReleaseRole(Interface):
     """A DistroReleaseRole Object """
     release= Attribute("Release")
@@ -199,7 +211,80 @@ class IDistributionRole(Interface):
     distribution = Attribute("Distribution")
     person = Attribute("Person")
     role = Attribute("Role")
-    
+
+#########################################
+
+class IPeopleApp(Interface):
+    """A People Tag """
+    entries = Attribute("Number of person entries")
+
+    def __getitem__(release):
+        """retrieve personal by name"""
+
+    def __iter__():
+        """retrieve an iterator"""
+
+
+class IPersonApp(Interface):
+    """A Person Tag """
+    person = Attribute("Person entry")
+    id = Attribute("Person entry")
+    email = Attribute("Email")
+    wiki = Attribute("Wiki")
+    jabber = Attribute("Jabber")
+    irc = Attribute("IRC")    
+    gpg = Attribute("GPG")
+
+# new people related table interfaces
+
+class ISoyuzEmailAddress(Interface):
+    """Email aka our unique name"""
+    person = Attribute("Owner")
+    email = Attribute("Email")
+    status = Attribute("Status")
+
+class IGPGKey(Interface):
+    """GPG support"""
+    person = Attribute("Owner")
+    keyid = Attribute("KeyID")
+    pubkey = Attribute("Pub Key itself")
+    fingerprint = Attribute("User Fingerprint")
+    revoked = Attribute("Revoked")
+
+class IArchUserID(Interface):
+    """ARCH specific user ID """
+    person = Attribute("Owner")
+    archuserid = Attribute("ARCH user ID")
+
+class IWikiName(Interface):
+    """Wiki for Users"""
+    person = Attribute("Owner")
+    wiki = Attribute("wiki host")
+    wikiname = Attribute("wikiname for user")
+
+class IJabberID(Interface):
+    """Jabber specific user ID """
+    person = Attribute("Owner")
+    jabberid = Attribute("Jabber user ID")
+
+class IIrcID(Interface):
+    """Wiki for Users"""
+    person = Attribute("Owner")
+    network = Attribute("IRC host")
+    nickname = Attribute("nickname for user")
+
+class IMembership(Interface):
+    """Membership for Users"""
+    person = Attribute("Owner")
+    team = Attribute("Team")
+    role= Attribute("Role on Team")
+    status= Attribute("Status of this Relation")
+
+class ITeamParticipation(Interface):
+    """Team Participation for Users"""
+    person = Attribute("Owner")
+    team = Attribute("Team")
+
 ###########################################        
 
 class IRelease(Interface):
@@ -213,7 +298,12 @@ class IRelease(Interface):
     sections = Attribute("The release section.")
     releasestate = Attribute("The release's state.")
     datereleased = Attribute("The datereleased.")
-
+    parentrelease = Attribute("Parent Release")
+    owner =Attribute("Owner")
+    sourcecount = Attribute("Source Packages Counter")
+    binarycount = Attribute("Binary Packages Counter")
+    state = Attribute("DistroRelease Status")
+    parent = Attribute("DistroRelease Parent")
 
 ################################################################
    
@@ -342,9 +432,10 @@ class IPackagePublishing(Interface):
 class IBinaryPackage(Interface):
     """A binary package, e.g apache-utils"""
     # See the BinaryPackage table
-    binarypackagename = Attribute("Binary Package Name")
+    binarypackagename = Attribute("Binary Package Name ID")
     shortdesc = Attribute("Short Description")
     description = Attribute("Full Description")
+    name = Attribute("Binary Package Name")
 
 class IBinaryPackageName(Interface):
     """A binary package name"""
@@ -389,11 +480,17 @@ class ISourcePackageRelease(Interface):
 
 class ISoyuzPerson(Interface):
     """A person"""
+    # use id instead unique name
+    id = Attribute("ID for a person")
     givenname = Attribute("Given name")
     familyname = Attribute("Family name")
     displayname = Attribute("Display name")
-
-
+    teamowner = Attribute("The Team Owner") 
+    teamdescription = Attribute("The Team Description")
+    karma = Attribute("Karma")
+    karmatimestamp = Attribute("Karma Time stamp")
+    password = Attribute("Passwork ?!?!")
+    
 class IManifestEntry(Interface):
     """"""
     branch = Attribute("A branch")
@@ -411,7 +508,7 @@ class IChangeset(Interface):
     message = Attribute("The log message for this changeset")
 
 ##Dummy Interfaces
-class IcurrentVersion(Interface):
+class ICurrentVersion(Interface):
     currentversion = Attribute("DUMMY")
     currentbuilds = Attribute("DUMMY")
 

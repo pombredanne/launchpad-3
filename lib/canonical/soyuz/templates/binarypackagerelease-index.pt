@@ -15,7 +15,7 @@
 <div metal:fill-slot="main">
 
     <h1>
-       <tal:block tal:replace="context/binarypackagerelease/binarypackage/shortdesc">
+       <tal:block tal:replace="context/binarypackagerelease/shortdesc">
 	TITLE </tal:block>
      <tal:block tal:replace="context/version">
 	Version</tal:block>
@@ -24,13 +24,13 @@
 
  <p><h4>Package name:</h4>
  <span
- tal:content="context/binarypackagerelease/binarypackage/binarypackagename/name">
+ tal:content="context/binarypackagerelease/name">
  NAME
  </span>
 
  <p><h4>Package Description:</h4>
  <span
- tal:content="context/binarypackagerelease/binarypackage/description">
+ tal:content="context/binarypackagerelease/description">
  DESCRIPTION
  </span>
 

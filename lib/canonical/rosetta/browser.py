@@ -7,11 +7,11 @@ import re
 from math import ceil
 
 from zope.component import getUtility
-from canonical.rosetta.interfaces import IProjects, ILanguages, IPerson
-from canonical.rosetta.sql import RosettaLanguage
+from canonical.rosetta.interfaces import ILanguages, IPerson
+from canonical.database.doap import IProjects
+from canonical.rosetta.sql import RosettaLanguage, RosettaPerson
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
-
 
 charactersPerLine = 50
 
@@ -22,6 +22,11 @@ def count_lines(text):
         count += int(ceil(float(len(line)) / charactersPerLine))
 
     return count
+
+def fake_person():
+    # XXX: Temporary hack, to be removed as soon as we have the login template
+    # working.
+    return RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
 
 
 class ViewProjects:
@@ -38,7 +43,7 @@ class ViewProjects:
                     owner=1
                     )
             else:
-                raise RuntimeError("must post this form!")
+                raise RuntimeError("This form must be posted!")
 
             self.submitted = True
             return "Thank you for submitting the form."
@@ -48,27 +53,27 @@ class ViewProjects:
 
 class ViewProject:
     def thereAreProducts(self):
-        return len(list(self.context.products())) > 0
-
-    def languageProducts(self):
-        for language in IPerson(self.request.principal).languages():
-            yield LanguageProducts(language, self.context.products())
-
-class LanguageProducts:
-    def __init__(self, language, products):
-        self.language = language
-        self._products = products
+        return len(list(self.context.products)) > 0
 
     def products(self):
-        for product in self._products:
-            total = product.messageCount()
-            currentCount = product.currentCount(self.language.code)
-            rosettaCount = product.rosettaCount(self.language.code)
-            updatesCount = product.updatesCount(self.language.code)
+        person = IPerson(self.request.principal, None)
+        if person is None:
+            person = fake_person()
+
+        for product in self.context.rosettaProducts():
+            total = 0
+            currentCount = 0
+            rosettaCount = 0
+            updatesCount = 0
+            for language in person.languages():
+                total += product.messageCount()
+                currentCount += product.currentCount(language.code)
+                rosettaCount += product.rosettaCount(language.code)
+                updatesCount += product.updatesCount(language.code)
+
             nonUpdatesCount = currentCount - updatesCount
             translated = currentCount  + rosettaCount
             untranslated = total - translated
-
             try:
                 currentPercent = float(currentCount) / total * 100
                 rosettaPercent = float(rosettaCount) / total * 100
@@ -85,7 +90,7 @@ class LanguageProducts:
                 nonUpdatesPercent = 0
                 translatedPercent = 0
                 untranslatedPercent = 100
-           
+
             # NOTE: To get a 100% value:
             # 1.- currentPercent + rosettaPercent + untranslatedPercent
             # 2.- translatedPercent + untranslatedPercent 
@@ -111,13 +116,21 @@ class LanguageProducts:
 
             yield retdict
 
+
 class ViewProduct:
     def thereAreTemplates(self):
         return len(list(self.context.poTemplates())) > 0
 
     def languageTemplates(self):
-        for language in IPerson(self.request.principal).languages():
-            yield LanguageTemplates(language, self.context.poTemplates())
+        person = IPerson(self.request.principal, None)
+        if person is not None:
+            for language in person.languages():
+                yield LanguageTemplates(language, self.context.poTemplates())
+        else:
+            # XXX
+            person = fake_person()
+            for language in person.languages():
+                yield LanguageTemplates(language, self.context.poTemplates())
 
 
 class LanguageTemplates:
@@ -241,7 +254,7 @@ class ViewPOFile:
                 self.context.header = self.header.msgstr.encode('utf-8')
                 self.context.pluralForms = int(self.request.form['pluralforms'])
             else:
-                raise RuntimeError("must post this form!")
+                raise RuntimeError("This form must be posted!")
 
             self.submitted = True
             return "Thank you for submitting the form."
@@ -249,10 +262,75 @@ class ViewPOFile:
             self.submitted = False
             return ""
 
+def traverseIPOFile(pofile, request, name):
+    print "Entro en el traversal"
+    if name == 'po':
+        print "Es un po"
+        poExport = POExport(pofile.poTemplate)
+        print "Tengo el pot"
+        languageCode = pofile.language.code
+        print "Voy a exportarlo"
+        exportedFile = poExport.export(languageCode)
+        print "Lo he exportado"
+
+        request.response.setHeader('Content-Type', 'application/x-po')
+        request.response.setHeader('Content-Length', len(exportedFile))
+        request.response.setHeader('Content-disposition',
+                'attachment; filename="%s.po"' % languageCode)
+        return exportedFile
+    # XXX: Implemente .mo export:
+    #elseif name == 'mo':
+    else:
+        # XXX: What should we do if the tye something that it's not a po or
+        # mo?
+        raise RuntimeError("Unknown request!")
+
 
 class TranslatorDashboard:
     def projects(self):
         return getUtility(IProjects)
+
+    def languages(self):
+        return getUtility(ILanguages)
+
+    def selectedLanguages(self):
+        person = IPerson(self.request.principal, None)
+        if person is None:
+            # XXX
+            person = fake_person()
+
+        return list(person.languages())
+
+    def submit(self):
+        if "SAVE" in self.request.form:
+            if self.request.method == "POST":
+                person = IPerson(self.request.principal, None)
+                if person is None:
+                    # XXX
+                    person = fake_person()
+
+                oldInterest = list(person.languages())
+
+                if 'selectedlanguages' in self.request.form:
+                    if isinstance(self.request.form['selectedlanguages'], list):
+                        newInterest = self.request.form['selectedlanguages']
+                    else:
+                        newInterest = [ self.request.form['selectedlanguages'] ]
+                else:
+                    newInterest = []
+
+                # XXX: We should fix this, instead of get englishName list, we
+                # should get language's code
+                for englishName in newInterest:
+                    for language in self.languages():
+                        if language.englishName == englishName:
+                            if language not in oldInterest:
+                                person.addLanguage(language)
+                for language in oldInterest:
+                    if language.englishName not in newInterest:
+                        person.removeLanguage(language)
+            else:
+                raise RuntimeError("This form must be posted!")
 
 
 class ViewSearchResults:
@@ -272,12 +350,13 @@ class ViewSearchResults:
             self.results = []
             self.resultCount = 0
 
+
 class ViewPOExport:
 
     def __call__(self):
         self.export = POExport(self.context)
         # XXX: hardcoded value
-        languageCode = 'cy'
+        languageCode = 'es'
 
         self.pofile = self.export.export(languageCode)
 
@@ -305,16 +384,25 @@ class TranslatePOTemplate:
         #   A list of languages to translate into.
         # pluralForms:
         #   A dictionary by language code of plural form counts.
+        # badLanguages:
+        #   A list of languages for which no plural form information is
+        #   available.
         # offset:
         #   The offset into the template of the first message being
         #   translated.
         # count:
         #   The number of messages being translated.
+        # error:
+        #   A flag indicating whether an error ocurred during initialisation.
 
         self.context = context
         self.request = request
 
+        self.error = False
+
         self.codes = request.form.get('languages')
+
+        # Turn language codes into language objects.
 
         all_languages = getUtility(ILanguages)
 
@@ -327,9 +415,17 @@ class TranslatePOTemplate:
                 except KeyError:
                     pass
         else:
-            self.languages = list(IPerson(request.principal).languages())
+            person = IPerson(request.principal, None)
+            if person is None:
+                # XXX
+                person = fake_person()
+
+            self.languages = list(person.languages())
+
+        # Get plural form information.
 
         self.pluralForms = {}
+        self.pluralFormsError = False
 
         for language in self.languages:
             try:
@@ -340,12 +436,15 @@ class TranslatePOTemplate:
                         all_languages[language.code].pluralForms
                 else:
                     # We don't have a default plural form for this Language
-                    # XXX: We need to implement something here
-                    raise RuntimeError(
-                        "No information on plural forms for this language!",
-                        language)
+                    self.pluralForms[language.code] = None
+                    self.error = True
             else:
                 self.pluralForms[language.code] = pofile.pluralForms
+
+        self.badLanguages = [ all_languages[x] for x in self.pluralForms
+            if self.pluralForms[x] is None ]
+
+        # Get pagination information.
 
         if 'offset' in request.form:
             self.offset = int(request.form.get('offset'))
@@ -398,7 +497,7 @@ class TranslatePOTemplate:
         length = len(self.context)
 
         if length % self.count == 0:
-            offset = length - count
+            offset = length - self.count
         else:
             offset = length - (length % self.count)
 
@@ -419,8 +518,26 @@ class TranslatePOTemplate:
         else:
             return self._makeURL(offset = self.offset + self.count)
 
-    def _munge(self, text):
-        return text.replace('\n', u'\u21b5<br/>\n')
+    def _mungeMessageID(self, text):
+        # Convert leading and trailing spaces on each line to open boxes.
+
+        lines = []
+
+        for line in text.split('\n'):
+            match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
+
+            if match:
+                lines.append(
+                    u'\u2423' * len(match.group(1)) +
+                    match.group(2) +
+                    u'\u2423' * len(match.group(3)))
+            else:
+                raise AssertionError(
+                    "Regular expression that should always match didn't.")
+
+        # Insert arrows and HTML line breaks at newlines.
+
+        return '\n'.join(lines).replace('\n', u'\u21b5<br/>\n')
 
     def _messageID(self, messageID):
         lines = count_lines(messageID.msgid)
@@ -428,7 +545,8 @@ class TranslatePOTemplate:
         return {
             'lines' : lines,
             'isMultiline' : lines > 1,
-            'text' : self._munge(messageID.msgid)
+            'text' : messageID.msgid,
+            'displayText' : self._mungeMessageID(messageID.msgid)
         }
 
     def _messageSet(self, set):
@@ -471,9 +589,9 @@ class TranslatePOTemplate:
         if not "SUBMIT" in self.request.form:
             return None
 
-        self.submitted = True
-
         sets = {}
+
+        # Extract msgids from form.
 
         for key in self.request.form:
             match = re.match('set_(\d+)_msgid$', key)
@@ -481,8 +599,10 @@ class TranslatePOTemplate:
             if match:
                 id = int(match.group(1))
                 sets[id] = {}
-                sets[id]['msgid'] = self.request.form[key]
+                sets[id]['msgid'] = self.request.form[key].replace('\r', '')
                 sets[id]['translations'] = {}
+
+        # Extract translations from form.
 
         for key in self.request.form:
             match = re.match(r'set_(\d+)_translation_([a-z]+)$', key)
@@ -492,17 +612,8 @@ class TranslatePOTemplate:
                 code = match.group(2)
 
                 sets[id]['translations'][code] = {}
-                sets[id]['translations'][code][0] = self.request.form[key]
-
-                #msgid = msgids[index]
-                #set = potemplate[msgid]
-
-                # Validation goes here.
-
-                # Database update goes here.
-                # If the PO file doesn't exist, we need to create it first.
-
-                # set.submitRosettaTranslation(language, person, msgstrs)
+                sets[id]['translations'][code][0] = (
+                    self.request.form[key].replace('\r', ''))
 
                 continue
 
@@ -518,6 +629,84 @@ class TranslatePOTemplate:
 
                 sets[id]['translations'][code][pluralform] = self.request.form[key]
 
+        # Get/create a PO file for each language.
+        # XXX: This should probably be done more lazily.
+
+        pofiles = {}
+
+        person = IPerson(self.request.principal, None)
+
+        if person is None:
+            person = fake_person()
+
+        for language in self.languages:
+            try:
+                pofiles[language.code] = self.context.poFile(language.code)
+            except KeyError:
+                pofiles[language.code] = self.context.newPOFile(
+                    person, language.code)
+
+        # Put the translations in the database.
+
+        for set in sets.values():
+            # XXX: Handle the case where the set is not already in the PO
+            # file.
+
+            msgid_text = set['msgid']
+
+            for code in set['translations'].keys():
+                new_translations = set['translations'][code]
+
+                # Skip if there are no non-empty translations.
+
+                if not [ x for x in new_translations if x != '' ]:
+                    continue
+
+                # Check that this is a translation for a message set that's
+                # actually in the template.
+
+                try:
+                    pot_set = self.context[msgid_text]
+                except KeyError:
+                    raise RuntimeError(
+                        "Got translation for msgid %s which is not in "
+                        "the template." % repr(msgid_text))
+
+                # Get hold of an appropriate message set in the PO file.
+                # XXX: Message set creation should probably be lazier also.
+
+                try:
+                    po_set = pofiles[code][msgid_text]
+                    print ">>> msgid found (%s, %s)" % (code, msgid_text)
+                except KeyError:
+                    po_set = pofiles[code].createMessageSetFromText(msgid_text)
+                    print ">>> msgid created (%s, %s)" % (code, msgid_text)
+
+                old_translations = po_set.translations()
+                print ">>> old_translations:\n", old_translations
+
+                for index in new_translations:
+                    if (new_translations[index] is not None and
+                            new_translations[index] != '' and
+                            new_translations[index] !=
+                            old_translations[index]):
+                        print "accepting translation:\n", (index, old_translations[index],
+                            new_translations[index])
+                        po_set.makeTranslationSighting(
+                            person = person,
+                            text = new_translations[index],
+                            pluralForm = index,
+                            update = True,
+                            fromPOFile = False
+                            )
+                        new_translations = po_set.translations()
+                        print ">>> new_translations:\n", new_translations
+
+                print
+                print
+
+        self.submitted = True
+
         from pprint import pformat
         from xml.sax.saxutils import escape
         return "<pre>" + escape(pformat(sets)) + "</pre>"
@@ -529,9 +718,18 @@ class ViewTranslationEffort:
         return len(list(self.context.categories())) > 0
 
     def languageTranslationEffortCategories(self):
-        for language in IPerson(self.request.principal).languages():
-            yield LanguageTranslationEffortCategories(language,
-                self.context.categories())
+        person = IPerson(self.request.principal, None)
+        if person is not None:
+            for language in person.languages():
+                yield LanguageTranslationEffortCategories(language,
+                    self.context.categories())
+        else:
+            # XXX
+            person = fake_person()
+            for language in person.languages():
+                yield LanguageTranslationEffortCategories(language,
+                    self.context.categories())
+
 
 class LanguageTranslationEffortCategories:
     def __init__(self, language, translationEffortCategories):
@@ -566,7 +764,7 @@ class LanguageTranslationEffortCategories:
                 nonUpdatesPercent = 0
                 translatedPercent = 0
                 untranslatedPercent = 100
-           
+
             # NOTE: To get a 100% value:
             # 1.- currentPercent + rosettaPercent + untranslatedPercent
             # 2.- translatedPercent + untranslatedPercent 
@@ -600,6 +798,13 @@ class ViewTranslationEffortCategory:
         return len(list(self.context.poTemplates())) > 0
 
     def languageTemplates(self):
-        for language in IPerson(self.request.principal).languages():
-            yield LanguageTemplates(language, self.context.poTemplates())
+        person = IPerson(self.request.principal, None)
+        if person is not None:
+            for language in person.languages():
+                yield LanguageTemplates(language, self.context.poTemplates())
+        else:
+            # XXX
+            person = fake_person()
+            for language in person.languages():
+                yield LanguageTemplates(language, self.context.poTemplates())
 

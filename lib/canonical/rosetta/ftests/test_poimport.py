@@ -8,7 +8,7 @@ from zope.component.tests.placelesssetup import PlacelessSetup
 from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.interfaces import ILanguages
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
-     RosettaProject, RosettaProduct, RosettaLanguages
+     xxxRosettaProject, RosettaProduct, RosettaLanguages, RosettaPOMessageSet
 from sqlobject import connectionForURI
 from canonical.rosetta.pofile_adapters import MessageProxy, \
      TemplateImporter, POFileImporter
@@ -33,7 +33,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
     def testTemplateImporter(self):
         try:
-            project = RosettaProject.selectBy(name = 'gnome')[0]
+            project = xxxRosettaProject.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()
@@ -66,11 +66,25 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
                                            license=1,
                                            messageCount=0,
                                            owner=XXXperson)
-        importer = TemplateImporter(poTemplate, None, XXXperson)
+        importer = TemplateImporter(poTemplate, XXXperson)
         importer.doImport(self.pot)
         get_transaction().commit()
         # try a second time to see if it breaks
+        importer = TemplateImporter(poTemplate, XXXperson)
+        self.pot.seek(0)
         importer.doImport(self.pot)
+        # check that there aren't duplicates in the db
+        get_transaction().commit()
+        RosettaPOMessageSet._connection.cache.clear()
+        for message in importer.parser.messages:
+            msgid = message._msgset.primeMessageID_
+            results = RosettaPOMessageSet.select('''
+                poTemplate = %d AND
+                poFile IS NULL AND
+                primeMsgID = %d
+                ''' % (poTemplate.id, msgid.id))
+            assert results.count() == 1, '%d message sets' % results.count()
+            assert results[0].sequence > 0
         return
         # TODO: add some code that actually tests the database
         # here is an attempt
@@ -87,7 +101,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
     def testFileImporter(self):
         try:
-            project = RosettaProject.selectBy(name = 'gnome')[0]
+            project = xxxRosettaProject.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()
@@ -124,11 +138,24 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
             poFile = poTemplate.poFile('cy')
         except KeyError:
             poFile = poTemplate.newPOFile(XXXperson, 'cy')
-        importer = POFileImporter(poFile, None, XXXperson)
+        importer = POFileImporter(poFile, XXXperson)
         importer.doImport(self.po)
         get_transaction().commit()
         # try a second time to see if it breaks
+        importer = POFileImporter(poFile, XXXperson)
+        self.po.seek(0)
         importer.doImport(self.po)
+        # check that there aren't duplicates in the db
+        RosettaPOMessageSet._connection.cache.clear()
+        for message in importer.parser.messages:
+            msgid = message._msgset.primeMessageID_
+            results = RosettaPOMessageSet.select('''
+                poTemplate = %d AND
+                poFile = %d AND
+                primeMsgID = %d
+                ''' % (poTemplate.id, poFile.id, msgid.id))
+            assert results.count() == 1, '%d message sets' % results.count()
+            assert results[0].sequence > 0
 
 
 def test_suite():

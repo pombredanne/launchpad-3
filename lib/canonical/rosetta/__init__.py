@@ -8,7 +8,7 @@ __metaclass__ = type
 
 from zope.interface import implements
 
-from canonical.rosetta.interfaces import IProject, IRosettaApplication
+from canonical.rosetta.interfaces import IRosettaApplication
 from canonical.publication import rootObject
 
 class RosettaApplication:

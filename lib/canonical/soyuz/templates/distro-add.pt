@@ -13,18 +13,65 @@
 <body>
 
 <div metal:fill-slot="main">
-    <h1>Create a new distribution</h1>
+    <h1>New Distribution on Soyuz</h1>
 
+    <div class="documentDescription">	
+    <p> Here you can create a new Distribution
+    </div>
+    
+    <div>
     <form name="add" action="" method="POST">
-    <table>
-    <tr><th>Name</th><th><input type="text" name="name" 
-        tal:attributes="value request/name|nothing"/></th></tr>
-    <tr><th>Title</th><th><input type="text" name="title" 
-        tal:attributes="value request/title|nothing"/></th></tr>
-    <tr><th>Description</th><th><input type="text" name="description" 
-        tal:attributes="value request/description|nothing"/></th></tr>
-    <tr><th></th><th><input type="submit" value="shoot"/></th></tr>
-    </form>
+    <fieldset>
+    <legend><h3>Create a New Distribution</h3><legend>
+	<table>
+	<tr><td>
+	<div class="field">
+	    <label>Name</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter the Distribution Name.
+            </div>
+	    <input type="text" name="name"
+	    tal:attributes="value request/name|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Title</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter the Distribution Title.
+            </div>
+	    <input type="text" name="title"
+	    tal:attributes="value request/title|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Description</label>
+	    <div class="formHelp">
+	    Enter the Distribution Description.
+            </div>
+	    <input type="text" name="description"
+	    tal:attributes="value request/description|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="formControls">
+	  <input type="submit" value="Create"/>
+	</div>
+	</td></tr>
+	</table>
+  </form>
+  </div>
+
+  <tla:block tal:condition="view/enable_added">
+  <div>
+  <h4><a tal:attributes="href request/name">
+  <span tal:content="view/results/title"/></a> 
+  Distribution added</h4>
+  </div>
+  </tla:block>
 
 </div>
 

@@ -29,7 +29,7 @@ from interfaces import \
 from canonical.database.malone import \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
         ProductBugAssignment, SourcepackageBugAssignment
-from canonical.database.doap import Project, Sourcepackage
+from canonical.database.doap import DBProject, Sourcepackage
 from canonical.database.foaf import Person, EmailAddress
 
 def traverseBug(bug, request, name):
@@ -404,7 +404,7 @@ class ProjectContainer(object):
     """A container for Project objects."""
 
     implements(IProjectContainer)
-    table = Project
+    table = DBProject
 
     def __getitem__(self, name):
         try:
@@ -427,7 +427,7 @@ class ProjectContainer(object):
             q += """ AND lower(title) LIKE '%%%%' || %s || '%%%%'""" % (
                     sqlbase.quote(title.lower())
                     )
-        return Project.select(q)
+        return DBProject.select(q)
 
 
 class SourcepackageContainer(object):

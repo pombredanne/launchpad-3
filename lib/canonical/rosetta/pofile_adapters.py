@@ -73,7 +73,12 @@ class TranslationsList(object):
         self._msgset = messageset
         self._who = person
         # cache, as we use that value a lot
-        self._nplurals = messageset.nplurals()
+        if messageset.poFile is None:
+            # allow pot-sets to have 2 msgstrs, since some efforts
+            # seem to like it that way
+            self._nplurals = len(list(messageset.messageIDs()))
+        else:
+            self._nplurals = messageset.pluralForms()
 
     # FIXME: this list implementation is incomplete.  Dude, if you want to do
     # del foo.msgstrs[2]
@@ -112,7 +117,7 @@ class TranslationsList(object):
             raise IndexError, index
 
     def __len__(self):
-        return self._msgset.translations().count()
+        return len(list(self._msgset.translations()))
 
     def append(self, value):
         if len(self) >= self._nplurals:
@@ -152,7 +157,7 @@ class MessageProxy(POMessage):
 
     def _get_msgidPlural(self):
         msgids = self._master_msgset.messageIDs()
-        if msgids.count() >= 2:
+        if len(list(msgids)) >= 2:
             return msgids[1].msgid
         return None
     def _set_msgidPlural(self, value):
@@ -165,15 +170,19 @@ class MessageProxy(POMessage):
     msgidPlural = property(_get_msgidPlural, _set_msgidPlural)
 
     def _get_msgstr(self):
+        if self._msgset.poFile is None:
+            return None
         translations = list(self._msgset.translations())
         if len(translations) == 1:
-            return translations[0].translation
+            return translations[0]
     def _set_msgstr(self, value):
         # let's avoid duplication of code
         self._translations[0] = value
     msgstr = property(_get_msgstr, _set_msgstr)
 
     def _get_msgstrPlurals(self):
+        if self._msgset.poFile is None:
+            return None
         translations = list(self._msgset.translations())
         if len(translations) > 1:
             # test is necessary because the interface says when
@@ -262,7 +271,7 @@ class TemplateImporter(object):
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
         try:
-            msgset = self.potemplate[msgid]
+            msgset = self.potemplate.messageSet(msgid)
         except KeyError:
             msgset = self.potemplate.createMessageSetFromText(msgid)
         else:

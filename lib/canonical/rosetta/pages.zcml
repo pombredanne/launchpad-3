@@ -7,7 +7,7 @@
   -->
 
   <!-- pages for the collection of projects -->
-  <pages for="canonical.rosetta.interfaces.IProjects"
+  <pages for="canonical.rosetta.domain.RosettaProjects"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewProjects"
          lp:url="Rosetta/projects">
@@ -19,11 +19,12 @@
           lp:url="Rosetta/projects/+submit" />
   </pages>
 
-  <traverse for="canonical.rosetta.interfaces.IProjects"
-            getter="__getitem__" />
+  <traverse for="canonical.rosetta.domain.RosettaProjects"
+            getter="__getitem__"
+            adaptwith="canonical.rosetta.domain.RosettaProject" />
 
   <!-- pages for a project -->
-  <pages for="canonical.rosetta.interfaces.IProject"
+  <pages for="canonical.rosetta.interfaces.IRosettaProject"
          permission="zope.Public"
          class="canonical.rosetta.browser.ViewProject"
          lp:url="Rosetta/projects/$Project.name">
@@ -32,7 +33,9 @@
           lp:url="Rosetta/projects/$Project.name/index" />
   </pages>
 
-  <traverse for="canonical.rosetta.interfaces.IProject" getter="product" />
+  <traverse for="canonical.rosetta.interfaces.IRosettaProject"
+            getter="product" />
+
 
   <!-- pages for a product -->
   <pages for="canonical.rosetta.interfaces.IProduct"
@@ -83,6 +86,9 @@
           template="templates/pofile-edit.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
   </pages>
+
+  <traverse for="canonical.rosetta.interfaces.IPOFile"
+            function="canonical.rosetta.browser.traverseIPOFile" />
 
   <page name="export.po"
         for="canonical.rosetta.interfaces.IPOTemplate"
@@ -135,6 +141,9 @@
     <page name="translator"
           template="templates/dashboard-translator.pt"
           lp:url="Rosetta/translator" />
+    <page name="prefs"
+          template="templates/rosetta-preferences.pt"
+          lp:url="Rosetta/prefs" />
   </pages>
 
   <pages for="canonical.rosetta.interfaces.IRosettaApplication"

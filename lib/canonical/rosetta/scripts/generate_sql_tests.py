@@ -4,8 +4,6 @@
 import sys
 
 tests = [
-    ('IProjects', 'RosettaProjects'),
-    ('IProject', 'RosettaProject'),
     ('IProduct', 'RosettaProduct'),
     ('IEditPOTemplate', 'RosettaPOTemplate'),
     ('IEditPOFile', 'RosettaPOFile'),
@@ -17,6 +15,12 @@ tests = [
     ('IPerson', 'RosettaPerson'),
     ('ILanguage', 'RosettaLanguage'),
     ('ILanguages', 'RosettaLanguages'),
+    ('ISchemas', 'RosettaSchemas'),
+    ('ISchema', 'RosettaSchema'),
+    ('ILabel', 'RosettaLabel'),
+    ('ICategory', 'RosettaCategory'),
+    ('ITranslationEffort', 'RosettaTranslationEffort'),
+    ('ITranslationEffortPOTemplate', 'RosettaTranslationEffortPOTemplate'),
     ]
 
 if '-c' in sys.argv:

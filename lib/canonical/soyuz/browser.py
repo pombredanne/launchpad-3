@@ -1,4 +1,5 @@
-from canonical.soyuz.sql import SoyuzDistribution, Release
+from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
+from canonical.soyuz.database import SoyuzSourcePackage
 from sqlobject import LIKE, OR, AND
 
 
@@ -9,19 +10,41 @@ class DistrosSearchView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.enable_results = False
 
-        name = self.request.get("name", "").encode("ascii")
-        title = self.request.get("title", "").encode("ascii")            
-        description = self.request.get("description", "").encode("ascii")
+        name = self.request.get("name", "")
+        title = self.request.get("title", "")
+        description = self.request.get("description", "")
 
+        # YAPS: add operator '%' for query all distros
         if name or title or description:
+            
             name_like = LIKE(SoyuzDistribution.q.name, "%%"+name+"%%")
             title_like = LIKE(SoyuzDistribution.q.title, "%%"+title+"%%")
             description_like = LIKE(SoyuzDistribution.q.description,
                                     "%%"+description+"%%")
-            self.results = SoyuzDistribution.select(AND(name_like, title_like, description_like))
+            self.results = SoyuzDistribution.select(AND(name_like, title_like,\
+                                                        description_like))
+            self.entries = self.results.count()
+            self.enable_results = True                
+            
+class PeopleSearchView(object):
 
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+        self.enable_results = False       
 
+        name = self.request.get("name", "")
+
+        # add operator '%' to query all persons
+        if name:
+            name_like = LIKE(SoyuzPerson.q.displayname, "%%"+name+"%%")
+            self.results = SoyuzPerson.select(AND(name_like))
+
+            self.entries = self.results.count()
+            self.enable_results = True
 
 class DistrosAddView(object):
 
@@ -29,17 +52,22 @@ class DistrosAddView(object):
         self.context = context
         self.request = request
         self.results = []
-
+        self.enable_added = False
+        
         name = self.request.get("name", "").encode("ascii")
         title = self.request.get("title", "").encode("ascii")            
         description = self.request.get("description", "").encode("ascii")
 
         if name or title or description:
-            #YAPS: the owner is hardcodes to Mark !!!!
+            #YAPS: verify unique name before insert new distro
+            #YAPS: the owner is hardcoded to Mark !!!!
             #How will we handler Security/Authentication Issues ?!?!
-            SoyuzDistribution(name=name, title=title, description=description,\
-                         domainname='domain', owner=1)
-                
+            self.results = SoyuzDistribution(name=name, title=title, \
+                                             description=description,\
+                                             domainname='domain', owner=1)
+            #YAPS: verify results
+            self.enable_added = True
+    
 
 class DistrosEditView(object):
 
@@ -47,16 +75,18 @@ class DistrosEditView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.enable_edited = False
 
         name = self.request.get("name", "").encode("ascii")
         title = self.request.get("title", "").encode("ascii")            
         description = self.request.get("description", "").encode("ascii")
 
         if name or title or description:
-            self.context.name = name
-            self.context.title = title
-            self.context.description = description
-
+            #YAPS: verify the unique name before update distro
+            self.context.distribution.name = name
+            self.context.distribution.title = title
+            self.context.distribution.description = description
+            self.enable_edited = True
 
 
 class ReleasesAddView(object):
@@ -65,6 +95,7 @@ class ReleasesAddView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.enable_added = False
 
         name = self.request.get("name", "").encode("ascii")
         title = self.request.get("title", "").encode("ascii")            
@@ -72,29 +103,64 @@ class ReleasesAddView(object):
         version = self.request.get("version", "").encode("ascii")
 
         if name or title or description or version:
-            Release(distribution=self.context.distribution.id, name=name,\
-                    title=title, description=description,version=version,\
-                    components=1, releasestate=1,sections=1,\
-                    datereleased='2004-08-15 10:00', owner=1)
-
-
+            #YAPS: verify unique name before insert a new release
+            #YAPS: get current UTC
+            #YAPS: What about figure out finally what to do with
+            #      components, sections ans so on ...
+            #YAPS: parentrelease hardcoded to "warty" 
+            self.results = Release(distribution=self.context.distribution.id,\
+                                   name=name, title=title, \
+                                   description=description,version=version,\
+                                   components=1, releasestate=1,sections=1,\
+                                   datereleased='2004-08-15 10:00', owner=1,
+                                   parentrelease=1)
+            #YAPS: verify the results 
+            self.enable_added = True
+            
 class ReleasesEditView(object):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.results = []
-
+        self.enable_edited = False
+        
         name = self.request.get("name", "").encode("ascii")
         title = self.request.get("title", "").encode("ascii")            
         description = self.request.get("description", "").encode("ascii")
         version = self.request.get("version", "").encode("ascii")
 
         if name or title or description or version:
+            #YAPS: verify unique name before update release information
             self.context.release.name = name
             self.context.release.title = title
             self.context.release.description = description
             self.context.release.version = version
+            #YAPS: verify the results 
+            self.enable_edited = True
+            
+class DistrosReleaseSourcesSearchView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        name = request.get("name", "")
+        if name:
+            self.results = list(context.findPackagesByName(name))
+        else:
+            self.results = []
+
+class DistrosReleaseBinariesSearchView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        name = request.get("name", "")
+        if name:
+            self.results = list(context.findPackagesByName(name))
+        else:
+            self.results = []
+
 
 ################################################################
 

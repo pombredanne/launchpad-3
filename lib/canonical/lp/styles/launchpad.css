@@ -3,8 +3,8 @@
     width: 40%;
     padding: 1em;
     margin: 1em;
-    background-color: #dee7ec;
-    border: 1px solid #8cacbb;
+    background-color: #8fb3d9;
+    border: 1px solid #7A9EC6;
     text-decoration: none;
 }
 
@@ -32,8 +32,8 @@ fieldset.message-strings input {
 
 .messageSourceString {
     padding: 0.5em 1em;
-    background-color: #dee7ec;
-    border: 1px solid #8cacbb;
+    background-color: #8fb3d9;
+    border: 1px solid #7A9EC6;
 }
 
 fieldset.two-column {
@@ -95,7 +95,7 @@ label {
 /* highlight on hover in table */
 
 table.rowNavigation tr:hover {
-    background-color: #dee7ec;
+    background-color: #8fb3d9;
     cursor:pointer;
 }
 
@@ -119,7 +119,7 @@ table.rowNavigation tr:hover {
 /* Board-like comment CSS */
 
 .boardComment {
-    border: 1px solid #8cacbb;
+    border: 1px solid #7A9EC6;
     margin-bottom: 1.5em;
     position: relative;
 }
@@ -132,9 +132,9 @@ table.rowNavigation tr:hover {
 }
 
 .boardCommentDetails {
-    border: 1px solid #8cacbb;
+    border: 1px solid #7A9EC6;
     border-style: none none solid none;
-    background-color: #dee7ec;
+    background-color: #8fb3d9;
     padding: 0.5em 1em;
 }
 
@@ -147,9 +147,9 @@ table.rowNavigation tr:hover {
 }
 
 .boardCommentActions {
-    border: 1px solid #8cacbb;
+    border: 1px solid #7A9EC6;
     border-style: solid none none none;
-    background-color: #dee7ec;
+    background-color: #8fb3d9;
     padding: 0.5em 1em 0 1em;
     text-align: right;
 }

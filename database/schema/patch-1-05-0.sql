@@ -1,3 +1,5 @@
+SET client_min_messages TO error;
+
 /*
  * names must be UNIQUE within their context, and all lower case
  */

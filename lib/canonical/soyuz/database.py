@@ -120,8 +120,9 @@ class SoyuzSourcePackage(SQLBase):
     _columns = [
         ForeignKey(name='maintainer', foreignKey='SoyuzPerson', dbName='maintainer',
                    notNull=True),
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
+        ForeignKey(name='sourcepackagename', foreignKey='SoyuzSourcePackageName',
+                   dbName='sourcepackagename', notNull=True),
+        StringCol('shortdesc', dbName='shortdesc', notNull=True),
         StringCol('description', dbName='description', notNull=True),
         ForeignKey(name='manifest', foreignKey='Manifest', dbName='manifest', 
                    default=None),
@@ -129,19 +130,30 @@ class SoyuzSourcePackage(SQLBase):
     releases = MultipleJoin('SoyuzSourcePackageRelease',
                             joinColumn='sourcepackage')
 
+    def name(self):
+        return self.sourcepackagename.name
+    name = property(name)
+
+    def title(self):
+        import warnings
+        warnings.warn("Use SoyuzSourcePackage.shortdesc instead of .title",
+                      DeprecationWarning)
+        return self.shortdesc
+    title = property(title)
+
     def getManifest(self):
         return self.manifest
 
     def getRelease(self, version):
         return SoyuzSourcePackageRelease.selectBy(version=version)[0]
 
-    def uploadsByStatus(self, distroRelease, sourcepackageRelease, status):
+    def uploadsByStatus(self, distroRelease, status):
         uploads = list(SoyuzSourcePackageRelease.select(
             'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackageUpload.distrorelease = %d'
-            ' AND SourcePackageUpload.sourcepackagerelease = %d'
+            ' AND SourcePackageRelease.sourcepackage = %d'
             ' AND SourcePackageUpload.uploadstatus = %d'
-            % (distroRelease.id, sourcepackageRelease.id, status)
+            % (distroRelease.id, self.id, status)
         ))
 
         if uploads:
@@ -149,12 +161,15 @@ class SoyuzSourcePackage(SQLBase):
         else:
             return None
 
-    def proposed(self, distroRelease, sourcepackageRelease):
+    def proposed(self, distroRelease):
         return self.uploadsByStatus(distroRelease,
-                                    sourcepackageRelease,
                                     dbschema.SourceUploadStatus.PROPOSED)
 
     def current(self, distroRelease):
+        """Currently published releases of this package for a given distro.
+        
+        :returns: iterable of SourcePackageReleases
+        """
         sourcepackagereleases = list(SoyuzSourcePackageRelease.select(
             'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackageUpload.distrorelease = %d'
@@ -163,10 +178,7 @@ class SoyuzSourcePackage(SQLBase):
             % (distroRelease.id, self.id, dbschema.SourceUploadStatus.PUBLISHED)
         ))
 
-        if sourcepackagereleases:
-            return sourcepackagereleases
-        else:
-            return None
+        return sourcepackagereleases
 
     def lastversions(self, distroRelease):
         last = list(SoyuzSourcePackageRelease.select(
@@ -182,6 +194,14 @@ class SoyuzSourcePackage(SQLBase):
             return last
         else:
             return None
+
+
+class SoyuzSourcePackageName(SQLBase):
+    _table = 'SourcePackageName'
+    _columns = [
+        StringCol('name', dbName='name', notNull=True),
+    ]
+
 
 class SoyuzSourcePackageRelease(SQLBase):
     """A source package release, e.g. apache 2.0.48-3"""
@@ -201,6 +221,16 @@ class SoyuzSourcePackageRelease(SQLBase):
     ]
 
     builds = MultipleJoin('SoyuzBuild', joinColumn='sourcepackagerelease')
+
+    def architecturesReleased(self, distroRelease):
+        archReleases = SoyuzDistroArchRelease.select(
+            'PackagePublishing.distroarchrelease = DistroArchRelease.id '
+            'AND DistroArchRelease.distrorelease = %d '
+            'AND PackagePublishing.binarypackage = BinaryPackage.id '
+            'AND BinaryPackage.sourcepackagerelease = %d'
+            % (distroRelease.id, self.id)
+        )
+        return archReleases
 
 
 def getSourcePackage(name):
@@ -368,5 +398,83 @@ class SoyuzProject(SQLBase):
                     default="NOW"),
         StringCol('homepageurl', dbName='homepageurl'),
     ]
+
+# People Related sqlobject
+
+class SoyuzEmailAddress(SQLBase):
+    _table = 'EmailAddress'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('email', dbName='email', notNull=True),
+        IntCol('status', dbName='status', notNull=True)
+        ]
+    
+class GPGKey(SQLBase):
+    _table = 'GPGKey'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('keyid', dbName='keyid', notNull=True),
+        StringCol('fingerprint', dbName='fingerprint', notNull=True),
+        StringCol('pubkey', dbName='pubkey', notNull=True),
+        BoolCol('revoked', dbName='revoked', notNull=True)
+        ]
+    
+class ArchUserID(SQLBase):
+    _table = 'ArchUserID'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('archuserid', dbName='archuserid', notNull=True)
+        ]
+    
+class WikiName(SQLBase):
+    _table = 'WikiName'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('wiki', dbName='wiki', notNull=True),
+        StringCol('wikiname', dbName='wikiname', notNull=True)
+        ]
+
+class JabberID(SQLBase):
+    _table = 'JabberID'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('jabberid', dbName='jabberid', notNull=True)
+        ]
+
+class IrcID(SQLBase):
+    _table = 'IrcID'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        StringCol('network', dbName='network', notNull=True),
+        StringCol('nickname', dbName='nickname', notNull=True)
+        ]
+
+class Membership(SQLBase):
+    _table = 'Membership'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        ForeignKey(name='team', foreignKey='SoyuzPerson', dbName='team',
+                   notNull=True),
+        IntCol('role', dbName='role', notNull=True),
+        IntCol('status', dbName='status', notNull=True)
+        ]
+
+class TeamParticipation(SQLBase):
+    _table = 'TeamParticipation'
+    _columns = [
+        ForeignKey(name='person', foreignKey='SoyuzPerson', dbName='person',
+                   notNull=True),
+        ForeignKey(name='team', foreignKey='SoyuzPerson', dbName='team',
+                   notNull=True)
+        ]
+
+
 
 # arch-tag: 6c76cb93-edf7-4019-9af4-53bfeb279194

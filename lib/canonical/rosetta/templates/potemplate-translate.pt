@@ -5,7 +5,7 @@
 
 <head>
     <title metal:fill-slot="title">Rosetta: Translating
-        <span tal:replace="context/title">POT file title</span></title>
+        <span tal:replace="context/title">PO template title</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -17,13 +17,35 @@
 <div metal:fill-slot="main">
 
     <div tal:content="structure view/submitTranslations" />
-    <!--
-    <div tal:condition="not: view/submitted">
-    -->
 
     <h1>Translating <span tal:replace="context/product/project/title">Project
         title</span> &mdash; <span tal:replace="context/title">POT file
         title</span></h1>
+
+    <!-- Error messages first. -->
+
+    <div tal:condition="context/hasPluralMessage">
+        <div tal:condition="view/badLanguages">
+            <p>
+            This template contains plural messages. However, no information on
+            plural forms is available for the following languages:
+            </p>
+
+            <ul>
+                <li tal:repeat="language view/badLanguages"
+                    tal:content="language/englishName">language</li>
+            </ul>
+
+            <p>
+            Before this template can be translated into those languages,
+            Rosetta needs to have this information.
+            </p>
+        </div>
+    </div>
+
+    <!-- No errors. -->
+
+    <div tal:condition="not: view/error">
 
     <div class="documentDescription">
     Hint: use the <code>Tab</code> key to move quickly between translation fields.
@@ -89,7 +111,7 @@
                 <div class="field">
                     <label class="language-code">English (Source)</label>:
                     <div class="messageSourceString"
-                         tal:content="structure set/messageID/text">text</div>
+                         tal:content="structure set/messageID/displayText">text</div>
                 </div>
 
                 <div class="field" tal:repeat="language view/languages">
@@ -119,13 +141,13 @@
                 <div class="field">
                     <label class="language-code">English Singular</label>:
                     <div class="messageSourceString"
-                        tal:content="structure set/messageID/text">singular</div>
+                        tal:content="structure set/messageID/displayText">singular</div>
                 </div>
 
                 <div class="field">
                     <label class="language-code">English Plural</label>:
                     <div class="messageSourceString"
-                        tal:content="structure set/messageIDPlural/text">plural</div>
+                        tal:content="structure set/messageIDPlural/displayText">plural</div>
                 </div>
 
                 <div tal:repeat="language view/languages">
@@ -180,10 +202,13 @@
         <input type="hidden" name="offset"
             tal:condition="not: view/atEnd"
             tal:attributes="value python: view.offset + view.count" />
+        <input type="hidden" name="languages"
+            tal:condition="view/codes"
+            tal:attributes="value view/codes" />
         <input type="submit" name="SUBMIT" value="Submit" />
     </form>
 
-    <!-- </div> --> <!-- tal:condition="not: view/submitted" -->
+    </div> <!-- tal:condition="not: view/error" -->
 </div>
 
 </body>

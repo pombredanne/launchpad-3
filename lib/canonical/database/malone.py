@@ -505,6 +505,23 @@ class IBugSystemType(Interface):
     homepage = TextLine(title=_('Homepage'))
     owner = Int(title=_('Owner'))
 
+class BugSystemType(SQLBase):
+    """A type of supported remote  bug system. eg Bugzilla."""
+
+    implements(IBugSystemType)
+
+    _table = 'BugSystemType'
+    _columns = [
+        StringCol('name', notNull=True),
+        StringCol('title', notNull=True),
+        StringCol('description', notNull=True),
+        StringCol('homepage', notNull=True),
+        ForeignKey(
+                name='owner', foreignKey='Person',
+                dbName='owner', default=None
+                ),
+    ]
+
 class IBugSystem(Interface):
     """A remote a bug system."""
 

@@ -41,8 +41,8 @@
 	
   <!-- This view registers 'releases' as 'traverse' of 
 	        	     RootObject/soyuz/distros/$Distribution.name/. -->
-  <traverse for="canonical.soyuz.sql.SoyuzDistribution" getter="getReleaseContainer" />	
-   <pages for="canonical.soyuz.sql.SoyuzDistribution"
+  <traverse for="canonical.soyuz.sql.DistroApp" getter="getReleaseContainer" />	
+   <pages for="canonical.soyuz.sql.DistroApp"
 	  permission="zope.Public"
 	  allowed_attributes="results context">
 	
@@ -60,7 +60,7 @@
 	/>
   </pages>
 
-  <page for="canonical.soyuz.sql.SoyuzDistribution"
+  <page for="canonical.soyuz.sql.DistroApp"
          permission="zope.Public"
 	 class="canonical.soyuz.browser.DistrosEditView"
 	 name="+edit"
@@ -85,7 +85,7 @@
 	  permission="zope.Public"
 	  class="canonical.soyuz.browser.ReleasesAddView"
 	  name="+new"
-          template="templates/releases-new.pt"	
+          template="templates/release-new.pt"	
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+new"
 	/>
 
@@ -147,6 +147,14 @@
 	/>
    </pages>
 
+  <page for="canonical.soyuz.sql.DistroReleaseSourcesApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.DistrosReleaseSourcesSearchView"
+	 template="templates/sourcepackage-search.pt"
+         lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/+search"
+	 name="+search"
+       />
+
 <traverse for="canonical.soyuz.sql.DistroReleaseSourceApp" 
                                           getter="__getitem__" />
    <pages for="canonical.soyuz.sql.DistroReleaseSourceApp"
@@ -182,26 +190,59 @@
    </pages>
 
 
-<traverse for="canonical.soyuz.sql.DistroPeopleApp" getter="__getitem__" />
+<traverse for="canonical.soyuz.sql.DistroTeamApp" getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sql.DistroPeopleApp"
+   <pages for="canonical.soyuz.sql.DistroTeamApp"
 	  allowed_attributes="results"	 
 	  permission="zope.Public"> 
-	
+
 	<page  name="index.html"
-          template="templates/people-index.pt"	
-	  lp:url="Soyuz/distros/$Distribution.name/people/index.html"
+          template="templates/team-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/team/index.html"
 	/>
    </pages>
 
 
-   <pages for="canonical.soyuz.sql.DistroReleasePeopleApp"
+   <pages for="canonical.soyuz.sql.DistroReleaseTeamApp"
 	  allowed_attributes="results"	 
 	  permission="zope.Public"> 
 	
 	<page  name="index.html"
-          template="templates/releasepeople-index.pt"	
-	  lp:url="Soyuz/distros/$Distribution.name/people/$Release.name/index.html"
+          template="templates/releaseteam-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/team/$Release.name/index.html"
+	/>
+   </pages>
+
+<traverse for="canonical.soyuz.sql.PeopleApp" getter="__getitem__"/>
+
+   <pages for="canonical.soyuz.sql.PeopleApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+
+	<page  name="+list"
+          template="templates/people-list.pt"	
+	  lp:url="Soyuz/people/+list"
+	/>
+   </pages>
+
+  <page for="canonical.soyuz.sql.PeopleApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.PeopleSearchView"
+	 template="templates/people-index.pt"
+         lp:url="Soyuz/people/index.html"
+	 name="index.html"
+       />
+
+
+
+
+   <pages for="canonical.soyuz.sql.PersonApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+
+	<page  name="index.html"
+          template="templates/person-index.pt"	
+	  lp:url="Soyuz/people/$person.id/index.html"
 	/>
    </pages>
 
@@ -231,6 +272,15 @@
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/index.html"
 	/>
    </pages>
+
+  <page for="canonical.soyuz.sql.DistroReleaseBinariesApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.DistrosReleaseBinariesSearchView"
+	 template="templates/binarypackage-search.pt"
+         lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/+search"
+	 name="+search"
+       />
+
 
 <traverse for="canonical.soyuz.sql.DistroReleaseBinaryApp" getter="__getitem__" />
 
