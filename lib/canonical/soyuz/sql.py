@@ -56,9 +56,7 @@ class DistrosApp(object):
 class DistroApp(object):
 
     def __init__(self, name):
-        self.distribution = SoyuzDistribution.selectBy(name=\
-                                                       name.encode('ascii'))[0]
-        
+        self.distribution = SoyuzDistribution.selectBy(name=name)[0]
         self.releases = Release.selectBy(distributionID=self.distribution.id)
 
     def getReleaseContainer(self, name):
@@ -94,11 +92,9 @@ class DistroReleasesApp(object):
         self.distribution = distribution
 
     def __getitem__(self, name):
-        return DistroReleaseApp(Release.selectBy(distributionID=\
-                                                 self.distribution.id,
-                                                 # XXX ascii bogus needs
-                                                 # to be revisited
-                                                 name=name.encode("ascii"))[0])
+        return DistroReleaseApp(Release.selectBy(distributionID=
+                                                    self.distribution.id,
+                                                 name=name)[0])
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
 
@@ -193,6 +189,8 @@ class DistroReleaseSourcesApp(object):
     """
 #    implements(ISourcePackageSet)
 
+    # FIXME: docstring says this contains SourcePackage objects, but it seems to
+    # contain releases.  Is this a bug or is the docstring wrong?
     table = SoyuzSourcePackageRelease
     clauseTables = ('SourcePackage', 'SourcePackageUpload',)
 
@@ -207,13 +205,19 @@ class DistroReleaseSourcesApp(object):
             'AND SourcePackageUpload.distrorelease = %d '
             % (self.release.id))
         
+    def findPackagesByName(self, pattern):
+        query = self._query()
+        pattern = pattern.replace('%', '%%')
+        query += ' AND name LIKE %s' % quote('%%' + pattern + '%%')
+        from sets import Set
+        return Set(SoyuzSourcePackage.select(query))
+
     def __getitem__(self, name):
         # XXX: What about multiple results?
         #      (which shouldn't happen here...)
 
         query = self._query()
-        # XXX ascii bogus needs to be revisited
-        query += ' AND name = %s ORDER BY dateuploaded DESC' % quote(name.encode('ascii'))
+        query += ' AND name = %s ORDER BY dateuploaded DESC' % quote(name)
         try:
             return DistroReleaseSourceApp(self.release,
                     self.table.select(query, clauseTables=self.clauseTables)[0])
@@ -239,11 +243,8 @@ class DistroSourcesApp(object):
 
     def __getitem__(self, name):
         return DistroReleaseSourcesApp(Release.selectBy(distributionID=\
-                                                        self.distribution.id,
-                                                        # XXX ascii bogus needs
-                                                        # to be revisited
-                                                        name=name.encode\
-                                                        ("ascii"))[0])
+                                                            self.distribution.id,
+                                                        name=name)[0])
 
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
@@ -308,12 +309,9 @@ class DistroTeamApp(object):
                      ]
 
     def __getitem__(self, name):
-        return DistroReleaseTeamApp(Release.selectBy(distributionID=\
+        return DistroReleaseTeamApp(Release.selectBy(distributionID=
                                                        self.distribution.id,
-                                                       # XXX ascii bogus needs
-                                                       # to be revisited
-                                                       name=name.encode\
-                                                       ("ascii"))[0])
+                                                     name=name)[0])
 
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
@@ -583,8 +581,7 @@ class SourcePackages(object):
         #      (which shouldn't happen here...)
 
         query = self._query()
-        # XXX ascii bogus needs to be revisited
-        query += ' AND name = %s' % quote(name.encode('ascii'))
+        query += ' AND name = %s' % quote(name)
         try:
             return self.table.select(query, clauseTables=self.clauseTables)[0]
         except IndexError:
@@ -627,7 +624,7 @@ class BinaryPackages(object):
 
         query = self._query()
         query += ' AND BinaryPackageBuild.binarypackage = BinaryPackage.id'
-        query += ' AND BinaryPackage.name = %s' % quote(name.encode('ascii'))
+        query += ' AND BinaryPackage.name = %s' % quote(name)
         try:
             return self.table.select(query, clauseTables=self.clauseTables)[0]
         except IndexError:

@@ -71,6 +71,8 @@ class IDistroReleaseSourcesApp(Interface):
         """Retrieve a package by name."""
     def __iter__():
         """Iterate over names"""
+    def findPackagesByName():
+        """Find packages by name"""
 
     
 class IDistroReleaseSourceApp(Interface):

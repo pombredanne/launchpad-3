@@ -116,16 +116,11 @@ class DistrosReleaseSourcesSearchView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.results = []
-
-        name = self.request.get("name", "").encode("ascii")
-        release = self.request.get("release", "").encode("ascii")
-
+        name = request.get("name", "")
         if name:
-            name_like = LIKE(SoyuzSourcePackage.q.name, "%%"+name+"%%")
-            ##FIXME: self.results must get only sourcepackage
-            ##of one distrorelease (distrorelease name in release attr)
-            self.results = SoyuzSourcePackage.select(AND(name_like))
+            self.results = list(context.findPackagesByName(name))
+        else:
+            self.results = []
 
 
 ################################################################
