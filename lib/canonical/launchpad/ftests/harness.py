@@ -20,8 +20,10 @@ class LaunchpadFunctionalTestCase(LaunchpadTestCase):
     """
 
     def setUp(self):
+        super(LaunchpadFunctionalTestCase, self).setUp()
         FunctionalTestSetup().setUp()
 
     def tearDown(self):
         FunctionalTestSetup().tearDown()
+        super(LaunchpadFunctionalTestCase, self).tearDown()
 

@@ -2,18 +2,12 @@
 
 import unittest
 import os
-from cStringIO import StringIO
 
-from zope.component import getService, servicenames
-from zope.component.tests.placelesssetup import PlacelessSetup
-
-from canonical.launchpad.interfaces import ILanguageSet
-from canonical.launchpad.database import Person, POTemplate, \
-     Product, LanguageSet, POMsgSet, POTMsgSet, POMsgIDSighting
-from canonical.rosetta.pofile_adapters import MessageProxy, \
-     TemplateImporter, POFileImporter
-from canonical.launchpad.database import Project
-import canonical.lp
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.launchpad.database import POTemplate, Product, POMsgSet
+from canonical.launchpad.database import POTMsgSet, POMsgIDSighting, Project
+from canonical.rosetta.pofile_adapters import MessageProxy, TemplateImporter
+from canonical.rosetta.pofile_adapters import POFileImporter
 
 # XXX: not using Person at all, probably should
 class FakePerson(object):
@@ -22,19 +16,12 @@ XXXperson = FakePerson()
 
 here = os.path.dirname(os.path.abspath(__file__))
 
-class POImportTestCase(PlacelessSetup, unittest.TestCase):
+class POImportTestCase(LaunchpadFunctionalTestCase):
 
     def setUp(self):
         super(POImportTestCase, self).setUp()
-        utilityService = getService(servicenames.Utilities)
-        utilityService.provideUtility(ILanguageSet, LanguageSet(), '')
-        self.ztm = canonical.lp.initZopeless()
         self.pot = file(os.path.join(here, 'gnome-terminal.pot'))
         self.po = file(os.path.join(here, 'gnome-terminal-cy.po'))
-
-    def tearDown(self):
-        self.ztm.uninstall()
-        super(POImportTestCase, self).tearDown()
 
     def testTemplateImporter(self):
         try:
@@ -73,11 +60,9 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
                                     ownerID=XXXperson.id)
         importer = TemplateImporter(poTemplate, XXXperson)
         importer.doImport(self.pot)
-        self.ztm.commit()
         # try a second time to see if it breaks
         self.pot.seek(0)
         importer.doImport(self.pot)
-        self.ztm.commit()
         sets = POTMsgSet.select('potemplate=%d and sequence > 0' % poTemplate.id)
         assert sets.count() == 513, '%d message sets instead of 513' % sets.count()
         for msgset in list(sets):
@@ -145,7 +130,6 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
             poFile = poTemplate.newPOFile(XXXperson, 'cy')
         importer = POFileImporter(poFile, XXXperson)
         importer.doImport(self.po)
-        self.ztm.commit()
         # try a second time to see if it breaks
         self.po.seek(0)
         importer.doImport(self.po)

@@ -48,7 +48,6 @@ lib/canonical/publication.py e739465e-bd5d-458c-b332-de6a783f21b7
 lib/canonical/rosetta/browser.py db407517-732d-47e3-a4c1-c1f8f9dece3a
 lib/canonical/rosetta/docs/poexport.txt 06f3feef-229e-42b9-a9d5-ab8c3758a23b
 lib/canonical/rosetta/domain.py d84c3aaa-f65c-49eb-aeea-47ef2bb559c7
-lib/canonical/rosetta/ftests/test_poexport.py 6f729cad-ca7b-4d66-8008-617457ac9ca1
 lib/canonical/rosetta/pages.zcml bd9952cf-5198-4ab5-a97f-8d2d9893b313_-->
 lib/canonical/rosetta/poexport.py aef7f683-dbd0-46d0-944d-6442bfdbdb13
 lib/canonical/rosetta/resources.zcml 0f9efb09-00d3-48dd-b5e7-711a9ed3612b_-->

@@ -1,20 +1,13 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
-# arch-tag: 6f729cad-ca7b-4d66-8008-617457ac9ca1
 
 __metaclass__ = type
 
 import unittest
 
-from zope.component import getService, servicenames
-from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.launchpad.interfaces import ILanguageSet
-from canonical.launchpad.database import Project
-from canonical.launchpad.database import Person, POTemplate, \
-    Product, LanguageSet
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.launchpad.database import Project, POTemplate, Product
 from canonical.rosetta.poexport import POExport
-import canonical.lp
-
 
 expected = '''# traducci\xc3\xb3n de es.po al Spanish
 # translation of es.po to Spanish
@@ -156,17 +149,7 @@ msgstr[1] ""
 #~ msgstr "_A\xc3\xb1adir grupo"
 '''
 
-class POExportTestCase(PlacelessSetup, unittest.TestCase):
-
-    def setUp(self):
-        super(POExportTestCase, self).setUp()
-        utilityService = getService(servicenames.Utilities)
-        utilityService.provideUtility(ILanguageSet, LanguageSet(), '')
-        self.ztm = canonical.lp.initZopeless()
-
-    def tearDown(self):
-        self.ztm.uninstall()
-        super(POExportTestCase, self).tearDown()
+class POExportTestCase(LaunchpadFunctionalTestCase):
 
     def testPoExportAdapter(self):
         try:
