@@ -21,6 +21,7 @@
 
   v0.99-dev:
         - add BugAttachmentContent.id for Stuart Bishop
+	- and move the BugAttachment.name to BugAttachmentContent
         - make ProductRelease.version NOT NULL and add a .changelog
         - don't require homepageurl for Project or Product
         - add ChangesetFileHash.id for Robert Weir
@@ -176,7 +177,7 @@ DROP TABLE BranchRelationship;
 DROP TABLE ProjectBugsystem;
 DROP TABLE BugWatch;
 DROP TABLE BugSystem;
-DROP TABLE BugattachmentContent;
+DROP TABLE BugAttachmentContent;
 DROP TABLE BugAttachment;
 DROP TABLE POTranslationSighting;
 DROP TABLE POMsgIDSighting;
@@ -1815,7 +1816,7 @@ CREATE TABLE ProjectBugsystem (
 CREATE TABLE BugAttachment (
   id              serial PRIMARY KEY,
   bug             integer NOT NULL REFERENCES Bug,
-  name            text NOT NULL,
+  -- name (filename) is in BugAttachmentContent
   title           text NOT NULL,
   description     text NOT NULL
 );
@@ -1823,16 +1824,17 @@ CREATE TABLE BugAttachment (
 
 
 /*
-  BugattachmentContent
+  BugAttachmentContent
   The actual content of a bug attachment. There can be multiple
   uploads over time, each revision gets a changecomment.
 */
-CREATE TABLE BugattachmentContent (
+CREATE TABLE BugAttachmentContent (
   id             serial PRIMARY KEY,
   bugattachment  integer NOT NULL REFERENCES BugAttachment,
   daterevised    timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   changecomment  text NOT NULL,
   content        bytea NOT NULL,
+  filename       text NOT NULL,
   mimetype       text,
   owner          integer REFERENCES Person
 );
