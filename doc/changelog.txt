@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-27 15:48:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1259
+
+    Summary:
+      emailfinder list functionality and code improvements
+    Revision:
+      launchpad--devel--0--patch-1259
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-18
+       Changes to emailfinder from code review
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-19
+       emailfinder: add list option
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/emailfinder.py
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--devel--0--patch-18
+     morgan.collett@canonical.com/launchpad--devel--0--patch-19
+
+
 2005-01-26 23:10:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1258
 
     Summary:
