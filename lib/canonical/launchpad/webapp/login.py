@@ -56,20 +56,22 @@ class CookieLoginPage:
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
-            self._logInPerson(principal, email)
+            logInPerson(self.request, principal, email)
             self.was_logged_in = True
         else:
             self.errortext = "The email address and password do not match."
         return ''
 
-    def _logInPerson(self, principal, email):
-        session = ISession(self.request)
-        authdata = session['launchpad.authenticateduser']
-        previous_login = authdata.get('personid')
-        authdata['personid'] = principal.id
-        authdata['logintime'] = datetime.utcnow()
-        authdata['login'] = email
-        notify(CookieAuthLoggedInEvent(self.request, email))
+
+def logInPerson(request, principal, email):
+    """Log the person in. Password validation must be done in callsites."""
+    session = ISession(request)
+    authdata = session['launchpad.authenticateduser']
+    previous_login = authdata.get('personid')
+    authdata['personid'] = principal.id
+    authdata['logintime'] = datetime.utcnow()
+    authdata['login'] = email
+    notify(CookieAuthLoggedInEvent(request, email))
 
 
 class CookieLogoutPage:

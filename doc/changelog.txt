@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-24 18:08:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1244
+
+    Summary:
+      Remember form values when passwords do not match on NewAccountView and automatically login the user after finishing the registration process.
+    Revision:
+      launchpad--devel--0--patch-1244
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-104
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-105
+       Moving _logInPerson() outside CookieLoginPage, so it can be used in other places (like NewAccountView)
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-106
+       Remember form values when passwords do not match on NewAccountView and automatically login the user after finishing the registration process.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/templates/foaf-newaccount.pt
+     lib/canonical/launchpad/templates/foaf-resetpassword.pt
+     lib/canonical/launchpad/webapp/login.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-104
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-105
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-106
+
+
 2005-01-24 13:52:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1243
 
     Summary:
