@@ -15,4 +15,5 @@ from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugtracker import *
 from canonical.launchpad.browser.bugextref import *
 from canonical.launchpad.browser.packages import *
+from canonical.launchpad.browser.bounty import *
 

@@ -5,18 +5,23 @@ _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute, classImplements
 
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
-from zope.schema.interfaces import IText
+from zope.schema.interfaces import IText, ITextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.launchpad.fields.bug import BugSummary
+from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.validators.name import valid_name
 
 # FIELDS
 
-class IBugSummary(IText):
+class ISummary(IText):
     """A Field that implements a Bug Summary"""
 
-classImplements(BugSummary, IBugSummary)
+classImplements(Summary, ISummary)
+
+class ITitle(ITextLine):
+    """A Field that implements a launchpad Title"""
+
+classImplements(Title, ITitle)
 
 
 # CONTENT
@@ -39,13 +44,13 @@ class IBug(Interface):
                 community, upstream and all distro's, will phear."""),
             constraint=valid_name,
             )
-    title = TextLine(
+    title = Title(
             title=_('Bug Title'), required=True,
             description=_("""The title of the bug should be no more than 70
             characters, and is displayed in every bug list or report. It
             should be as clear as possible in the space allotted."""),
             )
-    shortdesc = BugSummary(
+    shortdesc = Summary(
             title=_('Summary'), required=True,
             description=_("""The bug summary is a single paragraph
             description that should capture the essence of the bug, where it
@@ -131,7 +136,6 @@ class IMaloneBugAddForm(IMaloneBug):
 
 
 # Interfaces for containers
-
 class IBugContainer(IAddFormCustomization):
     """A container for bugs."""
 

@@ -23,6 +23,7 @@
     <include file="bugtracker.zcml" />
     <include file="bugattachment.zcml" />
     <include file="bugmessage.zcml" />
+    <include file="bounty.zcml" />
 
     <include file="widgets.zcml" />
     <include file="resources.zcml" />

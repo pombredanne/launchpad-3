@@ -1,0 +1,77 @@
+
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('launchpad')
+
+from zope.interface import Interface, Attribute, classImplements
+
+from zope.schema import Choice, Datetime, Int, Text, TextLine, Float
+from zope.schema.interfaces import IText, ITextLine
+from zope.app.form.browser.interfaces import IAddFormCustomization
+
+from canonical.launchpad.fields import Summary, Title
+from canonical.launchpad.validators.name import valid_name
+
+
+class IBounty(Interface):
+    """The core bounty description."""
+
+    id = Int(
+            title=_('Bounty ID'), required=True, readonly=True,
+            )
+    name = TextLine(
+            title=_('Bounty name'), required=True,
+            description=_("""A short and unique name for this bounty. 
+                This allows us to refer to the bounty directly in a url,
+                so it needs to be destinct and descriptive. For example:
+                mozilla-type-ahead-find and
+                postgres-smart-serial."""),
+            constraint=valid_name,
+            )
+    title = Title(
+            title=_('Bounty title'), required=True,
+            description=_("""The title of the bounty should be no more than 70
+            characters long, and is displayed in every list or report of bounties. It
+            should be as clear as possible in the space allotted what the
+            bounty is for."""),
+            )
+    summary = Summary(
+            title=_('Summary'), required=True,
+            description=_("""The bounty summary is a single paragraph
+            description of the bounty. This will also be desplayed in most
+            bounty listings."""),
+            )
+    description = Text(
+            title=_('Description'), required=True,
+            description=_("""The bounty description should be a detailed
+            description of the bounty, aimed ad specifying the exact results
+            that will be acceptable to the bounty owner and reviewer.""")
+            )
+    usdvalue = Float(
+            title=_('Estimated USD Value'),
+            required=True, description=_("""The value of this bounty, in
+            USD. Note that in some cases the bounty may have been offered in
+            a variety of currencies, so this USD value is an estimate based
+            on recent currency rates.""")
+            )
+    reviewer = Attribute('The reviewer.')
+    reviewerID = Int(title=_('Reviewer'), required=True)
+    datecreated = Datetime(
+            title=_('Date Created'), required=True, readonly=True,
+            )
+    ownerID = Int(
+            title=_('Owner'), required=True, readonly=True
+            )
+    owner = Attribute("The owner's IPerson")
+
+
+
+# Interfaces for containers
+class IBountySet(IAddFormCustomization):
+    """A container for bounties."""
+
+    def __getitem__(key):
+        """Get a bounty."""
+
+    def __iter__():
+        """Iterate through the bounties in this set."""
+

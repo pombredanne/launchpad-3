@@ -1,0 +1,77 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bounties/+new HTTP/1.1
+  ... Referer: http://localhost:9000/malone/bounties/
+  ... """)
+  HTTP/1.1 401 Unauthorized
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Www-Authenticate: basic realm=launchpad
+  ...
+
+  >>> print http(r"""
+  ... GET /malone/bounties/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bounties/
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+          <h1>Create A New Bounty</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bounties/+new HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1059
+  ... Content-Type: multipart/form-data; boundary=---------------------------15843680311753434999910776633
+  ... Referer: http://localhost:9000/malone/bounties/+new
+  ... 
+  ... -----------------------------15843680311753434999910776633
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... abc
+  ... -----------------------------15843680311753434999910776633
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... ABC Creation System
+  ... -----------------------------15843680311753434999910776633
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... This is a test bounty creation script to make an ABC bounty work well. The summary should be a paragraph, will be shown in bold at the top of any page describing the bounty.
+  ... -----------------------------15843680311753434999910776633
+  ... Content-Disposition: form-data; name="field.usdvalue"
+  ... 
+  ... 300.00
+  ... -----------------------------15843680311753434999910776633
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... This bounty is a test. It should be recreated but the data never added to sampledata.
+  ... -----------------------------15843680311753434999910776633
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------15843680311753434999910776633--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: abc
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bounties/abc HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bounties/+new
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+      <h1>Bounty details:<br />
+      ABC Creation System</h1>
+  ...

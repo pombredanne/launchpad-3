@@ -42,6 +42,7 @@ from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.files import *
+from canonical.launchpad.interfaces.bounty import *
 
 # these will go...
 from canonical.launchpad.iandrew import *

@@ -3,7 +3,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from zope.interface import implements
 from zope.schema.interfaces import IText
-from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser import TextAreaWidget, TextWidget
 
 from canonical.launchpad.database import BugAttachmentContainer, \
         BugExternalRefContainer, BugSubscriptionContainer, \
@@ -94,14 +94,28 @@ class BugsCreatedByView(object):
 
 #
 # WIDGETS
+# XXX Mark Shuttleworth first put here because they were for Malone use,
+# since they are beng generalised we should move them somewhere dedicated
+# for fields, widgets.
 #
 
-# BugSummaryWidget
-# A widget to capture a bug summary
-class BugSummaryWidget(TextAreaWidget):
+# SummaryWidget
+# A widget to capture a summary
+class SummaryWidget(TextAreaWidget):
 
     implements(IText)
 
     width = 60
     height = 5
+
+
+# TitleWidget
+# A launchpad title widget... needs to be a little wider than a normal
+# Textline
+class TitleWidget(TextWidget):
+
+    implements(IText)
+
+    displayWidth = 60
+
 

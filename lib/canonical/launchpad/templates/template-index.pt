@@ -17,7 +17,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1><span tal:replace="context/title">$EXAMPLE.displayname</span></h1>
+    <h1><span tal:replace="context/title">$EXAMPLE.title</span></h1>
 
     <div class="documentDescription" tal:content="context/shortdesc">
         $EXAMPLE.shortdesc goes here. This should be quite short,

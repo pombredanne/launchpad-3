@@ -68,6 +68,7 @@ class IProjectContainer(Interface):
     def search(querytext):
         """Search through Projects."""
 
+
 class IProjectSet(Interface):
     """The collection of projects."""
 
@@ -95,3 +96,4 @@ class IProjectBugTracker(Interface):
     project = Int(title=_('Owner'))
     bugtracker = Int(title=_('Bug Tracker'))
     
+

@@ -35,10 +35,7 @@ from canonical.launchpad.database.branch import *
 from canonical.launchpad.database.build import *
 from canonical.launchpad.database.publishing import *
 from canonical.launchpad.database.files import *
-
-#
-# Now the older ones that need to be cleaned out
-#
+from canonical.launchpad.database.bounty import *
 
 
 

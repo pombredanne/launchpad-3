@@ -22,3 +22,20 @@ fi
 # now merge launchpad with the rocketfuel repo
 tla star-merge rocketfuel@canonical.com/launchpad--devel--0
 
+# check for conflicts, and if none exist, commit the merge
+test -z $(find . -name "*.orig" -or -name "*.rej" -print)
+if [ $? -gt 0 ]; then
+  echo "WARNING: You have conflicts. Please resolve them and commit before doing"
+  echo "         any additional work."
+  exit 1
+else
+  tla changes
+  if [ $? -gt 0 ]; then
+    # commit the merged changes
+    tla commit -s "merge rocketfuel"
+    # show the commited star-merge delta
+    tla delta --diffs $(tla logs | tail -2) | less
+  fi
+fi
+
+

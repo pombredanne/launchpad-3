@@ -54,6 +54,14 @@
         permission="zope.Public"
         name="bugtrackers" />
 
+    <!--XXX Mark Shuttleworth: we need a home for bounties, so i'm parking
+    this underneath Malone to begin with -->
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.IBountySet"
+        permission="zope.Public"
+        name="bounties" />
+
 
     <!-- pages for the malone application -->
     <browser:pages
