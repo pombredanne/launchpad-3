@@ -104,6 +104,13 @@ def BugFactory(*args, **kw):
         owner = kw['owner'].id,
         datecreated=datecreated)
 
+    if kw.get("product") and kw.get("private"):
+        # subscribe the upstream maintainer on a private bug, to ensure
+        # they can actually see it!
+        BugSubscription(
+            person = kw['product'].owner.id, bug = bug.id,
+            subscription = dbschema.BugSubscription.CC.value)
+
     BugSubscription(
         person = kw['owner'].id, bug = bug.id,
         subscription = dbschema.BugSubscription.CC.value)

@@ -161,11 +161,17 @@ subscribed:
 
 But when a private bug is filed:
 
-XXX
+>>> added_bug = BugFactory(
+...     product = firefox, title = "test firefox bug",
+...     comment = "blah blah blah", owner = foobar,
+...     private = True)
+>>> notify(ObjectCreatedEvent(added_bug))
+>>> private_bug = bugset.get(added_bug.id)
 
 both the submitter and the maintainer are explicitly subscribed:
 
-XXX
+>>> print [subscription.person.id for subscription in private_bug.subscriptions]
+[12, 16]
 
 to ensure that both the submitter and maintainer can actually see the bug that
 was filed!

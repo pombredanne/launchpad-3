@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-07 22:06:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1284
+
+    Summary:
+      fix private bug filing, so that submitter /and/ maintainer are both
+ explicitly subscribed
+    Revision:
+      launchpad--devel--0--patch-1284
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-338
+       fix private bug filing, so that submitter /and/ maintainer are both explicitly subscribed
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/doc/bug.txt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-338
+
+
 2005-02-07 21:25:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1283
 
     Summary:
