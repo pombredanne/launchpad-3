@@ -45,11 +45,32 @@ def updateCvsrootFromInfoFile(infofile):
         query = "name=%s AND product=%s" % (
             sqlbase.quote(jobname), unassigned.id)
         for source in  SourceSource.select(query):
-            print 'updateCvsroot: cvsroot == ', source.cvsroot
+            print 'updateCvsroot: cvsroot ==', source.cvsroot
             if not isDownloadableUrl(source.cvsroot): continue
             if source.cvsroot == cvsroot: continue
-            print 'updateCvsroot: cvsroot <= ', cvsroot
+            print 'updateCvsroot: cvsroot <=', cvsroot
             source.cvsroot = cvsroot
+
+
+def updateNameSeparator(infofile, old, new):
+    unassigned = infoImporter.make_unassigned_product()
+    print "** processing info file %r" % infofile
+    import info2job
+    info = info2job.read_info(infofile, logging)
+    jobs = info2job.iter_jobs(info, logging)
+    for job in jobs:
+        jobname = info2job.jobfile_name(info, job, sep=old)
+        print "* processing job %r" % jobname
+        cvsroot = info.get("cvsroot")
+        if cvsroot is None: continue
+        query = "name=%s AND product=%s" % (
+            sqlbase.quote(jobname), unassigned.id)
+        for source in  SourceSource.select(query):
+            oldname = jobname
+            newname = info2job.jobfile_name(info, job, sep=new)
+            if source.name == newname: continue
+            print "updateName: %r => %r" % (oldname, newname)
+            source.name = newname
 
 
 def main(filelist):
