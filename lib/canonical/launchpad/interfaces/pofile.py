@@ -358,6 +358,11 @@ class IPOFile(IRosettaStats):
         """Gives all pofiles that have a rawfile pending of import into
         Rosetta."""
 
+    def lastChangedSighting():
+        """Of all the translation sightings belonging to PO messages sets
+        belonging to this PO file, return the one which was most recently
+        modified (greatest datelastactive), or None if there are no sightings
+        belonging to this PO file."""
 
 
 class IEditPOFile(IPOFile):

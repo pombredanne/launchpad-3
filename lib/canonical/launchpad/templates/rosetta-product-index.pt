@@ -83,6 +83,7 @@
                     <th>Translated</th>
                     <th>Untranslated</th>
                     <th>Graph</th>
+                    <th>Last Change</th>
                     <th>Details</th>
                     <th>Export</th>
                     <th>Translate</th>
@@ -124,6 +125,16 @@
                                 tal:attributes="width language/poUntranslatedPercent;
                                                 title string: Untranslated: ${language/poUntranslatedPercent}%" />
                         </td>
+                        <td>
+                            <tal:block condition="language/lastChangedSighting">
+                                <span tal:content="language/lastChangedSighting/person/displayname" />
+                                &ndash;
+                                <span tal:content="language/lastChangedSighting/datelastactive/fmt:datetime" />
+                            </tal:block>
+                            <tal:block condition="not: language/lastChangedSighting">
+                                &mdash;
+                            </tal:block>
+                        </td>
                             <!--
                             XXX Dafydd Harries, 2004/11/22
                             We should make PO files autovivify.
@@ -143,7 +154,8 @@
                         </td>
                         <td><a tal:attributes="href
                             string:${template/name}/translate?languages=${language/code}"
-                            >Translate</a></td>
+                            >Translate</a>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -153,7 +165,7 @@
     <div>
         <img src="/++resource++add.gif" />
         <a href="+newpotemplate">Add a new template</a>
-	</div>
+    </div>
 
 </div>
 

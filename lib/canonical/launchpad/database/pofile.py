@@ -634,8 +634,10 @@ class POFile(SQLBase):
     rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
         notNull=False, default=None)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False)
-    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False)
+    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
+        default=None)
+    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False,
+        default=None)
 
 
     def currentMessageSets(self):
@@ -859,6 +861,20 @@ class POFile(SQLBase):
             potmsgset = self.potemplate.createMessageSetFromText(text)
 
         return self.createMessageSetFromMessageSet(potmsgset)
+
+    def lastChangedSighting(self):
+        '''
+        SELECT * FROM POTranslationSighting WHERE POTranslationSighting.id =
+        POMsgSet.id AND POMsgSet.pofile = 2 ORDER BY datelastactive;
+        '''
+        sightings = POTranslationSighting.select('''
+            POTranslationSighting.pomsgset = POMsgSet.id AND
+            POMsgSet.pofile = %d''' % self.id, orderBy='-datelastactive')
+
+        try:
+            return sightings[0]
+        except IndexError:
+            return None
 
 
 class POMsgSet(SQLBase):

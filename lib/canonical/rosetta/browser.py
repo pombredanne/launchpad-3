@@ -200,11 +200,12 @@ class TemplateLanguages:
 
     def _language(self, language):
         retdict = {
+            'hasPOFile' : False,
             'name': language.englishname,
             'title': self.title,
             'code' : language.code,
             'poLen': len(self.template),
-            'hasPOFile' : False,
+            'lastChangedSighting' : None,
             'poCurrentCount': 0,
             'poRosettaCount': 0,
             'poUpdatesCount' : 0,
@@ -257,6 +258,7 @@ class TemplateLanguages:
         retdict.update({
             'hasPOFile' : True,
             'poLen': total,
+            'lastChangedSighting' : poFile.lastChangedSighting(),
             'poCurrentCount': currentCount,
             'poRosettaCount': rosettaCount,
             'poUpdatesCount' : updatesCount,
