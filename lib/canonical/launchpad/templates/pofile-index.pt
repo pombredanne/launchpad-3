@@ -87,7 +87,15 @@
 
     <h1>Translation of <span tal:replace="context/potemplate/name">PO Template</span>
         into <span tal:replace="context/language/englishname">Language</span></h1>
-    
+
+    <h2>Contributors for this translation:</h2>
+
+    <div tal:condition="context/getContributors" tal:omit-tag>
+        <ul>
+        <li tal:repeat="contributor context/getContributors"
+            tal:content="contributor/displayname" />
+        </ul>
+    </div>
 </div>
 
 </body>

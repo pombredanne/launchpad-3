@@ -51,7 +51,7 @@ class TestConfig(unittest.TestCase):
         """canonical.lucille.Config should have parsed a distro config"""
         from canonical.lucille import Config
         d = Config(dist, drs)
-        # XXX: Add checks here when you add stuff in util.py
+        # NOTE: Add checks here when you add stuff in util.py
         self.assertEquals( d.stayofexecution, 5 )
 
 

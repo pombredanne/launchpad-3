@@ -167,6 +167,16 @@ class PersonSet(object):
                 'There were %s email addresses matching %s'
                 % (resultscount, email))
 
+    def getContributorsForPOFile(self, pofile):
+        return Person.select('''
+            POTranslationSighting.active = True AND
+            POTranslationSighting.person = Person.id AND
+            POTranslationSighting.pomsgset = POMsgSet.id AND
+            POMsgSet.pofile = %d''' % pofile.id,
+            clauseTables=('POTranslationSighting', 'POMsgSet',),
+            distinct=True, orderBy='displayname')
+
+
 def PersonFactory(context, **kw):
     now = datetime.utcnow()
     person = Person(teamowner=1,

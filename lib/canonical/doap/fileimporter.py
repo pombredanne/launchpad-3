@@ -4,13 +4,19 @@ from canonical.launchpad.database import ProductReleaseFile, ProductRelease
 from canonical.librarian.client import FileUploadClient
 from canonical.lp import dbschema
 
-from hct.util.path import version_ext
-
 import urlparse, urllib2
 
 # FIXME: Hard-coded config!
 librarianHost = 'localhost'
 librarianPort = '9090'
+
+
+def extractVersionFromFilename(filename):
+    # XXX: We import this here because hct imports a ridiculous number of
+    # dependencies we don't want.
+    from hct.util.path import version_ext
+    return version_ext.search(filename).group(1)
+
 
 class ProductReleaseImporter:
     def __init__(self, product):
@@ -49,7 +55,7 @@ class ProductReleaseImporter:
 
         # We need to construct a product release file.  Figure out if we need to
         # construct a product release as well.
-        version = version_ext.search(filename).group(1)
+        version = extractVersionFromFilename(filename)
         existingReleases = ProductRelease.selectBy(productID=product,
                                                    version=version)
         if existingReleases.count() == 0:

@@ -141,7 +141,7 @@ class FakeUploadClient(object):
         return fileid, filealias
 
 
-# XXX: If you alter the configs here remember to add tests in test_config.py
+# NOTE: If you alter the configs here remember to add tests in test_config.py
 dist = FakeDistribution("ubuntu",
                         """
 [publishing]
