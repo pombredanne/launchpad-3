@@ -1,0 +1,17 @@
+
+
+  >>> print http(r"""
+  ... POST /doap/projects/mozilla/firefox/+addseries HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 240
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/doap/projects/mozilla/firefox/+addseries
+  ... 
+  ... name=1.0&displayname=1.0+Stable+Release&shortdesc=This+is+the+1.0+release+series+of+Mozilla+Firefox.+The+1.0+series+is+the+first+%22stable%22+branch+that+is+considered+suitable+for+very+widespread+end-user+adoption.&Register=Register+Series""")
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: +series/1.0
+  ...
+      <h1>Register a New Product Release Series for: ...</h1>
+  ...

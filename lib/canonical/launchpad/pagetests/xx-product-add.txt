@@ -1,0 +1,30 @@
+
+
+  >>> print http(r"""
+  ... POST /doap/projects/mozilla/+newproduct HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 203
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/doap/projects/mozilla/+newproduct
+  ... 
+  ... name=test&displayname=Test+product&title=Do+Not+Use+Test+Product&shortdesc=hjlkjhlkjhlkjhlkjhlkjhlkjh&description=lkjhlkjhlkjhlkjhlkjhlkjhlkj&homepageurl=http%3A%2F%2Furl.com%2F&Register=Register+Product""")
+  HTTP/1.1 303 See Other
+  ...
+  Content-Type: text/html;charset=utf-8
+  Location: test
+  ...
+      <h1>Register a New Product for: ...</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /doap/projects/mozilla/test HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/doap/projects/mozilla/+newproduct
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+      <h1>...</h1>
+  ...
