@@ -9,6 +9,7 @@ launchpad_test: .FORCE
 	ls -1 *.sql | sort | xargs -n 1 psql -d ${DBNAME} -f 2>&1 \
 	    | grep -v NOTICE:
 	psql -d ${DBNAME} -f ../default.sql
+	psql -d ${DBNAME} -f ../languages.sql
 	psql -d ${DBNAME} -f ../sampledata.sql
 
 .FORCE:

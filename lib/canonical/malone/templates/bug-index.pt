@@ -70,12 +70,14 @@
         </div>
         
         <div class="field">
-        
+          <form action="comments/+new" method="post">
             <label>Comment</label>
             <div class="formHelp">
             If you have additional relevant information, enter it below.
             </div>
-            <textarea></textarea>
+            <textarea name="field.contents"></textarea>
+            <input type="submit" value="Add" />
+          </form>
         </div>
       </fieldset>
     
@@ -119,7 +121,7 @@
     
                     <div class="boardCommentActions" >
                     
-                        <form>
+                      <form action="comments/+new" method="post">
                             <input class="standalone"
                                    type="submit" 
                                    value="Reply to this" 
