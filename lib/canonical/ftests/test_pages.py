@@ -7,6 +7,9 @@ from canonical.functional import FunctionalDocFileSuite
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(FunctionalDocFileSuite('page-tests/rosetta-homepage.txt'))
+    suite.addTest(FunctionalDocFileSuite('page-tests/malone-homepage.txt'))
+    suite.addTest(FunctionalDocFileSuite('page-tests/malone-bug-list.txt'))
+    suite.addTest(FunctionalDocFileSuite('page-tests/malone-bug-index.txt'))
     return suite
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@
   <rdb:provideConnection
       name="launchpad"
       component="psycopgda.adapter.PsycopgAdapter"
-      dsn="dbi://launchpad_unittest" />
+      dsn="dbi://launchpad_test" />
 
   <sqlos:connectionName name="launchpad" />
 
