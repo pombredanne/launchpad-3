@@ -7,7 +7,7 @@
 __metaclass__ = type
 
 # XXX IPerson should be defined in this canonical.lp package
-from canonical.rosetta.interfaces import IPerson
+from canonical.launchpad.interfaces import IPerson
 from zope.publisher.interfaces import IApplicationRequest
 from zope.interface import Interface, Attribute, implements
 import canonical.lp.dbschema

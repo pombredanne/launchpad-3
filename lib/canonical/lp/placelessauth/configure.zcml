@@ -4,7 +4,7 @@
 
   <utility
       factory="canonical.lp.placelessauth.authutility.PlacelessAuthUtility"
-      provides="canonical.launchpad.interfaces.IPlacelessAuthUtility"
+      provides="canonical.lp.placelessauth.interfaces.IPlacelessAuthUtility"
       permission="zope.Public"
       />
   
@@ -20,13 +20,13 @@
 
   <utility
       factory="canonical.lp.placelessauth.encryption.SSHADigestEncryptor"
-      provides="canonical.launchpad.interfaces.IPasswordEncryptor"
+      provides="canonical.lp.placelessauth.interfaces.IPasswordEncryptor"
       permission="zope.Public"
       />
 
   <utility
       factory="canonical.lp.placelessauth.launchpadsourceutility.LaunchpadLoginSource"
-      provides="canonical.launchpad.interfaces.IPlacelessLoginSource"
+      provides="canonical.lp.placelessauth.interfaces.IPlacelessLoginSource"
       permission="zope.Public"
       />
 
