@@ -23,25 +23,14 @@
 import unittest
 import sys
 
-
-class Imports(unittest.TestCase):
-
-    """Test that modules import without error."""
-
-    tests = []
-
-    def import_zope_interface(self):
-        """Import zope.interface (dependence)."""
-        import zope.interface
-    tests.append('import_zope_interface')
-
-    def import_canonical_arch_interfaces(self):
-        """Import canonical.launchpad.interfaces."""
-        import canonical.launchpad.interfaces
-    tests.append('import_canonical_arch_interfaces')
+class TestImports(unittest.TestCase):
+    def testBroker(self):
+        from canonical.arch import broker
 
 def test_suite():
-    return unittest.TestSuite()
+    import sys
+    result = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
+    return result
 
 def main(argv):
     """Run the full test suite."""
