@@ -9,6 +9,7 @@ from canonical.database.constants import nowUTC
 
 # canonical imports
 from canonical.launchpad.interfaces import IProductRelease
+##from canonical.lp.dbschema import EnumCol
 
 class ProductRelease(SQLBase):
     """A release of a product."""
@@ -40,6 +41,10 @@ class ProductReleaseFile(SQLBase):
                                 foreignKey='ProductRelease', notNull=True)
     libraryfile = ForeignKey(dbName='libraryfile',
                              foreignKey='LibraryFileAlias', notNull=True)
+
+    # XXX: DanielDebonzi 2005-03-23
+    # This should be changes to EnumCol but seems to do
+    # not have an schema defined yet.
     filetype = IntCol(notNull=True)
 
 

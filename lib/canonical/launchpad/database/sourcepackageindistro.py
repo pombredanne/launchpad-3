@@ -58,8 +58,6 @@ class SourcePackageInDistroSet(object):
                                                  pattern, fti)
 
     def __iter__(self):
-        plublishing_status = dbschema.PackagePublishingStatus.PUBLISHED.value
-        
         query = ('distrorelease = %d'
                  % (self.distrorelease.id))
         

@@ -698,10 +698,7 @@ class EmailAddress(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
     def _statusname(self):
-        for status in EmailAddressStatus.items:
-            if status == self.status:
-                return status.title
-        return 'Unknown (%d)' %self.status
+        return self.status.title
     
     statusname = property(_statusname)
 
@@ -751,15 +748,13 @@ class GPGKey(SQLBase):
     fingerprint = StringCol(dbName='fingerprint', notNull=True)
 
     keysize = IntCol(dbName='keysize', notNull=True)
-    algorithm = IntCol(dbName='algorithm', notNull=True)
+    algorithm = EnumCol(dbName='algorithm', notNull=True,
+                        schema=GPGKeyAlgorithms)
 
     revoked = BoolCol(dbName='revoked', notNull=True)
 
     def _algorithmname(self):
-        for algorithm in GPGKeyAlgorithms.items:
-            if algorithm.value == self.algorithm:
-                return algorithm.title
-        return 'Unknown (%d)' %self.algorithm
+        return self.algorithm.title
     
     algorithmname = property(_algorithmname)
 
@@ -871,10 +866,7 @@ class TeamMembership(SQLBase):
     reviewercomment = StringCol(dbName='reviewercomment', default=None)
 
     def _statusname(self):
-        for statusitem in TeamMembershipStatus.items:
-            if statusitem == self.status:
-                return statusitem.title
-        return 'Unknown (%d)' % self.status
+        return self.status.title
     statusname = property(_statusname)
 
     def isExpired(self):
@@ -993,13 +985,11 @@ class Karma(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     points = IntCol(dbName='points', notNull=True, default=0)
     karmafield = EnumCol(dbName='karmafield', notNull=True, schema=KarmaField)
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True, default='NOW')
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
+                              default='NOW')
 
     def _karmafieldname(self):
-        try:
-            return KarmaField.items[self.karmafield].title
-        except KeyError:
-            return 'Unknown (%d)' % self.karmafield
+        return self.karmafield.title
 
     karmafieldname = property(_karmafieldname)
 

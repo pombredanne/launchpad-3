@@ -5,7 +5,7 @@ __metaclass__ = type
 from zope.interface import implements
 
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound, \
-    StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, DateTimeCol
+    StringCol, ForeignKey, MultipleJoin, BoolCol, DateTimeCol
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database.bug import BugTask

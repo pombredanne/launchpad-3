@@ -15,14 +15,16 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 
 # Launchpad interfaces
-# XXX: Daniel Debonzi 2004-11-25
+# XXX: David Allouch 2004-11-25
 # Why RCSTypeEnum is inside launchpad.interfaces?
 from canonical.launchpad.interfaces import ISourceSource, \
     ISourceSourceAdmin, ISourceSourceSet, \
     RCSTypeEnum, RCSNames, IProductSet
 
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import ImportTestStatus
 from canonical.lp.dbschema import SourceSourceStatus
-
+from canonical.lp.dbschema import RevisionControlSystems
 # tools
 import datetime
 from sets import Set
@@ -65,8 +67,10 @@ class SourceSource(SQLBase):
     #IntCol('rcstype', dbName='rcstype', default=RCSTypeEnum.cvs,
     #       notNull=True),
     # FIXME: use 'RCSTypeEnum.cvs' rather than '1'
-    rcstype = IntCol(dbName='rcstype', default=1,
-               notNull=True)
+    rcstype = EnumCol(dbName='rcstype',
+                      default=RevisionControlSystems.CVS,
+                      schema=RevisionControlSystems,
+                      notNull=True)
     hosted = StringCol(dbName='hosted', default=None)
     upstreamname = StringCol(dbName='upstreamname', default=None)
     processingapproved = DateTimeCol(dbName='processingapproved',
@@ -87,7 +91,9 @@ class SourceSource(SQLBase):
     currentgpgkey = StringCol(dbName='currentgpgkey', default=None)
     fileidreference = StringCol(dbName='fileidreference', default=None)
     # canonical.lp.dbschema.ImportTestStatus
-    autotested = IntCol(dbName='autotested', notNull=True, default=0)
+    autotested = EnumCol(dbName='autotested', notNull=True,
+                         default=ImportTestStatus.NEW,
+                         schema=ImportTestStatus)
     datestarted = DateTimeCol(dbName='datestarted', notNull=False,
         default=None)
     datefinished = DateTimeCol(dbName='datefinished', notNull=False,

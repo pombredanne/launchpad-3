@@ -119,9 +119,9 @@ class Product(SQLBase):
                              product=self.id)
 
     def newSourceSource(self, form, owner):
-        rcstype = RevisionControlSystems.CVS.value
+        rcstype = RevisionControlSystems.CVS
         if form['svnrepository']:
-            rcstype = RevisionControlSystems.SVN.value
+            rcstype = RevisionControlSystems.SVN
         # XXX Robert Collins 05/10/04 need to handle arch too
         ss = SourceSource(name=form['name'],
             title=form['title'],

@@ -7,7 +7,8 @@ from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.interfaces import IPublishedPackage, \
                                            IPublishedPackageSet
-
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import PackagePublishingStatus
 
 class PublishedPackage(SQLBase):
     """See IPublishedPackage for details."""
@@ -21,7 +22,8 @@ class PublishedPackage(SQLBase):
     distroreleasename = StringCol(immutable=True)
     processorfamily = IntCol(immutable=True)
     processorfamilyname = StringCol(immutable=True)
-    packagepublishingstatus = IntCol(immutable=True)
+    packagepublishingstatus = EnumCol(immutable=True,
+                                      schema=PackagePublishingStatus)
     component = StringCol(immutable=True)
     section = StringCol(immutable=True)
     binarypackage = IntCol(immutable=True)
@@ -29,9 +31,6 @@ class PublishedPackage(SQLBase):
     binarypackageshortdesc = StringCol(immutable=True)
     binarypackagedescription = StringCol(immutable=True)
     binarypackageversion = StringCol(immutable=True)
-    # Daniel Debonzi 20050105
-    # Why not ForeignKey?
-    ## build = IntCol(immutable=True)
     build = ForeignKey(foreignKey='Build', 
                        dbName='build')
     datebuilt = DateTimeCol(immutable=True)

@@ -5,7 +5,7 @@ __metaclass__ = type
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import ForeignKey, IntCol
+from sqlobject import ForeignKey
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.lp.dbschema import EnumCol

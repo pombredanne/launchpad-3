@@ -2,7 +2,7 @@
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import ForeignKey, IntCol
+from sqlobject import ForeignKey
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBountySubscription, \

@@ -38,7 +38,7 @@
     <span tal:content="context/binarypackagerelease/section/name"/> 
 
     <p><b>Priority:</b>
-    <span tal:content="context/binarypackagerelease/pkgpriority"/>
+    <span tal:content="context/binarypackagerelease/priority/title"/>
 
     <p><a href="+license"><b>License</b></a>
 

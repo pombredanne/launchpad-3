@@ -2,6 +2,75 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-23 21:54:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1486
+
+    Summary:
+      Using EnumCol instead if IntCol for db columns represented by a dbschema class, code ajustment and some small distro, packages and person classes improvement.
+    Revision:
+      launchpad--devel--0--patch-1486
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-486
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-487
+       Using EnumCol instead if IntCol for db columns represented by a dbschema class, code ajustmente and some small distro, packages and person classes improvement.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-488
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-489
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-490
+       Change back manifestentry EnumCol change. Banzai needs to be fixed firts.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/archarchive.py
+     lib/canonical/launchpad/database/archchangeset.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/bountysubscription.py
+     lib/canonical/launchpad/database/bugsubscription.py
+     lib/canonical/launchpad/database/build.py
+     lib/canonical/launchpad/database/codeofconduct.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/distroarchrelease.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/files.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/database/manifest.py
+     lib/canonical/launchpad/database/manifestentry.py
+     lib/canonical/launchpad/database/mirror.py
+     lib/canonical/launchpad/database/packaging.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productrelease.py
+     lib/canonical/launchpad/database/publishedpackage.py
+     lib/canonical/launchpad/database/publishing.py
+     lib/canonical/launchpad/database/queue.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/database/sourcepackageindistro.py
+     lib/canonical/launchpad/database/sourcepackagename.py
+     lib/canonical/launchpad/database/sourcepackagerelease.py
+     lib/canonical/launchpad/database/sourcesource.py
+     lib/canonical/launchpad/database/translation_effort.py
+     lib/canonical/launchpad/database/vsourcepackagereleasepublishing.py
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/launchpad/templates/binarypackage-index.pt
+     lib/canonical/launchpad/templates/binarypackagerelease-index.pt
+     lib/canonical/lp/dbschema.py
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-486
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-487
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-488
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-489
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-490
+
+
 2005-03-23 19:41:47 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1485
 
     Summary:

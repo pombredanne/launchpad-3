@@ -46,6 +46,7 @@ __all__ = (
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'Packaging',
+'GPGKeyAlgorithms',
 'ProjectRelationship',
 'ProjectStatus',
 'RevisionControlSystems',
@@ -60,8 +61,10 @@ __all__ = (
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
 'TranslationPriority',
+'DistroReleaseQueueStatus',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
+'MirrorFreshness',
 )
 
 from zope.interface.advice import addClassAdvisor
@@ -2017,4 +2020,16 @@ class BuildStatus(DBSchema):
         to be damaged or bad in some way. The buildd maintainer will have to
         reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
         has been fixed.
+        """)
+
+class MirrorFreshness(DBSchema):
+    """ Mirror Freshness
+
+    This valeu indicates how up-to-date Mirror is.
+    """
+
+    UNKNOWN = Item(99, """
+        Freshness Unknown
+
+        The Freshness was never verified and is unknown.
         """)

@@ -4,7 +4,7 @@ from zope.exceptions import NotFoundError
 
 # SQLObject/SQLBase
 from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol, MultipleJoin
+from sqlobject import StringCol, ForeignKey, DateTimeCol, MultipleJoin
 
 from canonical.database.sqlbase import SQLBase, quote
 

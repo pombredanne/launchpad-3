@@ -37,7 +37,6 @@ class IBinaryPackage(Interface):
 
     title = TextLine(required=True, readonly=True)
     name = Attribute("Binary Package Name")
-    pkgpriority = Attribute("Package Priority")
     status = Attribute("The BinaryPackageStatus Title")
     files_url = Attribute("Return an URL to Download this Package")
 

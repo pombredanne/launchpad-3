@@ -9,7 +9,7 @@ from zope.interface import implements
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin
 from sqlobject import SQLObjectNotFound
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, DateTimeCol
+from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol
 
 from canonical.librarian.client import FileDownloadClient
 from canonical.database.sqlbase import SQLBase

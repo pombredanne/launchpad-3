@@ -4,7 +4,10 @@ from canonical.launchpad.database.schema import Label
 
 import canonical.launchpad.interfaces as interfaces
 
-from sqlobject import ForeignKey, MultipleJoin, IntCol, StringCol
+from sqlobject import ForeignKey, MultipleJoin, StringCol
+
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import TranslationPriority
 
 from zope.interface import implements
 
@@ -153,7 +156,8 @@ class TranslationEffortPOTemplate(SQLBase):
             dbName='potemplate', notNull=True),
         ForeignKey(name='category', foreignKey='Category',
             dbName='category', notNull=False),
-        IntCol(name='priority', dbName='priority', notNull=True),
+        EnumCol(name='priority', dbName='priority', notNull=True,
+                schema=TranslationPriority),
     ]
 
 

@@ -41,7 +41,7 @@
 	</li>
 
         <li><b>Priority:</b>
-           <span tal:content="context/pkgpriority">
+           <span tal:content="context/priority/title">
            PRIORITY</span>
 	</li>
 

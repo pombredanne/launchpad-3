@@ -1,5 +1,5 @@
 from canonical.database.sqlbase import quote, SQLBase
-from sqlobject import StringCol, BoolCol, ForeignKey, IntCol
+from sqlobject import StringCol, BoolCol, ForeignKey
 
 from canonical.launchpad.interfaces import ArchiveNotRegistered, ArchiveLocationDoublyRegistered
 from canonical.launchpad.interfaces import RevisionNotRegistered
@@ -8,9 +8,14 @@ from canonical.launchpad.interfaces import VersionNotRegistered
 from canonical.launchpad.interfaces import VersionAlreadyRegistered
 from canonical.launchpad.interfaces import BranchAlreadyRegistered
 from canonical.launchpad.interfaces import CategoryAlreadyRegistered
-
 from canonical.launchpad.interfaces import IBranch
 
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import ArchArchiveType
+
+#
+#
+#
 
 def archive_present(archive_name):
     results = Archive.select('name = ' + quote(archive_name))
@@ -84,7 +89,8 @@ class ArchiveLocation(SQLBase):
     _table = 'ArchArchiveLocation'
     _columns = [
         ForeignKey(name='archive', foreignKey='Archive', dbName='archive'),
-        IntCol('archivetype', dbName='archivetype', notNull=True),
+        EnumCol('archivetype', dbName='archivetype', notNull=True,
+                schema=ArchArchiveType),
         StringCol('url', dbName='url', notNull=True),
         BoolCol('gpgsigned', dbName='gpgsigned', notNull=True),
     ]

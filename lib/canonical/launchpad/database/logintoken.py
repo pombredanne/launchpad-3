@@ -9,7 +9,7 @@ import random
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol
 from canonical.database.sqlbase import SQLBase
 
 # canonical imports
@@ -25,8 +25,8 @@ class LoginToken(SQLBase):
     requesteremail = StringCol(dbName='requesteremail') 
     email = StringCol(dbName='email', notNull=True)
     token = StringCol(dbName='token', unique=True)
-    tokentype = EnumCol(
-        dbName='tokentype', notNull=True, schema=LoginTokenType)
+    tokentype = EnumCol(dbName='tokentype', notNull=True,
+                        schema=LoginTokenType)
     created = DateTimeCol(dbName='created', notNull=True)
 
     title = 'Launchpad Email Verification'

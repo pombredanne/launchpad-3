@@ -2,17 +2,23 @@
 
 __metaclass__ = type
 
+# Python Imports
 from sets import Set
 
+# Zope Imports
 from zope.interface import implements
 
+# SQL Imports
 from sqlobject import MultipleJoin
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, DateTimeCol
-
+from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol
 from canonical.database.sqlbase import SQLBase, quote
+
+# Launchpad Imports
 from canonical.lp import dbschema
-from canonical.launchpad.interfaces import ISourcePackage, \
-     ISourcePackageSet
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import SourcePackageFormat
+
+from canonical.launchpad.interfaces import ISourcePackage, ISourcePackageSet
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.vsourcepackagereleasepublishing import \
      VSourcePackageReleasePublishing
@@ -24,7 +30,8 @@ class SourcePackage(SQLBase):
 
     shortdesc = StringCol(dbName='shortdesc', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    srcpackageformat = IntCol(dbName='srcpackageformat', notNull=True)
+    srcpackageformat = EnumCol(dbName='srcpackageformat', notNull=True,
+                               schema=SourcePackageFormat)
     distro = ForeignKey(foreignKey='Distribution', dbName='distro')
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
     maintainer = ForeignKey(

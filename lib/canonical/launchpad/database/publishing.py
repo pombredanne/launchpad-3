@@ -12,6 +12,9 @@ from canonical.launchpad.interfaces import IPackagePublishing, \
     ISourcePackagePublishing, ISourcePackagePublishingView, \
     IBinaryPackagePublishingView, ISourcePackageFilePublishing, \
     IBinaryPackageFilePublishing
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import BinaryPackagePriority
+from canonical.lp.dbschema import PackagePublishingStatus
 
 class PackagePublishing(SQLBase):
     """A binary package publishing record."""
@@ -26,8 +29,9 @@ class PackagePublishing(SQLBase):
                            dbName='component')
     section = ForeignKey(foreignKey='Section',
                          dbName='section')
-    priority = IntCol(dbName='priority')
-    status = IntCol(dbName='status')
+    priority = EnumCol(dbName='priority',
+                       schema=BinaryPackagePriority)
+    status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = DateTimeCol(default=None)
     datepublished = DateTimeCol(default=None)
 
@@ -50,7 +54,7 @@ class SourcePackagePublishing(SQLBase):
         ForeignKey(name='section',
             foreignKey='Section',
             dbName='section'),
-        IntCol('status'),
+        EnumCol('status', schema=PackagePublishingStatus),
         DateTimeCol('scheduleddeletiondate', default=None),
         DateTimeCol('datepublished', default=None)
     ]
@@ -85,8 +89,9 @@ class SourcePackageFilePublishing(SQLBase):
     distroreleasename = StringCol(dbName='distroreleasename', unique=False,
                                   default=None, notNull=True)
 
-    publishingstatus = IntCol(dbName='publishingstatus', unique=False,
-                              default=None, notNull=True)
+    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
+                               default=None, notNull=True,
+                               schema=PackagePublishingStatus)
     
     
 class BinaryPackageFilePublishing(SQLBase):
@@ -119,8 +124,9 @@ class BinaryPackageFilePublishing(SQLBase):
     distroreleasename = StringCol(dbName='distroreleasename', unique=False,
                                   default=None, notNull=True, immutable=True)
 
-    publishingstatus = IntCol(dbName='publishingstatus', unique=False,
-                              default=None, notNull=True, immutable=True)
+    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
+                               default=None, notNull=True, immutable=True,
+                               schema=PackagePublishingStatus)
 
     architecturetag = StringCol(dbName='architecturetag', unique=False,
                                 default=None, notNull=True, immutable=True)
@@ -140,8 +146,9 @@ class SourcePackagePublishingView(SQLBase):
                             notNull=True, immutable=True)
     distribution = IntCol(dbName='distribution', unique=False, default=None,
                           notNull=True, immutable=True)
-    publishingstatus = IntCol(dbName='publishingstatus', unique=False,
-                              default=None, notNull=True, immutable=True)
+    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
+                               default=None, notNull=True, immutable=True,
+                               schema=PackagePublishingStatus)
 
 
 
@@ -162,5 +169,6 @@ class BinaryPackagePublishingView(SQLBase):
                           notNull=True)
     priority = IntCol(dbName='priority', unique=False, default=None,
                       notNull=True)
-    publishingstatus = IntCol(dbName='publishingstatus', unique=False,
-                              default=None, notNull=True)
+    publishingstatus = EnumCol(dbName='publishingstatus', unique=False,
+                               default=None, notNull=True,
+                               schema=PackagePublishingStatus)

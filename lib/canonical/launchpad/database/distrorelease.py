@@ -8,11 +8,12 @@ from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
+from sqlobject import StringCol, ForeignKey, MultipleJoin, BoolCol, \
                       DateTimeCol
 
 from canonical.database.sqlbase import SQLBase
 from canonical.lp import dbschema
+from canonical.lp.dbschema import EnumCol
 
 # interfaces and database
 from canonical.launchpad.interfaces import IDistroRelease, IPOTemplateSet, \
@@ -41,7 +42,8 @@ class DistroRelease(SQLBase):
         dbName='components', foreignKey='Schema', notNull=True)
     sections = ForeignKey(
         dbName='sections', foreignKey='Schema', notNull=True)
-    releasestate = IntCol(notNull=True)
+    releasestate = EnumCol(notNull=True,
+                           schema=dbschema.DistributionReleaseState)
     datereleased = DateTimeCol(notNull=True)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
@@ -58,7 +60,7 @@ class DistroRelease(SQLBase):
     parent = property(parent)
 
     def state(self):
-        return self._getState(self.releasestate)
+        return self.releasestate.title
     state = property(state)
 
     def sourcecount(self):
@@ -108,12 +110,6 @@ class DistroRelease(SQLBase):
         counts.insert(0, sum(counts))
         return counts
     bugCounter = property(bugCounter)
-
-    def _getState(self, value):
-        for status in dbschema.DistributionReleaseState.items:
-            if status.value == value:
-                return status.title
-        return 'Unknown'
 
     def architecturecount(self):
         return len(list(self.architectures))

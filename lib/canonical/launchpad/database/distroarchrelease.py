@@ -6,7 +6,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 # SQLObject/SQLBase
-from sqlobject import StringCol, ForeignKey, RelatedJoin, IntCol
+from sqlobject import StringCol, ForeignKey, RelatedJoin
 
 from canonical.database.sqlbase import SQLBase
 from canonical.lp import dbschema

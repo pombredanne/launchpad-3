@@ -11,13 +11,15 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
 
 from canonical.librarian.client import FileDownloadClient
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IBinaryPackage, IDownloadURL
 from canonical.launchpad.interfaces import IBinaryPackageSet
 
 from canonical.launchpad.database.publishing import PackagePublishing
+
+from canonical.lp import dbschema
+from canonical.lp.dbschema import EnumCol
 
 #
 #
@@ -32,11 +34,13 @@ class BinaryPackage(SQLBase):
     shortdesc = StringCol(dbName='shortdesc', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
-    binpackageformat = IntCol(dbName='binpackageformat', notNull=True)
+    binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,
+                               schema=dbschema.BinaryPackageFormat)
     component = ForeignKey(dbName='component', foreignKey='Component',
                            notNull=True)
     section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
-    priority = IntCol(dbName='priority')
+    priority = EnumCol(dbName='priority',
+                       schema=dbschema.BinaryPackagePriority)
     shlibdeps = StringCol(dbName='shlibdeps')
     depends = StringCol(dbName='depends')
     recommends = StringCol(dbName='recommends')
@@ -109,14 +113,6 @@ class BinaryPackage(SQLBase):
     # Properties
     #
     
-    def _priority(self):
-        for priority in dbschema.BinaryPackagePriority.items:
-            if priority.value == self.priority:
-                return priority.title
-        return 'Unknown (%d)' %self.priority
-
-    pkgpriority = property(_priority)
-
     def _status(self):
         """Returns the BinaryPackage Status."""
         #
@@ -135,11 +131,8 @@ class BinaryPackage(SQLBase):
         except IndexError:
             raise KeyError, 'BinaryPackage not found in PackagePublishing'
 
-        try:
-            return dbschema.PackagePublishingStatus.\
-                   items[packagepublishing.status].title
-        except KeyError:
-            return 'Unknown'
+        return packagepublishing.status.title
+        
     status = property(_status)
 
     def files_url(self):
@@ -254,7 +247,7 @@ class BinaryPackageSet(object):
                       %quote(version))
         else:
             query += ('AND PackagePublishing.status = %s '
-                      % dbschema.PackagePublishingStatus.PUBLISHED)
+                      % dbschema.PackagePublishingStatus.PUBLISHED.value)
 
         if archtag:
             query += ('AND DistroArchRelease.architecturetag = %s '
@@ -316,7 +309,7 @@ class BinaryPackageSet(object):
 
                  %(quote(sourcepackagename),
                    DistroRelease.id,
-                   dbschema.PackagePublishingStatus.PUBLISHED
+                   dbschema.PackagePublishingStatus.PUBLISHED.value
                    )
                  )
 

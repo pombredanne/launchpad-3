@@ -14,6 +14,8 @@ from canonical.launchpad.interfaces import ISourcePackageReleasePublishing, \
 
 from canonical.launchpad.database.sourcepackagerelease import \
      SourcePackageRelease
+from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import PackagePublishingStatus
 
 #
 #
@@ -28,7 +30,8 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     shortdesc = StringCol(dbName='shortdesc')
     #maintainer = ForeignKey(foreignKey='Person', dbName='maintainer')
     description = StringCol(dbName='description')
-    publishingstatus = IntCol(dbName='publishingstatus')
+    publishingstatus = EnumCol(dbName='publishingstatus',
+                               schema=PackagePublishingStatus)
     datepublished = DateTimeCol(dbName='datepublished')
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease')
