@@ -46,7 +46,7 @@ def verifySQLObject(interface, implementation):
 """
 
 if mode == 'object':
-    print "from canonical.arch.sqlbase import SQLBase"
+    print "from canonical.database.sqlbase import SQLBase"
     print "from canonical.rosetta.sql import RosettaPOMessageSet, RosettaLanguage"
     print "from sqlobject import connectionForURI"
     print

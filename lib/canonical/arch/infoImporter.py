@@ -4,7 +4,7 @@ It will create ArchArchive and Branch entries as needed.
 """
 
 #from canonical.arch.database import Archive
-from canonical.arch.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.soyuz.database import SoyuzProduct
 import canonical.lp
 

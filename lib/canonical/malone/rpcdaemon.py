@@ -7,7 +7,7 @@ To run the server, just run this file ("rpcdaemon.py").
 
 from twisted.web import xmlrpc
 from sqlobject import connectionForURI
-from canonical.arch.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.malone import Bug
 import xmlrpclib, sqlobject, optparse
 

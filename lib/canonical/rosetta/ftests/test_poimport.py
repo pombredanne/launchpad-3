@@ -5,7 +5,7 @@ import unittest
 from cStringIO import StringIO
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.interfaces import ILanguages
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
      RosettaProject, RosettaProduct, RosettaLanguages

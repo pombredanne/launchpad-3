@@ -9,7 +9,7 @@
 import canonical.arch, sys
 canonical.arch.database = sys.modules['canonical.arch.database']
 from canonical.arch import broker
-from canonical.arch.sqlbase import quote, SQLBase
+from canonical.database.sqlbase import quote, SQLBase
 from canonical.arch.interfaces import ArchiveAlreadyRegistered, ArchiveNotRegistered, ArchiveLocationDoublyRegistered
 
 from sqlobject import StringCol, BoolCol, ForeignKey, IntCol, DateTimeCol, \
@@ -24,7 +24,7 @@ DBHandle = None
 def connect():
     global DBHandle
     from sqlobject import connectionForURI
-    from canonical.arch.sqlbase import SQLBase
+    from canonical.database.sqlbase import SQLBase
     conn = connectionForURI('postgres:///launchpad_test')
     SQLBase.initZopeless(conn)
     DBHandle = conn.getConnection()

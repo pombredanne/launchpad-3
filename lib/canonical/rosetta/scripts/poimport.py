@@ -2,7 +2,7 @@
 # arch-tag: 752bd71e-584e-416e-abff-a4eb6c82399c
 
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
     RosettaProject, RosettaProduct 
 from sqlobject import connectionForURI

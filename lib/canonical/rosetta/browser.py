@@ -12,6 +12,18 @@ from canonical.rosetta.sql import RosettaLanguage
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
 
+
+charactersPerLine = 50
+
+def count_lines(text):
+    count = 0
+
+    for line in text.split('\n'):
+        count += int(ceil(float(len(line)) / charactersPerLine))
+
+    return count
+
+
 class ViewProjects:
     def newProjectSubmit(self):
         if "SUBMIT" in self.request.form:
@@ -185,7 +197,6 @@ class ViewPOExport:
 
 class TranslatePOTemplate:
     defaultCount = 5
-    charactersPerLine = 40
 
     def __init__(self, context, request):
         self.context = context
@@ -279,9 +290,7 @@ class TranslatePOTemplate:
         return text.replace('\n', u'\u21b5<br/>\n')
 
     def _messageID(self, messageID):
-        add = lambda x, y: x + y
-        lineCeiling = lambda x: int(ceil(float(len(x)) / self.charactersPerLine))
-        lines = reduce(add, map(lineCeiling, messageID.msgid.split('\n')))
+        lines = count_lines(messageID.msgid)
 
         return {
             'lines' : lines,

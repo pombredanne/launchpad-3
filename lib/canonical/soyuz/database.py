@@ -5,7 +5,7 @@ from zope.interface import implements
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
 from sqlobject.sqlbuilder import func
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase
 from canonical.lp import dbschema
 
 # Soyuz interfaces

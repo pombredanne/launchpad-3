@@ -11,7 +11,7 @@ from sqlos.interfaces import IConnectionName
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
 
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase
 
 # sibling import
 from canonical.soyuz.interfaces import IBinaryPackage, IBinaryPackageBuild
@@ -33,7 +33,7 @@ except ImportError:
     raise
 
 
-from canonical.arch.sqlbase import quote
+from canonical.database.sqlbase import quote
 from canonical.soyuz.database import SourcePackage, Manifest, ManifestEntry, \
                                      SourcePackageRelease
 

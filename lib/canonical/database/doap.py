@@ -20,7 +20,7 @@ from zope.schema import Password, Bool
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 # TODO: Move this wrapper here
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase
 
 class IProject(Interface):
     """A Project."""

@@ -1,6 +1,6 @@
 # arch-tag: da5d31ba-6994-4893-b252-83f4f66f0aba
 
-from canonical.arch.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.rosetta.interfaces import *
 from sqlobject import ForeignKey, MultipleJoin, IntCol, BoolCol, StringCol, \
     DateTimeCol

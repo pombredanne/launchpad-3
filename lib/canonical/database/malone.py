@@ -19,7 +19,7 @@ from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 # TODO: Move this wrapper here
-from canonical.arch.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase
 
 from canonical.lp import dbschema
 
