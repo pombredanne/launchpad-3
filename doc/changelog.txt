@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-11 13:05:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1172
+
+    Summary:
+      Added a script to get back the imported raw files from potemplates and pofiles
+    Revision:
+      launchpad--devel--0--patch-1172
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-472
+       Added a script to get back the imported raw files from potemplates and pofiles
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-473
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-474
+       Merge with rocketfuel
+    
+
+    new files:
+     lib/canonical/rosetta/scripts/.arch-ids/get_porawfile.py.id
+     lib/canonical/rosetta/scripts/get_porawfile.py
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-472
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-473
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-474
+
+
 2005-01-11 00:50:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1171
 
     Summary:
