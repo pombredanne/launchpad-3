@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 06:34:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1415
+
+    Summary:
+      Nuke Manifest.owner
+    Revision:
+      launchpad--devel--0--patch-1415
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-184
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-185
+       Nuke Manifest.owner
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-186
+       Temporarily disable tests to work around circular dependancies with launchpad/banzai
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-04-0.sql.id
+     database/schema/patch-11-04-0.sql
+
+    modified files:
+     Makefile database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/database/manifest.py
+     lib/canonical/launchpad/interfaces/manifest.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-184
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-185
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-186
+
+
 2005-03-11 06:28:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1414
 
     Summary:

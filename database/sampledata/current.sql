@@ -538,15 +538,15 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifest'::pg_catalog.regclass;
 
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (1, '2004-06-29 00:00:00', 1, '1');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (2, '2004-06-30 00:00:00', 11, '2');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (3, '2004-07-01 00:00:00', 7, '3');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (4, '2004-07-02 00:00:00', 3, '4');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (5, '2004-07-03 00:00:00', 8, '5');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (6, '2004-07-04 00:00:00', 9, '6');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (7, '2004-07-05 00:00:00', 10, '7');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (8, '2004-06-29 00:00:00', 12, '8');
-INSERT INTO manifest (id, datecreated, "owner", uuid) VALUES (9, '2004-06-29 00:00:00', 12, '9');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (1, '2004-06-29 00:00:00', '1');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (2, '2004-06-30 00:00:00', '2');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (3, '2004-07-01 00:00:00', '3');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (4, '2004-07-02 00:00:00', '4');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (5, '2004-07-03 00:00:00', '5');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (6, '2004-07-04 00:00:00', '6');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (7, '2004-07-05 00:00:00', '7');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (8, '2004-06-29 00:00:00', '8');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (9, '2004-06-29 00:00:00', '9');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifest'::pg_catalog.regclass;

@@ -1,3 +1,7 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 # Python imports
 from datetime import datetime
 
@@ -29,14 +33,11 @@ class Manifest(SQLBase):
 
     datecreated = DateTimeCol(notNull=True, default=datetime.utcnow())
 
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
-
     uuid = StringCol(notNull=True, default=uuidgen(), alternateID=True)
 
     entries = MultipleJoin('ManifestEntry', joinColumn='manifest')
     
     def __iter__(self):
         return self.entries
-
 
 
