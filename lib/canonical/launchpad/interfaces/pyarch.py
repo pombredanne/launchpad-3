@@ -1368,7 +1368,7 @@ except ImportError:
 
 def pyarch_implements():
     """Declares the implementation of interfaces in this module by PyArch."""
-    import arch
+    import pybaz as arch
     from zope.interface import classImplements
     from zope.interface import directlyProvides
     def plusDirectlyProvides(cls, *interfaces):
@@ -1424,7 +1424,7 @@ def pyarch_implements():
 
 
 try:
-    import arch
+    import pybaz as arch
 except ImportError:
     pass
 else:
