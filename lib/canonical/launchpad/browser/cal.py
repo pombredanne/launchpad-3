@@ -1,12 +1,49 @@
 
 import re
 import calendar
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, tzinfo
+
+from zope.i18nmessageid import MessageIDFactory
+_ = MessageIDFactory('launchpad')
 
 from zope.interface import implements
 from canonical.launchpad.interfaces import ICalendarView, ICalendarWeekView
 from canonical.launchpad.interfaces import ICalendarDayView, ICalendarMonthView
 from canonical.launchpad.interfaces import ICalendarYearView
+
+daynames = [
+    _("Monday"),
+    _("Tuesday"),
+    _("Wednesday"),
+    _("Thursday"),
+    _("Friday"),
+    _("Saturday"),
+    _("Sunday")
+    ]
+monthnames = [
+    _("January"),
+    _("February"),
+    _("March"),
+    _("April"),
+    _("May"),
+    _("June"),
+    _("July"),
+    _("August"),
+    _("September"),
+    _("October"),
+    _("November"),
+    _("December")
+    ]
+
+# XXX this should really be the user's timezone
+class UserTimeZone(tzinfo):
+    def utcoffset(self, dt):
+        return timedelta(0)
+    def tzname(self, dt):
+        return "UTC"
+    def dst(self, dt):
+        return timedelta(0)
+user_timezone = UserTimeZone()
 
 # XXXX we don't actually have any of these view classes yet ...
 _year_pat  = re.compile(r'^(\d\d\d\d)$')
@@ -34,7 +71,24 @@ def traverseCalendar(calendar, request, name):
                        year=int(match.group(1)),
                        month=int(match.group(2)),
                        day=int(match.group(3)))
-    # XXXX - need to handle "today", "this-week", "this-month", "this-year"
+    now = datetime.now(user_timezone)
+    if name == 'today':
+        return DayView(calendar,
+                       year=now.year,
+                       month=now.month,
+                       day=now.day)
+    elif name == 'this-week':
+        isoyear, isoweek, isoday = now.isocalendar()
+        return WeekView(calendar,
+                        year=isoyear,
+                        week=isoweek)
+    elif name == 'this-month':
+        return MonthView(calendar,
+                         year=now.year,
+                         month=now.month)
+    elif name == 'this-year':
+        return MonthView(calendar,
+                         year=now.year)
 
 def prev_month(date):
     """Calculate the first day of the previous month for a given date.
@@ -155,8 +209,8 @@ class DayView(CalendarView):
 
     def __init__(self, calendar, year, month, day):
         self.day = date(year, month, day)
-        CalendarView.__init__(self, calendar,
-                              '%04d-%02d-%02d' % (year, month, day))
+        datestring = '%d %s %04d' % (day, monthnames[month-1], year)
+        CalendarView.__init__(self, calendar, datestring)
 
         # navigation links
         yesterday = self.day - timedelta(days=1)
@@ -175,7 +229,7 @@ class WeekView(CalendarView):
 
     def __init__(self, calendar, year, week):
         assert check_weeknum(year, week), 'invalid week number'
-        CalendarView.__init__(self, calendar, '%04d-W%02d' % (year, week))
+        CalendarView.__init__(self, calendar, 'Week %d, %04d' % (week, year))
         self.year = year
         self.week = week
         self.bounds = weeknum_bounds(year, week)
@@ -194,7 +248,8 @@ class MonthView(CalendarView):
 
     def __init__(self, calendar, year, month):
         assert 1 <= month <= 12, 'invalid month number'
-        CalendarView.__init__(self, calendar, '%04d-%02d' % (year, month))
+        datestring = '%s %04d' % (monthnames[month-1], year)
+        CalendarView.__init__(self, calendar, datestring)
         self.year = year
         self.month = month
         start = date(year, month, 1)

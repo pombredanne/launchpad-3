@@ -3,7 +3,9 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
   <head>
-    <title>A calendar!</title>
+    <title metal:fill-slot="title">
+      <span tal:replace="context/title">Calendar Title</span>
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
   </head>
@@ -11,8 +13,25 @@
   <body>
 
     <div metal:fill-slot="main">
-      <h1>A calendar!</h1>
-      <p>title: <span tal:replace="context/title">the title</span></p>
+      <div id="content" class="documentEditable">
+        <ul class="contentViews">
+          <li id="contentview-day">
+            <a href="today">Day</a>
+          </li>
+          <li id="contentview-week">
+            <a href="this-week">Week</a>
+          </li>
+          <li id="contentview-month">
+            <a href="this-month">Month</a>
+          </li>
+          <li id="contentview-year">
+            <a href="this-year">Year</a>
+          </li>
+        </ul>
+        <div class="documentContent">
+          <h1><span tal:replace="context/title">Calendar Title</span></h1>
+        </div>
+      </div>
     </div>
 
   </body>
