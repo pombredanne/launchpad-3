@@ -26,9 +26,11 @@ from zope.app.mail.interfaces import IMailDelivery
 # our own custom charset definition to force quoted printable.
 Charset.add_charset('utf8', Charset.QP, Charset.QP, 'utf8')
 
-def simple_sendmail(from_addr, to_addrs, subject, body):
+def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     """Send an email from from_addr to to_addrs with the subject and body
     provided. to_addrs can be a list, tuple, or ASCII/Unicode string.
+
+    Arbitrary headers can be set using the headers parameter.
    
     Returns the Message-Id.
     """
@@ -36,6 +38,9 @@ def simple_sendmail(from_addr, to_addrs, subject, body):
         to_addrs = [to_addrs]
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+    for k,v in headers.items():
+        del msg[k]
+        msg[k] = v
     msg['To'] = ','.join([str(a) for a in to_addrs])
     msg['From'] = from_addr
     msg['Subject'] = subject

@@ -2,6 +2,56 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-16 16:51:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1445
+
+    Summary:
+      TeamParticipation and test harness fixes
+    Revision:
+      launchpad--devel--0--patch-1445
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-198
+       Allow passing of arbitrary headers to simple_sendmail and tests
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-199
+       Patch to add entries to TeamParticipation on Person creation
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-200
+       Update sampledata with correctly populated self-members
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-201
+       Update database docs
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-202
+       Track down bug causing occasional 'not all connections closed' messages when running the test suite
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-203
+       Python is no longer responsible for updating TeamParticipation on Person creation
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-06-0.sql.id
+     database/schema/patch-11-06-0.sql
+
+    modified files:
+     database/sampledata/current.sql database/schema/launchpad.html
+     database/schema/trusted.sql doc/changelog.txt
+     lib/canonical/ftests/pgsql.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/ftests/harness.py
+     lib/canonical/launchpad/mail/ftests/test_stub.py
+     lib/canonical/launchpad/mail/sendmail.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-198
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-199
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-200
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-201
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-202
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-203
+
+
 2005-03-16 16:40:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1444
 
     Summary:

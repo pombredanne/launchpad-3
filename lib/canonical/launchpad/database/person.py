@@ -551,7 +551,9 @@ class PersonSet(object):
         #  TeamParticipation entry for each person, with themselves as the
         #  member."
         # More info: TeamParticipationUsage spec.
-        _fillTeamParticipation(person, person)
+        # However, this is now done with a database trigger
+        #   -- StuartBishop 20050317
+        #_fillTeamParticipation(person, person)
         return person
 
     def getByName(self, name, default=None):

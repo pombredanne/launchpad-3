@@ -47,7 +47,6 @@ class ConnectionWrapper(object):
         finally:
             ConnectionWrapper.committed = True
 
-
     def __getattr__(self, key):
         return getattr(self.__dict__['real_connection'], key)
 
@@ -86,9 +85,14 @@ class PgTestSetup(object):
         if dbuser is not None:
             self.dbuser = dbuser
 
-    def setUp(self):
-        '''Create a fresh database (dropping the old if necessary)'''
+    def setUp(self, reset_db=True):
+        '''Create a fresh database (dropping the old if necessary)
+
+        Skips db creation if reset_db is False
+        '''
         #installFakeConnect()
+        if not reset_db:
+            return
         self.dropDb()
         con = psycopg.connect('dbname=%s' % self.template)
         try:
@@ -114,12 +118,13 @@ class PgTestSetup(object):
         finally:
             con.close()
 
-    def tearDown(self):
+    def tearDown(self, reset_db=True):
         '''Close all outstanding connections and drop the database'''
         while self.connections:
             con = self.connections[-1]
-            con.close() # Removes itself
-        self.dropDb()
+            con.close() # Removes itself from self.connections
+        if reset_db:
+            self.dropDb()
         #uninstallFakeConnect()
 
     def connect(self):

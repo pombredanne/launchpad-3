@@ -120,7 +120,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2005-03-09</p>
+Dumped on 2005-03-17</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -330,6 +330,9 @@ text )</a></li>
 )</a></li>
 <li><a href="#public.function.valid-version-text">valid_version(
 text )</a></li>
+<li><a href=
+"#public.function.you-are-your-own-member">you_are_your_own_member(
+)</a></li>
 </ul>
 </li>
 <li><a name="ts2.schema" id="ts2.schema">ts2</a></li>
@@ -1178,7 +1181,8 @@ public</a></p>
 <td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.branch">public.branch.id#1</a></td>
+<td><a href="#public.table.branch">public.branch.id</a> <a href=
+"#public.table.changeset">public.changeset.branch#1</a></td>
 <td>branch</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
@@ -11739,6 +11743,14 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.manifest" id=
 "public.table.manifest">manifest</a></h2>
+<p>A Manifest describes the branches that go into making up a
+source package or product release. This allows us to describe the
+source package or product release in a way that HCT can pull down
+the sources directly from The Bazaar and allow people to branch and
+edit immediately. Note that a Manifest does not have an owner,
+please ensure that ANYTHING that points TO a manifest, such as
+ProductRelease or SourcePackageRelease, has an owner, so that we do
+not end up with orphaned manifests.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.manifest Structure</caption>
 <tr>
@@ -11761,12 +11773,6 @@ public</a></p>
 ('now'::text)::timestamp(6) with time zone)</i></td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>owner</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
 <td></td>
 <td>uuid</td>
 <td>text</td>
@@ -13433,6 +13439,24 @@ public.packagepublishing</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>gina</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -13456,7 +13480,7 @@ public.packagepublishing</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -13468,7 +13492,7 @@ public.packagepublishing</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -13480,6 +13504,24 @@ public.packagepublishing</caption>
 <center>&diams;</center>
 </td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>lucille</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -14082,9 +14124,6 @@ displayed in this language wherever possible.</td>
 </ul>
 <ul>
 <li><a href="#public.table.logintoken">public.logintoken</a></li>
-</ul>
-<ul>
-<li><a href="#public.table.manifest">public.manifest</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.message">public.message</a></li>
@@ -22115,6 +22154,24 @@ public.sourcepackagepublishing</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>gina</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -22138,7 +22195,7 @@ public.sourcepackagepublishing</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -22150,7 +22207,7 @@ public.sourcepackagepublishing</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -22162,6 +22219,24 @@ public.sourcepackagepublishing</caption>
 <center>&diams;</center>
 </td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>lucille</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -23056,7 +23131,7 @@ public</a></p>
 <td></td>
 <td>name</td>
 <td>text</td>
-<td><i>NOT NULL</i></td>
+<td><i>UNIQUE NOT NULL</i></td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -25116,6 +25191,25 @@ instead</p>
     if name is None or re.match(pat, name):
         return 1
     return 0
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.you-are-your-own-member" id=
+"public.function.you-are-your-own-member">you_are_your_own_member(
+)</a></h2>
+<h3>Returns: "trigger"</h3>
+<h3>Language: PLPGSQL</h3>
+<p>Trigger function to ensure that every row added to the Person
+table gets a corresponding row in the TeamParticipation table, as
+per the TeamParticipationUsage page on the Launchpad wiki</p>
+<pre>
+    BEGIN
+        IF NEW.teamowner IS NULL THEN
+            INSERT INTO TeamParticipation (person, team)
+                VALUES (NEW.id, NEW.id);
+        END IF;
+        RETURN NULL;
+    END;
 </pre>
 <!-- ts2ts2 -->
 <hr />
