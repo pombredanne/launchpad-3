@@ -3,7 +3,7 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">FOAF: New Account</title>
+    <title metal:fill-slot="title">Create a New Launchpad Account</title>
 
   <body>
 
@@ -13,7 +13,7 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-        <h3 metal:fill-slot="heading">Create a new Account</h3>
+        <h1 metal:fill-slot="heading">Launchpad Account Details</h1>
 
         <div metal:fill-slot="extra_info" class="formHelp">
           Fill in the form bellow to finish your registration process on

@@ -5,7 +5,7 @@
       i18n:domain="launchpad">
 
 <head>
-  <title metal:fill-slot="title">Join Launchpad</title>
+  <title metal:fill-slot="title">Join the Launchpad</title>
   <style type="text/css" media="screen">@import url(plone.css);</style>
 </head>
 
@@ -13,45 +13,57 @@
 
 <div metal:fill-slot="main">
 
+<div id="content" class="documentEditable">
+
   <div tal:condition="not: view/success">
-    <h1>Join Launchpad</h1>
+    <h1>Join The Launchpad</h1>
 
     <div class="formHelp">
-      To Join Launchpad, just type your email address on the form bellow
-      and we will send you an email message with instructions on how to
-      complete your registration process.
+      To create an account in The Launchpad please enter your
+      email address on the form below. We will send an email
+      to verify your address, containing a URL which you can
+      use to complete the registration process.
     </div>
 
     <div class="portalMessage" tal:condition="view/errormessage"
-         tal:content="structure view/errormessage">
-    </div>
+         tal:content="structure view/errormessage" />
 
-    <br />
-    <form name="join" action="" method="POST">
-      <div class="field">
-        <label for="email">Email address</label>
-        <div class="formHelp">
-          Enter the email address you want to use on Launchpad
-        </div>
-        <input type="text" name="email" size="40"
-               tal:attributes="value view/email|nothing" />
-      </div>
-      <div class="formControls">
-        <input type="submit" name="SUBMIT" value="Join" />
-      </div>
-    </form>
+    <p> </p>
+
+    <div class="documentContent" id="region-content">
+      <br />
+      <form name="join" action="" method="POST">
+      <table>
+        <tr>
+          <td><b>Email address:</b></td>
+          <td><input type="text" size="40" name="email"
+                     tal:attributes="value view/email|nothing" /></td>
+          <td>
+            <input type="submit" name="SUBMIT" value="Join" />
+          </td>
+        </tr>
+      </table>
+      </form>
+    </div>
   </div>
 
   <div tal:condition="view/success">
+
     <h1>Thank You</h1>
 
-    <br />
-    <p>An email message was sent to <span tal:replace="view/email"></span>
-    with instructions on how to finish the registration process. Thank you
-    for joining Launchpad.</p>
+    <p> </p>
+
+    <div class="documentContent" id="region-content">
+      <br />
+      <p>Your registration URL has been sent to
+      <b tal:content="view/email">email@address</b>.
+      Thank you for your interest in the Launchpad!</p>
+    </div>
   </div>
 
+</div>
 </div>
 </body>
 
 </html>
+

@@ -113,7 +113,7 @@ class ForgottenPasswordPage:
 
 
 def sendPasswordResetEmail(token, appurl):
-    template_file = 'lib/canonical/launchpad/webapp/forgottenpassword.txt'
+    template_file = 'lib/canonical/launchpad/templates/forgottenpassword.txt'
     template = open(template_file).read()
     fromaddress = "Launchpad Team <noreply@canonical.com>"
 
@@ -170,7 +170,7 @@ class JoinLaunchpadView:
 
 
 def sendNewUserEmail(token, appurl):
-    template = open('lib/canonical/launchpad/webapp/newuser-email.txt').read()
+    template = open('lib/canonical/launchpad/templates/newuser-email.txt').read()
     replacements = {'longstring': token.token, 'appurl': appurl}
     message = template % replacements
 

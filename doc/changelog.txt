@@ -2,6 +2,67 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 15:46:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1232
+
+    Summary:
+      ui and textual cleanups of registration process
+    Revision:
+      launchpad--devel--0--patch-1232
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-721
+       tidy up the registration process
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-722
+       resolve spurious conflicts caused by bug in bazaar
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-723
+       merge rocketfuel resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-724
+       clean up text and put emails in templates dir
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-725
+       text changes on registration page
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-726
+       merge rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/templates/foaf-newaccount.pt
+     lib/canonical/launchpad/templates/launchpad-join.pt
+     lib/canonical/launchpad/templates/newuser-email.txt
+     lib/canonical/launchpad/templates/validate-email.txt
+     lib/canonical/launchpad/webapp/login.py
+     lib/canonical/launchpad/zcml/logintoken.zcml
+
+    renamed files:
+     lib/canonical/foaf/.arch-ids/validate-email.txt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/validate-email.txt.id
+     lib/canonical/foaf/validate-email.txt
+       ==> lib/canonical/launchpad/templates/validate-email.txt
+     lib/canonical/launchpad/webapp/.arch-ids/forgottenpassword.txt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/forgottenpassword.txt.id
+     lib/canonical/launchpad/webapp/.arch-ids/newuser-email.txt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/newuser-email.txt.id
+     lib/canonical/launchpad/webapp/forgottenpassword.txt
+       ==> lib/canonical/launchpad/templates/forgottenpassword.txt
+     lib/canonical/launchpad/webapp/newuser-email.txt
+       ==> lib/canonical/launchpad/templates/newuser-email.txt
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-721
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-722
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-723
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-724
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-725
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-726
+
+
 2005-01-21 14:19:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1231
 
     Summary:

@@ -1,0 +1,19 @@
+Hello!
+
+Thank you for registering at The Launchpad. To complete your
+registration, please click on the link below and follow the
+instructions to create your account:
+
+   %(appurl)s/foaf/logintoken/%(longstring)s/+newaccount
+
+The Launchpad is a web portal for open source developers that
+includes easy web based translation and bug management. We'll
+be adding new features to The Launchpad based on your
+suggestions, so feel free to contact us on #launchpad on
+irc.freenode.net with ideas. Malone and Rosetta are just
+the tip of the iceberg ;-)
+
+Thank you!
+
+The Launchpad SWAT Team
+launchpad@ubuntu.com
