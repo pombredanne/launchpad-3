@@ -3,7 +3,6 @@
  */
 
 /* TODO:
-
     How does the scraper know if it has already scraped a particular
     entry? I think it will either need to check if the homepageurl
     already exists (so that will need to be UNIQUE), or we need an
@@ -11,6 +10,8 @@
     with mangling to make sure they don't clash)
 
 */
+
+SET client_min_messages TO error;
 
 CREATE TABLE ScrapedProject (
     id serial PRIMARY KEY,
@@ -21,4 +22,13 @@ CREATE TABLE ScrapedProject (
     listurl text,
     programminglang text
     );
+
+SET client_min_messages TO error;
+
+/* Extra columns on the GPGKey table for Soyuz */
+
+ALTER TABLE GPGKey ADD COLUMN algorithm int;
+ALTER TABLE GPGKey ADD COLUMN keysize int;
+ALTER TABLE GPGKey ALTER COLUMN algorithm SET NOT NULL;
+ALTER TABLE GPGKey ALTER COLUMN keysize SET NOT NULL;
 
