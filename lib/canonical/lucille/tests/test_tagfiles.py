@@ -70,6 +70,14 @@ class TestTagFiles(unittest.TestCase):
         from canonical.lucille.TagFiles import parse_changes, ChangesParseError
         self.assertRaises( ChangesParseError,
                            parse_changes, "data/unterminated-sig-changes", 1 )
+
+    def testParseChangesNotVulnerableToArchExploit(self):
+        """canonical.lucille.TagFiles.parse_changes should not be vulnerable to tags outside of the signed portion"""
+        from canonical.lucille.TagFiles import parse_changes
+        tf = parse_changes( "data/changes-with-exploit-top" )
+        self.assertRaises( KeyError, tf.__getitem__, "you" )
+        tf = parse_changes( "data/changes-with-exploit-bottom" )
+        self.assertRaises( KeyError, tf.__getitem__, "you" )
         
 
 def main(argv):

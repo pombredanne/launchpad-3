@@ -165,16 +165,20 @@ def verify_signed_file(filename, keyrings, detached_sigfile = None):
            not re_taint_free.match(os.path.basename(detached_sigfile)):
         raise TaintedFileNameError("!!WARNING!! tainted filename: '%s'." % (detached_sigfile))
 
-    keyrings = [ k for k in keyrings ]
+    if type(keyrings) != list:
+        raise GPGInternalError("Someone passed us something other than a list in the keyrings argument")
+    
+
+    keyrings = [ "'" + k + "'" for k in keyrings ]
     keyrings.insert(0, "")
 
     # Invoke gpgv on the file
     status_read, status_write = os.pipe()
     if detached_sigfile is None:
-        cmd = "gpgv --status-fd %s %s %s" \
+        cmd = "gpgv --status-fd %s %s '%s'" \
               % (status_write, " --keyring ".join(keyrings), filename)
     else:
-        cmd = "gpgv --status-fd %s %s %s %s" \
+        cmd = "gpgv --status-fd %s %s %s '%s'" \
               % (status_write, " --keyring ".join(keyrings), \
                  filename, detached_sigfile)
 
