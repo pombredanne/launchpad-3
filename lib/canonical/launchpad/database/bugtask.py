@@ -74,6 +74,7 @@ class BugTask(SQLBase):
 
     def bugtitle(self):
         return self.bug.title
+    bugtitle = property(bugtitle)
 
     def maintainer(self):
         if self.product:
@@ -86,13 +87,11 @@ class BugTask(SQLBase):
             except IndexError:
                 return None
         return None
+    maintainer = property(maintainer)
 
     def bugdescription(self):
         if self.bug.messages:
             return self.bug.messages[0].contents
-
-    maintainer = property(maintainer)
-    bugtitle = property(bugtitle)
     bugdescription = property(bugdescription)
 
     def _title(self):
@@ -117,8 +116,6 @@ class BugTaskSet:
 
     implements(IBugTaskSet)
 
-    table = BugTask
-
     def __init__(self, bug=None):
         self.bug = bug
         self.title = 'A Set of Bug Tasks'
@@ -128,7 +125,7 @@ class BugTaskSet:
         principal = getUtility(ILaunchBag).user
 
         try:
-            task = self.table.get(id)
+            task = BugTask.get(id)
         except SQLObjectNotFound:
             raise KeyError, id
 
@@ -153,7 +150,7 @@ class BugTaskSet:
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         user = getUtility(ILaunchBag).user
 
-        for row in self.table.select(self.table.q.bugID == self.bug):
+        for row in BugTask.select(BugTask.q.bugID == self.bug):
             if row.product:
                 # upstream task
                 if user is not None and user.id == row.product.owner.id:
@@ -172,7 +169,7 @@ class BugTaskSet:
     def get(self, id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         try:
-            bugtask = self.table.get(id)
+            bugtask = BugTask.get(id)
         except SQLObjectNotFound:
             raise NotFoundError("BugTask with ID %s does not exist" % str(id))
 
@@ -182,48 +179,49 @@ class BugTaskSet:
                severity=None, product=None, distribution=None, milestone=None,
                assignee=None, submitter=None, orderby=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        query = ""
-
-        if searchtext:
-            query += "Bug.fti @@ ftq(%s)" % quote(searchtext)
-
-        # build the part of the query for FK columns
-        for arg in ('bug', 'product', 'distribution',
-                    'milestone','assignee', 'submitter'):
-            query_arg = eval(arg)
-            if query_arg is not None:
-                if query:
-                    query += " AND "
-
-                fragment = ""
-                if isinstance(query_arg, any):
-                    quoted_ids = [quote(obj.id) for obj in query_arg.query_values]
-                    query_values = ", ".join(quoted_ids)
-                    fragment = "(BugTask.%s IN (%s))" % (arg, query_values)
+        def build_where_condition_fragment(arg_name, arg_val, cb_arg_id):
+            fragment = ""
+            if isinstance(arg_val, any):
+                quoted_ids = [quote(cb_arg_id(obj)) for obj in query_arg.query_values]
+                query_values = ", ".join(quoted_ids)
+                fragment = "(BugTask.%s IN (%s))" % (arg_name, query_values)
+            else:
+                if query_arg == NULL:
+                    fragment = "(BugTask.%s IS NULL)" % (arg_name)
                 else:
-                    if query_arg == NULL:
-                        fragment = "(BugTask.%s IS NULL)" % (arg)
-                    else:
-                        fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg.id)))
+                    fragment = "(BugTask.%s = %s)" % (
+                        arg_name, str(quote(cb_arg_id(query_arg))))
 
-                query += fragment
+            return fragment
+
+        query = ""
+        # build the part of the query for FK columns
+        for arg_name in ('bug', 'product', 'distribution',
+                         'milestone', 'assignee', 'submitter'):
+            query_arg = eval(arg_name)
+            if query_arg is not None:
+                where_cond = build_where_condition_fragment(
+                    arg_name, query_arg, lambda obj: obj.id)
+                if where_cond:
+                    if query:
+                        query += " AND "
+                    query += where_cond
 
         # build the part of the query for the db schema columns
-        for arg in ('status', 'priority', 'severity'):
-            query_arg = eval(arg)
+        for arg_name in ('status', 'priority', 'severity'):
+            query_arg = eval(arg_name)
             if query_arg is not None:
-                if query:
-                    query += " AND "
+                where_cond = build_where_condition_fragment(
+                    arg_name, query_arg, lambda obj: obj)
+                if where_cond:
+                    if query:
+                        query += " AND "
+                    query += where_cond
 
-                fragment = ""
-                if isinstance(query_arg, any):
-                    quoted_ids = [quote(obj) for obj in query_arg.query_values]
-                    query_values = ", ".join(quoted_ids)
-                    fragment = "(BugTask.%s IN (%s))" % (arg, query_values)
-                else:
-                    fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg)))
-
-                query += fragment
+        if searchtext:
+            if query:
+                query += " AND "
+            query += "Bug.fti @@ ftq(%s)" % quote(searchtext)
 
         user = getUtility(ILaunchBag).user
 

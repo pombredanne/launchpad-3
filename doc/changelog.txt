@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-14 19:16:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1431
+
+    Summary:
+      more bugtask.py and searchbuilder.py changes based on code reviews
+    Revision:
+      launchpad--devel--0--patch-1431
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-416
+       more bugtask.py and searchbuilder.py changes based on code reviews
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/searchbuilder.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-416
+
+
 2005-03-14 17:11:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1430
 
     Summary:
