@@ -1,8 +1,0 @@
-<html>
-<body>
-<p>Pretend this is a calendar.</p>
-<ul>
-  <li tal:repeat="event context" tal:content="event/title">[event]</li>
-</ul>
-</body>
-</html>

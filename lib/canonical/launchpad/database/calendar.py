@@ -3,16 +3,25 @@ from zope.interface import implements, providedBy
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, EnumCol
 
 from canonical.database.sqlbase import SQLBase
-from schoolbell.interfaces import ICalendar
 from canonical.launchpad.interfaces import ILaunchpadCalendar
 
 import datetime
 
 class Calendar(SQLBase):
-    implements(ICalendar, ILaunchpadCalendar)
+    implements(ILaunchpadCalendar)
     owner = ForeignKey(dbName='owner', notNull=True, foreignKey='Person')
     title = StringCol(dbName='title', notNull=True)
     revision = IntCol(dbName='revision', notNull=True, default=0)
+
+    def __iter__(self):
+        raise NotImplementedError
+
+    def find(self, unique_id):
+        raise NotImplementedError
+
+    def expand(self, first, last):
+        raise NotImplementedError
+
 
 class CalendarSubscription(SQLBase):
     person = ForeignKey(dbName='person', notNull=True, foreignKey='Person')

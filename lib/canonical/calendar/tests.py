@@ -87,12 +87,12 @@ def doctest_UsersCalendarTraverser():
         >>> uct.publishTraverse(request, '2004')
         Traceback (most recent call last):
           ...
-        NotFound: Object: <AnyContext>, name: '+calendar'
+        NotFound: Object: <AnyContext>, name: 'calendar'
 
         >>> uct.browserDefault(request)
         Traceback (most recent call last):
           ...
-        NotFound: Object: <AnyContext>, name: '+calendar'
+        NotFound: Object: <AnyContext>, name: 'calendar'
 
     Calendar exists, but there are no views for it.
 
@@ -103,12 +103,12 @@ def doctest_UsersCalendarTraverser():
         >>> uct.publishTraverse(request, '2004')
         Traceback (most recent call last):
           ...
-        NotFound: Object: <AnyContext>, name: '+calendar'
+        NotFound: Object: <AnyContext>, name: 'calendar'
 
         >>> uct.browserDefault(request)
         Traceback (most recent call last):
           ...
-        NotFound: Object: <AnyContext>, name: '+calendar'
+        NotFound: Object: <AnyContext>, name: 'calendar'
 
     Calendar exists and there are views.
 
@@ -151,12 +151,12 @@ def doctest_UsersCalendarTraverser():
         >>> uct.publishTraverse(request, '2004')
         Traceback (most recent call last):
           ...
-        NotFound: Object: <AnyContext>, name: '+calendar'
+        NotFound: Object: <AnyContext>, name: 'calendar'
 
         >>> uct.browserDefault(request)
         Traceback (most recent call last):
           ...
-        NotFound: Object: <AnyContext>, name: '+calendar'
+        NotFound: Object: <AnyContext>, name: 'calendar'
 
 
     """
@@ -202,12 +202,12 @@ def doctest_CalendarAdapterTraverser():
         >>> cat.publishTraverse(request, '2004')
         Traceback (most recent call last):
           ...
-        NotFound: Object: <SomethingWithCalendar>, name: '+calendar'
+        NotFound: Object: <SomethingWithCalendar>, name: 'calendar'
 
         >>> cat.browserDefault(request)
         Traceback (most recent call last):
           ...
-        NotFound: Object: <SomethingWithCalendar>, name: '+calendar'
+        NotFound: Object: <SomethingWithCalendar>, name: 'calendar'
 
         >>> from zope.publisher.interfaces import IPublishTraverse
         >>> class FakeCalendarPublishTraverse:

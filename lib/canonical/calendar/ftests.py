@@ -14,20 +14,20 @@ __metaclass__ = type
 
 
 def doctest_adaptation():
-    """Test adapter configuration in configure.zcml
+    """Test adapter configuration in canonical/launchpad/zcml/calendar.zcml
 
     There should be an adapter from IPerson to ICalendar.
 
-        >>> from canonical.launchpad.interfaces.person import IPerson
+        >>> from canonical.launchpad.interfaces.calendar import ICalendarOwner
         >>> from zope.interface import implements
-        >>> class FakePerson:
-        ...     implements(IPerson)
-        >>> person = FakePerson()
+        >>> class FakeCalendarOwner:
+        ...     implements(ICalendarOwner)
+        ...     calendar = object()
+        >>> calendarowner = FakeCalendarOwner()
 
         >>> from schoolbell.interfaces import ICalendar
-        >>> calendar = ICalendar(person)
-
-        >>> ICalendar.providedBy(calendar)
+        >>> calendar = ICalendar(calendarowner)
+        >>> calendar is FakeCalendarOwner.calendar
         True
 
     There should be an adapter from IPersonApp to ICalendar.
@@ -35,39 +35,39 @@ def doctest_adaptation():
         >>> from canonical.launchpad.interfaces.person import IPersonApp
         >>> class FakePersonApp:
         ...     implements(IPersonApp)
-        ...     person = FakePerson()
+        ...     person = FakeCalendarOwner()
         >>> personapp = FakePersonApp()
 
         >>> calendar = ICalendar(personapp)
-        >>> ICalendar.providedBy(calendar)
+        >>> calendar is FakeCalendarOwner.calendar
         True
 
     """
 
 
 def doctest_views():
-    """Test adapter configuration in configure.zcml
+    """Test view configuration in canonical/launchpad/zcml/calendar.zcml
 
-    There should be a view for RootObject, named '+calendar'.
+    There should be a view for RootObject, named 'calendar'.
 
         >>> from zope.app import zapi
         >>> from zope.publisher.browser import TestRequest
         >>> from canonical.publication import rootObject
         >>> request = TestRequest()
         >>> root = rootObject
-        >>> view = zapi.getView(root, '+calendar', request)
+        >>> view = zapi.getView(root, 'calendar', request)
         >>> from canonical.calendar import UsersCalendarTraverser
         >>> isinstance(view, UsersCalendarTraverser)
         True
 
-    There should be a view for IPersonApp, named '+calendar'.
+    There should be a view for IPersonApp, named 'calendar'.
 
         >>> from zope.interface import implements
         >>> from canonical.launchpad.interfaces.person import IPersonApp
         >>> class FakePersonApp:
         ...     implements(IPersonApp)
         >>> context = FakePersonApp()
-        >>> view = zapi.getView(context, '+calendar', request)
+        >>> view = zapi.getView(context, 'calendar', request)
         >>> from canonical.calendar import CalendarAdapterTraverser
         >>> isinstance(view, CalendarAdapterTraverser)
         True
