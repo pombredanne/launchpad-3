@@ -226,12 +226,12 @@ class SourcepackageBugAssignment(SQLBase):
             )
     assignee = ForeignKey(dbName='assignee', foreignKey='Person', default=None)
 
-class BugSystemType(SQLBase):
+class BugTrackerType(SQLBase):
     """A type of supported remote  bug system. eg Bugzilla."""
 
-    implements(IBugSystemType)
+    implements(IBugTrackerType)
 
-    _table = 'BugSystemType'
+    _table = 'BugTrackerType'
     _columns = [
         StringCol('name', notNull=True),
         StringCol('title', notNull=True),
@@ -244,17 +244,17 @@ class BugSystemType(SQLBase):
     ]
 
 
-class BugSystem(SQLBase):
-    """A class to access the BugSystem table of the db. Each BugSystem is a
+class BugTracker(SQLBase):
+    """A class to access the BugTracker table of the db. Each BugTracker is a
     distinct instance of that bug tracking tool. For example, each Bugzilla
-    deployment is a separate BugSystem. bugzilla.mozilla.org and
-    bugzilla.gnome.org are each distinct BugSystem's.
+    deployment is a separate BugTracker. bugzilla.mozilla.org and
+    bugzilla.gnome.org are each distinct BugTracker's.
     """
-    implements(IBugSystem)
-    _table = 'BugSystem'
+    implements(IBugTracker)
+    _table = 'BugTracker'
     _columns = [
-        ForeignKey(name='bugsystemtype', dbName='bugsystemtype',
-                foreignKey='BugSystemType', notNull=True),
+        ForeignKey(name='bugtrackertype', dbName='bugtrackertype',
+                foreignKey='BugTrackerType', notNull=True),
         StringCol('name', notNull=True, unique=True),
         StringCol('title', notNull=True),
         StringCol('shortdesc', notNull=True),
@@ -264,14 +264,17 @@ class BugSystem(SQLBase):
         StringCol('contactdetails', notNull=True),
         ]
 
+# XXX Mark Shuttleworth 05/10/04 We are renaming BugTracker to BugTracker
+BugTracker = BugTracker
 
-class BugSystemSet(object):
-    """Implements IBugSystemSet for a container or set of BugSystem's,
+
+class BugTrackerSet(object):
+    """Implements IBugTrackerSet for a container or set of BugTracker's,
     either the full set in the db, or a subset."""
 
-    implements(IBugSystemSet)
+    implements(IBugTrackerSet)
 
-    table = BugSystem
+    table = BugTracker
     
     def __getitem__(self, name):
         try: return self.table.select(self.table.q.name == name)[0]
@@ -289,8 +292,8 @@ class BugWatch(SQLBase):
     _table = 'BugWatch'
     _columns = [
         ForeignKey(name='bug', dbName='bug', foreignKey='Bug', notNull=True),
-        ForeignKey(name='bugsystem', dbName='bugsystem',
-                foreignKey='BugSystem', notNull=True),
+        ForeignKey(name='bugtracker', dbName='bugtracker',
+                foreignKey='BugTracker', notNull=True),
         StringCol('remotebug', notNull=True),
         # TODO: Default should be NULL, but column is NOT NULL
         StringCol('remotestatus', notNull=True, default=''),

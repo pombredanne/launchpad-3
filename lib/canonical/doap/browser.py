@@ -11,7 +11,8 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
 
-from canonical.launchpad.database import Project, Product, SourceSource
+from canonical.launchpad.database import Project, Product, SourceSource, \
+        ProjectBugTracker
 from canonical.database.constants import nowUTC
 
 from zope.i18nmessageid import MessageIDFactory

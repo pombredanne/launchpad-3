@@ -25,7 +25,7 @@ VALUES ('Dave Miller', 'David', 'Miller');
 INSERT INTO EmailAddress (email, person, status)
 VALUES ('justdave@bugzilla.org', currval('Person_id_seq'), 2);
 
-INSERT INTO BugSystemType (name, title, description, homepage, owner)
+INSERT INTO BugTrackerType (name, title, description, homepage, owner)
 VALUES ('bugzilla', 'BugZilla',
         'Dave Miller\'s Labour of Love, the Godfather of Open Source project issue tracking.',
         'http://www.bugzilla.org/', currval('Person_id_seq'));
@@ -98,7 +98,7 @@ VALUES ('Colin Watson', 'Colin', 'Watson');
 INSERT INTO EmailAddress (email, person, status)
 VALUES ('colin.watson@canonical.com', currval('Person_id_seq'), 2);
 
-INSERT INTO BugSystemType (name, title, description, homepage, owner)
+INSERT INTO BugTrackerType (name, title, description, homepage, owner)
 VALUES ('debbugs', 'DebBugs',
         'The Debian bug tracking system, ugly as sin but fast and productive as a rabbit in high heels.',
         'http://bugs.debian.org/', currval('Person_id_seq'));
@@ -115,7 +115,7 @@ VALUES ('Steve Alexander', 'Steve', 'Alexander' );
 INSERT INTO EmailAddress (email, person, status)
 VALUES ('steve.alexander@canonical.com', currval('Person_id_seq'), 2 );
 
-INSERT INTO BugSystemType (name, title, description, homepage, owner)
+INSERT INTO BugTrackerType (name, title, description, homepage, owner)
 VALUES ('roundup', 'Round-Up',
         'Python-based open source bug tracking system with an elegant design and reputation for cleanliness and usability.',
         'http://www.roundup.org/', currval('Person_id_seq'));

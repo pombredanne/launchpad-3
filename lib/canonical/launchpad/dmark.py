@@ -235,6 +235,14 @@ class Project(SQLBase):
     products = MultipleJoin('Product', joinColumn='project')
     _productsJoin = MultipleJoin('Product', joinColumn='project')
 
+    _bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
+                                           otherColumn='bugtracker',
+                                           intermediateTable='ProjectBugTracker')
+
+    def bugtrackers(self):
+        for bugtracker in self._bugtrackers:
+            yield bugtracker
+
     def rosettaProducts(self):
         return iter(self._productsJoin)
 

@@ -18,18 +18,19 @@ from canonical.launchpad.interfaces import *
 
 class ProjectBugTracker(SQLBase):
     """Implements the IProjectBugTracker interface, for access to the
-    ProjectBugSystem (XXX Tracker) table."""
+    ProjectBugTracker table."""
     implements(IProjectBugTracker)
 
-    _table = 'BugSystem'
+    _table = 'ProjectBugTracker'
 
     _columns = [
         ForeignKey(
-                name='project', foreignKey="Project", dbName="project",
-                notNull=True
+                name='project', foreignKey="Project",
+                dbName="project", notNull=True
                 ),
         ForeignKey(
-                name='bugtracker', foreignKey="BugTracker", dbName="owner",
+                name='bugtracker', foreignKey="BugTracker",
+                dbName="bugtracker",
                 notNull=True
                 ),
                 ]

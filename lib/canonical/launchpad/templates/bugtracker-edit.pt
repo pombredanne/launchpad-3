@@ -16,7 +16,7 @@
 
    <tal:dummy condition="view/edit" />
 
-    <h1>Edit: <span tal:content="context/title">$BugSystem.title</span></h1>
+    <h1>Edit: <span tal:content="context/title">$BugTracker.title</span></h1>
 
     <div class="documentDescription">
     Please update the bug tracking system details below.

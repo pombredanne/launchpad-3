@@ -51,6 +51,16 @@
     <div>
 	<a href="+newproduct">Add a product</a>
 	</div>
+    <h2>Bug Trackers</h2>
+
+    <p>This project has the following bug trackers:</p>
+
+    <div>
+	<ul tal:repeat="bugtracker context/bugtrackers">
+        <li><span tal:content="bugtracker/name">$BugTracker.name</span></li>
+    </ul>
+    [ <a href="+newbugtracker">Register New Project Bug Tracker</a> ]
+    </div>
 
 </div>
 

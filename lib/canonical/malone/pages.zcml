@@ -78,37 +78,37 @@
             lp:url="malone/projects/$Project.name/index" />
     </pages>
 
-    <pages for="canonical.launchpad.interfaces.IBugSystemSet"
+    <pages for="canonical.launchpad.interfaces.IBugTrackerSet"
         permission="zope.Public">
         <page name="+index"
-            template="../launchpad/templates/bugsystems-index.pt"
-            lp:url="malone/bugsystems/" />
+            template="../launchpad/templates/bugtrackers-index.pt"
+            lp:url="malone/bugtrackers/" />
     </pages>
 
-    <pages for="canonical.launchpad.interfaces.IBugSystemSet"
+    <pages for="canonical.launchpad.interfaces.IBugTrackerSet"
         permission="launchpad.AnyPerson"
-        class="canonical.malone.browser.BugSystemSetView">
+        class="canonical.malone.browser.BugTrackerSetView">
         <page name="+newbugtracker"
-            template="../launchpad/templates/bugsystem-new.pt"
-            lp:url="malone/bugsystems/+new" />
+            template="../launchpad/templates/bugtracker-new.pt"
+            lp:url="malone/bugtrackers/+new" />
     </pages>
 
-    <traverse for="canonical.launchpad.interfaces.IBugSystemSet"
+    <traverse for="canonical.launchpad.interfaces.IBugTrackerSet"
         getter="__getitem__" />
 
-    <pages for="canonical.launchpad.interfaces.IBugSystem"
+    <pages for="canonical.launchpad.interfaces.IBugTracker"
         permission="zope.Public">
         <page name="+index"
-            template="../launchpad/templates/bugsystem-index.pt"
-            lp:url="malone/bugsystems/$BugSystem.name/" />
+            template="../launchpad/templates/bugtracker-index.pt"
+            lp:url="malone/bugtrackers/$BugTracker.name/" />
     </pages>
 
-    <pages for="canonical.launchpad.database.BugSystem"
+    <pages for="canonical.launchpad.database.BugTracker"
         permission="launchpad.AnyPerson"
-        class="canonical.malone.browser.BugSystemView">
+        class="canonical.malone.browser.BugTrackerView">
         <page name="+edit"
-            template="../launchpad/templates/bugsystem-edit.pt"
-            lp:url="malone/bugsystems/$BugSystem.name/+edit" />
+            template="../launchpad/templates/bugtracker-edit.pt"
+            lp:url="malone/bugtrackers/$BugTracker.name/+edit" />
     </pages>
 
     <pages for="canonical.launchpad.interfaces.ISourcepackageContainer"

@@ -41,16 +41,16 @@
   
   <browser:suburl
       for="canonical.malone.IMaloneApplication"
-      utility="canonical.launchpad.interfaces.IBugSystemSet"
+      utility="canonical.launchpad.interfaces.IBugTrackerSet"
       permission="zope.Public"
-      name="bugsystems" />
+      name="bugtrackers" />
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugSystemSet"
+      for="canonical.launchpad.interfaces.IBugTrackerSet"
       name="+index" />
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugSystem"
+      for="canonical.launchpad.interfaces.IBugTracker"
       name="+index" />
 
   <browser:defaultView

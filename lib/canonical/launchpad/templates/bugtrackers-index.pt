@@ -18,9 +18,9 @@
     <tr>
       <th>Bug System</th>
     </tr>
-    <tr tal:repeat="bugsystem context" tal:attributes="onclick
-        string:window.location='${bugsystem/name}';">
-      <td tal:content="bugsystem/name">$BugSystem.name</td>
+    <tr tal:repeat="bugtracker context" tal:attributes="onclick
+        string:window.location='${bugtracker/name}';">
+      <td tal:content="bugtracker/name">$BugTracker.name</td>
     </tr>
   </table>
 

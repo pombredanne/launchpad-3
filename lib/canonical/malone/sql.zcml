@@ -20,13 +20,13 @@
         <allow interface="canonical.launchpad.interfaces.IBugContainer" />
     </content>
 
-    <content class="canonical.launchpad.database.BugSystemSet">
-        <allow interface="canonical.launchpad.interfaces.IBugSystemSet" />
+    <content class="canonical.launchpad.database.BugTrackerSet">
+        <allow interface="canonical.launchpad.interfaces.IBugTrackerSet" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.BugSystemSet"
-        provides="canonical.launchpad.interfaces.IBugSystemSet" />
+        factory="canonical.launchpad.database.BugTrackerSet"
+        provides="canonical.launchpad.interfaces.IBugTrackerSet" />
     
     <utility
         factory=".browser.BugContainer"

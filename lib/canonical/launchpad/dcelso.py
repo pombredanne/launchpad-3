@@ -28,7 +28,7 @@ from canonical.launchpad.interfaces import * # XXX STEVEA SUCKS
 from canonical.lp import dbschema
 from canonical.launchpad.interfaces import IBug, IBugAttachment, IBugActivity, \
     IBugExternalRef, IBugMessage, IBugSubscription, IProductBugAssignment, \
-    ISourcepackageBugAssignment, IBugSystemType, IBugWatch
+    ISourcepackageBugAssignment, IBugTrackerType, IBugWatch
 
 def is_allowed_filename(value):
     if '/' in value: # Path seperator

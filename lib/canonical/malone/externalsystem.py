@@ -2,19 +2,19 @@
 
 import urllib
 from xml.dom import minidom
-from canonical.launchpad.database import BugSystem, BugSystemType
+from canonical.launchpad.database import BugTracker, BugTrackerType
 
-class UnknownBugSystemTypeError(Exception):
+class UnknownBugTrackerTypeError(Exception):
     """
     Exception class to catch systems we don't have a class for yet
     """
 
-    def __init__(self, bugsystemtypename, bugsystemname):
-        self.bugsystemtypename = bugsystemtypename
-        self.bugsystemname = bugsystemname
+    def __init__(self, bugtrackertypename, bugtrackername):
+        self.bugtrackertypename = bugtrackertypename
+        self.bugtrackername = bugtrackername
 
     def __str__(self):
-        return self.bugsystemtypename
+        return self.bugtrackertypename
 
 class ExternalSystem(object):
     """
@@ -23,12 +23,12 @@ class ExternalSystem(object):
     we know about,
     """
 
-    def __init__(self, bugsystem):
-        self.bugsystem = bugsystem
-        self.bugsystemtype = bugsystem.bugsystemtype
+    def __init__(self, bugtracker):
+        self.bugtracker = bugtracker
+        self.bugtrackertype = bugtracker.bugtrackertype
         self.remotesystem = None
-        if self.bugsystemtype.name == 'Bugzilla':
-            self.remotesystem = Bugzilla(self.bugsystem.baseurl)
+        if self.bugtrackertype.name == 'Bugzilla':
+            self.remotesystem = Bugzilla(self.bugtracker.baseurl)
         if not self.remotesystem:
             raise NotImplementedError()
 

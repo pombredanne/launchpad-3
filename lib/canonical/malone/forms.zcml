@@ -180,10 +180,10 @@
         schema="canonical.launchpad.interfaces.IBugWatch"
         for=".browser.IBugWatchContainer"
         label="Add Watch"
-        fields="bugsystem remotebug"
+        fields="bugtracker remotebug"
         content_factory=".browser.BugWatchFactory"
         arguments=""
-        keyword_arguments="bugsystem remotebug"
+        keyword_arguments="bugtracker remotebug"
         permission="launchpad.AnyPerson"
         template="../launchpad/templates/default-addform.pt"
         lp:url="malone/bugs/$Bugs.id/watches/+new" />
@@ -194,7 +194,7 @@
         label="Change Bug Watch"
         permission="launchpad.AnyPerson"
         template="../launchpad/templates/default-editform.pt"
-        fields="bugsystem remotebug"
+        fields="bugtracker remotebug"
         lp:url="malone/bugs/$Bug.id/watches/$Watch.id/+edit" />
 
     <addform

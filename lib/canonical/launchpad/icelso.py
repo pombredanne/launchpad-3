@@ -364,7 +364,7 @@ class IBugInfestation(Interface):
     lastmodified = Datetime(title=_('Last Modified'))
     lastmodifiedby = Int(title=_('Last Modified By'))
 
-class IBugSystemType(Interface):
+class IBugTrackerType(Interface):
     """A type of supported remote bug system, eg Bugzilla."""
 
     id = Int(title=_('ID'))
@@ -374,11 +374,11 @@ class IBugSystemType(Interface):
     homepage = TextLine(title=_('Homepage'))
     owner = Int(title=_('Owner'))
 
-class IBugSystem(Interface):
+class IBugTracker(Interface):
     """A remote a bug system."""
 
     id = Int(title=_('ID'))
-    bugsystemtype = Int(title=_('Bug System Type'))
+    bugtrackertype = Int(title=_('Bug System Type'))
     name = TextLine(title=_('Name'))
     title = TextLine(title=_('Title'))
     shortdesc = Text(title=_('Short Description'))
@@ -391,8 +391,8 @@ class IBugWatch(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    bugsystem = Choice(title=_('Bug System'), required=True,
-            vocabulary='BugSystem')
+    bugtracker = Choice(title=_('Bug System'), required=True,
+            vocabulary='BugTracker')
     remotebug = TextLine(title=_('Remote Bug'), required=True, readonly=False)
     # TODO: default should be NULL, but column is NOT NULL
     remotestatus = TextLine(

@@ -3,22 +3,22 @@
 Cron job to run daily to check all of the BugWatches
 """
 
-from canonical.launchpad.database import BugWatch, BugSystem
+from canonical.launchpad.database import BugWatch, BugTracker
 from externalsystem import ExternalSystem
 
 # This script probably doesn't work yet, it'll get cleaned up
 # after I get it tagged over to my desktop machine again. --dave
 
 def check_one_watch(watch):
-    bugsystem = watch.bugsystem
+    bugtracker = watch.bugtracker
     try:
-        remotesystem = ExternalSystem(bugsystem)
+        remotesystem = ExternalSystem(bugtracker)
     # XXX this name doesn't exist anywhere
-    except UnknownBugSystemTypeError, val:
-        print "*** WARNING: Bugsystem Type '%s' is not known" % (
-            val.bugsystemtypename, )
+    except UnknownBugTrackerTypeError, val:
+        print "*** WARNING: BugTrackerType '%s' is not known" % (
+            val.bugtrackertypename, )
         print "    Skipping %s bug %s watch on bug %s" % (
-            val.bugsystemname, watch.remotebug, watch.bug)
+            val.bugtrackername, watch.remotebug, watch.bug)
     else:
         remotestatus = remotesystem.get_bug_status(watch.remotebug)
         if remotestatus != watch.remotestatus:

@@ -7,10 +7,10 @@
 # at your fingertips, connected to launchpad_test
 #
 import sys
-sys.path.append('../../../sourcecode/zope/src/')
-sys.path.append('../../../sourcecode/sqlobject/')
-# this should get you launchpad's lib directory on the path
-sys.path.append('../../')
+sys.path.append('../sourcecode/zope/src/')
+sys.path.append('../sourcecode/sqlobject/')
+sys.path.append('../..')
+sys.path.append('..')
 
 #
 # setup connection to the db

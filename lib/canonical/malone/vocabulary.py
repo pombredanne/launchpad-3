@@ -9,7 +9,7 @@ from zope.schema.vocabulary import SimpleTerm
 from canonical.launchpad.database import Person
 from canonical.launchpad.database import Sourcepackage, Binarypackage
 from canonical.launchpad.database import Product
-from canonical.launchpad.database import BugSystem
+from canonical.launchpad.database import BugTracker
 
 __metaclass__ = type
 
@@ -88,8 +88,8 @@ class BinarypackageVocabulary(TitledTableVocabulary):
     def getTermByToken(self, token):
         return self.getTerm(token)
 
-class BugSystemVocabulary(TitledTableVocabulary):
-    _table = BugSystem
+class BugTrackerVocabulary(TitledTableVocabulary):
+    _table = BugTracker
 
 class PersonVocabulary(TitledTableVocabulary):
     _table = Person
