@@ -6,7 +6,7 @@ from email.Utils import make_msgid
 from zope.interface import implements
 
 # SQL imports
-from sqlos import SQLOS
+from canonical.arch.sqlbase import SQLBase
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 
@@ -32,7 +32,7 @@ class BugContainerBase(object):
         return '.'
 
 
-class Bug(SQLOS):
+class Bug(SQLBase):
     """A bug."""
 
     implements(IBug, IUsesAddForm)
@@ -118,7 +118,7 @@ class BugContainer(BugContainerBase):
             yield row
 
 
-class BugAttachment(SQLOS, BugContainerBase):
+class BugAttachment(SQLBase, BugContainerBase):
     """A bug attachment."""
 
     implements(IBugAttachment)
@@ -160,7 +160,7 @@ class BugAttachmentContainer(BugContainerBase):
             yield row
 
 
-class BugAttachmentContent(SQLOS):
+class BugAttachmentContent(SQLBase):
     """The actual content of a bug attachment (versioned)."""
 
     implements(IBugAttachmentContent)
@@ -193,7 +193,7 @@ def BugAttachmentContentFactory(context, **kw):
             )
 
 
-class BugActivity(SQLOS):
+class BugActivity(SQLBase):
     """Bug activity log entry."""
 
     implements(IBugActivity)
@@ -213,7 +213,7 @@ class BugActivity(SQLOS):
     ]
 
 
-class BugExternalRef(SQLOS):
+class BugExternalRef(SQLBase):
     """An external reference for a bug, not supported remote bug systems."""
 
     implements(IBugExternalRef)
@@ -273,7 +273,7 @@ class BugExternalRefContainer(BugContainerBase):
             yield row
 
 
-class BugMessage(SQLOS):
+class BugMessage(SQLBase):
     """A message for a bug."""
 
     implements(IBugMessage)
@@ -311,7 +311,7 @@ def PersonFactory(context, **kw):
                     **kw)
     return person
 
-class Person(SQLOS):
+class Person(SQLBase):
     """A Person."""
 
     implements(IPerson)
@@ -328,7 +328,7 @@ class Person(SQLOS):
     ]
 
 
-class BugSubscription(SQLOS):
+class BugSubscription(SQLBase):
     """A relationship between a person and a bug."""
 
     implements(IBugSubscription)
@@ -381,7 +381,7 @@ def ProductBugAssignmentFactory(context, **kw):
     pba = ProductBugAssignment(bug=context.context.id, **kw)
     return pba
 
-class ProductBugAssignment(SQLOS):
+class ProductBugAssignment(SQLBase):
     """A relationship between a Product and a Bug."""
 
     implements(IProductBugAssignment)
@@ -402,7 +402,7 @@ def SourcepackageBugAssignmentFactory(context, **kw):
                                     **kw)
     return sa
 
-class SourcepackageBugAssignment(SQLOS):
+class SourcepackageBugAssignment(SQLBase):
     """A relationship between a Sourcepackage and a Bug."""
 
     implements(ISourcepackageBugAssignment)
@@ -418,7 +418,7 @@ class SourcepackageBugAssignment(SQLOS):
         IntCol('binarypackage')
     ]
 
-class Product(SQLOS):
+class Product(SQLBase):
     """A Product."""
 
     implements(IProduct)
@@ -446,7 +446,7 @@ class Product(SQLOS):
 
     bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
 
-class Sourcepackage(SQLOS):
+class Sourcepackage(SQLBase):
     """A Sourcepackage."""
 
     implements(ISourcepackage)
@@ -459,7 +459,7 @@ class Sourcepackage(SQLOS):
         IntCol('manifest')
     ]
 
-class Project(SQLOS):
+class Project(SQLBase):
     """A Project"""
 
     implements(IProject)
