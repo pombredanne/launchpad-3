@@ -8,17 +8,18 @@ this is initial data for launchpad. unlike the sample data, this will be loaded 
 */
 
 -- Person
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Mark Shuttleworth', 'Mark', 'Shuttleworth' );     -- 1
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Dave Miller', 'David', 'Miller' );                -- 2
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Colin Watson', 'Colin', 'Watson' );               -- 3
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Scott James Remnant', 'Scott James', 'Remnant' ); -- 5
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Robert Collins', 'Robert', 'Collins' );           -- 6
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Jeff Waugh', 'Jeff', 'Waugh' );                   -- 7
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Andrew Bennetts', 'Andrew', 'Bennetts' );                   -- 8
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'James Blackwell', 'James', 'Blackwell' );                   -- 9
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Christian Reis', 'Christian', 'Reis' );                   -- 10
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Alexander Limi', 'Alexander', 'Limi' );                   -- 11
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );                   -- 11
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Mark Shuttleworth', 'Mark', 'Shuttleworth' );       -- 1
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Dave Miller', 'David', 'Miller' );                  -- 2
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Colin Watson', 'Colin', 'Watson' );                 -- 3
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Scott James Remnant', 'Scott James', 'Remnant' );   -- 4
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Robert Collins', 'Robert', 'Collins' );             -- 5
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Jeff Waugh', 'Jeff', 'Waugh' );                     -- 6
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Andrew Bennetts', 'Andrew', 'Bennetts' );           -- 7
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'James Blackwell', 'James', 'Blackwell' );           -- 8
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Christian Reis', 'Christian', 'Reis' );             -- 9
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Alexander Limi', 'Alexander', 'Limi' );             -- 10
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );           -- 11
+INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín' ); -- 12
 
 
 ---
@@ -31,10 +32,11 @@ INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'marks@thawte.com', 
 INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'markshuttle@yahoo.co.uk', 1, 1 );
 INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'justdave@bugzilla.org', 2, 2 );
 INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'colin.watson@canonical.com', 3, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'steve.alexander@canonical.com', 4, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'scott@netsplit.com', 5, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'robertc@cygwin.com', 6, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'robert.collins@canonical.com', 6, 2 );
+INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'steve.alexander@canonical.com', 11, 2 );
+INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'scott@netsplit.com', 4, 2 );
+INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'robertc@cygwin.com', 5, 2 );
+INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'robert.collins@canonical.com', 5, 2 );
+INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'carlos@interactors.coop', 12, 2 );
 
 
 -- BugSystemType
@@ -61,6 +63,7 @@ INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VA
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'glib', 'Glib', 'Glib is one of the core Gnome libraries, used by most Gnome applications.', 'http://www.gnome.org/' );
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'gtk+', 'Gnome Toolkit GTK+', 'The GTK+ libaries are the foundation of Gnome application look and feel. They allow for strongly themed applications, hundreds of themes are available.', 'http://www.gnome.org/' );
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'themes', 'Gnome Themes', 'This package of standard themes is usually available on any Gnome installation.', 'http://themes.gnome.org/' );
+INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'evolution', 'Evolution', 'The Evolution groupware client', 'http://www.novell.com/products/evolution/');
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'app-suite', 'Mozilla App Suite', 'The Mozilla application suite is the modern-day descendent of the Netscape browser that launched a thousand dot-com ships. The browser code was open sourced and is now driven by The Mozilla Foundation. The Mozilla App Suite includes a mail reader, web browser, news reader, web page editor and an addressbook.', 'http:///www.mozilla.org/' );
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'firefox', 'Mozilla Firefox', 'Firefox is a web browser derived from the Mozilla App Suite. It is designed to be smaller and faster than app-suite since it includes just the web browser, but it comes with the same world-beating standards support and speed.', 'http://www.mozilla.org/' );
 INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'thunderbird', 'Mozilla Thunderbird', 'Thunderbird is email software derived from Mozilla App Suite in the same way that Firefox is. Thunderbird supports excellent spam filtering and has hundreds of extensions for such things as encryption, mouse gestures and offline work.', 'http://www.mozilla.org/' );
@@ -105,6 +108,10 @@ INSERT INTO Sourcepackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE presentationname = 'Alexander Limi'),
          'plone', 'Plone', 
          'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Jeff Waugh'),
+        'evolution', 'Evolution', 
+        'text');
 
 
 --SourcepackageRelease
@@ -261,28 +268,35 @@ VALUES ('kiwi2', 'Kiwi2', 'text', false);
 INSERT INTO ArchArchive (name, title, description, visible)
 VALUES ('plone', 'Plone', 'text', false);
 
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('gnome', 'GNOME', 'The GNOME Project', false);
+
+
 --Archnamespace
-INSERT INTO Archnamespace (archarchive, category,visible) 
+INSERT INTO Archnamespace (archarchive, category, visible) 
 VALUES (1, 'mozilla', true);
 
-INSERT INTO Archnamespace (archarchive, category,visible) 
+INSERT INTO Archnamespace (archarchive, category, visible) 
 VALUES (2, 'tunderbird', true);
 
-INSERT INTO Archnamespace (archarchive, category,visible) 
+INSERT INTO Archnamespace (archarchive, category, visible) 
 VALUES (3, 'twisted', true);
 
-INSERT INTO Archnamespace (archarchive, category,visible) 
+INSERT INTO Archnamespace (archarchive, category, visible) 
 VALUES (4, 'bugzila', true);
 
-INSERT INTO Archnamespace (archarchive, category,visible) 
+INSERT INTO Archnamespace (archarchive, category, visible) 
 VALUES (5, 'arch', true);
 
-INSERT INTO Archnamespace (archarchive, category,visible) 
+INSERT INTO Archnamespace (archarchive, category, visible) 
 VALUES (6, 'kiwi2', true);
 
-INSERT INTO Archnamespace (archarchive, category,visible) 
+INSERT INTO Archnamespace (archarchive, category, visible) 
 VALUES (7, 'plone', true);
 
+INSERT INTO ArchNamespace (archarchive, category, branch, version, visible)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'gnome'), 'gnome', 'evolution',
+	'1.5.90', false);
 
 --Branch
 INSERT INTO Branch (archnamespace, title, description, owner)
@@ -318,7 +332,15 @@ VALUES ((SELECT id FROM ArchArchive WHERE name = 'kiwi2'),
 INSERT INTO Branch (archnamespace, title, description, owner)
 VALUES ((SELECT id FROM ArchArchive WHERE name = 'plone'),
         'Plone 0.9.1', 'text',
- (SELECT id FROM Person WHERE presentationname = 'Alexander Limi')); 
+ (SELECT id FROM Person WHERE presentationname = 'Alexander Limi'));
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchNamespace
+	 WHERE category = 'gnome' AND
+	       branch = 'evolution' AND
+	       version = '1.5.90'),
+	'Evolution 1.5.90', 'text',
+	(SELECT id FROM Person WHERE presentationname = 'Jeff Waugh'));
 
 
 /*
