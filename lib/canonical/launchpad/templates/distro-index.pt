@@ -79,7 +79,7 @@
    tal:content="context/distribution/title"/></h4></legend>
     <tr>
       <th>Name</th>
-
+      <th>Short Description</th>
       <th>Description</th>
       <th>Version</th>
       <th>Packages</th>
@@ -93,6 +93,7 @@
 	   tal:attributes="href string:releases/${release/name}">
 	   distribution name</a>
       </td>
+      <td tal:content="release/shortdesc">SHORT DESCRIPTION</td>
       <td tal:content="release/description">DESCRIPTION</td>
       <td tal:content="release/version">VERSION</td>
       <td>

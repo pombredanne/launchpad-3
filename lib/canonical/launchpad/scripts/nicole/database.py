@@ -192,8 +192,7 @@ class Doap(SQLThing):
             ## We don't support multiple owners, so, use the first
             name = name.split(',')[0]
             email = email.split(',')[0]            
-            self.ensurePerson(name, email)
-            owner = self.getPersonByEmail(email)[0]
+            owner = self.ensurePerson(name, email)[0]
         except:
             print '@ Exception on Owner Field !!! '
 	    try: 
@@ -202,6 +201,7 @@ class Doap(SQLThing):
 	    except:
 		print '@\tDEBUG: No Devel'
 
+            ## in case of 
 	    owner = 1
                 
         ## both have project
@@ -256,9 +256,9 @@ class Doap(SQLThing):
         ## wtf is it ? verify dbschema
         role = 2
         dbdata = {"person": owner,
-                "project": project,
-                "role": role,            
-                }
+                  "project": project,
+                  "role": role,            
+                  }
         
         self._insert("projectrole", dbdata)
         print '@\tProject Role %s Created' % role
@@ -292,8 +292,7 @@ class Doap(SQLThing):
             ## We don't support multiple owners, so, use the first
             name = name.split(',')[0]
             email = email.split(',')[0]            
-            self.ensurePerson(name, email)
-            owner = self.getPersonByEmail(email)[0]
+            owner = self.ensurePerson(name, email)[0]
         except:
             print '@\tException on Owner Field !!! '
             print '@\tDEBUG:', name
@@ -381,11 +380,57 @@ class Doap(SQLThing):
         role = 2 
 
         dbdata = { "person":  owner,
-                 "product": product,
-                 "role": role,
-                 }        
+                   "product": product,
+                   "role": role,
+                   }
+        
         self._insert("productrole", dbdata)
         print '@\tProduct Role %s Created' % role
+
+        ## productseries
+
+        ##XXX: (series+name) cprov 20041012
+        ## Hardcoded Product Series Name as "head"
+        name = 'head'
+        ##XXX: (series+diaplyname) cprov 20041012
+        ## Displayname composed by projectname-serie as
+        ## apache-1.2 or Mozilla-head
+        displayname = displayname + '-' + name
+        
+        dbdata = {"product":     product,
+                  "name":        name,
+                  "shortdesc":   shortdesc,
+                  "displayname": displayname,
+                  }
+
+        self._insert("productseries", dbdata)
+        print '@\tProduct Series %s Created' % displayname
+
+        ## productreleases
+        ## XXX: (productrelease+version) cprov 20041013
+        ## where does it comes from ?? using hardcoded
+        version = '1.0'
+
+        ## XXX: (productrelease+changelog) cprov 20041013
+        ## How to compose the changelog field ?
+        changelog = 'Created by Nicole Script'
+        ## XXX:  (productrelease+datereleased) cprov 20041013
+        ## Datereleased should be acquired from data, let's insert
+        ## now as quick&dirty strategy
+        datereleased = 'now()'
+        
+        dbdata = {"product":       product,
+                  "datereleased":  datereleased,
+                  "version":       version,
+                  "title":         title,
+                  "description":   description,
+                  "changelog":     changelog, 
+                  "owner":         owner,
+                  }
+
+        self._insert("productrelease", dbdata)
+        print '@\tProduct Release %s Created' % title
+
 
         ## product/source packaging
         sourcepackage = self.getSourcePackage(source)
@@ -405,4 +450,8 @@ class Doap(SQLThing):
                    }
 
         self._insert("packaging", dbdata)
-        print '@\tPackaging Created'  
+        print '@\tPackaging Created' 
+
+
+        
+        

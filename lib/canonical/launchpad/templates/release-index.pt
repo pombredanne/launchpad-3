@@ -21,6 +21,22 @@
    <table width="100%" border="0">
    <tr><td>
       <table width="100%">
+      <legend><h4>Short Description</h4></legend>
+      <tr><td>
+        <fieldset>
+        <div>
+	  <table>
+	  <tr><td>
+	  <span tal:content="context/release/shortdesc">short description
+          </span></td></tr>	  
+	  </table>	
+	</div>
+        </fieldset>
+      </td></tr>
+      </table>	
+   </td></tr>
+   <tr><td>
+      <table width="100%">
       <legend><h4>Description</h4></legend>
       <tr><td>
         <fieldset>
@@ -35,6 +51,7 @@
 	  </td></tr>
 	  </table>
 	</div>
+        </fieldset>
       </td></tr>
       </table>
    </td><td>

@@ -51,6 +51,17 @@
 	</td></tr>
 	<tr><td>
 	<div class="field">
+	    <label>Short Description</label>
+	    <div class="formHelp">
+	    Enter the Release Short Description.
+            </div>
+            <textarea name="shortdesc" cols="60" rows="2"
+	    tal:content="context/release/shortdesc|nothing">
+	    </textarea>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
 	    <label>Description</label>
 	    <div class="formHelp">
 	    Enter the Release Description.

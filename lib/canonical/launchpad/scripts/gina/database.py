@@ -217,18 +217,18 @@ class Launchpad(SQLThing):
             "changelog":               changelog,
             "dsc":                     dsc,
             "dscsigningkey":           key,
-            "section": section,
+            "section":                 section,
         }                                                          
         self._insert("sourcepackagerelease", data)
 
         release = self.getSourcePackageRelease(src.package, src.version)[0]
-        # 1 - Pending
+
         data = {
             "distrorelease":           1,
             "sourcepackagerelease":    release[0],
-            "status":            1, # Pending
-            "component": component,
-            "section": section,
+            "status":                  4,
+            "component":               component,
+            "section":                 1, # XXX
         }
         self._insert("sourcepackagepublishing", data)
 
@@ -359,7 +359,13 @@ class Launchpad(SQLThing):
            "component":         component, 
            "section":           section,
            "priority":          prioritymap[bin.priority],
-           "distroarchrelease": map_arch(bin.filename), # XXX: Always returns 1 for x86 until we import multi-arch
+           # XXX: Always returns 1 for x86 until we import multi-arch
+           "distroarchrelease": map_arch(bin.filename), 
+           "status": 1,
+           "section":           section,
+           "priority":          prioritymap[bin.priority],
+           # XXX: Always returns 1 for x86 until we import multi-arch
+           "distroarchrelease": map_arch(bin.filename), 
            "status": 1,
         }
         self._insert("packagepublishing", data)

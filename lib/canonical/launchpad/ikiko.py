@@ -347,6 +347,8 @@ class IRelease(Interface):
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     displayname = Attribute("Distrorelease Displayname")
+    shortdesc = Attribute("Distrorelease Short Description")
+    lucilleconfig = Attribute("Lucille Configuration Field")
 
 ################################################################
  

@@ -132,6 +132,13 @@ if __name__ == "__main__":
         ## split the package name by '-' and use just the first part
         name = split(package, '-')[0]        
 
+        ## XXX (project+valid_name) cprov 20041013
+        ## for god sake !!! we should avoid names shorter than 3 (!!)
+        ## chars 
+        if len(name) < 3:
+            name = package.replace('-', '')
+            
+
         print '@ Proposed Project name %s'% name
 
         if not doap.getProject(name):
@@ -142,12 +149,16 @@ if __name__ == "__main__":
                 ##present_data(data_sf)            
                 sf +=1            
                 doap.ensureProject(data_sf)
+                ## Partially Commit DB info
+                doap.commit()
                 grab_for_product(data_sf, name, package)
                 
             elif data_fm and not data_sf:
                 ##present_data(data_fm)
                 fm += 1
                 doap.ensureProject(data_fm)
+                ## Partially Commit DB info
+                doap.commit()
                 grab_for_product(data_fm, name, package)
 
             elif data_sf and data_fm:
@@ -155,6 +166,8 @@ if __name__ == "__main__":
                 ##present_data(data_fm)
                 both += 1
                 doap.ensureProject(data_sf)
+                ## Partially Commit DB info
+                doap.commit()
                 grab_for_product(data_fm, name, package)    
 
             else:

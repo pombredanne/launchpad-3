@@ -130,6 +130,7 @@ class Release(SQLBase):
                    foreignKey='SoyuzDistribution', notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('title', dbName='title', notNull=True),
+        StringCol('shortdesc', dbName='shortdesc', notNull=True),
         StringCol('description', dbName='description', notNull=True),
         StringCol('version', dbName='version', notNull=True),
         ForeignKey(name='components', dbName='components', foreignKey='Schema',
@@ -141,7 +142,8 @@ class Release(SQLBase):
         ForeignKey(name='parentrelease', dbName='parentrelease',
                    foreignKey='Release', notNull=False),
         ForeignKey(name='owner', dbName='owner', foreignKey='Person',
-                   notNull=True)
+                   notNull=True),
+        StringCol('lucilleconfig', dbName='lucilleconfig', notNull=False)
     ]
 
     def displayname(self):

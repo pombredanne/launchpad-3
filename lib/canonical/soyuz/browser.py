@@ -431,6 +431,7 @@ class ReleasesAddView(object):
 
         name = self.request.get("name", "")
         title = self.request.get("title", "")
+        shortdesc = self.request.get("shortdesc", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
 
@@ -449,12 +450,13 @@ class ReleasesAddView(object):
             ## Parentrelease is hardcoded to "warty", should the users
             ## be able to select then now ??
             
-            self.results = Release(distribution=self.context.distribution.id,\
-                                   name=name, title=title, \
-                                   description=description,version=version,\
-                                   components=1, releasestate=1,sections=1,\
+            self.results = Release(distribution=self.context.distribution.id,
+                                   name=name, title=title,
+                                   shortdesc=shortdesc,
+                                   description=description,version=version,
+                                   components=1, releasestate=1,sections=1,
                                    datereleased='2004-08-15 10:00', owner=1,
-                                   parentrelease=1)
+                                   parentrelease=1, lucilleconfig='')
             ##XXX: (results) cprov 20041003
             ## again
             enable_added = True
@@ -505,6 +507,7 @@ class ReleaseEditView(object):
         enable_edited = False
         name = self.request.get("name", "")
         title = self.request.get("title", "")
+        shortdesc = self.request.get("shortdesc", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
 
@@ -512,6 +515,7 @@ class ReleaseEditView(object):
             ##XXX: (uniques) cprov 20041003
             self.context.release.name = name
             self.context.release.title = title
+            self.context.release.shortdesc = shortdesc
             self.context.release.description = description
             self.context.release.version = version
             ##XXX: (results) cprov 20041003

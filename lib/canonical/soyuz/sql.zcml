@@ -194,7 +194,7 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
     <require
      permission="zope.Public"
-     set_attributes="name title description version"
+     set_attributes="name title shortdesc description version"
      />
   </content>
   
@@ -203,7 +203,7 @@
     <allow interface="canonical.launchpad.interfaces.IRelease"/>
     <require
      permission="zope.Public"
-     set_attributes="distribution name title description version components sections releasestate datereleased owner"
+     set_attributes="distribution name title shortdesc description version components sections releasestate datereleased owner"
      />
   </content>
 
