@@ -66,28 +66,6 @@
 </pages>
 
 
-    <traverse
-        for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp" 
-        getter="__getitem__" />
-
-    <page
-        for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp"
-	    allowed_attributes="results"
-	    permission="zope.Public"
-	    name="index.html"
-        class="canonical.launchpad.browser.DistroReleaseBinariesView"
-        template="../launchpad/templates/binarypackage-list.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/index.html"
-	    />
-
-    <page
-        for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp"
-        permission="zope.Public"
-	    class="canonical.launchpad.browser.DistrosReleaseBinariesSearchView"
-	    template="../launchpad/templates/binarypackage-search.pt"
-        lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/+search"
-	    name="+search"
-        />
 
 
     <traverse

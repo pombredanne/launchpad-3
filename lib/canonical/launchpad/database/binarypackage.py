@@ -3,6 +3,7 @@ from sets import Set
 
 # Zope imports
 from zope.interface import implements
+from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
@@ -14,7 +15,7 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IBinaryPackage, \
-                                           IBinaryPackageSet, \
+                                           IBinaryPackageUtility, \
                                            IBinaryPackageName,\
                                            IBinaryPackageNameSet
 
@@ -110,10 +111,30 @@ class BinaryPackage(SQLBase):
 
     pkgpriority = property(_priority)
 
+
+
 class BinaryPackageSet(object):
+    
+
+    def __init__(self, distrorelease, arch):
+        self.distrorelease = distrorelease
+        self.arch = arch
+
+    def __getitem__(self, name):
+        binset = getUtility(IBinaryPackageUtility)
+        return binset.getByNameInDistroRelease(self.distrorelease.id,
+                                               name=name,
+                                               archtag=self.arch)[0]
+    
+    def __iter__(self):
+        binset = getUtility(IBinaryPackageUtility)
+        return iter(binset.getByNameInDistroRelease(self.distrorelease.id,
+                                                    archtag=self.arch))
+
+class BinaryPackageUtility(object):
     """The set of BinaryPackage objects."""
 
-    implements(IBinaryPackageSet)
+    implements(IBinaryPackageUtility)
 
     def query(self, name=None, distribution=None, distrorelease=None,
               distroarchrelease=None, text=None):
@@ -123,7 +144,8 @@ class BinaryPackageSet(object):
         clauseTables = Set(['BinaryPackage'])
         # XXX sabdfl this is not yet done 12/12/04
 
-    def getByNameInDistroRelease(self, distroreleaseID, name, version=None, archtag=None):
+    def getByNameInDistroRelease(self, distroreleaseID, name=None,
+                                 version=None, archtag=None):
         """Get an BinaryPackage in a DistroRelease by its name"""
 
         clauseTables = ('PackagePublishing', 'DistroArchRelease',
@@ -134,13 +156,21 @@ class BinaryPackageSet(object):
             'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
             'DistroArchRelease.distrorelease = %d AND '
             'BinaryPackage.binarypackagename = BinaryPackageName.id '
-            'AND BinaryPackageName.name = %s '
-            %(distroreleaseID, quote(name))
+            %(distroreleaseID)
             )
 
+        if name:
+            query += 'AND BinaryPackageName.name = %s '% (quote(name))
+
+        # Look for a specific binarypackage version or if version == None
+        # return the current one
         if version:
             query += ('AND BinaryPackage.version = %s '
                       %quote(version))
+        else:
+            query += ('AND PackagePublishing.status = %s'
+                      % dbschema.PackagePublishingStatus.PUBLISHED)
+
         if archtag:
             query += ('AND DistroArchRelease.architecturetag = %s '
                       %quote(archtag))
@@ -209,7 +239,6 @@ class BinaryPackageName(SQLBase):
             )
 
 class BinaryPackageNameSet:
-
     implements(IBinaryPackageNameSet)
 
     def query(self, name=None, distribution=None, distrorelease=None,

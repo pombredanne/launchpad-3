@@ -52,9 +52,12 @@ class IDistroRelease(Interface):
     def architecturecount():
         """Return the number of architectures in this release."""
 
-    def getSourceByName(name):
-        """Return the latest source package of this name uploaded to this
-        distro release."""
+#    def getSourceByName(name):
+#        """Return the latest source package of this name uploaded to this
+#        distro release."""
+
+    def __getitem__(arch):
+        """Return a Set of Binary Packages in this distroarchrelease."""
 
     def findSourcesByName(name):
         """Return an iterator over source packages with a name that matches

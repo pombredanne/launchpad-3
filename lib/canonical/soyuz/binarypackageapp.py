@@ -111,7 +111,8 @@ class DistroReleaseBinaryApp(object):
                 iteritems()]
 
     def lastversions(self):
-        return self.binarypackage.lastversions(self.release)
+        self.binarypackage.lastversions(self.release)
+        return self.binarypackage.lastversions(self.release) 
 
     lastversions = property(lastversions)
 

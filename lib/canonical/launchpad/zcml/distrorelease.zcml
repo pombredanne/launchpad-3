@@ -19,13 +19,13 @@
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistroRelease"
-        getter="getSourceByName" />
+        getter="__getitem__" />
 
 	<browser:page
-        for="canonical.launchpad.interfaces.IDistroRelease"
+            for="canonical.launchpad.interfaces.IDistroRelease"
 	    permission="zope.Public"
 	    name="+index"
-        template="../templates/release-index.pt"
+            template="../templates/release-index.pt"
 	    class="canonical.launchpad.browser.DistroReleaseView"
 	    lp:url="Soyuz/distros/$Distribution.name/$Release.name/+index"
 	    />

@@ -41,7 +41,7 @@ class IBinaryPackage(Interface):
     name = Attribute("Binary Package Name")
     pkgpriority = Attribute("Package Priority")
 
-    def currrent():
+    def current(distroRelease):
         """ xxx """
 
 class IBinaryPackageName(Interface):
@@ -80,8 +80,21 @@ class IPackagePublishing(Interface):
     distroarchrelease = Attribute("Distro Arch Relese")
     packages = Attribute("Set of Packages inside a DistroRelease")
 
+
+
 class IBinaryPackageSet(Interface):
-    """A set of binary packages"""
+    """A set of binary packages"""    
+    distrorelease = Attribute("DistroRelease")
+    arch = Attribute("Arch")
+
+    def __getitem__(name):
+        """Getter"""    
+
+    def __iter__():
+        """Iterator"""    
+
+class IBinaryPackageUtility(Interface):
+    """A binary packages utility"""
 
     def getByNameInDistroRelease(distroreleaseID, name):
         """Get an BinaryPackage in a DistroRelease by its name"""

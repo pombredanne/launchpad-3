@@ -36,9 +36,13 @@ class ISourcePackage(Interface):
     distro = Int(title=_("Distribution"), required=False)
     sourcepackagename = Int(title=_("SourcePackage Name"), required=True)
     bugs = Attribute("bugs")
+
     product = Attribute("Product, or None")
     proposed = Attribute("A source package release with upload status of "
                          "PROPOSED, else None")
+    def bugsCounter():
+        """A bug counter widget for sourcepackage"""
+
     def getBugSourcePackages(distrorelease):
         """Get SourcePackages in a DistroRelease with BugAssignement"""
         

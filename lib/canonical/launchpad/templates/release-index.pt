@@ -22,8 +22,6 @@
 
 <div tal:replace="structure view/detailsPortlet" />
 
-<tal:block tal:define="distro context/distribution">
-
  <div class="portlet">
   <h4>Local Links</h4>
    <div class="portletBody">
@@ -36,7 +34,6 @@
      </div>
    </div>  
  </div>
-</tal:block>
 
 </metal:leftportlets>
 
@@ -102,7 +99,7 @@
                 <input type="submit" value="Search"/>
                </div>
               </form>
-
+ 
               <table>
               <tr><td><a 
                 tal:attributes="href string:../../src/${context/name}?showall=1">
