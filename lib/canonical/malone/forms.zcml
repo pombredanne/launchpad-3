@@ -124,7 +124,7 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IProductBugAssignment"
         schema="canonical.launchpad.interfaces.IProductBugAssignment"
-        fields="bugstatus priority severity assignee"
+        fields="product bugstatus priority severity assignee"
         label="Edit Product Bug Assignment"
         permission="launchpad.AnyPerson"
         template="../launchpad/templates/default-editform.pt"
