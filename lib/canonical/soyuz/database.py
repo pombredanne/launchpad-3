@@ -11,7 +11,7 @@ from canonical.lp import dbschema
 # Soyuz interfaces
 from canonical.soyuz.interfaces import ISourcePackageRelease, IManifestEntry
 from canonical.soyuz.interfaces import IBranch, IChangeset
-from canonical.soyuz.interfaces import ISourcePackage, IPerson
+from canonical.soyuz.interfaces import ISourcePackage, ISoyuzPerson
 
 
 class Distribution(SQLBase):
@@ -22,7 +22,7 @@ class Distribution(SQLBase):
         StringCol('name', dbName='name', notNull=True),
         StringCol('title', dbName='title', notNull=True),
         StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner', 
+        ForeignKey(name='owner', foreignKey='SoyuzPerson', dbName='owner', 
                    notNull=True),
     ]
 
@@ -34,7 +34,7 @@ class SourcePackage(SQLBase):
 
     _table = 'SourcePackage'
     _columns = [
-        ForeignKey(name='maintainer', foreignKey='Person', dbName='maintainer',
+        ForeignKey(name='maintainer', foreignKey='SoyuzPerson', dbName='maintainer',
                    notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('title', dbName='title', notNull=True),
@@ -60,7 +60,7 @@ class SourcePackageRelease(SQLBase):
     _table = 'SourcePackageRelease'
     _columns = [
         StringCol('version', dbName='Version'),
-        ForeignKey(name='creator', foreignKey='Person', dbName='creator'),
+        ForeignKey(name='creator', foreignKey='SoyuzPerson', dbName='creator'),
         ForeignKey(name='sourcepackage', foreignKey='SourcePackage',
                    dbName='sourcepackage', notNull=True),
     ]
@@ -192,7 +192,7 @@ class SoyuzProduct(SQLBase):
     _columns = [
         ForeignKey(name='project', foreignKey='Project', dbName='project',
                    notNull=True),
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
+        ForeignKey(name='owner', foreignKey='SoyuzPerson', dbName='owner',
                    notNull=True),
         StringCol('name', dbName='name', notNull=True),
         # TODO: remove default on displayname and shortdesc
@@ -218,7 +218,7 @@ class SoyuzProject(SQLBase):
     _table = 'Project'
 
     _columns = [
-        ForeignKey(name='owner', foreignKey='Person', dbName='owner',
+        ForeignKey(name='owner', foreignKey='SoyuzPerson', dbName='owner',
                    notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('displayname', dbName='displayname', notNull=True,

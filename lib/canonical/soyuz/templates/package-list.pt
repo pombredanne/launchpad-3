@@ -39,7 +39,7 @@
       <td tal:content="release/version">
         version
       </td>
-      <td tal:content="package/maintainer/presentationname">
+      <td tal:content="package/maintainer/displayname">
         version
       </td>
       </tal:dummy>

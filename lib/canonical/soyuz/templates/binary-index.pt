@@ -14,19 +14,9 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:content="context/distribution/title" /> People Overview</h1>
+  <h1><span tal:content="context/distribution/title" /> Binary Package 
+	Overview</h1>
 
-  <tal:block tal:repeat="role context/role">
-
-    <h4><span tal:replace="role">ROLE</span></h4>
-    
-    <tal:block tal:repeat="people context/people">
-      <p><span tal:content="people">
-        PRESENTATIONNAME
-      </span>
-    </tal:block>
-
-  </tal:block>
 
   <table class="listing">
     <tr>

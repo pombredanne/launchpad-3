@@ -10,18 +10,17 @@ this is initial data for launchpad. unlike the sample data, this will be loaded 
 -- Person
 INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Mark Shuttleworth', 'Mark', 'Shuttleworth' );       -- 1
 INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Robert Collins', 'Robert', 'Collins' );             -- 2
-/*
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Dave Miller', 'David', 'Miller' );                  -- 2
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Colin Watson', 'Colin', 'Watson' );                 -- 3
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Scott James Remnant', 'Scott James', 'Remnant' );   -- 4
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Jeff Waugh', 'Jeff', 'Waugh' );                     -- 6
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Andrew Bennetts', 'Andrew', 'Bennetts' );           -- 7
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'James Blackwell', 'James', 'Blackwell' );           -- 8
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Christian Reis', 'Christian', 'Reis' );             -- 9
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Alexander Limi', 'Alexander', 'Limi' );             -- 10
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );           -- 11
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín' ); -- 12
-*/
+
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Dave Miller', 'David', 'Miller' );                  -- 2
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Colin Watson', 'Colin', 'Watson' );                 -- 3
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Scott James Remnant', 'Scott James', 'Remnant' );   -- 4
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Jeff Waugh', 'Jeff', 'Waugh' );                     -- 6
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Andrew Bennetts', 'Andrew', 'Bennetts' );           -- 7
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'James Blackwell', 'James', 'Blackwell' );           -- 8
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Christian Reis', 'Christian', 'Reis' );             -- 9
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Alexander Limi', 'Alexander', 'Limi' );             -- 10
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );           -- 11
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín' ); -- 12
 
 ---
 
@@ -51,40 +50,40 @@ INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, descr
 INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl ) VALUES ( 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real proejcts ASAP.', 'http://arch.ubuntu.com/' );
 INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl ) VALUES ( 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', 'http://arch.ubuntu.com/' );
 
-/*
+
 -- Sourcepackage
 INSERT INTO Sourcepackage (maintainer, name, title, description)
-VALUES ((SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'),
+VALUES ((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
          'mozilla-firefox', 'Ubuntu Mozilla Firefox', 
          'text');
 
 INSERT INTO Sourcepackage (maintainer, name, title, description)
-VALUES ((SELECT id FROM Person WHERE presentationname = 'Steve Alexander'),
+VALUES ((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
          'mozilla-thunderbird', 'Ubuntu Mozilla Thunderbird', 
          'text');
 
 INSERT INTO Sourcepackage (maintainer, name, title, description)
-VALUES ((SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts'),
+VALUES ((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
          'python-twisted', 'Python Twisted', 
          'text');
 INSERT INTO Sourcepackage (maintainer, name, title, description)
-VALUES ((SELECT id FROM Person WHERE presentationname = 'Dave Miller'),
+VALUES ((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
          'bugzilla', 'Bugzilla', 
          'text');
 INSERT INTO Sourcepackage (maintainer, name, title, description)
-VALUES ((SELECT id FROM Person WHERE presentationname = 'James Blackwell'),
+VALUES ((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
          'arch', 'Arch(TLA)', 
          'text');
 INSERT INTO Sourcepackage (maintainer, name, title, description)
-VALUES ((SELECT id FROM Person WHERE presentationname = 'Christian Reis'),
+VALUES ((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
          'kiwi2', 'Kiwi2', 
          'text');
 INSERT INTO Sourcepackage (maintainer, name, title, description)
-VALUES ((SELECT id FROM Person WHERE presentationname = 'Alexander Limi'),
+VALUES ((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
          'plone', 'Plone', 
          'text');
 INSERT INTO Sourcepackage (maintainer, name, title, description)
-VALUES ((SELECT id FROM Person WHERE presentationname = 'Jeff Waugh'),
+VALUES ((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
         'evolution', 'Evolution', 
         'text');
 
@@ -94,7 +93,7 @@ INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
 VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
  	1,
-        (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'),
+        (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.1-1',
         timestamp '2004-06-29 00:00',
         1);
@@ -103,7 +102,7 @@ INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
 VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-thunderbird'),
  	1,
-        (SELECT id FROM Person WHERE presentationname = 'Steve Alexander'),
+        (SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
         '0.9.1-2',
         timestamp '2004-06-30 00:00',
         1);
@@ -112,7 +111,7 @@ INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
 VALUES ((SELECT id FROM Sourcepackage WHERE name = 'python-twisted'),
  	1,
-        (SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts'),
+        (SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
         '0.9.1-3',
         timestamp '2004-07-01 00:00',
         1);
@@ -121,7 +120,7 @@ INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
 VALUES ((SELECT id FROM Sourcepackage WHERE name = 'bugzilla'),
  	1,
-        (SELECT id FROM Person WHERE presentationname = 'Dave Miller'),
+        (SELECT id FROM Person WHERE displayname = 'Dave Miller'),
         '0.9.1-4',
         timestamp '2004-07-02 00:00',
         1);
@@ -130,7 +129,7 @@ INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
 VALUES ((SELECT id FROM Sourcepackage WHERE name = 'arch'),
  	1,
-        (SELECT id FROM Person WHERE presentationname = 'James Blackwell'),
+        (SELECT id FROM Person WHERE displayname = 'James Blackwell'),
         '0.9.1-5',
         timestamp '2004-07-03 00:00',
         1);
@@ -139,7 +138,7 @@ INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
 VALUES ((SELECT id FROM Sourcepackage WHERE name = 'kiwi2'),
  	1,
-        (SELECT id FROM Person WHERE presentationname = 'Christian Reis'),
+        (SELECT id FROM Person WHERE displayname = 'Christian Reis'),
         '0.9.1-6',
         timestamp '2004-07-04 00:00',
         1);
@@ -148,7 +147,7 @@ INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
 VALUES ((SELECT id FROM Sourcepackage WHERE name = 'plone'),
  	1,
-        (SELECT id FROM Person WHERE presentationname = 'Alexander Limi'),
+        (SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
         '0.9.1-7',
         timestamp '2004-07-05 00:00',
         1);
@@ -157,37 +156,37 @@ VALUES ((SELECT id FROM Sourcepackage WHERE name = 'plone'),
 --Manifest
 INSERT INTO Manifest (datecreated, owner)
 VALUES (timestamp '2004-06-29 00:00',  
- (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth')
+ (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')
  );
 
 INSERT INTO Manifest (datecreated, owner)
 VALUES (timestamp '2004-06-30 00:00',  
- (SELECT id FROM Person WHERE presentationname = 'Steve Alexander')
+ (SELECT id FROM Person WHERE displayname = 'Steve Alexander')
  );
 
 INSERT INTO Manifest (datecreated, owner)
 VALUES (timestamp '2004-07-01 00:00',  
- (SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts')
+ (SELECT id FROM Person WHERE displayname = 'Andrew Bennetts')
  );
 
 INSERT INTO Manifest (datecreated, owner)
 VALUES (timestamp '2004-07-02 00:00',  
- (SELECT id FROM Person WHERE presentationname = 'Dave Miller')
+ (SELECT id FROM Person WHERE displayname = 'Dave Miller')
  );
 
 INSERT INTO Manifest (datecreated, owner)
 VALUES (timestamp '2004-07-03 00:00',  
- (SELECT id FROM Person WHERE presentationname = 'James Blackwell')
+ (SELECT id FROM Person WHERE displayname = 'James Blackwell')
  );
 
 INSERT INTO Manifest (datecreated, owner)
 VALUES (timestamp '2004-07-04 00:00',  
- (SELECT id FROM Person WHERE presentationname = 'Christian Reis')
+ (SELECT id FROM Person WHERE displayname = 'Christian Reis')
  );
 
 INSERT INTO Manifest (datecreated, owner)
 VALUES (timestamp '2004-07-05 00:00',  
- (SELECT id FROM Person WHERE presentationname = 'Alexander Limi')
+ (SELECT id FROM Person WHERE displayname = 'Alexander Limi')
  );
 
 
@@ -277,37 +276,37 @@ VALUES ((SELECT id FROM ArchArchive WHERE name = 'gnome'), 'gnome', 'evolution',
 INSERT INTO Branch (archnamespace, title, description, owner)
 VALUES ((SELECT id FROM ArchArchive WHERE name = 'mozilla'),
         'Mozilla Firefox 0.9.1', 'text',
- (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth')); 
+ (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')); 
 
 INSERT INTO Branch (archnamespace, title, description, owner)
 VALUES ((SELECT id FROM ArchArchive WHERE name = 'thunderbird'),
         'Mozilla Thunderbird 0.9.1', 'text',
- (SELECT id FROM Person WHERE presentationname = 'Steve Alexander')); 
+ (SELECT id FROM Person WHERE displayname = 'Steve Alexander')); 
 
 INSERT INTO Branch (archnamespace, title, description, owner)
 VALUES ((SELECT id FROM ArchArchive WHERE name = 'twisted'),
         'Python Twisted 0.9.1', 'text',
- (SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts')); 
+ (SELECT id FROM Person WHERE displayname = 'Andrew Bennetts')); 
 
 INSERT INTO Branch (archnamespace, title, description, owner)
 VALUES ((SELECT id FROM ArchArchive WHERE name = 'bugzila'),
         'Bugzila 0.9.1', 'text',
- (SELECT id FROM Person WHERE presentationname = 'Dave Miller')); 
+ (SELECT id FROM Person WHERE displayname = 'Dave Miller')); 
 
 INSERT INTO Branch (archnamespace, title, description, owner)
 VALUES ((SELECT id FROM ArchArchive WHERE name = 'arch'),
         'Arch 0.9.1', 'text',
- (SELECT id FROM Person WHERE presentationname = 'James Blackwell')); 
+ (SELECT id FROM Person WHERE displayname = 'James Blackwell')); 
 
 INSERT INTO Branch (archnamespace, title, description, owner)
 VALUES ((SELECT id FROM ArchArchive WHERE name = 'kiwi2'),
         'Kiwi2 0.9.1', 'text',
- (SELECT id FROM Person WHERE presentationname = 'Christian Reis')); 
+ (SELECT id FROM Person WHERE displayname = 'Christian Reis')); 
 
 INSERT INTO Branch (archnamespace, title, description, owner)
 VALUES ((SELECT id FROM ArchArchive WHERE name = 'plone'),
         'Plone 0.9.1', 'text',
- (SELECT id FROM Person WHERE presentationname = 'Alexander Limi'));
+ (SELECT id FROM Person WHERE displayname = 'Alexander Limi'));
 
 INSERT INTO Branch (archnamespace, title, description, owner)
 VALUES ((SELECT id FROM ArchNamespace
@@ -315,13 +314,6 @@ VALUES ((SELECT id FROM ArchNamespace
 	       branch = 'evolution' AND
 	       version = '1.5.90'),
 	'Evolution 1.5.90', 'text',
-	(SELECT id FROM Person WHERE presentationname = 'Jeff Waugh'));
-*/
-
-/*
---Manifest
-INSERT INTO Manifest (owner) 
-VALUES ((select id from Person where presentationname='Mark Shuttleworth'));
-*/
+	(SELECT id FROM Person WHERE displayname = 'Jeff Waugh'));
 
 

@@ -17,6 +17,16 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.soyuz.sql.DistroReleaseSourceReleaseApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleaseSourceReleaseApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.DistroReleaseSourceReleaseBuildApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleaseSourceReleaseBuildApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
   <content class="canonical.soyuz.sql.DistroReleasesApp">
     <allow interface="canonical.soyuz.interfaces.IDistroReleasesApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
@@ -29,6 +39,36 @@
 
   <content class="canonical.soyuz.sql.DistroPeopleApp">
     <allow interface="canonical.soyuz.interfaces.IDistroPeopleApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.DistroReleasePeopleApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleasePeopleApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+ <content class="canonical.soyuz.sql.DistroBinariesApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroBinariesApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+ <content class="canonical.soyuz.sql.DistroReleaseBinariesApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleaseBinariesApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+ <content class="canonical.soyuz.sql.DistroReleaseBinaryApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleaseBinaryApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+ <content class="canonical.soyuz.sql.DistroReleaseBinaryReleaseApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleaseBinaryReleaseApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+ <content class="canonical.soyuz.sql.DistroReleaseBinaryReleaseBuildApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleaseBinaryReleaseBuildApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
@@ -88,7 +128,7 @@
   </content>
 
   <content class="canonical.soyuz.sql.SoyuzPerson">
-    <allow interface="canonical.soyuz.interfaces.IPerson"/>
+    <allow interface="canonical.soyuz.interfaces.ISoyuzPerson"/>
   </content>
 
   <!-- UNUSED STUFF YET -->
@@ -115,6 +155,13 @@
       factory="canonical.soyuz.sql.Projects"
       provides="canonical.soyuz.interfaces.IProjects"
       />
+
+<!--DUMMY CONTENT -->
+  <content class="canonical.soyuz.sql.currentVersion">
+    <allow interface="canonical.soyuz.interfaces.IcurrentVersion"/>
+  </content>
+
+
 
 </configure>
 

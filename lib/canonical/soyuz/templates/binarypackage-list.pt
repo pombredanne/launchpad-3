@@ -14,24 +14,22 @@
 <body>
 
 <div metal:fill-slot="main">
-<h1>Source Packages !!!!!</h1>
+<h1><span tal:content="context/release/title">DISTRORELEASE</span> Binary Packages</h1>
 <!-- <div tal:on-error="python: error.type, error.value.args"> -->
+<p> 
 
-  <table class="listing">
-    <tr>
-      <th>Packages</th>
-    </tr>
-    <tr tal:repeat="release context">
-      <tal:dummy tal:define="package release/sourcepackage">
-      <td>
-        <a tal:content="package/title"
-           tal:attributes="href package/name">
-	  distribution name
-	    </a>
-      </td>
-      </tal:dummy>
-    </tr>
-  </table>    
+<table class="listing">
+  <tr>
+    <th> Binary Package </th>
+  </tr>
+  <tr tal:repeat="binpackage context">
+    <td> 
+      <a tal:content="binpackage/title" tal:attributes="href binpackage/name">TITLE</a> 
+    </td>
+  </tr>
+</table>
+
+
 
 <!-- </div> -->
 </div>

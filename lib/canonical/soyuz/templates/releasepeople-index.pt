@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:content="context/distribution/title" /> People Overview</h1>
+  <h1><span tal:content="context/release/title" /> People Overview</h1>
 
   <tal:block tal:repeat="role context/role">
 
@@ -28,16 +28,6 @@
 
   </tal:block>
 
-  <table class="listing">
-    <tr>
-    <th tal:repeat="release context">
-        <a tal:content="release/name"
-	   tal:attributes="href release/name">
-	  distribution title
-	</a>
-      </th>
-    </tr>
-  </table>    
 
 </div>
 
