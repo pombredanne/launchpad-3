@@ -26,15 +26,16 @@
 
     <div tal:content="view/submit" />
 
-    <form action="prefs" method="post" onsubmit="selectAllWords();return true;"
-          tal:define="languages view/languages; selectedLanguages view/selectedLanguages" >
+    <form action="prefs" method="post"
+    onSubmit="javascript:selectAllWords();return true;"
+    tal:define="languages view/languages; selectedLanguages view/selectedLanguages" >
     
         <div style="float: left;">
             <label>Available languages</label>
             <br />
             <!-- These are the available languages. -->
             <select id="prefs-available-languages" 
-                    name="availablelanguages" 
+                    naoe="availablelanguages" 
                     size="10"
                     style="width: 20em;"
                     multiple="multiple" 
