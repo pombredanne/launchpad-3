@@ -5,7 +5,7 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     xmlns:lp="http://launchpad.canonical.com"
     i18n:domain="launchpad">
-    
+
     <!-- Product -->
     <content class="canonical.launchpad.database.Product">
         <allow interface="canonical.launchpad.interfaces.IProduct" />
@@ -196,7 +196,7 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ProductSetView" >
         <browser:page
-            name="+index" 
+            name="+index"
             template="../templates/products-index.pt"
             lp:url="doap/products/+index" />
         <browser:page

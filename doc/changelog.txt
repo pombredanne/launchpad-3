@@ -2,6 +2,37 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-10 20:24:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1413
+
+    Summary:
+      add a quick and simple context-sensitive distro bug filing form.
+    Revision:
+      launchpad--devel--0--patch-1413
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-401
+       add a quick and simple context-sensitive distro bug filing form.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-402
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/distribution.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/templates/distribution-bugs.pt
+     lib/canonical/launchpad/templates/malone-index.pt
+     lib/canonical/launchpad/zcml/distribution.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-401
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-402
+
+
 2005-03-10 20:12:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1412
 
     Summary:

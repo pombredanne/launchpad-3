@@ -125,7 +125,7 @@ class ProductView:
         #XXX: cprov 20050112
         # Avoid passing obscure arguments as self.form
         pr = newProductRelease(self.form, self.context, owner)
- 
+
     def newseries(self):
         #
         # Handle a request to create a new series for this product.
@@ -228,7 +228,7 @@ class ProductBugsView:
                             tasks = [BugTask.get(taskid) for taskid in taskids]
                             for task in tasks:
                                 task.milestone = milestone
-       
+
     # XXX: Brad Bollenbach, 2005-02-11: Replace this view method hack with a
     # TALES adapter, perhaps.
     def currentApproximateAge(self, bugtask):
@@ -241,13 +241,13 @@ class ProductBugsView:
         # the vocabulary doesn't need context since the
         # ValidPerson is independent of it in LP
         return ValidPersonVocabulary(None)
-    
+
     def milestones(self):
         """Return the list of milestones for this product."""
-        # Produce an empty context 
+        # Produce an empty context
         class HackedContext:
             pass
-        
+
         context = HackedContext()
         # Set context.product as required by Vocabulary
         context.product = self.context
@@ -268,7 +268,7 @@ class ProductFileBugView(AddView):
     ow = CustomWidgetFactory(ObjectWidget, Bug)
     sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
     options_widget = sw
-    
+
     def __init__(self, context, request):
         self.request = request
         self.context = context
@@ -295,14 +295,14 @@ class ProductFileBugView(AddView):
 
     def nextURL(self):
         return self._nextURL
- 
+
 
 class ProductSetView:
 
     __used_for__ = IProductSet
 
     def __init__(self, context, request):
-        
+
         self.context = context
         self.request = request
         form = self.request.form
@@ -313,9 +313,9 @@ class ProductSetView:
         self.text = form.get('text')
         self.searchrequested = False
         if (self.text is not None or
-            self.bazaar is not None or 
-            self.malone is not None or 
-            self.rosetta is not None or 
+            self.bazaar is not None or
+            self.malone is not None or
+            self.rosetta is not None or
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
@@ -345,7 +345,7 @@ class ProductSetAddView(AddView):
     ow = CustomWidgetFactory(ObjectWidget, Bug)
     sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
     options_widget = sw
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -362,7 +362,7 @@ class ProductSetAddView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
         kw['owner'] = owner
-        # grab a ProductSet utility 
+        # grab a ProductSet utility
         product_util = getUtility(IProductSet)
         # create a brand new Product
         # XXX cprov 20050112
@@ -374,7 +374,7 @@ class ProductSetAddView(AddView):
         #                      screenshotsurl=None, wikiurl=None,
         #                      downloadurl=None, freshmeatproject=None,
         #                      sourceforgeproject=None):
-        # make sure you have those required keys in the kw dict 
+        # make sure you have those required keys in the kw dict
         product = product_util.createProduct(**kw)
         notify(ObjectCreatedEvent(product))
         self._nextURL = kw['name']

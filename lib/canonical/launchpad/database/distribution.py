@@ -1,20 +1,18 @@
-# Zope imports
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
 from zope.interface import implements
 
-# SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
+from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound, \
+    StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, DateTimeCol
 
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
 from canonical.lp import dbschema
-
-# interfaces and database
-from canonical.launchpad.interfaces import IDistribution
-from canonical.launchpad.interfaces import IDistributionSet
-from canonical.launchpad.interfaces import IDistroPackageFinder
+from canonical.launchpad.interfaces import IDistribution, IDistributionSet, \
+    IDistroPackageFinder
 
 __all__ = ['Distribution', 'DistributionSet']
 
@@ -76,7 +74,7 @@ class Distribution(SQLBase):
     bugCounter = property(bugCounter)
 
 
-class DistributionSet(object):
+class DistributionSet:
     """This class is to deal with Distribution related stuff"""
 
     implements(IDistributionSet)
@@ -108,10 +106,10 @@ class DistributionSet(object):
         """Returns a Distribution with name = name"""
         return self[name]
 
-class DistroPackageFinder(object):
+
+class DistroPackageFinder:
 
     implements(IDistroPackageFinder)
 
     def __init__(self, distribution=None, processorfamily=None):
         self.distribution = distribution
-        # find the x86 processorfamily

@@ -36,6 +36,11 @@
     </tal:block>
     </small>
   </div>
+    <p><img src="/++resource++add.gif" alt="+">
+    <a href="+filebug" tal:content="string:File a bug in ${context/title}"></a><br />
+    </p>
+  <div>
+  </div>
  </div>
 </div>
 

@@ -43,11 +43,11 @@
             lp:url="malone/distros/$Distribution.name/" />
 
         <!-- XXX sabdfl moved this here, need to reactivate search tools -->
-        <!-- 
-        XXX: Daniel Debonzi 20050105 
-        Does it still useful? don't we have enought and better 
-        search places? 
-	I will let it commented. If nobody ask to keep it I will 
+        <!--
+        XXX: Daniel Debonzi 20050105
+        Does it still useful? don't we have enought and better
+        search places?
+	I will let it commented. If nobody ask to keep it I will
 	remove this pages.
         <browser:page
             name="+sources"
@@ -62,6 +62,28 @@
         -->
     </browser:pages>
 
+    <browser:addform
+        name="+filebug"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IBugAddForm"
+        label="Report Bug in a Linux Distribution"
+        fields="sourcepackagename title comment private owner"
+        class="canonical.launchpad.browser.DistributionFileBugView"
+        arguments=""
+        keyword_arguments="sourcepackagename title comment private owner"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-add.pt"
+        lp:url="/malone/distros/$Distribution.name/+filebug">
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
+        <browser:widget
+           field="comment"
+           class="zope.app.form.browser.TextAreaWidget"
+           width="62" />
+    </browser:addform>
 
     <browser:editform
         for="canonical.launchpad.interfaces.IDistribution"

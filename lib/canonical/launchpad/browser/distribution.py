@@ -14,7 +14,8 @@ import zope.security.interfaces
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.database import Distribution, DistributionSet
+from canonical.launchpad.database import Distribution, DistributionSet, \
+    BugFactory
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import IDistribution, \
@@ -44,6 +45,45 @@ class DistributionView:
 
     def assign_to_milestones(self):
         return []
+
+
+class DistributionFileBugView(AddView):
+
+    __used_for__ = IDistribution
+
+    #XXX cprov 20050107
+    # Can we use the IBug instead of the content class ?
+##     ow = CustomWidgetFactory(ObjectWidget, Bug)
+##     sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
+##     options_widget = sw
+
+    def __init__(self, context, request):
+        self.request = request
+        self.context = context
+        AddView.__init__(self, context, request)
+
+    def createAndAdd(self, data):
+        # add the owner information for the bug
+        owner = IPerson(self.request.principal, None)
+        if not owner:
+            raise zope.security.interfaces.Unauthorized(
+                "Need an authenticated bug owner")
+        kw = {}
+        for key, value in data.items():
+            kw[str(key)] = value
+        kw['distribution'] = self.context.id
+        bug = BugFactory(
+            distribution = kw['distribution'],
+            sourcepackagename = kw['sourcepackagename'],
+            title = kw['title'], comment = kw['comment'],
+            private = kw['private'], owner = kw['owner'])
+
+        notify(ObjectCreatedEvent(bug))
+
+        return bug
+
+    def nextURL(self):
+        return '.'
 
 
 class DistributionSetView:
