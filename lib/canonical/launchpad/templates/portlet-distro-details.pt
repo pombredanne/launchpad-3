@@ -6,7 +6,7 @@
         <div class="portletContent even">
 
             <b>Distribution:</b><br />
-            <a tal:attributes="href string:/soyuz/distros/${context/name}/">
+            <a tal:attributes="href string:/distros/${context/name}/">
             <span tal:replace="context/displayname" /></a><br />
 
             <b>Admin:</b><br />
@@ -20,7 +20,7 @@
                     <img src="/++resource++document_icon.gif" />
                     <a tal:content="release/displayname"
                        tal:attributes="href
-                       string:/soyuz/distros/${context/name}/${release/name}" />
+                       string:/distros/${context/name}/${release/name}" />
                 <br /></span>
             </span>
            

@@ -10,7 +10,7 @@
             <span tal:replace="context/distrorelease/distribution/displayname" /></a><br />
 
             <b>Release:</b><br />
-            <a tal:attributes="href string:/distros/${context/distrorelease/name}/">
+            <a tal:attributes="href string:/distros/${context/distrorelease/distribution/name}/${context/distrorelease/name}/">
             <span tal:replace="context/distrorelease/displayname" /></a><br />
 
             <b>Porting Lead:</b><br />

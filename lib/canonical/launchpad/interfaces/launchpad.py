@@ -10,12 +10,11 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
-           'IRosettaApplication', 'ISoyuzApplication',
-           'IDOAPApplication', 'IFOAFApplication',
-           'IPasswordEncryptor', 'IReadZODBAnnotation',
-           'IWriteZODBAnnotation', 'IZODBAnnotation',
-           'IAuthorization', 'IHasOwner',
-           'IOpenLaunchBag', 'ILaunchBag')
+           'IRosettaApplication', 'IDOAPApplication',
+           'IFOAFApplication', 'IPasswordEncryptor',
+           'IReadZODBAnnotation', 'IWriteZODBAnnotation',
+           'IZODBAnnotation', 'IAuthorization',
+           'IHasOwner', 'IOpenLaunchBag', 'ILaunchBag')
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -40,17 +39,6 @@ class IRosettaApplication(ILaunchpadApplication):
     def translatables():
         """Return an iterator over the set of translatable Products which
         are part of Ubuntu's translation project."""
-
-
-class ISoyuzApplication(ILaunchpadApplication):
-    """Application root for soyuz."""
-
-    title = Attribute("Title")
-
-    def distributions():
-        """Return a list of distributions that are entirely managed
-        by Soyuz. This does not include distributions which are parsed by
-        the backend tools, such as Fedora and Debian."""
 
 
 class IDOAPApplication(ILaunchpadApplication):

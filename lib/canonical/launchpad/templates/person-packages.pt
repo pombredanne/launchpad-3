@@ -56,7 +56,7 @@
              <td tal:define="name package/name; 
                              distrorelease package/distrorelease/name;
                              distro package/distrorelease/distribution/name;
-                             distro_path string:/soyuz/distros/${distro};">
+                             distro_path string:/distros/${distro};">
       
                <a tal:attributes="href distro_path"
                   tal:content="package/distrorelease/distribution/title">DISTRO</a> ::

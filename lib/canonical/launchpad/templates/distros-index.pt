@@ -34,7 +34,7 @@
         </tr>
         <tr tal:repeat="distribution context"
             tal:attributes="onclick
-                string:window.location='/soyuz/distros/${distribution/name}'">
+                string:window.location='/distros/${distribution/name}'">
             <td>
                 <a tal:content="distribution/name" 
 	               tal:attributes="href

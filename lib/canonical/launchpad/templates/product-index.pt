@@ -70,7 +70,7 @@
         <p>Here you can see distribution packages for this upstream product.</p>
 
 		<ul tal:repeat="package context/sourcepackages">
-			<li><a tal:attributes="href string:/soyuz/distros/${package/distro/name}">
+			<li><a tal:attributes="href string:/distros/${package/distro/name}">
             <span tal:replace="package/name">name</span> (<span
             tal:replace="package/distro/name">distro</span>)</a></li>
 		</ul>

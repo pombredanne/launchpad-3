@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /soyuz/distros/+add HTTP/1.1
+  ... GET /distros/+add HTTP/1.1
   ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
   ... 
   ... """)
@@ -12,7 +12,7 @@
 
 
   >>> print http(r"""
-  ... POST /soyuz/distros/+add HTTP/1.1
+  ... POST /distros/+add HTTP/1.1
   ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
   ...
   ... name=testtest&displayname=TestTest&title=canonical&summary=summary&description=description&domain=domain""")

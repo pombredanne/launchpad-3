@@ -6,7 +6,7 @@
         <div class="portletContent even">
 
             <b>Distribution:</b><br />
-            <a tal:attributes="href string:/soyuz/distros/${context/distribution/name}/">
+            <a tal:attributes="href string:/distros/${context/distribution/name}/">
             <span tal:replace="context/distribution/displayname" /></a><br />
 
             <b>Admin:</b><br />
@@ -29,7 +29,7 @@
             <span tal:condition="context/parentrelease" tal:omit-tag>
                 <b>Derives from:</b><br />
                 <a tal:attributes="href
-                string:/soyuz/distros/${context/parentrelease/distribution/name}/${context/parentrelease/name}">
+                string:/distros/${context/parentrelease/distribution/name}/${context/parentrelease/name}">
                 <span tal:replace="context/parentrelease/displayname" /></a>
             </span>
            

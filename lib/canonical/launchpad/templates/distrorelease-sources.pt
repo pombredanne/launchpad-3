@@ -28,13 +28,13 @@
      <div class="portletContent even">
 
      <ul>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
+     <li><a tal:attributes="href string:/distros/${distro/name}">
      Home Page</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
+     <li><a tal:attributes="href string:/distros/${distro/name}/releases">
       Releases</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
+     <li><a tal:attributes="href string:/distros/${distro/name}/src">
       Source Packages</a></li>
-     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+     <li><a tal:attributes="href string:/distros/${distro/name}/bin">
      Binary Packages</a></li>
      </ul>
 
@@ -47,7 +47,7 @@
    <div class="portletBody">
      <div class="portletContent even">
      <ul>
-     <li> Release: <a tal:attributes="href string:/soyuz/distros/${distro/name}/releases/${context/release/name}" 
+     <li> Release: <a tal:attributes="href string:/distros/${distro/name}/releases/${context/release/name}" 
             tal:content="context/release/title">RELEASE</a></li>
      </ul>
      </div>

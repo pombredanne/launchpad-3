@@ -16,12 +16,6 @@
       permission="zope.Public"
       />
   <page
-      for="canonical.soyuz.SoyuzApplication"
-      name="robots.txt"
-      template="templates/robots.txt"
-      permission="zope.Public"
-      />
-  <page
       for="canonical.malone.MaloneApplication"
       name="robots.txt"
       template="templates/robots.txt"

@@ -2,6 +2,84 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-14 23:09:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1434
+
+    Summary:
+      SoyuzAplication is dead. Accessible now only by /distros url; Page tests fix and  missing page tests added.
+    Revision:
+      launchpad--devel--0--patch-1434
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-466
+       SoyuzAplication is dead. Accessible now only by /distros url.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-467
+       Soyuz page test fixes
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-468
+       Fix to templates that were using /soyuz url
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-469
+       Missing page tests added.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-470
+       merge from rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-binarypackagenames.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-distribution-bounties.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-distribution-packages.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-distroarchrelease-pkgsearch.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-distrorelease-sources.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-sourcepackagenames.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-binarypackagenames.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-distribution-bounties.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-distribution-packages.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-distroarchrelease-pkgsearch.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-distrorelease-sources.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-sourcepackagenames.txt
+
+    removed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-soyuz-root.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-root.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/interfaces/launchpad.py
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-add-distribution.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distro-distros-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distrorelease-bugs.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distrorelease-i386.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distrorelease-sources.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-i386-binpackage.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-release-index.txt
+     lib/canonical/launchpad/robots.zcml
+     lib/canonical/launchpad/templates/distrorelease-sources.pt
+     lib/canonical/launchpad/templates/distroreleases-index.pt
+     lib/canonical/launchpad/templates/distros-index.pt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/person-packages.pt
+     lib/canonical/launchpad/templates/portlet-distro-details.pt
+     lib/canonical/launchpad/templates/portlet-distroarchrelease-details.pt
+     lib/canonical/launchpad/templates/portlet-distrorelease-details.pt
+     lib/canonical/launchpad/templates/product-index.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-changes.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-index.pt
+     lib/canonical/launchpad/templates/sourcepackagerelease-buildlog.pt
+     lib/canonical/launchpad/templates/team-index.pt
+     lib/canonical/soyuz/__init__.py
+     lib/canonical/soyuz/configure.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-466
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-467
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-468
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-469
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-470
+
+
 2005-03-14 21:57:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1433
 
     Summary:
