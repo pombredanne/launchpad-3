@@ -1,3 +1,9 @@
+# Copyright 2004 Canonical Ltd.  All rights reserved.
+#
+"""This module contains the Password Reset Application"""
+__metaclass__ = type
+
+
 from canonical.zodb import zodbconnection
 
 from smtplib import SMTP
@@ -22,10 +28,11 @@ class SendPasswordChangeEmail(object):
         msg = template.read() % code
         template.close()
 
-        ##XXX: Remove the line below.. here just for test
-        ##email = 'Daniel Debonzi <debonzi@gwyddion.com>'
-               
         sender = SMTP("localhost")
         sender.sendmail("Ubuntu Webmaster <webmaster@ubuntulinux.org>",
                         email,
                         msg)
+
+class UbuntuLinuxSite(object):
+    pass
+    

@@ -16,3 +16,7 @@ class launchpad(IBrowserRequest):
 
 class rosetta(launchpad):
     """The `rosetta` layer."""
+
+class ubuntulinux(IBrowserRequest):
+    """The `ubuntulinux` layer."""
+    

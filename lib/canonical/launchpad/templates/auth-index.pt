@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="launchpad">
 
 <head>
     <!-- Plone style sheet -->
@@ -24,9 +24,6 @@
   </legend>
   Enter your valid registration email address below.  
   You will receive an email on how to reset your password. 
- <a href="mailto:webmaster@ubuntulinux.org">
-    webmaster@ubuntulinux.org 
-  </a>
   <form name="passwdretrive" method="POST">
     <div class="formHelp">Email Address</div>
     <input type="text" size="50" name="email" tal:attributes="value request/email|nothing" />

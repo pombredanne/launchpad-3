@@ -11,10 +11,30 @@
     <implements interface="canonical.publication.IHasSuburls"/>
   </content>
 
+  <content class="canonical.auth.app.UbuntuLinuxSite">
+    <!--<allow attributes="__call__ foo"/>-->
+    <implements interface="canonical.publication.IHasSuburls"/>
+  </content>
+
+  <browser:page
+      for="*" 
+      permission="zope.Public"
+      name="main_template"
+      template="../launchpad/templates/ul-main-template.pt"
+      layer="canonical.launchpad.skins.ubuntulinux"
+   />
 
   <!-- This view registers 'auth' as a suburl of RootObject. -->
   <browser:suburl
       for="canonical.publication.RootObject"
+      class="canonical.auth.app.UbuntuLinuxSite"
+      permission="zope.Public"
+      name="ubuntulinux"
+      newskin="canonical.launchpad.skins.ubuntulinux"
+      />
+
+  <browser:suburl
+      for="canonical.auth.app.UbuntuLinuxSite"
       class="canonical.auth.AuthApplication"
       permission="zope.Public"
       name="forgottenpassword"

@@ -1,6 +1,7 @@
 from canonical.launchpad.database import EmailAddress, Person
 from canonical.auth.app import SendPasswordChangeEmail
 from canonical.auth.app import PasswordChangeApp
+from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 
 from canonical.zodb import zodbconnection
 
@@ -41,14 +42,16 @@ class SendPasswordToEmail(object):
 
             ## Try to get the PersonId that is this emails address owner
 
-            person = EmailAddress.selectBy(email=self.email)
+            dbemail = EmailAddress.selectBy(email=self.email)
 
-            if person.count() > 0:
+
+            if dbemail.count() > 0:
                 ## If the email was found in database, store the needed data
                 ## in ZODB and send an email to 'requester'
+                person = dbemail[0].person
 
                 resets = zodbconnection.passwordresets
-                random_link = resets.newURL(person[0])
+                random_link = resets.newURL(person)
                 
                 ## Send email
                 SendPasswordChangeEmail(random_link, self.email)
@@ -99,22 +102,19 @@ class changeEmailPassword(object):
                     self.success = False
                     return
 
-                person_results = EmailAddress.selectBy(email=self.email)
+                email_results = EmailAddress.selectBy(email=self.email)
 
-                if person_results.count() > 0:
-                    person_check = person_results[0]
+                if email_results.count() > 0:
+                    person_check = email_results[0].person
                 
-                if person.id != person_check.id:
-                    person = False
+                    if person.id != person_check.id:
+                        person = False
                 
 
-                if person:
-                    ##Change password
-
-                    ##XXX: password must be encrypted
-                    ##Daniel Debonzi 2004-10-03
-                    person.password=self.password
-                    return 'You password has successfully been reset.'
+                    if person:
+                        ssha = SSHADigestEncryptor()
+                        person.password = ssha.encrypt(self.password)
+                        return 'You password has successfully been reset.'
 
                 self.success = False
                 return

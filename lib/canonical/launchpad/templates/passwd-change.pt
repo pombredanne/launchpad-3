@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="launchpad">
 
 <head>
     <!-- Plone style sheet -->
@@ -43,7 +43,7 @@
 <h4 tal:condition="not:view/success"> 
    Sorry, there has been a problem in resetting your password. 
    Please try again, using the Forgotten password 
-   <a href="../forgottenpassword"> form </a>
+   <a href=".."> form </a>
 </h4>
 </tal:block>
 </div>
