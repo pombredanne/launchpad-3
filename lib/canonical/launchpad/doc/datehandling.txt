@@ -94,4 +94,5 @@ currentApproximateAge returns.
     >>> print aging_bug.currentApproximateAge()
     1 year
 
+    >>> ztapi.unprovideUtility(ILaunchBag)
     >>> zope.security.management.endInteraction()

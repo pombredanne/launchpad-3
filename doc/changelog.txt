@@ -2,6 +2,37 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-01 13:56:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1348
+
+    Summary:
+      Fixes to cleanup code and more predictable for system doc tests
+    Revision:
+      launchpad--devel--0--patch-1348
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--system-doctests-fixes--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1346
+    
+     * andrew.bennetts@canonical.com/launchpad--system-doctests-fixes--0--patch-1
+       Fix cleanup bugs in the system documentation tests
+    
+     * andrew.bennetts@canonical.com/launchpad--system-doctests-fixes--0--patch-2
+       Make the system documentation tests more predictable by sorting them.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/datehandling.txt
+     lib/canonical/launchpad/doc/milestone.txt
+     lib/canonical/launchpad/doc/upstream.txt
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--system-doctests-fixes--0--base-0
+     andrew.bennetts@canonical.com/launchpad--system-doctests-fixes--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--system-doctests-fixes--0--patch-2
+
+
 2005-03-01 02:00:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1347
 
     Summary:

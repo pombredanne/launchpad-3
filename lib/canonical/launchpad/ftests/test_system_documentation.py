@@ -46,6 +46,13 @@ def test_suite():
                  if filename.lower().endswith('.txt')
                     and filename not in special
                  ]
+    # XXX: Sort the list to give a predictable order.  We do this because when
+    # tests interfere with each other, the varying orderings that os.listdir
+    # gives on different people's systems make reproducing and debugging
+    # problems difficult.  Ideally the test harness would stop the tests from
+    # being able to interfere with each other in the first place.
+    #   -- Andrew Bennetts, 2005-03-01.
+    filenames.sort()
     for filename in filenames:
         path = os.path.join('../doc/', filename)
         suite.addTest(FunctionalDocFileSuite(
