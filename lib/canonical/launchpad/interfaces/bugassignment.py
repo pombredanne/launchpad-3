@@ -23,6 +23,13 @@ class IProductBugAssignment(Interface):
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
     datecreated = Datetime(title=_('Date Created'), required=True,
                            readonly=True)
+    ownerID = Int(
+            title=_('Owner'), required=True, readonly=True
+            )
+    # XXX: Need to define a proper schema type for owner to avoid this hack
+    # and remove the need for the widget subdirective in the addform .zcml
+    owner = Int(title=_('Owner'), required=True, readonly=True)
+    #owner = Attribute("The owner's IPerson")
 
 
 class IProductBugAssignmentContainer(Interface):
@@ -68,6 +75,13 @@ class ISourcePackageBugAssignment(Interface):
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
     datecreated = Datetime(title=_('Date Created'), required=True,
                            readonly=True)
+    ownerID = Int(
+            title=_('Owner'), required=True, readonly=True
+            )
+    # XXX: Need to define a proper schema type for owner to avoid this hack
+    # and remove the need for the widget subdirective in the addform .zcml
+    owner = Int(title=_('Owner'), required=True, readonly=True)
+    #owner = Attribute("The owner's IPerson")
 
 
 class ISourcePackageBugAssignmentContainer(Interface):

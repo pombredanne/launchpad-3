@@ -61,7 +61,6 @@ class SQLBase(SQLOS):
         finally:
             self._SO_writeLock.release()
 
-
 class _ZopelessConnectionDescriptor(object):
     def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter,
                  debug=False):

@@ -127,9 +127,7 @@ class SourcePackageVocabulary(SQLObjectVocabularyBase):
 
         '''
         if not query:
-            query = ''
-            #return []
-        #import pdb; pdb.set_trace()
+            return []
         t = self._table
         objs = [self._toTerm(r)
             for r in t.select('''

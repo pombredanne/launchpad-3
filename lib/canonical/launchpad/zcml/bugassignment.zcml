@@ -23,7 +23,8 @@
         for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
         getter="__getitem__" />
 
-    <browser:pages for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
         permission="zope.Public">
         <browser:page name="+index"
             template="../templates/productbugassignments-index.pt"
@@ -35,13 +36,15 @@
         schema="canonical.launchpad.interfaces.IProductBugAssignment"
         for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
         label="Add Product Bug Assignment"
-        fields="product bugstatus priority severity assignee"
+        fields="product bugstatus priority severity assignee owner"
         content_factory="canonical.launchpad.database.ProductBugAssignmentFactory"
         arguments=""
-        keyword_arguments="product bugstatus priority severity"
+        keyword_arguments="product bugstatus priority severity owner"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/productassignments/+new" />
+        lp:url="malone/bugs/$Bug.id/productassignments/+new">
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+    </browser:addform>
 
     <browser:editform
         name="+edit"
@@ -52,7 +55,8 @@
         label="Edit Product Bug Assignment"
         permission="launchpad.AnyPerson"
         template="../templates/default-editform.pt"
-        lp:url="malone/bugs/$Bug.id/productassignments/$ProductBugAssignment.id/+edit" />
+        lp:url="malone/bugs/$Bug.id/productassignments/$ProductBugAssignment.id/+edit">
+    </browser:editform>
 
     <!--SourcePackageBugAssignmentContainer -->
     <content class="canonical.launchpad.database.SourcePackageBugAssignmentContainer">
@@ -85,13 +89,15 @@
         schema="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
         for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
         label="Add SourcePackage Bug Assignment"
-        fields="sourcepackage bugstatus priority severity binarypackagename assignee"
+        fields="sourcepackage bugstatus priority severity binarypackagename assignee owner"
         content_factory="canonical.launchpad.database.SourcePackageBugAssignmentFactory"
         arguments=""
-        keyword_arguments="sourcepackage bugstatus priority severity"
+        keyword_arguments="sourcepackage bugstatus priority severity owner"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bug.id/sourcepackageassignments/+new" />
+        lp:url="malone/bugs/$Bug.id/sourcepackageassignments/+new">
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+    </browser:addform>
 
     <browser:editform
         name="+edit"
@@ -102,7 +108,9 @@
         label="Edit SourcePackage Bug Assignment"
         permission="launchpad.AnyPerson"
         template="../templates/default-editform.pt"
-        lp:url="malone/bugs/$Bug.id/sourcepackageassignments/$SourcePackageBugAssignment.id/+edit" />
+        lp:url="malone/bugs/$Bug.id/sourcepackageassignments/$SourcePackageBugAssignment.id/+edit">
+    </browser:editform>
+
 
     <!-- BugsAssignedReport -->
     <!-- TODO: figure out why we need to give explicit attributes instead of

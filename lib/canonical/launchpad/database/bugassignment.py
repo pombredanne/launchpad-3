@@ -33,6 +33,7 @@ class ProductBugAssignment(SQLBase):
                           default=None)
     datecreated = DateTimeCol(dbName='datecreated', notNull=True,
                               default=nowUTC)
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
 
 class ProductBugAssignmentContainer(BugContainerBase):
@@ -68,6 +69,7 @@ class SourcePackageBugAssignment(SQLBase):
                           default=None)
     datecreated = DateTimeCol(dbName='datecreated', notNull=True,
                               default=nowUTC)
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
 
 class SourcePackageBugAssignmentContainer(BugContainerBase):
