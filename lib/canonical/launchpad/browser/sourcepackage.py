@@ -2,6 +2,8 @@
 from sqlobject import LIKE, AND
 
 # Python standard library imports
+import cgi
+import re
 from apt_pkg import ParseSrcDepends
 
 # lp imports
@@ -45,7 +47,6 @@ class SourcePackageReleasePublishingView(object):
             builddepends.append(builddepsSet(*dep[0]))
         return builddepends
 
-
     def builddependsindep(self):
         if not self.context.builddependsindep:
             return []
@@ -57,6 +58,24 @@ class SourcePackageReleasePublishingView(object):
             builddependsindep.append(builddepsSet(*dep[0]))
         return builddependsindep
                 
+    def linkified_changelog(self):
+        # XXX: salgado: No bugtracker URL should be hardcoded.
+        changelog = cgi.escape(self.context.changelog)
+        sourcepkgname = self.context.sourcepackage.sourcepackagename.name
+        deb_bugs = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug='
+        warty_bugs = 'https://bugzilla.ubuntu.com/show_bug.cgi?id='
+        changelog = re.sub(r'%s \(([^)]+)\)' % sourcepkgname,
+                           r'%s (<a href="../\1">\1</a>)' % sourcepkgname,
+                           changelog)
+        changelog = re.sub(r'(([Ww]arty|[Uu]buntu) *#)([0-9]+)', 
+                           r'<a href="%s\3">\1\3</a>' % warty_bugs,
+                           changelog)
+        changelog = re.sub(r'[^(W|w)arty]#([0-9]+)', 
+                           r'<a href="%s\1">#\1</a>' % deb_bugs,
+                           changelog)
+        return changelog
+
+
 class SourcePackageInDistroSetView(object):
 
     def __init__(self, context, request):

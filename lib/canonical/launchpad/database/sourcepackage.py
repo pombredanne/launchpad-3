@@ -303,24 +303,6 @@ class SourcePackageRelease(SQLBase):
 
         return BinaryPackage.select(query, clauseTables=clauseTables)
 
-    def linkified_changelog(self):
-        # XXX: salgado: No bugtracker URL should be hardcoded.
-        sourcepkgname = self.sourcepackage.sourcepackagename.name
-        deb_bugs = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug='
-        warty_bugs = 'https://bugzilla.ubuntu.com/show_bug.cgi?id='
-        changelog = re.sub(r'%s \(([^)]+)\)' % sourcepkgname,
-                           r'%s (<a href="../\1">\1</a>)' % sourcepkgname,
-                           self.changelog)
-        changelog = re.sub(r'([Ww]arty#)([0-9]+)', 
-                           r'<a href="%s\2">\1\2</a>' % warty_bugs,
-                           changelog)
-        changelog = re.sub(r'[^(W|w)arty]#([0-9]+)', 
-                           r'<a href="%s\1">#\1</a>' % deb_bugs,
-                           changelog)
-        return changelog
-
-    linkified_changelog = property(linkified_changelog)
-
     binaries = property(binaries)
 
     pkgurgency = property(_urgency)
