@@ -8,6 +8,8 @@ import sys, sets, warnings, textwrap, codecs
 from canonical.rosetta.ipofile import IPOMessage, IPOHeader, IPOParser
 from zope.interface import implements
 
+DEBUG=False
+
 # Exceptions and warnings
 
 class POSyntaxError(Exception):
@@ -17,7 +19,7 @@ class POSyntaxError(Exception):
 
     def __str__(self):
         if self.lno:
-            return 'Po file: syntax error on line %d' % self.lno
+            return 'Po file: syntax error on or before line %d' % self.lno
         else:
             return 'Po file: syntax error in the header entry'
 
@@ -31,7 +33,7 @@ class POInvalidInputError(Exception):
         if self.msg:
             return self.msg
         elif self.lno:
-            return 'Po file: invalid input on line %d' % self.lno
+            return 'Po file: invalid input on or before line %d' % self.lno
         else:
             return 'Po file: invalid input in the header entry'
 
@@ -45,7 +47,7 @@ class POSyntaxWarning(Warning):
         if self.msg:
             return self.msg
         elif self.lno:
-            return 'Po file: syntax warning on line %d' % self.lno
+            return 'Po file: syntax warning on or before line %d' % self.lno
         else:
             return 'Po file: syntax warning in the header entry'
 
@@ -464,12 +466,15 @@ class POParser(object):
         if self._partial_transl:
             for message in self.messages:
                 if message.msgid == self._partial_transl['msgid']:
-                    raise POInvalidInputError('Po file: duplicate msgid on line %d'
+                    raise POInvalidInputError('Po file: duplicate msgid ending on line %d'
                                               % self._lineno)
             try:
                 transl = self.translation_factory(header=self.header,
                                                   **self._partial_transl)
             except POInvalidInputError:
+                if DEBUG:
+                    import traceback
+                    traceback.print_exc()
                 raise POInvalidInputError(self._lineno)
             self.messages.append(transl)
         self._partial_transl = None
@@ -479,6 +484,9 @@ class POParser(object):
             self.header = self.header_factory(messages=self.messages, **self._partial_transl)
             self.header.finish()
         except POSyntaxError:
+            if DEBUG:
+                import traceback
+                traceback.print_exc()
             raise POSyntaxError(self._lineno)
         if self.messages:
             warnings.warn(POSyntaxWarning(self._lineno,

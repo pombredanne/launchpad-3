@@ -916,7 +916,7 @@ class RosettaPOMessageSet(SQLBase):
 
             existing = existing[0]
             # XXX: Do we always want to set inLastRevision to True?
-            existing.set(datelastSeen = "NOW", inLastRevision = True)
+            existing.set(dateLastSeen = "NOW", inLastRevision = True)
 
             return existing
 

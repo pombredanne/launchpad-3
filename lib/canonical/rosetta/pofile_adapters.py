@@ -170,7 +170,8 @@ class MessageProxy(POMessage):
         if old_plural is not None:
             old_plural = self._msgset.getMessageIDSighting(1)
             old_plural.inPOFile = False
-        self._msgset.makeMessageIDSighting(value, 1, update=True)
+        if value:
+            self._msgset.makeMessageIDSighting(value, 1, update=True)
     msgidPlural = property(_get_msgidPlural, _set_msgidPlural)
 
     def _get_msgstr(self):
@@ -279,16 +280,13 @@ class TemplateImporter(object):
         except KeyError:
             msgset = self.potemplate.createMessageSetFromText(msgid)
         else:
-            try:
-                msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
-            except KeyError:
-                # If we don't have any MessageIDSighting, we shouldn't fail.
-                pass
+            msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
         self.len += 1
         msgset.sequence = self.len
+        msgset.getMessageIDSighting(0, allowOld=True).inLastRevision = True
         proxy = MessageProxy(msgset, person=self.person)
         try:
-            proxy.msgidPlural = kw.get('msgidPlural', '')
+            proxy.msgidPlural = kw.get('msgidPlural', None)
             if kw.get('msgstr'):
                 raise POInvalidInputError('PO template has msgstrs', 0)
             proxy.commentText = kw.get('commentText', '')
@@ -304,6 +302,10 @@ class TemplateImporter(object):
             proxy.obsolete = kw.get('obsolete', False)
             proxy.flush()
         except:
+            from canonical.rosetta.pofile import DEBUG
+            if DEBUG:
+                import traceback
+                traceback.print_exc()
             raise POInvalidInputError
         return proxy
 
@@ -341,9 +343,10 @@ class POFileImporter(object):
             msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
         self.len += 1
         msgset.sequence = self.len
+        msgset.getMessageIDSighting(0, allowOld=True).inLastRevision = True
         proxy = MessageProxy(msgset, person=self.person)
         try:
-            proxy.msgidPlural = kw.get('msgidPlural', '')
+            proxy.msgidPlural = kw.get('msgidPlural', None)
             if kw.get('msgstr'):
                 proxy.msgstr = kw['msgstr']
             proxy.commentText = kw.get('commentText', '')
@@ -355,5 +358,9 @@ class POFileImporter(object):
             proxy.obsolete = kw.get('obsolete', False)
             proxy.flush()
         except:
+            from canonical.rosetta.pofile import DEBUG
+            if DEBUG:
+                import traceback
+                traceback.print_exc()
             raise POInvalidInputError
         return proxy
