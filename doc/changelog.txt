@@ -2,6 +2,55 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-19 18:37:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1220
+
+    Summary:
+      FOAF registration-related fixes (including adding a global join link).
+ a small fix to simple_sendmail to handle unicode addresses.
+    Revision:
+      launchpad--devel--0--patch-1220
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-308
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-309
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-310
+       small fix to simple_sendmail to work with unicode to_addrs
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-311
+       move the registration link from under the /foaf namespace, to simply /+register
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-312
+       add a global Join link
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-313
+       fix the link in the new user creation email. modify the wording slightly.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-login-and-join-links.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-login-and-join-links.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/mail/sendmail.py
+     lib/canonical/launchpad/templates/main-template.pt
+     lib/canonical/launchpad/templates/malone-index.pt
+     lib/canonical/launchpad/zcml/person.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-308
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-309
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-310
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-311
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-312
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-313
+
+
 2005-01-19 12:54:48 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1219
 
     Summary:

@@ -201,7 +201,7 @@ class JoinLaunchpadView(object):
         # New user: requester and requesteremail are None.
         token = newLoginToken(None, None, self.email,
                               LoginTokenType.NEWACCOUNT)
-        sendNewUserEmail(token)
+        sendNewUserEmail(token, self.request.getApplicationURL())
         self.submitted = True
         return True
 
@@ -209,15 +209,21 @@ class JoinLaunchpadView(object):
         return self.submitted and not self.errormessage
 
 
-def sendNewUserEmail(token):
-    template = open('lib/canonical/foaf/newuser-email.txt').read()
-    fromaddress = "Launchpad <noreply@canonical.com>"
+def sendNewUserEmail(token, appurl):
+    msg = """\
+Your Launchpad registration request has been received. To complete the signup
+process, please click on the link below and follow the instructions to create
+your account:
 
-    replacements = {'longstring': token.token, 'toaddress': token.email }
-    message = template % replacements
+%(appurl)s/foaf/logintoken/%(longstring)s/+newaccount
 
-    subject = "Launchpad: Complete your registration process"
-    simple_sendmail(fromaddress, token.email, subject, message)
+Thank you!
+
+The Launchpad Team""" % {'appurl' : appurl, 'longstring': token.token}
+
+    fromaddress = "The Launchpad Team <noreply@canonical.com>"
+    subject = "Launchpad Account Creation Instructions"
+    simple_sendmail(fromaddress, token.email, subject, msg)
 
 
 class PersonView(object):

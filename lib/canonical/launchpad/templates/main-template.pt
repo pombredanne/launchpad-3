@@ -117,6 +117,8 @@
 
         <span tal:condition="not: request/lp:person">
             <a href="/+login">Log In</a>
+            &mdash;
+            <a href="/+register">Join</a>
         </span>
 
         &mdash;
