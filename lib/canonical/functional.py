@@ -47,6 +47,15 @@ from canonical.publication import BrowserPublication
 import zope.app.tests.setup
 from zope.app.component.hooks import setSite, getSite
 
+# XXX: When we've upgraded Zope 3 to a newer version, we'll just import
+#      IHeaderOutput from zope.publisher.interfaces.http.
+try:
+    # old zope3
+    from zope.server.interfaces import IHeaderOutput
+except ImportError:
+    # new zope3
+    from zope.publisher.interfaces.http import IHeaderOutput
+
 HTTPTaskStub = StringIO
 
 class ResponseWrapper(object):
@@ -383,7 +392,7 @@ class HTTPTestCase(FunctionalTestCase):
 
 class HTTPHeaderOutput:
 
-    zope.interface.implements(zope.server.interfaces.IHeaderOutput)
+    zope.interface.implements(IHeaderOutput)
 
     def __init__(self, protocol, omit):
         self.headers = {}
