@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-14 17:11:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1430
+
+    Summary:
+      small fixes related to code reviews
+    Revision:
+      launchpad--devel--0--patch-1430
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-413
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-414
+       more bugtask.py code review fixes
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-415
+       added proper licensing of editview.py (i.e. derived work from Z3 codebase)
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/editview.py
+     lib/canonical/launchpad/database/bugtask.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-413
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-414
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-415
+
+
 2005-03-14 15:56:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1429
 
     Summary:

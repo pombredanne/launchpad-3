@@ -129,7 +129,7 @@ class BugTaskSet:
 
         try:
             task = self.table.get(id)
-        except SQLObjectNotFound, err:
+        except SQLObjectNotFound:
             raise KeyError, id
 
         if task.product:
@@ -173,7 +173,7 @@ class BugTaskSet:
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         try:
             bugtask = self.table.get(id)
-        except SQLObjectNotFound, err:
+        except SQLObjectNotFound:
             raise NotFoundError("BugTask with ID %s does not exist" % str(id))
 
         return bugtask
