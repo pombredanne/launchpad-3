@@ -5,14 +5,15 @@ from sqlobject import MultipleJoin
 from sqlobject import SQLObjectNotFound
 
 from schoolbell.interfaces import ICalendarEvent
-from schoolbell.mixins import CalendarMixin, CalendarEventMixin
+from schoolbell.mixins import CalendarMixin, EditableCalendarMixin
+from schoolbell.mixins import CalendarEventMixin
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import ILaunchpadCalendar
 
 import datetime
 
-class Calendar(SQLBase, CalendarMixin):
+class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
     implements(ILaunchpadCalendar)
     owner = ForeignKey(dbName='owner', notNull=True, foreignKey='Person')
     title = StringCol(dbName='title', notNull=True)
@@ -28,6 +29,28 @@ class Calendar(SQLBase, CalendarMixin):
             return CalendarEvent.byUniqueID(unique_id)
         except SQLObjectNotFound:
             raise KeyError(unique_id)
+
+    def addEvent(self, event):
+        # TODO: support recurring events
+        try:
+            # XXX: the database has unique columns, so find should not be
+            # necessary -- only my ConnectionStub doesn't know about unique
+            # indexes yet.
+            self.find(event.unique_id)
+        except:
+            CalendarEvent(calendar=self, dtstart=event.dtstart,
+                          duration=event.duration, title=event.title,
+                          location=event.location, unique_id=event.unique_id)
+        else:
+            raise ValueError('event %r already in calendar' % event.unique_id)
+
+    def removeEvent(self, event):
+        try:
+            self.find(event.unique_id).destroySelf()
+        except KeyError:
+            raise ValueError('event %r not in calendar' % event.unique_id)
+
+    # TODO: implement clear() more directly
 
 
 class CalendarSubscription(SQLBase):
@@ -59,10 +82,4 @@ class CalendarEvent(SQLBase, CalendarEventMixin):
     exceptions = StringCol(dbName='exceptions', default=None)
     interval = IntCol(dbName='interval', default=None)
     rec_list = StringCol(dbName='rec_list', default=None)
-
-    def not_implemented(*args, **kw):
-        raise NotImplementedError
-
-    hasOccurrences = not_implemented    # TODO
-    replace = not_implemented           # TODO
 

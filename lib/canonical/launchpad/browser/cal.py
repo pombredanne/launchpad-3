@@ -34,6 +34,7 @@ def traverseCalendar(calendar, request, name):
                        year=int(match.group(1)),
                        month=int(match.group(2)),
                        day=int(match.group(3)))
+    # XXXX - need to handle "today", "this-week", "this-month", "this-year"
 
 def prev_month(date):
     """Calculate the first day of the previous month for a given date.

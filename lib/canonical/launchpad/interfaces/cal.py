@@ -4,10 +4,10 @@ _ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
 from zope.schema import Int, Object, TextLine
 from canonical.launchpad.fields import Title
-from schoolbell.interfaces import ICalendar
+from schoolbell.interfaces import IEditCalendar
 
 
-class ILaunchpadCalendar(ICalendar):
+class ILaunchpadCalendar(IEditCalendar):
     """Launchpad specific calendar.
 
     TODO: make it inherit IEditCalendar.

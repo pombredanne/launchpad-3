@@ -79,12 +79,16 @@ class IEditCalendar(ICalendar):
         It is perhaps not a good idea to add calendar events that have no
         occurrences into calendars (see ICalendarEvent.hasOccurrences), as they
         will be invisible in date-based of calendar views.
+
+        Do not call addEvent while iterating over the calendar.
         """
 
     def removeEvent(event):
         """Remove event from the calendar.
 
         Raises ValueError if event is not present in the calendar.
+
+        Do not call removeEvent while iterating over the calendar.
         """
 
     def update(calendar):

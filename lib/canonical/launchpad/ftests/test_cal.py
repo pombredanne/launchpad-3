@@ -20,7 +20,7 @@ def doctest_adaptation():
 
     There should be an adapter from ICalendarOwner to ICalendar.
 
-        >>> from canonical.launchpad.interfaces.calendar import ICalendarOwner
+        >>> from canonical.launchpad.interfaces.cal import ICalendarOwner
         >>> from zope.interface import implements
         >>> class FakeCalendarOwner:
         ...     implements(ICalendarOwner)
@@ -53,7 +53,7 @@ def doctest_views():
     There should be a view for ICalendarOwner, named 'calendar'.
 
         >>> from zope.interface import implements
-        >>> from canonical.launchpad.interfaces.calendar import ICalendarOwner
+        >>> from canonical.launchpad.interfaces.cal import ICalendarOwner
         >>> class FakeCalendarOwner:
         ...     implements(ICalendarOwner)
         >>> context = FakeCalendarOwner()

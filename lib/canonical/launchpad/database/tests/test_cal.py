@@ -1,5 +1,5 @@
 """
-Unit tests for canonical.launchpad.database.calendar
+Unit tests for canonical.launchpad.database.cal
 """
 
 import unittest
@@ -28,6 +28,7 @@ class ConnectionStub:
     created = ignore # connection.cache.created()
     get = ignore # connection.cache.get() -- return None
     put = ignore # connection.cache.put()
+    expire = ignore # connection.cache.expire()
     finishPut = ignore # connection.cache.finishPut()
 
     def queryInsertID(self, soInstance, id, names, values):
@@ -58,6 +59,10 @@ class ConnectionStub:
         for record in table.values():
             if record[column] == value:
                 yield (record[soClass._idName], )
+
+    def _SO_delete(self, so):
+        table = self._tables.setdefault(so._table, {})
+        del table[so.id]
 
 
 def setUp(doctest):
@@ -97,8 +102,7 @@ def doctest_Calendar():
 
         >>> from zope.interface.verify import verifyObject
         >>> from schoolbell.interfaces import ICalendar
-        >>> from canonical.launchpad.interfaces.calendar \
-        ...     import ILaunchpadCalendar
+        >>> from canonical.launchpad.interfaces.cal import ILaunchpadCalendar
         >>> verifyObject(ILaunchpadCalendar, cal)
         True
         >>> verifyObject(ICalendar, cal)
@@ -138,6 +142,39 @@ def doctest_Calendar():
         >>> [e.title for e in events]
         [u'Hack']
 
+    You can add calendar events without mucking with database tables or SQL
+    object classes.
+
+        >>> from schoolbell.simple import SimpleCalendarEvent
+        >>> e = SimpleCalendarEvent(datetime.datetime(2004, 12, 15, 19, 48),
+        ...         datetime.timedelta(hours=1), "Dinner, please!",
+        ...         unique_id="new1")
+        >>> cal.addEvent(e)
+
+        >>> [e.unique_id for e in cal]
+        [u'e1', u'e2', u'new1']
+
+    You cannot add another event with the same UID
+
+        >>> cal.addEvent(e)
+        Traceback (most recent call last):
+          ...
+        ValueError: event u'new1' already in calendar
+
+    You can remove calendar events.
+
+        >>> cal.removeEvent(e1)
+        >>> [e.unique_id for e in cal]
+        [u'e2', u'new1']
+
+    If you try to remove an event that is not in the calendar, you get a
+    ValueError.
+
+        >>> cal.removeEvent(e1)
+        Traceback (most recent call last):
+          ...
+        ValueError: event u'e1' not in calendar
+
     """
 
 
@@ -175,36 +212,22 @@ def doctest_CalendarEvent():
 
         >>> e1 == e2
         False
-        >>> e1 != e2
-        True
         >>> e1 < e2
         True
-        >>> e1 <= e2
-        True
-        >>> e1 > e2
-        False
-        >>> e1 >= e2
-        False
 
         >>> e1 == e1
         True
-        >>> e1 != e1
-        False
         >>> e1 < e1
         False
-        >>> e1 <= e1
+
+    Calendar events have a replace that returns a new object of a different
+    class.  The new object is not stored in the database.
+
+        >>> old_len = len(list(calendar))
+        >>> modified_e1 = e1.replace(title="Hack more")
+        >>> len(list(calendar)) == old_len
         True
-        >>> e1 > e1
-        False
-        >>> e1 >= e1
-        True
 
-    TODO: Check events are equal only if all the interesting attributes are
-          equal.
-
-    TODO: Check that events with the same dtstart compare titles.
-
-    TODO: Check that events with the same dtstart and titles compare unique_id.
     """
 
 
