@@ -1,5 +1,5 @@
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import quote
+from canonical.database.sqlbase import quote, SQLBase
 from canonical.launchpad.database import ProductReleaseFile, ProductRelease
 from canonical.librarian.client import FileUploadClient
 from canonical.lp import dbschema
@@ -73,6 +73,12 @@ class ProductReleaseImporter:
         librarian.connect(librarianHost, librarianPort)
         ids = librarian.addFile(filename, size, file, info.get('content-type'))
         aliasID = ids[1]
+        
+        # XXX: Awful hack -- the librarian's updated the database, so we need to
+        #      reset our connection so that we can see it.
+        #        - Andrew Bennetts, 2005-01-27
+        SQLBase._connection.rollback()
+        SQLBase._connection.begin()
         return aliasID
 
     def _alreadyImported(self, filename):
