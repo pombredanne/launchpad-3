@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-import re
+import re, os, popen2
 from math import ceil
 
 from zope.component import getUtility
@@ -340,6 +340,44 @@ class ViewPOExport:
         self.request.response.setHeader('Content-disposition',
                 'attachment; filename="%s.po"' % languageCode)
         return exportedFile
+
+class ViewMOExport:
+
+    def __call__(self):
+        pofile = self.context
+        poExport = POExport(pofile.poTemplate)
+        languageCode = pofile.language.code
+        exportedFile = poExport.export(languageCode)
+
+        # XXX: It's ok to hardcode the msgfmt path?
+        msgfmt = popen2.Popen3('/usr/bin/msgfmt -o - -', True)
+
+        # We feed the command with our .po file from the stdin
+        msgfmt.tochild.write(exportedFile)
+        msgfmt.tochild.close()
+
+        # Now we wait until the command ends
+        status = msgfmt.wait()
+
+        if os.WIFEXITED(status):
+            if os.WEXITSTATUS(status) == 0:
+                # The command worked
+                output = msgfmt.fromchild.read()
+                
+                self.request.response.setHeader('Content-Type',
+                    'application/x-gmo')
+                self.request.response.setHeader('Content-Length',
+                    len(output))
+                self.request.response.setHeader('Content-disposition',
+                    'attachment; filename="%s.mo"' % languageCode)
+                return output
+            else:
+                # XXX: Perhaps we should be more "polite" if it fails
+                return msgfmt.childerr.read()
+        else:
+            # XXX: Perhaps we should be more "polite" if it fails
+            return "ERROR exporting the .mo!!"
+
 
 class TranslatePOTemplate:
     DEFAULT_COUNT = 5
