@@ -24,13 +24,25 @@ class XMLRPCTestCase(LaunchpadTestCase):
         cmd = 'twistd -oy %s' % (sibpath(__file__, 'test.tac'),)
         rv = os.system(cmd)
         self.failUnlessEqual(rv, 0)
-        self.server = xmlrpclib.Server('http://localhost:9666/')
 
-        # XXX: Wait for twistd to have a chance to start and connect to db.
-        #      It'd be cleaner to get a notification of this, rather than
-        #      guessing.
-        time.sleep(0.1)
-    
+        # Wait for the server to be listening on a port, and find out what that
+        # port is
+        while True:
+            try:
+                # Make sure it's really ready, including having written the port
+                # to a file
+                open('twistd.ready')
+
+                # Get the file with the port number
+                f = open('twistd.port')
+            except IOError:
+                pass
+            else:
+                port = int(f.read())
+                break
+
+        self.server = xmlrpclib.Server('http://localhost:%d/' % port)
+
     def test_getUser(self):
         # Check that getUser works, and returns the right contents
         markDict = self.server.getUser('mark@hbd.com')
@@ -88,7 +100,7 @@ class XMLRPCTestCase(LaunchpadTestCase):
                 break
             time.sleep(0.1)
         os.remove('twistd.log')
-        super(XMLRPCTestCase, self).setUp()
+        super(XMLRPCTestCase, self).tearDown()
         self.failIf(ret)
 
 

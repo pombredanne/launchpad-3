@@ -16,8 +16,8 @@ class IUserDetailsStorage(Interface):
     def getUser(loginID):
         """Get a user
 
-        :param loginID: A login ID (i.e. email address) or person ID from a user
-            dict.
+        :param loginID: A login ID (an email address, nickname, or numeric
+            person ID from a user dict).
         
         :returns: user dict if loginID exists, otherwise empty dict
         """
@@ -25,13 +25,14 @@ class IUserDetailsStorage(Interface):
     def authUser(loginID, sshaDigestedPassword):
         """Authenticate a user
         
+        :param loginID: A login ID, same as for getUser.
         :returns: user dict if authenticated, otherwise empty dict
         """
 
     def createUser(loginID, sshaDigestedPassword, displayname, emailAddresses):
         """Create a user
         
-        :param loginID: an email address.
+        :param loginID: A login ID, same as for getUser.
         :param sshaDigestedPassword: SSHA digest of the password.
         :param displayname: full name, for display.
         :param emailAddresses: list of email addresses.  The loginID may appear
@@ -44,8 +45,17 @@ class IUserDetailsStorage(Interface):
     def changePassword(loginID, sshaDigestedPassword, newSshaDigestedPassword):
         """Change a password
 
+        :param loginID: A login ID, same as for getUser.
         :param sshaDigestedPassword: SSHA digest of the current password.
         :param newSshaDigestedPassword: SSHA digest of the new password.
+        """
+
+    def getSSHKeys(loginID):
+        """Retrieve SSH public keys for a given user
+        
+        :param loginID: a login ID.
+        :returns: list of 2-tuples of (key type, key text).  This list will be
+            empty if the user has no keys or does not exist.
         """
 
 

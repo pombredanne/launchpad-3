@@ -56,6 +56,7 @@ __all__ = (
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
+'SSHKeyType',
 'TranslationPriority',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
@@ -1801,4 +1802,25 @@ class KarmaField(DBSchema):
 
         User uploaded a new package to the system.
     """)
+
+
+class SSHKeyType(DBSchema):
+    """SSH key type
+
+    SSH (version 2) can use RSA or DSA keys for authentication.  See OpenSSH's
+    ssh-keygen(1) man page for details.
+    """
+
+    RSA = Item(1, """
+        RSA
+
+        RSA
+        """)
+
+    DSA = Item(2, """
+        DSA
+
+        DSA
+        """)
+
 
