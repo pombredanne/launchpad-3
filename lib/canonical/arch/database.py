@@ -473,7 +473,7 @@ class RevisionMapper(object):
 
         f = ChangesetFile(changeset=revision.changeset.id,
                           changesetfilename=name.id,
-                          filecontents=data[:100],
+                          filecontents="",
                           filesize=size)
         for checksum in checksums:
             hashes={"md5":0, "sha1":1}
