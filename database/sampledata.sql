@@ -11,10 +11,10 @@
  
 
 -- Schema
-INSERT INTO schema (name, title, description, owner, extensible) VALUES('Mark schema', 'TITLE', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
-INSERT INTO Schema (name, title, description, owner, extensible) values('schema', 'SCHEMA', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
-INSERT INTO Schema (name, title, description, owner, extensible) values('trema', 'XCHEMA', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
-INSERT INTO Schema (name, title, description, owner, extensible) values('enema', 'ENHEMA', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
+INSERT INTO schema (name, title, description, owner, extensible) VALUES('Mark schema', 'TITLE', 'description', (Select id from Person where displayname = 'Mark Shuttleworth'), true);
+INSERT INTO Schema (name, title, description, owner, extensible) values('schema', 'SCHEMA', 'description', (Select id from Person where displayname = 'Mark Shuttleworth'), true);
+INSERT INTO Schema (name, title, description, owner, extensible) values('trema', 'XCHEMA', 'description', (Select id from Person where displayname = 'Mark Shuttleworth'), true);
+INSERT INTO Schema (name, title, description, owner, extensible) values('enema', 'ENHEMA', 'description', (Select id from Person where displayname = 'Mark Shuttleworth'), true);
 
 
  -- Label
@@ -49,13 +49,13 @@ INSERT INTO Binarypackage (name, title, description) values ('plone-1.0', 'Plone
  -- ProcessorFamily
 INSERT INTO ProcessorFamily (name, title, description, owner) 
 VALUES ('x86', 'Intel 386 compatible chips', 'Bring back the 8086!', 
-         (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'));
+         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'));
  
  -- Processor
 INSERT INTO Processor (family, name, title, description, owner)
 VALUES ((SELECT id FROM ProcessorFamily WHERE name = 'x86'),
          '386', 'Intel 386', 'Intel 386 and its many derivatives and clones, the basic 32-bit chip in the x86 family',
-        (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'));
+        (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'));
  
  -- BinarypackageBuild
 INSERT INTO BinarypackageBuild (sourcepackagerelease, binarypackage, processor,
@@ -127,7 +127,7 @@ INSERT INTO DistroArchRelease (distrorelease, processorfamily, architecturetag, 
 VALUES ((SELECT id FROM DistroRelease WHERE name = 'warty'),
          (SELECT id FROM ProcessorFamily WHERE name = 'x86'),
 	'warty--x86--devel--0',
- 	(SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'));
+ 	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'));
   
 
 -- BinarypackageUpload
@@ -259,6 +259,27 @@ VALUES ((SELECT id FROM Distrorelease WHERE name = 'grumpy'),
  * Sample data for Rosetta
  */
 
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín' );
+INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
+VALUES ((SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
+	'gnome', 'GNOME', 'The GNOME Project', 'foo', 'bar', 'http://www.gnome.org/' );
+INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
+VALUES ((SELECT id FROM Project WHERE name='gnome'),
+	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
+	'evolution', 'Evolution', 'The Evolution Groupware', 'foo', 'bar', 'http://www.novell.com/' );
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('gnome', 'GNOME', 'The GNOME Project', false);
+INSERT INTO ArchNamespace (archarchive, category, branch, version, visible)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'gnome'), 'gnome', 'evolution',
+	'2.0', false);
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchNamespace
+	 WHERE category = 'gnome' AND
+	       branch = 'evolution' AND
+	       version = '2.0'),
+	'Evolution 2.0', 'text',
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'));
+
 
 INSERT INTO License (legalese) VALUES ('GPL-2');
 
@@ -269,15 +290,15 @@ INSERT INTO POTemplate (product, branch, priority, name, title,
 			path, iscurrent, messagecount, owner)
 VALUES ((SELECT id FROM Product WHERE name = 'evolution'),
         (SELECT id FROM Branch
-	WHERE title = 'Evolution 1.5.90'),
-	2, 'evolution-1.5.90',
+	WHERE title = 'Evolution 2.0'),
+	2, 'evolution-2.0',
 	'Main POT file for the Evolution 2.0 development branch',
 	'I suppose we should create a long description here....',
 	'Copyright (C) 2003  Ximian Inc.',
 	(SELECT id FROM License WHERE legalese = 'GPL-2'),
 	timestamp '2004-08-17 09:10',
 	'po/', TRUE, 3, 	
-	(SELECT id FROM Person WHERE presentationname = 'Carlos Perelló Marín'));
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'));
 
 --  1
 INSERT INTO POMsgID (msgid) VALUES ('evolution addressbook');
@@ -592,7 +613,7 @@ INSERT INTO POMsgID (msgid) VALUES ('_Add Group');
 INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
 		    lasttranslator, currentcount, updatescount, rosettacount,
 		    pluralforms)
-VALUES ((SELECT id FROM POTemplate WHERE name = 'evolution-1.5.90'),
+VALUES ((SELECT id FROM POTemplate WHERE name = 'evolution-2.0'),
         (SELECT id FROM Language WHERE code = 'cy'),
 	' traducción de es.po al Spanish\n'
         ' translation of es.po to Spanish\n'
@@ -620,7 +641,7 @@ VALUES ((SELECT id FROM POTemplate WHERE name = 'evolution-1.5.90'),
         'X-Generator: KBabel 1.3.1\n'
         'Plural-Forms:  nplurals=2; plural=(n != 1);\n',
 	FALSE,
-	(SELECT id FROM Person WHERE presentationname = 'Carlos Perelló Marín'),
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	2, 0, 1, 2);
 
 INSERT INTO POTranslation (translation)
@@ -637,7 +658,7 @@ VALUES (16, 1, now(), now(), TRUE, 0);
 INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
 				   inpofile, pluralform, person, origin)
 VALUES (16, 1, 1, now(), now(), TRUE, 0,
-	(SELECT id FROM Person WHERE presentationname = 'Carlos Perelló Marín'),
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
 INSERT INTO POTranslation (translation)
@@ -654,7 +675,7 @@ VALUES (17, 2, now(), now(), TRUE, 0);
 INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
 				   inpofile, pluralform, person, origin)
 VALUES (17, 2, 1, now(), now(), TRUE, 0,
-	(SELECT id FROM Person WHERE presentationname = 'Carlos Perelló Marín'),
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 	
 /* An example for a fuzzy string */
@@ -671,7 +692,7 @@ VALUES (18, 3, now(), now(), TRUE, 0);
 INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
 				   inpofile, pluralform, person, origin)
 VALUES (18, 3, 1, now(), now(), TRUE, 0,
-	(SELECT id FROM Person WHERE presentationname = 'Carlos Perelló Marín'),
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
 /* An example for plural forms */
@@ -696,13 +717,13 @@ VALUES (19, 94, now(), now(), TRUE, 1);
 INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
 				   inpofile, pluralform, person, origin)
 VALUES (19, 4, 1, now(), now(), TRUE, 0,
-	(SELECT id FROM Person WHERE presentationname = 'Carlos Perelló Marín'),
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
 INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
 				   inpofile, pluralform, person, origin)
 VALUES (19, 5, 1, now(), now(), TRUE, 1,
-	(SELECT id FROM Person WHERE presentationname = 'Carlos Perelló Marín'),
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
 /* An example for obsolete string */
@@ -719,6 +740,6 @@ VALUES (20, 95, now(), now(), TRUE, 0);
 INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
 				   inpofile, pluralform, person, origin)
 VALUES (20, 6, 1, now(), now(), TRUE, 0,
-	(SELECT id FROM Person WHERE presentationname = 'Carlos Perelló Marín'),
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
