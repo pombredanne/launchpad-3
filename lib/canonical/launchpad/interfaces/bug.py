@@ -92,7 +92,6 @@ class IBug(Interface):
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
     messages = Attribute('SQLObject.Multijoin of IBugMessages')
-    people = Attribute('SQLObject.Multijoin of IPerson')
     productassignment = Attribute('SQLObject.Multijoin of IProductBugAssigment')
     packageassignment = Attribute(
             'SQLObject.Multijoin of ISourcePackageBugAssignment'
@@ -102,8 +101,6 @@ class IBug(Interface):
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
-
-    url = Attribute('Generated URL based on data and reference type')
 
 # XXX Mark Shuttleworth comments: we can probably get rid of this and
 # consolidate around IBug

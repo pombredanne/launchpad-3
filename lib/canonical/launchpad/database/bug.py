@@ -81,15 +81,6 @@ class Bug(SQLBase):
                             message='Message here')
         self._SO_set_title(value)
 
-    def _url(self):
-        if int(self.bugreftype) == int(dbschema.BugExternalReferenceType.CVE):
-            return 'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=%s' % (
-                    urlquote(self.data)
-                    )
-        else:
-            return self.data
-    url = property(_url, None)
-
 
 class MaloneBug(Bug):
     implements(IMaloneBug)
@@ -224,7 +215,7 @@ def MaloneBugFactory(context, **kw):
             hitstimestamp=now,
             activityscore=0,
             activitytimestamp=now,
-            owner=1, # will be logged in user
+            owner=context.request.principal.id,
             **kw
             )
     return bug

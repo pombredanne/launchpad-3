@@ -5,12 +5,15 @@ from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
 from canonical.launchpad.interfaces import IBug
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.database import BugTracker
+from canonical.launchpad.database import BugTracker, EmailAddress
 from canonical.lp.dbschema import BugAssignmentStatus, BugPriority, \
-     BugSeverity, BugInfestationStatus, BugExternalReferenceType
+     BugSeverity, BugInfestationStatus, BugExternalReferenceType, \
+     BugSubscription
 from canonical.launchpad.vocabularies import BugTrackerVocabulary
 
-FROM_MAIL = "noreply@bbnet.ca"
+FROM_ADDR = "noreply@bbnet.ca"
+GLOBAL_NOTIFICATION_EMAIL_ADDR = "global@bbnet.ca"
+CC = "CC"
 
 def send_edit_notification(from_addr, to_addrs, subject, edit_header_line,
                            changes):
@@ -28,7 +31,15 @@ The following changes were made:
 
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug."""
-    return ['test@bbnet.ca']
+    subscribers = [
+        s.person for s in bug.subscriptions
+        if BugSubscription.items[s.subscription].title == CC]
+    emails = [GLOBAL_NOTIFICATION_EMAIL_ADDR]
+    for s in subscribers:
+        emails.append(
+            EmailAddress.select(EmailAddress.q.personID == s.id)[0].email)
+
+    return emails
 
 def get_changes(before, after, fields):
     """Return what changed from the object before to after for the
@@ -52,6 +63,50 @@ def get_changes(before, after, fields):
 
     return changes
 
+def notify_bug_added(bug, event):
+    """Notify the owner and the global notification list that a bug
+    was added."""
+    owner = "(no owner)"
+    if bug.owner:
+        owner = bug.owner.displayname
+
+    msg = """\
+Title: %(title)s
+Short Description: %(short_desc)s
+Description: %(description)s
+Source Package: %(source_package)s
+Owner: %(owner)s
+""" % {'title' : bug.title,
+       'short_desc' : bug.shortdesc,
+       'description' : bug.description,
+       'source_package' : bug.sourcepackage.sourcepackagename.name,
+       'owner' : owner}
+
+    if bug.owner:
+        owner_email = EmailAddress.select(
+            EmailAddress.q.personID == bug.owner.id)[0].email
+        simple_sendmail(
+            FROM_ADDR, [owner_email], "'%s' added" % bug.title, msg)
+
+def notify_bug_modified(modified_bug, event):
+    """Notify the Cc'd list that this bug has been modified."""
+    changes = get_changes(
+        before = event.object_before_modification,
+        after = event.object,
+        fields = (
+            ("title", None),
+            ("shortdesc", None),
+            ("description", None),
+            ("name", None)))
+
+    send_edit_notification(
+        from_addr = FROM_ADDR,
+        to_addrs = get_cc_list(modified_bug),
+        subject = "'%s' edited" % event.object_before_modification.title,
+        edit_header_line = (
+            "Edited bug: %s" % event.object_before_modification.title),
+        changes = changes)
+
 def notify_bug_assigned_product_added(product_assignment, event):
     """Notify CC'd list that this bug has been assigned to
     a product."""
@@ -72,7 +127,7 @@ Assigned: %(assigned)s
        'assigned' : assignee_name}
 
     simple_sendmail(
-        FROM_MAIL, get_cc_list(product_assignment.bug),
+        FROM_ADDR, get_cc_list(product_assignment.bug),
         '"%s" product assignment' % product_assignment.bug.title, msg)
 
 def notify_bug_assigned_product_modified(modified_product_assignment, event):
@@ -89,7 +144,7 @@ def notify_bug_assigned_product_modified(modified_product_assignment, event):
             ("assignee", lambda v: v.displayname)))
 
     send_edit_notification(
-        from_addr = FROM_MAIL,
+        from_addr = FROM_ADDR,
         to_addrs = get_cc_list(modified_product_assignment.bug),
         subject = '"%s" product assignment edited' % modified_product_assignment.bug.title,
         edit_header_line = (
@@ -122,7 +177,7 @@ Assigned: %(assigned)s
        'assigned' : assignee_name}
 
     simple_sendmail(
-        FROM_MAIL, get_cc_list(package_assignment.bug),
+        FROM_ADDR, get_cc_list(package_assignment.bug),
         '"%s" package assignment' % package_assignment.bug.title, msg)
 
 def notify_bug_assigned_package_modified(modified_package_assignment, event):
@@ -139,7 +194,7 @@ def notify_bug_assigned_package_modified(modified_package_assignment, event):
             ("assignee", lambda v: v.displayname)))
 
     send_edit_notification(
-        from_addr = FROM_MAIL,
+        from_addr = FROM_ADDR,
         to_addrs = get_cc_list(modified_package_assignment.bug),
         subject = '"%s" package assignment edited' % modified_package_assignment.bug.title,
         edit_header_line = (
@@ -159,7 +214,7 @@ Infestation: %(infestation)s
        'infestation' : BugInfestationStatus.items[product_infestation.infestationstatus].title}
 
     simple_sendmail(
-        FROM_MAIL, get_cc_list(product_infestation.bug),
+        FROM_ADDR, get_cc_list(product_infestation.bug),
         '"%s" product infestation' % product_infestation.bug.title, msg)
 
 def notify_bug_product_infestation_modified(modified_product_infestation, event):
@@ -173,11 +228,11 @@ def notify_bug_product_infestation_modified(modified_product_infestation, event)
             ("infestationstatus", lambda v: BugInfestationStatus.items[v].title)))
 
     send_edit_notification(
-        from_addr = FROM_MAIL,
+        from_addr = FROM_ADDR,
         to_addrs = get_cc_list(modified_product_infestation.bug),
         subject = (
             '"%s" product infestation edited' %
-            event.object_before_modification.bug.title),
+            modified_product_infestation.bug.title),
         edit_header_line = (
             "Edited infested product: %s" %
             event.object_before_modification.productrelease.product.displayname + " " +
@@ -196,7 +251,7 @@ Infestation: %(infestation)s
        'infestation' : BugInfestationStatus.items[package_infestation.infestationstatus].title}
 
     simple_sendmail(
-        FROM_MAIL, get_cc_list(package_infestation.bug),
+        FROM_ADDR, get_cc_list(package_infestation.bug),
         '"%s" package infestation' % package_infestation.bug.title, msg)
 
 def notify_bug_package_infestation_modified(modified_package_infestation, event):
@@ -205,11 +260,12 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
         before = event.object_before_modification,
         after = event.object,
         fields = (
-            ("sourcepackagerelease", lambda v: "%s %s" % (v.name, v.version)),
+            ("sourcepackagerelease", lambda v: "%s %s" % (
+                v.sourcepackage.sourcepackagename.name, v.version)),
             ("infestationstatus", lambda v: BugInfestationStatus.items[v].title)))
 
     send_edit_notification(
-        from_addr = FROM_MAIL,
+        from_addr = FROM_ADDR,
         to_addrs = get_cc_list(modified_package_infestation.bug),
         subject = '"%s" package infestation edited' % modified_package_infestation.bug.title,
         edit_header_line = (
@@ -230,7 +286,7 @@ def notify_bug_comment_added(comment, event):
          comment.contents)
 
     simple_sendmail(
-        FROM_MAIL, get_cc_list(comment.bug),
+        FROM_ADDR, get_cc_list(comment.bug),
         'Comment on "%s"' % comment.bug.title, msg)
 
 def notify_bug_external_ref_added(ext_ref, event):
@@ -245,7 +301,7 @@ Description: %(description)s
        'description' : ext_ref.description}
 
     simple_sendmail(
-        FROM_MAIL, get_cc_list(ext_ref.bug),
+        FROM_ADDR, get_cc_list(ext_ref.bug),
         '"%s" external reference added' % ext_ref.bug.title, msg)
 
 def notify_bug_watch_added(watch, event):
@@ -257,7 +313,7 @@ Remote Bug: %(remote_bug)s
 """ % {'bug_tracker' : watch.bugtracker.title, 'remote_bug' : watch.remotebug}
 
     simple_sendmail(
-        FROM_MAIL, get_cc_list(watch.bug),
+        FROM_ADDR, get_cc_list(watch.bug),
         '"%s" watch added' % watch.bug.title, msg)
 
 def notify_bug_watch_modified(modified_bug_watch, event):
@@ -270,7 +326,7 @@ def notify_bug_watch_modified(modified_bug_watch, event):
             ("remotebug", lambda v: v)))
 
     send_edit_notification(
-        from_addr = FROM_MAIL,
+        from_addr = FROM_ADDR,
         to_addrs = get_cc_list(modified_bug_watch.bug),
         subject = '"%s" watch edited' % event.object_before_modification.bug.title,
         edit_header_line = (

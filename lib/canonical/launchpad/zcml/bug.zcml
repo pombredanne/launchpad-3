@@ -80,6 +80,7 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
         label="Change Bug Information"
         permission="launchpad.AnyPerson"
         template="../templates/bug-edit.pt"
