@@ -83,10 +83,10 @@ DROP VIEW PublishedSourcePackage;
 
 CREATE VIEW PublishedSourcePackage AS SELECT
 SourcePackagePublishing.id AS id,
-DistroRelease.name AS distroreleasename,
-SourcePackageName.name AS sourcepackagename,
-Component.name AS componentname,
-Section.name AS sectionname,
+        DistroRelease.name AS distroreleasename,
+    SourcePackageName.name AS sourcepackagename,
+            Component.name AS componentname,
+              Section.name AS sectionname,
 DistroRelease.distribution AS distribution
 
 FROM
@@ -117,11 +117,11 @@ WHERE SourcePackagePublishing.distrorelease = DistroRelease.id
 DROP VIEW PublishedBinaryPackage;
 
 CREATE VIEW PublishedBinaryPackage AS SELECT
-PackagePublishing.id AS id,
-DistroRelease.name AS distroreleasename,
-BinaryPackageName.name AS binarypackagename,
-Component.name AS componentname,
-Section.name AS sectionname,
+      PackagePublishing.id AS id,
+        DistroRelease.name AS distroreleasename,
+    BinaryPackageName.name AS binarypackagename,
+            Component.name AS componentname,
+              Section.name AS sectionname,
 PackagePublishing.priority AS priority,
 DistroRelease.distribution AS distribution
 
@@ -147,3 +147,82 @@ WHERE PackagePublishing.distroarchrelease = DistroArchRelease.id
      OR PackagePublishing.status = 3
       )
 ;
+
+-- ------------------------------------------------------------------------- --
+-- ------------------------------------------------------------------------- --
+-- ------------------------------------------------------------------------- --
+
+DROP VIEW PublishedSourcePackageFile;
+
+CREATE VIEW PublishedSourcePackageFile AS SELECT
+LibraryFileAlias.id || '.' || SourcePackagePublishing.id  AS id,
+		   DistroRelease.name AS distroreleasename,
+                       Component.name AS componentname,
+               SourcePackageName.name AS sourcepackagename,
+            LibraryFileAlias.filename AS libraryfilealiasfilename,
+           DistroRelease.distribution AS distribution
+
+FROM SourcePackagePublishing,
+     SourcePackageRelease,
+     SourcePackageReleaseFile,
+     LibraryFileAlias,
+     DistroRelease,
+     SourcePackage,
+     SourcePackageName,
+     Component
+
+WHERE SourcePackagePublishing.distrorelease = DistroRelease.id
+  AND SourcePackagePublishing.sourcepackagerelease = SourcePackageRelease.id
+  AND SourcePackageReleaseFile.sourcepackagerelease = SourcePackageRelease.id
+  AND LibraryFileAlias.id = SourcePackageReleaseFile.libraryfile
+-- In dbschema.py status of 2 or 3 are published to the overrides
+  AND ( SourcePackagePublishing.status = 2
+   OR   SourcePackagePublishing.status = 3
+      )
+  AND SourcePackageRelease.sourcepackage = SourcePackage.id
+  AND SourcePackageName.id = SourcePackage.sourcepackagename
+  AND Component.id = SourcePackagePublishing.component
+;
+
+-- ------------------------------------------------------------------------- --
+
+DROP VIEW PublishedBinaryPackageFile;
+
+CREATE VIEW PublishedBinaryPackageFile AS SELECT
+LibraryFileAlias.id || '.' || PackagePublishing.id AS id,
+               DistroRelease.name AS distroreleasename,
+DistroArchRelease.architecturetag AS architecturetag,
+                   Component.name AS componentname,
+           SourcePackageName.name AS sourcepackagename,
+        LibraryFileAlias.filename AS libraryfilealiasfilename,
+       DistroRelease.distribution AS distribution
+
+FROM PackagePublishing,
+     SourcePackage,
+     SourcePackageRelease,
+     SourcePackageName,
+     Build,
+     BinaryPackage,
+     BinaryPackageFile,
+     LibraryFileAlias,
+     DistroArchRelease,
+     DistroRelease,
+     Component
+
+WHERE DistroRelease.id = DistroArchRelease.distrorelease
+  AND PackagePublishing.distroarchrelease = DistroArchRelease.id
+  AND PackagePublishing.binarypackage = BinaryPackage.id
+  AND BinaryPackageFile.binarypackage = BinaryPackage.id
+  AND BinaryPackageFile.libraryfile = LibraryFileAlias.id
+  AND BinaryPackage.build = Build.id
+  AND Build.sourcepackagerelease = SourcePackageRelease.id
+  AND SourcePackageRelease.sourcepackage = SourcePackage.id
+  AND Component.id = PackagePublishing.component
+  AND SourcePackageName.id = SourcePackage.sourcepackagename
+-- In dbschema.py status of 2 or 3 is published to the overrides
+  AND ( PackagePublishing.status = 2
+   OR   PackagePublishing.status = 3
+      )
+
+;
+

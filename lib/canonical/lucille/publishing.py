@@ -161,3 +161,47 @@ class Publisher(object):
                     f.write("\n")
                 f.close()
                 
+    def publishFileLists(self, sourcefiles, binaryfiles, listroot):
+        """Collate the set of source files and binary files provided and
+        write out all the file list files for them.
+
+        listroot/distrorelease_component_source
+        listroot/distrorelease_component_binary-archname
+        """
+        filelist = {}
+        for f in sourcefiles:
+            distrorelease = f.distroreleasename.encode('utf-8')
+            component = f.componentname.encode('utf-8')
+            sourcepackagename = f.sourcepackagename.encode('utf-8')
+            filename = f.libraryfilealiasfilename.encode('utf-8')
+            ondiskname = self._pathfor(sourcepackagename,component,filename)
+
+            filelist.setdefault(distrorelease, {})
+            filelist[distrorelease].setdefault(component,{})
+            filelist[distrorelease][component].setdefault('source',[])
+            filelist[distrorelease][component]['source'].append(ondiskname)
+
+        for f in binaryfiles:
+            distrorelease = f.distroreleasename.encode('utf-8')
+            component = f.componentname.encode('utf-8')
+            sourcepackagename = f.sourcepackagename.encode('utf-8')
+            filename = f.libraryfilealiasfilename.encode('utf-8')
+            architecturetag = f.architecturetag.encode('utf-8')
+            architecturetag = "binary-%s" % architecturetag
+            
+            ondiskname = self._pathfor(sourcepackagename,component,filename)
+
+            filelist.setdefault(distrorelease, {})
+            filelist[distrorelease].setdefault(component,{})
+            filelist[distrorelease][component].setdefault(architecturetag,[])
+            filelist[distrorelease][component][architecturetag].append(ondiskname)
+
+        # Now write them out...
+        for dr in filelist:
+            for comp in filelist[dr]:
+                for arch in filelist[dr][comp]:
+                    f = open("%s/%s_%s_%s" % (listroot, dr, comp, arch), "w")
+                    for name in filelist[dr][comp][arch]:
+                        f.write("%s\n" % name)
+                    f.close()
+
