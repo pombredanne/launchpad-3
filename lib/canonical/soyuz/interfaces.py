@@ -467,7 +467,7 @@ class ISourcePackage(Interface):
 
     maintainer = Attribute("Maintainer")
     name = Attribute("A string")
-    title = Attribute("Package Title")
+    shortdesc = Attribute("Package Shortdesc")
     description = Attribute("Package Description")
     distro = Attribute("Package Distribution")
     ##releases = Attribute("List of ISourcePackageRelease objects")

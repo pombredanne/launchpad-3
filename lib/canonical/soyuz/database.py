@@ -204,13 +204,6 @@ class SoyuzSourcePackage(SQLBase):
         return self.sourcepackagename.name
     name = property(name)
 
-    def title(self):
-        import warnings
-        warnings.warn("Use SoyuzSourcePackage.shortdesc instead of .title",
-                      DeprecationWarning)
-        return self.shortdesc
-    title = property(title)
-
     def product(self):
         try:
             return SoyuzProduct.select(
@@ -300,6 +293,7 @@ class SoyuzSourcePackageRelease(SQLBase):
         DateTimeCol('dateuploaded', dbName='dateuploaded', notNull=True,
                     default='NOW'),
         IntCol('urgency', dbName='urgency', notNull=True),
+        StringCol('changelog', dbName='changelog'),
         StringCol('builddepends', dbName='builddepends'),
         StringCol('builddependsindep', dbName='builddependsindep'),
     ]

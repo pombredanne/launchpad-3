@@ -16,35 +16,57 @@
 
 <h1><spam
 tal:content="context/binarypackagerelease/shortdesc">TITLE</spam> 
-<spam tal:content="context/version">Version</spam>
+(<spam tal:content="context/version" />)
 </h1>
 
- <p><h4>Package name:</h4>
-    <span tal:content="context/binarypackagerelease/name">NAME</span>
+ <fieldset>
+   <legend>
+     Binary Package Information
+   </legend>
 
- <p><h4>Package Description:</h4>
-    <span tal:content="context/binarypackagerelease/description">
-    DESCRIPTION</span>
+    <p><b>Binary Package name:</b>
+    <a tal:content="context/binarypackagerelease/name" 
+    tal:attributes="href string:../../${context/binarypackagerelease/name}"/>
 
-<div class="dummy">
- <p><h4>Package Maintainer:</h4>
-    <span>Does it exist for binarypackages????</span>
-</div>
+    <p><b>Source Package Release:</b>
+    <a class="dummy"> xxxxx </a>
 
-<div class="dummy">
+    <p><b>Build:</b>
+    <a class="dummy"> xxxxx </a>
+
+    <p><b>Package Format:</b>
+    <a class="dummy"> xxxxx </a>
+
+    <p><b>Component:</b>
+    <a class="dummy"> xxxxx </a>
+
+    <p><b>Section:</b>
+    <a class="dummy"> xxxxx </a>
+
+    <p><b>Priority:</b>
+    <a class="dummy"> xxxxx </a>
+
+    <p><b>Installed Size:</b>
+    <a class="dummy"> xxxxx </a>
+
+    <p><b>Licence:</b>
+    <a class="dummy"> xxxxx </a>
+
+ </fieldset>
+
  <p><h4>Package Bugs:</h4>
-    <span>#1, #2, #3</span>
-</div>
+ <div class="dummy">
+   <span>#1, #2, #3</span>
+ </div>
 
  <p><h4>Builds:</h4>
  <tal:block tal:repeat="arch context/archs">
  [
- <a tal:content="arch" tal:attributes="href arch">
- ARCH
+ <a class="dummy" tal:content="arch" tal:attributes="href arch">
+   ARCH
  </a>
  ]
  </tal:block>
-
 
 </div>
 </body>

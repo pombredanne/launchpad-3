@@ -737,6 +737,130 @@ UPDATE sourcepackagerelease set builddependsindep =
 	(SELECT id FROM Sourcepackagename WHERE name = 'evolution'))
 	;
 
+UPDATE sourcepackagerelease set changelog = 
+'
+mozilla-thunderbird (0.5-4) unstable; urgency=low
+
+  * reenabled hppa patch, which apparently led to FTBFS on hppa
+
+ -- Alexander Sack <asac@jwsdot.com>  Thu, 04 Mar 2004 21:30:20 +0100
+
+mozilla-thunderbird (0.5-3) unstable; urgency=medium
+
+  * preinst added to allow clean upgrade path to this
+      (Closes: 234118, Closes: 234267)
+  * added prerm script to allow a clean remove of package
+
+ -- Alexander Sack <asac@jwsdot.com>  Sun, 29 Feb 2004 10:30:20 +0100
+
+mozilla-thunderbird (0.5-2) unstable; urgency=low
+
+  * new source package layout!! Now using orig.tar.gz with diff.gz
+    (Closes: 232055)
+  * moved arch-indep chrome stuff to /usr/share/mozilla-thunderbird/chrome
+  * moved images to /usr/share/mozilla-thunderbird/res
+      /usr/share/mozilla-thunderbird/icons
+      /usr/share/mozilla-thunderbird/chrome/icons
+
+ -- Alexander Sack <asac@jwsdot.com>  Thu, 19 Feb 2004 19:30:20 +0100
+
+mozilla-thunderbird (0.5-1.1) unstable; urgency=low
+
+  * new source package layout!! Now using orig.tar.gz with diff.gz
+
+ -- Alexander Sack <asac@jwsdot.com>  Mon, 11 Feb 2003 19:30:20 +0100
+
+mozilla-thunderbird (0.5-1) unstable; urgency=low
+
+ Aggregated changes since 0.4-1:
+  * new upstream release 0.5 included
+  * added xprt-xprintorg to Recommends (Closes: 226626)
+  * upgraded enigmail to 0.83.2 (Closes: 228678)
+      + includes a workaround for mozilla bug
+          leading to a crash in rare situations
+          (fixed in 0.82.6)
+  * improved package structure. Sources now are included as original archives
+        & are extracted to build-dir. (Closes: 225033)
+  * Minor wording changes in package description, pointed out by
+      Mark Stevenson.
+  * New debianization of appearance (branding)
+  * added switches for pref.js config entries for
+        individual doubleclick timeout & drag threshold
+        settings in gtk2 (Closes: 229146)
+
+ -- Alexander Sack <asac@jwsdot.com>  Mon, 09 Feb 2003 19:30:20 +0100
+' 
+WHERE  sourcepackage = (SELECT id from sourcepackage where sourcepackagename = 
+	(select id from sourcepackagename where name = 'mozilla-thunderbird')
+	);
+
+
+UPDATE sourcepackagerelease set changelog = 
+'
+mozilla-firefox (0.8-12) unstable; urgency=low
+
+  * The "Last Chance Before 0.9" release.
+  * debian/mozilla-firefox-runner: Fix unescaped \n, thanks Olly
+    Betts. (Closes: #252436)
+  * debian/update-mozilla-firefox-chrome: Watch out for empty
+    LD_LIBRARY_PATH. Thanks George Cristian Birzan. (Closes: #254142)
+  * debian/README.Debian: Restructure and update a bit.
+  * debian/presubj: Add bug information from README.Debian for reportbug.
+  * debian/mozilla-firefox.install: Install the presubj.
+
+ -- Eric Dorland <eric@debian.org>  Mon, 14 Jun 2004 19:39:27 -0400
+
+mozilla-firefox (0.8-11) unstable; urgency=low
+
+  * Apply amd64 fix from #249211.
+  * debian/README.Debian: Shamelessly stole the java plugin installation
+    instructions from the mozilla package. (Closes: #243513)
+  * nsCommonWidget.cpp, nsCommonWidget.h, nsWindow.cpp: Apply patch (with
+    some hand massaging) from upstream bugzilla bug #209342 to fix initial
+    window placement. (Closes: #235209, 241519)
+  * nsprpub/pr/src/misc/prnetdb.c: Apply patch from Miquel van Smoorenburg
+    to prevent unless reverse DNS lookups. (Closes: #251978)
+  * debian/mozilla-firefox-runner: Apply patch from Jasper Spaans to fix
+    remote xprint printing. (Closes: #252072)
+
+ -- Eric Dorland <eric@debian.org>  Tue,  1 Jun 2004 23:12:36 -0400
+
+mozilla-firefox (0.8-10) unstable; urgency=low
+
+  * debian/mozilla-firefox.install: Don\'t install uuencoded file. (Closes:
+    #251441)
+  * debian/mozilla-firefox-runner: unset AUDIODEV which can cause
+    crashes. Thanks Christopher Armstrong. (Closes: #236231)
+  * update-mozilla-firefox-chrome: Port security fix from #249613 to
+    handle insecure tempfile creation.
+  * debian/rules: Following the advice of #247585 I\'m disabling postscript
+    printing. Perhaps this will alleviate some of the other printing
+    problems.
+
+ -- Eric Dorland <eric@debian.org>  Sun, 30 May 2004 01:47:52 -0400
+
+mozilla-firefox (0.8-9) unstable; urgency=low
+
+  * debian/control:
+    - Suggest latex-xft-fonts for MathML fonts. Thanks Michael
+      JasonSmith. (Closes: #216925)
+    - Build depend on libx11-dev & libxp-dev instead of xlibs-dev to
+      reflect new X packages.
+  * widget/src/gtk2/nsWindow.cpp: Apply patch from Peter Colberg to ignore
+    unused mouse buttons. (Closes: #244305)
+  * debian/README.Debian: Document the fact that the loopback interface
+    has to be up and unfiltered for things to work right.
+
+ -- Eric Dorland <eric@debian.org>  Wed,  5 May 2004 23:30:42 -0400
+
+'
+WHERE  sourcepackage = (SELECT id from sourcepackage where sourcepackagename = 
+	(select id from sourcepackagename where name = 'mozilla-firefox')
+	);
+
+
+
+
 --Manifest
 INSERT INTO Manifest (datecreated, owner)
 VALUES (timestamp '2004-06-29 00:00',  

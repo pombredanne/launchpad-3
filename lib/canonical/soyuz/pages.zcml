@@ -189,6 +189,15 @@
 	/>
    </pages>
 
+   <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	<page  name="+changelog"
+          template="templates/sourcechangelog-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+changelog"
+	/>
+   </pages>
+
    <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseBuildApp"
 
 	  allowed_attributes="results"	 
