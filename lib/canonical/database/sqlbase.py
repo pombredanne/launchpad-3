@@ -208,7 +208,6 @@ class ZopelessTransactionManager(object):
 
     def begin(self):
         self.manager.begin()
-        self.manager.get().join(self._dm())
 
     def commit(self, sub=False):
         self.manager.get().commit(sub)
