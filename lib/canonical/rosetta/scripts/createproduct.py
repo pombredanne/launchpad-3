@@ -6,10 +6,9 @@
 import os, popen2
 
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.database.sqlbase import SQLBase
+import canonical.lp
 from canonical.database.doap import Product, DBProject
 from canonical.rosetta.sql import RosettaPerson
-from sqlobject import connectionForURI
 from optparse import OptionParser
 from datetime import datetime
 
@@ -43,7 +42,7 @@ if __name__ == '__main__':
         if getattr(options, name) is None:
             raise RuntimeError("No %s specified." % name)
 
-    SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+    canonical.lp.initZopeless()
 
     person = RosettaPerson.get(int(options.owner))
     if person is None:

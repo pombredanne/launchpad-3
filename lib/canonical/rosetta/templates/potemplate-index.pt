@@ -22,7 +22,7 @@
     This file contains <i tal:content="view/num_messages">N messages</i>
     </p>
 
-    <p><a href="translate?languages=">Translate this template</a>.</p>
+    <p><a href="translate">Translate this template</a>.</p>
 
     <p><a href="upload">Update this template's data</a>.</p>
 

@@ -8,12 +8,10 @@ import unittest
 
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.interfaces import ILanguages
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
     xxxRosettaProject, RosettaProduct, RosettaLanguages
 from canonical.rosetta.poexport import POExport
-from sqlobject import connectionForURI
 
 
 expected = '''# traducci\xc3\xb3n de es.po al Spanish
@@ -135,7 +133,7 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
         super(POExportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
         utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+        canonical.lp.initZopeless()
 
     def testPoExportAdapter(self):
         try:

@@ -6,10 +6,9 @@
 import os, popen2
 
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.database.sqlbase import SQLBase
+import canonical.lp
 from canonical.rosetta.sql import RosettaPerson, RosettaEmailAddress
 from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
-from sqlobject import connectionForURI
 from optparse import OptionParser
 
 if __name__ == '__main__':
@@ -56,7 +55,7 @@ if __name__ == '__main__':
 
         passEncrypted = ssha.encrypt(options.password)
 
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+        canonical.lp.initZopeless()
 
         # XXX: We don't check if the person already exists
         person = RosettaPerson(givenName=options.given,

@@ -2,11 +2,10 @@
 # arch-tag: 752bd71e-584e-416e-abff-a4eb6c82399c
 
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.database.sqlbase import SQLBase
+import canonical.lp
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
     RosettaProduct
 from canonical.database.doap import DBProjects
-from sqlobject import connectionForURI
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 from optparse import OptionParser
 from transaction import get_transaction
@@ -14,7 +13,7 @@ from transaction import get_transaction
 class PODBBridge(PlacelessSetup):
 
     def __init__(self):
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+        canonical.lp.initZopeless()
 
     def imports(self, person, file, projectName, productName, poTemplateName,
         languageCode=None):

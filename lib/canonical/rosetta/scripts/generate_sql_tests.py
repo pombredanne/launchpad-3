@@ -51,11 +51,10 @@ def verifySQLObject(interface, implementation):
 """
 
 if mode == 'object':
-    print "from canonical.database.sqlbase import SQLBase"
     print "from canonical.rosetta.sql import RosettaPOMessageSet, RosettaLanguage"
-    print "from sqlobject import connectionForURI"
+    print "import canonical.lp"
     print
-    print "SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))"
+    print "canonical.lp.initZopeless()"
     print
 
 for t in tests:
