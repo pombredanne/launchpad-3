@@ -2,6 +2,176 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-23 17:16:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1482
+
+    Summary:
+      Merged LaunchpadPackagePoAttach spec implementation needed for Hoary Translations
+    Revision:
+      launchpad--devel--0--patch-1482
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1393
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-1
+       Merge with the potemplatelinkages implementation
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-2
+       Started the implementation work of the spec with daf, code split and tests added
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-3
+       More implementation of the spec and doctests
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-4
+       Added POTemplateNameSet
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-5
+       Merge changes from daf's branch
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-6
+       Implemented fifth case + tests
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-7
+       Merge from daf's archive
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-8
+       Merged potemplate-linkages branch
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-9
+       Fixed sample data
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-10
+       Merged all changes from potemplate-linkages
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-11
+       Final changes to implement the spec for Hoary translations
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-12
+       Activated the doctests
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-13
+       Applied all changes needed after the review
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-14
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-15
+       Merged with stub's branch to get the approved .sql patch
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-16
+       final changes before commit
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-17
+       Removed an unneeded test
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--base-0
+       tag of carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-3
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-1
+       more work on get_domains_from_tarball, various fixes
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-2
+       remove old code, more reorganisation, more implementation
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-3
+       merge from Carlos
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-4
+       fix POTemplateNameSet
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-5
+       remove dummy POTemplateNameSet
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-6
+       fixes to POTemplateSet, POTemplate
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-7
+       fixups
+    
+     * stuart.bishop@canonical.com/launchpad--carlos--1--base-0
+       tag of carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-14
+    
+     * stuart.bishop@canonical.com/launchpad--carlos--1--patch-1
+       tweak and approve DB patch
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-09-0.sql.id
+     database/schema/patch-11-09-0.sql
+     lib/canonical/launchpad/doc/.arch-ids/potemplatename.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/rosetta.py.id
+     lib/canonical/launchpad/doc/potemplatename.txt
+     lib/canonical/launchpad/doc/rosetta.py
+     lib/canonical/launchpad/scripts/.arch-ids/rosetta.py.id
+     lib/canonical/launchpad/scripts/rosetta.py
+     lib/canonical/launchpad/scripts/tests/.arch-ids/=id
+     lib/canonical/launchpad/scripts/tests/.arch-ids/__init__.py.id
+     lib/canonical/launchpad/scripts/tests/.arch-ids/test_rundoctests.py.id
+     lib/canonical/launchpad/scripts/tests/__init__.py
+     lib/canonical/launchpad/scripts/tests/test_rundoctests.py
+     lib/canonical/launchpad/tests/.arch-ids/test_helpers.py.id
+     lib/canonical/launchpad/tests/test_helpers.py
+
+    removed files:
+     lib/canonical/rosetta/.arch-ids/tar.py.id
+     lib/canonical/rosetta/tar.py
+     lib/canonical/rosetta/tests/.arch-ids/test_rundoctests.py.id
+     lib/canonical/rosetta/tests/test_rundoctests.py
+
+    modified files:
+     cronscripts/rosetta-package-po-attach.py
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/potemplatename.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/rosetta/browser.py
+
+    renamed files:
+     cronscripts/.arch-ids/rosetta-poupload_tar.py.id
+       ==> cronscripts/.arch-ids/rosetta-package-po-attach.py.id
+     cronscripts/rosetta-poupload_tar.py
+       ==> cronscripts/rosetta-package-po-attach.py
+
+    new directories:
+     lib/canonical/launchpad/scripts/tests
+     lib/canonical/launchpad/scripts/tests/.arch-ids
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-2
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-3
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-4
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-5
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-6
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-7
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-8
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-9
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-10
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-11
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-12
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-13
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-14
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-15
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-16
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-17
+     daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--base-0
+     daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-1
+     daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-2
+     daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-3
+     daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-4
+     daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-5
+     daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-6
+     daf@canonical.com--2004/launchpad--LaunchpadPackagePoAttach--0--patch-7
+     stuart.bishop@canonical.com/launchpad--carlos--1--base-0
+     stuart.bishop@canonical.com/launchpad--carlos--1--patch-1
+
+
 2005-03-23 16:03:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1481
 
     Summary:

@@ -80,16 +80,10 @@ standardPOFileHeader = (
 )
 
 def _attachRawFileData(raw_file_data, contents, importer):
-    # Initial check to be sure that the content is a valid .po/.pot file, if
-    # it fails an exception will be throw and the attachment will be rejected.
-    parser = POParser()
-    parser.write(contents)
-    parser.finish()
-
     raw_file_data.rawfile = base64.encodestring(contents)
     raw_file_data.daterawimport = UTC_NOW
-    if importer is not None:
-        raw_file_data.rawimporter = importer
+    assert importer is not None
+    raw_file_data.rawimporter = importer
     raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
 
 
@@ -312,7 +306,7 @@ class POTemplate(SQLBase, RosettaStats):
     _table = 'POTemplate'
 
     productrelease = ForeignKey(foreignKey='ProductRelease',
-        dbName='productrelease', notNull=False)
+        dbName='productrelease', notNull=False, default=None)
     priority = IntCol(dbName='priority', notNull=False, default=None)
     potemplatename = ForeignKey(foreignKey='POTemplateName',
         dbName='potemplatename', notNull=True)
@@ -323,7 +317,7 @@ class POTemplate(SQLBase, RosettaStats):
     license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = DateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
-    iscurrent = BoolCol(dbName='iscurrent', notNull=True)
+    iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False,
         default=None)
@@ -334,6 +328,10 @@ class POTemplate(SQLBase, RosettaStats):
     distrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='distrorelease', notNull=False, default=None)
     header = StringCol(dbName='header', notNull=False, default=None)
+    binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
+        dbName='binarypackagename', notNull=False, default=None)
+    languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
+    filename = StringCol(dbName='filename', notNull=False, default=None)
 
     poFiles = MultipleJoin('POFile', joinColumn='potemplate')
 

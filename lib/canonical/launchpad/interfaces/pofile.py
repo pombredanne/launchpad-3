@@ -164,6 +164,15 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
 
     header = Attribute("The header of this .pot file.")
 
+    binarypackagename = Attribute(
+        "The name of the binarypackage where this potemplate's translations"
+        " are installed.")
+
+    languagepack = Attribute(
+        "Flag to know if this potemplate belongs to a languagepack.")
+
+    filename = Attribute(
+        "The file name this PO Template had when last imported.")
 
     # A "current" messageset is one that was in the latest version of
     # the POTemplate parsed and recorded in the database. Current

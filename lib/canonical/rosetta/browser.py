@@ -32,7 +32,7 @@ from canonical.launchpad.database import Person, POTemplate, POFile
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader, POSyntaxError, \
     POInvalidInputError
-from canonical.rosetta.tar import string_to_tarfile, examine_tarfile
+from canonical.launchpad import helpers
 
 from canonical.lp.dbschema import RosettaImportStatus
 
@@ -651,17 +651,17 @@ class ViewPOTemplate:
 
             self.context.attachRawFileData(potfile, owner)
         elif is_tar_filename(filename):
-            tf = string_to_tarfile(file.read())
-            pot_paths, po_paths = examine_tarfile(tf)
+            tarball = helpers.string_to_tarfile(file.read())
+            pot_paths, po_paths = helpers.examine_tarfile(tarball)
 
-            error = check_tar(tf, pot_paths, po_paths)
+            error = check_tar(tarball, pot_paths, po_paths)
 
             if error is not None:
                 self.status_message = error
                 return
 
             self.status_message = (
-                import_tar(self.context, owner, tf, pot_paths, po_paths))
+                import_tar(self.context, owner, tarball, pot_paths, po_paths))
         else:
             self.status_message = (
                 'The file you uploaded was not recognised as a file that '

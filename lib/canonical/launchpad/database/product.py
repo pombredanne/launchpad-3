@@ -19,7 +19,7 @@ import canonical.sourcerer.deb.version
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp.dbschema import BugSeverity, BugTaskStatus
 from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
-from canonical.rosetta.tar import string_to_tarfile, examine_tarfile
+from canonical.launchpad import helpers
 from canonical.rosetta.pofile import POSyntaxError, POInvalidInputError
 
 from canonical.launchpad.database.sourcesource import SourceSource
@@ -315,8 +315,8 @@ class Product(SQLBase):
                                     " imported. Ignoring it...")
                     return updated, added, errors
 
-        tf = string_to_tarfile(tarfile.read())
-        pot_paths, po_paths = examine_tarfile(tf)
+        tarball = helpers.string_to_tarfile(tarfile.read())
+        pot_paths, po_paths = helpers.examine_tarfile(tarball)
 
         if len(pot_paths) == 0:
             # It's not a valid tar file, it does not have any .pot file.
@@ -331,7 +331,7 @@ class Product(SQLBase):
             # Get the list of domains
             domains = []
             try:
-                domains_file = tf.extractfile('domains.txt')
+                domains_file = tarball.extractfile('domains.txt')
                 # We have that file inside the tar file.
                 for line in domains_file.readlines():
                     domains.append(line.strip())
@@ -412,8 +412,9 @@ class Product(SQLBase):
                         potemplate = self.newPOTemplate(potname, potname)
                         added.append(pot_path)
 
+                potfilecontent = tarball.extractfile(pot_path).read()
                 try:
-                    potemplate.attachRawFileData(tf.extractfile(pot_path).read())
+                    potemplate.attachRawFileData(potfilecontent)
                 except (POSyntaxError, POInvalidInputError):
                     # The file has an error detected by our parser.
                     errors.append(pot_path)
@@ -456,8 +457,9 @@ class Product(SQLBase):
                                                " Rosetta." % code)
                             errors.append(po_path)
                             continue
+                        pofilecontent = tarball.extractfile(po_path).read()
                         try:
-                            pofile.attachRawFileData(tf.extractfile(po_path).read())
+                            pofile.attachRawFileData(pofilecontent)
                         except (POSyntaxError, POInvalidInputError):
                             # The file has an error detected by our parser.
                             errors.append(po_path)

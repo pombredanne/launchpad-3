@@ -130,7 +130,7 @@ class SourcePackageInDistroSetView(object):
 
     def sourcePackagesBatchNavigator(self):
         name = self.request.get("name", "")
-        
+
 
         if not name:
             source_packages = []

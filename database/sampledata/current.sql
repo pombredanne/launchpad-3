@@ -1950,7 +1950,7 @@ SELECT pg_catalog.setval('potemplate_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('pofile_id_seq', 1, true);
+SELECT pg_catalog.setval('pofile_id_seq', 2, true);
 
 
 
@@ -2149,9 +2149,11 @@ SELECT pg_catalog.setval('buildqueue_id_seq', 1, false);
 SELECT pg_catalog.setval('packaging_id_seq', 2, true);
 
 
-
 SELECT pg_catalog.setval('signedcodeofconduct_id_seq', 1, false);
 
+
+
+SELECT pg_catalog.setval('potemplatename_id_seq', 1, true);
 
 
 SELECT pg_catalog.setval('bountysubscription_id_seq', 3, true);
