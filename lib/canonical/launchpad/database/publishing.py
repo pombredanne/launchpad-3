@@ -29,6 +29,7 @@ class PackagePublishing(SQLBase):
     priority = IntCol(dbName='priority')
     status = IntCol(dbName='status')
     scheduleddeletiondate = DateTimeCol(default=None)
+    datepublished = DateTimeCol(default=None)
 
 
 class SourcePackagePublishing(SQLBase):
@@ -50,7 +51,8 @@ class SourcePackagePublishing(SQLBase):
             foreignKey='Section',
             dbName='section'),
         IntCol('status'),
-        DateTimeCol('scheduleddeletiondate', default=None)
+        DateTimeCol('scheduleddeletiondate', default=None),
+        DateTimeCol('datepublished', default=None)
     ]
 
     

@@ -2,6 +2,44 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-03 22:13:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1366
+
+    Summary:
+      Add datepublished stuff to the sqlobjects
+    Revision:
+      launchpad--devel--0--patch-1366
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-7
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-8
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-9
+       Add datepublished stuff to the publishing sqlobjects
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-10
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-11
+       Missing comma
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/publishing.py
+     lib/canonical/launchpad/interfaces/publishing.py
+
+    new patches:
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-7
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-8
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-9
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-10
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-11
+
+
 2005-03-03 22:05:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1365
 
     Summary:
