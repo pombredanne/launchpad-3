@@ -156,3 +156,46 @@ class SourcePackageSet(object):
         return SourcePackageInDistro.select("maintainer = %d" % personID,
                                             orderBy='name')
 
+    def findByNameInDistroRelease(self, distroreleaseID,
+                                  pattern, fti=False):
+        """Returns a set o sourcepackage that matchs pattern
+        inside a distrorelease"""
+
+        clauseTables = ()
+
+        pattern = pattern.replace('%', '%%')
+
+        if fti:
+            clauseTables = ('SourcePackage',)
+            query = ('VSourcePackageReleasePublishing.sourcepackage = '
+                     'SourcePackage.id AND '
+                     'distrorelease = %d AND '
+                     '(name ILIKE %s OR SourcePackage.fti @@ ftq(%s))'
+                     %(distroreleaseID,
+                       quote('%%'+pattern+'%%'),
+                       quote(pattern))
+                     )
+
+        else:
+            query = ('distrorelease = %d AND '
+                     'name ILIKE %s '
+                     % (distroreleaseID, quote('%%'+pattern+'%%'))
+                     )
+
+        return VSourcePackageReleasePublishing.select(query, orderBy='name',
+                                                      clauseTables=clauseTables)
+
+    def getByNameInDistroRelease(self, distroreleaseID, name):
+        """Returns a SourcePackage by its name"""
+
+        query = ('distrorelease = %d ' 
+                 ' AND name = %s'
+                 % (distroreleaseID, quote(name))
+                 )
+
+        return SourcePackageInDistro.select(query, orderBy='name')[0]
+
+    def getSourcePackageRelease(self, sourcepackageID, version):
+        table = VSourcePackageReleasePublishing 
+        return table.select("sourcepackage = %d AND version = %s"
+                            % (sourcepackageID, quote(version)))

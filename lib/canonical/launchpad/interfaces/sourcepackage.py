@@ -60,3 +60,14 @@ class ISourcePackageSet(Interface):
 
     def getByPersonID(personID):
         """Get a set of SourcePackages maintained by a Person"""
+
+    def findByNameInDistroRelease(distroreleaseID, pattern):
+        """Returns a set o sourcepackage that matchs pattern
+        inside a distrorelease"""
+
+    def getByNameInDistroRelease(distroreleaseID, name):
+        """Returns a SourcePackage by its name"""
+
+    def getSourcePackageRelease(sourcepackageid, version):
+        """Get an Specific SourcePackageRelease by
+        sourcepackageID and Version"""

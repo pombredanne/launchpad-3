@@ -2,6 +2,66 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-22 20:26:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1477
+
+    Summary:
+      Got away with SourcePackageUtility and BinaryPackageUtility. The methods are now accessible only by SourcePackageSet and BinaryPackageSet.
+    Revision:
+      launchpad--devel--0--patch-1477
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-481
+       getbySourceName method implement in BinaryPackageUtility.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-482
+       commit from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-483
+       Got away with BinaryPackageUtility.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-484
+       Got away with SourcePackageUtility.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-485
+       merge from rocketfuel
+    
+
+    removed files:
+     lib/canonical/launchpad/database/.arch-ids/binarypackageutility.py.id
+     lib/canonical/launchpad/database/.arch-ids/sourcepackageutility.py.id
+     lib/canonical/launchpad/database/binarypackageutility.py
+     lib/canonical/launchpad/database/sourcepackageutility.py
+     lib/canonical/launchpad/interfaces/.arch-ids/binarypackageutility.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/sourcepackageutility.py.id
+     lib/canonical/launchpad/interfaces/binarypackageutility.py
+     lib/canonical/launchpad/interfaces/sourcepackageutility.py
+     lib/canonical/launchpad/zcml/.arch-ids/binarypackageutility.zcml.id
+     lib/canonical/launchpad/zcml/binarypackageutility.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/distroarchrelease.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/database/sourcepackageindistro.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/zcml/binarypackage.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/sourcepackage.zcml
+     lib/canonical/launchpad/zcml/sourcepackagereleaseindistro.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-481
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-482
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-483
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-484
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-485
+
+
 2005-03-22 19:54:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1476
 
     Summary:

@@ -15,7 +15,7 @@ from canonical.lp import dbschema
 from canonical.launchpad.interfaces import ISourcePackageInDistro
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.interfaces import ISourcePackageInDistroSet, \
-     ISourcePackageUtility
+     ISourcePackageSet
 from canonical.launchpad.database.vsourcepackagereleasepublishing import \
      VSourcePackageReleasePublishing
 
@@ -53,7 +53,7 @@ class SourcePackageInDistroSet(object):
         self.title = 'Source Packages in: ' + distrorelease.title
 
     def findPackagesByName(self, pattern, fti=False):
-        srcutil = getUtility(ISourcePackageUtility)
+        srcutil = getUtility(ISourcePackageSet)
         return srcutil.findByNameInDistroRelease(self.distrorelease.id,
                                                  pattern, fti)
 

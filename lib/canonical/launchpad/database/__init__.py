@@ -32,10 +32,8 @@ from canonical.launchpad.database.sourcepackage import *
 from canonical.launchpad.database.sourcepackagename import *
 from canonical.launchpad.database.sourcepackageindistro import *
 from canonical.launchpad.database.sourcepackagerelease import *
-from canonical.launchpad.database.sourcepackageutility import *
 from canonical.launchpad.database.vsourcepackagereleasepublishing import *
 from canonical.launchpad.database.binarypackage import *
-from canonical.launchpad.database.binarypackageutility import *
 from canonical.launchpad.database.binarypackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *

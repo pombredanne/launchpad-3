@@ -34,4 +34,11 @@
     </content>
 
 
+    <securedutility
+        class="canonical.launchpad.database.BinaryPackageSet"
+        provides="canonical.launchpad.interfaces.IBinaryPackageSet">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageSet" />
+    </securedutility>
+
+
 </configure>

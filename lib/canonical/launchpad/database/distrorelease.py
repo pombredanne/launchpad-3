@@ -16,7 +16,7 @@ from canonical.lp import dbschema
 
 # interfaces and database
 from canonical.launchpad.interfaces import IDistroRelease, IPOTemplateSet, \
-    IBinaryPackageUtility, IDistroReleaseSet, ISourcePackageUtility
+     IDistroReleaseSet
 
 from canonical.launchpad.database import SourcePackageInDistro, \
     SourcePackageInDistroSet, PublishedPackageSet, PackagePublishing
@@ -134,7 +134,7 @@ class DistroRelease(SQLBase):
             query, clauseTables=clauseTables, distinct=True)
 
     def findSourcesByName(self, pattern):
-        srcset = getUtility(ISourcePackageUtility)
+        srcset = getUtility(ISourcePackageSet)
         return srcset.findByNameInDistroRelease(self.id, pattern)
 
     def traverse(self, name):
@@ -158,27 +158,6 @@ class DistroRelease(SQLBase):
                       self.distribution.name,
                       self.name )
 
-
-# XXX: Daniel Debonzi 2005-03-04
-# I think this method is obsolet. I will comment out
-# and remove in the next days if nothing breaks
-
-##     def findBinariesByName(self, pattern):
-##         binariesutil = getUtility(IBinaryPackageUtility)
-##         selection = Set(binariesutil.findByNameInDistroRelease(self.id, pattern))
-##         # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
-##         # XXX Daniel please can you go over this with SABDFL I don't
-##         # understand the code here. 11/12/04
-##         # expensive routine
-##         # Dummy solution to avoid a binarypackage to be shown more
-##         # then once
-##         present = []
-##         result = []
-##         for srcpkg in selection:
-##             if srcpkg.binarypackagename not in present:
-##                 present.append(srcpkg.binarypackagename)
-##                 result.append(srcpkg)
-##         return result
 
 class DistroReleaseSet:
     implements(IDistroReleaseSet)

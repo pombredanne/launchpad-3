@@ -13,7 +13,7 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IDistroArchRelease
-from canonical.launchpad.interfaces import IBinaryPackageUtility
+from canonical.launchpad.interfaces import IBinaryPackageSet
 from canonical.launchpad.database.distribution import Distribution
 
 class DistroArchRelease(SQLBase):
@@ -59,14 +59,14 @@ class DistroArchRelease(SQLBase):
 
     def findPackagesByName(self, pattern, fti=False):
         """Search BinaryPackages matching pattern and archtag"""
-        binset = getUtility(IBinaryPackageUtility)
+        binset = getUtility(IBinaryPackageSet)
         return binset.findByNameInDistroRelease(self.distrorelease.id,
                                                 pattern,
                                                 self.architecturetag,
                                                 fti)
         
     def __getitem__(self, name):
-        binset = getUtility(IBinaryPackageUtility)
+        binset = getUtility(IBinaryPackageSet)
         try:
             return binset.getByNameInDistroRelease(\
                                        self.distrorelease.id,

@@ -35,30 +35,4 @@
             lp:url="soyuz/distros/$distro.name/$distrorelease.name/+sources/+index" />
     </browser:pages>
 
-    <securedutility
-        class="canonical.launchpad.database.SourcePackageSet"
-        provides="canonical.launchpad.interfaces.ISourcePackageSet">
-        <allow interface="canonical.launchpad.interfaces.ISourcePackageSet" />
-    </securedutility>
-
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ISourcePackageSet"
-        getter="__getitem__" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackageSet"
-        layer="canonical.launchpad.layers.MaloneLayer"
-        name="+malone-index" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ISourcePackageSet"
-        class="canonical.launchpad.browser.packages.SourcePackageBugsView"
-        permission="zope.Public">
-        <browser:page
-            name="+malone-index"
-            template="../templates/packages-bugs.pt"
-            lp:url="malone/packages/+malone-index" />
-    </browser:pages>
-
-
 </configure>

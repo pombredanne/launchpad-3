@@ -8,7 +8,6 @@
     <include file="archuserid.zcml" />
     <include file="binarypackage.zcml" />
     <include file="binarypackagename.zcml" />
-    <include file="binarypackageutility.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="branch.zcml" />
@@ -62,7 +61,6 @@
     <include file="skins.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />
-    <include file="sourcepackageutility.zcml" />
     <include file="sourcepackagerelease.zcml" />
     <include file="sourcepackagereleaseindistro.zcml" />
     <include file="vsourcepackagereleasepublishing.zcml" />
