@@ -15,7 +15,7 @@ from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, flushUpdates
 
 # canonical imports
 from canonical.launchpad.interfaces import IPOTMsgSet, \
@@ -74,14 +74,6 @@ standardPOFileHeader = (
 "X-Rosetta-Version: 0.1\n"
 "Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n"
 )
-
-def _sqlobject_sync_hack():
-    # XXX: Andrew Bennetts 2004-12-17: Really BIG AND UGLY fix to prevent
-    # a race condition that prevents the statistics to be calculated
-    # correctly. DON'T copy this, ask Andrew first.
-    # https://dogfood.ubuntu.com/malone/bugs/226/
-    for object in list(SQLBase._connection._dm.objects):
-        object.sync()
 
 def _attachRawFileData(raw_file_data, contents, importer):
     # Initial check to be sure that the content is a valid .po/.pot file, if
@@ -598,7 +590,7 @@ class POTemplate(SQLBase, RosettaStats):
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
-            _sqlobject_sync_hack()
+            flushUpdates()
 
             # We update the cached value that tells us the number of msgsets this
             # .pot file has
@@ -1308,7 +1300,7 @@ class POFile(SQLBase, RosettaStats):
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
-            _sqlobject_sync_hack()
+            flushUpdates()
 
             # Now we update the statistics after this new import
             self.updateStatistics(newImport=True)
@@ -1600,7 +1592,7 @@ class POMsgSet(SQLBase):
 
 
         # Ask for a sqlobject sync before reusing the data we just updated.
-        _sqlobject_sync_hack()
+        flushUpdates()
 
         # Implicit set of iscomplete. If we have all translations, it's 
         # complete, if we lack a translation, it's not complete.

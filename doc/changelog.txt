@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-16 14:14:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1322
+
+    Summary:
+      Turn _sqlobject_sync_hack into flushUpdates
+    Revision:
+      launchpad--devel--0--patch-1322
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-329
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-330
+       Turn _sqlobject_sync_hack into flushUpdates
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/database/sqlbase.py
+     lib/canonical/launchpad/database/pofile.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-329
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-330
+
+
 2005-02-16 13:19:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1321
 
     Summary:
