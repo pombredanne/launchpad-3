@@ -69,6 +69,7 @@ class SQLThing:
         keys = data.keys()
         query = "INSERT INTO %s (%s) VALUES (%s)" \
                  % (table, ",".join(keys), ",".join(["%s"] * len(keys)))
+        #print query
         try:
             self._exec(query, data.values())
         except Exception, e:
@@ -163,7 +164,12 @@ class Launchpad(SQLThing):
         except:
             raise ValueError, "Unable to find a processor from the processor family chosen from %s/%s" % (dr, proc)
         print "INFO: Chosen D(%d) DR(%d), PROC(%d), DAR(%d) from SUITE(%s), ARCH(%s)" % (self.distro, self.distrorelease, self.processor, self.distroarchrelease, dr, proc)
-
+        # Attempt to populate self._debiandistro
+        self._debiandistro = self._query_single("""
+        SELECT id FROM distribution WHERE name = 'debian'
+        """)[0]
+        print "INFO: Found Debian GNU/Linux at %d" % (self._debiandistro)
+        
     #
     # SourcePackageName
     #
@@ -203,14 +209,31 @@ class Launchpad(SQLThing):
             "srcpackageformat":     1 
         }
         self._insert("sourcepackage", data)
+        data["distro"] = self._debiandistro
+        self._insert("sourcepackage", data)
 
-    def getSourcePackage(self, name_name):
+        ubuntupackage = self.getSourcePackage(name[0])
+        debianpackage = self.getSourcePackage(name[0], self._debiandistro)
+        
+        data = {
+            "subject": ubuntupackage,
+            "label": 4, ## DERIVESFROM
+            "object": debianpackage
+            }
+        self._insert("sourcepackagerelationship", data)
+
+    def getSourcePackage(self, name_name, distro = None):
+        # Suckage because Python won't analyse default values in the context
+        # of the call. Python idiom is nasty.
+        if distro is None:
+            distro = self.distro
         self.ensureSourcePackageName(name_name)
         name = self.getSourcePackageName(name_name)
         # FIXME: SELECT * is crap !!!
         return self._query_single("""SELECT * FROM sourcepackage 
-                                     WHERE sourcepackagename=%s;""",
-                                  (name[0],))
+                                     WHERE sourcepackagename=%s
+                                       AND distro=%s""",
+                                  (name[0],distro))
         
     #
     # SourcePackageRelease
