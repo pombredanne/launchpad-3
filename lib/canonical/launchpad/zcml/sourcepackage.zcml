@@ -98,34 +98,35 @@
     </content>
 
     <!-- This is class VSourcePackageReleasePublishing -->
-    <content
-      class="canonical.launchpad.database.VSourcePackageReleasePublishing">
-      <allow
-        interface="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
-        />
-    </content>
+<content class="canonical.launchpad.database.VSourcePackageReleasePublishing">
+    <allow interface="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"/>
+</content>
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
-        name="+index" />
+<browser:defaultView
+    for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
+    name="+index" />
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
-        permission="zope.Public"
-	class="canonical.launchpad.browser.SourcePackageReleasePublishingView">
-        <browser:page
-            name="+index"
-            template="../templates/sourcepackagerelease-index.pt"
-            lp:url="soyuz/distros/$distro.name/$distrorelease.name/sources/+index" />
-        <browser:page
-            name="+changelog"
-            template="../templates/sourcechangelog-index.pt"
-            lp:url="soyuz/distros/$distro.name/$distrorelease.name/sources/+index" />
-    </browser:pages>
+<browser:traverse
+    for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
+    getter="__getitem__" />
 
-    <!-- SourcePackageInDistro -->
-    <content class="canonical.launchpad.database.SourcePackageInDistro">
-        <allow interface="canonical.launchpad.interfaces.ISourcePackageinDistro" />
-    </content>
+<browser:pages
+    for="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.SourcePackageReleasePublishingView">
+    <browser:page
+        name="+index"
+        template="../templates/sourcepackagerelease-index.pt"
+        lp:url="soyuz/distros/$distro.name/$distrorelease.name/sources/+index" />
+    <browser:page
+        name="+changelog"
+        template="../templates/sourcechangelog-index.pt"
+        lp:url="soyuz/distros/$distro.name/$distrorelease.name/sources/+index" />
+</browser:pages>
+
+<!-- SourcePackageInDistro -->
+<content class="canonical.launchpad.database.SourcePackageInDistro">
+    <allow interface="canonical.launchpad.interfaces.ISourcePackageinDistro"/>
+</content>
 
 </configure>

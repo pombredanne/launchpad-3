@@ -485,7 +485,8 @@ class EmailAddressStatus(DBSchema):
         has just been created in the system, either by a person claiming
         it as their own, or because we have stored an email message or
         arch changeset including that email address and have created
-        a phantom person and email address to record it.
+        a phantom person and email address to record it. WE SHOULD
+        NEVER EMAIL A "NEW" EMAIL.
         """)
 
     VALIDATED = Item(2, """

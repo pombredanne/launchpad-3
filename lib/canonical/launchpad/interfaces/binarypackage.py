@@ -48,6 +48,9 @@ class IBinaryPackage(Interface):
     def lastversions():
         """Return the SUPERCEDED BinaryPackages in a DistroRelease
            that comes from the same SourcePackage"""
+
+    def __getitem__(version):
+        """Return the packagename that matches the given version"""
     
     
 class IBinaryPackageName(Interface):

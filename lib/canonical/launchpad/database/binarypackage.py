@@ -111,20 +111,35 @@ class BinaryPackage(SQLBase):
         """Get the BinaryPackage Status"""
 
         try:
-            packagepublishing = PackagePublishing.select('binarypackage=%d '
-                                                         'AND distroarchrelease=%d '
-                                                         %(self.id,
-                                                           self.build.distroarchrelease.id))[0];
+            packagepublishing = PackagePublishing.\
+                                select('binarypackage=%d '
+                                       'AND distroarchrelease=%d '
+                                       %(self.id,
+                                         self.build.distroarchrelease.id))[0];
         except IndexError:
             raise KeyError, 'BinaryPackage not found in PackagePublishing'
         
         try:
-            return dbschema.PackagePublishingStatus.items[packagepublishing.status].title
+            return dbschema.PackagePublishingStatus.\
+                   items[packagepublishing.status].title
         except KeyError:
-            return 'Unknow'
+            return 'Unknown'
 
     status = property(_status)
 
+    def __getitem__(self, version):        
+        clauseTables = ["Build",]        
+        query = """Build.id = build
+                   AND  Build.distroarchrelease = %d
+                   AND  binarypackagename = %d
+                   AND  version = %s""" % (self.build.distroarchrelease.id,
+                                           self.binarypackagename.id,
+                                           quote(version))
+        try:
+            return BinaryPackage.select(query, clauseTables=clauseTables)[0]
+        except IndexError:
+            raise KeyError, "Version Not Found"
+        
 
 class BinaryPackageSet(object):
     """A Set of BinaryPackages"""

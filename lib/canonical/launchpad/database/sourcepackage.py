@@ -363,16 +363,15 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     #XXX: salgado: wtf is this?
     #MultipleJoin('Build', joinColumn='sourcepackagerelease'),
 
-    def __getitem__(self, name):
-        """Geta SourcePackageRelease"""
-
-# XXX Mark Shuttleworth: this is somewhat misleading as there
-# will likely be several versions of a source package with the
-# same name, please consider getSourcePackages() 21/10/04
-def getSourcePackage(name):
-    return SourcePackage.selectBy(name=name)
-
-
+    def __getitem__(self, version):
+        """Get a  SourcePackageRelease"""
+        table = VSourcePackageReleasePublishing 
+        try:            
+            return table.select("sourcepackage = %d AND version = %s"
+                                % (self.sourcepackage.id, quote(version)))[0]
+        except IndexError:
+            raise KeyError, 'Version Not Found'
+        
 def createSourcePackage(name, maintainer=0):
     # FIXME: maintainer=0 is a hack.  It should be required (or the DB shouldn't
     #        have NOT NULL on that column).
