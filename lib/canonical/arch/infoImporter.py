@@ -158,7 +158,7 @@ class SourceSource(SQLBase):
         job.tagging_rules=[]
 
   
-        job.name = self.name
+        job.name = str(self.name)
         job.RCS = RCSNames[self.rcstype]
         job.svnrepository = self.svnrepository
         job.module = str(self.cvsmodule)
