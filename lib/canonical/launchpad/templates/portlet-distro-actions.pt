@@ -8,6 +8,8 @@
         <a href="+edit">Edit Distro Details</a><br />
         <img src="/++resource++edit.gif">
         <a href="+new">Create Release</a><br />
+        <img src="/++resource++add.gif">
+        <a href="+packages">Search Packages</a><br />
 
         </div>
     </div>

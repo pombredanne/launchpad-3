@@ -82,20 +82,45 @@ class SourcePackageReleasePublishingView(object):
         return list(self.context.sourcepackage.lastversions\
                                        (self.bag.distrorelease))
 
+    def binaries(self):
+        """Format binary packeges into binarypackagename and archtags"""
+
+        bins = self.context.binaries
+
+        results = {}
+
+        for bin in bins:
+            if bin.name not in results.keys():
+                results[bin.name] = [bin.build.distroarchrelease.architecturetag]
+            else:
+                results[bin.name].append(\
+                    bin.build.distroarchrelease.architecturetag)
+
+        return results
+                
+
 class SourcePackageInDistroSetView(object):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.bag = getUtility(ILaunchBag)
-    
+
+        self.fti = self.request.get("fti", "")
+
     def sourcePackagesBatchNavigator(self):
         name = self.request.get("name", "")
+        
 
         if not name:
-            source_packages = list(self.context)
+            source_packages = []
+            # XXX: Daniel Debonzi 20050104
+            # Returns all sourcepackages available.
+            # Do not work with more than 8000 binarypackage
+            # (Actual dogfood db)
+            ## source_packages = list(self.context)
         else:
-            source_packages = list(self.context.findPackagesByName(name))
+            source_packages = list(self.context.findPackagesByName(name, self.fti))
 
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', BATCH_SIZE))

@@ -69,17 +69,16 @@
       </ul>
       </tal:block>
 
-      <tal:block tal:condition="context/sourcecount" tal:omit-tag>
+      <tal:block tal:define="sourcecount context/sourcecount "
+                 tal:condition="sourcecount" tal:omit-tag>
       <h2>Packages</h2>
 
       <p>This release of
       <span tal:replace="context/distribution/displayname" /> contains
       <span tal:replace="context/binarycount" /> software packages, 
       across <span tal:replace="context/architecturecount" /> architectures
-      from a total of <span tal:replace="context/sourcecount" /> source
+      from a total of <span tal:replace="sourcecount" /> source
       packages.</p>
-
-        <div tal:define="sourcecount context/sourcecount">
 
           <div tal:condition="sourcecount" align="center">
 
@@ -97,7 +96,6 @@
 
           </div>
 
-      </div>
       </tal:block>
 
   </div>

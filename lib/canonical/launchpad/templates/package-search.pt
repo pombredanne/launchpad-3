@@ -48,8 +48,12 @@
                                    <a
                                    tal:content="build/processorfamilyname"
                                    tal:attributes="href
-                                   string:/soyuz/packages/${build/id}"
+				   string:../${release/distroreleasename}/${build/distroarchrelease/architecturetag}/${package/name}"
                                    />,
+				   <!-- Daniel Debonzi 20050105-->
+				   <!-- Old link. Changed by me until we discuss if  -->
+				   <!-- its gonna be used like this. -->
+				   <!-- string:/soyuz/packages/${build/id}" -->
                                 </span>
                            </td>
                         </tr>

@@ -168,6 +168,13 @@ class BinaryPackageSet(object):
         binset = getUtility(IBinaryPackageUtility)
         return binset.findByNameInDistroRelease(self.distrorelease.id, pattern)
 
+    def findPackagesByArchtagName(self, pattern, fti=False):
+        """Search BinaryPackages matching pattern and archtag"""
+        binset = getUtility(IBinaryPackageUtility)
+        return binset.findByNameInDistroRelease(self.distrorelease.id,
+                                                pattern, self.arch,
+                                                fti)
+        
     def __getitem__(self, name):
         binset = getUtility(IBinaryPackageUtility)
         try:
@@ -219,7 +226,7 @@ class BinaryPackageUtility(object):
             query += ('AND BinaryPackage.version = %s '
                       %quote(version))
         else:
-            query += ('AND PackagePublishing.status = %s'
+            query += ('AND PackagePublishing.status = %s '
                       % dbschema.PackagePublishingStatus.PUBLISHED)
 
         if archtag:
@@ -229,7 +236,9 @@ class BinaryPackageUtility(object):
         return BinaryPackage.select(query, distinct=True,
                                         clauseTables=clauseTables)
 
-    def findByNameInDistroRelease(self, distroreleaseID, pattern):
+    def findByNameInDistroRelease(self, distroreleaseID,
+                                  pattern, archtag=None,
+                                  fti=False):
         """Returns a set o binarypackages that matchs pattern
         inside a distrorelease"""
 
@@ -243,12 +252,23 @@ class BinaryPackageUtility(object):
         'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
         'DistroArchRelease.distrorelease = %d AND '
         'BinaryPackage.binarypackagename = BinaryPackageName.id '
-        'AND (BinaryPackageName.name ILIKE %s '
-        'OR BinaryPackage.shortdesc ILIKE %s)'
-        %(distroreleaseID,
-          quote('%%' + pattern + '%%'),
-          quote('%%' + pattern + '%%'))
+        %distroreleaseID
         )
+
+        if fti:
+            query += ('AND (BinaryPackageName.name ILIKE %s '
+                      'OR BinaryPackage.fti @@ ftq(%s))'
+                      %(quote('%%' + pattern + '%%'),
+                        quote(pattern))
+        )
+        else:
+            query += ('AND BinaryPackageName.name ILIKE %s '
+                      %quote('%%' + pattern + '%%')
+                      )
+
+        if archtag:
+            query += ('AND DistroArchRelease.architecturetag=%s'
+                      %quote(archtag))
 
         return BinaryPackage.select(query,
                                     clauseTables=clauseTables,

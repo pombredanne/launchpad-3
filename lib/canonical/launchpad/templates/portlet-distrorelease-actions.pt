@@ -7,9 +7,9 @@
         <img src="/++resource++edit.gif">
 	<a href="+edit">Edit Release Information</a> <br />
         <img src="/++resource++add.gif">
-        <a href="+sources">See Source Package</a><br />
+        <a href="+sources">View Source Packages</a><br />
         <img src="/++resource++add.gif">
-	<a href="+bugs">See Distro Release Bugs</a><br />
+	<a href="+bugs">View Release Bugs</a><br />
         </div>
     </div>
 </div>

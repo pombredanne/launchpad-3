@@ -19,10 +19,12 @@ from canonical.launchpad.interfaces import IPublishedPackage, \
 
 class PkgBuild:
 
-    def __init__(self, id, processorfamilyname):
+    def __init__(self, id, processorfamilyname,
+                 distroarchrelease):
         self.id = id
         self.processorfamilyname = processorfamilyname
-
+        self.distroarchrelease = distroarchrelease
+        
     def html(self):
         return '<a href="/soyuz/packages/'+str(self.id)+'">'+self.processorfamilyname+'</a>'
 
@@ -95,7 +97,8 @@ class PublishedPackageSetView:
                 package.binarypackageversion,
                 PkgVersion(package.binarypackageversion) )
             version.builds.append(PkgBuild(package.binarypackage,
-                                    package.processorfamilyname))
+                                           package.processorfamilyname,
+                                           package.build.distroarchrelease))
             drversions.versions[package.binarypackageversion] = version
             binpkg.distroreleases[package.distroreleasename] = drversions
             binpkgs[package.binarypackagename] = binpkg

@@ -2,6 +2,104 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-06 00:43:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1152
+
+    Summary:
+      Soyuz improvement and speed-up.
+    Revision:
+      launchpad--devel--0--patch-1152
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-392
+       Links from SourcePackagerelease to the generated BinaryPackages by Archtag
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-393
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-394
+       Simple fix in a BinaryPackage query
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-395
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-396
+       Generated binaries archtag in SourcePackageRelease page fixed.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-397
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-398
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-399
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-400
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-401
+       Queries and template changes to speed up soyuz/distros/.name/.name page.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-402
+       Queries and template changes to speed up soyuz/distros/.name/.name/.architecturetag page.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-403
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-404
+       Souyz sourcepackage search improvent and speed up
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-405
+       Packages returned links in soyuz/.name/+packages search tool are now pointing to its page inside its distrorelease.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-406
+       Comments time stamp fix. I forgot we are in 2005.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-407
+       star-merge from rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/packages.py
+     lib/canonical/launchpad/browser/publishedpackage.py
+     lib/canonical/launchpad/browser/sourcepackage.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/publishedpackage.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/launchpad/templates/binarypackage-index.pt
+     lib/canonical/launchpad/templates/binarypackage-list.pt
+     lib/canonical/launchpad/templates/package-search.pt
+     lib/canonical/launchpad/templates/portlet-distro-actions.pt
+     lib/canonical/launchpad/templates/portlet-distrorelease-actions.pt
+     lib/canonical/launchpad/templates/release-index.pt
+     lib/canonical/launchpad/templates/release-search.pt
+     lib/canonical/launchpad/templates/sourcepackage-index.pt
+     lib/canonical/launchpad/templates/sourcepackagerelease-index.pt
+     lib/canonical/launchpad/zcml/distribution.zcml
+     lib/canonical/launchpad/zcml/sourcepackage.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-392
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-393
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-394
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-395
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-396
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-397
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-398
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-399
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-400
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-401
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-402
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-403
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-404
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-405
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-406
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-407
+
+
 2005-01-05 17:00:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1151
 
     Summary:
