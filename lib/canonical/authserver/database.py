@@ -57,7 +57,7 @@ class DatabaseUserDetailsStorage(object):
             # No-one found
             return {}
 
-        if passwordDigest != sshaDigestedPassword:
+        if passwordDigest.rstrip() != sshaDigestedPassword.rstrip():
             # Wrong password
             return {}
         

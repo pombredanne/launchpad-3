@@ -20,6 +20,15 @@
     products from that project. For example, the Apache Project description
     would highlight its work on the Apache Server, and mention other
     products such as APR.</div>
+
+    <h2>Products</h2>
+    <div>
+	<ul tal:repeat="product context/products">
+		<li><a href="" tal:attributes="href product/name" 
+               tal:content="product/title">Product title</a></li>
+	</ul>
+	<a href="products+new">Add a product</a>
+	</div>
 </div>
 
 </body>

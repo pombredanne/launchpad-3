@@ -173,6 +173,7 @@ class IProduct(Interface):
 
     project = Int(title=_('Project'))
     owner = Int(title=_('Owner'))
+    name = TextLine(title=_('Name'))
     title = TextLine(title=_('Title'))
     description = Text(title=_('Description'))
     homepageurl = TextLine(title=_('Homepage URL'))
