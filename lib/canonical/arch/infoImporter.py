@@ -95,12 +95,12 @@ def importInfoFile(infofile):
                         **kwargs)
             if job.RCS == 'svn':
                 ss = SourceSource(
-                    rcstype=dbschema.RevisionControlSystems.SVN
+                    rcstype=dbschema.RevisionControlSystems.SVN,
                     svnrepository=job.svnrepository,
                     **kwargs)
         elif job.RCS == "package":
             ss = SourceSource(
-                    rcstype=dbschema.RevisionControlSystems.PACKAGE
+                    rcstype=dbschema.RevisionControlSystems.PACKAGE,
                     name=jobname,
                     title="",
                     description="",
