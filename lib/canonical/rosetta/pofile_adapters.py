@@ -87,7 +87,7 @@ class TranslationsList(object):
         self._msgset.makeTranslationSighting(value, index, update=True, fromPOFile=True)
 
     def __getitem__(self, index):
-        return self._msgset.getTranslationSighting(index).poTranslation.text
+        return self._msgset.getTranslationSighting(index).poTranslation.translation
 
     def __len__(self):
         return self._msgset.translations().count()
@@ -124,10 +124,10 @@ class MessageProxy(POMessage):
     def _get_msgstr(self):
         translations = list(self._msgset.translations())
         if len(translations) == 1:
-            return translations[0].text
+            return translations[0].translation
     def _set_msgstr(self, value):
         current = self._msgset.getTranslationSighting(0)
-        if value == current.poTranslation.text:
+        if value == current.poTranslation.translation:
             return
         current.inPOFile = False
         new = self._msgset.makeTranslationSighting(0, index)        

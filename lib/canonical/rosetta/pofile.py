@@ -271,6 +271,12 @@ class POHeader(dict, POMessage):
         self.pluralExpr = '0'
 
     def finish(self):
+        for attr in ('msgidPlural', 'msgstrPlurals', 'fileReferences'):
+            if getattr(self, attr):
+                warnings.warn(POSyntaxWarning(msg='PO file header entry should have no %s'
+                                              % attr))
+                setattr(self, attr, u'')
+
         for l in self.msgstr.strip().split('\n'):
             l = l.strip()
             if not l:
@@ -280,38 +286,16 @@ class POHeader(dict, POMessage):
             except ValueError:
                 raise POSyntaxError
             field, value = field.strip(), value.strip()
-            self[field] = value
-            self._casefold[field.lower()] = value
-        if 'content-type' in self:
-            d = parse_assignments(self['content-type'], skipfirst=True)
-            if 'charset' in d:
-                if d['charset'] != 'CHARSET':
-                    self.charset = d['charset']
-                else:
-                    self.charset = 'us-ascii'
-        else:
+            if field.lower() == 'plural-forms':
+                try:
+                    self[field] = value
+                except ValueError:
+                    raise POInvalidInputError(msg='Malformed plural-forms header entry')
+            else:
+                self.__setitem__(field, value, False)
+        if 'content-type' not in self:
             warnings.warn(POSyntaxWarning(msg='PO file header entry has no content-type field'))
-            self['Content-Type'] = 'text/plain; us-ascii'
-
-        # Plural forms logic
-        if 'plural-forms' in self:
-            d = parse_assignments(self['plural-forms'])
-            try:
-                self.nplurals = int(d.get('nplurals'))
-            except ValueError:
-                raise POInvalidInputError(msg='Malformed plural-forms header entry')
-            self.pluralExpr = d.get('plural', '0')
-
-        # Convert attributes to unicode
-        for attr in ('msgidPlural', 'msgstrPlurals', 'fileReferences'):
-            if getattr(self, attr):
-                warnings.warn(POSyntaxWarning(msg='PO file header entry should have no %s' % attr))
-                setattr(self, attr, u'')
-        for attr in ('msgid', 'msgstr', 'commentText', 'sourceComment'):
-            v = getattr(self, attr)
-            if type(v) is str:
-                v = self._decode(v)
-            setattr(self, attr, v)
+            self['Content-Type'] = 'text/plain; charset=us-ascii'
 
     def _decode(self, v):
         try:
@@ -323,7 +307,7 @@ class POHeader(dict, POMessage):
             v = unicode(v, self.charset, 'replace')
         return v
 
-    def get(self, item, default=_marker):
+    def get(self, item, default=None):
         v = None
         try:
             v = dict.__getitem__(self, item)
@@ -339,7 +323,8 @@ class POHeader(dict, POMessage):
             v = self._decode(v)
         return v
 
-    __getitem__ = get
+    def __getitem__(self, item):
+        return self.get(item, _marker)
 
     def has_key(self, item):
         try:
@@ -351,16 +336,63 @@ class POHeader(dict, POMessage):
 
     __contains__ = has_key
 
-    def __setitem__(self, item, value):
+    def __setitem__(self, item, value, update_msgstr=True):
         if not self.has_key(item) and self._casefold.has_key(item.lower()):
             for key in self.keys():
                 if key.lower() == item.lower():
                     item = key
+        oldvalue = self.get(item)
         dict.__setitem__(self, item, value)
         self._casefold[item.lower()] = value
 
+        if item.lower() == 'content-type':
+            d = parse_assignments(self['content-type'], skipfirst=True)
+            if 'charset' in d:
+                if d['charset'] != 'CHARSET':
+                    self.charset = d['charset']
+                else:
+                    self.charset = 'us-ascii'
+            # Convert attributes to unicode
+            for attr in ('msgid', 'msgstr', 'commentText', 'sourceComment'):
+                v = getattr(self, attr)
+                if type(v) is str:
+                    v = self._decode(v)
+                setattr(self, attr, v)
+
+        # Plural forms logic
+        elif item.lower() == 'plural-forms':
+            d = parse_assignments(self['plural-forms'])
+            if d.get('nplurals') == 'INTEGER':
+                # sure hope it's a template.
+                self.nplurals = 2
+            else:
+                self.nplurals = int(d.get('nplurals'))
+                self.pluralExpr = d.get('plural', '0')
+
+        # Update msgstr
+        if update_msgstr:
+            text = []
+            printed = sets.Set()
+            for l in self.msgstr.strip().split('\n'):
+                l = l.strip()
+                if not l:
+                    continue
+                try:
+                    field, value = l.split(':', 1)
+                except ValueError:
+                    raise POSyntaxError
+                field = field.strip()
+                value = self[field]
+                text.append(u'%s: %s' % (field, self[field]))
+                printed.add(field)
+            for field in self.keys():
+                if field not in printed:
+                    value = self[field]
+                    text.append(u'%s: %s' % (field, self[field]))
+            text.append('')
+            self.msgstr = u'\n'.join(text)
+
     def update(self, other):
-        # sigh... need to reimplement due to casefold
         for key in other:
             # not using items() because this way we get decoding
             self[key] = other[key]
@@ -392,31 +424,6 @@ class POHeader(dict, POMessage):
 
     def __nonzero__(self):
         return bool(self.keys())
-
-    def _msgstrs_representation(self, wrapper):
-        text = ['msgstr ""']
-        printed = sets.Set()
-        for l in self.msgstr.strip().split('\n'):
-            l = l.strip()
-            if not l:
-                continue
-            try:
-                field, value = l.split(':', 1)
-            except ValueError:
-                raise POSyntaxError
-            field = field.strip()
-            value = self[field]
-            value = value.replace(u'\\', u'\\\\')
-            value = value.replace(u'\"', u'\\"')
-            text.append(u'"%s: %s\\n"' % (field, self[field]))
-            printed.add(field)
-        for field in self.keys():
-            if field not in printed:
-                value = self[field]
-                value = value.replace(u'\\', u'\\\\')
-                value = value.replace(u'\"', u'\\"')
-                text.append(u'"%s: %s\\n"' % (field, self[field]))
-        return u'\n'.join(text)
 
 class POParser(object):
     implements(IPOParser)

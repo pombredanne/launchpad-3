@@ -207,6 +207,17 @@ class POBasicTestCase(unittest.TestCase):
         except ValueError:
             self.fail("The SquareBracketAndPlural test failed")
 
+    def testUpdateHeader(self):
+        self.parser.write('msgid ""\nmsgstr "foo: bar\\n"\n')
+        self.parser.finish()
+        self.parser.header['plural-forms'] = 'nplurals=2; plural=random()'
+        self.assertEqual(unicode(self.parser.header),
+                         'msgid ""\n'
+                         'msgstr ""\n'
+                         '"foo: bar\\n"\n'
+                         '"Content-Type: text/plain; charset=us-ascii\\n"\n'
+                         '"plural-forms: nplurals=2; plural=random()\\n"')
+
 
 def test_suite():
     dt_suite = doctest.DocTestSuite(pofile)
