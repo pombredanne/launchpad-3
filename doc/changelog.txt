@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-15 21:03:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1318
+
+    Summary:
+      update the sourcesource smaple data to be useful in buildbot package calling tests
+    Revision:
+      launchpad--devel--0--patch-1318
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-103
+       merge from rf
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-104
+       update the sourcesource smaple data to be useful in buildbot package calling tests
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-103
+     robert.collins@canonical.com/launchpad--devel--0--patch-104
+
+
 2005-02-15 14:51:17 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1317
 
     Summary:
