@@ -116,9 +116,9 @@ class IBugAddForm(IBug):
     owner = Int(title=_("Owner"), required=True)
 
 
-# Interfaces for containers
-class IBugContainer(IAddFormCustomization):
-    """A container for bugs."""
+# Interfaces for set
+class IBugSet(IAddFormCustomization):
+    """A set for bugs."""
 
     def __getitem__(key):
         """Get a Bug."""

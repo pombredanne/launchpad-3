@@ -71,23 +71,23 @@
 
         
 
-    <!-- ProjectContainer-->
-    <content class="canonical.launchpad.database.ProjectContainer">
-        <allow interface="canonical.launchpad.interfaces.IProjectContainer" />
+    <!-- ProjectSet-->
+    <content class="canonical.launchpad.database.ProjectSet">
+        <allow interface="canonical.launchpad.interfaces.IProjectSet" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.ProjectContainer"
-        provides="canonical.launchpad.interfaces.IProjectContainer" />
+        factory="canonical.launchpad.database.ProjectSet"
+        provides="canonical.launchpad.interfaces.IProjectSet" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IProjectContainer"
+        for="canonical.launchpad.interfaces.IProjectSet"
         name="+index" />
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IProjectContainer"
+        for="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
-        class="canonical.launchpad.browser.ProjectContainerView"
+        class="canonical.launchpad.browser.ProjectSetView"
         lp:url="doap/projects/">
         <browser:page
             name="+index" 
@@ -100,26 +100,16 @@
     </browser:pages>
 
     <browser:page
-        for="canonical.launchpad.interfaces.IProjectContainer"
+        for="canonical.launchpad.interfaces.IProjectSet"
         name="+new"
-        class="canonical.launchpad.browser.ProjectContainerView"
+        class="canonical.launchpad.browser.ProjectSetView"
         permission="launchpad.AnyPerson"
         template="../templates/project-new.pt"
         lp:url="doap/projects/+new" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IProjectContainer"
+        for="canonical.launchpad.interfaces.IProjectSet"
         getter="__getitem__" />
-
-    <!-- ProjectSet -->
-    <content class="canonical.launchpad.database.ProjectSet">
-        <allow interface="canonical.launchpad.interfaces.IProjectSet" />
-    </content>
-
-    <utility
-        factory="canonical.launchpad.database.ProjectSet"
-        provides="canonical.launchpad.interfaces.IProjectSet"
-        />
 
     <content class="canonical.rosetta.domain.RosettaProject">
         <allow interface="canonical.launchpad.interfaces.IRosettaProject"/>

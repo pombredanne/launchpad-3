@@ -31,8 +31,8 @@ class IBugWatch(Interface):
             )
 
 
-class IBugWatchContainer(Interface):
-    """A container for IBugWatch objects."""
+class IBugWatchSet(Interface):
+    """A set for IBugWatch objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 

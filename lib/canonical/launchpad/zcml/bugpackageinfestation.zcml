@@ -16,8 +16,8 @@
         <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IBugPackageInfestation" />
     </content>
 
-    <content class="canonical.launchpad.database.BugPackageInfestationContainer">
-        <allow interface="canonical.launchpad.interfaces.IBugPackageInfestationContainer" />
+    <content class="canonical.launchpad.database.BugPackageInfestationSet">
+        <allow interface="canonical.launchpad.interfaces.IBugPackageInfestationSet" />
         <allow
             interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
@@ -29,7 +29,7 @@
 
     <!--TRAVERSALS-->
     <browser:traverse
-        for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
+        for="canonical.launchpad.interfaces.IBugPackageInfestationSet"
         getter="__getitem__" />
 
     <!--BROWSER DEFAULTVIEWS-->
@@ -38,12 +38,12 @@
         name="+index" />
 
     <browser:defaultView
-       for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
+       for="canonical.launchpad.interfaces.IBugPackageInfestationSet"
        name="index" />
 
     <!--PAGE DECLARATIONS-->
     <browser:pages
-        for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
+        for="canonical.launchpad.interfaces.IBugPackageInfestationSet"
         permission="zope.Public">
         <browser:page name="index"
             template="../templates/bugpackageinfestations-index.pt"
@@ -54,7 +54,7 @@
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugPackageInfestation"
-        for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
+        for="canonical.launchpad.interfaces.IBugPackageInfestationSet"
         label="Add Infested Package Release"
         fields="sourcepackagerelease infestationstatus"
         content_factory="canonical.launchpad.database.BugPackageInfestationFactory"

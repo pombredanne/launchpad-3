@@ -21,7 +21,7 @@
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugExternalRef"
-        for="canonical.launchpad.interfaces.IBugExternalRefContainer"
+        for="canonical.launchpad.interfaces.IBugExternalRefSet"
         label="Add External Reference"
         fields="bugreftype data description"
         content_factory="canonical.launchpad.database.BugExternalRefFactory"
@@ -40,26 +40,26 @@
         fields="bugreftype data description"
         lp:url="malone/bugs/$Bug.id/references/$Reference.id/+edit" />
 
-    <!-- BugExternalRefContainer -->
+    <!-- BugExternalRefSet -->
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugExternalRefContainer"
+        for="canonical.launchpad.interfaces.IBugExternalRefSet"
         name="+index" />
 
-    <content class="canonical.launchpad.database.BugExternalRefContainer">
-        <allow interface="canonical.launchpad.interfaces.IBugExternalRefContainer" />
+    <content class="canonical.launchpad.database.BugExternalRefSet">
+        <allow interface="canonical.launchpad.interfaces.IBugExternalRefSet" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.BugExternalRefContainer"
-        provides="canonical.launchpad.interfaces.IBugExternalRefContainer" />
+        factory="canonical.launchpad.database.BugExternalRefSet"
+        provides="canonical.launchpad.interfaces.IBugExternalRefSet" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IBugExternalRefContainer"
+        for="canonical.launchpad.interfaces.IBugExternalRefSet"
         getter="__getitem__" />
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IBugExternalRefContainer"
+        for="canonical.launchpad.interfaces.IBugExternalRefSet"
         permission="zope.Public">
         <browser:page name="+index"
             template="../templates/references-index.pt"

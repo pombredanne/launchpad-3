@@ -24,19 +24,19 @@
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.IBugContainer"
+        utility="canonical.launchpad.interfaces.IBugSet"
         permission="zope.Public"
         name="bugs" />
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.IProjectContainer"
+        utility="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
         name="projects" />
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"
-        utility="canonical.launchpad.interfaces.ISourcePackageContainer"
+        utility="canonical.launchpad.interfaces.ISourcePackageSet"
         permission="zope.Public"
         name="packages" />
 

@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, \
                                            ISourcePackageReleasePublishing, \
                                            ISourcePackage, \
                                            ISourcePackageName, \
-                                           ISourcePackageContainer
+                                           ISourcePackageSet
 
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.binarypackage import BinaryPackage
@@ -199,10 +199,10 @@ class SourcePackageInDistro(SourcePackage):
     findSourcesByName = classmethod(findSourcesByName)
 
 
-class SourcePackageContainer(object):
-    """A container for SourcePackage objects."""
+class SourcePackageSet(object):
+    """A set for SourcePackage objects."""
 
-    implements(ISourcePackageContainer)
+    implements(ISourcePackageSet)
     table = SourcePackage
 
     #

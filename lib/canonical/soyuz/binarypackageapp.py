@@ -14,7 +14,7 @@ from zope.interface import implements
 from canonical.lp import dbschema
 
 #Soyuz imports
-from canonical.soyuz.generalapp import CurrentVersion, builddepsContainer
+from canonical.soyuz.generalapp import CurrentVersion, builddepsSet
 
 #Launchpad imports
 from canonical.launchpad.database import BinaryPackage, \
@@ -190,7 +190,7 @@ class DistroReleaseBinaryReleaseBuildApp(object):
         if packages:
             packs = ParseDepends(packages)
             for pack in packs:
-                blist.append(builddepsContainer(*pack[0]))
+                blist.append(builddepsSet(*pack[0]))
                                           
         return blist
 

@@ -1,10 +1,10 @@
 
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
-from canonical.launchpad.interfaces import IBugContainer
+from canonical.launchpad.interfaces import IBugSet
 
-class BugContainerBase(object):
-    implements(IBugContainer, IAddFormCustomization)
+class BugSetBase(object):
+    implements(IBugSet, IAddFormCustomization)
     def __init__(self, bug=None):
         self.bug = bug
 

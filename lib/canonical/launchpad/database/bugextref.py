@@ -12,7 +12,7 @@ from canonical.launchpad.interfaces import IBugExternalRef
 from canonical.launchpad.interfaces import *
 
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.database.bugcontainer import BugContainerBase
+from canonical.launchpad.database.bugset import BugSetBase
 
 
 
@@ -43,10 +43,10 @@ class BugExternalRef(SQLBase):
             return self.data
 
 
-class BugExternalRefContainer(BugContainerBase):
-    """A container for BugExternalRef."""
+class BugExternalRefSet(BugSetBase):
+    """A set for BugExternalRef."""
 
-    implements(IBugExternalRefContainer)
+    implements(IBugExternalRefSet)
     table = BugExternalRef
 
 

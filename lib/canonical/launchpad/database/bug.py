@@ -12,13 +12,13 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import IBug, IBugContainer
+from canonical.launchpad.interfaces import IBug, IBugSet
 from canonical.launchpad.interfaces import *
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
 
-from canonical.launchpad.database.bugcontainer import BugContainerBase
+from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.bugassignment \
         import SourcePackageBugAssignment, ProductBugAssignment
 from canonical.launchpad.database.sourcepackage import SourcePackage
@@ -112,10 +112,10 @@ def BugFactory(*args, **kw):
 
     return bug_added
 
-class BugContainer(BugContainerBase):
-    """A container for bugs."""
+class BugSet(BugSetBase):
+    """A set for bugs."""
 
-    implements(IBugContainer)
+    implements(IBugSet)
     table = Bug
 
     def __getitem__(self, id):

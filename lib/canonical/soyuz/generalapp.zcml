@@ -7,8 +7,8 @@
   <!-- Content directives.  We need to make sure SubURLs and other kinds of
        traversal work properly.  We also need to make security declarations.-->
 
-  <content class="canonical.soyuz.generalapp.builddepsContainer">
-    <allow interface="canonical.launchpad.interfaces.IbuilddepsContainer"/>
+  <content class="canonical.soyuz.generalapp.builddepsSet">
+    <allow interface="canonical.launchpad.interfaces.IbuilddepsSet"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 

@@ -13,7 +13,7 @@ from zope.interface import implements
 from canonical.database.sqlbase import quote
 
 #Soyuz imports
-from canonical.soyuz.generalapp import CurrentVersion, builddepsContainer
+from canonical.soyuz.generalapp import CurrentVersion, builddepsSet
 
 #Launchpad imports
 from canonical.launchpad.database import Build, \
@@ -174,7 +174,7 @@ class DistroReleaseSourceReleaseApp(object):
 
             depends = ParseSrcDepends(self.sourcepackagerelease.builddepends)
             for dep in depends:
-                self.builddepends.append(builddepsContainer(*dep[0]))
+                self.builddepends.append(builddepsSet(*dep[0]))
 
         else:
             self.builddepends = None
@@ -185,7 +185,7 @@ class DistroReleaseSourceReleaseApp(object):
 
             depends = ParseSrcDepends(self.sourcepackagerelease.builddependsindep)
             for dep in depends:
-                self.builddependsindep.append(builddepsContainer(*dep[0]))
+                self.builddependsindep.append(builddepsSet(*dep[0]))
 
         else:
             self.builddependsindep = None

@@ -15,12 +15,12 @@ from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import *
-from canonical.launchpad.database.bugcontainer import BugContainerBase
+from canonical.launchpad.database.bugset import BugSetBase
 
 
 __all__ = ['BugProductInfestation', 'BugPackageInfestation',
-           'BugProductInfestationContainer',
-           'BugPackageInfestationContainer',
+           'BugProductInfestationSet',
+           'BugPackageInfestationSet',
            'BugProductInfestationFactory',
            'BugPackageInfestationFactory'
            ]
@@ -61,9 +61,9 @@ class BugPackageInfestation(SQLBase):
     lastmodifiedby = ForeignKey(dbName='lastmodifiedby', foreignKey='Person')
 
 
-class BugProductInfestationContainer(BugContainerBase):
-    """A container for BugProductInfestation."""
-    implements(IBugProductInfestationContainer)
+class BugProductInfestationSet(BugSetBase):
+    """A set for BugProductInfestation."""
+    implements(IBugProductInfestationSet)
     table = BugProductInfestation
 
     def __getitem__(self, id):
@@ -78,9 +78,9 @@ class BugProductInfestationContainer(BugContainerBase):
             yield row
 
 
-class BugPackageInfestationContainer(BugContainerBase):
-    """A container for BugPackageInfestation."""
-    implements(IBugPackageInfestationContainer)
+class BugPackageInfestationSet(BugSetBase):
+    """A set for BugPackageInfestation."""
+    implements(IBugPackageInfestationSet)
     table = BugPackageInfestation
 
     def __getitem__(self, id):

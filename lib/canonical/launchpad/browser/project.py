@@ -23,7 +23,7 @@ def traverseProject(project, request, name):
 
 
 
-class ProjectContainerView(object):
+class ProjectSetView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request

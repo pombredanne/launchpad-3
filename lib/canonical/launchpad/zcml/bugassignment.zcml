@@ -5,26 +5,26 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- ProductBugAssignmentContainer -->
-    <content class="canonical.launchpad.database.ProductBugAssignmentContainer">
-        <allow interface="canonical.launchpad.interfaces.IProductBugAssignmentContainer" />
+    <!-- ProductBugAssignmentSet -->
+    <content class="canonical.launchpad.database.ProductBugAssignmentSet">
+        <allow interface="canonical.launchpad.interfaces.IProductBugAssignmentSet" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.ProductBugAssignmentContainer"
-        provides="canonical.launchpad.interfaces.IProductBugAssignmentContainer" />
+        factory="canonical.launchpad.database.ProductBugAssignmentSet"
+        provides="canonical.launchpad.interfaces.IProductBugAssignmentSet" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
+        for="canonical.launchpad.interfaces.IProductBugAssignmentSet"
         name="+index" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
+        for="canonical.launchpad.interfaces.IProductBugAssignmentSet"
         getter="__getitem__" />
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
+        for="canonical.launchpad.interfaces.IProductBugAssignmentSet"
         permission="zope.Public">
         <browser:page name="+index"
             template="../templates/productbugassignments-index.pt"
@@ -38,7 +38,7 @@
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IProductBugAssignment"
-        for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
+        for="canonical.launchpad.interfaces.IProductBugAssignmentSet"
         label="Add Product Bug Assignment"
         fields="product bugstatus priority severity assignee owner"
         content_factory="canonical.launchpad.database.ProductBugAssignmentFactory"
@@ -62,26 +62,26 @@
         lp:url="malone/bugs/$Bug.id/productassignments/$ProductBugAssignment.id/+edit">
     </browser:editform>
 
-    <!--SourcePackageBugAssignmentContainer -->
-    <content class="canonical.launchpad.database.SourcePackageBugAssignmentContainer">
-        <allow interface="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer" />
+    <!--SourcePackageBugAssignmentSet -->
+    <content class="canonical.launchpad.database.SourcePackageBugAssignmentSet">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageBugAssignmentSet" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.SourcePackageBugAssignmentContainer"
-        provides="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer" />
+        factory="canonical.launchpad.database.SourcePackageBugAssignmentSet"
+        provides="canonical.launchpad.interfaces.ISourcePackageBugAssignmentSet" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentSet"
         name="+index" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentSet"
         getter="__getitem__" />
 
     <browser:pages
-        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentSet"
         permission="zope.Public">
         <browser:page name="+index"
             template="../templates/sourcepackagebugassignments-index.pt"
@@ -95,7 +95,7 @@
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
-        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentSet"
         label="Add SourcePackage Bug Assignment"
         fields="sourcepackage bugstatus priority severity binarypackagename assignee owner"
         content_factory="canonical.launchpad.database.SourcePackageBugAssignmentFactory"

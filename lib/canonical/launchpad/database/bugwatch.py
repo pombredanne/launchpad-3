@@ -8,8 +8,8 @@ from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBugWatch, \
-        IBugWatchContainer
-from canonical.launchpad.database.bug import BugContainerBase
+        IBugWatchSet
+from canonical.launchpad.database.bug import BugSetBase
 from canonical.database.sqlbase import SQLBase
 
 class BugWatch(SQLBase):
@@ -27,10 +27,10 @@ class BugWatch(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person',
                 notNull=True)
 
-class BugWatchContainer(BugContainerBase):
-    """A container for BugWatch"""
+class BugWatchSet(BugSetBase):
+    """A set for BugWatch"""
 
-    implements(IBugWatchContainer)
+    implements(IBugWatchSet)
     table = BugWatch
 
 def BugWatchFactory(context, **kw):

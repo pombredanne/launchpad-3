@@ -11,7 +11,7 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 from canonical.launchpad.interfaces import *
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.bugcontainer import BugContainerBase
+from canonical.launchpad.database.bugset import BugSetBase
 
 from sets import Set
 
@@ -38,10 +38,10 @@ class ProductBugAssignment(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
 
-class ProductBugAssignmentContainer(BugContainerBase):
-    """A container for ProductBugAssignment"""
+class ProductBugAssignmentSet(BugSetBase):
+    """A Set for ProductBugAssignment"""
 
-    implements(IProductBugAssignmentContainer)
+    implements(IProductBugAssignmentSet)
     table = ProductBugAssignment
 
 
@@ -74,10 +74,10 @@ class SourcePackageBugAssignment(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
 
-class SourcePackageBugAssignmentContainer(BugContainerBase):
-    """A container for SourcePackageBugAssignment"""
+class SourcePackageBugAssignmentSet(BugSetBase):
+    """A set for SourcePackageBugAssignment"""
 
-    implements(ISourcePackageBugAssignmentContainer)
+    implements(ISourcePackageBugAssignmentSet)
     table = SourcePackageBugAssignment
 
 

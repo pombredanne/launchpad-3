@@ -16,7 +16,7 @@ from canonical.launchpad.database import \
         BugTracker, BugsAssignedReport, BugWatch, Product, Person, EmailAddress, \
         Bug, BugAttachment, BugExternalRef, BugSubscription, \
         ProductBugAssignment, SourcePackageBugAssignment, \
-        BugProductInfestation, BugPackageInfestation, BugContainerBase
+        BugProductInfestation, BugPackageInfestation, BugSetBase
 
 from canonical.database import sqlbase
 
@@ -29,11 +29,11 @@ from canonical.lp import dbschema
 # Interface imports
 from canonical.launchpad.interfaces import \
         IBug, IBugAttachment, \
-        IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
-        IBugSubscriptionContainer, ISourcePackageContainer, \
-        IBugWatchContainer, IProductBugAssignmentContainer, \
-        ISourcePackageBugAssignmentContainer, IBugProductInfestationContainer, \
-        IBugPackageInfestationContainer, IPerson, \
+        IBugSet, IBugAttachmentSet, IBugExternalRefSet, \
+        IBugSubscriptionSet, ISourcePackageSet, \
+        IBugWatchSet, IProductBugAssignmentSet, \
+        ISourcePackageBugAssignmentSet, IBugProductInfestationSet, \
+        IBugPackageInfestationSet, IPerson, \
         IBugExternalRefsView
 
 class MaloneApplicationView(object):

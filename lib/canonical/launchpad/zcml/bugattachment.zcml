@@ -29,7 +29,7 @@
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugAttachment"
-        for="canonical.launchpad.interfaces.IBugAttachmentContainer"
+        for="canonical.launchpad.interfaces.IBugAttachmentSet"
         label="Add a Bug Attachment"
         fields="name description libraryfile"
         content_factory="canonical.launchpad.database.BugAttachmentFactory"
@@ -50,21 +50,21 @@
         lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+edit"
         />
 
-    <!-- BugAttachmentContainer -->
-    <content class="canonical.launchpad.database.BugAttachmentContainer">
-        <allow interface="canonical.launchpad.interfaces.IBugAttachmentContainer" />
+    <!-- BugAttachmentSet -->
+    <content class="canonical.launchpad.database.BugAttachmentSet">
+        <allow interface="canonical.launchpad.interfaces.IBugAttachmentSet" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.BugAttachmentContainer"
-        provides="canonical.launchpad.interfaces.IBugAttachmentContainer" />
+        factory="canonical.launchpad.database.BugAttachmentSet"
+        provides="canonical.launchpad.interfaces.IBugAttachmentSet" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugAttachmentContainer"
+        for="canonical.launchpad.interfaces.IBugAttachmentSet"
         name="+index" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IBugAttachmentContainer"
+        for="canonical.launchpad.interfaces.IBugAttachmentSet"
         getter="__getitem__" />
 
 </configure>

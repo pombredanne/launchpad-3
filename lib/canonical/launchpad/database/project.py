@@ -75,46 +75,6 @@ class Project(SQLBase):
         else:
             raise AssertionError("Too many results.")
 
-
-
-#
-# XXX Mark Shuttleworth 03/10/04 This classname is deprecated in favour of
-#     ProjectSet below
-#
-class ProjectContainer(object):
-    """A container for Project objects."""
-
-    implements(IProjectContainer)
-    table = Project
-
-    def __getitem__(self, name):
-        try:
-            return self.table.select(self.table.q.name == name)[0]
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
-            raise KeyError, id
-
-    def __iter__(self):
-        for row in self.table.select():
-            yield row
-
-    def search(self, searchtext):
-        q = """name LIKE '%%%%' || %s || '%%%%' """ % (
-                quote(searchtext.lower())
-                )
-        q += """ OR lower(title) LIKE '%%%%' || %s || '%%%%'""" % (
-                quote(searchtext.lower())
-                )
-        q += """ OR lower(shortdesc) LIKE '%%%%' || %s || '%%%%'""" % (
-                quote(searchtext.lower())
-                )
-        q += """ OR lower(description) LIKE '%%%%' || %s || '%%%%'""" % (
-                quote(searchtext.lower())
-                )
-        return Project.select(q)
-
-
-
 class ProjectSet:
     implements(IProjectSet)
 

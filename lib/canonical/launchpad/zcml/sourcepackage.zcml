@@ -48,27 +48,27 @@
         <allow interface="canonical.launchpad.interfaces.ISourcePackageName" />
     </content>
 
-    <!-- SourcePackageContainer -->
-    <content class="canonical.launchpad.database.SourcePackageContainer">
+    <!-- SourcePackageSet -->
+    <content class="canonical.launchpad.database.SourcePackageSet">
         <allow
-            interface="canonical.launchpad.interfaces.ISourcePackageContainer"
+            interface="canonical.launchpad.interfaces.ISourcePackageSet"
             />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.SourcePackageContainer"
-        provides="canonical.launchpad.interfaces.ISourcePackageContainer" />
+        factory="canonical.launchpad.database.SourcePackageSet"
+        provides="canonical.launchpad.interfaces.ISourcePackageSet" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.ISourcePackageContainer"
+        for="canonical.launchpad.interfaces.ISourcePackageSet"
         getter="__getitem__" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackageContainer"
+        for="canonical.launchpad.interfaces.ISourcePackageSet"
         layer="canonical.launchpad.layers.MaloneLayer"
         name="+malone-index" />
 
-    <browser:pages for="canonical.launchpad.interfaces.ISourcePackageContainer"
+    <browser:pages for="canonical.launchpad.interfaces.ISourcePackageSet"
         permission="zope.Public">
         <browser:page 
             name="+malone-index"

@@ -17,7 +17,7 @@
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IBugProductInfestation"
-        for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
+        for="canonical.launchpad.interfaces.IBugProductInfestationSet"
         label="Add Infested Product Release"
         fields="productrelease infestationstatus"
         content_factory="canonical.launchpad.database.BugProductInfestationFactory"
@@ -38,26 +38,26 @@
         template="../templates/default-editform.pt"
         lp:url="malone/bugs/$Bug.id/productinfestations/$BugProductInfestation.id/+edit" />
 
-    <!-- BugProductInfestationContainer -->
-    <content class="canonical.launchpad.database.BugProductInfestationContainer">
-        <allow interface="canonical.launchpad.interfaces.IBugProductInfestationContainer" />
+    <!-- BugProductInfestationSet -->
+    <content class="canonical.launchpad.database.BugProductInfestationSet">
+        <allow interface="canonical.launchpad.interfaces.IBugProductInfestationSet" />
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.BugProductInfestationContainer"
-        provides="canonical.launchpad.interfaces.IBugProductInfestationContainer" />
+        factory="canonical.launchpad.database.BugProductInfestationSet"
+        provides="canonical.launchpad.interfaces.IBugProductInfestationSet" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
+        for="canonical.launchpad.interfaces.IBugProductInfestationSet"
         getter="__getitem__" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
+        for="canonical.launchpad.interfaces.IBugProductInfestationSet"
         name="+index" />
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
+        for="canonical.launchpad.interfaces.IBugProductInfestationSet"
         permission="zope.Public">
         <browser:page name="+index"
             template="../templates/bugproductinfestations-index.pt"

@@ -10,15 +10,15 @@ from string import strip
 from zope.interface import implements
 
 # Launchpad imports
-from canonical.launchpad.interfaces import IbuilddepsContainer, \
+from canonical.launchpad.interfaces import IbuilddepsSet, \
                                            ICurrentVersion
 
 #
 # 
 #
 
-class builddepsContainer(object):
-    implements(IbuilddepsContainer)
+class builddepsSet(object):
+    implements(IbuilddepsSet)
     
     def __init__(self, name, version, signal):
         self.name = name

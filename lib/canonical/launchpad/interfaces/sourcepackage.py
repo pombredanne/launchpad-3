@@ -65,8 +65,8 @@ class ISourcePackageName(Interface):
 
 
 
-class ISourcePackageContainer(Interface):
-    """A container for ISourcePackage objects."""
+class ISourcePackageSet(Interface):
+    """A set for ISourcePackage objects."""
 
     def __getitem__(key):
         """Get an ISourcePackage by name"""
@@ -184,7 +184,7 @@ class IDistroReleaseSourceReleaseBuildApp(Interface):
         build = Attribute("The SourcePackageRelease Build Table")
 
 
-class IbuilddepsContainer(Interface):
+class IbuilddepsSet(Interface):
     name = Attribute("Package name for a builddepends/builddependsindep")
     signal = Attribute("Dependence Signal e.g = >= <= <")
     version = Attribute("Package version for a builddepends/builddependsindep")

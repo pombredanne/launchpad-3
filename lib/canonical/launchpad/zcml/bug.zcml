@@ -58,26 +58,26 @@
         <defaultPage name="+index" />
     </browser:view>
 
-    <!-- this is class BugContainer -->
-    <content class="canonical.launchpad.database.BugContainer">
-        <allow interface="canonical.launchpad.interfaces.IBugContainer" />
+    <!-- this is class BugSet -->
+    <content class="canonical.launchpad.database.BugSet">
+        <allow interface="canonical.launchpad.interfaces.IBugSet" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.BugContainer"
-        provides="canonical.launchpad.interfaces.IBugContainer" />
+        factory="canonical.launchpad.database.BugSet"
+        provides="canonical.launchpad.interfaces.IBugSet" />
 
     <browser:traverse
-        for="canonical.launchpad.interfaces.IBugContainer"
+        for="canonical.launchpad.interfaces.IBugSet"
         function="canonical.launchpad.browser.traverseBugs" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugContainer"
+        for="canonical.launchpad.interfaces.IBugSet"
         name="+index" />
 
     <browser:addform
         name="+new"
-        for="canonical.launchpad.interfaces.IBugContainer"
+        for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Create A New Bug Record"
         fields="title shortdesc description sourcepackage product owner"
@@ -95,7 +95,7 @@
     </browser:addform>
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IBugContainer"
+        for="canonical.launchpad.interfaces.IBugSet"
         class="canonical.launchpad.browser.BugAssignmentsView"
         permission="zope.Public"
         lp:url="malone/bugs/$Bug.id">
@@ -106,7 +106,7 @@
     </browser:pages>
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IBugContainer"
+        for="canonical.launchpad.interfaces.IBugSet"
         class="canonical.launchpad.browser.BugsCreatedByView"
         permission="zope.Public"
         lp:url="malone/bugs/created/$Bug.owner">

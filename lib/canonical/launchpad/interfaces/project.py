@@ -87,20 +87,7 @@ class IProject(Interface):
 
 
 
-# Interfaces for containers
-
-class IProjectContainer(Interface):
-    """A container for IProject objects."""
-
-    def __getitem__(key):
-        """Get a Project by name."""
-
-    def __iter__():
-        """Iterate through Projects."""
-
-    def search(querytext):
-        """Search through Projects."""
-
+# Interfaces for set
 
 class IProjectSet(Interface):
     """The collection of projects."""

@@ -5,13 +5,13 @@ from zope.interface import implements
 from zope.schema.interfaces import IText
 from zope.app.form.browser import TextAreaWidget, TextWidget
 
-from canonical.launchpad.database import BugAttachmentContainer, \
-        BugExternalRefContainer, BugSubscriptionContainer, \
-        BugWatchContainer, ProductBugAssignmentContainer, \
-        SourcePackageBugAssignmentContainer, \
-        BugProductInfestationContainer, \
-        BugPackageInfestationContainer, Person, Bug, \
-        BugsAssignedReport, BugContainer
+from canonical.launchpad.database import BugAttachmentSet, \
+        BugExternalRefSet, BugSubscriptionSet, \
+        BugWatchSet, ProductBugAssignmentSet, \
+        SourcePackageBugAssignmentSet, \
+        BugProductInfestationSet, \
+        BugPackageInfestationSet, Person, Bug, \
+        BugsAssignedReport, BugSet
 
 from canonical.launchpad.interfaces import IPerson
 
@@ -19,21 +19,21 @@ from canonical.lp import dbschema
 
 def traverseBug(bug, request, name):
     if name == 'attachments':
-        return BugAttachmentContainer(bug=bug.id)
+        return BugAttachmentSet(bug=bug.id)
     elif name == 'references':
-        return BugExternalRefContainer(bug=bug.id)
+        return BugExternalRefSet(bug=bug.id)
     elif name == 'people':
-        return BugSubscriptionContainer(bug=bug.id)
+        return BugSubscriptionSet(bug=bug.id)
     elif name == 'watches':
-        return BugWatchContainer(bug=bug.id)
+        return BugWatchSet(bug=bug.id)
     elif name == 'productassignments':
-        return ProductBugAssignmentContainer(bug=bug.id)
+        return ProductBugAssignmentSet(bug=bug.id)
     elif name == 'packageassignments':
-        return SourcePackageBugAssignmentContainer(bug=bug.id)
+        return SourcePackageBugAssignmentSet(bug=bug.id)
     elif name == 'productinfestations':
-        return BugProductInfestationContainer(bug=bug.id)
+        return BugProductInfestationSet(bug=bug.id)
     elif name == 'packageinfestations':
-        return BugPackageInfestationContainer(bug=bug.id)
+        return BugPackageInfestationSet(bug=bug.id)
     else:
        raise KeyError, name
 
@@ -41,7 +41,7 @@ def traverseBugs(bugcontainer, request, name):
     if name == 'assigned':
         return BugsAssignedReport()
     else:
-        return BugContainer()[int(name)]
+        return BugSet()[int(name)]
 
 
 # TODO: It should be possible to specify all this via ZCML and not require

@@ -35,8 +35,8 @@ class IProductBugAssignment(Interface):
     #owner = Attribute("The owner's IPerson")
 
 
-class IProductBugAssignmentContainer(Interface):
-    """A container for IProductBugAssignment objects."""
+class IProductBugAssignmentSet(Interface):
+    """A set for IProductBugAssignment objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 
@@ -87,8 +87,8 @@ class ISourcePackageBugAssignment(Interface):
     #owner = Attribute("The owner's IPerson")
 
 
-class ISourcePackageBugAssignmentContainer(Interface):
-    """A container for ISourcePackageBugAssignment objects."""
+class ISourcePackageBugAssignmentSet(Interface):
+    """A set for ISourcePackageBugAssignment objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 
