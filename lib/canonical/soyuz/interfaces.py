@@ -160,6 +160,7 @@ class IDistroReleaseBinaryReleaseApp(Interface):
     """A Binary Release Proxy """
     binarypackagerelease = Attribute("BinaryPackageRelease")
     version = Attribute("BinaryPackageRelease Version ?!?!")
+    sourcedistrorelease = Attribute("The DistroRelease from where the binary's SourcePackageRelease came from")
     archs = Attribute("Builded archs")
 
     def __getitem__(name):
@@ -436,12 +437,19 @@ class IPackagePublishing(Interface):
     distroarchrelease = Attribute("Distro Arch Relese")
     packages = Attribute("XXX")
 
+class IBuild(Interface):
+    """A Build interface"""
+    distroarchrelease = Attribute("The Ditro Arch Release")
+
+
 class IBinaryPackage(Interface):
     """A binary package, e.g apache-utils"""
     # See the BinaryPackage table
     binarypackagename = Attribute("Binary Package Name ID")
+    sourcepackagerelease = Attribute("Sourcepackagerelease from where the binary comes")
     shortdesc = Attribute("Short Description")
     description = Attribute("Full Description")
+    build = Attribute("Binary Package Build")
     name = Attribute("Binary Package Name")
 
 class IBinaryPackageName(Interface):

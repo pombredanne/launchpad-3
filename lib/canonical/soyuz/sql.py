@@ -475,8 +475,13 @@ class DistroReleaseBinaryReleaseBuildApp(object):
 
 class DistroReleaseBinaryReleaseApp(object):
     def __init__(self, binarypackagerelease, version):
-        self.binarypackagerelease = binarypackagerelease
         self.version = version
+        self.binarypackagerelease = binarypackagerelease
+
+        query = 'SourcePackageUpload.distrorelease = DistroRelease.id '
+        query += 'AND SourcePackageUpload.sourcepackagerelease = %i ' %(self.binarypackagerelease.sourcepackagerelease.id)
+        self.sourcedistrorelease = Release.select(query)[0]
+
         # FIXME: stub
         self.archs = ['i386','AMD64']
 
@@ -487,20 +492,8 @@ class DistroReleaseBinaryReleaseApp(object):
     
 class DistroReleaseBinaryApp(object):
     def __init__(self, binarypackage, release):
-        # FIXME: stub
         self.binarypackage = binarypackage
         self.release = release
-
-##         self.lastversions = ['1.2.3-4',
-##                              '1.2.3-5',
-##                              '1.2.3-6',
-##                              '1.2.4-0',
-##                              '1.2.4-1']
-
-
-##         Self.currentversions = [CurrentVersion('1.2.4-0',['i386', 'AMD64']),
-##                                 CurrentVersion('1.2.3-6',['PPC'])
-##                                 ]
 
     def currentReleases(self):
         """The current releases of this binary package by architecture.

@@ -117,6 +117,11 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.soyuz.sql.SoyuzBuild">
+    <allow interface="canonical.soyuz.interfaces.IBuild"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
  <content class="canonical.soyuz.sql.DistroBinariesApp">
     <allow interface="canonical.soyuz.interfaces.IDistroBinariesApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>

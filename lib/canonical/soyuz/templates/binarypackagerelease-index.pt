@@ -29,7 +29,13 @@ tal:content="context/binarypackagerelease/shortdesc">TITLE</spam>
     tal:attributes="href string:../../${context/binarypackagerelease/name}"/>
 
     <p><b>Source Package Release:</b>
-    <a class="dummy"> xxxxx </a>
+    <a
+    tal:define="sourcerelease
+    context/binarypackagerelease/sourcepackagerelease"
+    tal:content="sourcerelease/sourcepackage/name"
+    tal:attributes="href
+    string:../../../../src/${context/sourcedistrorelease/name}/${sourcerelease/sourcepackage/name}/${sourcerelease/version}"
+    /> 
 
     <p><b>Build:</b>
     <a class="dummy"> xxxxx </a>
