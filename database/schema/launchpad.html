@@ -111,7 +111,7 @@
   <body>
 
     <!-- Primary Index -->
-	<p><br><br>Dumped on 2004-11-10</p>
+	<p><br><br>Dumped on 2004-11-12</p>
 <h1><a name="index">Index of database - launchpad_dev</a></h1>
 <ul>
     
@@ -1774,6 +1774,8 @@
 			<a name="public.table.bounty">bounty</a>
 		</h2>
         
+         <p>A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.</p>
+        
 
 
         <table width="100%" cellspacing="0" cellpadding="3">
@@ -1892,7 +1894,7 @@
 				NOT NULL
 				
 				</i>
-				
+				<br><br>This is the ESTIMATED value in US Dollars of the bounty. We say &quot;estimated&quot; because the bounty might one day be offered in one of several currencies, or people might contribute different amounts in different currencies to each bounty. This field will reflect an estimate based on recent currency exchange rates of the value of this bounty in USD.
 				</td>
 			 </tr>
             
@@ -1908,7 +1910,7 @@
 				NOT NULL
 				
 				</i>
-				
+				<br><br>An estimate of the difficulty of the bounty, from 1 to 100, where 100 is extremely difficult and 1 is extremely easy.
 				</td>
 			 </tr>
             
@@ -1924,7 +1926,7 @@
 				NOT NULL
 				
 				</i>
-				
+				<br><br>An estimate of the length of time it should take to complete this bounty, given the skills required.
 				</td>
 			 </tr>
             
@@ -1948,7 +1950,7 @@
 				NOT NULL
 				
 				</i>
-				
+				<br><br>The person who will review this bounty regularly for progress. The reviewer is the person who is responsible for establishing when the bounty is complete.
 				</td>
 			 </tr>
             
@@ -1988,7 +1990,7 @@
 				NOT NULL
 				
 				</i>
-				
+				<br><br>The person who created the bounty. The owner can update the specification of the bounty, and appoints the reviewer.
 				</td>
 			 </tr>
             
@@ -2480,6 +2482,8 @@
 		<h2>Table:
 			<a name="public.table.bug">bug</a>
 		</h2>
+        
+         <p>A software bug that requires fixing. This particular bug may be linked to one or more products or sourcepackages to identify the location(s) that this bug is found.</p>
         
 
 
@@ -14932,6 +14936,8 @@ generating archives for this distro release
 			<a name="public.table.productbugassignment">productbugassignment</a>
 		</h2>
         
+         <p>Links a given Bug to a particular product.</p>
+        
 
 
         <table width="100%" cellspacing="0" cellpadding="3">
@@ -15115,6 +15121,22 @@ generating archives for this distro release
 				DEFAULT timezone(&#39;UTC&#39;::text, (&#39;now&#39;::text)::timestamp(6) with time zone)
 				</i>
 				
+				</td>
+			 </tr>
+            
+            <tr class="tr0">
+				<td>
+                
+                </td>
+            	<td>datecreated</td>
+            	<td>timestamp without time zone</td>
+                <td><i>
+				
+
+				NOT NULL
+				DEFAULT timezone(&#39;UTC&#39;::text, (&#39;now&#39;::text)::timestamp(6) with time zone)
+				</i>
+				<br><br>A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it&#39;s the date the bug was assigned to this product, which could have come later.
 				</td>
 			 </tr>
             
@@ -17526,6 +17548,8 @@ generating archives for this distro release
 			<a name="public.table.sourcepackagebugassignment">sourcepackagebugassignment</a>
 		</h2>
         
+         <p>Links a given Bug to a particular sourcepackage.</p>
+        
 
 
         <table width="100%" cellspacing="0" cellpadding="3">
@@ -17733,6 +17757,22 @@ generating archives for this distro release
 				DEFAULT timezone(&#39;UTC&#39;::text, (&#39;now&#39;::text)::timestamp(6) with time zone)
 				</i>
 				
+				</td>
+			 </tr>
+            
+            <tr class="tr1">
+				<td>
+                
+                </td>
+            	<td>datecreated</td>
+            	<td>timestamp without time zone</td>
+                <td><i>
+				
+
+				NOT NULL
+				DEFAULT timezone(&#39;UTC&#39;::text, (&#39;now&#39;::text)::timestamp(6) with time zone)
+				</i>
+				<br><br>A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it&#39;s the date the bug was assigned to this product, which could have come later.
 				</td>
 			 </tr>
             
