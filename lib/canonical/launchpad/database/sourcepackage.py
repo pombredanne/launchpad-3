@@ -23,11 +23,11 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, \
                                            ISourcePackageNameSet, \
                                            ISourcePackageSet, \
                                            ISourcePackageInDistroSet, \
-                                           ISourcePackageUtility, \
-                                           IDownloadURL
+                                           ISourcePackageUtility
 
 from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.binarypackage import BinaryPackage
+from canonical.launchpad.database.binarypackage import BinaryPackage, \
+                                                       DownloadURL
 
 class SourcePackage(SQLBase):
     """A source package, e.g. apache2."""
@@ -437,11 +437,3 @@ def createSourcePackage(name, maintainer=0):
         title='', # FIXME
         description='', # FIXME
     )
-
-
-class DownloadURL(object):
-    implements(IDownloadURL)
-
-    def __init__(self, filename, fileurl):
-        self.filename = filename
-        self.fileurl = fileurl

@@ -1,0 +1,148 @@
+Introduction
+============
+
+Bugs are problems in software. When a bug gets assigned to a specific
+upstream or distro/sourcepackagename/binarypackagename, a bug /task/ is
+created. In essence, a bug task is a bug that needs to be fixed in a specific
+place. Where a bug has things like a title, comments and subscribers, it's
+the bug task that tracks priority, severity, assignee, etc.
+
+Working with Bug Tasks in Launchpad
+===================================
+
+All BugTask creation and retrieval is done through BugTaskSet.  BugTaskSet can
+be accessed as a utility.
+
+    >>> from zope.component import getUtility
+    >>> import transaction
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+    >>> bugtaskset = getUtility(IBugTaskSet)
+
+To retrieve a specific BugTask, use BugTaskSet.get. As an example,
+interacting with the system as an anonymous (i.e. unauthenticated) user:
+
+    >>> import zope.security.management
+    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from canonical.launchpad.database import Person
+    >>> class Principal:
+    ...     def __init__(self, id):
+    ...         self.id = id
+    ...         self.groups = []
+    >>> principal = Principal('launchpad.anonymous')
+
+    >>> class Participation:
+    ...     interaction = None
+    >>> anon_participation = Participation()
+    >>> anon_participation.principal = principal
+
+    >>> zope.security.management.newInteraction(anon_participation)
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from zope.app.tests import ztapi
+    >>> from zope.interface import implements
+    >>> class MockLaunchBag(object):
+    ...     implements(ILaunchBag)
+    ...     def __init__(self, login=None, user=None):
+    ...         self.login = login
+    ...         self.user = user
+    >>> ztapi.provideUtility(ILaunchBag, MockLaunchBag())
+
+let's fetch the BugTask with ID 1:
+
+    >>> bugtask = bugtaskset.get(1)
+    >>> bugtask.bugtitle
+    u'Firefox does not support SVG'
+
+If you pass an ID for which no object exists, you'll get a
+zope.exceptions.NotFoundError:
+
+    >>> bugtask = bugtaskset.get(-1)
+    Traceback (most recent call last):
+      ...
+    NotFoundError: 'BugTask with ID -1 does not exist'
+
+To retrieve a set of bug tasks matching a set of search criteria, use
+BugTaskSet.search. Here's how you'd grab all the NEW and ACCEPTED tasks:
+
+    >>> from canonical.launchpad.searchbuilder import any
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.database import Product
+    >>> upstream_mozilla = Product.get(4)
+    >>> bugtasks = bugtaskset.search(
+    ...     status = any(BugTaskStatus.NEW.value, BugTaskStatus.ACCEPTED.value),
+    ...     product = upstream_mozilla,
+    ...     orderby = "id")
+    >>> bugtask_ids = [bt.id for bt in bugtasks]
+    >>> print bugtask_ids
+    [2, 13, 14, 15]
+
+Bug Privacy
+===========
+
+A bug is either private or public. Private bugs are only visible (e.g. in
+search listings) to explicit subscribers. Public bugs are visible to
+anyone.
+
+Let's mark one of the Firefox bugs private:
+
+    >>> bug_firefox_no_svg_support = bugtaskset.get(2)
+    >>> bug_firefox_no_svg_support.bug.private = True
+    >>> transaction.commit()
+
+Now the same search as above yields only three bugs, because the anonymous user
+can't see the private bug.
+
+    >>> bugtasks = bugtaskset.search(
+    ...     status = any(BugTaskStatus.NEW.value, BugTaskStatus.ACCEPTED.value),
+    ...     product = upstream_mozilla,
+    ...     orderby = "id")
+    >>> bugtask_ids = [bt.id for bt in bugtasks]
+    >>> print bugtask_ids
+    [13, 14, 15]
+
+Trying to retrieve the bug directly will work fine:
+
+    >>> bug_firefox_no_svg_support = bugtaskset.get(2)
+
+But attribute access on the IBugTask will raise an authorization exception:
+
+    >>> bug_firefox_no_svg_support.bug
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('bug', 'launchpad.View')
+
+But, logged in as the Firefox maintainer:
+
+    XXX: Brad Bollenbach, 2005-01-26: Simulating a login in a test needs to be
+    a one-liner. See:
+
+        https://launchpad.ubuntu.com/malone/bugs/104
+
+    >>> from zope.security.management import getInteraction
+    >>> firefox_maintainer = Person.get(12)
+    >>> firefox_maintainer_participation = Participation()
+    >>> firefox_maintainer_participation.principal = firefox_maintainer
+    >>> interaction = getInteraction()
+    >>> interaction.remove(anon_participation)
+    >>> interaction.add(firefox_maintainer_participation)
+
+    >>> ztapi.provideUtility(
+    ...     ILaunchBag, MockLaunchBag("test@canonical.com", firefox_maintainer))
+
+We'll find all four IBugTasks that match the search criteria, as the maintainer
+is also an explicit subscriber in this case.
+
+    >>> bugtasks = bugtaskset.search(
+    ...     status = any(BugTaskStatus.NEW.value, BugTaskStatus.ACCEPTED.value),
+    ...     product = upstream_mozilla,
+    ...     orderby = "id")
+    >>> bugtask_ids = [bt.id for bt in bugtasks]
+    >>> print bugtask_ids
+    [2, 13, 14, 15]
+
+And, as you would expect, we'll also be able to access it directly:
+
+    >>> bug_firefox_no_svg_support = bugtaskset.get(2)
+    >>> bug_firefox_no_svg_support.bug.title
+    u'Firefox does not support SVG'
+

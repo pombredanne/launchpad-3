@@ -15,8 +15,7 @@ from canonical.database.sqlbase import SQLBase, quote
 
 # Launchpad interfaces
 from canonical.launchpad.interfaces import IProject, IProjectSet, \
-                                           IProjectBugTracker,\
-                                           IObjectAuthorization
+                                           IProjectBugTracker
 
 # Import needed database objects
 from canonical.launchpad.database.product import Product
@@ -26,7 +25,7 @@ from sets import Set
 class Project(SQLBase):
     """A Project"""
 
-    implements(IProject, IObjectAuthorization)
+    implements(IProject)
 
     _table = "Project"
 
@@ -49,20 +48,8 @@ class Project(SQLBase):
     _products = MultipleJoin('Product', joinColumn='project')
 
     _bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
-                                           otherColumn='bugtracker',
-                                           intermediateTable='ProjectBugTracker')
-
-    def checkPermission(self, principal, permission):
-        if permission == "launchpad.Edit":
-            owner = getattr(self.owner, 'id', None)
-            user = getattr(principal, 'id', None)
-            # XXX cprov 20050104
-            # Uncovered case when Onwer is a Team
-
-            # prevent NOT LOGGED and uncertain NO OWNER
-            if owner and user:
-                # I'm the product owner and want to edit
-                return user == owner
+                               otherColumn='bugtracker',
+                               intermediateTable='ProjectBugTracker')
 
     def bugtrackers(self):
         for bugtracker in self._bugtrackers:
@@ -182,17 +169,10 @@ class ProjectBugTracker(SQLBase):
     implements(IProjectBugTracker)
 
     _table = 'ProjectBugTracker'
-
-    _columns = [
-        ForeignKey(
-                name='project', foreignKey="Project",
-                dbName="project", notNull=True
-                ),
-        ForeignKey(
-                name='bugtracker', foreignKey="BugTracker",
-                dbName="bugtracker",
-                notNull=True
-                ),
-                ]
+    
+    _columns = [ForeignKey(name='project', foreignKey="Project",
+                           dbName="project", notNull=True),
+                ForeignKey(name='bugtracker', foreignKey="BugTracker",
+                           dbName="bugtracker", notNull=True),]
 
 

@@ -147,9 +147,4 @@
             lp:url="malone/bugs/created/$Bug.owner/index" />
     </browser:pages>
 
-    <!-- IBugTask -->
-    <content class="canonical.launchpad.database.BugTask">
-        <allow interface="canonical.launchpad.interfaces.IBugTask" />
-        <require permission="zope.Public" set_schema="canonical.launchpad.interfaces.IBugTask" />
-    </content>
 </configure>

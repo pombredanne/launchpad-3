@@ -2,6 +2,8 @@
 
   <permission id="launchpad.AnyPerson" title="Any Authenticated Person" />
 
+  <permission id="launchpad.View" title="Viewing something" />
+
   <permission id="launchpad.Edit" title="Editing something" />
 
   <permission id="launchpad.Admin" title="Administer something" />
