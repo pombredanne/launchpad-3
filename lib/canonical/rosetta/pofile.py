@@ -506,7 +506,7 @@ class POParser(object):
             l = l[6:]
             if l[0] == '[':
                 # plural case
-                new_plural_case, l = l[1:].split(']')
+                new_plural_case, l = l[1:].split(']', 1)
                 new_plural_case = int(new_plural_case)
                 if (self._plural_case is not None) and (new_plural_case != self._plural_case + 1):
                     warnings.warn(POSyntaxWarning(self._lineno,

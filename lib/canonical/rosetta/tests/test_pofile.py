@@ -194,6 +194,15 @@ class POBasicTestCase(unittest.TestCase):
             pass
         else:
             self.fail("no error when duplicate msgid encountered")
+    def testSquareBracketAndPlural(self):
+        try:
+            self.parser.write(
+                'msgid "foo %d"\n'
+                'msgid_plural "foos %d"\n'
+                'msgstr[0] "foo translated[%d]"\n'
+                'msgstr[1] "foos translated[%d]"\n')
+        except ValueError:
+            self.fail("The SquareBracketAndPlural test failed")
 
 
 def test_suite():
