@@ -4,7 +4,7 @@ DBNAME=launchpad_test
 
 default: all
 
-base: check
+base: 
 	@ echo "* Creating database \"$(DBNAME)\" with sample data."
 	@ echo "* This will hang if another process is accessing the database"
 	createdb -E UNICODE ${DBNAME} || echo ${DBNAME} already exists
