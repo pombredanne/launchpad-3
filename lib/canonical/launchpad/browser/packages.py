@@ -1,3 +1,5 @@
+from urllib import quote as urlquote
+
 # lp imports
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
@@ -41,6 +43,18 @@ class SourcePackageView(object):
 # SourcePackage in a DistroRelease related classes
 #
 
+class DistroSourcesView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        release = urlquote(request.get("release", ""))
+        name = urlquote(request.get("name", ""))
+        if release and name:
+            redirect = request.response.redirect
+            redirect("%s/%s?name=%s" % (request.get('PATH_INFO'), 
+                                        release, name))
+
 ##XXX: (batch+duplicated) cprov 20041006
 ## The two following classes are almost like a duplicated piece
 ## of code. We should look for a better way for use Batching Pages
@@ -50,37 +64,30 @@ class DistroReleaseSourcesView(object):
         self.request = request
 
     def sourcePackagesBatchNavigator(self):
-        source_packages = list(self.context)
+        name = self.request.get("name", "")
+        showall = self.request.get("showall", "")
+
+        if not (name or showall):
+            return None
+
+        if showall:
+            source_packages = list(self.context)
+        else:
+            source_packages = list(self.context.findPackagesByName(name))
+
+        if not source_packages:
+            return None
+
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', BATCH_SIZE))
         batch_size = BATCH_SIZE
-        batch = Batch(list = source_packages, start = start,
-                      size = batch_size)
 
-        return BatchNavigator(batch = batch, request = self.request)
+        batch = Batch(list=source_packages, start=start, size=batch_size)
+        return BatchNavigator(batch=batch, request=self.request)
 
-##XXX: (batch+duplicated) cprov 20041003
-## AGAIN !!!
-class DistrosReleaseSourcesSearchView(object):
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        
-    def searchSourcesBatchNavigator(self):        
-
-        name = self.request.get("name", "")
-
-        if name:
-            source_packages = list(self.context.findPackagesByName(name))
-            start = int(self.request.get('batch_start', 0))
-            end = int(self.request.get('batch_end', BATCH_SIZE))
-            batch_size = BATCH_SIZE
-            batch = Batch(list = source_packages, start = start,
-                          size = batch_size)
-            return BatchNavigator(batch = batch,
-                                  request = self.request)
-        else:
-            return None
+#
+# Source Package
+#
 
 class DistroReleaseSourceView(object):
     translationPortlet = ViewPageTemplateFile(

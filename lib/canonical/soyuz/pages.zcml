@@ -148,9 +148,10 @@
 
    <pages for="canonical.soyuz.sourcepackageapp.DistroSourcesApp"
 	  allowed_attributes="results"
+      class="canonical.launchpad.browser.DistroSourcesView"
 	  permission="zope.Public">
 
-	<page  name="index.html"
+	<page name="index.html"
           template="../launchpad/templates/distroreleases-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/index.html"
 	/>
@@ -168,14 +169,6 @@
 	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/index.html"
 	/>
    </pages>
-
-  <page for="canonical.soyuz.sourcepackageapp.DistroReleaseSourcesApp"
-         permission="zope.Public"
-	 class="canonical.launchpad.browser.DistrosReleaseSourcesSearchView"
-	 template="../launchpad/templates/sourcepackage-search.pt"
-         lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/+search"
-	 name="+search"
-       />
 
 <traverse for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceApp"
                                           getter="__getitem__" />

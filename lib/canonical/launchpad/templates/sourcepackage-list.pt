@@ -4,6 +4,9 @@
       i18n:domain="launchpad">
 
 <head>
+  <title><span tal:content="context/release/distribution/title" />
+    <span tal:content="context/release/title" />: Source Packages
+  </title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
   <!-- Soyuz style sheet -->
@@ -44,7 +47,7 @@
    <div class="portletBody">
      <div class="portletContent even">
      <ul>
-     <li> <a tal:attributes="href string:/soyuz/distros/${distro/name}/releases/${context/release/name}" 
+     <li> Release: <a tal:attributes="href string:/soyuz/distros/${distro/name}/releases/${context/release/name}" 
             tal:content="context/release/title">RELEASE</a></li>
      </ul>
      </div>
@@ -63,62 +66,69 @@
  <div id="content" class="documentEditable">
   <div class="documentContent" id="region-content">
 
-<h1><span tal:content="context/release/distribution/title" />
-<span tal:content="context/release/title" /> Source Packages</h1>
-<!-- <div tal:on-error="python: error.type, error.value.args"> -->
+    <h1 style="margin-bottom: 1em;"><span tal:content="context/release/distribution/title" />
+    <span tal:content="context/release/title" />: Source Packages</h1>
+    <!-- <div tal:on-error="python: error.type, error.value.args"> -->
 
-<h3><span tal:content="context/release/sourcecount" /> Packages</h3>
+    <div align="center" tal:define="sourcecount context/release/sourcecount">
 
-<form name="search" method="GET" action="+search">
-Find Source Package by Name: 
-<br>
-<input type="text" name="name" tal:attributes="value request/name|nothing" />
-<input type="submit" value="Search"/>
-</form>
-<br><br>
+      <form name="search" method="get" action="">
+       <div class="formControls">
+        <label>Package name:</label>
+        <input tal:attributes="value request/name|nothing" 
+               title="Enter the package name" size="50"
+               type="text" name="name"/>
+        <input type="submit" value="Search"/>
+       </div>
+      </form>
+
+      <a tal:attributes="href string:../../src/${context/release/name}?showall=1">
+        View All  
+        (<span tal:content="sourcecount"/> Packages)
+      </a>
+
+    </div>
 
 <!-- XXX: Need section stuff in db. They are in soyuz.dia but  -->
 <!-- the db implementatio is missing -->
 
-<h3>Browse Source Packages</h3>
-  <tal:block tal:define="bn view/sourcePackagesBatchNavigator;
-                         prev_url bn/prevBatchURL;
-                         next_url bn/nextBatchURL;">
+  </div>
 
-  <table>
-    <tr>
-      <th>Source Packages</th>
-    </tr>
-    <tr tal:repeat="package python:list(bn.currentBatch())">      
-      <td><a tal:content="string: ${package/name} : ${package/shortdesc}"
-             tal:attributes="href package/name">PACKAGE</a>
-      </td>
-    </tr>    
-    <tr>
-    <td align="center">
-    <fieldset tal:condition="python:prev_url or next_url">
-    <div>
-    	  <table>
-	  <tr>
-	  <!-- <th condition="not: prev_url"><< prev</th> -->
-          <th tal:condition="prev_url">
-	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
-	  </th>
-          <th tal:repeat="page_link bn/batchPageURLs">
-	     <a tal:attributes="href python:page_link.values()[0]"
-                tal:content="python:page_link.keys()[0]"></a>
-	  </th>
-          <th tal:condition="next_url" >
-	     <a tal:attributes="href next_url"><b>Next >></b></a>
-          </th>
-          <!-- <th condition="not: next_url">next >></th> -->
-          </tr>
-	  </table>
-     </div>
-     </fieldset>
-    </td>
-    </tr>
-  </table>
+  <tal:block tal:define="bn view/sourcePackagesBatchNavigator">
+
+    <p tal:condition="python: bn is None and request.get('name', None)">
+        No packages containing '<span tal:replace="request/name" />' were found.
+    </p>
+
+    <div tal:condition="bn">
+      <tal:block tal:define="prev_url bn/prevBatchURL; next_url bn/nextBatchURL;">
+
+        <ul>
+          <li tal:repeat="package python:list(bn.currentBatch())">
+            <a tal:content="string: ${package/name} : ${package/shortdesc}"
+                 tal:attributes="href package/name">PACKAGE</a></li>
+        </ul>
+        <fieldset tal:condition="python:prev_url or next_url">
+          <div>
+              <table>
+              <tr>
+                <th tal:condition="prev_url">
+                  <a tal:attributes="href prev_url"><b>&lt;&lt; Prev</b></a>
+                </th>
+                <th tal:repeat="page_link bn/batchPageURLs">
+                 <a tal:attributes="href python:page_link.values()[0]"
+                        tal:content="python:page_link.keys()[0]"></a>
+                </th>
+                <th tal:condition="next_url" >
+                 <a tal:attributes="href next_url"><b>Next &gt;&gt;></b></a>
+                </th>
+                </tr>
+            </table>
+          </div>
+        </fieldset>
+
+      </tal:block>
+    </div>
   </tal:block>
 
 
@@ -126,7 +136,6 @@ Find Source Package by Name:
   </div>
 
 <!-- </div> -->
-</div>
 
 </body>
 

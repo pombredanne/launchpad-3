@@ -17,9 +17,14 @@ from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.interfaces import IDistroTools
 
 
-##XXX: (batch_size+global) cprov 20041003
-## really crap constant definition for BatchPages 
+# XXX: (batch_size+global) cprov 20041003
+# really crap constant definition for BatchPages 
 BATCH_SIZE = 40
+
+
+#
+# Distributions
+#
 
 class DistrosSearchView(object):
     """
@@ -27,32 +32,31 @@ class DistrosSearchView(object):
     This Views able the user to search on all distributions hosted on
     Soyuz by Name Distribution Title (Dispalyed name),  
     """
-    ##TODO: (class+doc) cprov 20041003
-    ## This is the EpyDoc Class Document Format,
-    ## Does it fits our expectations ? (except the poor content)
+    # TODO: (class+doc) cprov 20041003
+    # This is the EpyDoc Class Document Format,
+    # Does it fits our expectations ? (except the poor content)
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.results = []
 
     def search_action(self):
-        enable_results = False
         name = self.request.get("name", "")
         title = self.request.get("title", "")
         description = self.request.get("description", "")
 
-        if name or title or description:
-            name = name.replace('%', '%%')
-            title = title.replace('%', '%%')
-            description = description.replace('%', '%%')
+        if not (name or title or description):
+            return False
 
-            name_like = LIKE(Distribution.q.name,
-                             "%%" + name + "%%")
-            title_like = LIKE(Distribution.q.title,
-                              "%%" + title + "%%")
-            description_like = LIKE(Distribution.q.\
-                                    description,
-                                    "%%" + description + "%%")
+        name = name.replace('%', '%%')
+        title = title.replace('%', '%%')
+        description = description.replace('%', '%%')
+
+        name_like = LIKE(Distribution.q.name, "%%" + name + "%%")
+        title_like = LIKE(Distribution.q.title, "%%" + title + "%%")
+        description_like = LIKE(Distribution.q.description,
+                                "%%" + description + "%%")
+        query = AND(name_like, title_like, description_like) 
 
 ##XXX: (case+insensitive) cprov 20041003
 ## Performe case insensitive queries using ILIKE doesn't work
@@ -64,13 +68,9 @@ class DistrosSearchView(object):
 #                                + description + "%%")
 #=================================================================
 
-            query = AND(name_like, title_like, description_like) 
-
-            self.results = Distribution.select(query)
-            self.entries = self.results.count()
-            enable_results = True                
-
-        return enable_results
+        self.results = Distribution.select(query)
+        self.entries = self.results.count()
+        return True
 
 class DistrosAddView(object):
 
@@ -84,7 +84,7 @@ class DistrosAddView(object):
         domain = self.request.get("domain", "")
         person = IPerson(self.request.principal, None)
 
-        d_util = getUtility(IDistroTools)
+        dt = getUtility(IDistroTools)
         
         if not person:
             return False
@@ -92,10 +92,9 @@ class DistrosAddView(object):
         if not title:
             return False
 
-        self.results = d_util.createDistro(person.id, title,
-                                           description, domain)
-
-        return self.results
+        res = dt.createDistro(person.id, title, description, domain)
+        self.results = res
+        return res
 
 class DistrosEditView(object):
 
@@ -120,20 +119,22 @@ class DistrosEditView(object):
         self.context.distribution.description = description
         return True
 
+#
+# Releases
+#
+
 class DistroReleaseView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
     def bugSourcePackagesBatchNavigator(self):
-        source_packages = list(self.context.bugSourcePackages())
+        packages = list(self.context.bugSourcePackages())
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', BATCH_SIZE))
-        batch_size = BATCH_SIZE
-        batch = Batch(list = source_packages, start = start,
-                      size = batch_size)
 
-        return BatchNavigator(batch = batch, request = self.request)
+        batch = Batch(list=packages, start=start, size=BATCH_SIZE)
+        return BatchNavigator(batch=batch, request=self.request)
 
 class ReleasesAddView(object):
 
@@ -143,32 +144,27 @@ class ReleasesAddView(object):
         self.results = []
 
     def add_action(self):
+        person = IPerson(self.request.principal, None)        
+        if not person:
+            return False
+
         title = self.request.get("title", "")
         shortdesc = self.request.get("shortdesc", "")
         description = self.request.get("description", "")
         version = self.request.get("version", "")
         parent = self.request.get("parentrelease", "")
 
-        distro_id = self.context.distribution.id
-        person = IPerson(self.request.principal, None)        
-
-        if not person:
-            return False
-
         if not (title and version and parent):
             return False
 
-        d_util = getUtility(IDistroTools)
+        distro_id = self.context.distribution.id
 
-        self.results = d_util.createDistroRelease(person.id,
-                                                  title,
-                                                  distro_id,
-                                                  shortdesc,
-                                                  description,
-                                                  version,
-                                                  parent)
-                                                          
-        return self.results
+        dt = getUtility(IDistroTools)
+        res = dt.createDistroRelease(person.id, title, distro_id,
+                                     shortdesc, description, version,
+                                     parent)
+        self.results = res
+        return res
 
     def getReleases(self):
         d_util = getUtility(IDistroTools)
@@ -199,7 +195,6 @@ class ReleaseEditView(object):
         self.context.release.version = version
         return True
 
-
 class ReleaseSearchView(object):
     def __init__(self, context, request):
         self.context = context
@@ -207,21 +202,20 @@ class ReleaseSearchView(object):
         self.sources = []
         self.binaries = []
 
-
     def search_action(self):
-        enable_result = False        
         name = self.request.get("name", "")
+        context = self.context
 
-        if name:
-            self.sources = list(self.context.findSourcesByName(name))
-            self.binaries = list(self.context.findBinariesByName(name))
-            enable_result = True
-        else:
-            self.sources = []
-            self.binaries = []
+        if not name:
+            return False
 
-        return enable_result
+        self.sources = list(context.findSourcesByName(name))
+        self.binaries = list(context.findBinariesByName(name))
+        return True
 
+#
+# Roles
+#
 
 class AddRoleViewBase(object):
     rolesPortlet = None

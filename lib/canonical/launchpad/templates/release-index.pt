@@ -109,9 +109,9 @@
 
           <table>
           <tr><td><a 
-            tal:attributes="href string:../../src/${context/release/name}">
+            tal:attributes="href string:../../src/${context/release/name}?showall=1">
             View All 
-            (<span tal:content="context/release/sourcecount"/> Packages)
+            (<span tal:content="sourcecount"/> Packages)
             </a></td>
           </tr>
           </table>
