@@ -61,7 +61,7 @@
   </pages>
 
   <page for="canonical.soyuz.distroapp.DistroApp"
-         permission="launchpad.AnyPerson"
+         permission="launchpad.Edit"
 	 class="canonical.soyuz.browser.DistrosEditView"
 	 name="+edit"
 	 template="../launchpad/templates/distro-edit.pt"
@@ -82,7 +82,7 @@
   </pages>
 
 	<page for="canonical.soyuz.distroapp.DistroReleasesApp"
-	  permission="zope.Public"
+	  permission="launchpad.Admin"
 	  class="canonical.soyuz.browser.ReleasesAddView"
 	  name="+new"
           template="../launchpad/templates/release-new.pt"
@@ -116,7 +116,7 @@
   </pages>
 
 	<page for="canonical.soyuz.distroapp.DistroReleaseApp"
-	  permission="launchpad.AnyPerson"
+	  permission="launchpad.Edit"
 	  class="canonical.soyuz.browser.ReleaseEditView"
 	  name="+edit"
           template="../launchpad/templates/release-edit.pt"

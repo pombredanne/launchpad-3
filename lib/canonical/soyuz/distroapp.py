@@ -23,7 +23,8 @@ from canonical.launchpad.interfaces import IDistribution, \
                                            IDistroReleaseApp, \
                                            IDistroReleasesApp, \
                                            IDistroReleaseTeamApp, \
-                                           IDistroTeamApp
+                                           IDistroTeamApp,\
+                                           IAuthorization
 
 
 #
@@ -44,7 +45,7 @@ class DistrosApp(object):
 
     
 class DistroApp(object):
-    implements(IDistroApp)
+    implements(IDistroApp, IAuthorization)
 
     def __init__(self, name):
         self.distribution = Distribution.selectBy(name=name)[0]
@@ -54,6 +55,10 @@ class DistroApp(object):
             self.enable_releases = True
         else:
             self.enable_releases = False
+
+    def checkPermission(self, principal, permission):
+        if permission == 'launchpad.Edit':
+            return self.distribution.owner.id == principal.id
         
     def getReleaseContainer(self, name):
         container = {
@@ -70,12 +75,15 @@ class DistroApp(object):
 
 # Release app component Section (releases)
 class DistroReleaseApp(object):
-    implements(IDistroReleaseApp)
+    implements(IDistroReleaseApp, IAuthorization)
 
     def __init__(self, release):
         self.release = release
         self.roles=DistroReleaseRole.selectBy(distroreleaseID=self.release.id) 
 
+    def checkPermission(self, principal, permission):
+        if permission == 'launchpad.Edit':
+            return self.release.owner.id == principal.id
 
     def findSourcesByName(self, pattern):
         return SourcePackage.findSourcesByName(self.release, pattern)
@@ -87,10 +95,14 @@ class DistroReleaseApp(object):
         return SourcePackageInDistro.getBugSourcePackages(self.release)
 
 class DistroReleasesApp(object):
-    implements(IDistroReleasesApp)
+    implements(IDistroReleasesApp, IAuthorization)
 
     def __init__(self, distribution):
         self.distribution = distribution
+
+    def checkPermission(self, principal, permission):
+        if permission == 'launchpad.Admin':
+            return self.distribution.owner.id == principal.id
 
     def __getitem__(self, name):
         return DistroReleaseApp(DistroRelease.selectBy(distributionID=

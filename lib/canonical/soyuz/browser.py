@@ -104,16 +104,18 @@ class DistrosAddView(object):
         name = self.request.get("name", "")
         title = self.request.get("title", "")
         description = self.request.get("description", "")
-
-        if name or title or description:
+        person = IPerson(self.request.principal, None)
+        
+        if (name or title or description) and person:
             ##XXX: (uniques) cprov 20041003
 
             ##XXX: (authserver) cprov 20041003
             ## The owner is hardcoded to Mark.
             ## Authserver Security/Authentication Issues ?!?!
-            self.results = Distribution(name=name, title=title, \
-                                             description=description,\
-                                             domainname='domain', owner=1)
+            self.results = Distribution(name=name, title=title, 
+                                        description=description,
+                                        domainname='domain',
+                                        owner=person.id)
             ##XXX: (results) cprov 20041003
             enable_added = True
 
@@ -124,19 +126,9 @@ class DistrosEditView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.results = []
-        self.permission = False
-        self.person = IPerson(self.request.principal, None)
-
-        if self.person:
-            
-            if self.person.id == self.context.distribution.owner.id:
-                self.permission = True
 
     def edit_action(self):
         enable_edited = False
-        if not self.permission:
-            return False
         
         name = self.request.get("name", "")
         title = self.request.get("title", "")
@@ -168,7 +160,10 @@ class ReleasesAddView(object):
         description = self.request.get("description", "")
         version = self.request.get("version", "")
 
-        if name or title or description or version:
+        distro_id = self.context.distribution.id
+        person = IPerson(self.request.principal, None)        
+   
+        if (name or title or description or version) and person:
             ##XXX: (uniques) cprov 20041003
             ## again
 
@@ -183,13 +178,18 @@ class ReleasesAddView(object):
             ## Parentrelease is hardcoded to "warty", should the users
             ## be able to select then now ??
             
-            self.results = DistroRelease(distribution=self.context.distribution.id,
+            self.results = DistroRelease(distribution=distro_id,
                                          name=name, title=title,
                                          shortdesc=shortdesc,
-                                         description=description,version=version,
-                                         components=1, releasestate=1,sections=1,
-                                         datereleased='2004-08-15 10:00', owner=1,
-                                         parentrelease=1, lucilleconfig='')
+                                         description=description,
+                                         version=version,
+                                         owner=person.id,
+                                         components=1,
+                                         releasestate=1,
+                                         sections=1,
+                                         parentrelease=1,
+                                         datereleased='2004-08-15 10:00',
+                                         lucilleconfig='')
             ##XXX: (results) cprov 20041003
             ## again
             enable_added = True
@@ -249,20 +249,9 @@ class ReleaseEditView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.results = []
-        self.permission = False
-        self.person = IPerson(self.request.principal, None)
-        
-        if self.person:
-
-            if self.person.id == self.context.release.owner.id:
-                self.permission = True
-                
 
     def edit_action(self):
         enable_edited = False
-        if not self.permission:
-            return False
         
         name = self.request.get("name", "")
         title = self.request.get("title", "")
