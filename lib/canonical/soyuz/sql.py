@@ -3,6 +3,9 @@
 (c) Canonical Software Ltd. 2004, all rights reserved.
 """
 
+# Python standard library imports
+from sets import Set
+
 # Zope imports
 from zope.interface import implements
 
@@ -628,17 +631,7 @@ class Release(SQLBase):
         query += 'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
         query += 'AND SourcePackageUpload.distrorelease = %d '% (self.id)
 
-## FIXME: How to make it return count for distinct sourcepackages?
-##        return SoyuzSourcePackage.select(query).count()
-
-##DUMMY Counter
-        tmp = SoyuzSourcePackage.select(query)
-        sourcelist = []
-        for source in tmp:
-            if source.id not in sourcelist:
-                sourcelist.append(source.id)
-        return len(sourcelist)
-###############        
+        return len(Set(SoyuzSourcePackage.select(query)))
     sourcecount = property(sourcecount)
 
     def binarycount(self):

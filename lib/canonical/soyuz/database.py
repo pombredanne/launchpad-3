@@ -120,14 +120,26 @@ class SoyuzSourcePackage(SQLBase):
     _columns = [
         ForeignKey(name='maintainer', foreignKey='SoyuzPerson', dbName='maintainer',
                    notNull=True),
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
+        ForeignKey(name='sourcepackagename', foreignKey='SoyuzSourcePackageName',
+                   dbName='sourcepackagename', notNull=True),
+        StringCol('shortdesc', dbName='shortdesc', notNull=True),
         StringCol('description', dbName='description', notNull=True),
         ForeignKey(name='manifest', foreignKey='Manifest', dbName='manifest', 
                    default=None),
     ]
     releases = MultipleJoin('SoyuzSourcePackageRelease',
                             joinColumn='sourcepackage')
+
+    def name(self):
+        return self.sourcepackagename.name
+    name = property(name)
+
+    def title(self):
+        import warnings
+        warnings.warn("Use SoyuzSourcePackage.shortdesc instead of .title",
+                      DeprecationWarning)
+        return self.shortdesc
+    title = property(title)
 
     def getManifest(self):
         return self.manifest
@@ -182,6 +194,13 @@ class SoyuzSourcePackage(SQLBase):
             return last
         else:
             return None
+
+
+class SoyuzSourcePackageName(SQLBase):
+    _table = 'SourcePackageName'
+    _columns = [
+        StringCol('name', dbName='name', notNull=True),
+    ]
 
 
 class SoyuzSourcePackageRelease(SQLBase):
