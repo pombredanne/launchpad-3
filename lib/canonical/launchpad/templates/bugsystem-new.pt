@@ -35,7 +35,7 @@
             <span class="fieldRequired" title="Required">(Required)</span>
 
                   <div class="formHelp">
-                    The name of the bug tracker is a short name - a unique
+                    The "name" of the bug tracker is a short name - a unique
                     name that identifies the bug tracker, and is used in 
                     URLs and references to it. It should be all lowercase
                     letters and dashes, and contain no special characters.

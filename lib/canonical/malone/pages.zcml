@@ -85,10 +85,18 @@
             lp:url="malone/bugsystems/" />
     </pages>
 
+    <pages for="canonical.launchpad.interfaces.IBugSystemSet"
+        permission="launchpad.AnyPerson"
+        class="canonical.malone.browser.BugSystemSetView">
+        <page name="+new"
+            template="../launchpad/templates/bugsystem-new.pt"
+            lp:url="malone/bugsystems/+new" />
+    </pages>
+
     <traverse for="canonical.launchpad.interfaces.IBugSystemSet"
         getter="__getitem__" />
 
-    <pages for="canonical.launchpad.database.BugSystem"
+    <pages for="canonical.launchpad.interfaces.IBugSystem"
         permission="zope.Public">
         <page name="+index"
             template="../launchpad/templates/bugsystem-index.pt"
