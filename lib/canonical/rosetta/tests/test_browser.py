@@ -11,32 +11,34 @@ from canonical.rosetta.interfaces import ILanguages, IPerson
 from zope.interface import implements
 
 class DummyLanguage:
-    def __init__(self, code):
+    def __init__(self, code, pluralForms):
         self.code = code
-        self.pluralForms = 3
+        self.pluralForms = pluralForms
 
 
 class DummyLanguages:
     implements(ILanguages)
 
+    _languages = {
+        'ja' : DummyLanguage('ja', 1),
+        'es' : DummyLanguage('es', 2),
+        'fr' : DummyLanguage('fr', 3),
+        'cy' : DummyLanguage('cy', None),
+        }
+
     def __getitem__(self, key):
-        if key in ('es', 'ja', 'cy'):
-            return DummyLanguage(key)
-        else:
-            raise KeyError, key
+        return self._languages[key]
 
 
 class DummyPerson:
     implements(IPerson)
 
     def languages(self):
-        return [DummyLanguage('es')]
+        return [DummyLanguages()['es']]
 
 
 class DummyPOFile:
-    pluralForms = 2
-    #def __init__(self, pluralForms):
-    #    self.pluralForms = pluralForms
+    pluralForms = 4
 
 
 class DummyMessageID:
@@ -61,7 +63,7 @@ class DummyPOTemplate:
     def poFile(self, language_code):
         self.language_code = language_code
 
-        if language_code in ('es', 'ja'):
+        if language_code in ('ja', 'es'):
             return DummyPOFile()
         else:
             raise KeyError
@@ -130,11 +132,15 @@ def test_TranslatePOTemplate_init():
     >>> [l.code for l in t.languages]
     ['ja']
     >>> t.pluralForms
-    {'ja': 2}
+    {'ja': 4}
+    >>> t.badLanguages
+    []
     >>> t.offset
     0
     >>> t.count
     5
+    >>> t.error
+    False
 
     This is testing when the languages aren't specified in the form, so it
     falls back to using the principal's languages instead.
@@ -150,14 +156,43 @@ def test_TranslatePOTemplate_init():
     >>> [l.code for l in t.languages]
     ['es']
     >>> t.pluralForms
-    {'es': 2}
+    {'es': 4}
+    >>> t.badLanguages
+    []
     >>> t.offset
     0
     >>> t.count
     5
+    >>> t.error
+    False
 
     This is testing when a language is specified which the context has no PO
     file for.
+
+    >>> context = DummyPOTemplate()
+    >>> request = DummyRequest(DummyPerson(), languages='fr')
+    >>> t = TranslatePOTemplate(context, request)
+
+    >>> context.language_code
+    'fr'
+    >>> t.codes
+    'fr'
+    >>> [l.code for l in t.languages]
+    ['fr']
+    >>> t.pluralForms
+    {'fr': 3}
+    >>> t.badLanguages
+    []
+    >>> t.offset
+    0
+    >>> t.count
+    5
+    >>> t.error
+    False
+
+    This is for testing when a language is specified for which there is no PO
+    file and for which there is no plural form information in the language
+    object.
 
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest(DummyPerson(), languages='cy')
@@ -170,11 +205,13 @@ def test_TranslatePOTemplate_init():
     >>> [l.code for l in t.languages]
     ['cy']
     >>> t.pluralForms
-    {'cy': 3}
-    >>> t.offset
-    0
-    >>> t.count
-    5
+    {'cy': None}
+    >>> len(t.badLanguages)
+    1
+    >>> t.badLanguages[0] is DummyLanguages()['cy']
+    True
+    >>> t.error
+    True
 
     This is for testing the case when an explicit offset and count are
     provided.

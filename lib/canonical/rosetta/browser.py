@@ -43,7 +43,7 @@ class ViewProjects:
                     owner=1
                     )
             else:
-                raise RuntimeError("must post this form!")
+                raise RuntimeError("This form must be posted!")
 
             self.submitted = True
             return "Thank you for submitting the form."
@@ -254,7 +254,7 @@ class ViewPOFile:
                 self.context.header = self.header.msgstr.encode('utf-8')
                 self.context.pluralForms = int(self.request.form['pluralforms'])
             else:
-                raise RuntimeError("must post this form!")
+                raise RuntimeError("This form must be posted!")
 
             self.submitted = True
             return "Thank you for submitting the form."
@@ -272,7 +272,7 @@ def traverseIPOFile(pofile, request, name):
         print "Voy a exportarlo"
         exportedFile = poExport.export(languageCode)
         print "Lo he exportado"
-    
+
         request.response.setHeader('Content-Type', 'application/x-po')
         request.response.setHeader('Content-Length', len(exportedFile))
         request.response.setHeader('Content-disposition',
@@ -283,7 +283,7 @@ def traverseIPOFile(pofile, request, name):
     else:
         # XXX: What should we do if the tye something that it's not a po or
         # mo?
-        raise RuntimeError("Unknow request!")
+        raise RuntimeError("Unknown request!")
 
 
 class TranslatorDashboard:
@@ -310,7 +310,7 @@ class TranslatorDashboard:
                     person = fake_person()
 
                 oldInterest = list(person.languages())
-                
+
                 if 'selectedlanguages' in self.request.form:
                     if isinstance(self.request.form['selectedlanguages'], list):
                         newInterest = self.request.form['selectedlanguages']
@@ -318,7 +318,7 @@ class TranslatorDashboard:
                         newInterest = [ self.request.form['selectedlanguages'] ]
                 else:
                     newInterest = []
-                
+
                 # XXX: We should fix this, instead of get englishName list, we
                 # should get language's code
                 for englishName in newInterest:
@@ -330,7 +330,8 @@ class TranslatorDashboard:
                     if language.englishName not in newInterest:
                         person.removeLanguage(language)
             else:
-               raise RuntimeError("must post this form!")
+                raise RuntimeError("This form must be posted!")
+
 
 class ViewSearchResults:
     def __init__(self, context, request):
@@ -383,16 +384,25 @@ class TranslatePOTemplate:
         #   A list of languages to translate into.
         # pluralForms:
         #   A dictionary by language code of plural form counts.
+        # badLanguages:
+        #   A list of languages for which no plural form information is
+        #   available.
         # offset:
         #   The offset into the template of the first message being
         #   translated.
         # count:
         #   The number of messages being translated.
+        # error:
+        #   A flag indicating whether an error ocurred during initialisation.
 
         self.context = context
         self.request = request
 
+        self.error = False
+
         self.codes = request.form.get('languages')
+
+        # Turn language codes into language objects.
 
         all_languages = getUtility(ILanguages)
 
@@ -412,7 +422,10 @@ class TranslatePOTemplate:
 
             self.languages = list(person.languages())
 
+        # Get plural form information.
+
         self.pluralForms = {}
+        self.pluralFormsError = False
 
         for language in self.languages:
             try:
@@ -423,12 +436,15 @@ class TranslatePOTemplate:
                         all_languages[language.code].pluralForms
                 else:
                     # We don't have a default plural form for this Language
-                    # XXX: We need to implement something here
-                    raise RuntimeError(
-                        "No information on plural forms for this language!",
-                        language)
+                    self.pluralForms[language.code] = None
+                    self.error = True
             else:
                 self.pluralForms[language.code] = pofile.pluralForms
+
+        self.badLanguages = [ all_languages[x] for x in self.pluralForms
+            if self.pluralForms[x] is None ]
+
+        # Get pagination information.
 
         if 'offset' in request.form:
             self.offset = int(request.form.get('offset'))

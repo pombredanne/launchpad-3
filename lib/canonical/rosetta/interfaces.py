@@ -187,7 +187,11 @@ class IPOTemplate(Interface):
 
     def hasMessageID(msgid):
         """Check whether a message set with the given message ID exists within
-        this PO file."""
+        this template."""
+
+    def hasPluralMessage():
+        """Test whether this template has any message sets which are plural
+        message sets."""
 
     # TODO provide a way to look through non-current message ids.
 

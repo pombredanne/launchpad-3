@@ -393,7 +393,8 @@ class RosettaPOTemplate(SQLBase):
 
         if not isinstance(key, unicode):
             raise TypeError(
-                "Can't index with this type. (Must be slice or unicode.)")
+                "Can't index with type %s. (Must be slice or unicode.)"
+                    % type(key))
 
         # Find a message ID with the given text.
 
@@ -419,7 +420,45 @@ class RosettaPOTemplate(SQLBase):
     def __getitem__(self, key):
         return self.messageSet(key, onlyCurrent=True)
 
+    # XXX: currentCount, updatesCount and rosettaCount should be updated with
+    # a way that let's us query the database instead of use the cached value
+
+    def currentCount(self, language):
+        try:
+            return self.poFile(language).currentCount
+        except KeyError:
+            return 0
+
+    def updatesCount(self, language):
+        try:
+            return self.poFile(language).updatesCount
+        except KeyError:
+            return 0
+
+    def rosettaCount(self, language):
+        try:
+            return self.poFile(language).rosettaCount
+        except KeyError:
+            return 0
+
+    def hasMessageID(self, messageID):
+        results = RosettaPOMessageSet.selectBy(
+            poTemplateID=self.id,
+            poFileID=None,
+            primeMessageID_ID=messageID.id)
+
+        return results.count() > 0
+
+    def hasPluralMessage(self):
+        results = RosettaPOMessageIDSighting.select('''
+            pluralform = 1 AND
+            pomsgset IN (SELECT id FROM POMsgSet WHERE potemplate = %d)
+            ''' % self.id)
+
+        return results.count() > 0
+
     # IEditPOTemplate
+
     def expireAllMessages(self):
         self._connection.query('UPDATE POMsgSet SET sequence = 0'
                                ' WHERE potemplate = %d AND pofile IS NULL'
@@ -471,35 +510,6 @@ class RosettaPOTemplate(SQLBase):
                              lastParsed="NOW",
                              pluralForms=language.pluralForms or 0,
                              variant=variant)
-
-    # XXX: currentCount, updatesCount and rosettaCount should be updated with
-    # a way that let's us query the database instead of use the cached value
-
-    def currentCount(self, language):
-        try:
-            return self.poFile(language).currentCount
-        except KeyError:
-            return 0
-
-    def updatesCount(self, language):
-        try:
-            return self.poFile(language).updatesCount
-        except KeyError:
-            return 0
-
-    def rosettaCount(self, language):
-        try:
-            return self.poFile(language).rosettaCount
-        except KeyError:
-            return 0
-
-    def hasMessageID(self, messageID):
-        results = RosettaPOMessageSet.selectBy(
-            poTemplateID=self.id,
-            poFileID=None,
-            primeMessageID_ID=messageID.id)
-
-        return results.count() > 0
 
     def createMessageSetFromMessageID(self, messageID):
         return createMessageSetFromMessageID(self, messageID)
