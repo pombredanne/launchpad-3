@@ -47,7 +47,7 @@
         </div>
         -->
 
-        <div tal:condition="not: view/person">
+        <div tal:condition="not: view/languages">
             <ul>
                 <li tal:repeat="template context/poTemplates">
                     <a tal:attributes="href string:${template/name}/translate"
@@ -55,7 +55,7 @@
             </ul>
         </div>
 
-        <div tal:condition="view/person" tal:repeat="LT view/languageTemplates">
+        <div tal:condition="view/languages" tal:repeat="LT view/languageTemplates">
 
             <h2 tal:content="LT/language/englishName">Language</h2>
 

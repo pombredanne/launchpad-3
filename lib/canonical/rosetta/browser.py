@@ -10,6 +10,7 @@ import sys
 from xml.sax.saxutils import escape as xml_escape
 
 from zope.component import getUtility
+from zope.i18n.interfaces import IUserPreferredLanguages
 from canonical.rosetta.interfaces import ILanguages, IPerson
 from canonical.database.doap import IProjects
 from canonical.rosetta.sql import RosettaLanguage, RosettaPerson
@@ -31,6 +32,50 @@ def fake_person():
     # XXX: Temporary hack, to be removed as soon as we have the login template
     # working.
     return RosettaPerson.selectBy(displayName='Foo Bar')[0]
+
+def canonicalise_code(code):
+    '''Convert a language code to a standard xx_YY form.'''
+
+    if '-' in code:
+        language, country = code.split('-', 1)
+
+        return "%s_%s" % (language, country.upper())
+    else:
+        return code
+
+def codes_to_languages(codes):
+    '''Convert a list of ISO language codes to language objects.'''
+
+    languages = []
+    all_languages = getUtility(ILanguages)
+
+    for code in codes:
+        try:
+            languages.append(all_languages[canonicalise_code(code)])
+        except KeyError:
+            pass
+
+    return languages
+
+def request_languages(request):
+    '''Turn a request into a list of languages to show.'''
+
+    person = IPerson(request.principal, None)
+
+    # If the user is authenticated, try seeing if they have any languages set.
+
+    if person is not None:
+        languages = list(person.languages())
+
+        if languages:
+            return languages
+
+    # If the user is not authenticated, or they are authenticated but have no
+    # languages set, try looking at the HTTP headers for clues.
+
+    codes = IUserPreferredLanguages(request).getPreferredLanguages()
+
+    return codes_to_languages(codes)
 
 
 class ViewProjects:
@@ -102,7 +147,7 @@ class ViewProject:
             currentCount = 0
             rosettaCount = 0
             updatesCount = 0
-            for language in person.languages():
+            for language in request_languages(self.request):
                 total += product.messageCount()
                 currentCount += product.currentCount(language.code)
                 rosettaCount += product.rosettaCount(language.code)
@@ -159,18 +204,18 @@ class ViewProduct:
         self.context = context
         self.request = request
 
-        self.person = IPerson(self.request.principal, None)
+        self.languages = request_languages(self.request)
 
     def thereAreTemplates(self):
         return len(list(self.context.poTemplates())) > 0
 
     def languageTemplates(self):
-        if self.person is not None:
-            for language in self.person.languages():
+        if self.languages:
+            for language in self.languages:
                 yield LanguageTemplates(language, self.context.poTemplates())
         else:
             raise RuntimeError(
-                "Can't generate LanguageTemplates unless authenticated.")
+                "Can't generate LanguageTemplates without languages.")
 
 
 class LanguageTemplates:
@@ -512,23 +557,17 @@ class TranslatePOTemplate:
 
         # Turn language codes into language objects.
 
-        all_languages = getUtility(ILanguages)
-
         if self.codes:
-            self.languages = []
-
-            for code in self.codes.split(','):
-                try:
-                    self.languages.append(all_languages[code])
-                except KeyError:
-                    pass
+            self.languages = codes_to_languages(self.codes.split(','))
         else:
-            self.languages = list(self.person.languages())
+            self.languages = request_languages(request)
 
         # Get plural form information.
 
         self.pluralForms = {}
         self.pluralFormsError = False
+
+        all_languages = getUtility(ILanguages)
 
         for language in self.languages:
             try:
@@ -812,12 +851,14 @@ class ViewTranslationEffort:
     def languageTranslationEffortCategories(self):
         person = IPerson(self.request.principal, None)
         if person is not None:
+            # XXX: Use request_languages().
             for language in person.languages():
                 yield LanguageTranslationEffortCategories(language,
                     self.context.categories())
         else:
             # XXX
             person = fake_person()
+            # XXX: Use request_languages().
             for language in person.languages():
                 yield LanguageTranslationEffortCategories(language,
                     self.context.categories())
@@ -892,11 +933,13 @@ class ViewTranslationEffortCategory:
     def languageTemplates(self):
         person = IPerson(self.request.principal, None)
         if person is not None:
+            # XXX: Use request_languages().
             for language in person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
         else:
             # XXX
             person = fake_person()
+            # XXX: Use request_languages().
             for language in person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
 
