@@ -423,7 +423,7 @@ INSERT INTO distroreleaserole (person, distrorelease, role, id) VALUES (21, 3, 4
 
 
 
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner") VALUES (1, 1, 1, 'warty--x86--devel--0', 1);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner") VALUES (1, 1, 1, 'i386', 1);
 
 
 
@@ -456,27 +456,33 @@ INSERT INTO packaging (sourcepackage, packaging, product) VALUES (1, 1, 4);
 
 
 
+INSERT INTO sourcepackagerelease (id, sourcepackage, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section) VALUES (14, 1, 1, '0.9', '2004-09-27 11:57:13', 1, 1, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4)', NULL, NULL, 1);
 
 
 
 
 
 
+INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 14, 2, 1, 1, 1, '2004-09-27 11:57:13', NULL);
+
+
+
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (2, '2004-09-27 11:57:13', 1, 1, 1, '2004-09-27 11:57:13', NULL, NULL, NULL, NULL, 'Sample changes :)....', 14);
+
+
+
+INSERT INTO binarypackagename (id, name) VALUES (8, 'mozilla-firefox-dummy');
+
+
+
+INSERT INTO binarypackage (id, binarypackagename, "version", shortdesc, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
 
 
 
 
-
-
-
-
-
-
-
-
-
+INSERT INTO packagepublishing (id, binarypackage, distroarchrelease, component, section, priority, scheduleddeletiondate, status) VALUES (9, 12, 1, 1, 1, 1, NULL, 2);
 
 
 
@@ -1039,23 +1045,23 @@ SELECT pg_catalog.setval('sourcepackage_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagerelease_id_seq', 13, true);
+SELECT pg_catalog.setval('sourcepackagerelease_id_seq', 14, true);
 
 
 
-SELECT pg_catalog.setval('build_id_seq', 1, true);
+SELECT pg_catalog.setval('build_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('binarypackagename_id_seq', 7, true);
+SELECT pg_catalog.setval('binarypackagename_id_seq', 8, true);
 
 
 
-SELECT pg_catalog.setval('binarypackage_id_seq', 11, true);
+SELECT pg_catalog.setval('binarypackage_id_seq', 12, true);
 
 
 
-SELECT pg_catalog.setval('packagepublishing_id_seq', 8, true);
+SELECT pg_catalog.setval('packagepublishing_id_seq', 9, true);
 
 
 
@@ -1189,7 +1195,7 @@ SELECT pg_catalog.setval('sectionselection_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sourcepackagepublishing_id_seq', 1, false);
+SELECT pg_catalog.setval('sourcepackagepublishing_id_seq', 1, true);
 
 
 

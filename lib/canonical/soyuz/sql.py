@@ -521,9 +521,10 @@ class DistroReleaseBinaryReleaseBuildApp(object):
 
     def _buildList(self, packages):
         blist = []
-        packs = ParseDepends(packages)
-        for pack in packs:
-            blist.append(builddepsContainer(*pack[0]))
+        if packages:
+            packs = ParseDepends(packages)
+            for pack in packs:
+                blist.append(builddepsContainer(*pack[0]))
                                           
         return blist
 
