@@ -2,12 +2,10 @@
 
 import os
 import string
+from optparse import OptionParser
 
 
-inFileName = 'fm-projects.rdf'
-#inFileName = 'test.rdf'
-
-def rdfsplit(inFileName, outputDir='/home/freshmeat/'):
+def rdfsplit(inFileName, outputDir):
     outFileSuffix = '.xml'
 
     # Read in the whole rdf file
@@ -41,8 +39,12 @@ def rdfsplit(inFileName, outputDir='/home/freshmeat/'):
         projEndLine = line + 1
 
         #print projName+outFileSuffix
-
-        outFileName = outputDir + projName + outFileSuffix
+        destfile = projName + outFileSuffix
+        
+        if not os.access(outputDir, os.F_OK):
+            os.mkdir(outputDir)
+                
+        outFileName = os.path.join (outputDir, destfile) 
 
         outFile = open(outFileName, 'w')
 
@@ -58,4 +60,21 @@ def rdfsplit(inFileName, outputDir='/home/freshmeat/'):
         outFile.close()
 
 if __name__=='__main__':
-    rdfsplit(inFileName, '/home/freshmeat/')
+    parser = OptionParser()
+
+    parser.add_option("-f", "--file", dest="filename",
+                      help="Freashmeat RDF file",
+                      metavar="FILE",
+                      default="fm-projects.rdf")
+
+    parser.add_option("-d", "--dir", dest="directory",
+                      help="XML directory",
+                      metavar="DIR",
+                      default="freshmeat")
+
+    (options,args) = parser.parse_args()
+    
+    FILE = options.filename
+    DIR = options.directory
+
+    rdfsplit(FILE, DIR)

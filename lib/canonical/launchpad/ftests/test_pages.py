@@ -45,10 +45,10 @@ class EndStory(harness.LaunchpadFunctionalTestCase):
         pass
 
 def setUp(test):
-    sqlos.connection.connCache = {}
+    _reconnect_sqlos()
 
 def tearDown(test):
-    sqlos.connection.connCache = {}
+    _disconnect_sqlos()
 
 def test_suite():
     suite = unittest.TestSuite()

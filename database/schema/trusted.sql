@@ -73,3 +73,12 @@ COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number
 
     As defined on www.cve.mitre.org';
 
+
+CREATE OR REPLACE FUNCTION sha1(text) RETURNS char(40) AS '
+    import sha
+    return sha.new(args[0]).hexdigest()
+' LANGUAGE plpythonu IMMUTABLE;
+
+COMMENT ON FUNCTION sha1(text) IS
+    'Return the SHA1 one way cryptographic hash as a string of 40 hex digits';
+

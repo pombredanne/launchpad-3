@@ -18,6 +18,11 @@
         <div metal:fill-slot="extra_info" class="formHelp">
           Fill in the form bellow to finish your registration process on
           Launchpad.
+
+          <div tal:condition="request/passwordmismatch|nothing">
+            <p class="portalMessage">Your password and confirmation did
+            not match. Please try again.</p>
+          </div>
         </div>
 
         <legend metal:fill-slot="addform_legend">

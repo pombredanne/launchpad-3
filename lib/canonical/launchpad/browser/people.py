@@ -152,9 +152,7 @@ class NewAccountView(BaseAddView):
             # Do not display the password in the form when an error
             # occurs.
             kw.pop('password')
-            # XXX: salgado: 2005-07-01: I must find a way to tell the user
-            # that the password didn't match.
-            self._nextURL = '+newaccount'
+            self._nextURL = "%s?passwordmismatch=1" % self.request.URL
             return False
 
         nick = generate_nick(self.context.email)
@@ -187,6 +185,7 @@ class JoinLaunchpadView(object):
         self.context = context
         self.request = request
         self.errormessage = None
+        self.submitted = False
         self.email = None
 
     def formSubmitted(self):
@@ -196,14 +195,18 @@ class JoinLaunchpadView(object):
         self.email = self.request.form.get("email", "").strip()
         if not well_formed_email(self.email):
             self.errormessage = ("The email address you provided isn't "
-                                 "valid.  Please check it.")
+                                 "valid. Please check it.")
             return False
 
         # New user: requester and requesteremail are None.
         token = newLoginToken(None, None, self.email,
                               LoginTokenType.NEWACCOUNT)
         sendNewUserEmail(token)
+        self.submitted = True
         return True
+
+    def success(self):
+        return self.submitted and not self.errormessage
 
 
 def sendNewUserEmail(token):
@@ -225,6 +228,16 @@ class PersonView(object):
         self.context = context
         self.request = request
 
+    def membershipOrRoles(self):
+        # XXX: salgado, 2005-01-13: I'll find a better way to display
+        # memberships and distro/distrorelease roles on a Person's page,
+        # and then we're not going to need this method anymore.
+        person = self.context
+        return person.teams or person.distroroles or person.distroreleaseroles
+
+    def sshkeysCount(self):
+        return len(self.context.sshkeys)
+
 
 class TeamView(object):
     """A simple View class to be used in Team's pages where we don't have
@@ -241,7 +254,11 @@ class PersonEditView(object):
         self.context = context
         self.request = request
         self.errormessage = None
-        self.user = getUtility(ILaunchBag).user
+        # XXX: salgado, 2005-01-13: If LaunchBag.user is not going to
+        # return None when no user is logged in, we'll not be able to
+        # use it here.
+        # self.user = getUtility(ILaunchBag).user
+        self.user = IPerson(self.request.principal, None)
 
     def edit_action(self):
         if self.request.method != "POST":
@@ -319,7 +336,11 @@ class EmailAddressEditView(object):
         self.context = context
         self.request = request
         self.message = "Your changes have been saved."
-        self.user = getUtility(ILaunchBag).user
+        # XXX: salgado, 2005-01-13: If LaunchBag.user is not going to
+        # return None when no user is logged in, we'll not be able to
+        # use it here.
+        # self.user = getUtility(ILaunchBag).user
+        self.user = IPerson(self.request.principal, None)
 
     def formSubmitted(self):
         if "SUBMIT_CHANGES" in self.request.form:
@@ -340,26 +361,28 @@ class EmailAddressEditView(object):
             return
 
         newemail = self.request.form.get("newemail", "").strip()
-        if not well_formed_email(newemail):
-            self.message = "'%s' is not a valid email address." % newemail
-            return
+        if newemail:
+            if not well_formed_email(newemail):
+                self.message = "'%s' is not a valid email address." % newemail
+                return
 
-        results = EmailAddress.selectBy(email=newemail)
-        if results.count() > 0:
-            email = results[0]
-            self.message = ("The email address '%s' was already registered "
-                            "by user '%s'. If you think this is your email "
-                            "address, you can hijack it by clicking here.") % \
-                           (email.email, email.person.browsername())
-            return
+            results = EmailAddress.selectBy(email=newemail)
+            if results.count() > 0:
+                email = results[0]
+                self.message = ("The email address '%s' was already "
+                                "registered by user '%s'. If you think this "
+                                "is your email address, you can hijack it by "
+                                "clicking here.") % \
+                               (email.email, email.person.browsername())
+                return
 
-        login = getUtility(ILaunchBag).login
-        token = newLoginToken(user, login, newemail, 
-                              LoginTokenType.VALIDATEEMAIL)
-        sendEmailValidationRequest(token)
-        self.message = ("A new message was sent to '%s', please follow "
-                        "the instructions on that message to validate "
-                        "your email address.") % newemail
+            login = getUtility(ILaunchBag).login
+            token = newLoginToken(user, login, newemail, 
+                                  LoginTokenType.VALIDATEEMAIL)
+            sendEmailValidationRequest(token)
+            self.message = ("A new message was sent to '%s', please follow "
+                            "the instructions on that message to validate "
+                            "your email address.") % newemail
 
         # XXX: salgado 2005-01-12: If we change the preferred email address,
         # the view is displaying the old preferred one, even that the change
@@ -498,7 +521,11 @@ class SSHKeyEditView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.user = getUtility(ILaunchBag).user
+        # XXX: salgado, 2005-01-13: If LaunchBag.user is not going to
+        # return None when no user is logged in, we'll not be able to
+        # use it here.
+        # self.user = getUtility(ILaunchBag).user
+        self.user = IPerson(self.request.principal, None)
 
     def form_action(self):
         if self.request.method != "POST":
@@ -555,5 +582,9 @@ class TeamMembersEditView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.user = getUtility(ILaunchBag).user
+        # XXX: salgado, 2005-01-13: If LaunchBag.user is not going to
+        # return None when no user is logged in, we'll not be able to
+        # use it here.
+        # self.user = getUtility(ILaunchBag).user
+        self.user = IPerson(self.request.principal, None)
 

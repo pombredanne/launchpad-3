@@ -66,9 +66,9 @@ def grab_web_info(name):
     return datas['fm']
 #    return merge_data(datas['fm'], datas['sf'])
 
-def grab_rdf_info(name):
+def grab_rdf_info(path, name):
     print '@ Looking for %s on FM RDF' % (name)
-    data = rdfproj.getProductSpec(name)
+    data = rdfproj.getProductSpec(path, name)
 
     if data is None:
         print '@\tNot Found'
@@ -77,17 +77,25 @@ def grab_rdf_info(name):
     print '@\tFound at FM RDF'
     return data
     
-def createorupdate(doap, productname, source, packagename=None, force=None):
+def createorupdate(doap, productname, source, path, packagename=None,
+                   distroname=None, ownername=None, force=None):
+
     if source == 'web':
         data = grab_web_info(productname)
     else:
-        data = grab_rdf_info(productname)
+        data = grab_rdf_info(path, productname)
 
     if data or force:
-        doap.ensureProduct(data, productname, packagename=packagename)
+        doap.ensureProduct(data, productname, ownername=ownername)
+
+        if packagename:
+            if not doap.ensurePackaging(productname, packagename, distroname):
+                print '@\tNo Package Found for %s' % packagename
+                append_list('No Package ' + packagename)                
+                
     else:
         print '@\tNo Product Found for %s' % productname
-        append_list(productname)                
+        append_list('No Product ' + productname)                
 
 
 if __name__ == "__main__":
@@ -122,7 +130,6 @@ if __name__ == "__main__":
                       help="Interval in seconds",
                       metavar="TIME",
                       default="10")
-
     ## Where Not Found Entries will be stored
     parser.add_option("-l", "--list", dest="listfile",
                       help="Not Found list file",
@@ -140,6 +147,21 @@ if __name__ == "__main__":
     parser.add_option("-p", "--package", dest="package",
                       help="Two columms format list",
                       default=False, action='store_true')
+    ## Provide a distribution name for packaging
+    parser.add_option("-D", "--distro", dest="distro",
+                      help="Distribution name for Packaging",
+                      metavar="DISTRO",
+                      default="ubuntu")
+    ## Provide a default owner name
+    parser.add_option("-o", "--owner", dest="owner",
+                      help="Default product owner name",
+                      metavar="OWNER",
+                      default="doap")
+    ## set the xml directory
+    parser.add_option("-P", "--path", dest="path",
+                      help="Directory containing the xml files",
+                      metavar="PATH",
+                      default="freshmeat")
 
     
     (options,args) = parser.parse_args()
@@ -148,11 +170,14 @@ if __name__ == "__main__":
     filename = options.filename
     source = options.source
     DOAPDB = options.doapdb
+    DISTRO = options.distro
     WAIT = int(options.wait)
     LIST = options.listfile
     DRY = options.dry_run
     FORCE = options.force
     PKG = options.package
+    OWNER = options.owner
+    PATH = options.path
     
     # get the DB abstractors
     doap = Doap(DOAPDB)
@@ -165,11 +190,13 @@ if __name__ == "__main__":
         print '\tList:', filename
     print '\tSource:', source
     print '\tDOAP:', DOAPDB
+    print '\tDISTRO:', DISTRO
     print '\tWait:', WAIT, 's'
     print '\tNotFOUND:', LIST
     print '\tDRY-RUN:', DRY
     print '\tFORCE:', FORCE
     print '\tPKG:', PKG
+    print '\tPATH:', PATH
     print '=================================='
     print ''
     
@@ -197,6 +224,10 @@ if __name__ == "__main__":
         print 'MODE not implemented: ', mode
         sys.exit(0)
 
+    if not os.access(PATH, os.F_OK):
+        print 'PATH is wrong: ', PATH
+        sys.exit(0)
+
     index = 0
     clean_list()
 
@@ -214,7 +245,9 @@ if __name__ == "__main__":
                 print '...'
                 sys.exit(1)
         else:
-            productname =  product
+            # get always the first token, so the list format is compatible
+            # for both procedures (do packaging or not)
+            productname =  product.split()[0]
             packagename = None
 
         print ' '
@@ -222,8 +255,9 @@ if __name__ == "__main__":
                                              index,
                                              tries)
     
-        createorupdate(doap, productname, source, packagename=packagename,
-                       force=FORCE)
+        createorupdate(doap, productname, source, PATH,
+                       packagename=packagename, distroname=DISTRO,
+                       ownername=OWNER, force=FORCE)
 
         ## If permitted, partially Commit DB Product Info
         if not DRY:

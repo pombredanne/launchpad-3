@@ -184,11 +184,17 @@ class IEditPOTemplate(IPOTemplate):
     rawfile = Attribute("The pot file itself in raw mode.")
 
     rawimporter = Attribute("The person that attached the rawfile.")
-    
+
     daterawimport = Attribute("The date when the rawfile was attached.")
-            
+
     rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
         imported, 2 failed.""")
+
+    sourcepackagename = Attribute("""The name of the sourcepackage from where
+        this PO template is.""")
+
+    distrorelease = Attribute("""The distribution where this PO template
+        belongs""")
 
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""

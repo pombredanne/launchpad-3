@@ -33,11 +33,9 @@ def check_one_watch(watch):
             val.bugtrackertypename, )
         print "    Skipping %s bug %s watch on bug %s" % (
             val.bugtrackername, watch.remotebug, watch.bug)
-        return
     except externalsystem.BugTrackerConnectError, val:
         print "*** WARNING: Got error trying to contact %s" % bugtracker.name
         print "    %s" % val
-        return
     else:
         versioncache.update({ bugtracker.baseurl : remotesystem.version })
         remotestatus = remotesystem.get_bug_status(watch.remotebug)
@@ -46,11 +44,10 @@ def check_one_watch(watch):
             if remotestatus == None:
                 remotestatus = 'UNKNOWN'
             watch.remotestatus = remotestatus
-            watch.lastchanged = UTC_NOW
+        watch.lastchanged = UTC_NOW
 
 def main():
-    initZopeless()
-
+    txn = initZopeless()
     # We want 1 day, but we'll use 23 hours because we can't count on the cron
     # job hitting exactly the same time every day
     watches = BugWatch.select(
@@ -58,6 +55,8 @@ def main():
           lastchecked IS NULL)""")
     for watch in watches:
         check_one_watch(watch)
+        txn.commit()
+
 
 if __name__ == '__main__':
     main()

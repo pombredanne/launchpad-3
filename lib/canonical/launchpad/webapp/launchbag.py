@@ -57,7 +57,12 @@ class LaunchBag(object):
         elif len(principals) > 1:
             raise ValueError, 'Too many principals'
         else:
-            return IPerson(principals[0])
+            try:
+                person = IPerson(principals[0])
+            except TypeError, err:
+                person = None
+            return person
+
     user = property(user)
 
     def add(self, obj):

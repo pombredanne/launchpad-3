@@ -2,6 +2,472 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-15 13:13:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1205
+
+    Summary:
+      finished Nicole redesign
+    Revision:
+      launchpad--devel--0--patch-1205
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-459
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-460
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-461
+       same list format for dopackaging or not in Nicole
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-462
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-463
+       Workarround on Nicole for RDF Support
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-464
+       select and verify correct PATH for xml files in Nicole
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/Changelog
+     lib/canonical/launchpad/scripts/nicole/README
+     lib/canonical/launchpad/scripts/nicole/database.py
+     lib/canonical/launchpad/scripts/nicole/nicole.py
+     lib/canonical/launchpad/scripts/nicole/rdfproj.py
+     lib/canonical/launchpad/scripts/nicole/rdfsplit.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-459
+     celso.providelo@canonical.com/launchpad--devel--0--patch-460
+     celso.providelo@canonical.com/launchpad--devel--0--patch-461
+     celso.providelo@canonical.com/launchpad--devel--0--patch-462
+     celso.providelo@canonical.com/launchpad--devel--0--patch-463
+     celso.providelo@canonical.com/launchpad--devel--0--patch-464
+
+
+2005-01-14 23:43:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1204
+
+    Summary:
+      fix LaunchBag.user's broken adaptation when no user is logged in. this
+ does not currently have a test (see bug #58/production)
+    Revision:
+      launchpad--devel--0--patch-1204
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-303
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-304
+       fix LaunchBag.user's broken adaptation when no user is logged in. this does not currently have a test (see bug #58/production)
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/webapp/launchbag.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-303
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-304
+
+
+2005-01-14 22:19:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1203
+
+    Summary:
+      clean up the bug listing shown on the bug index page to look more
+ consistent with the upstream bug listing (fixes bug #33/production)
+    Revision:
+      launchpad--devel--0--patch-1203
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-302
+       clean up the bug listing shown on the bug index page to look more consistent with the upstream bug listing (fixes bug #33/production)
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/portlet-bug-assignments-headline.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-302
+
+
+2005-01-14 21:51:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1202
+
+    Summary:
+      improve bug task view/edit navigation by adding a link back to the
+ upstream bug listing
+    Revision:
+      launchpad--devel--0--patch-1202
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-301
+       improve bug task view/edit navigation by adding a link back to the upstream bug listing
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/bugassignment-display.pt
+     lib/canonical/launchpad/templates/bugassignment-editform.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-301
+
+
+2005-01-14 20:58:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1201
+
+    Summary:
+      fix upstream bug page links. add page tests to cover this
+ functionality.
+    Revision:
+      launchpad--devel--0--patch-1201
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-300
+       fix upstream bug page links. add page tests to cover this functionality.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-critical.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-my-todo.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-submitted-by-me.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-unassigned.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-critical.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-my-todo.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-submitted-by-me.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-unassigned.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/templates/bugassignment-search-listing.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-300
+
+
+2005-01-14 18:24:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1200
+
+    Summary:
+      add more malone sample data to fix and create tests for some things
+ that are currently broken in upstream support. deprecate some of the page
+ tests that broke, since the UI they test (/malone/bugs) is long since
+ deprecated.
+    Revision:
+      launchpad--devel--0--patch-1200
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-297
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-298
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-299
+       add more malone sample data to fix and create tests for some things that are currently broken in upstream support. deprecate some of the page tests that broke, since the UI they test (/malone/bugs) is long since deprecated.
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/pagetests/malone/91-bug-add-owner-auto-subscribed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-maintainer.txt
+
+    renamed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-quick-search-critical.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-quick-search-critical.txt.deprecated.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-quick-search-unassigned.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-quick-search-unassigned.txt.deprecated.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-search-assignments-sampleperson.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-search-assignments-sampleperson.txt.deprecated.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-search-product-firefox.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-search-product-firefox.txt.deprecated.id
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-critical.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-critical.txt.deprecated
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-unassigned.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-unassigned.txt.deprecated
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-search-assignments-sampleperson.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-bug-search-assignments-sampleperson.txt.deprecated
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-search-product-firefox.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-bug-search-product-firefox.txt.deprecated
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-297
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-298
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-299
+
+
+2005-01-14 17:36:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1199
+
+    Summary:
+      Code review changes done
+    Revision:
+      launchpad--devel--0--patch-1199
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-492
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-493
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-494
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-495
+       Code review changes done
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/rosetta/poexport.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-492
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-493
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-494
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-495
+
+
+2005-01-13 22:34:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1198
+
+    Summary:
+      Template fixes, pagetests fixes and additions. Some reverted changes
+    Revision:
+      launchpad--devel--0--patch-1198
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-77
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-78
+       Some fixes (mainly avoiding python:) in page templates.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-79
+       Reverting change that used getUtility(ILaunchBag).user
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-80
+       One broken change reverted. Some templates/pagetests fixes and a new pagetest
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-person-emails.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-person-emails.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-person-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-team-list.txt
+     lib/canonical/launchpad/templates/foaf-join.pt
+     lib/canonical/launchpad/templates/foaf-newaccount.pt
+     lib/canonical/launchpad/templates/person-edit.pt
+     lib/canonical/launchpad/templates/person-emails.pt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/zcml/person.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-77
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-78
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-79
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-80
+
+
+2005-01-13 18:18:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1197
+
+    Summary:
+      small bugfixes and a first go at a db schema patch for bug group
+ viewing/privacy support
+    Revision:
+      launchpad--devel--0--patch-1197
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-294
+       a first go at how we could patch the schema to handle group viewing and privacy on bugs
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-295
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-296
+       fix bug #30/production: give followup on bugs a sensible subject line
+    
+
+    new files:
+     database/schema/pending/.arch-ids/bradb-bug-group-assignments.sql.id
+     database/schema/pending/bradb-bug-group-assignments.sql
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/templates/bug-index.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-294
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-295
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-296
+
+
+2005-01-13 14:55:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1196
+
+    Summary:
+      Changes to be able to have huge msgid fields (like drupal ones). Thanks Stuart
+    Revision:
+      launchpad--devel--0--patch-1196
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-3
+    
+     * carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--patch-1
+       Raise SQLObjectNotFound instead of KeyError
+    
+     * carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--patch-2
+       Merge with rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--hugepomsgid--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-81
+    
+     * stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-1
+       Use a hash to index POMsgID.msgid to allow large values
+    
+     * stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-2
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-3
+       Fix invalid class method declaration
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-25-0.sql.id
+     database/schema/patch-6-25-0.sql
+
+    modified files:
+     database/schema/trusted.sql doc/changelog.txt
+     lib/canonical/launchpad/database/pofile.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--hugepomsgid--0--patch-2
+     stuart.bishop@canonical.com/launchpad--hugepomsgid--0--base-0
+     stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-1
+     stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-2
+     stuart.bishop@canonical.com/launchpad--hugepomsgid--0--patch-3
+
+
+2005-01-13 13:17:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1195
+
+    Summary:
+      checkwatches.py should commit
+    Revision:
+      launchpad--devel--0--patch-1195
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-82
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-83
+       checkwatches.py should commit
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/malone/checkwatches.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-82
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-83
+
+
+2005-01-13 11:44:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1194
+
+    Summary:
+      Fixed and added tests to the potemplate creation from the web and improved the error checks
+    Revision:
+      launchpad--devel--0--patch-1194
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-484
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-485
+       When we create a POTemplate we should store also the owner
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-486
+       Added two new doc tests to test the potemplate creation from the web
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-487
+       Fixed so new tests pass
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-488
+       Added a check in case we have already a potemplate with the name we are creating
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-489
+       Fixed the newPOTemplate method, seems like I'm the first using it...
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-490
+       We don't need this assignation here
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-491
+       Done needed changes so the security proxy is happy
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/tests/test_browser.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-484
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-485
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-486
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-487
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-488
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-489
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-490
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-491
+
+
+2005-01-13 09:47:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1193
+
+    Summary:
+      Test isolation enforcement
+    Revision:
+      launchpad--devel--0--patch-1193
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-79
+       More test isolation integrity checking
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-80
+       Stronger commit for page tests
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-81
+       Stronger commit for page tests
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/ftests/pgsql.py
+     lib/canonical/launchpad/ftests/harness.py
+     lib/canonical/launchpad/ftests/test_pages.py test.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-79
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-80
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-81
+
+
 2005-01-12 23:20:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1192
 
     Summary:

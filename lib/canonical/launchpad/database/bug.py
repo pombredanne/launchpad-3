@@ -65,6 +65,10 @@ class Bug(SQLBase):
     cverefs = MultipleJoin('CVERef', joinColumn='bug')
     subscriptions = MultipleJoin('BugSubscription', joinColumn='bug')
 
+    def followup_title(self):
+        return 'Re: '+ self.title
+
+
 def BugFactory(*args, **kw):
     """Create a bug from an IBugAddForm. Note some unusual behaviour in this
     Factory:

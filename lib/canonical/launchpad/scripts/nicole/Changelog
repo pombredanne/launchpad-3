@@ -1,3 +1,10 @@
+2005-01-15 cprov:
+     -> Select and ensure Packaging Distro by -D option
+     -> Select DEFAULT owner name (RDF owner til we fetch all 
+        needed info OR used when we have troubles with owner fields)
+     -> select the path for products' XML files
+     -> RDF workarround (it works even if there is no devels)
+
 2005-01-12 cprov:
      -> Integrate command line support with optparse module
 	(see help for further info)

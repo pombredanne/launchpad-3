@@ -25,7 +25,7 @@
 	Information</h1>
 
     <div tal:condition="view/edit_action">
-      <p class="portalMessage">Your changes had been saved.</p>
+      <p class="portalMessage">Your changes have been saved.</p>
     </div>
   
     <div class="portalMessage" tal:condition="view/errormessage">
@@ -139,16 +139,10 @@
 	    <div class="formHelp">
 	    Enter the Jabber ID.
             </div>
-	    <input type="text" name="jabberid" size="20"
-	    tal:attributes="value context/jabber/jabberid|nothing"/>
+      <input type="text" name="jabberid"
+      tal:attributes="value context/jabber/jabberid|nothing"/>
 	</div>
 	</td></tr>
-
-  <!--
-	<tr><td class="dummy">	
-	PUB KEY IMPORT ENGINE ????
-	</td></tr>
-  -->
 
 	<tr><td>
 	<div class="field">

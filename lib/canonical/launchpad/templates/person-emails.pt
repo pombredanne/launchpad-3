@@ -32,8 +32,8 @@
   <form name="email" action="" method="POST">
 
   <p>Your preferred email address is the only one we'll use to communicate with
-  you. There can be only one preferred email at a time, and this email
-  cannot be removed.</p>
+  you. There can be only one preferred email address at a time, and it cannot 
+  be removed.</p>
 
   <table id="ass_listing" class="listing rowNavigation">
     <tr>
@@ -83,10 +83,10 @@
   <tal:block define="notvalidatedemails context/notvalidatedemails">
   <fieldset tal:condition="notvalidatedemails">
     <legend>Guessed Emails</legend>
-    <p>The following emails have been guessed by our system as probably
-    being your email addresses, but in order to use them on the Launchpad
-    system you must validate them. To do so, just select the one you want
-    and click on the Validate button.</p>
+    <p>The following email addresses have been guessed by our system as 
+    probably being yours. In order to use them on Launchpad, you must 
+    validate them. To do so, just select one from the list below and 
+    click on the Validate button.</p>
     <select name="NOT_VALIDATED_EMAIL">
       <option tal:repeat="email notvalidatedemails"
               tal:attributes="value email/id"

@@ -5,13 +5,13 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
-    
+
     <content class="canonical.launchpad.database.POTemplate">
         <require permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOTemplate"
             set_attributes="name title description copyright path
                             priority rawfile daterawimport rawimporter
-                            rawimportstatus"/>
+                            rawimportstatus distrorelease sourcepackagename"/>
     </content>
 
     <browser:traverse

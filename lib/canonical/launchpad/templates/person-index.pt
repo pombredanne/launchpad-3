@@ -120,8 +120,7 @@
           <tr>
             <td>SSH:</td>
             <td tal:condition="context/sshkeys">
-              <a href="+sshkey"><span tal:replace="python:
-                  len(context.sshkeys)">0</span> SSH key(s)</a>
+              <a href="+sshkey"><span tal:replace="view/sshkeysCount">0</span>SSH key(s)</a>
               <a href="+editsshkey">(Edit your ssh key(s))</a>
             </td>
             <td tal:condition="not: context/sshkeys">
@@ -138,9 +137,7 @@
 
 
     <!-- Teams and Roles-->
-    <div tal:condition="python: context.memberships or
-                                context.distroroles or
-                                context.distroreleaseroles">
+    <div tal:condition="view/membershipOrRoles">
       <fieldset>
         <legend><span tal:replace="context/displayname"></span> is
         </legend>
@@ -171,39 +168,9 @@
       </fieldset>
     </div>
 
-
-    <!--Roles distro and distrorelease 
-    <div tal:condition="python: context.distroroles or 
-                                context.distroreleaseroles">
-      <fieldset>
-      <legend>Roles</legend>
-        <table>
-          <tr><td>
-            <table><th>Distribution Role</th>
-              <tr tal:condition="context/distroroles"
-                  tal:repeat="role context/distroroles">
-                <td><span tal:content="role/rolename">ROLENAME</span> on 
-                  <a tal:attributes="href string:/soyuz/distros/${role/distribution/name}"
-                     tal:content="role/distribution/title">DISTRO</a></td>
-              </tr>
-            </table>
-            </td><td>
-            <table><th>Release Roles</th>
-              <tr tal:condition="context/distroreleaseroles"
-                  tal:repeat="role context/distroreleaseroles">
-                <td><span tal:content="role/rolename">ROLENAME</span> on 
-                  <a tal:attributes="href string:/soyuz/distros/${role/distrorelease/distribution/name}/${role/distrorelease/name}"
-                     tal:content="role/distrorelease/displayname">RELEASE</a>
-                </td>
-              </tr>
-            </table>
-          </td></tr>
-        </table>
-      </div>
-      -->
-    </div> <!-- <div class="documentContent" id="region-content"> -->
-  </div> <!-- <div id="content" class="documentEditable"> -->
-</div>  <!-- <div metal:fill-slot="main"> -->
+    </div>
+  </div>
+</div>
  
 
 </body>

@@ -9,16 +9,16 @@
 <table class="listing rowNavigation" style="width: 100%;">
     <thead>
         <tr>
-            <th title="Assignment to...">
+            <th>
                 <img src="/++resource++download.png" 
                      title="Product Assignment" />Upstream /
                  <img src="/++resource++product_icon.gif" 
                      title="Package Assignment" />
                      Package</th>
-            <th title="State">State</th>
-            <th title="Severity">Severity</th>
-            <th title="Priority">Priority</th>
-            <th title="Assignee">Assigned to</th>
+            <th>Status</th>
+            <th>Severity</th>
+            <th>Priority</th>
+            <th>Assigned to</th>
         </tr>
     </thead>
 
@@ -41,33 +41,21 @@
                 </span>
             </td>
             
-            <td><acronym tal:content="bugass/status/lp:BugAssignmentStatus"
-                         tal:attributes="title
-                         string:XXX${bugass/status/lp:BugAssignmentStatus}">
+            <td tal:content="bugass/status/lp:BugAssignmentStatus">
                 $ProductBugAssignment.status
-                </acronym>
             </td>
 
-            <td>
-                <acronym title="Critical
-This bug is essential to fix as soon as possible. It affects system stability, data integrity and / or remote access security."
-                         tal:content="bugass/severity/lp:BugSeverity"
-                         tal:attributes="class
-                         string:severity${bugass/severity/lp:BugSeverity},
-                                         title
-                                         string:severity${bugass/severity/lp:BugSeverity}"
-                >Critical</acronym>
+            <td tal:content="bugass/severity/lp:BugSeverity"
+                tal:attributes="class string:severity${bugass/severity/lp:BugSeverity}">
+                Critical
             </td>
 
-            <td>
-                <acronym class="priorityMedium"
-                         title="Medium Priority. This is a medium priority bug for the maintainer."
-                         tal:content="bugass/priority/lp:BugPriority"
-                         tal:attributes="class string:priority${bugass/priority/lp:BugPriority}"
-                >Medium</acronym>
+            <td tal:content="bugass/priority/lp:BugPriority"
+                tal:attributes="class string:priority${bugass/priority/lp:BugPriority}">
+                Medium
             </td>
             
-            <td title="Assigned To">
+            <td>
                 <a tal:condition="bugass/assignee"
                    tal:attributes="href string:/malone/bugs/assigned?name=${bugass/assignee/name}">
                    <img src="/++resource++user.gif" alt="" 

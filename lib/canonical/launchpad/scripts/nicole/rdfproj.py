@@ -67,15 +67,17 @@ trove_programmingLangs = {
 	 267: 'Zope',
 	 }
 
-def getProductSpec(projname):
-    filename = XMLDIR + projname + '.xml'
+def getProductSpec(directory, productname):
+    filename = productname + '.xml'
+
+    path = os.path.join(directory , filename)
 	 
-    if not os.access(filename, os.F_OK):
+    if not os.access(path, os.F_OK):
         return None
 
-    rdf = open(filename).read()
+    rdf = open(path).read()
     prod_dict = rdf2dict(rdf)
-    prod_dict['product'] = prod_dict['projectname']
+    prod_dict['product'] = productname
     return prod_dict
 
 def getProjectSpec(projname):
