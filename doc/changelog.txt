@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-09 15:05:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1397
+
+    Summary:
+      PO import/export scripts; keep Accept-Language header in page test generation
+    Revision:
+      launchpad--devel--0--patch-1397
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-440
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-441
+       add convenience PO import/export scripts
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-442
+       make makepagetest.py not strip out the Accept-Language header
+    
+
+    new files:
+     lib/canonical/rosetta/scripts/.arch-ids/po_export.py.id
+     lib/canonical/rosetta/scripts/.arch-ids/po_import.py.id
+     lib/canonical/rosetta/scripts/po_export.py
+     lib/canonical/rosetta/scripts/po_import.py
+
+    modified files:
+     doc/changelog.txt makepagetest.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-440
+     daf@canonical.com--2004/launchpad--devel--0--patch-441
+     daf@canonical.com--2004/launchpad--devel--0--patch-442
+
+
 2005-03-09 13:59:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1396
 
     Summary:

@@ -136,9 +136,18 @@ def main():
         # At this point, tcpwatch waits for a KeyboardInterrupt before
         # continuing.
 
+        # The default dochttp options remove the Accept-Language header from
+        # the request; however, we want to keep it. Remove the option that
+        # removes the header.
+        new_defaults = list(dochttp.default_options)
+        position_of_lang_header = new_defaults.index('Accept-Language')
+        # Remove the 'Accept-Language' and the '-I' that is in the position
+        # that precedes it.
+        del new_defaults[position_of_lang_header-1:position_of_lang_header+1]
+
         # Remove stdout from tcpwatch from the output.
         outputfile.truncate(0)
-        dochttp.dochttp(args=[tempdir])
+        dochttp.dochttp(args=[tempdir], default=new_defaults)
         rm_dash_r(tempdir)
     finally:
         sys.stdout = original_stdout
