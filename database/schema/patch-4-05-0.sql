@@ -1,6 +1,8 @@
+SET client_min_messages TO fatal;
 
+/* Mark's Bounty table */
 
-CREATE TABLE bounty (
+CREATE TABLE Bounty (
     id serial PRIMARY KEY,
     name text NOT NULL UNIQUE,
     title text NOT NULL,
@@ -10,12 +12,18 @@ CREATE TABLE bounty (
     difficulty integer NOT NULL,
     duration interval NOT NULL,
     reviewer integer NOT NULL REFERENCES Person,
-    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    datecreated timestamp without time zone
+        DEFAULT current_timestamp AT TIME ZONE 'UTC';
     owner integer NOT NULL REFERENCES Person,
-    deadline timestamp,
+    deadline timestamp without time zone,
     claimant integer REFERENCES Person,
     dateclaimed timestamp without time zone
     );
 
+ALTER TABLE person ADD column language int;
+ALTER TABLE person ADD CONSTRAINT person_language_fk
+    FOREIGN KEY(language) REFERENCES Language(id);
+
+UPDATE LaunchpadDatabaseRevision SET major=4, minor=5, patch=0;
 
 

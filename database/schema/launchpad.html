@@ -111,7 +111,7 @@
   <body>
 
     <!-- Primary Index -->
-	<p><br><br>Dumped on 2004-11-03</p>
+	<p><br><br>Dumped on 2004-11-10</p>
 <h1><a name="index">Index of database - launchpad_dev</a></h1>
 <ul>
     
@@ -6998,7 +6998,7 @@ generating archives for this distribution
 				NOT NULL
 				
 				</i>
-				
+				<br><br>A link to the ProcessorFamily table, giving the architecture of this DistroArchRelease.
 				</td>
 			 </tr>
             
@@ -7014,7 +7014,7 @@ generating archives for this distribution
 				NOT NULL
 				
 				</i>
-				
+				<br><br>The name of this architecture in the context of this specific distro release. For example, some distributions might label amd64 as amd64, others might call is x86_64. This information is used, for example, in determining the names of the actual package files... such as the &quot;amd64&quot; part of &quot;apache2_2.0.56-1_amd64.deb&quot;
 				</td>
 			 </tr>
             
@@ -8822,6 +8822,10 @@ generating archives for this distro release
 			<p>Tables referencing this one via Foreign Key Constraints:</p>
 		
 			<ul>	
+				<li><a href="#public.table.person">person</a></li>
+			</ul>
+		
+			<ul>	
 				<li><a href="#public.table.personlanguage">personlanguage</a></li>
 			</ul>
 		
@@ -8859,6 +8863,8 @@ generating archives for this distro release
 			<a name="public.table.launchpaddatabaserevision">launchpaddatabaserevision</a>
 		</h2>
         
+         <p>This table has a single row which specifies the most recently applied patch number.</p>
+        
 
 
         <table width="100%" cellspacing="0" cellpadding="3">
@@ -8882,7 +8888,7 @@ generating archives for this distro release
 				
 				
 				</i>
-				
+				<br><br>Major number. This is incremented every update to production.
 				</td>
 			 </tr>
             
@@ -8898,7 +8904,7 @@ generating archives for this distro release
 				
 				
 				</i>
-				
+				<br><br>Minor number. Patches made during development each increment the minor number.
 				</td>
 			 </tr>
             
@@ -8914,7 +8920,7 @@ generating archives for this distro release
 				
 				
 				</i>
-				
+				<br><br>The patch number will hopefully always be &#39;0&#39;, as it exists to support emergency patches made to the production server. eg. If production is running &#39;4.0.0&#39; and needs to have a patch applied ASAP, we would create a &#39;4.0.1&#39; patch and roll it out. We then may need to refactor all the existing &#39;4.x.0&#39; patches.
 				</td>
 			 </tr>
             
@@ -10608,6 +10614,8 @@ generating archives for this distro release
 			<a name="public.table.person">person</a>
 		</h2>
         
+         <p>Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.</p>
+        
 
 
         <table width="100%" cellspacing="0" cellpadding="3">
@@ -10654,7 +10662,7 @@ generating archives for this distro release
 				
 				
 				</i>
-				
+				<br><br>Person or group&#39;s name as it should be rendered to screen
 				</td>
 			 </tr>
             
@@ -10670,7 +10678,7 @@ generating archives for this distro release
 				
 				
 				</i>
-				
+				<br><br>Component of a person&#39;s full name used for secondary sorting. Generally the person&#39;s given or christian name.
 				</td>
 			 </tr>
             
@@ -10686,7 +10694,7 @@ generating archives for this distro release
 				
 				
 				</i>
-				
+				<br><br>Component of a person&#39;s full name used for sorting. Generally the person&#39;s family name.
 				</td>
 			 </tr>
             
@@ -10702,7 +10710,7 @@ generating archives for this distro release
 				
 				
 				</i>
-				
+				<br><br>SSHA digest encrypted password.
 				</td>
 			 </tr>
             
@@ -10726,7 +10734,7 @@ generating archives for this distro release
 				
 				
 				</i>
-				
+				<br><br>id of the team owner. Team owners will have authority to add or remove people from the team.
 				</td>
 			 </tr>
             
@@ -10742,7 +10750,7 @@ generating archives for this distro release
 				
 				
 				</i>
-				
+				<br><br>Informative description of the team. Format and restrictions are as yet undefined.
 				</td>
 			 </tr>
             
@@ -10758,7 +10766,7 @@ generating archives for this distro release
 				NOT NULL
 				
 				</i>
-				
+				<br><br>Numeric score attempting to indicate how useful, helpful or generally cool a person is. It is currently unknown if teams have karma.
 				</td>
 			 </tr>
             
@@ -10774,7 +10782,7 @@ generating archives for this distro release
 				NOT NULL
 				DEFAULT timezone(&#39;UTC&#39;::text, (&#39;now&#39;::text)::timestamp(6) with time zone)
 				</i>
-				
+				<br><br>Last time this person&#39;s karma scrore was calculated and updated.
 				</td>
 			 </tr>
             
@@ -10790,7 +10798,31 @@ generating archives for this distro release
 				NOT NULL
 				
 				</i>
+				<br><br>Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).
+				</td>
+			 </tr>
+            
+            <tr class="tr0">
+				<td>
+                
+                  
+                  <a href="#public.table.language">language.id</a>
+                  
+                
+                </td>
+            	<td>language</td>
+            	<td>integer</td>
+                <td><i>
 				
+					
+
+					
+				
+
+				
+				
+				</i>
+				<br><br>Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.
 				</td>
 			 </tr>
             
@@ -13562,6 +13594,8 @@ generating archives for this distro release
 			<a name="public.table.processor">processor</a>
 		</h2>
         
+         <p>A single processor for which code might be compiled. For example, i386, P2, P3, P4, Itanium1, Itanium2... each processor belongs to a ProcessorFamily, and it might be that a package is compiled several times for a given Family, with different optimisation settings for each processor.</p>
+        
 
 
         <table width="100%" cellspacing="0" cellpadding="3">
@@ -13616,7 +13650,7 @@ generating archives for this distro release
 				NOT NULL
 				
 				</i>
-				
+				<br><br>The ProcessorFamily for this Processor.
 				</td>
 			 </tr>
             
@@ -13640,7 +13674,7 @@ generating archives for this distro release
 				NOT NULL
 				
 				</i>
-				
+				<br><br>The name of this processor, for example, i386, Pentium, P2, P3, P4, Itanium, Itanium2, K7, Athlon, Opteron... it should be short and unique.
 				</td>
 			 </tr>
             
@@ -13739,6 +13773,8 @@ generating archives for this distro release
 			<a name="public.table.processorfamily">processorfamily</a>
 		</h2>
         
+         <p>An architecture, that might consist of several actual processors. Different distributions call these architectures different things, so we have an &quot;architecturetag&quot; in DistroArchRelease that might be different to the architecture&#39;s name.</p>
+        
 
 
         <table width="100%" cellspacing="0" cellpadding="3">
@@ -13793,7 +13829,7 @@ generating archives for this distro release
 				NOT NULL
 				
 				</i>
-				
+				<br><br>The name of the architecture. This is a short unix-style name such as i386 or amd64
 				</td>
 			 </tr>
             
@@ -13809,7 +13845,7 @@ generating archives for this distro release
 				NOT NULL
 				
 				</i>
-				
+				<br><br>A title for the architecture. For example &quot;Intel i386 Compatible&quot;.
 				</td>
 			 </tr>
             
@@ -13825,7 +13861,7 @@ generating archives for this distro release
 				NOT NULL
 				
 				</i>
-				
+				<br><br>A description for this processor family. It might include any gotchas such as the fact that i386 does not necessarily mean that code would run on a 386... Ubuntu for example requires a 486.
 				</td>
 			 </tr>
             
@@ -13849,7 +13885,7 @@ generating archives for this distro release
 				NOT NULL
 				
 				</i>
-				
+				<br><br>The person responsible for this processor family entry.
 				</td>
 			 </tr>
             
@@ -20174,8 +20210,8 @@ ORDER BY sourcepackage.id
 				<td>
                 
                 </td>
-            	<td>sourcepackagerelease</td>
-            	<td>integer</td>
+            	<td>dsc</td>
+            	<td>text</td>
                 <td><i>
 				
 
@@ -20187,6 +20223,22 @@ ORDER BY sourcepackage.id
 			 </tr>
             
             <tr class="tr1">
+				<td>
+                
+                </td>
+            	<td>dscsigningkey</td>
+            	<td>integer</td>
+                <td><i>
+				
+
+				
+				
+				</i>
+				
+				</td>
+			 </tr>
+            
+            <tr class="tr0">
 				<td>
                 
                 </td>
@@ -20202,43 +20254,11 @@ ORDER BY sourcepackage.id
 				</td>
 			 </tr>
             
-            <tr class="tr0">
-				<td>
-                
-                </td>
-            	<td>componentname</td>
-            	<td>text</td>
-                <td><i>
-				
-
-				
-				
-				</i>
-				
-				</td>
-			 </tr>
-            
             <tr class="tr1">
 				<td>
                 
                 </td>
-            	<td>componenttitle</td>
-            	<td>text</td>
-                <td><i>
-				
-
-				
-				
-				</i>
-				
-				</td>
-			 </tr>
-            
-            <tr class="tr0">
-				<td>
-                
-                </td>
-            	<td>componentdesc</td>
+            	<td>componentname</td>
             	<td>text</td>
                 <td><i>
 				
@@ -20281,14 +20301,13 @@ SELECT sourcepackagerelease.id
 , sourcepackagerelease.builddependsindep
 , sourcepackagerelease.urgency
 , sourcepackagerelease.dateuploaded
-, sourcepackagerelease.id AS sourcepackagerelease
+, sourcepackagerelease.dsc
+, sourcepackagerelease.dscsigningkey
 , distrorelease.id AS distrorelease
-, label.name AS componentname
-, label.title AS componenttitle
-, label.description AS componentdesc 
+, component.name AS componentname 
 FROM sourcepackagepublishing
 , sourcepackagerelease
-, label
+, component
 , sourcepackage
 , distrorelease
 , sourcepackagename 
@@ -20303,7 +20322,7 @@ WHERE (
            )
          AND (sourcepackage.sourcepackagename = sourcepackagename.id)
      )
-   AND (label.id = sourcepackagerelease.component)
+   AND (component.id = sourcepackagerelease.component)
 );</pre>
 	
 

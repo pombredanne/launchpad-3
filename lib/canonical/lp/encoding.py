@@ -1,8 +1,16 @@
 import re
+import codecs
+
+_boms = [
+    (codecs.BOM_UTF16_BE, 'UTF16be'),
+    (codecs.BOM_UTF16_LE, 'UTF16le'),
+    (codecs.BOM_UTF32_BE, 'UTF32be'),
+    (codecs.BOM_UTF32_LE, 'UTF32le'),
+    ]
 
 def guess(s):
     r'''
-    Attempts to heuristically guess a strings encoding, returning 
+    Attempts to heuristically guess a strings encoding, returning
     a Unicode string.
 
     This method should only be used for importing legacy data from systems
@@ -36,7 +44,6 @@ def guess(s):
 
     >>> guess(u'100% Pure Beef\N{TRADE MARK SIGN}'.encode('UTF-8'))
     u'100% Pure Beef\u2122'
-
 
     But we fall back to ISO-8859-1 if UTF-8 fails
 
@@ -94,11 +101,12 @@ def guess(s):
         pass
 
     # Detect BOM
-    if s.startswith('\xff'):
-        try:
-            return unicode(s, 'UTF-16')
-        except UnicodeDecodeError:
-            pass
+    try:
+        for bom, encoding in _boms:
+            if s.startswith(bom):
+                return unicode(s[len(bom):], encoding)
+    except UnicodeDecodeError:
+        pass
 
     # Try preferred encoding
     try:
@@ -121,4 +129,4 @@ def guess(s):
             pass
 
     # Otherwise we default to ISO-8859-1
-    return unicode(s, 'ISO-8859-1')
+    return unicode(s, 'ISO-8859-1', 'replace')
