@@ -202,26 +202,30 @@ class POTemplate(SQLBase):
         # So, we get around this problem by checking the number of PO message
         # sets against the number of languages.
 
-        language_ids = ', '.join([ str(l.id) for l in languages ])
+        language_codes = ', '.join([ "'%s'" % str(l.code) for l in languages ])
 
         if translated is not None:
             # Search for PO message sets which aren't complete for this POT
             # set.
             subquery1 = '''
-                SELECT poset.id FROM POMsgSet poset, POFile pofile WHERE
+                SELECT poset.id FROM POMsgSet poset, POFile pofile,
+                        Language language WHERE
                     poset.potmsgset = POTMsgSet.id AND
                     poset.pofile = pofile.id AND
-                    pofile.language IN (%s) AND
+                    pofile.language = language.id AND
+                    language.code IN (%s) AND
                     iscomplete = FALSE
-                ''' % language_ids
+                ''' % language_codes
 
             # Count PO message sets for this POT set.
             subquery2 = '''
-                SELECT COUNT(poset.id) FROM POMsgSet poset, POFile pofile WHERE
+                SELECT COUNT(poset.id) FROM POMsgSet poset, POFile pofile,
+                        Language language WHERE
                     poset.potmsgset = POTMsgSet.id AND
                     poset.pofile = pofile.id AND
-                    pofile.language IN (%s)
-                ''' % language_ids
+                    pofile.language = language.id AND
+                    language.code IN (%s)
+                ''' % language_codes
 
             if translated:
                 translated_condition = ('NOT EXISTS (%s) AND (%s) = %d' %

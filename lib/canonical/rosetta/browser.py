@@ -1194,28 +1194,11 @@ class TemplateUpload:
                 # should get language's code
                 for language in self.languages():
                     if language.englishname == language_name:
-                        if language in self.context.languages():
-                            pofile = self.context.getPOFileByLang(language.code)
-                            pofile.rawfile = base64.encodestring(file.read())
-                            pofile.daterawimport = UTC_NOW
-                            pofile.rawimporter = IPerson(self.request.principal, None)
-                            pofile.rawimportstatus = RosettaImportStatus.PENDING.value
-                        else:
-                            base64_file = base64.encodestring(file.read())
-                            importer = IPerson(self.request.principal, None)
-
-                            pofile = POFile(
-                                potemplateID=self.context.id,
-                                language=language,
-                                fuzzyheader=True,
-                                currentcount=0,
-                                updatescount=0,
-                                rosettacount=0,
-                                pluralforms=1,
-                                rawfile=base64_file,
-                                daterawimport=UTC_NOW,
-                                rawimporter = importer,
-                                rawimportstatus = RosettaImportStatus.PENDING.value)
+                        pofile = self.context.getOrCreatePOFile(language.code)
+                        pofile.rawfile = base64.encodestring(file.read())
+                        pofile.daterawimport = UTC_NOW
+                        pofile.rawimporter = IPerson(self.request.principal, None)
+                        pofile.rawimportstatus = RosettaImportStatus.PENDING.value
                         return "Looks like a PO file."
             else:
                 return 'You should select a language with a po file!'

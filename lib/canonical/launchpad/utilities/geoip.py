@@ -27,7 +27,13 @@ class GeoIP:
             else:
                 return None
         countryset = getUtility(ICountrySet)
-        return countryset[countrycode]
+
+        try:
+            country = countryset[countrycode]
+        except KeyError:
+            return None
+        else:
+            return country
 
 
 class RequestLocalLanguages(object):
