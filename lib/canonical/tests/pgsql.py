@@ -1,4 +1,4 @@
-import unittest, os, os.path, re
+import unittest, os, os.path, re, time
 import psycopg
 from warnings import warn
 import time
@@ -42,24 +42,52 @@ class ConWrapper:
 
 
 class PgTestCase(unittest.TestCase):
-    """This test harness will create and destroy a database named
-       launchpad_test in the setUp and tearDown methods
+    """This test harness will create and destroy a database 
+       in the setUp and tearDown methods
 
     """
     # This database must already exist
-    dbname = 'launchpad_unittest'
     _cons = None
+    dbname = 'unittest_tmp'
+    template = 'template1'
 
     def connect(self):
         """Get an open DB-API Connection object to a temporary database"""
         con = psycopg.connect('dbname=%s' % self.dbname)
+        #con = ConWrapper(con)
         self._cons.append(con)
-        return ConWrapper(con)
+        return con
 
     def setUp(self):
         self._cons = []
-        self.resetDatabase()
-
+        con = psycopg.connect('dbname=%s' % self.template)
+        try:
+            try:
+                cur = con.cursor()
+                cur.execute('ABORT TRANSACTION')
+                cur.execute('DROP DATABASE %s' % self.dbname)
+            except psycopg.ProgrammingError, x:
+                if 'does not exist' not in str(x):
+                    raise
+            for i in range(0,100):
+                try:
+                    cur.execute(
+                        "CREATE DATABASE %s TEMPLATE=%s ENCODING='UNICODE'" % (
+                            self.dbname, self.template
+                            )
+                        )
+                    break
+                except psycopg.ProgrammingError, x:
+                    x = str(x)
+                    if 'being accessed by other users' not in x:
+                        raise
+                time.sleep(0.1)
+        finally:
+            try:
+                con.close()
+            except psycopg.Error:
+                pass
+ 
     def tearDown(self):
         # Close any unclosed connections if our tests are being lazy
         for con in self._cons:
@@ -68,8 +96,26 @@ class PgTestCase(unittest.TestCase):
                 con.close()
             except psycopg.InterfaceError:
                 pass # Already closed
-        self.resetDatabase()
+        for i in range(0,100):
+            con = psycopg.connect('dbname=%s' % self.template)
+            cur = con.cursor()
+            cur.execute('ABORT TRANSACTION')
+            try:
+                cur.execute('DROP DATABASE %s' % self.dbname)
+            except psycopg.ProgrammingError, x:
+                x = str(x)
+                if 'being accessed by other users' in x:
+                    time.sleep(0.1)
+                    continue
+                if 'does not exist' not in str(x):
+                    raise
 
+
+class LaunchpadSchemaTestCase(PgTestCase):
+    dbname = 'launchpad_unittest'
+    template = 'launchpad_unittest_template'
+
+"""
     def resetDatabase(self):
         con = self.connect()
         cur = con.cursor()
@@ -101,8 +147,10 @@ class PgTestCase(unittest.TestCase):
         tables = [r[0] for r in cur.fetchall()]
         for table in tables:
             warn('Table %r not dropped' % (table,))
+"""
 
 
+'''
 class LaunchpadSchemaTestCase(PgTestCase):
     """A test harness that creates the launchpad database schema and populates
     it with the current sample data
@@ -139,4 +187,4 @@ class LaunchpadSchemaTestCase(PgTestCase):
         finally:
             cur.close()
             con.close()
-
+'''

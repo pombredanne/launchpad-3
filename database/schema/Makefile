@@ -1,16 +1,28 @@
 # Quick hack makefile to (re)create the Launchpad database.
 
 DBNAME=launchpad_test
+TEST_DBNAME=launchpad_unittest_template
 
 default: all
 
-base:
+develdb:
 	@ echo "* Loading base database schema"
 	psql -d ${DBNAME} -f launchpad-3-00-0.sql
 	@ echo "* Patching the database schema"
 	ls -1 patch*.sql | sort | xargs -n 1 psql -d ${DBNAME} -f
 	@ echo "* Loading language data"
 	psql -d ${DBNAME} -f ../languages.sql | cat
+	@ echo "* Loading sample data"
+	psql -d ${DBNAME} -f ../sampledata/current.sql | cat
+	@ echo "* Adding comments"
+	psql -d ${DBNAME} -f comments.sql | cat
+
+testdb: drop create develdb
+	@ echo "* Creating ${TEST_DBNAME} for unittests"
+	@if [ "`psql -l | grep ${TEST_DBNAME} | wc -l`" = '1' ]; \
+	    then dropdb ${TEST_DBNAME} ; \
+	fi
+	createdb -E UNICODE --template=${DBNAME} ${TEST_DBNAME}
 
 create: drop
 	@ echo "* If this fails you need to run as the postgresql superuser"
@@ -38,15 +50,8 @@ drop:
 check:
 	@if [ "`md5sum launchpad-3-00-0.sql`" != '4334075ea148a66337de442e9e953d43  launchpad-3-00-0.sql' ]; then echo "* launchpad-3-00-0.sql is corrupt or has been modified"; exit 1; else echo "* Using launchpad-3-00-0 as baseline"; fi
 
-all: drop create base
-#	psql -d ${DBNAME} -f ../sampledata/foaf.sql
-#	psql -d ${DBNAME} -f ../sampledata/doap.sql
-#	psql -d ${DBNAME} -f ../sampledata/soyuz.sql
-#	psql -d ${DBNAME} -f ../sampledata/malone.sql
-#	psql -d ${DBNAME} -f ../sampledata/rosetta.sql
-#	psql -d ${DBNAME} -f ../sampledata/soyuz-extra.sql
-	psql -d ${DBNAME} -f ../sampledata/current.sql | cat
-	psql -d ${DBNAME} -f comments.sql | cat
+all: drop create develdb testdb
+	@ echo "* All done"
 
 doc:
 	${HOME}/Desktop/build/bin/postgresql_autodoc -d ${DBNAME} -f launchpad -t html
