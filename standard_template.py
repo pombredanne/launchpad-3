@@ -1,6 +1,6 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
+# Copyright 2004 Canonical Ltd.  All rights reserved.
 #
-# arch-tag: <generate a tag using uuidgen>
+# arch-tag: <generate_a_tag_using_uuidgen>
 
 __metaclass__ = type
 
