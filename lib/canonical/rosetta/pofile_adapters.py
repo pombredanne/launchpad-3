@@ -377,10 +377,6 @@ class TemplateImporter(object):
         # set sequence
         self.len += 1
         msgset.sequence = self.len
-        # set inLastRevision for the primary msgid
-        # (the primary msgid is such an special case that we can't trust
-        # that task to the proxy)
-        msgset.getMessageIDSighting(SINGULAR, allowOld=True).inLastRevision = True
         # create the proxy
         proxy = MessageProxy(msgset, person=self.person)
         # capture all exceptions - we want (do we?) our IndexError, KeyError,
@@ -491,10 +487,6 @@ class POFileImporter(object):
         # set sequence
         self.len += 1
         msgset.sequence = self.len
-        # set inLastRevision for the primary msgid
-        # (the primary msgid is such an special case that we can't trust
-        # that task to the proxy)
-        msgset.getMessageIDSighting(SINGULAR, allowOld=True).inLastRevision = True
         # create the proxy
         proxy = MessageProxy(msgset, person=self.person)
         # capture all exceptions - we want (do we?) our IndexError, KeyError,
