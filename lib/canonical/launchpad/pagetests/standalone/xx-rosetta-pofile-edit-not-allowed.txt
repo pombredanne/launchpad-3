@@ -1,3 +1,5 @@
+Tests that the foo.bar@canonical.com user is not allowed to edit a POFile
+options from its edit form.
 
 
   >>> print http(r"""

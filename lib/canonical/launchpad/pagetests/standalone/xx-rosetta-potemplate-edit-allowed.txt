@@ -1,4 +1,5 @@
-
+Tests that the user carlos@canonical.com is allowed to edit a POTemplate
+options from its edit form.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+sources/evolution/+rosetta/evolution-2.2/+edit HTTP/1.1

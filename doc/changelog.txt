@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-31 09:34:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1528
+
+    Summary:
+      Added comments to Rosetta's pagetests
+    Revision:
+      launchpad--devel--0--patch-1528
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-578
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-579
+       Added descriptions to the Rosetta page tests
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-580
+       Merge from rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-edit-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-pofile-edit-not-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-edit-allowed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-potemplate-edit-not-allowed.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-578
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-579
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-580
+
+
 2005-03-31 08:50:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1527
 
     Summary:
