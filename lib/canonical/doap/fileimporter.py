@@ -37,7 +37,7 @@ class ProductReleaseImporter:
 
         # Now create the release file
         ProductReleaseFile(productreleaseID=pr.id, libraryfileID=aliasID, 
-                           filetype=dbschema.UpstreamFileType.CODETARBALL)
+                           filetype=int(dbschema.UpstreamFileType.CODETARBALL))
 
         # ...and we're done!
 
