@@ -199,10 +199,19 @@ class SourcePackageInDistroSet(object):
         """Take the distrorelease when it makes part of the context"""
         self.distrorelease = distrorelease
 
+    def findPackagesByName(self, pattern):
+        srcutil = getUtility(ISourcePackageUtility)
+        return srcutil.findByNameInDistroRelease(self.distrorelease.id, pattern)
+
     def __iter__(self):
-        query = 'distrorelease = %d ' % (self.distrorelease.id)
+        plublishing_status = dbschema.PackagePublishingStatus.PUBLISHED.value
         
-        return iter(SourcePackageInDistro.select(query, orderBy='name'))
+        query = ('distrorelease = %d'
+                 % (self.distrorelease.id))
+        
+        return iter(SourcePackageInDistro.select(query,
+                                                 orderBy='VSourcePackageInDistro.name',
+                                                 distinct=True))
 
     def __getitem__(self, name):
         plublishing_status = dbschema.PackagePublishingStatus.PUBLISHED.value
@@ -354,6 +363,8 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     #XXX: salgado: wtf is this?
     #MultipleJoin('Build', joinColumn='sourcepackagerelease'),
 
+    def __getitem__(self, name):
+        """Geta SourcePackageRelease"""
 
 # XXX Mark Shuttleworth: this is somewhat misleading as there
 # will likely be several versions of a source package with the

@@ -108,6 +108,9 @@ class ISourcePackageSet(Interface):
 class ISourcePackageInDistroSet(Interface):
     """A Set of SourcePackages in a given DistroRelease"""
 
+    def findPackagesByName(pattern):
+        """Find SourcePackages in a given DistroRelease matching pattern"""
+
     def __iter__():
         """Return the SourcePackageInDistroSet Iterator"""
 
@@ -181,6 +184,8 @@ class ISourcePackageReleasePublishing(ISourcePackageRelease):
     distrorelease = Attribute("The distro in which this package was released")
     maintainer = Attribute("The maintainer of this package")
 
+    def __getitem__(version):
+        """Get a SourcePackageRelease"""
 
 class IbuilddepsSet(Interface):
     name = Attribute("Package name for a builddepends/builddependsindep")

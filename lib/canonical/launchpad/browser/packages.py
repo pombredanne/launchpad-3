@@ -127,7 +127,13 @@ class DistroReleaseBinariesView:
         self.request = request
 
     def binaryPackagesBatchNavigator(self):
-        binary_packages = list(self.context)
+        name = self.request.get("name", "")
+
+        if not name:
+            binary_packages = list(self.context)
+        else:
+            binary_packages = list(self.context.findPackagesByName(name))
+
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', BATCH_SIZE))
         batch_size = BATCH_SIZE

@@ -46,14 +46,14 @@
 	<div>
 	 <table>
 	 <tr><th><a 
-	 tal:attributes="href string:../../src/${context/name}">
+	 tal:attributes="href string:sources/">
 	 View Source Packages List</a></th>
 	 <th>( <span tal:content="context/sourcecount"/> 
 	 Packages)</th>
 	 </tr><tr>
 	 <th><a
-	 tal:attributes="href string:../../bin/${context/name}">
-	 View Binary Packages List</a></th>
+	 tal:attributes="href string:i386/">
+	 View Binary Packages List (i386)</a></th>
 	 <th>( <span tal:content="context/binarycount"/> 
 	 Packages)</th>
 	 </tr>
@@ -73,7 +73,7 @@
 <h3>Source Packages</h3>
 <ul>
  <li tal:repeat="source view/sources">
-  <a tal:attributes="href string:../../src/${context/name}/${source/name}"
+  <a tal:attributes="href string:sources/${source/name}"
      tal:content="source/name">SOURCE</a> : 
     <span tal:content="source/shortdesc"/>
   </li> 
@@ -87,16 +87,15 @@
 <h3>Binary Packages</h3>
 <ul>
   <li tal:repeat="binary view/binaries">
-    <a tal:attributes="href string:../../bin/${context/name}/${binary/name}" 
-    tal:content="binary/name">BIN</a>  : 
+    <a tal:define="archtag binary/build/distroarchrelease/architecturetag"
+       tal:attributes="href
+       string:${archtag}/${binary/name}" 
+    tal:content="string:${binary/name}-${archtag}">BIN</a>  : 
     <span tal:content="binary/shortdesc"/>
   </li> 
 </ul>
 </fieldset>
 </div>
-
-
-
 
 <h3><a tal:attributes="href string: ../${context/name}">Back
 to <span tal:content="context/title"/> 

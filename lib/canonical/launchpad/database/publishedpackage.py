@@ -58,10 +58,8 @@ class PublishedPackageSet(object):
         querytxt = '1=1'
         if name:
             name = name.lower().strip()
-            querytxt += " AND binarypackagename ILIKE %s" % quote(name+"%")
-            querytxt += " AND binarypackagename = %s" % quote(name)
-        if text:
-            raise NotImplementedError, 'Need FTI on BinaryPackages'
+            name.replace('%','%%')
+            querytxt += " AND binarypackagename ILIKE %s" % quote('%'+name+'%')
         if distribution:
             querytxt += " AND distribution = %d" % distribution
         if distrorelease:
@@ -70,7 +68,7 @@ class PublishedPackageSet(object):
             querytxt += " AND distroarchrelease = %d" % distroarchrelease
         if text:
             text = text.lower().strip()
-            querytxt += " AND binarypackagefti @@ ftq(%s)" % text
+            querytxt += " AND binarypackagefti @@ ftq(%s)" % quote(text)
         return PublishedPackage.select(querytxt)
 
 

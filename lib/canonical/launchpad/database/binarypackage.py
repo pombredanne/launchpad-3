@@ -120,11 +120,19 @@ class BinaryPackageSet(object):
         self.distrorelease = distrorelease
         self.arch = arch
 
+    def findPackagesByName(self, pattern):
+        """Search BinaryPackages matching pattern"""
+        binset = getUtility(IBinaryPackageUtility)
+        return binset.findByNameInDistroRelease(self.distrorelease.id, pattern)
+
     def __getitem__(self, name):
         binset = getUtility(IBinaryPackageUtility)
-        return binset.getByNameInDistroRelease(self.distrorelease.id,
-                                               name=name,
-                                               archtag=self.arch)[0]
+        try:
+            return binset.getByNameInDistroRelease(self.distrorelease.id,
+                                                   name=name,
+                                                   archtag=self.arch)[0]
+        except IndexError:
+            raise KeyError
     
     def __iter__(self):
         binset = getUtility(IBinaryPackageUtility)
@@ -174,10 +182,9 @@ class BinaryPackageUtility(object):
         if archtag:
             query += ('AND DistroArchRelease.architecturetag = %s '
                       %quote(archtag))
-            
+
         return BinaryPackage.select(query, distinct=True,
-                                    clauseTables=clauseTables)
-        
+                                        clauseTables=clauseTables)
 
     def findByNameInDistroRelease(self, distroreleaseID, pattern):
         """Returns a set o binarypackages that matchs pattern

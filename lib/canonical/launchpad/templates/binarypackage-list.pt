@@ -28,7 +28,7 @@
 <h1><span tal:content="context/distrorelease/title" /> Binary Packages</h1>
 <!-- <div tal:on-error="python: error.type, error.value.args"> -->
 
-<form name="search" method="GET" action="+search">
+<form name="search" method="GET">
 Find Binary Package by Name: 
 <br>
 <input type="text" name="name" tal:attributes="value request/name|nothing" />
