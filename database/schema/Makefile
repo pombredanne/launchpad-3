@@ -49,7 +49,9 @@ all: drop create base
 	psql -d ${DBNAME} -f comments.sql | cat
 
 doc:
-	postgresql_autodoc -d ${DBNAME} -f launchpad -t html
+	${HOME}/Desktop/build/bin/postgresql_autodoc -d ${DBNAME} -f launchpad -t html
+	${HOME}/Desktop/build/bin/postgresql_autodoc -d ${DBNAME} -f launchpad -t dot
+	${HOME}/Desktop/build/bin/postgresql_autodoc -d ${DBNAME} -f launchpad -t xml
 
 newsample-foaf:
 	pg_dump -d ${DBNAME} -a -D -O --table=person | grep -v "\(SET \| TOC \)" > ../sampledata/new-foaf.sql
