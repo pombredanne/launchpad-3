@@ -37,7 +37,7 @@
    <tr>
     <td>
     <form name="search" method="POST" tal:attributes="action string:${release/name}/+search">
-     Find Source Package: 
+     Find Binary Package: 
      <input type="text" name="name" tal:attributes="value request/name|nothing" />
     <input type="submit" value="Search"/>
     </form>

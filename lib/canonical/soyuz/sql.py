@@ -470,19 +470,44 @@ class DistroReleaseBinaryReleaseApp(object):
                                                   arch)
     
 class DistroReleaseBinaryApp(object):
-    def __init__(self, binarypackage):
+    def __init__(self, binarypackage, release):
         # FIXME: stub
         self.binarypackage = binarypackage
-        self.lastversions = ['1.2.3-4',
-                             '1.2.3-5',
-                             '1.2.3-6',
-                             '1.2.4-0',
-                             '1.2.4-1']
+        self.release = release
+
+##         self.lastversions = ['1.2.3-4',
+##                              '1.2.3-5',
+##                              '1.2.3-6',
+##                              '1.2.4-0',
+##                              '1.2.4-1']
 
 
-        self.currentversions = [CurrentVersion('1.2.4-0',['i386', 'AMD64']),
-                                CurrentVersion('1.2.3-6',['PPC'])
-                                ]
+##         Self.currentversions = [CurrentVersion('1.2.4-0',['i386', 'AMD64']),
+##                                 CurrentVersion('1.2.3-6',['PPC'])
+##                                 ]
+
+    def currentReleases(self):
+        """The current releases of this binary package by architecture.
+        
+        :returns: a dict of version -> list-of-architectures
+        """
+        binaryReleases = self.binarypackage.current(self.release)
+        current = {}
+        from canonical.soyuz.database import SoyuzDistroArchRelease
+        for release in binaryReleases:
+            # Find distroarchs for that release
+            archReleases = release.architecturesReleased(self.release)
+            current[release.version] = [a.archtecturetag for a in archReleases]
+        return current
+
+    def currentversions(self):
+        print [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
+        return [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
+
+    def lastversions(self):
+        return self.binarypackage.lastversions(self.release)
+
+    lastversions = property(lastversions)
 
     def __getitem__(self, version):
         return DistroReleaseBinaryReleaseApp(self.binarypackage, version)
@@ -545,12 +570,12 @@ class DistroReleaseBinariesApp(object):
                 'AND Binarypackage.binarypackagename = BinarypackageName.id '
                 'AND BinarypackageName.name = ' + quote(name)
                 )
-            return DistroReleaseBinaryApp(SoyuzBinaryPackage.select(where)[0])
+            return DistroReleaseBinaryApp(SoyuzBinaryPackage.select(where)[0], self.release)
         except IndexError:
             raise KeyError, name
          
     def __iter__(self):
-        return iter([DistroReleaseBinaryApp(p) for p in 
+        return iter([DistroReleaseBinaryApp(p, self.release) for p in 
                      SoyuzBinaryPackage.select(self.where % self.release.id)])
     
 class DistroBinariesApp(object):

@@ -103,6 +103,27 @@ class SoyuzBinaryPackage(SQLBase):
         return self.sourcepackagerelease.sourcepackage.maintainer
     maintainer = property(maintainer)
 
+    def current(self, distroRelease):
+        """Currently published releases of this package for a given distro.
+        
+        :returns: iterable of SourcePackageReleases
+        """
+        return self.sourcepackagerelease.sourcepackage.current(distroRelease)
+
+    def lastversions(self, distroRelease):
+        last = list(SoyuzSourcePackageRelease.select(
+            'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
+            ' AND SourcepackageUpload.distrorelease = %d'
+            ' AND SourcePackageRelease.sourcepackage = %d'
+            ' AND SourcePackageUpload.uploadstatus = %d'
+            ' ORDER BY sourcePackageRelease.dateuploaded DESC'
+            % (distroRelease.id, self.sourcepackagerelease.sourcepackage.id,dbschema.SourceUploadStatus.SUPERCEDED)
+        ))
+        if last:
+            return last
+        else:
+            return None
+
 
 class SoyuzBinaryPackageName(SQLBase):
     _table = 'BinaryPackageName'

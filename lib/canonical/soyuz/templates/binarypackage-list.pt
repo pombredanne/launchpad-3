@@ -21,7 +21,7 @@
 <h3><spam tal:content="context/release/binarycount" /> Packages</h3>
 
 <form name="search" method="POST" action="+search">
-Find Source Package by Name: 
+Find Binary Package by Name: 
 <br>
 <input type="text" name="name" tal:attributes="value request/name|nothing" />
 <input type="submit" value="Search"/>
