@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="launchpad">
 
 <head>
     <title metal:fill-slot="title">Launchpad Code of Conduct</title>
@@ -22,9 +22,8 @@
       </div>
 
       <ul>
-
          <li tal:repeat="code context"> 
-            <img tal:condition="code/current" src="/++resource++user.gif">
+            <img tal:condition="code/current" src="/++resource++user.gif"/>
             <a tal:content="code/title" tal:attributes="href string:${code/version}"/> 
          </li>
       </ul>

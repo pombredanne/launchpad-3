@@ -1,14 +1,15 @@
+""" Interfaces for CodeOfConduct (CoC) and related classes.
+    
+    https://wiki.launchpad.canonical.com/CodeOfConduct
+    
+    Copyright 2004 Canonical Ltd.  All rights reserved.
+"""
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from zope.interface import Interface, Attribute, classImplements
-
-from zope.schema import Choice, Datetime, Int, Text, TextLine, Bool
-from zope.schema.interfaces import IText, ITextLine
-
-from canonical.launchpad.fields import Summary, Title, TimeInterval
-from canonical.launchpad.validators.name import valid_name
+from zope.interface import Interface, Attribute
+from zope.schema import Datetime, Int, Text, TextLine, Bool
 
 
 class ICodeOfConduct(Interface):
@@ -19,43 +20,50 @@ class ICodeOfConduct(Interface):
     content = Attribute("CoC File Content")
     current = Attribute("True if the release is the current one")
     
+
 class ISignedCodeOfConduct(Interface):
     """The Signed Code of Conduct."""
 
-    id = Int(title=_('Signed CoC ID'), required=True, readonly=True)
+    id = Int(title=_("Signed CoC ID"), required=True, readonly=True)
 
     person = Int(title=_("Owner"), required=True, readonly=False)
     
-    signedcode = TextLine(title=_('Signed Code'), required=False,
-                          description=_("""GPG Signed Code"""))
+    signedcode = TextLine(title=_("Signed Code"), 
+                          description=_("GPG Signed Code"),
+                          required=False)
 
-    signingkey = Int(title=_("Signing key ID"), required=False,
-                     description=_('GPG Key ID.'), readonly=False)
+    signingkey = Int(title=_("Signing key ID"), 
+                     description=_("GPG Key ID."),
+                     required=False,
+                     readonly=False)
 
-    datecreated = Datetime(title=_('Date Created'), required=True,
+    datecreated = Datetime(title=_("Date Created"),
+                           required=True,
                            readonly=True)
 
     recipient = Int(title=_("Recipient"), required=False, readonly=False)
     
-    admincomment = TextLine(title=_('Admin Comment'), required=False,
-                    description=_("""Admin comment describing the reasons
-                    for Approve or not of this registry."""))
+    admincomment = Text(
+        title=_("Admin Comment"), 
+        description=_("Admin comment, to e.g. describe the reasons why "
+                      "this registration was approved or rejected."),
+        required=False)
 
-    active = Bool(title=_('Active'), required=False,
-                  description=_("""Whether or not this Signed CoC
-                  is considered active."""))
-
+    active = Bool(title=_("Active"), 
+                  description=_("Whether or not this Signed CoC"
+                                "is considered active."),
+                  required=False)
 
 
 # Interfaces for containers
 class ICodeOfConductSet(Interface):
-    """Pristine Code of Conduct container."""
+    """Unsigned (original) Codes of Conduct container."""
 
-    def __getitem__(user):
-        """Get a Pristine CoC Release."""
+    def __getitem__(version):
+        """Get a original CoC Release by its version."""
 
     def __iter__():
-        """Iterate through the Pristine CoC release in this set."""
+        """Iterate through the original CoC releases in this set."""
 
 
 class ISignedCodeOfConductSet(Interface):
@@ -67,8 +75,9 @@ class ISignedCodeOfConductSet(Interface):
     def __iter__():
         """Iterate through the Signed CoC in this set."""
 
+
 class ICodeOfConductConf(Interface):
-    """Component to store the CoC Conf."""
+    """Component to store the CoC Configuration."""
 
     path = Attribute("CoCs FS path")
     prefix = Attribute("CoC Title Prefix")

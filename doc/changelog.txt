@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-18 19:25:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1335
+
+    Summary:
+      Reviewed CodeOfConduct base
+    Revision:
+      launchpad--devel--0--patch-1335
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-508
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-509
+       Review Changes Applied
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-510
+       Yet Another Review
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/codeofconduct.py
+     lib/canonical/launchpad/interfaces/codeofconduct.py
+     lib/canonical/launchpad/pagetests/standalone/xx-codeofconduct-list.txt
+     lib/canonical/launchpad/templates/codeofconduct-list.pt
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-508
+     celso.providelo@canonical.com/launchpad--devel--0--patch-509
+     celso.providelo@canonical.com/launchpad--devel--0--patch-510
+
+
 2005-02-18 16:40:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1334
 
     Summary:

@@ -2,7 +2,6 @@
 
   >>> print http(r"""
   ... GET /codeofconduct/ HTTP/1.1
-  ... Cookie: launchpad=M4dEbjjx9qDnzPByXODEbQ4NxtwnSExmMBw.czFl82M80o731KsDck
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
