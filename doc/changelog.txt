@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 22:19:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1424
+
+    Summary:
+      put back the security adapter that handles milestone editing. response to page template code review.
+    Revision:
+      launchpad--devel--0--patch-1424
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-409
+       put back the security adapter that handles milestone editing. response to page template code review.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-410
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-409
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-410
+
+
 2005-03-11 20:49:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1423
 
     Summary:

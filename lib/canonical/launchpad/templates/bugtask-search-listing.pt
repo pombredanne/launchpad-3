@@ -13,20 +13,23 @@
       <span tal:omit-tag="" tal:condition="logged_in">.
           <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackagename=all&search=Search">submitted by me</a></span>
       :: bug id or text
-      <input style="border-style: solid; border-width: 1px; border-color: grey;" type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/>
-      <input type="submit" style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; " name="search" value="Search" />
+      <input type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/>
+      <input type="submit" name="search" value="Search" />
     <input
         tal:condition="not:request/advanced|nothing"
-        style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; "
         type="submit" name="advanced" value="Advanced" />
     <input
         tal:condition="request/advanced|nothing"
-        style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; "
         type="submit" name="simple_submit" value="Simple" />
     <input type="hidden"
         name="advanced" tal:attributes="value request/advanced|nothing" />
   </small><br /><br />
-  <small tal:content="python:'displaying matching bugs ' + str(task_batch.startNumber()) + ' to ' + str(task_batch.endNumber()) + ' of ' + str(task_batch.total())">displaying 1 to 20 of 42 </small>
+  <small tal:define="startno task_batch/startNumber;
+                     endno task_batch/endNumber;
+                     total task_batch/total"
+         tal:content="string:displaying matching bugs $startno to $endno of $total">
+    displaying matching bugs 1 to 10 of 42
+  </small>
   <table id="ass_listing"
          class="listing rowNavigation">
     <tr>

@@ -86,6 +86,15 @@ class EditSourceSourceByButtSource(AuthorizationBase):
             return False
 
 
+class EditMilestoneByProductMaintainer(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IMilestone
+
+    def checkAuthenticated(self, user):
+        """Authorize the product maintainer."""
+        return self.obj.product.owner.id == user.id
+
+
 class EditByProductOwnerOrAssignee:
     permission = 'launchpad.Edit'
     usedfor = IEditableUpstreamBugTask
