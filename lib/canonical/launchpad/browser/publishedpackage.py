@@ -66,7 +66,7 @@ class PublishedPackageSetView:
         if self.searchresultset is not None:
             return self.searchresultset
         pkgset = self.context
-        resultset = list(pkgset.query(name=self.searchtext))
+        resultset = list(pkgset.query(name=self.searchtext, text=self.searchtext))
         binpkgs = {}
         for package in resultset:
             binpkg = binpkgs.get(package.binarypackagename,
