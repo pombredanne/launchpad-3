@@ -29,7 +29,8 @@ __all__ = ('ManifestEntryType', 'Packaging', 'BranchRelationships',
 'CodereleaseRelationships', 'BugInfestationStatus', 'BugAssignmentStatus',
 'BugPriority', 'BugSeverity', 'BugExternalReferenceType', 'BugRelationship',
 'UpstreamReleaseVersionStyle', 'RevisionControlSystems', 'ArchArchiveType',
-'BugSubscription', 'RosettaTranslationOrigin', 'DistributionRole')
+'BugSubscription', 'RosettaTranslationOrigin', 'DistributionRole',
+'DOAPRole')
 
 from zope.interface.advice import addClassAdvisor
 from zope.schema.vocabulary import SimpleVocabulary
@@ -1377,5 +1378,31 @@ class DistributionRole(DBSchema):
 
         Release Manager'''
     )
+
+
+class DOAPRole(DBSchema):
+    """DOAP Role
+
+    This schema documents the roles that a person can play in
+    a DOAP project. The person might have these roles with
+    regard to the project as a whole or to a specific product
+    of that project."""
+
+    MAINTAINER = Item(1, '''
+        Maintainer
+
+        A project or product maintainer is a member of the core
+        team of people who are responsible for that open source
+        work. Maintainers have commit rights to the relevant code
+        repository, and are the ones who sign off on any release.''')
+
+    ADMIN = Item(2, '''
+        Administrator
+
+        The project or product administrators for a Launchpad
+        project and product have the same privileges as the
+        project or product owner, except that they cannot appoint
+        more administrators. This allows the project owner to share
+        the load of administration with other individuals.''')
 
 
