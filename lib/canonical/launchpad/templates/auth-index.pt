@@ -20,38 +20,50 @@
 <div class="portalMessage" tal:condition="result" tal:content="result"> MESSAGE </div>
 
 <br>
-<h2> Forgotten your password? </h2>
-<br>
+<h1> Forgotten your password? </h1>
 
-<fieldset tal:condition="not:view/success">
-  <legend>
-    Account details
-  </legend>
-  Enter your valid registration email address below.  
-  You will receive an email on how to reset your password. 
-  <br>  <br>  
-  <form name="passwdretrive" method="POST">
-    <div class="formHelp">Email Address</div>
-    <div class="field">
-      <input type="text" size="50" name="email" tal:attributes="value request/email|nothing" />
-       <div class="formControls">
-         <input class="context" tabindex="4" type="submit" value="Send"/>
-       </div>
-    </div>
+
+<div  tal:condition="not:view/success">
+
+ <p>
+  <b>
+   Enter your valid registration email address below.  
+   You will receive an email on how to reset your password. 
+  </b>
+ </p>
+
+
+ <form name="passwdretrive" method="POST">
+ <fieldset>
+   <legend>
+     Account details
+   </legend>
+ <div class="field">
+   <label for="__ac_email">Email address</label>
+
+     <div class="field">
+       <input type="text" size="50" name="email" tal:attributes="value request/email|nothing" />
+        <div class="formControls">
+          <input class="context" tabindex="4" type="submit" value="Send"/>
+        </div>
+     </div>
+  </div>
+  </fieldset>
   </form>
 
-</fieldset>
+</div>
 
-
-<fieldset tal:condition="view/success">
-  <legend>
-    Thank you!
-  </legend>
+<div tal:condition="view/success">
+ <br>
+ <b>Thank you!</b>
+ <br>
  <br>
  You have been sent an email with a link to reset your password.
- Please click on the link provided. You will be asked to enter a new password and confirm it.
+ Please click on the link provided. 
  <br>
-</fieldset>
+ You will be asked to enter a new password and confirm it.
+ <br>
+</div>
 
 </tal:block>
 
