@@ -28,7 +28,7 @@
                     $BinarypackageName.name
                 </span>
                 <span tal:omit-tag=""
-                tal:condition="not:bugass/binarypackagename">
+                      tal:condition="not:bugass/binarypackagename">
                     (none)
                 </span>
             </td>

@@ -220,7 +220,7 @@ class SourcepackageBugAssignment(SQLBase):
     _columns = [
         ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
         ForeignKey(name='sourcepackage', 
-            dbName='sourcepackage', foreignKey='Sourcepackage'),
+                   dbName='sourcepackage', foreignKey='Sourcepackage'),
         IntCol('bugstatus', default=int(dbschema.BugAssignmentStatus.NEW)),
         IntCol('priority', default=int(dbschema.BugPriority.MEDIUM)),
         IntCol('severity', default=int(dbschema.BugSeverity.NORMAL)),

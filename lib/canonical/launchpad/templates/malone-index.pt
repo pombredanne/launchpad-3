@@ -53,6 +53,15 @@
     <ul>
         <li><a href="sourcepackage">See all source package bugs</a></li>
         <li><a href="bugs">See the bug list</a></li>
+        <li tal:condition="request/lp:person">
+          <span tal:define="name request/lp:person/name">
+            <a tal:attributes="href python:'bugs/createdby?owner=' + name">See the bugs I've reported</a>
+          </span>
+        </li>
+        <li tal:condition="not:request/lp:person">
+          <a href="bugs/createdby">Show bugs by creator</a>
+        </li>
+        <li><a href="myassignedbugs">See the bugs I've been assigned</a></li>
         <li><a href="projects">Search projects</a></li>
         <li><a href="bugtrackers">Known bug trackers</a></li>
     </ul>

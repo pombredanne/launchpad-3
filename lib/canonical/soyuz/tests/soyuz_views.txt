@@ -1,0 +1,16 @@
+Soyuz is the part of launchpad that allows for building and managing
+derivative Linux distributions.
+
+Views in Zope 3 are things (i.e. classes) that you provide to
+templates via ZCML to do some dirty work associated with rendering a
+page.
+
+This document describes how to use various view classes in Soyuz page
+templates.
+
+  >>> from canonical.soyuz.browser import DistroReleaseSourcesView
+  >>> context = request = None
+  >>> drsv = DistroReleaseSourcesView(context, request)
+  >>> hasattr(drsv, "sourcePackagesBatchNavigator")
+  True
+

@@ -360,7 +360,7 @@ class ISourcepackageBugAssignment(Interface):
             required=True, default=int(dbschema.BugSeverity.NORMAL),
             )
     binarypackagename = Choice(
-            title=_('Binary Package Name'), required=False,
+            title=_('Binary PackageName'), required=False,
             vocabulary='BinarypackageName'
             )
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')

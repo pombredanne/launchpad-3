@@ -606,8 +606,6 @@ class BugTrackerSetView(object):
         # Now redirect to view it again
         self.request.response.redirect(self.request.URL[-1])
 
-
-
 class BugTrackerView(object):
     def __init__(self, context, request):
         self.context = context
@@ -640,21 +638,38 @@ class BugTrackerView(object):
         #
         self.request.response.redirect(self.request.URL[-1])
 
-
-#
 # Bug Reports
-#
 class BugsAssignedReportView(object):
-
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.form = self.request.form
 
     def update(self):
-        #
         # Default to showing bugs assigned to the logged in user.
-        #
         user = IPerson(self.request.principal).id
         self.context.user = user
 
+class BugsCreatedByView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def getAllPeople(self):
+        return Person.select()
+
+    def _getBugsForOwner(self, owner):
+        bugs_created_by_owner = []
+        if owner:
+            persons = Person.select(Person.q.name == owner)
+            if persons:
+                person = persons[0]
+                bugs_created_by_owner = Bug.select(Bug.q.ownerID == person.id)
+        else:
+            bugs_created_by_owner = Bug.select()
+
+        return bugs_created_by_owner
+
+    def getBugs(self):
+        bugs_created_by_owner = self._getBugsForOwner(self.request.get("owner", ""))
+        return bugs_created_by_owner

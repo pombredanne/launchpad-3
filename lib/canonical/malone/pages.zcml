@@ -12,7 +12,7 @@
     </pages>
 
     <!-- pages for the malone application -->
-    <pages 
+    <pages
         for="canonical.launchpad.interfaces.IMaloneApplication"
         permission="zope.Public"
         class="canonical.malone.browser.MaloneApplicationView"
@@ -40,7 +40,17 @@
             lp:url="malone/bugs/$Bug.id/index" />
     </pages>
 
-    <traverse 
+    <pages
+        for="canonical.launchpad.interfaces.IBugContainer"
+        class="canonical.malone.browser.BugsCreatedByView"
+        permission="zope.Public"
+        lp:url="malone/bugs/createdby/$Bug.owner">
+        <page name="createdby"
+            template="../launchpad/templates/bugs-createdby-index.pt"
+            lp:url="malone/bugs/createdby/$Bug.owner/index" />
+    </pages>
+
+    <traverse
         for="canonical.launchpad.interfaces.IBugContainer"
         getter="__getitem__" />
 
@@ -55,15 +65,13 @@
         <page name="activity"
             template="../launchpad/templates/bug-activity.pt"
             lp:url="malone/bugs/$Bugs.id/activity" />
-        <!--<page name="assignments"
-            template="../launchpad/templates/bug-assignment.pt" />-->
     </pages>
 
-    <traverse 
+    <traverse
         for="canonical.launchpad.interfaces.IBugAttachmentContainer"
         getter="__getitem__" />
 
-    <pages 
+    <pages
         for="canonical.launchpad.interfaces.IBugAttachment"
         permission="zope.Public"
         lp:url="malone/bugs/$Bugs.id/attachments/$Attachment.id">
@@ -121,8 +129,8 @@
     <traverse for="canonical.launchpad.interfaces.ISourcepackageContainer"
       getter="__getitem__" />
 
-    <pages 
-        for="canonical.launchpad.interfaces.ISourcepackage" 
+    <pages
+        for="canonical.launchpad.interfaces.ISourcepackage"
         permission="zope.Public"
         class=".browser.SourcepackageView">
         <page name="+malone-index"
@@ -130,7 +138,7 @@
             lp:url="malone/sourcepackage/$Sourcepackage.name/index" />
     </pages>
 
-    <pages 
+    <pages
         for="canonical.launchpad.interfaces.IBugExternalRefContainer"
         permission="zope.Public">
         <page name="index"
@@ -138,7 +146,7 @@
             lp:url="malone/bugs/$Bug.id/references" />
     </pages>
 
-    <traverse 
+    <traverse
         for="canonical.launchpad.interfaces.IBugExternalRefContainer"
         getter="__getitem__" />
 
@@ -149,11 +157,11 @@
             lp:url="malone/bugs/$Bug.id/productassignments/index" />
     </pages>
 
-    <traverse 
+    <traverse
         for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
         getter="__getitem__" />
 
-    <pages 
+    <pages
         for="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer"
         permission="zope.Public">
         <page name="index"
@@ -161,11 +169,11 @@
             lp:url="malone/bugs/$Bug.id/sourcepackageassignments/index" />
     </pages>
 
-    <traverse 
+    <traverse
         for="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer"
         getter="__getitem__" />
 
-    <pages 
+    <pages
         for="canonical.launchpad.interfaces.IBugWatchContainer"
         permission="zope.Public">
         <page name="index"
@@ -173,7 +181,7 @@
             lp:url="malone/bugs/$Bug.id/watches/index" />
     </pages>
 
-    <traverse 
+    <traverse
         for="canonical.launchpad.interfaces.IBugWatchContainer"
         getter="__getitem__" />
 
@@ -190,7 +198,7 @@
         for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
         getter="__getitem__" />
 
-    <pages 
+    <pages
         for="canonical.launchpad.interfaces.IBugExternalRef"
         permission="zope.Public">
         <page name="index"
@@ -206,5 +214,4 @@
               template="../launchpad/templates/malone-bugsassigned.pt"
               lp:url="malone/assigned/" />
     </pages>
-  
 </configure>
