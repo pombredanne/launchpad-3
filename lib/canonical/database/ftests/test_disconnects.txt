@@ -2,12 +2,14 @@ This test demonstrates the normal behaviour of psycopg when a connection to
 postgres breaks (i.e. queries fail).  This can happen in real life when postgres
 restarts.
 
-Make a TCP proxy to postgres
+Make a TCP proxy to postgres. Note that the twisted version needs to match
+the Python version.
 
-    >>> import os
-    >>> os.system('mktap portforward --port 5555 --dest_port 5432')
+    >>> import os, sys
+    >>> ver = sys.version[:3]
+    >>> os.system('mktap%s portforward --port 5555 --dest_port 5432' % ver)
     0
-    >>> os.system('twistd -of portforward.tap')
+    >>> os.system('twistd%s -of portforward.tap' % ver)
     0
 
 Wait for the proxy to start (this is a hack).
@@ -40,7 +42,7 @@ it properly).
 
 And restart it.
 
-    >>> os.system('twistd -of portforward.tap')
+    >>> os.system('twistd%s -of portforward.tap' % ver)
     0
     >>> time.sleep(1)
 

@@ -2,6 +2,37 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-19 06:35:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1464
+
+    Summary:
+      More paranoid email parameter checks and test suite fixes
+    Revision:
+      launchpad--devel--0--patch-1464
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-212
+       More paranoia email parameter checks
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-213
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-214
+       Ensure we call the correct version of twisted to avoid SRE mismatch errors
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/database/ftests/test_disconnects.txt
+     lib/canonical/database/ftests/test_reconnector.txt
+     lib/canonical/launchpad/mail/sendmail.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-212
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-213
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-214
+
+
 2005-03-18 22:42:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1463
 
     Summary:

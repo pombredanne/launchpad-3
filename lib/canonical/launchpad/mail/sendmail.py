@@ -35,15 +35,26 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
    
     Returns the Message-Id.
     """
+
+    # Extremely paranoid parameter checking is required to ensure
+    # we raise an exception rather than stick garbage in the mail
+    # queue. Currently, the Z3 mailer is too forgiving and accepts
+    # badly formatted emails which the delivery mechanism then
+    # can't send.
+    # XXX: These checks need to be migrated upstream if this bug
+    # still exists in modern Z3 -- StuartBishop 20050319
     if pisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
-    assert pisinstance(to_addrs, (list, tuple)), \
+    assert pisinstance(to_addrs, (list, tuple)) and len(to_addrs) > 0, \
             'Invalid To: %r' % (to_addrs,)
     assert pisinstance(from_addr, basestring), \
             'Invalid From: %r' % (from_addr,)
     assert pisinstance(subject, basestring), \
             'Invalid Subject: %r' % (from_addr,)
     assert pisinstance(body, basestring), 'Invalid body: %r' % (from_addr,)
+    for addr in to_addrs:
+        assert pisinstance(addr, basestring) and bool(addr), \
+                'Invalid recipient: %r in %r' % (addr, to_addrs)
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
     for k,v in headers.items():
