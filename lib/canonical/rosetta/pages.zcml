@@ -87,15 +87,12 @@
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
   </pages>
 
-  <traverse for="canonical.rosetta.interfaces.IPOFile"
-            function="canonical.rosetta.browser.traverseIPOFile" />
-
-  <page name="export.po"
-        for="canonical.rosetta.interfaces.IPOTemplate"
+  <page name="po"
+        for="canonical.rosetta.interfaces.IPOFile"
         permission="zope.Public"
         class="canonical.rosetta.browser.ViewPOExport"
         attribute="__call__"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code.po" />
+        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code/po" />
 
   <!-- pages for the rosetta application -->
   <pages for="canonical.rosetta.interfaces.IRosettaApplication"
