@@ -1,13 +1,13 @@
-from canonical.soyuz.sql import Distribution
+from canonical.soyuz.sql import SoyuzDistribution
 from sqlobject import LIKE, OR, AND
 
 
 class DistrosApplication(object):
     def __getitem__(self, name):
-        return Distribution.selectBy(name=name.encode("ascii"))[0]
+        return SoyuzDistribution.selectBy(name=name.encode("ascii"))[0]
 
     def __iter__(self):
-    	return iter(Distribution.select())
+    	return iter(SoyuzDistribution.select())
 
 class DistrosSearchView(object):
 
@@ -21,11 +21,11 @@ class DistrosSearchView(object):
         description = self.request.get("description", "").encode("ascii")
 
         if name or title or description:
-            name_like = LIKE(Distribution.q.name, "%%"+name+"%%")
-            title_like = LIKE(Distribution.q.title, "%%"+title+"%%")
-            description_like = LIKE(Distribution.q.description,
+            name_like = LIKE(SoyuzDistribution.q.name, "%%"+name+"%%")
+            title_like = LIKE(SoyuzDistribution.q.title, "%%"+title+"%%")
+            description_like = LIKE(SoyuzDistribution.q.description,
                                     "%%"+description+"%%")
-            self.results = Distribution.select(AND(name_like, title_like, description_like))
+            self.results = SoyuzDistribution.select(AND(name_like, title_like, description_like))
 
 
 
@@ -43,7 +43,7 @@ class DistrosAddView(object):
         if name or title or description:
             #YAPS: the owner is hardcodes to Mark !!!!
             #How will we handler Security/Authentication Issues ?!?!
-            Distribution(name=name, title=title, description=description,\
+            SoyuzDistribution(name=name, title=title, description=description,\
                          owner=1)
                 
     

@@ -18,9 +18,6 @@
 
 <!--<div tal:on-error="python: error.type, error.value.args">-->
 <ul>
-	<li>
-		<a href="+add">Add New</a>
-	</li>
 <tal:block tal:repeat="distribution context">
 	<li>
 		<a tal:content="distribution/name"
@@ -29,6 +26,9 @@
 	</li>
 </tal:block>
 </ul>
+
+<h4> <a href="+add">Add New</a> </h4>
+
 <!--</div>-->
 
 

@@ -185,7 +185,7 @@ class BranchRelationship(SQLBase):
                 if br == self.label][0]
         
 
-class Product(SQLBase):
+class SoyuzProduct(SQLBase):
 
     _table = 'Product'
 
@@ -205,7 +205,7 @@ class Product(SQLBase):
         ]
         
 
-class Project(SQLBase):
+class SoyuzProject(SQLBase):
 
     _table = 'Project'
 

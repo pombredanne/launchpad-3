@@ -23,7 +23,8 @@ from canonical.soyuz.interfaces import IProjects, IProduct
 from canonical.soyuz.interfaces import ISync, IDistribution, IRelease
 
 try:
-    from canonical.arch.infoImporter import SourceSource as infoSourceSource, RCSTypeEnum
+    from canonical.arch.infoImporter import SourceSource as infoSourceSource,\
+         RCSTypeEnum
 except ImportError:
     pass
 
@@ -32,7 +33,8 @@ from canonical.arch.sqlbase import quote
 from canonical.soyuz.database import SourcePackage, Manifest, ManifestEntry, \
                                      SourcePackageRelease
 
-from canonical.soyuz.database import Project as dbProject, Product as dbProduct
+from canonical.soyuz.database import SoyuzProject as dbProject, SoyuzProduct \
+     as dbProduct
 from canonical.arch.database import Branch, Changeset
 
 
@@ -80,7 +82,7 @@ class BinaryPackageRelease(SQLBase):
 
 
 
-class Person(SQLBase):
+class SoyuzPerson(SQLBase):
     """A person"""
 
     implements(IPerson)
@@ -92,7 +94,7 @@ class Person(SQLBase):
         StringCol('presentationName', dbName='presentationname'),
     ]
 
-class Distribution(SQLBase):
+class SoyuzDistribution(SQLBase):
 
     implements(IDistribution)
 
@@ -212,7 +214,7 @@ class Projects(object):
         """Iterate over all the projects."""
         print "iter"
         for project in dbProject.select():
-            yield Project(project)
+            yield SoyuzProject(project)
 
     def __getitem__(self, name):
         """Get a project by its name."""
@@ -228,7 +230,7 @@ class Projects(object):
 def getOwner():
     return 1
 
-class Project(object):
+class SoyuzProject(object):
     implements (IProject)
     def __init__(self, dbProject):
         self._project=dbProject
@@ -243,7 +245,7 @@ class Project(object):
     def products(self):
         """Returns an iterator over this projects products."""
         for product in dbProduct.select("product.project=%s" % quote(self._project.id)):
-            yield Product(product)
+            yield SoyuzProduct(product)
 
     def potFile(self,name):
         """Returns the pot file with the given name."""
@@ -257,7 +259,7 @@ class Project(object):
         """blah"""
         return Product(dbProduct.select("product.project=%s and product.name = %s" % (quote(self._project.id),quote(name)))[0])
 
-class Product(object):
+class SoyuzProduct(object):
     implements (IProduct)
     def __init__(self, dbProduct):
         self._product=dbProduct

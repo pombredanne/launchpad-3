@@ -41,8 +41,8 @@
 	
   <!-- This view registers 'releases' as 'traverse' of 
 	        	     RootObject/soyuz/distros/$Distribution.name/. -->
-  <traverse for="canonical.soyuz.sql.Distribution" getter="getReleaseContainer" />	
-   <pages for="canonical.soyuz.sql.Distribution"
+  <traverse for="canonical.soyuz.sql.SoyuzDistribution" getter="getReleaseContainer" />	
+   <pages for="canonical.soyuz.sql.SoyuzDistribution"
 	  permission="zope.Public"> 
 	
 	<page  name="index.html"
@@ -184,11 +184,11 @@
          permission="zope.Public">
     <page name="index.html"
           template="templates/product-index.pt"
-          lp:url="Soyuz/projects/$Project.name/$Product.name/index.html" 
+          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/index.html" 
           />
     <page name="syncs+new"
           template="templates/sourcesource-add.pt"
-          lp:url="Soyuz/projects/$Project.name/$Product.name/syncs+new"
+          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/syncs+new"
           /> 
     </pages>
 
@@ -199,7 +199,7 @@
          permission="zope.Public">
     <page name="index.html"
           template="templates/sourcesource-index.pt"
-          lp:url="Soyuz/projects/$Project.name/$Product.name/?syncs?/$Sync.name/index.html" 
+          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/?syncs?/$Sync.name/index.html" 
           />
   </pages>
 
