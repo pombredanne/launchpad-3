@@ -43,11 +43,16 @@ class IBug(Interface):
             )
     shortdesc = BugSummary(
             title=_('Summary'), required=True,
-            description=_("""The bug summary is a single paragraph that
-                captures the essence of the bug and what triggers it."""),
+            description=_("""The bug summary is a single paragraph
+            description that should capture the essence of the bug, where it
+            has been observed, and what triggers it."""),
             )
     description = Text(
             title=_('Description'), required=True,
+            description=_("""The bug description should be a detailed
+            description of this bug, including the steps required to
+            reproduce the bug if it is reproducable, and the platforms on which
+            it is found if it is platform specific.""")
             )
     ownerID = Int(
             title=_('Owner'), required=True, readonly=True
@@ -111,6 +116,10 @@ class IMaloneBugAddForm(IMaloneBug):
             )
     sourcepackage = Choice(
             title=_("Source Package"), required=False,
+            description=_("""The distro package in which this bug exists and
+            needs to be fixed. Bugs might be related to distribution
+            packaging of the upstream software, or they might be upstream
+            bugs that affect that source package."""),
             vocabulary="SourcePackage",
             )
     binarypackage = Choice(

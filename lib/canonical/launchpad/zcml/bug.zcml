@@ -15,6 +15,29 @@
         permission="zope.Public"
         />
 
+    <!-- Launchpad Add Form METAL
+        This template can be used by any of the add forms in Launchpad-->
+    <browser:page
+        for="*"
+        name="launchpad_addform"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/launchpad-addform.pt"
+        />
+
+    <!-- Widget Macros
+         NB this file overrides the addform / editform widget
+         display layout used in Launchpad. It should be somewhere
+         more central than bug.zcml-->
+
+    <browser:page
+        for="*"
+        name="widget_macros"
+        layer="canonical.launchpad.layers.LaunchpadLayer"
+        permission="zope.Public"
+        template="../templates/widget_macros.pt"
+        />
+
     <!-- MaloneBug (this must disappear!) -->
     <content class="canonical.launchpad.database.MaloneBug">
         <allow interface="canonical.launchpad.interfaces.IMaloneBug" />
@@ -86,13 +109,13 @@
         name="+new"
         for="canonical.launchpad.interfaces.IBugContainer"
         schema="canonical.launchpad.interfaces.IMaloneBugAddForm"
-        label="Record a New Bug"
+        label="Create A New Bug Record"
         fields="title shortdesc description sourcepackage owner"
         content_factory="canonical.launchpad.database.MaloneBugAddForm"
         arguments=""
         keyword_arguments="title shortdesc description sourcepackage owner"
         permission="launchpad.AnyPerson"
-        template="../templates/default-addform.pt"
+        template="../templates/bug-addform.pt"
         lp:url="malone/bugs/+new">
         <widget field="owner" class="canonical.widgets.OwnerWidget" />
     </browser:addform>

@@ -6,7 +6,7 @@
     specialised assignments page.
 -->
 
-<table class="listing">
+<table class="listing" style="width: 100%;">
     <thead>
         <tr>
             <th title="Source Package Assignment">Upstream / Package</th>
@@ -120,16 +120,16 @@ This bug is essential to fix as soon as possible. It affects system stability, d
     </tbody>
 </table>
 
-                <a href="packageassignments/+new"
-                   style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-                   title="Add new reference to an existing Source Package that is affected.">
-                <img src="++resource++add.gif" alt="+" />
-                Add Package
-                </a>
+<a href="packageassignments/+new"
+    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+    title="Add new reference to an existing Source Package that is affected.">
+    <img src="++resource++add.gif" alt="+" />
+    Add Package
+</a>
                 
-                <a href="productassignments/+new"
-                   style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-                   title="Add new reference to a Product that is affected.">
-                <img src="++resource++add.gif" alt="+" />
-                Add Product
-                </a>
+<a href="productassignments/+new"
+    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+    title="Add new reference to a Product that is affected.">
+    <img src="++resource++add.gif" alt="+" />
+    Add Product
+</a>

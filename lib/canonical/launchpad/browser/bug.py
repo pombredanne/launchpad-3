@@ -100,12 +100,8 @@ class BugsCreatedByView(object):
 # A widget to capture a bug summary
 class BugSummaryWidget(TextAreaWidget):
 
-    implements (IText)
-    
+    implements(IText)
+
     width = 60
     height = 5
-
-    def _validate(self, value):
-        pass
-
 

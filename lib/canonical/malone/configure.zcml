@@ -9,6 +9,9 @@
         name="bullet.gif" file="../launchpad/images/bullet.gif" />
   
     <browser:resource
+        name="required.gif" file="../launchpad/images/required.gif" />
+  
+    <browser:resource
         name="malone.png" file="images/malone.png" />
   
     <!-- This view registers 'malone' as a suburl of RootObject. -->

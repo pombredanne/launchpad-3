@@ -1,0 +1,43 @@
+<!-- This is a customised version of lib/zope/form/browser/widget_macros.pt
+for launchpad use -->
+<html>
+  <body>
+    <metal:block define-macro="launchpad_widget_rows">
+      <div class="row" tal:repeat="widget view/widgets">
+        <metal:block define-macro="launchpad_widget_row">
+        
+          <div class="field">
+
+            <label tal:content="widget/label">The Label</label>
+
+            <span
+                tal:condition="widget/required"
+                class="fieldRequired"
+                title="Required">(Required)</span>
+
+            <div class="formHelp"
+                tal:condition="widget/hint"
+                tal:content="widget/hint">Some Help Text
+            </div>
+            
+                <div tal:content="structure widget">
+                    <input type="text" style="width:100%"/>
+                </div>
+
+            
+            <div class="portalMessage"
+                tal:define="error widget/error"
+                tal:condition="error"
+                tal:content="structure error">An Error Message</div>
+            
+          </div>
+
+        </metal:block>
+        
+      </div>
+      
+    </metal:block>
+
+  </body>
+
+</html>
