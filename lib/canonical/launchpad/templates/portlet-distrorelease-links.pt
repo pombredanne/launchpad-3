@@ -4,7 +4,7 @@
     <div class="portletBody">
         <div class="portletContent even">
 	<ul>
-	<li><a href="sources">Distro Release Source Package</a></li>
+	<li><a href="+sources">Distro Release Source Package</a></li>
 	<li><a href="+bugs">Distro Release Bugs</a></li>
 	</ul>
         </div>
