@@ -13,6 +13,9 @@
                 <li><a href="products">Products</a></li>
                 <li><a href="projects">Projects</a></li>
                 <li><a href="distros">Distributions</a></li>
+                <li><a href="changelog.html">Changelog</a></li>
+                <li><a href="++apidoc++">Zope3 online developers
+                        reference</a></li>
             </ul>
             <h1>Old-Style Apps</h1>
             <ul>
@@ -25,9 +28,6 @@
                 <li><a href="bazaar">Bazaar</a>: manage Bazaar branches</li>
                 <li><a href="ubuntulinux/forgottenpassword">Forgotten
                         Password?</a></li>
-                <li><a href="changelog.html">Changelog</a></li>
-                <li><a href="++apidoc++">Zope3 online developers
-                        reference</a></li>
             </ul>
         </div>
     </body>

@@ -120,7 +120,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2005-03-18</p>
+Dumped on 2005-03-23</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -238,6 +238,7 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.pomsgset">pomsgset</a></li>
 <li><a href="#public.table.posubscription">posubscription</a></li>
 <li><a href="#public.table.potemplate">potemplate</a></li>
+<li><a href="#public.table.potemplatename">potemplatename</a></li>
 <li><a href="#public.table.potmsgset">potmsgset</a></li>
 <li><a href="#public.table.potranslation">potranslation</a></li>
 <li><a href=
@@ -3182,9 +3183,6 @@ public</a></p>
 <ul>
 <li><a href=
 "#public.table.manifestentry">public.manifestentry</a></li>
-</ul>
-<ul>
-<li><a href="#public.table.potemplate">public.potemplate</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -6855,9 +6853,6 @@ public</a></p>
 <li><a href=
 "#public.table.manifestentry">public.manifestentry</a></li>
 </ul>
-<ul>
-<li><a href="#public.table.potemplate">public.potemplate</a></li>
-</ul>
 <!-- View Definition -->
 <!-- List off permissions -->
 <p> </p>
@@ -8574,6 +8569,22 @@ page.</p>
 </th>
 </tr>
 <tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -11397,6 +11408,24 @@ clicked on will continue a workflow.</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -14262,6 +14291,22 @@ this language.</td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -14269,7 +14314,7 @@ this language.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -15420,35 +15465,10 @@ public</a></p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.product">public.product.id</a></td>
-<td>product</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr0">
 <td></td>
 <td>priority</td>
 <td>integer</td>
 <td></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.branch">public.branch.id#1</a></td>
-<td>branch</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.changeset">public.changeset.id#1</a></td>
-<td>changeset</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>name</td>
-<td>text</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -15503,13 +15523,13 @@ public</a></p>
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
-<td></td>
+<td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>rawfile</td>
 <td>text</td>
-<td><br />
+<td><i>NOT NULL</i><br />
 <br />
 The pot file itself encoded as a base64 string.</td>
 </tr>
@@ -15517,7 +15537,7 @@ The pot file itself encoded as a base64 string.</td>
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>rawimporter</td>
 <td>integer</td>
-<td><br />
+<td><i>NOT NULL</i><br />
 <br />
 The person that attached the rawfile.</td>
 </tr>
@@ -15525,8 +15545,8 @@ The person that attached the rawfile.</td>
 <td></td>
 <td>daterawimport</td>
 <td>timestamp without time zone</td>
-<td><i>DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6)
-with time zone)</i><br />
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i><br />
 <br />
 The date when the rawfile was attached.</td>
 </tr>
@@ -15544,7 +15564,7 @@ failed.</td>
 "#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
 <td>sourcepackagename</td>
 <td>integer</td>
-<td><br />
+<td><i>UNIQUE#2</i><br />
 <br />
 A reference to a sourcepackage name from where this POTemplate
 comes.</td>
@@ -15554,19 +15574,12 @@ comes.</td>
 "#public.table.distrorelease">public.distrorelease.id</a></td>
 <td>distrorelease</td>
 <td>integer</td>
-<td><br />
+<td><i>UNIQUE#2</i><br />
 <br />
 A reference to the distribution from where this POTemplate
 comes.</td>
 </tr>
 <tr class="tr1">
-<td><a href=
-"#public.table.sourcepackagerelease">public.sourcepackagerelease.id</a></td>
-<td>sourcepackagerelease</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
 <td></td>
 <td>sourcepackageversion</td>
 <td>text</td>
@@ -15575,7 +15588,7 @@ comes.</td>
 The sourcepackage version string from where this potemplate was
 imported last time with our buildd &lt;-&gt; Rosetta gateway.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>header</td>
 <td>text</td>
@@ -15583,6 +15596,26 @@ imported last time with our buildd &lt;-&gt; Rosetta gateway.</td>
 <br />
 The header of a .pot file when we import it. Most important info
 from it is POT-Creation-Date and custom headers.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.potemplatename">public.potemplatename.id</a></td>
+<td>potemplatename</td>
+<td>integer</td>
+<td><i>UNIQUE#2 UNIQUE#1 NOT NULL</i><br />
+<br />
+A reference to a POTemplateName row that tells us the name/domain
+for this POTemplate.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.productrelease">public.productrelease.id</a></td>
+<td>productrelease</td>
+<td>integer</td>
+<td><i>UNIQUE#1</i><br />
+<br />
+A reference to a ProductRelease from where this POTemplate
+comes.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -15594,13 +15627,10 @@ from it is POT-Creation-Date and custom headers.</td>
 <th>Constraint</th>
 </tr>
 <tr class="tr0">
-<td>potemplate_rawimportstatus_valid</td>
-<td>CHECK ((((rawfile IS NULL) AND (rawimportstatus &lt;&gt; 2)) OR
-(rawfile IS NOT NULL)))</td>
-</tr>
-<tr class="tr1">
-<td>valid_name</td>
-<td>CHECK (valid_name(name))</td>
+<td>valid_link</td>
+<td>CHECK ((((productrelease IS NULL) &lt;&gt; (distrorelease IS
+NULL)) AND ((distrorelease IS NULL) = (sourcepackagename IS
+NULL))))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -15627,6 +15657,179 @@ from it is POT-Creation-Date and custom headers.</td>
 <p> </p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to public.potemplate</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.potemplatename" id=
+"public.table.potemplatename">potemplatename</a></h2>
+<p>POTemplate Name. This table stores the domains/names of a set of
+POTemplate rows.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.potemplatename Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+The name of the POTemplate set. It must be unique</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>title</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The title we are going to use every time that we render a view of
+this POTemplateName row.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>description</td>
+<td>text</td>
+<td><br />
+<br />
+A brief text about this POTemplateName so the user could know more
+about it.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.potemplatename Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>potemplate_valid_name</td>
+<td>CHECK (valid_name(name))</td>
+</tr>
+</table>
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.potemplate">public.potemplate</a></li>
+</ul>
+<!-- View Definition -->
+<!-- List off permissions -->
+<p> </p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.potemplatename</caption>
 <tr>
 <th>User</th>
 <th>
@@ -16854,9 +17057,6 @@ Whether or not this product should be considered active.</td>
 <li><a href="#public.table.packaging">public.packaging</a></li>
 </ul>
 <ul>
-<li><a href="#public.table.potemplate">public.potemplate</a></li>
-</ul>
-<ul>
 <li><a href=
 "#public.table.productbkbranch">public.productbkbranch</a></li>
 </ul>
@@ -17218,6 +17418,22 @@ will be mentioned on the bounty web page.</p>
 </th>
 </tr>
 <tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -18004,6 +18220,9 @@ in time.</td>
 <ul>
 <li><a href=
 "#public.table.bugproductinfestation">public.bugproductinfestation</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.potemplate">public.potemplate</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -18959,6 +19178,22 @@ will be mentioned on the bounty web page.</p>
 </th>
 </tr>
 <tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -22172,9 +22407,6 @@ claims to be in</td>
 <ul>
 <li><a href=
 "#public.table.distroreleasequeuesource">public.distroreleasequeuesource</a></li>
-</ul>
-<ul>
-<li><a href="#public.table.potemplate">public.potemplate</a></li>
 </ul>
 <ul>
 <li><a href=

@@ -2,6 +2,53 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-22 18:15:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1472
+
+    Summary:
+      finalize POTemplateLinkages patch
+    Revision:
+      launchpad--devel--0--patch-1472
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-215
+       Rights on projectbounty
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-216
+       changelog and online docs are not old-style apps
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-217
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-218
+       Permissions on distrobounty table
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-219
+       Finish data migration and tweak patch
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-220
+       Permissions on potemplatename
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-221
+       Update database docs
+    
+
+    modified files:
+     database/schema/launchpad.html
+     database/schema/patch-11-08-0.sql database/schema/security.cfg
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/debug-root-index.pt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-215
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-216
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-217
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-218
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-219
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-220
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-221
+
+
 2005-03-22 15:09:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1471
 
     Summary:
