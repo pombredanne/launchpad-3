@@ -27,7 +27,17 @@
         <div tal:define="batch view/batch">
             <h1 tal:content="view/title">Title</h1>
 
-            <table>
+            <form method="GET">
+                <input type="text" name="search"
+                    tal:attributes="value request/search|nothing" />
+                <input type="submit" value="Search" />
+                <input type="hidden" name="vocabulary"
+                    tal:attributes="value request/vocabulary" />
+                <input type="hidden" name="field"
+                    tal:attributes="value request/field" />
+            </form>
+
+            <table tal:condition="python:len(batch.batchPageURLs()) > 1">
                 <tr>
                     <th>
                         <a tal:attributes="href batch/prevBatchURL">&larr;</a>

@@ -7,6 +7,7 @@ from zope.app.schema.vocabulary import IVocabularyFactory
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
+from canonical.launchpad.vocabularies import IHugeVocabulary
 
 import logging
 
@@ -72,7 +73,7 @@ class ISinglePopupView(Interface):
         'Title to use on the popup page'
 
     def vocabulary():
-        'Return the IVocabulary to display in the popup window'
+        'Return the IHugeVocabulary to display in the popup window'
 
     def batch():
         'Return the BatchNavigator of the current results to display'
@@ -89,7 +90,10 @@ class SinglePopupView(object):
         factory = zapi.getUtility(IVocabularyFactory,
             self.request.form['vocabulary']
             )
-        return factory(self.context)
+        vocabulary = factory(self.context)
+        assert IHugeVocabulary.providedBy(vocabulary), \
+                'Invalid vocabulary %s' % self.request.form['vocabulary']
+        return vocabulary
 
     def batch(self):
         # TODO: Dead chickens here! batching module needs refactoring.
@@ -97,8 +101,9 @@ class SinglePopupView(object):
         # StuartBishop 2004/11/12
         start = int(self.request.get('batch_start', 0))
         #end = int(self.request.get('batch_end', self.batchsize))
+        search = self.request.get('search', None)
         batch = Batch(
-                list=list(self.vocabulary()),
+                list=list(self.vocabulary().search(search)),
                 start=start, size=self.batchsize
                 )
         return BatchNavigator(batch=batch, request=self.request)

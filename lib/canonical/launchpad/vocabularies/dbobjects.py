@@ -20,14 +20,20 @@ from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.database.sqlbase import SQLBase
 
 
-class IHugeVocabulary(Interface):
-    """Marker interface for huge vocabularies.
+class IHugeVocabulary(IVocabulary):
+    """Interface for huge vocabularies.
     
     Items in an IHugeVocabulary should have human readable tokens or the
     default UI will suck.
 
     """
-    pass
+    def search(query=None):
+        """Return an iterable of ITokenizedTerm that match the
+        search string.
+
+        Note that what is searched and how the match is the choice of the 
+        IHugeVocabulary implementation.
+        """
 
 class SQLObjectVocabularyBase(object):
     """A base class for widgets that are rendered to collect values
@@ -138,6 +144,22 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         if len(objs) != 1:
             raise LookupError, token
         return self._toTerm(objs[0])
+
+    def search(self, query):
+        '''Returns products where the product name starts with the given
+        query. Returns an empty list if query is None or an empty string.
+
+        We don't do a proper substring match, as this will be slow because
+        PostgreSQL cannot do this search using an index.
+
+        '''
+        if not query:
+            return []
+        t = self._table
+        objs = [self._toTerm(r)
+            for r in t.select(t.q.name.startswith(query.lower()))
+            ]
+        return objs
 
 # We cannot refer to a BinaryPackage unambiguously by a name, as
 # we have no assurace that a generated name using $BinaryPackageName.name
