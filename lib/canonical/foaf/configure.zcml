@@ -29,7 +29,6 @@
       permission="zope.Public"
       name="people" />
 
-  <!-- XXX: Someone help me to find a better name. logintoken is terrible -->
   <!-- This view registers 'logintoken' as a suburl of RootObject/foaf/. -->
   <browser:suburl
       for="canonical.foaf.FOAFApplication"

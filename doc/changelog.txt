@@ -2,6 +2,33 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 23:20:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1192
+
+    Summary:
+      small fixes according to Steve's code review
+    Revision:
+      launchpad--devel--0--patch-1192
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-75
+       Some small fixes according to Steve's code review.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-76
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/foaf/configure.zcml
+     lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-75
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-76
+
+
 2005-01-12 22:16:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1191
 
     Summary:

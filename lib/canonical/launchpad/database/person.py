@@ -163,24 +163,6 @@ class Person(SQLBase):
         else:
             return self.name
 
-    # XXX: not implemented
-    def maintainedProjects(self):
-        '''SELECT Project.* FROM Project
-            WHERE Project.owner = self.id
-            '''
-
-    # XXX: not implemented
-    def translatedProjects(self):
-        '''SELECT Project.* FROM Project, Product, POTemplate, POFile
-            WHERE
-                POFile.owner = self.id AND
-                POFile.template = POTemplate.id AND
-                POTemplate.product = Product.id AND
-                Product.project = Project.id
-            ORDER BY ???
-        '''
-        raise NotImplementedError
-
     def translatedTemplates(self):
         '''
         SELECT * FROM POTemplate WHERE
@@ -209,7 +191,9 @@ class Person(SQLBase):
                 # Print a warning here, cause someone forgot to add the
                 # karmafield to KARMA_POINTS.
         Karma(person=self, karmafield=karmafield.value, points=points)
-        # XXX: I think we should recalculate the karma here.
+        # XXX: salgado, 2005-01-12: I think we should recalculate the karma
+        # here, but first we must define karma points and depreciation
+        # methods.
         self.karma += points
 
     def inTeam(self, team_name):
@@ -292,7 +276,7 @@ class Person(SQLBase):
     def _setPreferredemail(self, email):
         assert email.person == self
         preferredemail = self.preferredemail
-        if preferredemail:
+        if preferredemail is not None:
             preferredemail.status = int(EmailAddressStatus.VALIDATED)
         email.status = int(EmailAddressStatus.PREFERRED)
 
@@ -389,6 +373,7 @@ class PersonSet(object):
             return person
 
     def new(self, *args, **kw):
+        """See IPersonSet."""
         encryptor = getUtility(IPasswordEncryptor)
         kw['password'] = encryptor.encrypt(kw['password'])
         return Person(**kw)
@@ -406,6 +391,7 @@ class PersonSet(object):
             return default
 
     def getAll(self):
+        """See IPersonSet."""
         return Person.select(orderBy='displayname')
 
     def getByEmail(self, email, default=None):
@@ -422,6 +408,7 @@ class PersonSet(object):
                 % (resultscount, email))
 
     def getContributorsForPOFile(self, pofile):
+        """See IPersonSet."""
         return Person.select('''
             POTranslationSighting.active = True AND
             POTranslationSighting.person = Person.id AND
@@ -624,17 +611,17 @@ class Membership(SQLBase):
     status = IntCol(dbName='status', notNull=True)
 
     def _rolename(self):
-        for role in MembershipRole.items:
-            if role.value == self.role:
-                return role.title
-        return 'Unknown (%d)' %self.role
+        for roleitem in MembershipRole.items:
+            if roleitem.value == self.role:
+                return roleitem.title
+        return 'Unknown (%d)' % self.role
     rolename = property(_rolename)
 
     def _statusname(self):
-        for status in MembershipStatus.items:
-            if status.value == self.status:
-                return status.title
-        return 'Unknown (%d)' %self.status
+        for statusitem in MembershipStatus.items:
+            if statusitem.value == self.status:
+                return statusitem.title
+        return 'Unknown (%d)' % self.status
     statusname = property(_statusname)
 
 

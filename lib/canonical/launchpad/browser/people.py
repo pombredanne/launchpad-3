@@ -94,8 +94,8 @@ class FOAFSearchView(object):
         self.results = []
 
     def searchPeopleBatchNavigator(self):
-        name = self.request.get("name", "")
-        searchfor = self.request.get("searchfor", "")
+        name = self.request.get("name")
+        searchfor = self.request.get("searchfor")
 
         if not name:
             return None
@@ -190,14 +190,13 @@ class JoinLaunchpadView(object):
         self.email = None
 
     def formSubmitted(self):
-        if self.request.get("REQUEST_METHOD", "") != "POST":
+        if self.request.method != "POST":
             return False
 
-        self.email = self.request.form.get("email", "")
-        goodemail = well_formed_email(self.email)
-        if not goodemail:
-            self.errormessage = """The email address you provided isn't valid.
-Please check it."""
+        self.email = self.request.form.get("email", "").strip()
+        if not well_formed_email(self.email):
+            self.errormessage = ("The email address you provided isn't "
+                                 "valid.  Please check it.")
             return False
 
         # New user: requester and requesteremail are None.
@@ -215,7 +214,7 @@ def sendNewUserEmail(token):
     message = template % replacements
 
     subject = "Launchpad: Complete your registration process"
-    simple_sendmail(fromaddress, [token.email], subject, message)
+    simple_sendmail(fromaddress, token.email, subject, message)
 
 
 class PersonView(object):
@@ -245,7 +244,7 @@ class PersonEditView(object):
         self.user = getUtility(ILaunchBag).user
 
     def edit_action(self):
-        if self.request.get("REQUEST_METHOD") != "POST":
+        if self.request.method != "POST":
             # Nothing to do
             return False
 
@@ -319,55 +318,55 @@ class EmailAddressEditView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.message = "Your changes had been saved."
+        self.message = "Your changes have been saved."
         self.user = getUtility(ILaunchBag).user
 
     def formSubmitted(self):
-        if self.request.form.get("SUBMIT_CHANGES", ""):
+        if "SUBMIT_CHANGES" in self.request.form:
             self.processEmailChanges()
-        elif self.request.form.get("VALIDATE_EMAIL", ""):
+            return True
+        elif "VALIDATE_EMAIL" in self.request.form:
             self.processValidationRequest()
+            return True
         else:
             return False
 
-        return True
-
     def processEmailChanges(self):
         user = self.user
-        password = self.request.get("password", "")
+        password = self.request.form.get("password")
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(password, user.password):
             self.message = "Wrong password. Please try again."
             return
 
-        newemail = self.request.get("newemail", "")
-        if newemail:
-            if not well_formed_email(newemail):
-                self.message = "'%s' is not a valid email address." % newemail
-                return
+        newemail = self.request.form.get("newemail", "").strip()
+        if not well_formed_email(newemail):
+            self.message = "'%s' is not a valid email address." % newemail
+            return
 
-            results = EmailAddress.selectBy(email=newemail)
-            if results.count() > 0:
-                email = results[0]
-                self.message = """
-                    The email '%s' was already registered by user '%s'. If you
-                    think this is your email, you can hijack it by clicking
-                    here.""" % (email.email, email.person.browsername())
-                return
+        results = EmailAddress.selectBy(email=newemail)
+        if results.count() > 0:
+            email = results[0]
+            self.message = ("The email address '%s' was already registered "
+                            "by user '%s'. If you think this is your email "
+                            "address, you can hijack it by clicking here.") % \
+                           (email.email, email.person.browsername())
+            return
 
-            login = getUtility(ILaunchBag).login
-            token = newLoginToken(user, login, newemail, 
-                                  LoginTokenType.VALIDATEEMAIL)
-            sendEmailValidationRequest(token)
-            self.message = """A new message was sent to '%s', please follow
-the instructions on that message to validate your email address.""" % newemail
+        login = getUtility(ILaunchBag).login
+        token = newLoginToken(user, login, newemail, 
+                              LoginTokenType.VALIDATEEMAIL)
+        sendEmailValidationRequest(token)
+        self.message = ("A new message was sent to '%s', please follow "
+                        "the instructions on that message to validate "
+                        "your email address.") % newemail
 
-        # XXX: If we change the preferred email address, the view is
-        # displaying the old preferred one, even that the change is
-        # stored in the DB, as one can see by Reloading/Opening the page
+        # XXX: salgado 2005-01-12: If we change the preferred email address,
+        # the view is displaying the old preferred one, even that the change
+        # is stored in the DB, as one can see by Reloading/Opening the page
         # again.
-        id = self.request.form.get("PREFERRED_EMAIL", "")
-        if id:
+        id = self.request.form.get("PREFERRED_EMAIL")
+        if id is not None:
             # XXX: salgado 2005-01-06: Ideally, any person that is able to
             # login *must* have a PREFERRED email, and this will not be
             # needed anymore. But for now we need this cause id may be "".
@@ -378,8 +377,8 @@ the instructions on that message to validate your email address.""" % newemail
                 assert email.status == int(EmailAddressStatus.VALIDATED)
                 user.preferredemail = email
 
-        ids = self.request.form.get("REMOVE_EMAIL", "")
-        if ids:
+        ids = self.request.form.get("REMOVE_EMAIL")
+        if ids is not None:
             # We can have multiple email adressess marked for deletion, and in
             # this case ids will be a list. Otherwise ids will be str or int
             # and we need to make a list with that value to use in the for 
@@ -396,8 +395,8 @@ the instructions on that message to validate your email address.""" % newemail
     def processValidationRequest(self):
         id = self.request.form.get("NOT_VALIDATED_EMAIL")
         email = EmailAddress.get(id)
-        self.message = """A new email was sent to '%s' with instructions on 
-how to validate it.""" % email.email
+        self.message = ("A new email was sent to '%s' with instructions "
+                        "on how to validate it.") % email.email
         login = getUtility(ILaunchBag).login
         token = newLoginToken(self.user, login, email.email,
                               LoginTokenType.VALIDATEEMAIL)
@@ -428,7 +427,7 @@ class ValidateEmailView(object):
         self.errormessage = ""
 
     def formSubmitted(self):
-        if self.request.get("REQUEST_METHOD") == "POST":
+        if self.request.method == "POST":
             self.validate()
             return True
         return False
@@ -438,7 +437,7 @@ class ValidateEmailView(object):
         assert self.context.requester is not None
         assert self.context.requesteremail is not None
         requester = self.context.requester
-        password = self.request.get("password", "")
+        password = self.request.form.get("password")
         encryptor = getUtility(IPasswordEncryptor)
         if not encryptor.validate(password, requester.password):
             self.errormessage = "Wrong password. Please try again."
@@ -502,18 +501,18 @@ class SSHKeyEditView(object):
         self.user = getUtility(ILaunchBag).user
 
     def form_action(self):
-        if self.request.get("REQUEST_METHOD") != "POST":
+        if self.request.method != "POST":
             # Nothing to do
             return ''
 
-        action = self.request.get('action', '')
+        action = self.request.form.get('action')
         if action == 'add':
             return self.add_action()
         elif action == 'remove':
             return self.remove_action()
 
     def add_action(self):
-        sshkey = self.request.get('sshkey', '')
+        sshkey = self.request.form.get('sshkey')
         try:
             kind, keytext, comment = sshkey.split(' ', 2)
         except ValueError:
@@ -532,7 +531,7 @@ class SSHKeyEditView(object):
 
     def remove_action(self):
         try:
-            id = self.request.get('key', '')
+            id = self.request.form.get('key')
         except ValueError:
             return "Can't remove key that doesn't exist"
 

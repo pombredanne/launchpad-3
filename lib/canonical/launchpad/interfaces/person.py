@@ -117,7 +117,11 @@ class IPersonSet(Interface):
         """
 
     def new(*args, **kwargs):
-        """Create a new person with given keyword arguments."""
+        """Create a new Person with given keyword arguments.
+        These keyword arguments will be passed to Person, which is an
+        SQLBase class and will do all the checks needed before inserting
+        anything in the database. Please refer to the Person implementation
+        to see what keyword arguments are allowed."""
 
     def get(personid, default=None):
         """Returns the person with the given id.
