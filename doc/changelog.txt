@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-03 14:55:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1273
+
+    Summary:
+      Some small fixes for gina and EmailAddressEditView
+    Revision:
+      launchpad--devel--0--patch-1273
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-114
+       Small fix to not let any user delete its email address when they have only one and it's not validated yet.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-115
+       Please gina, don't ignore my --keywords argument, don't try to access indexes out of range, don't try to insert a tuple as the maintainer for a sourcepackagerelease and don't, ever, trust displaynames when adding an email to someone. Amen
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/scripts/gina/database.py
+     lib/canonical/launchpad/scripts/gina/grabber.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-114
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-115
+
+
 2005-02-03 10:52:42 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1272
 
     Summary:

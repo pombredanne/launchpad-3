@@ -328,7 +328,20 @@ class EmailAddressEditView(object):
                 email = EmailAddress.get(id)
                 assert email.person == user
                 if user.preferredemail != email:
-                    email.destroySelf()
+                    # The following lines are a *real* hack to make sure we
+                    # don't let the user with no validated email address.
+                    # Ideally, we wouldn't need this because all users would
+                    # have a preferred email address.
+                    if user.preferredemail is None and \
+                       len(user.validatedemails) > 1:
+                        # No preferred email set. We can only delete this
+                        # email if it's not the last validated one.
+                        email.destroySelf()
+                    elif user.preferredemail is not None:
+                        # This user have a preferred email and it's not this
+                        # one, so we can delete it.
+                        email.destroySelf()
+
 
     def processValidationRequest(self):
         id = self.request.form.get("NOT_VALIDATED_EMAIL")
