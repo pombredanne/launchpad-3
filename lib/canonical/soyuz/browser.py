@@ -190,9 +190,25 @@ class ViewSync(View):
         newurl=kwargs.get('name', self.context.name) != self.context.name
         print newurl
         self.context.update(**kwargs)
+        if self.context.canChangeProduct() and self.request.form.has_key('product'):
+            self.context.changeProduct(self.request.form.get('product'))
         self.submittedok=True
         if newurl:
             self.request.response.redirect('../' + kwargs['name'])
+    def selectedProduct(self):
+        return self.context.product.name + "/" + self.context.product.project.name
+    def products(self):
+        """all the products that context can switch between"""
+        """ugly"""
+        from canonical.soyuz.sql import ProjectMapper, ProductMapper
+        projMapper=ProjectMapper()
+        prodMapper=ProductMapper()
+        for project in projMapper.findByName("%%"):
+            if project.name != "do-not-use-info-imports":
+                for product in prodMapper.findByName("%%", project):
+                    name=project.name + "/" + product.name
+                    if name != "do-not-use-info-imports/unassigned":
+                        yield name
 
 
 #arch-tag: 985007b4-9c10-4601-b3ce-bdb03576569f

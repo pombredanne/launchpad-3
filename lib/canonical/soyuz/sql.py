@@ -249,62 +249,85 @@ class Projects(object):
 
     def __iter__(self):
         """Iterate over all the projects."""
-        print "iter"
-        for project in dbProject.select():
-            yield SoyuzProject(project)
+        for project in ProjectMapper().findByName("%%"):
+            yield project
 
     def __getitem__(self, name):
         """Get a project by its name."""
-        return SoyuzProject(dbProject.select("name=%s" % quote(name))[0])
+        return ProjectMapper().getByName(name)
 
     def new(self, name, title, description, url):
         """Creates a new project with the given name.
 
         Returns that project.
         """
-        return SoyuzProject(dbProject(name=name, title=title, description=description, ownerID=getOwner(), homepageurl=url))
+        project=SoyuzProject(name=name, title=title, description=description, url=url)
+        ProjectMapper().insert(project)
+        return project
 
 def getOwner():
     return 1
 
 class SoyuzProject(object):
     implements (IProject)
-    def __init__(self, dbProject):
-        self._project=dbProject
-        self.name=self._project.name
-        self.title=self._project.title
-        self.url=self._project.homepageurl
-        self.description=self._project.description
+    def __init__(self, dbProject=None,name=None,title=None,url=None,description=None):
+        if dbProject is not None:
+            self._project=dbProject
+            self.name=self._project.name
+            self.title=self._project.title
+            self.url=self._project.homepageurl
+            self.description=self._project.description
+        else:
+            self._project=None
+            self.name=name
+            self.title=title
+            self.url=url
+            self.description=description
+            
 
     def potFiles(self):
         """Returns an iterator over this project's pot files."""
 
     def products(self):
         """Returns an iterator over this projects products."""
-        for product in dbProduct.select("product.project=%s" % quote(self._project.id)):
-            yield SoyuzProduct(product)
+        for product in ProductMapper().findByName("%%", self):
+            yield product
 
     def potFile(self,name):
         """Returns the pot file with the given name."""
 
     def newProduct(self,name, title, description, url):
         """make a new product"""
-        return SoyuzProduct(dbProduct(project=self._project, ownerID=getOwner(), name=name, title=title, description=description, homepageurl=url, screenshotsurl="", wikiurl="",programminglang="", downloadurl="",lastdoap=""))
-        # FIXME, limi needs to do a find-an-owner wizard
-
+        product=SoyuzProduct(project=self, name=name, title=title, description=description, url=url)
+        ProductMapper().insert(product)
+        return product
     def getProduct(self,name):
         """blah"""
-        return SoyuzProduct(dbProduct.select("product.project=%s and product.name = %s" % (quote(self._project.id),quote(name)))[0])
+        return ProductMapper().getByName(name, self)
 
 class SoyuzProduct(object):
     implements (IProduct)
-    def __init__(self, dbProduct):
-        self._product=dbProduct
-        self.name=self._product.name
-        self.title=self._product.title
-        #self.url=self._product.homepageurl
-        self.description=self._product.description
-        #project = Attribute("The product's project.")
+    def __init__(self, dbProduct=None, project=None, name=None, title=None, description=None, url=None):
+        assert (project)
+        if dbProduct is not None:
+            self.project=project
+            self._product=dbProduct
+            self.name=self._product.name
+            self.title=self._product.title
+            #self.url=self._product.homepageurl
+            self.description=self._product.description
+        else:
+            self.project=project
+            self.name=name
+            self.title=title
+            self.description=description
+            self.url=url
+            self.screenshotsurl=""
+            self.wikiurl=""
+            self.programminglang=""
+            self.downloadurl=""
+            self.lastdoap=""
+            
 
     def potFiles(self):
         """Returns an iterator over this product's pot files."""
@@ -321,7 +344,7 @@ class SoyuzProduct(object):
     def syncs(self):
         """iterate over this products syncs"""
         for sync in infoSourceSource.select("sourcesource.product=%s" % quote(self._product.id)):
-            yield Sync(sync)
+            yield Sync(self, sync)
     def newSync(self,**kwargs):
         """create a new sync job"""
         print kwargs
@@ -330,7 +353,7 @@ class SoyuzProduct(object):
             rcstype=RCSTypeEnum.svn
         #handle arch
         
-        return Sync(infoSourceSource(name=kwargs['name'],
+        return Sync(self, infoSourceSource(name=kwargs['name'],
             title=kwargs['title'],
             ownerID=getOwner(),
             description=kwargs['description'],
@@ -363,11 +386,12 @@ class SoyuzProduct(object):
         
     def getSync(self,name):
         """get a sync"""
-        return Sync(infoSourceSource.select("name=%s and sourcesource.product=%s" % (quote(name), self._product.id)  )[0])
+        return Sync(self, infoSourceSource.select("name=%s and sourcesource.product=%s" % (quote(name), self._product.id)  )[0])
  
 class Sync(object):
     implements (ISync)
-    def __init__(self, dbSource):
+    def __init__(self, product, dbSource):
+        self.product=product
         self._sync=dbSource
         self.name=self._sync.name
         self.title=self._sync.title
@@ -423,6 +447,64 @@ class Sync(object):
         print "updating ", myattr, source[myattr]
         setattr(self._sync, dbattr, source[myattr])
         setattr(self, myattr, getattr(self._sync, dbattr))
+    def canChangeProduct(self):
+        """is this sync allowed to have its product changed?"""
+        return self.product.project.name == "do-not-use-info-imports" and self.product.name=="unassigned"
+    def changeProduct(self,targetname):
+        """change the product this sync belongs to to be 'product'"""
+        assert (self.canChangeProduct())
+        projectname,productname=targetname.split("/")
+        project=ProjectMapper().getByName(projectname)
+        product=ProductMapper().getByName(productname, project)
+        self.product=product
+        SyncMapper().update(self)
  
+class Mapper(object):
+    """I am a layer supertype for Mappers"""
+    def sanitize(self,string):
+        """escape string for passing as a literal to a like method"""
+        if '%' in string:
+            raise ValueError("HACKEUR")
+        return string
+    def _find(self,dbType, query, domainType, *domainTypeParams):
+        """abstracted finding mechanism"""
+        for dataInstance in dbType.select(query):
+            yield domainType(dataInstance, *domainTypeParams)
+    
+class ProjectMapper(Mapper):
+    """I map Projects to data storage and back again"""
+    def insert(self, project):
+        """insert project to the database"""
+        dbproject=dbProject(name=project.name, title=project.title, description=project.description, ownerID=getOwner(), homepageurl=project.url)
+        project._project=dbproject
+    def getByName(self, name):
+        """returns the project 'name'"""
+        return self.findByName(self.sanitize(name)).next()
+    def findByName(self, likePattern):
+        """returns a list containing projects that match likePattern"""
+        for project in self._find(dbProject, "name like '%s'" % likePattern, SoyuzProject):
+            yield project
 
+class ProductMapper(Mapper):
+    """I broker access to a data storage mechanism for Product instances"""
+    def insert(self, product):
+        """insert product to the database"""
+        dbproduct=dbProduct(project=product.project._project, ownerID=getOwner(), name=product.name, title=product.title, description=product.description, homepageurl=product.url, screenshotsurl=product.screenshotsurl, wikiurl=product.wikiurl,programminglang=product.programminglang, downloadurl=product.downloadurl,lastdoap=product.lastdoap)
+        product._product=dbproduct
+    def getByName(self, name, project):
+        """returns the product 'name' in project, from the database."""
+        return self.findByName(self.sanitize(name), project).next()
+    def findByName(self, likePattern, project):
+        """find products in a project... may want to extend to optional project (all projects)"""
+        for product in self._find(dbProduct, "name like '%s' and product.project='%d'" % (likePattern, project._project.id), SoyuzProduct, project):
+            yield product
+
+class SyncMapper(Mapper):
+    """I broker access to a data storage mechanism for Sync instances"""
+    """FIXME we really would benefit from an IdentityMap or similar. fortunately we aren't performance critical"""
+    def update(self, sync):
+        """update sync in the database."""
+        """TODO, all field updates"""
+        sync._sync.product=sync.product._product
+ 
 # arch-tag: 8dbe3bd2-94d8-4008-a03e-f5c848d6cfa7
