@@ -131,12 +131,12 @@
                             If you have additional relevant information,
                             enter it below.
                         </div>
-                        <b>Title:</b>
+                        <b>Subject:</b>
                         <input name="field.title"
                                type="text" size="50"
                                value=""
                                tal:attributes="value message/followup_title" /><br />
-                        <textarea name="field.contents"></textarea>
+                        <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
                         <input type="submit" name="UPDATE_SUBMIT" value="Add" />
                     </form>
                 </div>
