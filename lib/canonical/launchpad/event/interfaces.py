@@ -4,7 +4,8 @@ __metaclass__ = type
 
 from zope.app.event.interfaces import IObjectModifiedEvent, IObjectEvent, \
     IObjectCreatedEvent
-from zope.interface import Attribute
+from zope.interface import Interface, Attribute
+
 
 class ISQLObjectCreatedEvent(IObjectCreatedEvent):
     """An SQLObject has been created."""
@@ -24,7 +25,17 @@ class ISQLObjectModifiedEvent(IObjectModifiedEvent):
         "The IBrowserRequest if this object was created through a web "
         "browser, or None, if it was not created through a browser.")
 
+
 class ISQLObjectToBeModifiedEvent(IObjectEvent):
     """An SQLObject is about to be modified."""
 
     new_values = Attribute("A dict of fieldname -> newvalue pairs.")
+
+
+class IJoinTeamRequestEvent(Interface):
+    """An user requested to join a team."""
+
+    user = Attribute("The user who requested to join the team.")
+    team = Attribute("The team.")
+    appurl = Attribute("The base url. (i.e. https://launchpad.ubuntu.com)")
+

@@ -366,15 +366,13 @@ class Person(SQLBase):
     # Properties
     #
 
-    def unvalidatedEmails(self):
-        tokens = LoginToken.select("requester=%d AND email IS NOT NULL"
-                % self.id)
-        return [token.email for token in tokens]
-    unvalidatedEmails = property(unvalidatedEmails)
-
     def title(self):
         return self.browsername()
     title = property(title)
+
+    def allmembers(self):
+        return _getAllMembers(self)
+    allmembers = property(allmembers)
 
     def deactivatedmembers(self):
         return self._getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
@@ -437,10 +435,15 @@ class Person(SQLBase):
         return self._getEmailsByStatus(status)
     validatedemails = property(validatedemails)
 
-    def notvalidatedemails(self):
-        status = EmailAddressStatus.NEW
-        return self._getEmailsByStatus(status)
-    notvalidatedemails = property(notvalidatedemails)
+    def unvalidatedemails(self):
+        tokens = LoginToken.select("requester=%d AND email IS NOT NULL"
+                % self.id)
+        return [token.email for token in tokens]
+    unvalidatedemails = property(unvalidatedemails)
+
+    def guessedemails(self):
+        return self._getEmailsByStatus(EmailAddressStatus.NEW)
+    guessedemails = property(guessedemails)
 
     def bugs(self):
         return list(Bug.selectBy(ownerID=self.id))

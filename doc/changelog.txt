@@ -2,6 +2,67 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-03 21:22:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1549
+
+    Summary:
+      Adding mail notification to team owners/administrators when a new proposed member is added.
+    Revision:
+      launchpad--devel--0--patch-1549
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-238
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-239
+       Adding mail notification to team owners/administrators when a new proposed member is added.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-240
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-241
+       Extending foaf's pagetests to check if notification is sent to team administrators when a new member is waiting for approval.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-242
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-243
+       Adding missing template for new membership notification (which I forgot to add on the last commit).
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-244
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/event/.arch-ids/team.py.id
+     lib/canonical/launchpad/event/team.py
+     lib/canonical/launchpad/templates/.arch-ids/pending-membership-approval.txt.id
+     lib/canonical/launchpad/templates/pending-membership-approval.txt
+     lib/canonical/launchpad/zcml/.arch-ids/team-subscriptions.zcml.id
+     lib/canonical/launchpad/zcml/team-subscriptions.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/event/interfaces.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/pagetests/foaf/21-join-moderated-team.txt
+     lib/canonical/launchpad/templates/people-index.pt
+     lib/canonical/launchpad/templates/person-emails.pt
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/rosetta/poexport.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-238
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-239
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-240
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-241
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-242
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-243
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-244
+
+
 2005-04-03 15:34:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1548
 
     Summary:

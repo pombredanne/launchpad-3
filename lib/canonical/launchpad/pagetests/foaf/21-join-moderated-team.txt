@@ -38,14 +38,23 @@
   ...
 
 
+  Let's see if the team owner received an email notification that there's a
+  new member waiting for approval. (this notification is sent to all team
+  administrators, but in this case we don't have team administrators)
+
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['foo@baz.com']
+
+
+  Proposed Members are not shown as "real" team members by our API.
+
   >>> from canonical.launchpad.database import Person, TeamMembership
   >>> salgado = Person.byName('salgado')
   >>> team = Person.byName('myemail')
   >>> tm = TeamMembership.selectBy(personID=salgado.id, teamID=team.id)[0]
   >>> tm.statusname
   'Proposed Member'
-
-  Proposed Members are not shown as "real" team members by our API.
-
   >>> salgado.inTeam(team)
   False

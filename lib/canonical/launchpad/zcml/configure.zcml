@@ -73,6 +73,7 @@
     <include file="sshkey.zcml" />
     <include file="teammembership.zcml" />
     <include file="teamparticipation.zcml" />
+    <include file="team-subscriptions.zcml" />
     <include file="wikiname.zcml" />
     <include file="component.zcml" />
     <include file="section.zcml" />

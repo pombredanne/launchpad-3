@@ -16,6 +16,8 @@ from canonical.launchpad.interfaces import ITeamMembershipSubset
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
+from canonical.launchpad.event.team import JoinTeamRequestEvent
+
 # lp imports
 from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.lp.dbschema import TeamSubscriptionPolicy
@@ -190,6 +192,8 @@ class TeamJoinView(TeamView):
         user = getUtility(ILaunchBag).user
         if self.request.form.get('join'):
             user.join(self.context)
+            appurl = self.request.getApplicationURL()
+            notify(JoinTeamRequestEvent(user, self.context, appurl))
 
         self.request.response.redirect('./')
 

@@ -74,7 +74,6 @@ class IPerson(Interface):
 
     # Properties of the Person object.
     ubuntite = Attribute("Ubuntite Flag")
-    unvalidatedEmails = Attribute("The unvalidated emails requested by this person")
     gpg = Attribute("GPG")
     irc = Attribute("IRC")
     bugs = Attribute("Bug")
@@ -86,12 +85,20 @@ class IPerson(Interface):
     maintainerships = Attribute("This person's Maintainerships")
     activities = Attribute("Karma")
     memberships = Attribute(("List of TeamMembership objects for Teams this "
-                             "Person is a member of. Either as a PROPOSED "
-                             "or CURRENT member."))
+                             "Person is a member of. Either active, inactive "
+                             "or proposed member."))
     translations = Attribute("Translations")
+    guessedemails = Attribute("List of emails with status NEW. These email "
+                              "addresses probably came from a gina or "
+                              "POFileImporter run.")
     validatedemails = Attribute("Emails with status VALIDATED")
-    notvalidatedemails = Attribute("Emails waiting validation.")
+    unvalidatedemails = Attribute("Emails this person added in Launchpad "
+                                  "but are not yet validated.")
 
+    allmembers = Attribute("List of all direct/indirect members of this team. "
+                           "If you want a method to check if a given person is "
+                           "a member of a team, you should probably look at "
+                           "IPerson.inTeam().")
     activemembers = Attribute("List of members with ADMIN or APPROVED status")
     administrators = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")

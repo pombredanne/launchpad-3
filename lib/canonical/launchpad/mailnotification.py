@@ -5,7 +5,7 @@ from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IBug, IBugSet
+from canonical.launchpad.interfaces import IBug, IBugSet, ITeam
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.database import Bug, BugTracker, EmailAddress
 from canonical.lp.dbschema import BugTaskStatus, BugPriority, \
@@ -346,3 +346,34 @@ Bug URL: %(url)s""" % {
         subject = '"%s" watch edited' % event.object_before_modification.bug.title,
         edit_header_line = edit_header_line,
         changes = changes)
+
+
+def notify_join_request(event):
+    """Notify team administrators that a new membership is pending approval."""
+    if not event.user in event.team.proposedmembers:
+        return
+
+    user = event.user
+    team = event.team
+    to_addrs = []
+    for person in team.administrators + [team.teamowner]:
+        for member in person.allmembers:
+            if ITeam.providedBy(member):
+                # Don't worry, this is a team and person.allmembers already
+                # gave us all members of this team too.
+                pass
+            elif (member.preferredemail is not None and
+                  member.preferredemail.email not in to_addrs):
+                to_addrs.append(member.preferredemail.email)
+
+    url = "%s/people/%s/+members/%s" % (event.appurl, team.name, user.name)
+    replacements = {'browsername': user.browsername(),
+                    'name': user.name,
+                    'teamname': team.browsername(),
+                    'url': url}
+    file = 'lib/canonical/launchpad/templates/pending-membership-approval.txt'
+    msg = open(file).read() % replacements
+    fromaddress = "Launchpad <launchpad@ubuntu.com>"
+    subject = "Launchpad: New member awayting approval."
+    simple_sendmail(fromaddress, to_addrs, subject, msg)
+
