@@ -22,7 +22,7 @@ class PackagePublishing(SQLBase):
     _columns = [
         # XXX: Daniel Silverstone 2004-10-15: Need to fix up the CamelCaseNess
         # of the table classes. They should be CamelCase not Initialcapital
-        ForeignKey(name='binarypackage', foreignKey='Binarypackage', dbName='binarypackage'),
+        ForeignKey(name='binarypackage', foreignKey='BinaryPackage', dbName='binarypackage'),
         ForeignKey(name='distroarchrelease', foreignKey='DistroArchRelease', dbName='distroarchrelease'),
         ForeignKey(name='component', foreignKey='Component', dbName='component'),
         ForeignKey(name='section', foreignKey='Section', dbName='section'),

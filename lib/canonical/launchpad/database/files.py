@@ -18,7 +18,7 @@ class BinaryPackageFile(SQLBase):
     implements(IBinaryPackageFile)
 
     _columns = [
-        ForeignKey(name='binarypackage', foreignKey='Binarypackage', dbName='binarypackage'),
+        ForeignKey(name='binarypackage', foreignKey='BinaryPackage', dbName='binarypackage'),
         ForeignKey(name='libraryfile', foreignKey='LibraryFileAlias', dbName='libraryfile'),
         IntCol('filetype'),
     ]

@@ -52,7 +52,7 @@ class ISourcepackageBugAssignment(Interface):
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
     sourcepackage = Choice(
             title=_('Source Package'), required=True, readonly=True,
-            vocabulary='Sourcepackage'
+            vocabulary='SourcePackage'
             )
     bugstatus = Choice(
             title=_('Bug Status'), vocabulary=BugStatusVocabulary,
@@ -68,7 +68,7 @@ class ISourcepackageBugAssignment(Interface):
             )
     binarypackagename = Choice(
             title=_('Binary PackageName'), required=False,
-            vocabulary='BinarypackageName'
+            vocabulary='BinaryPackageName'
             )
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
 

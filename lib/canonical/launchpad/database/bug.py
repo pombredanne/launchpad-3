@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import *
 
 from canonical.launchpad.database.bugassignment \
         import SourcepackageBugAssignment, ProductBugAssignment
-from canonical.launchpad.database.package import Sourcepackage
+from canonical.launchpad.database.package import SourcePackage
 from canonical.launchpad.database.product import Product
 
 # Python
@@ -298,8 +298,8 @@ class BugsAssignedReport(object):
                                 AND(Bug.q.id==self.BPA.q.bugID,
                                     self.BPA.q.assigneeID==self.user.id),
                                 AND(Bug.q.id==self.BSA.q.bugID,
-                                    self.BSA.q.sourcepackageID==Sourcepackage.q.id,
-                                    Sourcepackage.q.maintainerID==self.user.id),
+                                    self.BSA.q.sourcepackageID==SourcePackage.q.id,
+                                    SourcePackage.q.maintainerID==self.user.id),
                                 AND(Bug.q.id==self.BPA.q.bugID,
                                     self.BPA.q.productID==Product.q.id,
                                     Product.q.ownerID==self.user.id),

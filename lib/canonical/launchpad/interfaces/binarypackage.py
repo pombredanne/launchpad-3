@@ -15,9 +15,9 @@ class IBinaryPackageSet(IPackageSet):
     
 
 #
-# Interface provided by a Binarypackage
+# Interface provided by a BinaryPackage
 #
-class IBinarypackage(Interface):
+class IBinaryPackage(Interface):
     id = Int(title=_('ID'), required=True)
     #sourcepackagerelease = Int(required=True)
     binarypackagename = Int(required=True)
@@ -47,7 +47,7 @@ class IBinarypackage(Interface):
     pkgpriority = Attribute("Package Priority")
 
 
-class IBinarypackageName(Interface):
+class IBinaryPackageName(Interface):
     id = Int(title=_('ID'), required=True)
     name = TextLine(title=_('Name'), required=True)
     binarypackages = Attribute('binarypackages')
@@ -77,7 +77,7 @@ class IPackagePublishing(Interface):
 
 
 #
-# Binarypackages related Applications Interface
+# BinaryPackages related Applications Interface
 #
 
 class IDistroBinariesApp(Interface):

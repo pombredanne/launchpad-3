@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import IDistributionRole, IDistroReleaseRole
                                            IDistribution, IDistroRelease
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
-from canonical.launchpad.database.package import Sourcepackage, Binarypackage
+from canonical.launchpad.database.package import SourcePackage, BinaryPackage
 from canonical.launchpad.database.person import Person
 
 class DistributionRole(SQLBase):
@@ -97,7 +97,7 @@ class DistroArchRelease(SQLBase):
         ForeignKey(name='distrorelease', dbName='distrorelease',
                    foreignKey='DistroRelease', notNull=True),
         ForeignKey(name='processorfamily', dbName='processorfamily',
-                   foreignKey='Processorfamily', notNull=True),
+                   foreignKey='ProcessorFamily', notNull=True),
         StringCol('architecturetag', dbName='architecturetag', notNull=True),
         ForeignKey(name='owner', dbName='owner', foreignKey='Person', 
                    notNull=True),
@@ -173,15 +173,15 @@ class DistroRelease(SQLBase):
 
     def sourcecount(self):
         q =  """SELECT COUNT (DISTINCT sourcepackagename.name)
-                FROM sourcepackagename, Sourcepackage,
-                SourcepackageRelease, SourcepackagePublishing
+                FROM sourcepackagename, SourcePackage,
+                SourcePackageRelease, SourcePackagePublishing
                 WHERE sourcepackagename.id = sourcepackage.sourcepackagename
-                AND SourcepackagePublishing.sourcepackagerelease=
+                AND SourcePackagePublishing.sourcepackagerelease=
                                                   SourcePackageRelease.id
                 AND SourcePackageRelease.sourcepackage = SourcePackage.id
-                AND SourcepackagePublishing.distrorelease = %s;""" % (self.id)
+                AND SourcePackagePublishing.distrorelease = %s;""" % (self.id)
 
-        db = Sourcepackage._connection._connection
+        db = SourcePackage._connection._connection
         db_cursor = db.cursor()
         db_cursor.execute(q)        
         return db_cursor.fetchall()[0][0]
@@ -197,7 +197,7 @@ class DistroRelease(SQLBase):
                AND binarypackagename.id = binarypackage.binarypackagename;
                """ % (self.id)
 
-        db = Binarypackage._connection._connection
+        db = BinaryPackage._connection._connection
         db_cursor = db.cursor()
         db_cursor.execute(q)
         return db_cursor.fetchall()[0][0]

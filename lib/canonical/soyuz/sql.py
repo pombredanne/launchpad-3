@@ -16,15 +16,15 @@ from canonical.lp import dbschema
 from canonical.database.sqlbase import quote
 
 # launchpad imports
-from canonical.launchpad.interfaces import IBinarypackage,IBinaryPackageBuild,\
+from canonical.launchpad.interfaces import IBinaryPackage,IBinaryPackageBuild,\
                                            ISourcePackageRelease,\
                                            IManifestEntry, IPackages,\
                                            IBinaryPackageSet,\
                                            ISourcePackageSet,\
                                            IBranch, IChangeset 
 
-from canonical.launchpad.database import Binarypackage, Build, \
-                                         Sourcepackage, Manifest, \
+from canonical.launchpad.database import BinaryPackage, Build, \
+                                         SourcePackage, Manifest, \
                                          ManifestEntry, DistroRelease, \
                                          SourcePackageRelease, \
                                          DistroArchRelease, \
@@ -93,9 +93,9 @@ class DistroReleaseApp(object):
 
     def _sourcequery(self):
         return (
-            'SourcepackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
+            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-            'AND SourcepackagePublishing.distrorelease = %d '
+            'AND SourcePackagePublishing.distrorelease = %d '
             'AND SourcePackage.sourcepackagename = SourcePackageName.id'
             % (self.release.id))
         
@@ -106,7 +106,7 @@ class DistroReleaseApp(object):
                  % quote('%%' + pattern + '%%')
                  + ' OR SourcePackage.shortdesc ILIKE %s)'
                  % quote('%%' + pattern + '%%'))        
-        return Sourcepackage.select(query)[:500]
+        return SourcePackage.select(query)[:500]
 
     where = (
         'PackagePublishing.binarypackage = BinaryPackage.id AND '
@@ -118,9 +118,9 @@ class DistroReleaseApp(object):
     def findBinariesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
         query = (self.where % self.release.id +
-                 'AND (BinarypackageName.name ILIKE %s '
+                 'AND (BinaryPackageName.name ILIKE %s '
                  % quote('%%' + pattern + '%%')
-                 + 'OR Binarypackage.shortdesc ILIKE %s)'
+                 + 'OR BinaryPackage.shortdesc ILIKE %s)'
                  % quote('%%' + pattern + '%%'))
         
         # FIXME: (SQLObject_Selection+batching) Daniel Debonzi - 2004-10-13
@@ -130,7 +130,7 @@ class DistroReleaseApp(object):
         # for all the related things available on the database which
         # presents a very slow result.
         # Is those unique ?
-        return Binarypackage.select(query)[:500]
+        return BinaryPackage.select(query)[:500]
 
 
 class DistroReleasesApp(object):
@@ -277,7 +277,7 @@ class DistroReleaseSourcesApp(object):
     Used for web UI.
     """
     table = SourcePackageRelease
-    clauseTables = ('Sourcepackage', 'SourcepackagePublishing')
+    clauseTables = ('SourcePackage', 'SourcePackagePublishing')
 
     def __init__(self, release):
         self.release = release
@@ -285,26 +285,26 @@ class DistroReleaseSourcesApp(object):
         
     def _query(self):
         return (
-            'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id '
-            'AND SourcepackageRelease.sourcepackage = Sourcepackage.id '
-            'AND SourcepackagePublishing.distrorelease = %d '
-            'AND Sourcepackage.sourcepackagename = SourcepackageName.id'
+            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
+            'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+            'AND SourcePackagePublishing.distrorelease = %d '
+            'AND SourcePackage.sourcepackagename = SourcePackageName.id'
             % (self.release.id))
         
     def findPackagesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
         query = self._query() + \
-                (' AND SourcepackageName.name ILIKE %s'
+                (' AND SourcePackageName.name ILIKE %s'
                  % quote('%%' + pattern + '%%')
                  )
-        return Sourcepackage.select(query)[:500]
+        return SourcePackage.select(query)[:500]
 
     def __getitem__(self, name):
         # XXX: (mult_results) Daniel Debonzi 2004-10-13
         # What about multiple results?
         #(which shouldn't happen here...)
         query = self._query() + \
-                (' AND SourcepackageName.name = '
+                (' AND SourcePackageName.name = '
                  '%s' % quote(name))
         try:
             release = self.table.select(query,
@@ -490,7 +490,7 @@ class PersonApp(object):
             self.gpg = None
 
     def _getsourcesByPerson(self):
-        query = ('SourcepackagePublishing.sourcepackagerelease = '
+        query = ('SourcePackagePublishing.sourcepackagerelease = '
                  'SourcePackageRelease.id '
                  'AND SourcePackageRelease.sourcepackage = '
                  'SourcePackage.id '
@@ -498,8 +498,8 @@ class PersonApp(object):
                  %self.id)
         
         # FIXME: (sourcename_order) Daniel Debonzi 2004-10-13
-        # ORDER by Sourcepackagename
-        # The result should be ordered by SourcepackageName
+        # ORDER by SourcePackagename
+        # The result should be ordered by SourcePackageName
         # but seems that is it not possible
         return Set(SourcePackageRelease.select(query))
     
@@ -564,8 +564,8 @@ class DistroReleaseBinaryReleaseApp(object):
         except:
             self.binarypackagerelease = binarypackagerelease[0]
 
-        query = ('SourcepackagePublishing.distrorelease = DistroRelease.id '
-                 'AND SourcepackagePublishing.sourcepackagerelease = %i '
+        query = ('SourcePackagePublishing.distrorelease = DistroRelease.id '
+                 'AND SourcePackagePublishing.sourcepackagerelease = %i '
                  %(self.binarypackagerelease.build.sourcepackagerelease.id))
 
 
@@ -575,8 +575,8 @@ class DistroReleaseBinaryReleaseApp(object):
         binaryReleases = self.binarypackagerelease.current(distrorelease)
 
         query = binaryReleases.clause + \
-                (' AND Build.id = Binarypackage.build'
-                 ' AND Build.sourcepackagerelease = SourcepackageRelease.id'
+                (' AND Build.id = BinaryPackage.build'
+                 ' AND Build.sourcepackagerelease = SourcePackageRelease.id'
                  ' AND BinaryPackage.version = %s' %quote(version)
                 )
 
@@ -592,7 +592,7 @@ class DistroReleaseBinaryReleaseApp(object):
     def __getitem__(self, arch):
         query = self.binselect.clause + \
                 ' AND DistroArchRelease.architecturetag = %s' %quote(arch)
-        binarypackage = Binarypackage.select(query)
+        binarypackage = BinaryPackage.select(query)
         return DistroReleaseBinaryReleaseBuildApp(binarypackage[0],
                                                   self.version, arch)
     
@@ -632,7 +632,7 @@ class DistroReleaseBinaryApp(object):
     def __getitem__(self, version):
         query = self.binselect.clause + \
                 ' AND BinaryPackage.version = %s' %quote(version)
-        self.binarypackage = Binarypackage.select(query)
+        self.binarypackage = BinaryPackage.select(query)
         return DistroReleaseBinaryReleaseApp(self.binarypackage,
                                              version, self.release)
 
@@ -649,8 +649,8 @@ class DistroReleaseBinariesApp(object):
     def findPackagesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
         query = (self.where % self.release.id + \
-                 'AND  BinaryPackage.binarypackagename = BinarypackageName.id '
-                 'AND  UPPER(BinarypackageName.name) LIKE UPPER(%s)'
+                 'AND  BinaryPackage.binarypackagename = BinaryPackageName.id '
+                 'AND  UPPER(BinaryPackageName.name) LIKE UPPER(%s)'
                  % quote('%%' + pattern + '%%'))
 
 
@@ -658,7 +658,7 @@ class DistroReleaseBinariesApp(object):
         # Will be solved when bug #2094 is fixed
         # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
         # expensive routine
-        selection = Set(Binarypackage.select(query)[:500])
+        selection = Set(BinaryPackage.select(query)[:500])
 
         # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
         # Dummy solution to avoid a binarypackage to be shown more
@@ -675,11 +675,11 @@ class DistroReleaseBinariesApp(object):
     def __getitem__(self, name):
         try:
             where = self.where % self.release.id + \
-                    ('AND Binarypackage.binarypackagename ='
-                     ' BinarypackageName.id '
-                     'AND BinarypackageName.name = ' + quote(name)
+                    ('AND BinaryPackage.binarypackagename ='
+                     ' BinaryPackageName.id '
+                     'AND BinaryPackageName.name = ' + quote(name)
                      )
-            return DistroReleaseBinaryApp(Binarypackage.select(where),
+            return DistroReleaseBinaryApp(BinaryPackage.select(where),
                                           self.release)
         except IndexError:
             raise KeyError, name
@@ -690,8 +690,8 @@ class DistroReleaseBinariesApp(object):
     # they were LIMITED by hand
     def __iter__(self):
         query = self.where % self.release.id
-        return iter(Binarypackage.select(query, orderBy=\
-                                              'Binarypackagename.name')[:500])
+        return iter(BinaryPackage.select(query, orderBy=\
+                                              'BinaryPackagename.name')[:500])
 
 class DistroBinariesApp(object):
     def __init__(self, distribution):
@@ -716,16 +716,16 @@ class SourcePackages(object):
     implements(ISourcePackageSet)
 
     table = SourcePackageRelease
-    clauseTables = ('SourcePackage', 'SourcepackagePublishing',)
+    clauseTables = ('SourcePackage', 'SourcePackagePublishing',)
 
     def __init__(self, release):
         self.release = release
         
     def _query(self):
         return (
-            'SourcepackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
+            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-            'AND SourcepackagePublishing.distrorelease = %d '
+            'AND SourcePackagePublishing.distrorelease = %d '
             % (self.release.id))
         
     def __getitem__(self, name):

@@ -170,10 +170,10 @@ class IBugWatchContainer(Interface):
         """Iterate through BugWatches for a given bug."""
 
 class ISourcepackageContainer(Interface):
-    """A container for ISourcepackage objects."""
+    """A container for ISourcePackage objects."""
 
     def __getitem__(key):
-        """Get an ISourcepackage by name"""
+        """Get an ISourcePackage by name"""
 
     def __iter__():
         """Iterate through Sourcepackages."""

@@ -68,7 +68,7 @@ class Product(SQLBase):
 
     sourcesources = MultipleJoin('SourceSource', joinColumn='product')
 
-    sourcepackages = RelatedJoin('Sourcepackage', joinColumn='product',
+    sourcepackages = RelatedJoin('SourcePackage', joinColumn='product',
                            otherColumn='sourcepackage',
                            intermediateTable='Packaging')
 

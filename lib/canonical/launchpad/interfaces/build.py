@@ -24,7 +24,7 @@ class IBuild(Interface):
     changes = Attribute("The Build Changes")
     component = Attribute("The BinaryPackage Component")
     section = Attribute("The BinaryPackage Section")
-    sourcepackagerelease = Attribute("Sourcepackagerelease reference")
+    sourcepackagerelease = Attribute("SourcePackageRelease reference")
 
 class IBuilder(Interface):
     processor = Attribute("The Builder Processor")

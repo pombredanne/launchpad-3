@@ -19,7 +19,7 @@ from zope.schema import TextLine, Int, Choice
 # Database access objects
 #
 from canonical.launchpad.database import \
-        Sourcepackage, SourcepackageName, Binarypackage, \
+        SourcePackage, SourcePackageName, BinaryPackage, \
         BugTracker, BugsAssignedReport, BugWatch, Product, Person, EmailAddress, \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
         ProductBugAssignment, SourcepackageBugAssignment, \
@@ -139,12 +139,12 @@ class MaloneApplicationView(object):
         if self.request.form.has_key('query'):
             # TODO: Make this case insensitive
             s = self.request.form['query']
-            self.results = Sourcepackage.select(AND(
-                Sourcepackage.q.sourcepackagenameID == SourcepackageName.q.id,
+            self.results = SourcePackage.select(AND(
+                SourcePackage.q.sourcepackagenameID == SourcePackageName.q.id,
                 OR(
-                    CONTAINSSTRING(SourcepackageName.q.name, s),
-                    CONTAINSSTRING(Sourcepackage.q.shortdesc, s),
-                    CONTAINSSTRING(Sourcepackage.q.description, s)
+                    CONTAINSSTRING(SourcePackageName.q.name, s),
+                    CONTAINSSTRING(SourcePackage.q.shortdesc, s),
+                    CONTAINSSTRING(SourcePackage.q.description, s)
                     )
                 ))
             self.noresults = not self.results
@@ -206,11 +206,11 @@ class IMaloneBugAddForm(IMaloneBug):
             )
     sourcepackage = Choice(
             title=_("Source Package"), required=False,
-            vocabulary="Sourcepackage",
+            vocabulary="SourcePackage",
             )
     binarypackage = Choice(
             title=_("Binary Package"), required=False,
-            vocabulary="Binarypackage"
+            vocabulary="BinaryPackage"
             )
     owner = Int(title=_("Owner"), required=True)
 
@@ -311,12 +311,12 @@ class BugContainer(BugContainerBase):
         sourcepkgid = getattr(ob, 'sourcepackage', None)
         binarypkgid = getattr(ob, 'binarypackage', None)
         if sourcepkgid:
-            sourcepkg = Sourcepackage.get(sourcepkgid)
+            sourcepkg = SourcePackage.get(sourcepkgid)
             if binarypkgid:
-                binarypkg = Binarypackage.get(binarypkgid)
+                binarypkg = BinaryPackage.get(binarypkgid)
             else:
                 binarypkg = None
-            sba = SourcepackageBugAssignment(
+            sba = SourcePackageBugAssignment(
                     bug=bug, sourcepackage=sourcepkg,
                     binarypackagename=binarypkg,
                     )
@@ -349,9 +349,9 @@ def BugAdder(object):
         sourcepkgid = getattr(ob, 'sourcepackage', None)
         binarypkgid = getattr(ob, 'binarypackage', None)
         if sourcepkgid:
-            sourcepkg = Sourcepackage.get(sourcepkgid)
+            sourcepkg = SourcePackage.get(sourcepkgid)
             if binarypkgid:
-                binarypkg = Binarypackage.get(binarypkgid)
+                binarypkg = BinaryPackage.get(binarypkgid)
             else:
                 binarypkg = None
             sba = SourcepackageBugAssignment(
@@ -588,7 +588,7 @@ class SourcepackageContainer(object):
     """A container for Sourcepackage objects."""
 
     implements(ISourcepackageContainer)
-    table = Sourcepackage
+    table = SourcePackage
 
     #
     # We need to return a Sourcepackage given a name. For phase 1 (warty)
@@ -597,8 +597,8 @@ class SourcepackageContainer(object):
     # the same name.
     #
     def __getitem__(self, name):
-        return self.table.select("Sourcepackage.sourcepackagename = \
-        SourcepackageName.id AND SourcepackageName.name = %s" %     \
+        return self.table.select("SourcePackage.sourcepackagename = \
+        SourcePackageName.id AND SourcePackageName.name = %s" %     \
         sqlbase.quote(name))[0]
 
     def __iter__(self):
@@ -616,7 +616,7 @@ class SourcepackageContainer(object):
     # which in future might be limited by distro, for example
     #
     def withBugs(self):
-        return self.table.select("Sourcepackage.id = \
+        return self.table.select("SourcePackage.id = \
         SourcepackageBugAssignment.sourcepackage")
 
 

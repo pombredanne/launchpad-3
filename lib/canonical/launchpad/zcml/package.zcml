@@ -23,17 +23,17 @@
     </content>
 
     <!-- Sourcepackage -->
-    <content class="canonical.launchpad.database.Sourcepackage">
-        <allow interface="canonical.launchpad.interfaces.ISourcepackage" />
+    <content class="canonical.launchpad.database.SourcePackage">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcepackage"
+        for="canonical.launchpad.interfaces.ISourcePackage"
         name="+index" />
 
     <browser:pages
-        for="canonical.launchpad.interfaces.ISourcepackage"
+        for="canonical.launchpad.interfaces.ISourcePackage"
         permission="zope.Public"
         class="canonical.malone.browser.SourcepackageView">
         <browser:page
@@ -43,19 +43,19 @@
     </browser:pages>
 
     <!-- SourcepackageName -->
-    <content class="canonical.launchpad.database.SourcepackageName">
-        <allow interface="canonical.launchpad.interfaces.ISourcepackageName" />
+    <content class="canonical.launchpad.database.SourcePackageName">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageName" />
     </content>
 
     <!-- Binarypackage -->
-    <content class="canonical.launchpad.database.Binarypackage">
-        <allow interface="canonical.launchpad.interfaces.IBinarypackage" />
+    <content class="canonical.launchpad.database.BinaryPackage">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackage" />
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
     <!-- Binarypackagename -->
-    <content class="canonical.launchpad.database.BinarypackageName">
-        <allow interface="canonical.launchpad.interfaces.IBinarypackageName" />
+    <content class="canonical.launchpad.database.BinaryPackageName">
+        <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />
     </content>
 
     <!-- SourcepackageContainer -->

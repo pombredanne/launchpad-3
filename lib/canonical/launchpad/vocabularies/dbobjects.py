@@ -4,8 +4,8 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.launchpad.database.person import Person
-from canonical.launchpad.database.package import Sourcepackage, Binarypackage, \
-                                         BinarypackageName, SourcePackageRelease
+from canonical.launchpad.database.package import SourcePackage, BinaryPackage, \
+                                         BinaryPackageName, SourcePackageRelease
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bug import BugTracker
@@ -74,7 +74,7 @@ class SourcepackageVocabulary(SQLObjectVocabularyBase):
     # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
     # no test data for me to check yet. This'll be fixed by the end
     # of the week (2004/10/08) as we get Malone into usable shape.
-    _table = Sourcepackage
+    _table = SourcePackage
     _orderBy = 'id'
 
     def _toTerm(self, obj):
@@ -85,7 +85,7 @@ class SourcepackageVocabulary(SQLObjectVocabularyBase):
 
 
 class BinarypackageNameVocabulary(SQLObjectVocabularyBase):
-    _table = BinarypackageName
+    _table = BinaryPackageName
     _orderBy = 'name'
 
     def _toTerm(self, obj):
@@ -111,7 +111,7 @@ class BinarypackageVocabulary(SQLObjectVocabularyBase):
     # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
     # no test data for me to check yet. This'll be fixed by the end
     # of the week (2004/10/08) as we get Malone into usable shape.
-    _table = Binarypackage
+    _table = BinaryPackage
     _orderBy = 'id'
 
     def _toTerm(self, obj):

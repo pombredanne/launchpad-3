@@ -15,19 +15,19 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageRelease, \
-                                           ISourcepackage, IBinarypackage, \
-                                           ISourcepackageName, IBinarypackageName
+                                           ISourcePackage, IBinaryPackage, \
+                                           ISourcePackageName, IBinaryPackageName
 
 from canonical.launchpad.database import Product, Project
 from canonical.launchpad.database.person import Person
 
 
-class Binarypackage(SQLBase):
-    implements(IBinarypackage)
+class BinaryPackage(SQLBase):
+    implements(IBinaryPackage)
     _table = 'BinaryPackage'
     _columns = [
         ForeignKey(name='binarypackagename', dbName='binarypackagename', 
-                   foreignKey='BinarypackageName', notNull=True),
+                   foreignKey='BinaryPackageName', notNull=True),
         StringCol('version', dbName='version', notNull=True),
         StringCol('shortdesc', dbName='shortdesc', notNull=True, default=""),
         StringCol('description', dbName='description', notNull=True),
@@ -74,10 +74,10 @@ class Binarypackage(SQLBase):
 
     def lastversions(self, distroRelease):
         last = list(SourcePackageRelease.select(
-            'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
-            ' AND SourcepackagePublishing.distrorelease = %d'
+            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
+            ' AND SourcePackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcepackagePublishing.status = %d'
+            ' AND SourcePackagePublishing.status = %d'
             ' ORDER BY sourcePackageRelease.dateuploaded DESC'
             % (distroRelease.id, self.build.sourcepackagerelease.sourcepackage.id,dbschema.PackagePublishingStatus.SUPERCEDED)
         ))
@@ -95,7 +95,7 @@ class Binarypackage(SQLBase):
     pkgpriority = property(_priority)
 
 
-class BinarypackageName(SQLBase):
+class BinaryPackageName(SQLBase):
     _table = 'BinaryPackageName'
     _columns = [
         StringCol('name', dbName='name', notNull=True),
@@ -103,7 +103,7 @@ class BinarypackageName(SQLBase):
 
     # Got from BinaryPackageName class
     binarypackages = MultipleJoin(
-            'Binarypackage', joinColumn='binarypackagename'
+            'BinaryPackage', joinColumn='binarypackagename'
             )
     ####
 
@@ -114,7 +114,7 @@ class SourcePackageRelease(SQLBase):
 
     _table = 'SourcePackageRelease'
     _columns = [
-        ForeignKey(name='sourcepackage', foreignKey='Sourcepackage',
+        ForeignKey(name='sourcepackage', foreignKey='SourcePackage',
                    dbName='sourcepackage', notNull=True),
         ForeignKey(name='creator', foreignKey='Person', dbName='creator'),
         StringCol('version', dbName='version'),
@@ -131,9 +131,9 @@ class SourcePackageRelease(SQLBase):
 
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.distro import Distroarchrelease
+        from canonical.launchpad.database.distro import DistroArchRelease
 
-        archReleases = Set(Distroarchrelease.select(
+        archReleases = Set(DistroArchRelease.select(
             'PackagePublishing.distroarchrelease = DistroArchRelease.id '
             'AND DistroArchRelease.distrorelease = %d '
             'AND PackagePublishing.binarypackage = BinaryPackage.id '
@@ -156,7 +156,7 @@ class SourcePackageRelease(SQLBase):
                  %self.id 
                  )
 
-        return Binarypackage.select(query)
+        return BinaryPackage.select(query)
         
     binaries = property(binaries)
 
@@ -177,15 +177,15 @@ def createSourcePackage(name, maintainer=0):
         description='', # FIXME
     )
 
-class Sourcepackage(SQLBase):
+class SourcePackage(SQLBase):
     """A source package, e.g. apache2."""
 
-    implements(ISourcepackage)
+    implements(ISourcePackage)
 
     _table = 'SourcePackage'
 
     maintainer = ForeignKey(foreignKey='Person', dbName='maintainer', notNull=True)
-    sourcepackagename = ForeignKey(foreignKey='SourcepackageName',
+    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
                    dbName='sourcepackagename', notNull=True)
     shortdesc = StringCol(dbName='shortdesc', notNull=True)
     description = StringCol(dbName='description', notNull=True)
@@ -202,7 +202,7 @@ class Sourcepackage(SQLBase):
             )
 
     sourcepackagereleases = MultipleJoin(
-            'SourcepackageRelease', joinColumn='sourcepackage'
+            'SourcePackageRelease', joinColumn='sourcepackage'
             )
     ####
 
@@ -230,10 +230,10 @@ class Sourcepackage(SQLBase):
 
     def uploadsByStatus(self, distroRelease, status):
         uploads = list(SourcePackageRelease.select(
-            'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
-            ' AND SourcepackagePublishing.distrorelease = %d'
+            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
+            ' AND SourcePackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcepackagePublishing.status = %d'
+            ' AND SourcePackagePublishing.status = %d'
             % (distroRelease.id, self.id, status)
         ))
 
@@ -252,10 +252,10 @@ class Sourcepackage(SQLBase):
         :returns: iterable of SourcePackageReleases
         """
         sourcepackagereleases = SourcePackageRelease.select(
-            'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
-            ' AND SourcepackagePublishing.distrorelease = %d'
-            ' AND SourcepackageRelease.sourcepackage = %d'
-            ' AND SourcepackagePublishing.status = %d'
+            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
+            ' AND SourcePackagePublishing.distrorelease = %d'
+            ' AND SourcePackageRelease.sourcepackage = %d'
+            ' AND SourcePackagePublishing.status = %d'
             % (distroRelease.id, self.id, dbschema.PackagePublishingStatus.PUBLISHED)
         )
 
@@ -263,10 +263,10 @@ class Sourcepackage(SQLBase):
 
     def lastversions(self, distroRelease):
         last = list(SourcePackageRelease.select(
-            'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
-            ' AND SourcepackagePublishing.distrorelease = %d'
+            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
+            ' AND SourcePackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcepackagePublishing.status = %d'
+            ' AND SourcePackagePublishing.status = %d'
             ' ORDER BY sourcePackageRelease.dateuploaded DESC'
             % (distroRelease.id, self.id,dbschema.PackagePublishingStatus.SUPERCEDED)
         ))
@@ -277,10 +277,10 @@ class Sourcepackage(SQLBase):
             return None
 
 
-class SourcepackageName(SQLBase):
+class SourcePackageName(SQLBase):
 
-    implements(ISourcepackageName)
+    implements(ISourcePackageName)
 
-    _table = 'SourcepackageName'
+    _table = 'SourcePackageName'
 
     name = StringCol(dbName='name', notNull=True)

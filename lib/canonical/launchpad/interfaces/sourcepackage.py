@@ -25,10 +25,10 @@ class ISourcePackageSet(IPackageSet):
     """A set of source packages"""
 
 #
-# Interface we expect a Sourcepackage to provide.
+# Interface we expect a SourcePackage to provide.
 #
-class ISourcepackage(Interface):
-    """A Sourcepackage"""
+class ISourcePackage(Interface):
+    """A SourcePackage"""
     id = Int(title=_("ID"), required=True)
     maintainer = Int(title=_("Maintainer"), required=True)
     name = TextLine(title=_("Name"), required=True)
@@ -37,7 +37,7 @@ class ISourcepackage(Interface):
     description = Text(title=_("Description"), required=True)
     manifest = Int(title=_("Manifest"), required=False)
     distro = Int(title=_("Distribution"), required=False)
-    sourcepackagename = Int(title=_("Sourcepackage Name"), required=True)
+    sourcepackagename = Int(title=_("SourcePackage Name"), required=True)
     bugs = Attribute("bugs")
     ##XXX: (interface+attr) cprov 20041010
     ## I'm confused about how to declare new (abstract) attributes as
@@ -47,12 +47,12 @@ class ISourcepackage(Interface):
                          "PROPOSED, else None")
 
 #
-# Interface provied by a SourcepackageName. This is a tiny
-# table that allows multiple Sourcepackage entities to share
+# Interface provied by a SourcePackageName. This is a tiny
+# table that allows multiple SourcePackage entities to share
 # a single name.
 #
-class ISourcepackageName(Interface):
-    """Name of a Sourcepackage"""
+class ISourcePackageName(Interface):
+    """Name of a SourcePackage"""
     id = Int(title=_("ID"), required=True)
     name = TextLine(title=_("Name"), required=True)
 
@@ -79,7 +79,7 @@ class ISourcePackageRelease(Interface):
 
 
 #
-# Sourcepackage related Applications Interfaces
+# SourcePackage related Applications Interfaces
 #
 
 class IDistroSourcesApp(Interface):

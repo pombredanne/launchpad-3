@@ -429,7 +429,7 @@
         />
 
 
-  <page for="canonical.launchpad.interfaces.IBinarypackage"
+  <page for="canonical.launchpad.interfaces.IBinaryPackage"
         permission="zope.Public"
         name="index.html"
         template="../launchpad/templates/package-index.pt"

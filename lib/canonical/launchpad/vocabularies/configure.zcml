@@ -5,15 +5,15 @@
         factory="canonical.launchpad.vocabulary.BugTrackerVocabulary" />
 
     <vocabulary
-        name="Sourcepackage"
+        name="SourcePackage"
         factory="canonical.launchpad.vocabulary.SourcepackageVocabulary" />
 
     <vocabulary
-        name="Binarypackage"
+        name="BinaryPackage"
         factory="canonical.launchpad.vocabulary.BinarypackageVocabulary" />
 
     <vocabulary
-        name="BinarypackageName"
+        name="BinaryPackageName"
         factory="canonical.launchpad.vocabulary.BinarypackageNameVocabulary" />
 
     <vocabulary

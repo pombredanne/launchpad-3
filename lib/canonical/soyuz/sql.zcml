@@ -154,8 +154,8 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.Processorfamily">
-    <allow interface="canonical.launchpad.interfaces.IProcessorfamily"/>
+  <content class="canonical.launchpad.database.ProcessorFamily">
+    <allow interface="canonical.launchpad.interfaces.IProcessorFamily"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 

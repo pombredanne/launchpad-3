@@ -15,7 +15,7 @@ from canonical.database.sqlbase import SQLBase, quote
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IProcessor, \
-                                           IProcessorfamily
+                                           IProcessorFamily
 
 class Processor(SQLBase):
     implements(IProcessor)
@@ -23,7 +23,7 @@ class Processor(SQLBase):
     _table = 'Processor'
     _columns = [
         ForeignKey(name='family', dbName='family',
-                   foreignKey='Processorfamily', notNull=True),
+                   foreignKey='ProcessorFamily', notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('title', dbName='title', notNull=True),
         StringCol('description', dbName='description', notNull=True),
@@ -31,8 +31,8 @@ class Processor(SQLBase):
                    foreignKey='Person', notNull=True),
         ]
 
-class Processorfamily(SQLBase):
-    implements(IProcessorfamily)
+class ProcessorFamily(SQLBase):
+    implements(IProcessorFamily)
 
     _table = 'ProcessorFamily'
     _columns = [

@@ -8,7 +8,7 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import *
 
-from canonical.launchpad.database.package import Sourcepackage
+from canonical.launchpad.database.package import SourcePackage
 from canonical.launchpad.database.product import Product
 
 class ProductBugAssignment(SQLBase):
@@ -40,7 +40,7 @@ class SourcepackageBugAssignment(SQLBase):
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug')
     sourcepackage = ForeignKey(dbName='sourcepackage', notNull=True,
-                               foreignKey='Sourcepackage')
+                               foreignKey='SourcePackage')
     bugstatus = IntCol(dbName='bugstatus', notNull=True,
                        default=int(dbschema.BugAssignmentStatus.NEW))
     priority =IntCol(dbName='priority', notNull=True,
@@ -48,7 +48,7 @@ class SourcepackageBugAssignment(SQLBase):
     severity = IntCol(dbName='severity', notNull=True,
                       default=int(dbschema.BugSeverity.NORMAL))
     binarypackagename = ForeignKey(dbName='binarypackagename',
-                                   foreignKey='BinarypackageName', default=None)
+                                   foreignKey='BinaryPackageName', default=None)
     assignee = ForeignKey(dbName='assignee', foreignKey='Person',
                           default=None)
 
