@@ -73,7 +73,7 @@ COMMENT ON FUNCTION valid_bug_name(text) IS 'validate a bug name
 CREATE OR REPLACE FUNCTION valid_version(text) RETURNS boolean AS '
     import re
     name = args[0]
-    pat = r"^[A-Za-z0-9\\+:\\.\\-]+$"
+    pat = r"^[A-Za-z0-9\\+:\\.\\-\\~]+$"
     if name is None or re.match(pat, name):
         return 1
     return 0

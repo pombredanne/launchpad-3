@@ -44,10 +44,8 @@ ALTER TABLE BranchRelationship ADD PRIMARY KEY (id);
 
 
 -- change the SourcePackage table to make it more consistent
-ALTER TABLE SourcePackage RENAME COLUMN distro TO distribution;
+-- Not yet - too much breakage.
+-- ALTER TABLE SourcePackage RENAME COLUMN distro TO distribution;
 
-COMMENT ON COLUMN SourcePackage.distribution IS 'The distribution in which this
-package "belongs", if any. It is possible for a package to have no home
-distribution, in the sense that it is just a package produced by an
-individual, and not yet published.';
+UPDATE LaunchpadDatabaseRevision SET major=6, minor=15, patch=0;
 

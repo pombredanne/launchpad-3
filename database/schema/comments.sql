@@ -357,7 +357,7 @@ COMMENT ON COLUMN SourcePackage.maintainer IS 'The maintainer of a sourcepackage
 COMMENT ON COLUMN SourcePackage.shortdesc IS 'The title or short name of a sourcepackage. E.g. "Mozilla Firefox Browser"';
 COMMENT ON COLUMN SourcePackage.description IS 'A description of the sourcepackage. Typically longer and more detailed than shortdesc.';
 COMMENT ON COLUMN SourcePackage.manifest IS 'The head HCT manifest for the sourcepackage';
-COMMENT ON COLUMN SourcePackage.distro IS 'The distribution (if any) that the sourcepackage resides in.';
+COMMENT ON COLUMN SourcePackage.distro IS 'The distribution in which this package "belongs", if any. It is possible for a package to have no home distribution, in the sense that it is just a package produced by an individual, and not yet published.'; 
 
 -- SourcePackageRelease
 
