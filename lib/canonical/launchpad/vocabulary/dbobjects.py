@@ -1,4 +1,9 @@
+'''
+Vocabularies pulling stuff from the database.
 
+You probably don't want to use these classes directly - see the
+docstring in __init__.py for details
+'''
 from zope.interface import implements
 from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm

@@ -1,3 +1,7 @@
+'''
+You probably don't want to import stuff from here. See __init__.py
+for details
+'''
 from canonical.lp import dbschema
 
 # DB Schema Vocabularies

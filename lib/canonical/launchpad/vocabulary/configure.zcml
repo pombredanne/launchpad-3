@@ -28,4 +28,29 @@
         name="Product"
         factory="canonical.launchpad.vocabulary.ProductVocabulary" />
 
+    <vocabulary
+        name="Subscription"
+        factory="canonical.launchpad.vocabulary.SubscriptionVocabulary" />
+
+    <vocabulary
+        name="BugRef"
+        factory="canonical.launchpad.vocabulary.BugRefVocabulary" />
+
+    <vocabulary
+        name="BugStatus"
+        factory="canonical.launchpad.vocabulary.BugStatusVocabulary" />
+
+    <vocabulary
+        name="BugPriority"
+        factory="canonical.launchpad.vocabulary.BugPriorityVocabulary" />
+
+    <vocabulary
+        name="BugSeverity"
+        factory="canonical.launchpad.vocabulary.BugSeverityVocabulary" />
+
+    <vocabulary
+        name="InfestationStatus"
+        factory="canonical.launchpad.vocabulary.InfestationStatusVocabulary" />
+
+
 </configure>

@@ -3,8 +3,6 @@ from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.vocabularies.dbschema import SubscriptionVocabulary
-
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""
 
@@ -16,7 +14,7 @@ class IBugSubscription(Interface):
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
     subscription = Choice(
             title=_('Subscription'), required=True, readonly=False,
-            vocabulary=SubscriptionVocabulary)
+            vocabulary='Subscription')
 
 
 class IBugSubscriptionContainer(Interface):

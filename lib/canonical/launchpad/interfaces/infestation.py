@@ -5,7 +5,6 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.launchpad.vocabularies.dbschema import InfestationStatusVocabulary
 
 __all__ = ['IBugProductInfestationContainer',
            'IBugPackageInfestationContainer',
@@ -25,7 +24,7 @@ class IBugProductInfestation(Interface):
     productrelease = Choice(title=_('Product Release'),
                             vocabulary='ProductRelease')
     infestationstatus = Choice(title=_('Infestation Status'),
-                         vocabulary=InfestationStatusVocabulary)
+                         vocabulary='InfestationStatus')
     datecreated = Datetime(title=_('Date Created'))
     creator = Int(title=_('Creator'))
     dateverified = Datetime(title=_('Date Verified'))
@@ -46,7 +45,7 @@ class IBugPackageInfestation(Interface):
                                   vocabulary='PackageRelease')
     explicit = Bool(title=_('Explicitly Created by a Human'))
     infestationstatus = Choice(title=_('Infestation Status'),
-                         vocabulary=InfestationStatusVocabulary)
+                         vocabulary='InfestationStatus')
     datecreated = Datetime(title=_('Date Created'))
     creator = Int(title=_('Creator'))
     dateverified = Datetime(title=_('Date Verified'))
