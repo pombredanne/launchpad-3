@@ -174,7 +174,7 @@ class SoyuzPerson(SQLBase):
     _columns = [
         StringCol('givenName', dbName='givenname'),
         StringCol('familyName', dbName='familyname'),
-        StringCol('presentationName', dbName='presentationname'),
+        StringCol('displayname', dbName='displayname'),
     ]
 
 class SoyuzDistribution(SQLBase):

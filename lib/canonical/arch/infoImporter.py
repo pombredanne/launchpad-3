@@ -171,7 +171,7 @@ class ArchPerson(SQLBase):
     _table = 'Person'
 
     _columns = [
-        StringCol('name', dbName='presentationname', notNull=True),
+        StringCol('name', dbName='displayname', notNull=True),
         ]
 
 

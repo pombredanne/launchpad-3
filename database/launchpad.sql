@@ -332,7 +332,7 @@ DROP TABLE Person;
 */
 CREATE TABLE Person (
   id                    serial PRIMARY KEY,
-  presentationname      text,
+  displayname           text,
   givenname             text,
   familyname            text,
   password              text,

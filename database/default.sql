@@ -8,11 +8,12 @@ this is initial data for launchpad. unlike the sample data, this will be loaded 
 */
 
 -- Person
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Mark Shuttleworth', 'Mark', 'Shuttleworth' );       -- 1
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Mark Shuttleworth', 'Mark', 'Shuttleworth' );       -- 1
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Robert Collins', 'Robert', 'Collins' );             -- 2
+/*
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Dave Miller', 'David', 'Miller' );                  -- 2
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Colin Watson', 'Colin', 'Watson' );                 -- 3
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Scott James Remnant', 'Scott James', 'Remnant' );   -- 4
-INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Robert Collins', 'Robert', 'Collins' );             -- 5
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Jeff Waugh', 'Jeff', 'Waugh' );                     -- 6
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Andrew Bennetts', 'Andrew', 'Bennetts' );           -- 7
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'James Blackwell', 'James', 'Blackwell' );           -- 8
@@ -20,7 +21,7 @@ INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Christi
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Alexander Limi', 'Alexander', 'Limi' );             -- 10
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );           -- 11
 INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín' ); -- 12
-
+*/
 
 ---
 
@@ -28,55 +29,29 @@ INSERT INTO Person ( presentationname, givenname, familyname ) VALUES ( 'Carlos 
 
 -- EmailAddress
 INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'mark@hbd.com', 1, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'marks@thawte.com', 1, 3 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'markshuttle@yahoo.co.uk', 1, 1 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'justdave@bugzilla.org', 2, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'colin.watson@canonical.com', 3, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'steve.alexander@canonical.com', 11, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'scott@netsplit.com', 4, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'robertc@cygwin.com', 5, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'robert.collins@canonical.com', 5, 2 );
-INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'carlos@interactors.coop', 12, 2 );
+INSERT INTO EmailAddress ( email, person, status ) VALUES ( 'robertc@robertcollins.net', 2, 2 );
 
-
+/*
 -- BugSystemType
 INSERT INTO BugSystemType VALUES ( 1, 'bugzilla', 'BugZilla', 'Dave Miller\'s Labour of Love, the Godfather of Open Source project issue tracking.', 'http://www.bugzilla.org/', 2 );
 INSERT INTO BugSystemType VALUES ( 2, 'debbugs', 'DebBugs', 'The Debian bug tracking system, ugly as sin but fast and productive as a rabbit in high heels.', 'http://bugs.debian.org/', 3 );
 INSERT INTO BugSystemType VALUES ( 3, 'roundup', 'Round-Up', 'Python-based open source bug tracking system with an elegant design and reputation for cleanliness and usability.', 'http://www.roundup.org/', 4 );
-
+*/
 
 
 -- Project
-INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 1, 'ubuntu', 'The Ubuntu Project', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community. Ubuntu also includes work to unify the translation of common opens source desktop applications and the tracking of bugs across multiple distributions.', 'http://www.no-name-yet.com/' );
-INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 2, 'mozilla', 'The Mozilla Project', 'The Mozilla Project is the largest open source web browser collaborative project. The Mozilla Project produces several internet applications that are very widely used, and is also a center for collaboration on internet standards work by open source groups.', 'http://www.mozilla.org/' );
-INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 7, 'gnome', 'The Gnome Project', 'The Gnome project aims to create a desktop environment and core desktop applications that bring simplicity and ease of use to the open source desktop.', 'http://www.gnome.org/' );
-INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 6, 'arch', 'The Arch Revision Control System', 'Arch is a next-generation revision control system that allows anyone to create local branches of open source code, and makes merging between these branches easy.', 'http://www.gnuarch.org/' );
-INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 6, 'launchpad-mirrors', 'The launchpad mirroring Project', 'launchpad mirrors various revision control archives, that mirroring is managed here', '????' );
-INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 6, 'do-not-use-info-imports', 'DO NOT USE', 'TEMPORARY project till mirror jobs are assigned to correct project', '????' );
-INSERT INTO Project ( owner, name, title, description, homepageurl ) VALUES ( 3, 'apache', 'The Apache Project', 'The Apache Project produces some of the worlds most widely used web and internet server software.', 'http://www.apache.org/' ); -- 5
+INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl ) VALUES ( 1, 'ubuntu', 'Ubuntu', 'The Ubuntu Project', 'A community Linux distribution building building a slick desktop for the global market.', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community. Ubuntu also includes work to unify the translation of common opens source desktop applications and the tracking of bugs across multiple distributions.', 'http://www.no-name-yet.com/' ); -- 1
+INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl ) VALUES ( 2, 'do-not-use-info-imports', 'DO NOT USE', 'DO NOT USE', 'DO NOT USE', 'TEMPORARY project till mirror jobs are assigned to correct project', 'http://arch.ubuntu.com/' ); -- 2
+INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl ) VALUES ( 2, 'launchpad-mirrors', 'Launchpad SCM Mirrors', 'The Launchpad Mirroring Project', 'launchpad mirrors various revision control archives, that mirroring is managed here', 'A project to mirror revision control archives into Arch.', 'http://arch.ubuntu.com/' ); -- 3
 
 
 
 -- Product
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 1, 1, 'ubuntu', 'Ubuntu', 'A desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is avaialble everywhere absolutely free of charge.', 'http://www.ubuntu.com/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'gdm', 'Gnome Display Manager', 'The Gnome Display Manager is a login manager for the Gnome Desktop Environment. It allows for configurable login screens with face browsers and system actions such as shutdown and restart.', 'http://gdm.gnome.org' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'glib', 'Glib', 'Glib is one of the core Gnome libraries, used by most Gnome applications.', 'http://www.gnome.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'gtk+', 'Gnome Toolkit GTK+', 'The GTK+ libaries are the foundation of Gnome application look and feel. They allow for strongly themed applications, hundreds of themes are available.', 'http://www.gnome.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'themes', 'Gnome Themes', 'This package of standard themes is usually available on any Gnome installation.', 'http://themes.gnome.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 3, 7, 'evolution', 'Evolution', 'The Evolution groupware client', 'http://www.novell.com/products/evolution/');
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'app-suite', 'Mozilla App Suite', 'The Mozilla application suite is the modern-day descendent of the Netscape browser that launched a thousand dot-com ships. The browser code was open sourced and is now driven by The Mozilla Foundation. The Mozilla App Suite includes a mail reader, web browser, news reader, web page editor and an addressbook.', 'http:///www.mozilla.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'firefox', 'Mozilla Firefox', 'Firefox is a web browser derived from the Mozilla App Suite. It is designed to be smaller and faster than app-suite since it includes just the web browser, but it comes with the same world-beating standards support and speed.', 'http://www.mozilla.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'thunderbird', 'Mozilla Thunderbird', 'Thunderbird is email software derived from Mozilla App Suite in the same way that Firefox is. Thunderbird supports excellent spam filtering and has hundreds of extensions for such things as encryption, mouse gestures and offline work.', 'http://www.mozilla.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 2, 2, 'bugzilla', 'Bugzilla', 'Bugzilla is the big daddy of all open source bug tracking systems and is still used at several large open source projects. It\'s better known for scale than beauty.', 'http://www.bugzilla.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 7, 3, 'apache', 'The Apache Web Server', 'The worlds most popular web server. Used on more than half of the worlds web servers, and most of the servers that carry heavy traffic, Apache is the undisputed champion of the web server business.', 'http://httpd.apache.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 7, 3, 'tomcat', 'Tomcat Java Application Server', 'Tomcat description goes here. A good description has at least a full paragraph of text, explaining what\'s unique about that product, why and when you would use it.', 'http://tomcat.apache.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 7, 3, 'spamassassin', 'Spamassassin Spam Filter Daemon', 'Spamassassin description goes here. A good description has at least a full paragraph of text, explaining what\'s unique about that product, why and when you would use it.', 'http://spamassassin.apache.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 7, 3, 'apr', 'Apache Portable Runtime Library', 'APR description goes here. A good description has at least a full paragraph of text, explaining what\'s unique about that product, why and when you would use it.', 'http://apr.apache.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 7, 3, 'cocoon', 'XML Publishing Engine', 'Cocoon description goes here. A good description has at least a full paragraph of text, explaining what\'s unique about that product, why and when you would use it.', 'http://cocoon.apache.org/' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 5, 6, 'arch-mirrors', 'Arch archive mirrors', 'Arch archive full-archive mirror tasks', '????' );
-INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VALUES ( 6, 6, 'unassigned', 'unassigned syncs', 'unassigned syncs, will not be processed, to be moved to real proejcts ASAP.', '????' );
+INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl ) VALUES ( 1, 1, 'ubuntu', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is avaialble everywhere absolutely free of charge.', 'http://www.ubuntu.com/' );
+INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl ) VALUES ( 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real proejcts ASAP.', 'http://arch.ubuntu.com/' );
+INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl ) VALUES ( 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', 'http://arch.ubuntu.com/' );
 
-
+/*
 -- Sourcepackage
 INSERT INTO Sourcepackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'),
@@ -341,13 +316,12 @@ VALUES ((SELECT id FROM ArchNamespace
 	       version = '1.5.90'),
 	'Evolution 1.5.90', 'text',
 	(SELECT id FROM Person WHERE presentationname = 'Jeff Waugh'));
-
+*/
 
 /*
 --Manifest
 INSERT INTO Manifest (owner) 
 VALUES ((select id from Person where presentationname='Mark Shuttleworth'));
 */
-
 
 
