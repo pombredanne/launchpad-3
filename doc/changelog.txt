@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-26 19:23:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1257
+
+    Summary:
+      Soyuz Download Package feature implemented for BinaryPackages too.
+    Revision:
+      launchpad--devel--0--patch-1257
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-431
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-432
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-433
+       Soyuz Download Package feature implemented for BinaryPackages too.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/binarypackage.py
+     lib/canonical/launchpad/templates/binarypackage-index.pt
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-431
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-432
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-433
+
+
 2005-01-26 17:35:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1256
 
     Summary:
