@@ -9,7 +9,8 @@
 </div>
 
  <div metal:fill-slot="main" class="visualPadding"
-     tal:define="ass_batch view/batch">
+     tal:define="ass_batch view/batch;
+                 logged_in request/lp:person|nothing;">
   <iframe width="0" height="0" frameborder="0" scrolling="no" id="blackhole"></iframe>
 
   <script type="text/javascript">
@@ -33,7 +34,7 @@
 
 
   <h1>Bugs</h1>
-  <small tal:content="python:'displaying bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42</small>
+  <small tal:content="python:'displaying bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42 </small><small> :: <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackage=all&search=Search">unassigned</a> . <span tal:omit-tag="" tal:condition="logged_in"><a href="" tal:attributes="href string:${request/URL}/?status=10&status=20&assignee=${request/lp:person/name}&product=all&sourcepackage=all&search=Search">my todo list</a> . </span><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&product=all&sourcepackage=all&severity=50&search=Search">critical</a> <span tal:omit-tag="" tal:condition="logged_in">. <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackage=all&search=Search">submitted by me</a></span> :: bug id or text <input style="border-style: solid; border-width: 1px; border-color: grey;" type="text" name="searchtext" /> <input type="submit" style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; " name="search" value="Search" /></small>
   <table id="ass_listing" class="listing rowNavigation">
     <tr>
       <th>Bug #</th>
@@ -137,7 +138,7 @@
       </td>
     </tr>
   </table>
-  <input type="submit" value="Add" onclick="window.open('+new','_top')" />
+  <input type="submit" value="Submit a Bug" onclick="window.open('+new','_top')" />
 
   <form action="" method="GET">
     <fieldset>
@@ -173,10 +174,13 @@
               <td>
                 <select name="assignee" size="5" multiple>
                   <option value="all"
-                          tal:attributes="selected request/htmlform:assignee/selected/all">All</option>
+                          tal:condition="python:request.has_key('search')"
+                          tal:attributes="selected request/htmlform:assignee/selected/all">Anyone</option>
                   <option value="all"
                           tal:condition="python:not request.has_key('search')"
-                          selected>All</option>
+                          selected>Anyone</option>
+                  <option value="unassigned"
+                          tal:attributes="selected request/htmlform:assignee/selected/unassigned">Unassigned</option>
                   <span tal:omit-tag="" tal:repeat="term view/people">
                     <option tal:define="value term/token"
                             tal:content="term/title"

@@ -1,4 +1,4 @@
-from sqlobject.sqlbuilder import AND, IN
+from sqlobject.sqlbuilder import AND, IN, ISNULL
 
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
@@ -109,12 +109,25 @@ class BugAssignmentsView(object):
             spba_params.append(
                 IN(SourcePackageBugAssignment.q.bugstatus, status))
 
-        if self.request.get('assignee', None) and self.request['assignee'] != 'all':
-            assignees = []
-            if isinstance(self.request['assignee'], (list, tuple)):
-                people = Person.select(IN(Person.q.name, self.request['assignee']))
+        param_severity = self.request.get('severity', None)
+        if param_severity and param_severity != 'all':
+            severity = []
+            if isinstance(param_severity, (list, tuple)):
+                severity = param_severity
             else:
-                people = Person.select(Person.q.name == self.request['assignee'])
+                severity = [param_severity]
+            pba_params.append(
+                IN(ProductBugAssignment.q.severity, severity))
+            spba_params.append(
+                IN(SourcePackageBugAssignment.q.severity, severity))
+
+        param_assignee = self.request.get('assignee', None)
+        if param_assignee and param_assignee not in ('all', 'unassigned'):
+            assignees = []
+            if isinstance(param_assignee, (list, tuple)):
+                people = Person.select(IN(Person.q.name, param_assignee))
+            else:
+                people = Person.select(Person.q.name == param_assignee)
 
             if people:
                 assignees = [p.id for p in people]
@@ -123,6 +136,26 @@ class BugAssignmentsView(object):
                 IN(ProductBugAssignment.q.assigneeID, assignees))
             spba_params.append(
                 IN(SourcePackageBugAssignment.q.assigneeID, assignees))
+        elif param_assignee == 'unassigned':
+            pba_params.append(
+                ISNULL(ProductBugAssignment.q.assigneeID))
+            spba_params.append(
+                ISNULL(SourcePackageBugAssignment.q.assigneeID))
+
+        if self.request.get('submitter', None) and self.request['submitter'] != 'all':
+            submitters = []
+            if isinstance(self.request['submitter'], (list, tuple)):
+                people = Person.select(IN(Person.q.name, self.request['submitter']))
+            else:
+                people = Person.select(Person.q.name == self.request['submitter'])
+
+            if people:
+                submitters = [p.id for p in people]
+
+            pba_params.append(
+                IN(ProductBugAssignment.q.ownerID, submitters))
+            spba_params.append(
+                IN(SourcePackageBugAssignment.q.ownerID, submitters))
 
         if self.request.get('product', None) and self.request['product'] != 'all':
             products = []
