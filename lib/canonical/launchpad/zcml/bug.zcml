@@ -63,9 +63,11 @@
         <allow interface="canonical.launchpad.interfaces.IBugSet" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.BugSet"
-        provides="canonical.launchpad.interfaces.IBugSet" />
+    <securedutility
+        class="canonical.launchpad.database.BugSet"
+        provides="canonical.launchpad.interfaces.IBugSet">
+        <allow interface="canonical.launchpad.interfaces.IBugSet" />
+    </securedutility>
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IBugSet"

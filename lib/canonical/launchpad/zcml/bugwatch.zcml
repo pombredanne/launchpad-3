@@ -32,12 +32,15 @@
     <!--BugWatchSet -->
     <content class="canonical.launchpad.database.BugWatchSet">
         <allow interface="canonical.launchpad.interfaces.IBugWatchSet" />
-        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+        <allow
+          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.BugWatchSet"
-        provides="canonical.launchpad.interfaces.IBugWatchSet" />
+    <securedutility
+        class="canonical.launchpad.database.BugWatchSet"
+        provides="canonical.launchpad.interfaces.IBugWatchSet">
+        <allow interface="canonical.launchpad.interfaces.IBugWatchSet" />
+    </securedutility>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugWatchSet"

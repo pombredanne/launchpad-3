@@ -7,13 +7,21 @@
 
     <!-- ProductBugAssignmentSet -->
     <content class="canonical.launchpad.database.ProductBugAssignmentSet">
-        <allow interface="canonical.launchpad.interfaces.IProductBugAssignmentSet" />
-        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+        <allow
+            interface="canonical.launchpad.interfaces.IProductBugAssignmentSet"
+            />
+        <allow
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
+            />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.ProductBugAssignmentSet"
-        provides="canonical.launchpad.interfaces.IProductBugAssignmentSet" />
+    <securedutility
+        class="canonical.launchpad.database.ProductBugAssignmentSet"
+        provides="canonical.launchpad.interfaces.IProductBugAssignmentSet">
+        <allow
+            interface="canonical.launchpad.interfaces.IProductBugAssignmentSet"
+        />
+    </securedutility>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductBugAssignmentSet"
@@ -68,9 +76,14 @@
         <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.SourcePackageBugAssignmentSet"
-        provides="canonical.launchpad.interfaces.ISourcePackageBugAssignmentSet" />
+    <securedutility
+        class="canonical.launchpad.database.SourcePackageBugAssignmentSet"
+        provides="canonical.launchpad.interfaces.ISourcePackageBugAssignmentSet"
+        >
+        <allow
+        interface="canonical.launchpad.interfaces.ISourcePackageBugAssignmentSet"
+        />
+    </securedutility>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentSet"
@@ -130,9 +143,12 @@
             set_attributes="user minseverity minpriority showclosed" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.BugsAssignedReport"
-        provides="canonical.launchpad.interfaces.IBugsAssignedReport" />
+    <securedutility
+        class="canonical.launchpad.database.BugsAssignedReport"
+        provides="canonical.launchpad.interfaces.IBugsAssignedReport">
+        <allow interface="canonical.launchpad.interfaces.IBugsAssignedReport"
+            />
+    </securedutility>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugsAssignedReport"

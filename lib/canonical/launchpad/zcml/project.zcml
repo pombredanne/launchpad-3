@@ -120,9 +120,11 @@
         <allow interface="canonical.launchpad.interfaces.IProjectSet" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.ProjectSet"
-        provides="canonical.launchpad.interfaces.IProjectSet" />
+    <securedutility
+        class="canonical.launchpad.database.ProjectSet"
+        provides="canonical.launchpad.interfaces.IProjectSet">
+        <allow interface="canonical.launchpad.interfaces.IProjectSet" />
+    </securedutility>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProjectSet"

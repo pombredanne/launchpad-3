@@ -48,9 +48,11 @@
         <allow interface="canonical.launchpad.interfaces.IBountySet" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.BountySet"
-        provides="canonical.launchpad.interfaces.IBountySet" />
+    <securedutility
+        class="canonical.launchpad.database.BountySet"
+        provides="canonical.launchpad.interfaces.IBountySet" >
+        <allow interface="canonical.launchpad.interfaces.IBountySet" />
+    </securedutility>
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IBountySet"

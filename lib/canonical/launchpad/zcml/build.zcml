@@ -40,8 +40,10 @@
 </browser:pages>
 
 
-<utility  
-    factory="canonical.launchpad.database.BuildSet"
-    provides="canonical.launchpad.interfaces.IBuildSet" />
+<securedutility
+    class="canonical.launchpad.database.BuildSet"
+    provides="canonical.launchpad.interfaces.IBuildSet">
+    <allow interface="canonical.launchpad.interfaces.IBuildSet" />
+</securedutility>
 
 </configure>

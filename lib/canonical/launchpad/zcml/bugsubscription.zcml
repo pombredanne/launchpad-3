@@ -31,18 +31,24 @@
 
     <!-- BugSubscriptionSet -->
     <content class="canonical.launchpad.database.BugSubscriptionSet">
-        <allow interface="canonical.launchpad.interfaces.IBugSubscriptionSet" />
-        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+        <allow
+          interface="canonical.launchpad.interfaces.IBugSubscriptionSet" />
+        <allow
+          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.BugSubscriptionSet"
-        provides="canonical.launchpad.interfaces.IBugSubscriptionSet" />
+    <securedutility
+        class="canonical.launchpad.database.BugSubscriptionSet"
+        provides="canonical.launchpad.interfaces.IBugSubscriptionSet">
+        <allow interface="canonical.launchpad.interfaces.IBugSubscriptionSet"
+        />
+    </securedutility>
 
     <adapter
         for="canonical.launchpad.interfaces.IBug"
         provides="canonical.launchpad.interfaces.IBugSubscriptionSet"
-        factory="canonical.launchpad.components.bugsubscription.IBugSubscriptionSetAdapter" />
+        factory="canonical.launchpad.components.bugsubscription.IBugSubscriptionSetAdapter"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugSubscriptionSet"

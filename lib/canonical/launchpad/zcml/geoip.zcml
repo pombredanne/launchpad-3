@@ -10,9 +10,11 @@
         <allow interface="canonical.launchpad.interfaces.IGeoIP" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.utilities.GeoIP"
-        provides="canonical.launchpad.interfaces.IGeoIP" />
+    <securedutility
+        class="canonical.launchpad.utilities.GeoIP"
+        provides="canonical.launchpad.interfaces.IGeoIP">
+        <allow interface="canonical.launchpad.interfaces.IGeoIP" />
+    </securedutility>
 
     <adapter
         for="zope.publisher.interfaces.browser.IBrowserRequest"

@@ -21,4 +21,20 @@
       handler="canonical.launchpad.webapp.metazcml.favicon"
       />
 
+  <complexDirective
+      namespace="http://namespaces.zope.org/zope"
+      name="securedutility"
+      schema="canonical.launchpad.webapp.metazcml.ISecuredUtilityDirective"
+      handler="canonical.launchpad.webapp.metazcml.SecuredUtilityDirective"
+      >
+      <subdirective
+          name="require"
+          schema="zope.app.component.metadirectives.IRequireSubdirective"
+          />
+      <subdirective
+          name="allow"
+          schema="zope.app.component.metadirectives.IAllowSubdirective"
+          />
+  </complexDirective>
+
 </configure>

@@ -32,6 +32,11 @@ class ICountry(Interface):
             title=_('Description'), required=True,
             )
 
+    # XXX: This attribute is missing from the interface.
+    #      It needs a proper description.
+    # -- Steve Alexander, Fri Dec 10 16:06:58 UTC 2004
+    languages = Attribute("XXX")
+
 
 # Interfaces for containers
 class ICountrySet(Interface):

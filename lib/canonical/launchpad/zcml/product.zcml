@@ -153,9 +153,11 @@
         <allow interface="canonical.launchpad.interfaces.IProductSet" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.ProductSet"
-        provides="canonical.launchpad.interfaces.IProductSet" />
+    <securedutility
+        class="canonical.launchpad.database.ProductSet"
+        provides="canonical.launchpad.interfaces.IProductSet">
+        <allow interface="canonical.launchpad.interfaces.IProductSet" />
+    </securedutility>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductSet"

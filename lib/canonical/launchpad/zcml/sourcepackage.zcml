@@ -11,8 +11,11 @@
     </content>
 
     <!-- This is class VSourcePackageReleasePublishing -->
-    <content class="canonical.launchpad.database.VSourcePackageReleasePublishing">
-      <allow interface="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"/>
+    <content
+      class="canonical.launchpad.database.VSourcePackageReleasePublishing">
+      <allow
+        interface="canonical.launchpad.interfaces.ISourcePackageReleasePublishing"
+        />
       <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
@@ -55,9 +58,11 @@
             />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.SourcePackageSet"
-        provides="canonical.launchpad.interfaces.ISourcePackageSet" />
+    <securedutility
+        class="canonical.launchpad.database.SourcePackageSet"
+        provides="canonical.launchpad.interfaces.ISourcePackageSet">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageSet" />
+    </securedutility>
 
     <browser:traverse
         for="canonical.launchpad.interfaces.ISourcePackageSet"
