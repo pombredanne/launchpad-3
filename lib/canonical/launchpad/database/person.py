@@ -458,7 +458,7 @@ class PersonSet(object):
                             email=email)
 
 
-def registeredName(name):
+def registeredPersonName(name):
     try:
         Person.selectBy(name=name)[0]
         return True
@@ -472,7 +472,7 @@ def createPerson(displayname=None, givenname=None, familyname=None,
     if email:
         email = email.lower()
 
-    nick = nickname.generate_nick(email, registeredName)
+    nick = nickname.generate_nick(email, registeredPersonName)
     now = datetime.utcnow()
 
     existing = Person.selectBy(name=nick)

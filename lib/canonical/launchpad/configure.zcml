@@ -11,7 +11,7 @@
   <!-- legal link -->
   <browser:page
     for="canonical.publication.RootObject"
-    name="legal-temp"
+    name="legal"
     template="templates/launchpad-legal.pt"
     permission="zope.Public"
     />

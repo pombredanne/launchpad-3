@@ -53,15 +53,6 @@
           lp:url="foaf/people/+index" />
   </browser:pages>
 
-  <browser:page
-      name="+register"
-      for="canonical.launchpad.interfaces.ILaunchpadApplication"
-      class="canonical.launchpad.browser.JoinLaunchpadView"
-      permission="zope.Public"
-      template="../templates/foaf-join.pt"
-      lp:url="+register">
-  </browser:page>
-
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />

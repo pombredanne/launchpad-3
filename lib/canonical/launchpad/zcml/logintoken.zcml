@@ -9,10 +9,11 @@
         <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
     </content>
 
-    <utility 
-        provides="canonical.launchpad.interfaces.ILoginTokenSet"
-        factory="canonical.launchpad.database.LoginTokenSet"
-        permission="zope.Public" />
+    <securedutility
+        class="canonical.launchpad.database.LoginTokenSet"
+        provides="canonical.launchpad.interfaces.ILoginTokenSet">
+        <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
+    </securedutility>
 
     <browser:traverse
         for="canonical.launchpad.interfaces.ILoginTokenSet"
@@ -30,6 +31,14 @@
         class="canonical.launchpad.browser.ValidateEmailView"
         template="../templates/foaf-validateemail.pt"
         lp:url="foaf/logintoken/$token/+validate" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILoginToken"
+        name="+resetpassword"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ResetPasswordView"
+        template="../templates/foaf-resetpassword.pt"
+        lp:url="foaf/logintoken/$token/+resetpassword" />
 
     <browser:addform
         name="+newaccount"

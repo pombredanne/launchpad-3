@@ -2,6 +2,311 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 00:37:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1226
+
+    Summary:
+      Improve database locale checks, add locale sanity check to test_on_merge.py and improve test_on_merge output
+    Revision:
+      launchpad--devel--0--patch-1226
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-90
+       Improve database locale checks, add locale sanity check to test_on_merge.py and improve test_on_merge output
+    
+
+    modified files:
+     database/schema/fti.py doc/changelog.txt test_on_merge.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-90
+
+
+2005-01-21 00:03:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1225
+
+    Summary:
+      Update tsearch2 installation scripts to support en_* locales as well as the C locale
+    Revision:
+      launchpad--devel--0--patch-1225
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-88
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-89
+       Update tsearch2 installation scripts to support en_* locales as well as the C locale
+    
+
+    modified files:
+     database/schema/fti.py doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-88
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-89
+
+
+2005-01-20 21:17:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1224
+
+    Summary:
+      Killing **kw args and Adding Product link on Person Packages
+    Revision:
+      launchpad--devel--0--patch-1224
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-465
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-466
+       redesign createProduct
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-467
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-468
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-469
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-470
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-471
+       add product link in person-packages template
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-472
+       typo on person-packages.pt
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-473
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-474
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-475
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/templates/person-packages.pt
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-465
+     celso.providelo@canonical.com/launchpad--devel--0--patch-466
+     celso.providelo@canonical.com/launchpad--devel--0--patch-467
+     celso.providelo@canonical.com/launchpad--devel--0--patch-468
+     celso.providelo@canonical.com/launchpad--devel--0--patch-469
+     celso.providelo@canonical.com/launchpad--devel--0--patch-470
+     celso.providelo@canonical.com/launchpad--devel--0--patch-471
+     celso.providelo@canonical.com/launchpad--devel--0--patch-472
+     celso.providelo@canonical.com/launchpad--devel--0--patch-473
+     celso.providelo@canonical.com/launchpad--devel--0--patch-474
+     celso.providelo@canonical.com/launchpad--devel--0--patch-475
+
+
+2005-01-20 19:15:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1223
+
+    Summary:
+      Small fixes for JoinLaunchpad and ForgottenPassword pages.
+    Revision:
+      launchpad--devel--0--patch-1223
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-94
+       Small fixes on JoinLaunchpadView. Some of them according to Andrew's review.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-95
+       Small template fixes to make ForgottenPassword and JoinLaunchpad pages consistent with the Login page.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-96
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/launchpad-forgottenpassword.pt
+     lib/canonical/launchpad/templates/launchpad-join.pt
+     lib/canonical/launchpad/webapp/login.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-94
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-95
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-96
+
+
+2005-01-20 16:08:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1222
+
+    Summary:
+      approved legal text, and debsync ruggedization
+    Revision:
+      launchpad--devel--0--patch-1222
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-706
+       ruggedize malone debsync
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-707
+       fixups... CAUTION baz is behaving strangely this changeset might be b0rked
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-708
+       ruggedize source and binary package names in debsync
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-709
+       smarter handling of unknown source packages
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-710
+       ruggedize debsync
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-711
+       skip bug if initial email is too large too
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-712
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-713
+       make sure we only try to create valid package names
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-714
+       never try to create an invalid package name
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-715
+       make sure generated nick makes a valid name
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-716
+       typo
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-717
+       fix typo in nick generation
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-718
+       try two way merge for refueling
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-719
+       try star merge now
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-720
+       merge rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/foaf/nickname.py
+     lib/canonical/launchpad/configure.zcml
+     lib/canonical/launchpad/database/bugattachment.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/images/languages.gif
+     lib/canonical/launchpad/templates/launchpad-legal.pt
+     lib/canonical/malone/debsync/debsync.py
+     lib/canonical/malone/debsync/malone.py utilities/refuel
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-706
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-707
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-708
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-709
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-710
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-711
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-712
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-713
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-714
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-715
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-716
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-717
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-718
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-719
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-720
+
+
+2005-01-20 15:11:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1221
+
+    Summary:
+      Adding the Forgotten Password page. Moving LoginToken-related Views to browser/logintoken.py. Moving JoinLaunchpadView to launchpad/webapp/login.py. Lots of small fixes.
+    Revision:
+      launchpad--devel--0--patch-1221
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-85
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-86
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-87
+       Quick fix on CookieLoginPage: errortext wasn't being set when login failed.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-88
+       Adding forgotten password functionality and some small fixes.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-89
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-90
+       Creating browser/logintoken.py and put logintoken Views there.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-91
+       Small fix to direct users trying to login to the Forgotten Password page when the email is already registered.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-92
+       Do not hardcode the Application URL in emails for email address validation.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-93
+       Moving JoinLaunchpadView to launchpad/webapp/login.py and some fixes for URLs we send by email.
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/logintoken.py.id
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/templates/.arch-ids/foaf-resetpassword.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/launchpad-forgottenpassword.pt.id
+     lib/canonical/launchpad/templates/foaf-resetpassword.pt
+     lib/canonical/launchpad/templates/launchpad-forgottenpassword.pt
+     lib/canonical/launchpad/webapp/.arch-ids/forgottenpassword.txt.id
+     lib/canonical/launchpad/webapp/forgottenpassword.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/foaf/validate-email.txt
+     lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/interfaces/logintoken.py
+     lib/canonical/launchpad/templates/foaf-newaccount.pt
+     lib/canonical/launchpad/templates/launchpad-join.pt
+     lib/canonical/launchpad/templates/launchpad-login.pt
+     lib/canonical/launchpad/webapp/configure.zcml
+     lib/canonical/launchpad/webapp/login.py
+     lib/canonical/launchpad/webapp/newuser-email.txt
+     lib/canonical/launchpad/zcml/logintoken.zcml
+     lib/canonical/launchpad/zcml/person.zcml
+
+    renamed files:
+     lib/canonical/foaf/.arch-ids/newuser-email.txt.id
+       ==> lib/canonical/launchpad/webapp/.arch-ids/newuser-email.txt.id
+     lib/canonical/foaf/newuser-email.txt
+       ==> lib/canonical/launchpad/webapp/newuser-email.txt
+     lib/canonical/launchpad/templates/.arch-ids/foaf-join.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/launchpad-join.pt.id
+     lib/canonical/launchpad/templates/foaf-join.pt
+       ==> lib/canonical/launchpad/templates/launchpad-join.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-85
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-86
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-87
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-88
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-89
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-90
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-91
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-92
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-93
+
+
 2005-01-19 18:37:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1220
 
     Summary:

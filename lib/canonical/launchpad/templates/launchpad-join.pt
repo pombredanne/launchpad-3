@@ -1,0 +1,57 @@
+<tal:do-this-first tal:content="view/process_form" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Join Launchpad</title>
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div tal:condition="not: view/success">
+    <h1>Join Launchpad</h1>
+
+    <div class="formHelp">
+      To Join Launchpad, just type your email address on the form bellow
+      and we will send you an email message with instructions on how to
+      complete your registration process.
+    </div>
+
+    <div class="portalMessage" tal:condition="view/errormessage"
+         tal:content="structure view/errormessage">
+    </div>
+
+    <br />
+    <form name="join" action="" method="POST">
+      <div class="field">
+        <label for="email">Email address</label>
+        <div class="formHelp">
+          Enter the email address you want to use on Launchpad
+        </div>
+        <input type="text" name="email" size="40"
+               tal:attributes="value view/email|nothing" />
+      </div>
+      <div class="formControls">
+        <input type="submit" name="SUBMIT" value="Join" />
+      </div>
+    </form>
+  </div>
+
+  <div tal:condition="view/success">
+    <h1>Thank You</h1>
+
+    <br />
+    <p>An email message was sent to <span tal:replace="view/email"></span>
+    with instructions on how to finish the registration process. Thank you
+    for joining Launchpad.</p>
+  </div>
+
+</div>
+</body>
+
+</html>

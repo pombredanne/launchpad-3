@@ -3,7 +3,7 @@
 
 """Tests that get run automatically on a merge."""
 
-import sys
+import sys, re
 import os, os.path
 import popen2
 import tabnanny
@@ -138,6 +138,15 @@ def main():
     if enc != 'UNICODE':
         print 'Database encoding incorrectly set'
         return 1
+    cur.execute(r"""
+        SELECT setting FROM pg_settings
+        WHERE context='internal' AND name='lc_ctype'
+        """)
+    loc = cur.fetchone()[0]
+    if not (loc.startswith('en_') or loc in ('C', 'en')):
+        print 'Database locale incorrectly set. Need to rerun initdb.'
+        return 1
+
     # Explicity close our connections - things will fail if we leave open
     # connections.
     cur.close()
@@ -147,8 +156,11 @@ def main():
     
 
     print 'Running tests.'
-    proc = popen2.Popen3('cd %s; %s test.py %s < /dev/null' %
-        (here, sys.executable, ' '.join(sys.argv[1:])), True)
+    cmd = 'cd %s; %s test.py %s < /dev/null' % (
+            here, sys.executable, ' '.join(sys.argv[1:])
+            )
+    print cmd
+    proc = popen2.Popen3(cmd, True)
     stdin, out, err = proc.tochild, proc.fromchild, proc.childerr
 
     # Use non-blocking reader threads to cope with differing expectations
@@ -166,7 +178,9 @@ def main():
     dataout = outthread.read()
 
     if test_ok:
-        print errlines[1]
+        for line in errlines:
+            if re.match('^Ran\s\d+\stest(s)?\sin\s[\d\.]+s$', line):
+                print line
         return 0
     else:
         print '---- test stdout ----'

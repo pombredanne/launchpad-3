@@ -180,9 +180,11 @@ class IProductSet(Interface):
     def __getitem__(name):
         """Get a product by its name."""
 
-    # XXX cprov 20050112
-    # Avoid collapsed **kw, use explicit expanded arguments
-    def createProduct(**kw):
+    def createProduct(owner, name, displayname, title, shortdesc,
+                      description, project=None, homepageurl=None,
+                      screenshotsurl=None, wikiurl=None,
+                      downloadurl=None, freshmeatproject=None,
+                      sourceforgeproject=None):
         """Create and Return a brand new Product."""
         
     def forReview():

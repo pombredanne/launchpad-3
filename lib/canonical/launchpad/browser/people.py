@@ -12,7 +12,6 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 from canonical.auth.browser import well_formed_email
-from canonical.foaf.nickname import generate_nick
 
 # database imports
 from canonical.launchpad.database import WikiName
@@ -20,26 +19,22 @@ from canonical.launchpad.database import JabberID
 from canonical.launchpad.database import TeamParticipation, Membership
 from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID
-from canonical.launchpad.database import createPerson
 from canonical.launchpad.database import createTeam
-from canonical.launchpad.database import newLoginToken
 from canonical.launchpad.database import Person
 from canonical.launchpad.database import SSHKey
 
 # interface import
 from canonical.launchpad.interfaces import IPerson, IPersonSet
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
 
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
 # zope imports
-import zope
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages
@@ -123,7 +118,7 @@ class FOAFSearchView(object):
         return Person.select(query, orderBy='displayname')
 
 
-class BaseAddView(AddView):
+class TeamAddView(AddView):
 
     def __init__(self, context, request):
         self.context = context
@@ -133,38 +128,6 @@ class BaseAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
-
-
-class NewAccountView(BaseAddView):
-
-    def __init__(self, context, request):
-        BaseAddView.__init__(self, context, request)
-
-    def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
-        password = kw['password']
-        # We don't want to pass password2 to PersonSet.new().
-        password2 = kw.pop('password2')
-        if password2 != password:
-            # Do not display the password in the form when an error
-            # occurs.
-            kw.pop('password')
-            self._nextURL = "%s?passwordmismatch=1" % self.request.URL
-            return False
-
-        nick = generate_nick(self.context.email)
-        kw['name'] = nick
-        person = getUtility(IPersonSet).new(**kw)
-        email = EmailAddress(person=person.id, email=self.context.email,
-                             status=int(EmailAddressStatus.PREFERRED))
-        self._nextURL = '/foaf/people/%s' % person.name
-        return True
-
-
-class TeamAddView(BaseAddView):
 
     def createAndAdd(self, data):
         kw = {}
@@ -177,53 +140,6 @@ class TeamAddView(BaseAddView):
         notify(ObjectCreatedEvent(team))
         self._nextURL = '/foaf/people/%s' % team.name
         return team
-
-
-class JoinLaunchpadView(object):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.errormessage = None
-        self.submitted = False
-        self.email = None
-
-    def formSubmitted(self):
-        if self.request.method != "POST":
-            return False
-
-        self.email = self.request.form.get("email", "").strip()
-        if not well_formed_email(self.email):
-            self.errormessage = ("The email address you provided isn't "
-                                 "valid. Please check it.")
-            return False
-
-        # New user: requester and requesteremail are None.
-        token = newLoginToken(None, None, self.email,
-                              LoginTokenType.NEWACCOUNT)
-        sendNewUserEmail(token, self.request.getApplicationURL())
-        self.submitted = True
-        return True
-
-    def success(self):
-        return self.submitted and not self.errormessage
-
-
-def sendNewUserEmail(token, appurl):
-    msg = """\
-Your Launchpad registration request has been received. To complete the signup
-process, please click on the link below and follow the instructions to create
-your account:
-
-%(appurl)s/foaf/logintoken/%(longstring)s/+newaccount
-
-Thank you!
-
-The Launchpad Team""" % {'appurl' : appurl, 'longstring': token.token}
-
-    fromaddress = "The Launchpad Team <noreply@canonical.com>"
-    subject = "Launchpad Account Creation Instructions"
-    simple_sendmail(fromaddress, token.email, subject, msg)
 
 
 class PersonView(object):
@@ -375,9 +291,10 @@ class EmailAddressEditView(object):
                 return
 
             login = getUtility(ILaunchBag).login
-            token = newLoginToken(user, login, newemail, 
-                                  LoginTokenType.VALIDATEEMAIL)
-            sendEmailValidationRequest(token)
+            logintokenset = getUtility(ILoginTokenSet)
+            token = logintokenset.new(user, login, newemail, 
+                                      LoginTokenType.VALIDATEEMAIL)
+            sendEmailValidationRequest(token, self.request.getApplicationURL())
             self.message = ("A new message was sent to '%s', please follow "
                             "the instructions on that message to validate "
                             "your email address.") % newemail
@@ -419,77 +336,25 @@ class EmailAddressEditView(object):
         self.message = ("A new email was sent to '%s' with instructions "
                         "on how to validate it.") % email.email
         login = getUtility(ILaunchBag).login
-        token = newLoginToken(self.user, login, email.email,
-                              LoginTokenType.VALIDATEEMAIL)
-        sendEmailValidationRequest(token)
+        logintokenset = getUtility(ILoginTokenSet)
+        token = logintokenset.new(self.user, login, email.email,
+                                  LoginTokenType.VALIDATEEMAIL)
+        sendEmailValidationRequest(token, self.request.getApplicationURL())
 
 
-def sendEmailValidationRequest(token):
+def sendEmailValidationRequest(token, appurl):
     template = open('lib/canonical/foaf/validate-email.txt').read()
     fromaddress = "Launchpad Email Validator <noreply@canonical.com>"
 
     replacements = {'longstring': token.token,
                     'requester': token.requester.browsername(),
                     'requesteremail': token.requesteremail,
-                    'toaddress': token.email
-                    }
-
+                    'toaddress': token.email,
+                    'appurl': appurl}
     message = template % replacements
 
     subject = "Launchpad: Validate your email address"
-    simple_sendmail(fromaddress, [token.email], subject, message)
-
-
-class ValidateEmailView(object):
-
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        self.errormessage = ""
-
-    def formSubmitted(self):
-        if self.request.method == "POST":
-            self.validate()
-            return True
-        return False
-
-    def validate(self):
-        # Email validation requests must have a registered requester.
-        assert self.context.requester is not None
-        assert self.context.requesteremail is not None
-        requester = self.context.requester
-        password = self.request.form.get("password")
-        encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(password, requester.password):
-            self.errormessage = "Wrong password. Please try again."
-            return 
-
-        results = EmailAddress.selectBy(email=self.context.requesteremail)
-        assert results.count() == 1
-        reqemail = results[0]
-        assert reqemail.person == requester
-
-        status = int(EmailAddressStatus.VALIDATED)
-        if not requester.preferredemail and not requester.validatedemails:
-            # This is the first VALIDATED email for this Person, and we
-            # need it to be the preferred one, to be able to communicate
-            # with the user.
-            status = int(EmailAddressStatus.PREFERRED)
-
-        results = EmailAddress.selectBy(email=self.context.email)
-        if results.count() > 0:
-            # This email was obtained via gina or lucille and have been
-            # marked as NEW on the DB. In this case all we have to do is
-            # set that email status to VALIDATED.
-            assert results.count() == 1
-            email = results[0]
-            email.status = status
-            return
-
-        # New email validated by the user. We must add it to our emailaddress
-        # table.
-        email = EmailAddress(email=self.context.email, status=status,
-                             person=requester.id)
+    simple_sendmail(fromaddress, token.email, subject, message)
 
 
 class GPGKeyView(object):

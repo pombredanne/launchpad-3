@@ -19,8 +19,8 @@ class BugAttachment(SQLBase):
     implements(IBugAttachment)
 
     _table = 'BugAttachment'
-    bugmessage = ForeignKey(foreignKey='BugMessage',
-                            dbName='bugmessage', notNull=True)
+    message = ForeignKey(foreignKey='Message',
+                            dbName='message', notNull=True)
     name = StringCol(notNull=False, default=None)
     description = StringCol(notNull=False, default=None)
     libraryfile = ForeignKey(foreignKey='LibraryFileAlias',
