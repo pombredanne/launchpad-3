@@ -341,10 +341,10 @@ class IEditPOFile(IPOFile):
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
 
-    def createMessageSetFromMessageID(self, messageID):
+    def createMessageSetFromMessageID(messageID):
         """See IEditPOTemplate."""
 
-    def createMessageSetFromText(self, text):
+    def createMessageSetFromText(text):
         """See IEditPOTemplate."""
 
 class IPOMessageSet(Interface):
