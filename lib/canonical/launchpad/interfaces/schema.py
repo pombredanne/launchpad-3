@@ -1,12 +1,4 @@
-
-# Zope schema imports
-from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
-                        TextLine, Password
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
-
 
 class ISchemaSet(Interface):
     """The collection of schemas."""

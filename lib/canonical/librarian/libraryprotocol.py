@@ -5,6 +5,7 @@ from twisted.internet import protocol
 from twisted.internet.threads import deferToThread
 from twisted.protocols import basic
 from twisted.python import log
+from canonical.lp import initZopeless
 
 
 class ProtocolViolation(Exception):
@@ -144,8 +145,7 @@ if __name__ == '__main__':
     log.startLogging(sys.stdout)
     from canonical.librarian import db, storage
     from canonical.arch.sqlbase import SQLBase
-    from sqlobject import connectionForURI
-    SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+    initZopeless()
     
     try:
         os.mkdir('/tmp/fatsam')

@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@malone_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="launchpad">
   <body>
   <div metal:fill-slot="main">
 
@@ -19,7 +19,7 @@
         <h3 tal:condition="view/label"
             tal:content="view/label"
             metal:define-slot="heading"
-            >Edit something</h3>
+            >Add Something</h3>
 
         <p tal:define="status view/update"
            tal:condition="status"
@@ -38,7 +38,11 @@
             <div class="label"><input type="text" style="width:100%" /></div>
         </div>
 
+        <fieldset>
+
         <div metal:use-macro="context/@@form_macros/widget_rows" />
+
+        </fieldset>
 
         <div class="separator"></div>
 

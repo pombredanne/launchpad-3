@@ -39,14 +39,6 @@ class Language(SQLBase):
         StringCol(name='pluralExpression', dbName='pluralexpression'),
     ]
 
-    def translateLabel(self):
-        try:
-            schema = Schema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-        return Label.selectBy(schemaID=schema.id, name=self.code)
-
-    def translators(self):
-        return self.translateLabel().persons()
+    translators = RelatedJoin('Person', joinColumn='language',
+        otherColumn='person', intermediateTable='PersonLanguage')
 

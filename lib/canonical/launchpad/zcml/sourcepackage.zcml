@@ -6,36 +6,71 @@
     i18n_domain="launchpad">
 
     <!-- This is class SourcePackageRelease -->
-    <!-- CONTENT CLASSES -->
     <content class="canonical.soyuz.sql.SourcePackageRelease">
       <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
       <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
-<!--
-    <content class="canonical.launchpad.database.SourcePackageRelease">
-        <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease" />
-        <allow
-            interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
-        <require
-            permission="zope.View"
-            set_schema="canonical.launchpad.interfaces.ISourcePackageRelease" />
+    <!-- XXX comments from Mark Shuttleworth: the Soyuz BinaryPackages and
+            SourcePackages objects should be merged into BinaryPackageSet
+            and SourcePackageSet by 16/10/04 unless their continued existence
+            is justified 
+            -->
+    <content class="canonical.soyuz.sql.SourcePackages">
+        <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
--->
 
-    <!-- UTILITY DECLARATION-->
+    <!-- SourcePackage -->
+    <content class="canonical.launchpad.database.SourcePackage">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackage" />
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
 
-    <!-- VOCABULARIES -->
-    <vocabulary
-        name="PackageRelease"
-        factory="canonical.launchpad.vocabulary.PackageReleaseVocabulary" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        name="+index" />
 
-    <!--TRAVERSALS-->
+    <browser:pages
+        for="canonical.launchpad.interfaces.ISourcePackage"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.SourcePackageView">
+        <browser:page
+            name="+index"
+            template="../templates/malone-sourcepackage-index.pt"
+            lp:url="malone/sourcepackage/$SourcePackage.name/+malone-index" />
+    </browser:pages>
 
-    <!--BROWSER DEFAULTVIEWS-->
+    <!-- SourcePackageName -->
+    <content class="canonical.launchpad.database.SourcePackageName">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageName" />
+    </content>
 
-    <!--PAGE DECLARATIONS-->
+    <!-- SourcePackageContainer -->
+    <content class="canonical.launchpad.database.SourcePackageContainer">
+        <allow
+            interface="canonical.launchpad.interfaces.ISourcePackageContainer"
+            />
+    </content>
 
-    <!--FORMS-->
+    <utility
+        factory="canonical.launchpad.database.SourcePackageContainer"
+        provides="canonical.launchpad.interfaces.ISourcePackageContainer" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ISourcePackageContainer"
+        getter="__getitem__" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackageContainer"
+        name="+index" />
+
+    <browser:pages for="canonical.launchpad.interfaces.ISourcePackageContainer"
+        permission="zope.Public">
+        <browser:page 
+            name="+index"
+            template="../templates/sourcepackages-index.pt"
+            lp:url="malone/sourcepackages/+index" />
+    </browser:pages>
 
 </configure>

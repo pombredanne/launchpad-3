@@ -2,30 +2,72 @@
     
     <vocabulary
         name="BugTracker"
-        factory="canonical.launchpad.vocabulary.BugTrackerVocabulary" />
+        factory="canonical.launchpad.vocabularies.BugTrackerVocabulary"
+        />
 
     <vocabulary
         name="SourcePackage"
-        factory="canonical.launchpad.vocabulary.SourcepackageVocabulary" />
+        factory="canonical.launchpad.vocabularies.SourcePackageVocabulary"
+        />
 
     <vocabulary
         name="BinaryPackage"
-        factory="canonical.launchpad.vocabulary.BinarypackageVocabulary" />
+        factory="canonical.launchpad.vocabularies.BinaryPackageVocabulary"
+        />
 
     <vocabulary
         name="BinaryPackageName"
-        factory="canonical.launchpad.vocabulary.BinarypackageNameVocabulary" />
+        factory="canonical.launchpad.vocabularies.BinaryPackageNameVocabulary"
+        />
 
     <vocabulary
         name="Person"
-        factory="canonical.launchpad.vocabulary.PersonVocabulary" />
+        factory="canonical.launchpad.vocabularies.PersonVocabulary"
+        />
 
     <vocabulary
         name="ProductRelease"
-        factory="canonical.launchpad.vocabulary.ProductReleaseVocabulary" />
+        factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
+        />
 
     <vocabulary
         name="Product"
-        factory="canonical.launchpad.vocabulary.ProductVocabulary" />
+        factory="canonical.launchpad.vocabularies.ProductVocabulary"
+        />
+
+    <vocabulary
+        name="Subscription"
+        factory="canonical.launchpad.vocabularies.SubscriptionVocabulary"
+        />
+
+    <vocabulary
+        name="BugRef"
+        factory="canonical.launchpad.vocabularies.BugRefVocabulary"
+        />
+
+    <vocabulary
+        name="BugStatus"
+        factory="canonical.launchpad.vocabularies.BugStatusVocabulary"
+        />
+
+    <vocabulary
+        name="BugPriority"
+        factory="canonical.launchpad.vocabularies.BugPriorityVocabulary"
+        />
+
+    <vocabulary
+        name="BugSeverity"
+        factory="canonical.launchpad.vocabularies.BugSeverityVocabulary"
+        />
+
+    <vocabulary
+        name="InfestationStatus"
+        factory="canonical.launchpad.vocabularies.InfestationStatusVocabulary"
+        />
+
+    <vocabulary
+        name="PackageRelease"
+        factory="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
+        />
 
 </configure>

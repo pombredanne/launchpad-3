@@ -15,7 +15,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet,  \
                                                   IEmailAddress
 from canonical.launchpad.interfaces.language import ILanguageSet
-from canonical.launchpad.database.schema import Schema, Label
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.lp import dbschema
 
@@ -38,6 +37,10 @@ class Person(SQLBase):
         DateTimeCol('karmatimestamp', default=UTC_NOW)
     ]
 
+    # RelatedJoin gives us also an addLanguage and removeLanguage for free
+    languages = RelatedJoin('Language', joinColumn='person',
+        otherColumn='language', intermediateTable='PersonLanguage')
+
     _emailsJoin = MultipleJoin('RosettaEmailAddress', joinColumn='person')
 
     def emails(self):
@@ -46,13 +49,13 @@ class Person(SQLBase):
     def browsername(self):
         """Returns a name suitable for display on a web page."""
         if self.displayname: return self.displayname
-        webname = ''
+        browsername = ''
         if self.familyname:
-            webname.append(string.upper(self.familyname))
-            if self.givenname: webname.append(' '+self.givenname)
-        if not webname:
-            webname = 'UNKNOWN USER #'+str(self.id)
-        return webname
+            browsername.append(string.upper(self.familyname))
+            if self.givenname: browsername.append(' '+self.givenname)
+        if not browsername:
+            browsername = 'UNKNOWN USER #'+str(self.id)
+        return browsername
 
     # XXX: not implemented
     def maintainedProjects(self):
@@ -90,53 +93,6 @@ class Person(SQLBase):
                 ORDER BY datefirstseen DESC))
             ''')
 
-    _labelsJoin = RelatedJoin('Label', joinColumn='person',
-        otherColumn='label', intermediateTable='PersonLabel')
-
-    def languages(self):
-        languages = getUtility(ILanguageSet)
-        try:
-            schema = Schema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-
-        for label in self._labelsJoin:
-            if label.schema == schema:
-                yield languages[label.name]
-
-    def addLanguage(self, language):
-        try:
-            schema = Schema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-        label = Label.selectBy(schemaID=schema.id, name=language.code)
-        if label.count() < 1:
-            # The label for this language does not exists yet into the
-            # database, we should create it.
-            label = Label(
-                        schemaID=schema.id,
-                        name=language.code,
-                        title='Translates into ' + language.englishName,
-                        description='A person with this label says that ' + \
-                                    'knows how to translate into ' + \
-                                    language.englishName)
-        else:
-            label = label[0]
-        # This method comes from the RelatedJoin
-        self.addLabel(label)
-
-    def removeLanguage(self, language):
-        try:
-            schema = Schema.byName('translation-languages')
-        except SQLObjectNotFound:
-            raise RuntimeError("Launchpad installation is broken, " + \
-                    "the DB is missing essential data.")
-        label = Label.selectBy(schemaID=schema.id, name=language.code)[0]
-        # This method comes from the RelatedJoin
-        self.removeLabel(label)
-
 
 class PersonSet(object):
     """The set of persons."""
@@ -144,7 +100,17 @@ class PersonSet(object):
 
     def __getitem__(self, personid):
         """See IPersonSet."""
-	return Person.get(personid)
+        return Person.get(personid)
+
+
+def PersonFactory(context, **kw):
+    now = datetime.utcnow()
+    person = Person(teamowner=1,
+                    teamdescription='',
+                    karma=0,
+                    karmatimestamp=now,
+                    **kw)
+    return person
 
 
 def personFromPrincipal(principal):
@@ -270,4 +236,18 @@ class TeamParticipation(SQLBase):
         ForeignKey(name='team', foreignKey='Person', dbName='team',
                    notNull=True)
         ]
+
+    #
+    # TeamPaticipation Class Methods
+    #
+
+    def getSubTeams(klass, teamID):
+        query = ("team = %d "
+                 "AND Person.id = TeamParticipation.person "
+                 "AND Person.teamowner IS NOT NULL" %teamID)
+
+        return klass.select(query)
+    getSubTeams = classmethod(getSubTeams)
+    
+        
 

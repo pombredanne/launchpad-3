@@ -1,6 +1,6 @@
 SET client_min_messages TO fatal;
 
-DROP TABLE SourcepackagePublishing CASCADE;
+DROP TABLE SourcePackagePublishing CASCADE;
 DROP SEQUENCE sourcepackagepublishing_id_seq;
 
 --

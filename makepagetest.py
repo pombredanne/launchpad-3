@@ -139,9 +139,12 @@ def main():
         # Remove stdout from tcpwatch from the output.
         outputfile.truncate(0)
         dochttp.dochttp(args=[tempdir])
+        rm_dash_r(tempdir)
     finally:
         sys.stdout = original_stdout
-        rm_dash_r(tempdir)
+        # Don't delete the tempdir if there was an error.  We may want to
+        # forensically examine it.
+        ##rm_dash_r(tempdir)
 
     print  # A blank line to separate tcpwatch output from what follows.
 

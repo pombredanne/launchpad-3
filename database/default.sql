@@ -52,101 +52,101 @@ INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, descr
 INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl ) VALUES ( 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', 'http://arch.ubuntu.com/' );
 
 /*
--- Sourcepackage
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+-- SourcePackage
+INSERT INTO SourcePackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
          'mozilla-firefox', 'Ubuntu Mozilla Firefox', 
          'text');
 
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO SourcePackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
          'mozilla-thunderbird', 'Ubuntu Mozilla Thunderbird', 
          'text');
 
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO SourcePackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
          'python-twisted', 'Python Twisted', 
          'text');
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO SourcePackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
          'bugzilla', 'Bugzilla', 
          'text');
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO SourcePackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
          'arch', 'Arch(TLA)', 
          'text');
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO SourcePackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
          'kiwi2', 'Kiwi2', 
          'text');
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO SourcePackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
          'plone', 'Plone', 
          'text');
-INSERT INTO Sourcepackage (maintainer, name, title, description)
+INSERT INTO SourcePackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
         'evolution', 'Evolution', 
         'text');
 
 
---SourcepackageRelease
-INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+--SourcePackageRelease
+INSERT INTO SourcePackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+VALUES ((SELECT id FROM SourcePackage WHERE name = 'mozilla-firefox'),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
         '0.9.1-1',
         timestamp '2004-06-29 00:00',
         1);
 
-INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+INSERT INTO SourcePackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-thunderbird'),
+VALUES ((SELECT id FROM SourcePackage WHERE name = 'mozilla-thunderbird'),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
         '0.9.1-2',
         timestamp '2004-06-30 00:00',
         1);
 
-INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+INSERT INTO SourcePackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'python-twisted'),
+VALUES ((SELECT id FROM SourcePackage WHERE name = 'python-twisted'),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
         '0.9.1-3',
         timestamp '2004-07-01 00:00',
         1);
 
-INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+INSERT INTO SourcePackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'bugzilla'),
+VALUES ((SELECT id FROM SourcePackage WHERE name = 'bugzilla'),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Dave Miller'),
         '0.9.1-4',
         timestamp '2004-07-02 00:00',
         1);
 
-INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+INSERT INTO SourcePackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'arch'),
+VALUES ((SELECT id FROM SourcePackage WHERE name = 'arch'),
  	1,
         (SELECT id FROM Person WHERE displayname = 'James Blackwell'),
         '0.9.1-5',
         timestamp '2004-07-03 00:00',
         1);
 
-INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+INSERT INTO SourcePackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'kiwi2'),
+VALUES ((SELECT id FROM SourcePackage WHERE name = 'kiwi2'),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Christian Reis'),
         '0.9.1-6',
         timestamp '2004-07-04 00:00',
         1);
 
-INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+INSERT INTO SourcePackageRelease (sourcepackage, srcpackageformat, creator,
                                   version, dateuploaded, urgency)
-VALUES ((SELECT id FROM Sourcepackage WHERE name = 'plone'),
+VALUES ((SELECT id FROM SourcePackage WHERE name = 'plone'),
  	1,
         (SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
         '0.9.1-7',
@@ -193,31 +193,31 @@ VALUES (timestamp '2004-07-05 00:00',
 
 --CodeRelease
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-29 00:00'),
+VALUES ((SELECT id FROM SourcePackageRelease WHERE dateuploaded = timestamp '2004-06-29 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-30 00:00'),
+VALUES ((SELECT id FROM SourcePackageRelease WHERE dateuploaded = timestamp '2004-06-30 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-30 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-01 00:00'),
+VALUES ((SELECT id FROM SourcePackageRelease WHERE dateuploaded = timestamp '2004-07-01 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-01 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-02 00:00'),
+VALUES ((SELECT id FROM SourcePackageRelease WHERE dateuploaded = timestamp '2004-07-02 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-02 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-03 00:00'),
+VALUES ((SELECT id FROM SourcePackageRelease WHERE dateuploaded = timestamp '2004-07-03 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-03 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-04 00:00'),
+VALUES ((SELECT id FROM SourcePackageRelease WHERE dateuploaded = timestamp '2004-07-04 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-04 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-05 00:00'),
+VALUES ((SELECT id FROM SourcePackageRelease WHERE dateuploaded = timestamp '2004-07-05 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
 
 

@@ -4,14 +4,37 @@
     i18n_domain="launchpad"
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
+    <!-- Content class configuration -->
     <include file="project.zcml" />
     <include file="product.zcml" />
     <include file="productseries.zcml" />
     <include file="productrelease.zcml" />
-    <include file="package.zcml" />
+    <include file="binarypackage.zcml" />
     <include file="sourcesource.zcml" />
     <include file="productrelease.zcml" />
     <include file="bugpackageinfestation.zcml" />
+    <include file="bugsubscription.zcml" />
     <include file="sourcepackage.zcml" />
+    <include file="bug.zcml" />
+    <include file="bugwatch.zcml" />
+    <include file="bugassignment.zcml" />
+    <include file="buginfestation.zcml" />
+    <include file="bugextref.zcml" />
+    <include file="bugtracker.zcml" />
+    <include file="bugattachment.zcml" />
+    <include file="bugmessage.zcml" />
+
+    <include file="widgets.zcml" />
+    <include file="resources.zcml" />
+
+    <!-- Event configuration -->
+    <include file="bug-events.zcml" />
+
+    <!-- Mail configuration -->
+    <!-- XXX: Brad Bollenbach, 2004/10/19: Include this when
+    we get our policy on using mail sorted out (for more, ask
+    Steve. :)
+    <include file="mail.zcml" />
+    -->
 
 </configure>

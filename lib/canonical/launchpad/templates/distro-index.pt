@@ -50,8 +50,8 @@
          <tr><td>
            <div>
 	      <ul>
-	      <li><a href="src">Sourcepackages</a></li> 
-	      <li><a href="bin">Binarypackages</a></li>  
+	      <li><a href="src">SourcePackages</a></li> 
+	      <li><a href="bin">BinaryPackages</a></li>  
 	      <li><a href="team">Team</a> </li> 
 	      <li class="dummy"><a href="translations">Translations</a> </li> 
 	      <li class="dummy"><a href="bugs">Bugs</a> </li> 

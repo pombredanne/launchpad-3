@@ -1,0 +1,135 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <title xmetal:fill-slot="title">Rosetta: <span
+        xtal:replace="context/title">Project Title</span></title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body metal:fill-slot="main">
+
+<tal:testvalues define="selection python: {'title':'Mozilla Firefox',
+                         'shortdesc':'''Mozilla Firefox is a streamlined 
+                               edition of the Mozilla browser,
+                               featuring pop-up blocking and a 
+                               tabbed interface.'''};
+                        
+                        searchstring string:Firefox;
+                        
+                        searchresults python: [ 
+                        {'title':'Mozilla Firefox',
+                         'shortdesc':'''Mozilla Firefox is a streamlined 
+                               edition of the Mozilla browser,
+                               featuring pop-up blocking and a 
+                               tabbed interface.'''},
+                        {'title':'Mozilla Thunderbird',
+                         'shortdesc':'''Thunderbird is the mail client 
+                               equivalent to Firefox - a
+                               standalone mail application based
+                               on the Mozilla code base.'''}];
+                        ">
+
+<fieldset>
+    <legend>Package</legend>
+    
+    <tal:noselection condition="not: selection">
+        <form action=""
+              style="float: right;"
+              xtal:attributes="action where-to-get-search-results">
+
+            <dl>
+                <dt>
+                    <div style="float: right;">
+                        <input type="text"
+                               tal:attributes="value searchstring" /> 
+                        <input type="submit" 
+                               class="context" 
+                               value="Search" />
+                    </div>
+
+                    <span class="discreet">
+                    To select a package, use the search field
+                    to find possible candidates.
+                    </span> 
+                </dt>
+            </dl>
+        </form>
+        <div class="visualClear"></div>
+    </tal:noselection>
+    
+    <tal:selection condition="selection">
+        <dl>
+            <dt>
+                <input type="submit" 
+                       class="context" 
+                       value="Change selection" 
+                       style="float: right;" />
+                <span tal:replace="selection/title">Mozilla Firefox</span> 
+            </dt>
+            <dd>
+                <div class="discreet" tal:content="selection/shortdesc">
+                Mozilla Firefox is a streamlined edition of the Mozilla browser,
+                featuring pop-up blocking and a tabbed interface.
+                </div>
+            </dd>
+        </dl>
+        
+    </tal:selection>
+    
+<form action=""
+      xtal:attributes="action selecting-an-item">
+    <fieldset tal:condition="not: selection">
+    
+        <legend>Search Results</legend>
+
+        <div class="discreet"
+             tal:condition="not: searchresults">
+        No search results found.
+        </div>
+    
+        <tal:results condition="searchresults"
+                      repeat="result searchresults">
+        <dl>
+            <dt>
+                <span tal:replace="result/title">Mozilla Firefox</span> 
+                <input type="submit" class="context" value="Select" />
+            </dt>
+            <dd tal:content="result/shortdesc">
+            Mozilla Firefox is a streamlined edition of the Mozilla browser,
+            featuring pop-up blocking and a tabbed interface.
+            </dd>
+        </dl>
+        </tal:results>
+    
+        <div class="listingBar"
+            tal:condition="searchresults"
+            xtal:condition="result set is more than X items">
+            
+            <span class="next">
+                <a href="#">
+                   Next 30 items
+                   &raquo;
+                </a>
+            </span>
+            [1]
+            <a href="#">2</a>
+            <a href="#">3</a>
+            <a href="#">4</a>
+            ...
+            <a href="#">25</a>
+        </div>
+
+    </fieldset>
+
+</fieldset>
+
+</tal:testvalues>
+
+</body>
+</html>

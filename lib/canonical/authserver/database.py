@@ -12,6 +12,8 @@ from canonical.lp import dbschema
 
 from canonical.authserver.interfaces import IUserDetailsStorage
 
+from canonical.foaf import nickname
+
 class DatabaseUserDetailsStorage(object):
     """Launchpad-database backed implementation of IUserDetailsStorage"""
     implements(IUserDetailsStorage)
@@ -98,7 +100,8 @@ class DatabaseUserDetailsStorage(object):
 
         # Create the Person
         displaynameOrig = displayname
-        name = displayname.replace(" ", "")[:8].lower().encode('utf-8')
+        name = nickname.generate_nick(emailAddresses[0], lambda nick:
+                self._getPerson(transaction, nick))
         displayname = displayname.replace("'", "''").encode('utf-8')
         pw = sshaDigestedPassword.replace("'", "''")
         sql = ("""\
@@ -132,7 +135,8 @@ class DatabaseUserDetailsStorage(object):
         return {
             'id': personID,
             'displayname': displaynameOrig,
-            'emailaddresses': list(emailAddresses)
+            'emailaddresses': list(emailAddresses),
+            'salt': saltFromDigest(sshaDigestedPassword),
         }
                 
     def changePassword(self, loginID, sshaDigestedPassword,
@@ -164,9 +168,12 @@ class DatabaseUserDetailsStorage(object):
         return userDict
 
     def _getPerson(self, transaction, loginID):
-        transaction.execute(
+        query = (
             "SELECT Person.id, Person.displayname, Person.password "
             "FROM Person "
+        )
+        transaction.execute(
+            query + 
             "WHERE EmailAddress.email = '%s' "
             "AND EmailAddress.person = Person.id"
             % (str(loginID).replace("'", "''"),)
@@ -181,15 +188,24 @@ class DatabaseUserDetailsStorage(object):
                 pass
             else:
                 transaction.execute(
-                    "SELECT Person.id, Person.displayname, Person.password "
-                    "FROM Person "
+                    query +
                     "WHERE Person.id = '%d'" % (personID,)
                 )
                 row = transaction.fetchone()
-            if row is None:
-                return row
+        if row is None:
+            # Fallback #2: try treating loginID as a nickname
+            transaction.execute(
+                query +
+                "WHERE Person.name = '%s'" 
+                % (str(loginID).replace("'", "''"),)
+            )
+            row = transaction.fetchone()
+        if row is None:
+            # Fallback #3: give up
+            return None
 
         row = list(row)
+        row[1] = row[1].decode('utf-8')
         passwordDigest = row[2]
         if passwordDigest:
             salt = saltFromDigest(passwordDigest)

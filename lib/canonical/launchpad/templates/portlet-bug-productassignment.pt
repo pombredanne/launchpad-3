@@ -1,7 +1,7 @@
 <div>
     <table class="listing rowNavigation">
         <tr>
-            <th>Product</th>
+            <th>Upstream Product</th>
             <th>Status</th>
             <th>Priority</th>
             <th>Severity</th>

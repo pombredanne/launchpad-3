@@ -1,116 +1,79 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    i18n_domain="malone"
-    xmlns:i18n="http://namespaces.zope.org/i18n">
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
 
-  <!-- Content directives.  We need to make sure SubURLs and other kinds of
-       traversal work properly.  We also need to make security declarations.
-    -->
-  <content class="canonical.malone.MaloneApplication">
-    <implements interface="canonical.publication.IHasSuburls" />
-  </content>
+    <browser:resource
+        name="bullet.gif" file="../launchpad/images/bullet.gif" />
+  
+    <browser:resource
+        name="required.gif" file="../launchpad/images/required.gif" />
+  
+    <browser:resource
+        name="malone.png" file="images/malone.png" />
+  
+    <!-- This view registers 'malone' as a suburl of RootObject. -->
+    <browser:suburl
+        for="canonical.publication.RootObject"
+        class="canonical.malone.MaloneApplication"
+        name="malone" />
 
-  <!-- This view registers 'malone' as a suburl of RootObject. -->
-  <browser:suburl
-      for="canonical.publication.RootObject"
-      class="canonical.malone.MaloneApplication"
-      name="malone" />
+    <!-- general template for everything in malone -->
+    <browser:pages for="*" permission="zope.Public">
+        <browser:page name="malone_template"
+            template="../launchpad/templates/main-template.pt" />
+    </browser:pages>
 
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IMaloneApplication"
-      name="index" />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        name="index" />
 
-  <browser:suburl
-      for="canonical.malone.IMaloneApplication"
-      utility="canonical.launchpad.interfaces.IBugContainer"
-      permission="zope.Public"
-      name="bugs" />
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.IBugContainer"
+        permission="zope.Public"
+        name="bugs" />
 
-  <browser:suburl
-      for="canonical.malone.IMaloneApplication"
-      utility="canonical.launchpad.interfaces.IProjectContainer"
-      permission="zope.Public"
-      name="projects" />
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.IProjectContainer"
+        permission="zope.Public"
+        name="projects" />
 
-  <browser:suburl
-      for="canonical.malone.IMaloneApplication"
-      utility="canonical.launchpad.interfaces.ISourcepackageContainer"
-      permission="zope.Public"
-      name="sourcepackage" />
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.ISourcePackageContainer"
+        permission="zope.Public"
+        name="package" />
 
-  <browser:suburl
-      for="canonical.malone.IMaloneApplication"
-      utility="canonical.launchpad.interfaces.IBugTrackerSet"
-      permission="zope.Public"
-      name="bugtrackers" />
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.IBugTrackerSet"
+        permission="zope.Public"
+        name="bugtrackers" />
 
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugTrackerSet"
-      name="+index" />
 
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugsAssignedReport"
-      name="+index" />
+    <!-- pages for the malone application -->
+    <browser:pages
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        permission="zope.Public"
+        class="canonical.malone.browser.MaloneApplicationView"
+        lp:url="malone">
+        <browser:page name="index"
+            template="../launchpad/templates/malone-index.pt"
+            lp:url="malone/index" />
+        <browser:page name="about"
+            template="../launchpad/templates/malone-about.pt"
+            lp:url="malone/+about" />
+        <browser:page name="dashboard"
+            template="../launchpad/templates/malone-dashboard.pt"
+            lp:url="malone/dashboard" />
+        <browser:page name="to-do"
+            template="../launchpad/templates/malone-to-do.pt"
+            lp:url="malone/to-do" />
+    </browser:pages>
 
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugTracker"
-      name="+index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IMaloneBug"
-      name="index" />
-
-  <browser:traverse
-      for="canonical.launchpad.interfaces.IMaloneBug"
-      function="canonical.malone.browser.traverseBug" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugAttachmentContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IMaloneBugAttachment"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugExternalRefContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugExternalRef"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugWatchContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
-      name="index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
-      name="index" />
-
-  <browser:traverse
-      for="canonical.launchpad.interfaces.IMaloneBugAttachment"
-      function=".browser.traverseBugAttachment" />
-
-  <include file="pages.zcml" />
-  <include file="forms.zcml" />
-  <include file="resources.zcml" />
 
 </configure>

@@ -88,7 +88,7 @@ def parse_tagfile(filename, dsc_whitespace_rules=0):
     lines = changes_in.readlines()
 
     if not lines:
-	raise TagFileParseError( "%s: empty file" % filename )
+        raise TagFileParseError( "%s: empty file" % filename )
 
     # Reindex by line number so we can easily verify the format of
     # .dsc files...
@@ -134,7 +134,7 @@ def parse_tagfile(filename, dsc_whitespace_rules=0):
         if slf:
             field = slf.groups()[0].lower()
             changes[field] = slf.groups()[1]
-	    first = 1
+            first = 1
             continue
         if line == " .":
             changes[field] += '\n'
@@ -146,9 +146,9 @@ def parse_tagfile(filename, dsc_whitespace_rules=0):
             if first == 1 and changes[field] != "":
                 changes[field] += '\n'
             first = 0
-	    changes[field] += mlf.groups()[0] + '\n'
+            changes[field] += mlf.groups()[0] + '\n'
             continue
-	error += line
+        error += line
 
     if dsc_whitespace_rules and inside_signature:
         raise TagFileParseError("%s: invalid .dsc format at line %d" % (filename, index))
@@ -157,6 +157,6 @@ def parse_tagfile(filename, dsc_whitespace_rules=0):
     changes["filecontents"] = "".join(lines)
 
     if error:
-	raise TagFileParseError("%s: unable to parse .changes file: %s" % (filename, error))
+        raise TagFileParseError("%s: unable to parse .changes file: %s" % (filename, error))
 
     return changes

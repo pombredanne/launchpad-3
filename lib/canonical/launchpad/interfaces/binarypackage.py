@@ -109,7 +109,8 @@ class IDistroReleaseBinaryApp(Interface):
     lastversions = Attribute("Last Release Versions")
     currentversions = Attribute("Current Release Versions")
     release = Attribute("Distro Release")
-
+    bugsCounter = Attribute("BinaryPackages bugs counter")
+    
     def __getitem__(name):
         """Retrieve a package release by version."""
 

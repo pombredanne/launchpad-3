@@ -30,7 +30,7 @@ CREATE TABLE DistroReleaseQueueSource (
         REFERENCES DistroReleaseQueue(id),
     sourcepackagerelease integer NOT NULL
         CONSTRAINT distroreleasequeuesource_sourcepackagerelease_fk
-        REFERENCES SourcepackageRelease(id)
+        REFERENCES SourcePackageRelease(id)
 );
 
 CREATE TABLE DistroReleaseQueueBuild (
@@ -59,7 +59,7 @@ ALTER TABLE sourcepackagepublishing
      PRIMARY KEY (id);
 
 
--- SourcepackageRelease needs a section column...
+-- SourcePackageRelease needs a section column...
 
 ALTER TABLE sourcepackagerelease
    ADD COLUMN section integer;

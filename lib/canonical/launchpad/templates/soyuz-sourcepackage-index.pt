@@ -60,7 +60,7 @@
                 <tal:dummy tal:define="product context/sourcepackage/product">
 
 	        <tal:dummy tal:condition="product">
-	         <a tal:attributes="href string:/doap/projects/${product/name}/${product/name}" 
+	         <a tal:attributes="href string:/doap/projects/${product/project/name}/${product/name}" 
 	            tal:content="product/title" />
 	        </tal:dummy>
   	        <tal:dummy tal:condition="not:product">
@@ -146,13 +146,29 @@
 
           <fieldset>
 	     <legend>Bug Count</legend>
-	     <div class="dummy">
+	     <div>
 	        <table>
-		<tr><td>All bugs</td><td>5</td></tr>
-		<tr><td>Release Critical</td><td>0</td></tr>	
-		<tr><td>Important and Normal</td><td>3</td></tr>
-		<tr><td>Minor and Wishlist</td><td>2</td></tr>
-		<tr><td>Fixed and Pending</td><td>0</td></tr>
+		<tr><td>All bugs</td>
+		    <td>
+		      <a tal:content="python:context.bugsCounter[0]"
+		         tal:attributes="href
+	                 string:/malone/package/${context/sourcepackage/name}">
+			 N
+		      </a>
+		    </td>
+		</tr>
+		<tr><td>Release Critical</td>
+		    <td tal:content="python:context.bugsCounter[1]">N</td>
+                </tr>	
+		<tr><td>Important and Normal</td>
+		    <td tal:content="python:context.bugsCounter[2]">N</td>
+		</tr>
+		<tr><td>Minor and Wishlist</td>
+		    <td tal:content="python:context.bugsCounter[3]">N</td>
+		</tr>
+		<tr><td>Fixed and Pending</td>
+		    <td tal:content="python:context.bugsCounter[4]">N</td>
+		</tr>
 		</table>
 	     </div>
 	  </fieldset>    

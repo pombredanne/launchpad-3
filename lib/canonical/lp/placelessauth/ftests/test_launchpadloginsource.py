@@ -1,6 +1,5 @@
 import unittest
-from canonical.tests.functional import FunctionalTestCase
-from canonical.tests.pgsql import LaunchpadSchemaTestCase
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 from canonical.lp.placelessauth.launchpadsourceutility import \
      LaunchpadLoginSource
@@ -9,19 +8,16 @@ from zope.app.tests import ztapi
 from zope.app import zapi
 from zope.app.tests.placelesssetup import PlacelessSetup
 
-class TestLaunchpadLoginSource(LaunchpadSchemaTestCase, FunctionalTestCase):
+class TestLaunchpadLoginSource(LaunchpadFunctionalTestCase):
 
     def setUp(self):
-        LaunchpadSchemaTestCase.setUp(self)
-        FunctionalTestCase.setUp(self)
+        super(TestLaunchpadLoginSource, self).setUp()
         source = LaunchpadLoginSource()
         ztapi.provideUtility(IPlacelessLoginSource, source, 'fleeb')
 
     def tearDown(self):
         ztapi.unprovideUtility(IPlacelessLoginSource, 'fleeb')
-        # trying to clean the DB up here hangs forever for some reason; bag it.
-        #LaunchpadSchemaTestCase.tearDown(self)
-        FunctionalTestCase.tearDown(self)
+        super(TestLaunchpadLoginSource, self).tearDown()
 
     def testAPI(self):
 

@@ -1,0 +1,7 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+  <include package="canonical.launchpad.vocabularies" />
+  <include package="canonical.launchpad.zcml" />
+  <include file="robots.zcml" />
+
+</configure>

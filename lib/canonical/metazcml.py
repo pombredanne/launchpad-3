@@ -8,21 +8,24 @@ __metaclass__ = type
 
 from zope.interface import Interface, implements
 from zope.schema import TextLine
-from zope.configuration.fields import GlobalObject, PythonIdentifier
+from zope.configuration.fields import GlobalObject, PythonIdentifier, Path
 from zope.app.security.fields import Permission
 from zope.app.component.fields import LayerField
 from canonical.launchpad.layers import setAdditionalLayer
 
 from zope.component import queryView, getDefaultViewName, getUtility
 from zope.app.component.metaconfigure import view, PublicPermission
+from zope.app.publisher.browser.viewmeta import page
 from zope.security.checker import CheckerPublic
+from zope.app.file.image import Image
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
 import zope.app.publisher.browser.metadirectives
-from canonical.publication import ISubURLDispatch
+from canonical.publication import ISubURLDispatch, SubURLTraverser
 
 from zope.app import zapi
+import sets
 from zope.component.interfaces import IDefaultViewName
 
 from zope.app.component.metaconfigure import handler
@@ -109,6 +112,19 @@ class ITraverseDirective(Interface):
         )
 
 
+class IFaviconDirective(Interface):
+
+    for_ = GlobalObject(
+        title=u"Specification of the object that has this favicon",
+        required=True
+        )
+
+    file = Path(
+        title=u"Path to the image file",
+        required=True
+        )
+
+
 class SubURLDispatcher:
     implements(ISubURLDispatch)
 
@@ -125,12 +141,25 @@ class SubURLDispatcher:
     def __call__(self):
         raise NotImplementedError
 
+
+# The `for_` objects we have already seen, so we set their traverser to be
+# the SubURLTraverser once only.  If we set it more than once, we get
+# a configuration conflict error.
+suburl_traversers = sets.Set()
+
 def suburl(_context, for_, name, permission=None, utility=None, class_=None,
            adaptwith=None, newlayer=None):
     if utility is None and class_ is None:
         raise TypeError("Cannot specify both utility and class.")
 
-    # XXX check that for_ implements IHasSuburls
+    type = IBrowserRequest  # So we can use "type" below, for documentation.
+
+    global suburl_traversers
+    if for_ not in suburl_traversers:
+        view(_context, [SubURLTraverser], type, '', [for_],
+             provides=IBrowserPublisher, permission=None)
+        suburl_traversers.add(for_)
+
 
     # TODO: Move layer-setting into a handler for the BeforeTraverse event
     #       because that's actually what we want to handle.
@@ -138,10 +167,11 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
     if class_ is not None:
         class Dispatcher(SubURLDispatcher):
             def __call__(self):
+                # Note that `newlayer`, `class_` and `adaptwith` are bound
+                # from the containing context.
                 val = class_()
                 if adaptwith is not None:
                     val = adaptwith(val)
-                # Note that `newlayer` is bound from the containing context.
                 if newlayer is not None:
                     setAdditionalLayer(self.request, newlayer)
                 return val
@@ -149,10 +179,11 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
     if utility is not None:
         class Dispatcher(SubURLDispatcher):
             def __call__(self):
+                # Note that `newlayer`, `utility` and `adaptwith` are bound
+                # from the containing context.
                 val = getUtility(utility)
                 if adaptwith is not None:
                     val = adaptwith(val)
-                # Note that `newlayer` is bound from the containing context.
                 if newlayer is not None:
                     setAdditionalLayer(self.request, newlayer)
                 return val
@@ -161,9 +192,7 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
     if permission == PublicPermission:
         permission = CheckerPublic
 
-    type = IBrowserRequest  # So we can use "type" below, for documentation.
-    return view(_context, factory, type, name, [for_], permission=permission,
-                provides=ISubURLDispatch)
+    view(_context, factory, type, name, [for_], permission=permission)
 
 class URLTraverse:
     """Use the operation named by _getter to traverse an app component."""
@@ -256,10 +285,29 @@ def traverse(_context, for_, getter=None, function=None, permission=None,
 
         factory = [URLTraverseFunction]
 
-    return view(_context, factory, layer, name, [for_], permission=permission,
-                provides=provides)
+    view(_context, factory, layer, name, [for_], permission=permission,
+         provides=provides)
 
 
+class FaviconRendererBase:
+
+    # subclasses must provide a 'fileobj' member that has 'contentType'
+    # and 'data' attributes.
+
+    def __call__(self):
+        self.request.response.setHeader('Content-type',
+                                        self.file.contentType)
+        return self.file.data
+
+
+def favicon(_context, for_, file):
+    fileobj = Image(open(file, 'rb').read())
+    class Favicon(FaviconRendererBase):
+        file = fileobj
+
+    name = "favicon.ico"
+    permission = CheckerPublic
+    page(_context, name, permission, for_, class_=Favicon)
 
 # This is pretty much copied from the browser publisher's metaconfigure
 # module, but with the `layer` as an argument rather than hard-coded.

@@ -15,8 +15,8 @@ SET client_min_messages TO error;
 
 */
 
-ALTER TABLE BinarypackageName ADD CONSTRAINT valid_name CHECK (valid_name(name));
-ALTER TABLE BinarypackageName DROP CONSTRAINT "$1";
+ALTER TABLE BinaryPackageName ADD CONSTRAINT valid_name CHECK (valid_name(name));
+ALTER TABLE BinaryPackageName DROP CONSTRAINT "$1";
 
 ALTER TABLE Bug ADD CONSTRAINT valid_name CHECK (valid_name(name));
 ALTER TABLE Bug DROP CONSTRAINT "$2";
@@ -59,9 +59,9 @@ ALTER TABLE Project DROP CONSTRAINT "$2";
 ALTER TABLE Schema ADD CONSTRAINT valid_name CHECK (valid_name(name));
 ALTER TABLE Schema DROP CONSTRAINT "$2";
 
-ALTER TABLE SourcepackageName ADD CONSTRAINT valid_name 
+ALTER TABLE SourcePackageName ADD CONSTRAINT valid_name 
     CHECK (valid_name(name));
-ALTER TABLE SourcepackageName DROP CONSTRAINT lowercasename;
+ALTER TABLE SourcePackageName DROP CONSTRAINT lowercasename;
 
 ALTER TABLE TranslationEffort ADD CONSTRAINT valid_name
     CHECK (valid_name(name));

@@ -48,7 +48,7 @@ CREATE TABLE BugPackageInfestation (
         REFERENCES Bug(id),
     sourcepackagerelease integer not null
         CONSTRAINT bugpackageinfestation_sourcepackagerelease_fk
-        REFERENCES SourcepackageRelease(id),
+        REFERENCES SourcePackageRelease(id),
     explicit boolean not null,
     infestationstatus integer not null,
     datecreated timestamp without time zone 

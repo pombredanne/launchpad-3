@@ -4,24 +4,22 @@
     i18n:domain="malone">
 <body>
 
+<metal:rightportlets fill-slot="portlets_two">
+    <form method="POST" action="." style="float: right;">
+        <b>Assigned to:</b><br />
+        <div tal:replace="structure view/userSelector" /><br />
+        <b>Minimum Severity:</b><br />
+        <div tal:replace="structure view/severitySelector" /><br />
+    </form>
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
+
 
     <h1>Bugs Assigned to <span tal:content="context/user/browsername">The
     Person</span></h1>
     
-    <form method="POST" action="">
-    
-        <b>Show bugs for:</b>
-        <div tal:replace="structure view/userSelector" />
-        
-    </form>
-
-    <h3>Direct Assignments</h3>
-
-    <p>These bugs have been assigned directly to <span
-    tal="content/user/browsername">the user</span>.</p>
-
-    <div>
+    <div tal:condition="context/assignedBugs">
     
         <table class="listing rowNavigation">
         
@@ -47,6 +45,14 @@
             
         </table>
         
+    </div>
+
+    <div tal:condition="not:context/assignedBugs">
+    No bugs are currently assigned to <span
+    tal:replace="context/user/browsername">Person</span>. You can assign a bug by
+    clicking on the "Add Product" or "Add Package" links near the top of the
+    main bug page, assigning the bug to a product or person and then also
+    assigning it to a specific person for action.
     </div>
   
 

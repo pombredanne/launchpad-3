@@ -118,17 +118,17 @@ class FatSamFile(object):
             else:
                 if txn is not None:
                    txn.commit()
-	else:
+        else:
             # Not a new file; perhaps a new alias. Commit the transaction
-	    if txn is not None:
-	        txn.commit()
+            if txn is not None:
+                txn.commit()
         
         if txn is not None:
             # XXX: dsilvers 2004-10-13: Need to make this nicer
             # We release the connection to the pool here. Without
             # this call; we end up overloading the psql server and
             # we get refused new connections.
-	    txn._makeObsolete()
+            txn._makeObsolete()
 	
         # Return the IDs
         return fileID, alias

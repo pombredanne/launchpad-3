@@ -24,4 +24,3 @@
   <include package="zope.app.site.browser" />
     -->
 </configure>
-<!-- arch-tag: 082f31e9-949e-48a6-a435-a7e5042a58e2 -->

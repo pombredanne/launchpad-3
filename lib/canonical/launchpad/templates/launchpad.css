@@ -40,8 +40,8 @@
     width: 40%;
     padding: 1em;
     margin: 1em;
-    background-color: #8fb3d9;
-    border: 1px solid #7A9EC6;
+    background-color: #93bee2;
+    border: 1px solid #364970;
     text-decoration: none;
 }
 
@@ -73,8 +73,8 @@ fieldset.message-strings input {
 
 .messageSourceString {
     padding: 0.5em 1em;
-    background-color: #8fb3d9;
-    border: 1px solid #7A9EC6;
+    background-color: #93bee2;
+    border: 1px solid #364970;
 }
 
 fieldset.two-column {
@@ -100,13 +100,15 @@ label {
     font-weight: bold;    
 }
 
-.listingBar a {
+
+.listingBar a,
+.portlet a,
+#portal-personaltools a,
+#portal-breadcrumbs a,
+#portal-footer a {
     text-decoration: none;
 }
 
-.portlet a {
-    text-decoration: none;
-}
 
 
 /* XXX Just setting a fixed width until the rest of the layout is in place */
@@ -136,10 +138,12 @@ label {
 /* highlight on hover in table */
 
 table.rowNavigation tr:hover {
-    background-color: #8fb3d9;
+    background-color: #93bee2 !important;
     cursor:pointer;
 }
-
+table.rowNavigation th:hover {
+    cursor: default;
+}
 
 /* Bug status markers */
 
@@ -157,10 +161,29 @@ table.rowNavigation tr:hover {
     padding: 0 0.25em;
 }
 
+/* Bug Severity markers */
+.severityCritical { color: Red; }
+.severityMajor    { color: Orange; }
+.severityNormal   { color: Green; }
+.severityMinor    { color: Black; }
+.severityWishlist { color: Blue; }
+
+.severityCriticalRow { background-color: #E1A1A1; }
+.severityMajorRow { background-color: #D9C08F; }
+.severityNormalRow { background-color: #9FD98F; }
+.severityMinorRow { background-color: #A5AFC8; }
+.severityWishlistRow { background-color: #8FA9D9; }
+
+/* Priority markers */
+.priorityHigh    { color: Red; }
+.priorityMedium  { color: Orange; }
+.priorityLow     { color: Black; }
+.priorityWontFix { color: Gray; }
+
 /* Board-like comment CSS */
 
 .boardComment {
-    border: 1px solid #7A9EC6;
+    border: 1px solid #364970;
     margin-bottom: 1.5em;
     position: relative;
 }
@@ -173,9 +196,9 @@ table.rowNavigation tr:hover {
 }
 
 .boardCommentDetails {
-    border: 1px solid #7A9EC6;
+    border: 1px solid #364970;
     border-style: none none solid none;
-    background-color: #8fb3d9;
+    background-color: #93bee2;
     padding: 0.5em 1em;
 }
 
@@ -188,9 +211,9 @@ table.rowNavigation tr:hover {
 }
 
 .boardCommentActions {
-    border: 1px solid #7A9EC6;
+    border: 1px solid #364970;
     border-style: solid none none none;
-    background-color: #8fb3d9;
+    background-color: #93bee2;
     padding: 0.5em 1em 0 1em;
     text-align: right;
 }
@@ -212,5 +235,22 @@ table.rowNavigation tr:hover {
 /* used to mark dummy data with div entity */
 .dummy{
    background-color: #cccccc;
+}
+
+/* Various custom list formats */
+
+ul.people {
+    list-style-image: none;
+    list-style: none;
+    margin: 0;
+}
+
+ul.people li {
+    line-height: 1.5em;
+    padding: 0;
+    background-image: url(++resource++user.gif);
+    background-color: transparent;
+    background-repeat: no-repeat;
+    padding-left: 18px
 }
 

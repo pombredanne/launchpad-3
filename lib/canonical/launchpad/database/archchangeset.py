@@ -17,6 +17,10 @@ from canonical.launchpad.interfaces import CategoryAlreadyRegistered
 from zope.interface import implements
 from canonical.launchpad.interfaces import IBranch
 
+# XXX: Another somewhat circular import, like the one in archbranch.py :/
+#  - Andrew Bennetts, 2004-10-20
+from canonical.launchpad.database import VersionMapper
+
 class Changeset(SQLBase):
     """A changeset"""
 

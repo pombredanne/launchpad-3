@@ -26,6 +26,6 @@ ALTER TABLE DistroreleaseRole ALTER COLUMN id
 /* Another name constraint - need to comb the database and do these in
    a batch :-(
 */
-ALTER TABLE SourcepackageName ADD CONSTRAINT lowercasename 
+ALTER TABLE SourcePackageName ADD CONSTRAINT lowercasename 
     CHECK (lower(name) = name);
 

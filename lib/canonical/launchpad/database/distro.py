@@ -21,7 +21,8 @@ from canonical.launchpad.interfaces import IDistributionRole, IDistroReleaseRole
                                            IDistribution, IDistroRelease
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
-from canonical.launchpad.database.package import SourcePackage, BinaryPackage
+from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.binarypackage import BinaryPackage
 from canonical.launchpad.database.person import Person
 
 class DistributionRole(SQLBase):
@@ -203,5 +204,18 @@ class DistroRelease(SQLBase):
         return db_cursor.fetchall()[0][0]
                 
     binarycount = property(binarycount)
+
+    #
+    # DistroRelease Class Methods
+    #
+
+    def getBySourcePackageRelease(klass, sourcepackagereleaseID):
+        query = ('SourcePackagePublishing.distrorelease = DistroRelease.id '
+                 'AND SourcePackagePublishing.sourcepackagerelease = %i '
+                 %(sourcepackagereleaseID))
+        
+        return klass.select(query)[0]
+    getBySourcePackageRelease = \
+                              classmethod(getBySourcePackageRelease)
 
 

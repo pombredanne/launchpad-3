@@ -74,7 +74,16 @@ COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Seri
 /*
   Rosetta
 */
+-- POTMsgSet
+COMMENT ON TABLE POTMsgSet IS 'POTMsgSet: This table is stores a collection of msgids without their translations and all kind of information associated to that set of messages that could be found in a potemplate file.';
 
+COMMENT ON COLUMN POTMsgSet.primemsgid IS 'The id of a pomgsid that identify this message set.';
+COMMENT ON COLUMN POTMsgSet."sequence" IS 'The position of this message set inside the potemplate.';
+COMMENT ON COLUMN POTMsgSet.potemplate IS 'The potemplate where this message set is stored.';
+COMMENT ON COLUMN POTMsgSet.commenttext IS 'The comment text that is associated to this message set.';
+COMMENT ON COLUMN POTMsgSet.filereferences IS 'The list of files and their line number where this message set was extracted from.';
+COMMENT ON COLUMN POTMsgSet.sourcecomment IS 'The comment that was extracted from the source code.';
+COMMENT ON COLUMN POTMsgSet.flagscomment IS 'The flags associated with this set (like c-format).';
 
 
 /*
@@ -94,11 +103,11 @@ COMMENT ON COLUMN Bug.name IS
   Soyuz
 */
 -- Are these soyuz or butress?
-COMMENT ON COLUMN Sourcepackage.sourcepackagename IS 
+COMMENT ON COLUMN SourcePackage.sourcepackagename IS 
     'A lowercase name identifying the sourcepackage';
-COMMENT ON COLUMN SourcepackageName.name IS
+COMMENT ON COLUMN SourcePackageName.name IS
     'A lowercase name identifying one or more sourcepackages';
-COMMENT ON COLUMN BinarypackageName.name IS
+COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
 COMMENT ON COLUMN SourcePackage.srcpackageformat IS 
     'The format of this source package, e.g. DPKG, RPM, EBUILD, etc.';
@@ -183,20 +192,24 @@ COMMENT ON COLUMN DistroReleaseQueueBuild.distroreleasequeue IS 'This integer fi
 
 COMMENT ON COLUMN DistroReleaseQueueBuild.build IS 'This integer field refers to the Build record related to this upload.';
 
--- SourcepackageRelease
-COMMENT ON COLUMN SourcepackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
+-- SourcePackageRelease
+COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
 
-/* SourcepackagePublishing and PackagePublishing */
+/* SourcePackagePublishing and PackagePublishing */
 
-COMMENT ON COLUMN SourcepackagePublishing.datepublished IS 'This column contains the timestamp at which point the SourcepackageRelease progressed from a pending publication to being published in the respective DistroRelease';
+COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'This column contains the timestamp at which point the SourcePackageRelease progressed from a pending publication to being published in the respective DistroRelease';
 
-COMMENT ON COLUMN SourcepackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
+COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
 
-COMMENT ON COLUMN SourcepackagePublishing.datepublished IS 'This column contains the timestamp at which point the Build progressed from a pending publication to being published in the respective DistroRelease';
+COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'This column contains the timestamp at which point the Build progressed from a pending publication to being published in the respective DistroRelease';
 
-COMMENT ON COLUMN SourcepackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
+COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
 
-COMMENT ON COLUMN SourcepackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
+COMMENT ON COLUMN SourcePackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
 
 COMMENT ON COLUMN PackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
 
+-- PersonLanguage
+COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
+COMMENT ON COLUMN PersonLanguage.person IS 'This field is a reference to a Person object that has this preference.';
+COMMENT ON COLUMN PersonLanguage.language IS 'This field is a reference to a Language object that says that the Person associated to this row knows how to translate/understand this language.';

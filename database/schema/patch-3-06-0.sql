@@ -13,30 +13,30 @@ ALTER TABLE product ADD COLUMN freshmeatproject TEXT;
 
 
 /*
- * The SourcepackagePublishing records need a datepublished
+ * The SourcePackagePublishing records need a datepublished
  */
 
-ALTER TABLE SourcepackagePublishing
+ALTER TABLE SourcePackagePublishing
     ADD COLUMN datepublished timestamp without time zone;
 
 /*
- * The SourcepackagePublishing and PackagePublishing records need a
+ * The SourcePackagePublishing and PackagePublishing records need a
  * date for expected deletion of the publishing record and associated
  * files (assuming they're unreferenced by other DistroReleases in
  * the distribution
  */
 
-ALTER TABLE SourcepackagePublishing
+ALTER TABLE SourcePackagePublishing
     ADD COLUMN scheduleddeletiondate timestamp without time zone;
     
 ALTER TABLE PackagePublishing
     ADD COLUMN scheduleddeletiondate timestamp without time zone;
 
 /*
- * The 'uploadstatus' column name is crack in SourcepackagePublishing
+ * The 'uploadstatus' column name is crack in SourcePackagePublishing
  */
 
-ALTER TABLE SourcepackagePublishing RENAME COLUMN uploadstatus TO status;
+ALTER TABLE SourcePackagePublishing RENAME COLUMN uploadstatus TO status;
 
 /*
  * And PackagePublishing needs a similar status column

@@ -7,17 +7,26 @@ __metaclass__ = type
 import unittest
 from zope.testing.doctestunit import DocTestSuite
 
-from canonical.launchpad.interfaces import ILanguageSet, IPerson
+from canonical.launchpad.interfaces import IProjectSet, ILanguageSet, IPerson
 from zope.interface import implements
 from zope.app.security.interfaces import IPrincipal
 from zope.publisher.interfaces.browser import IBrowserRequest
 
-class DummyProduct:
-    pass
+class DummyProjectSet:
+    implements(IProjectSet)
+
+    def search(self, query, search_products = False):
+        return [DummyProject(), DummyProject()]
+
 
 class DummyProject:
     def products(self):
         return [DummyProduct(), DummyProduct()]
+
+
+class DummyProduct:
+    pass
+
 
 class DummyLanguage:
     def __init__(self, code, pluralForms):
@@ -61,36 +70,36 @@ def adaptPrincipalToNoLanguagePerson(principal):
     return DummyPerson([])
 
 class DummyPOFile:
-    pluralForms = 4
+    pluralforms = 4
 
     def __init__(self, template):
-        self.poTemplate = template
+        self.potemplate = template
 
     def translatedCount(self):
         return 3
 
 
-class DummyMessageID:
+class DummyMsgID:
     msgid = "foo"
 
 
-class DummyPOMessageSet:
+class DummyPOTMsgSet:
     id = 1
     sequence = 1
-    fileReferences = 'fileReferences'
-    commentText = 'commentText'
-    sourceComment = 'sourceComment'
+    filereferences = 'fileReferences'
+    commenttext = 'commentText'
+    sourcecomment = 'sourceComment'
 
     def flags(self):
         return []
 
     def messageIDs(self):
-        return [DummyMessageID()]
+        return [DummyMsgID()]
 
     def translationsForLanguage(self, language):
         return ['bar']
 
-
+    
 class DummyPOTemplate:
     def poFile(self, language_code):
         self.language_code = language_code
@@ -101,7 +110,7 @@ class DummyPOTemplate:
             raise KeyError
 
     def __getitem__(self, key):
-        return [DummyPOMessageSet(), DummyPOMessageSet()]
+        return [DummyPOTMsgSet(), DummyPOTMsgSet()]
 
     def __len__(self):
         return 16
@@ -245,6 +254,39 @@ def test_ViewProject():
     >>> view.request = DummyRequest()
     >>> view.thereAreProducts()
     True
+    '''
+
+def test_ViewSearchResults():
+    '''
+    >>> from zope.app.tests.placelesssetup import setUp, tearDown
+    >>> from zope.app.tests import ztapi
+
+    >>> setUp()
+
+    >>> ztapi.provideUtility(IProjectSet, DummyProjectSet())
+
+    >>> from canonical.rosetta.browser import ViewSearchResults
+
+    >>> view = ViewSearchResults(None, DummyRequest())
+    >>> view.queryProvided
+    False
+    >>> view.query
+    >>> view.results
+    []
+    >>> view.resultCount
+    0
+
+    >>> view = ViewSearchResults(None, DummyRequest(q = 'foo'))
+    >>> view.queryProvided
+    True
+    >>> view.query
+    'foo'
+    >>> len(view.results)
+    2
+    >>> view.resultCount
+    2
+
+    >>> tearDown()
     '''
 
 def test_TranslatePOTemplate_init():

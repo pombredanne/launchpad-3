@@ -553,16 +553,16 @@ class DistrosReleaseSourcesSearchView(object):
         self.context = context
         self.request = request
         
-    def searchBinariesBatchNavigator(self):        
+    def searchSourcesBatchNavigator(self):        
 
         name = self.request.get("name", "")
 
         if name:
-            binary_packages = list(self.context.findPackagesByName(name))
+            source_packages = list(self.context.findPackagesByName(name))
             start = int(self.request.get('batch_start', 0))
             end = int(self.request.get('batch_end', BATCH_SIZE))
             batch_size = BATCH_SIZE
-            batch = Batch(list = binary_packages, start = start,
+            batch = Batch(list = source_packages, start = start,
                           size = batch_size)
             return BatchNavigator(batch = batch,
                                   request = self.request)

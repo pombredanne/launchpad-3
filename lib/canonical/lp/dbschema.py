@@ -36,7 +36,6 @@ __all__ = ('ManifestEntryType', 'Packaging', 'BranchRelationships',
 'DistributionRole', 'DOAPRole')
 
 from zope.interface.advice import addClassAdvisor
-from zope.schema.vocabulary import SimpleVocabulary
 import sys
 
 
@@ -186,15 +185,6 @@ class DBSchema:
     items = ItemsDescriptor()
 
 
-# TODO: Make DBSchema classes provide an interface, so we can adapt IDBSchema
-# to IVocabulary
-def vocabulary(schema):
-    '''Adapt IDBSchema to IVocabulary'''
-    return SimpleVocabulary.fromItems([
-        (i.title, int(i)) for i in [getattr(schema, a) for a in dir(schema)]
-        if isinstance(i, Item)
-        ])
-
 class ManifestEntryType(DBSchema):
     """A Sourcerer Manifest.
 
@@ -267,7 +257,7 @@ class Packaging(DBSchema):
         ''')
 
     INCLUDES = Item(2, '''
-        Sourcepackage Includes Product
+        SourcePackage Includes Product
 
         This source package includes some part or all of the product. For
         example, the "cadaver" source package has an "includes" Packaging
@@ -812,7 +802,7 @@ class DistroReleaseQueueStatus(DBSchema):
     part of a DistroRelease. These are managed via the DistroReleaseQueue
     table and related tables and eventually (assuming a successful upload
     into the DistroRelease) the effects are published via the PackagePublishing
-    and SourcepackagePublishing tables.
+    and SourcePackagePublishing tables.
     """
 
     UNCHECKED = Item(1, '''
@@ -1319,7 +1309,7 @@ class BugPriority(DBSchema):
         ''')
 
     WONTFIX = Item(10, '''
-        Won't Fix
+        Wontfix
 
         The maintainer does not intend to fix this bug.
         ''')
@@ -1334,7 +1324,7 @@ class BugSeverity(DBSchema):
     """
 
     CRITICAL = Item(50, '''
-        Critical Severity
+        Critical
 
         This bug is essential to fix as soon as possible. It affects
         system stability, data integrity and / or remote access
@@ -1342,21 +1332,21 @@ class BugSeverity(DBSchema):
         ''')
 
     MAJOR = Item(40, '''
-        Major Severity
+        Major
 
         This bug needs urgent attention from the maintainer or
         upstream. It affects local system security or data integrity.
         ''')
 
     NORMAL = Item(30, '''
-        Normal Severity
+        Normal
 
         This bug warrants an upload just to fix it, but can be put
         off until other major or critical bugs have been fixed.
         ''')
 
     MINOR = Item(20, '''
-        Minor Severity
+        Minor
 
         This bug does not warrant an upload just to fix it, but 
         should if possible be fixed when next the maintainer does an
@@ -1381,14 +1371,14 @@ class BugExternalReferenceType(DBSchema):
     """
 
     CVE = Item(1, '''
-        A cve number
+        CVE Reference
 
         This external reference is a CVE number, which means it
         exists in the CVE database of security bugs.
         ''')
 
     URL = Item(2, '''
-        A URL
+        URL
 
         This external reference is a URL. Typically that means it
         is a reference to a web page or other internet resource

@@ -1,0 +1,62 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- BugProductInfestation -->
+    <content class="canonical.launchpad.database.BugProductInfestation">
+        <allow interface="canonical.launchpad.interfaces.IBugProductInfestation" />
+        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+        <require
+            permission="zope.View"
+            set_schema="canonical.launchpad.interfaces.IBugProductInfestation" />
+    </content>
+
+    <browser:addform
+        name="+new"
+        schema="canonical.launchpad.interfaces.IBugProductInfestation"
+        for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
+        label="Add Infested Product Release"
+        fields="productrelease infestationstatus"
+        content_factory="canonical.launchpad.database.BugProductInfestationFactory"
+        arguments=""
+        keyword_arguments="productrelease infestationstatus"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="malone/bugs/$Bug.id/productinfestations/+new" />
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IBugProductInfestation"
+        schema="canonical.launchpad.interfaces.IBugProductInfestation"
+        fields="productrelease infestationstatus"
+        label="Edit Infested Product Release"
+        permission="launchpad.AnyPerson"
+        template="../templates/default-editform.pt"
+        lp:url="malone/bugs/$Bug.id/productinfestations/$BugProductInfestation.id/+edit" />
+
+    <!-- BugProductInfestationContainer -->
+    <content class="canonical.launchpad.database.BugProductInfestationContainer">
+        <allow interface="canonical.launchpad.interfaces.IBugProductInfestationContainer" />
+        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+    </content>
+
+    <utility
+        factory="canonical.launchpad.database.BugProductInfestationContainer"
+        provides="canonical.launchpad.interfaces.IBugProductInfestationContainer" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
+        permission="zope.Public">
+        <browser:page name="+index"
+            template="../templates/bugproductinfestations-index.pt"
+            lp:url="malone/bugs/$Bug.id/bugproductinfestations/index" />
+    </browser:pages>
+
+</configure>

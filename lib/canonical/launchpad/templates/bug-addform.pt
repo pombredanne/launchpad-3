@@ -1,0 +1,49 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="launchpad">
+
+  <body>
+
+  <!-- This page uses the launchpad-addform.pt METAL -->
+
+  <div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_addform/addform">
+
+        <h3 tal:condition="view/label"
+            tal:content="view/label"
+            metal:fill-slot="heading">Add a New bug in Malone</h3>
+
+        <div metal:fill-slot="extra_info" class="documentDescription">
+            This is the form to create a new bug report. Malone is unlike
+            other bug trackers - it's much more important to establish if
+            this bug already exists in Malone than it might be in other bug
+            trackers. Reducing the number of duplicates makes the most of
+            Malone's unique qualities, such as tracking the status of the
+            same bug in multiple packages of the same upstream code.
+        </div>
+
+        <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">
+            <div class="label">Extra top</div>
+            <div class="label"><input type="text" style="width:100%" /></div>
+        </div>
+
+        <legend metal:fill-slot="form_legend">New Bug Details</legend>
+
+        <div class="row"
+            metal:fill-slot="extra_bottom" tal:replace="nothing">
+          <div class="label">Extra bottom</div>
+          <div class="field"><input type="text" style="width:100%" /></div>
+        </div>
+
+      <div class="row" metal:fill-slot="extra_buttons" tal:replace="nothing">
+      </div>
+
+  </div>
+
+  </div>
+  </body>
+
+</html>
+

@@ -1,5 +1,3 @@
-# arch-tag: 2867d2c1-667a-472c-befa-1c27f79698dd
-#
 # Hacked up version of zope.app.tests.functional which doesn't depend on the
 # server it's testing having a ZODB.
 

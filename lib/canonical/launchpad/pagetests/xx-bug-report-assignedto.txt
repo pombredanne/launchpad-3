@@ -1,0 +1,28 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/assigned HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <h1>Bugs Assigned to <span>Foo Bar</span></h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bugs/assigned HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 10
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/malone/bugs/assigned
+  ... 
+  ... user=name1""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <h1>Bugs Assigned to ...</h1>
+  ...

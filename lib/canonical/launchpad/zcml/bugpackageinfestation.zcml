@@ -16,7 +16,7 @@
         <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IBugPackageInfestation" />
     </content>
 
-    <content class="canonical.malone.browser.BugPackageInfestationContainer">
+    <content class="canonical.launchpad.database.BugPackageInfestationContainer">
         <allow interface="canonical.launchpad.interfaces.IBugPackageInfestationContainer" />
         <allow
             interface="zope.app.form.browser.interfaces.IAddFormCustomization"
@@ -57,11 +57,11 @@
         for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
         label="Add Infested Package Release"
         fields="sourcepackagerelease infestationstatus"
-        content_factory="canonical.malone.browser.BugPackageInfestationFactory"
+        content_factory="canonical.launchpad.database.BugPackageInfestationFactory"
         arguments=""
         keyword_arguments="sourcepackagerelease infestationstatus"
         permission="launchpad.AnyPerson"
-        template="../templates/default-addform.pt"
+        template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/packageinfestations/+new" />
 
     <browser:editform

@@ -10,5 +10,3 @@ Releases in <span tal:replace="here/name">package name</span>:
 
 </div>
 
-<!-- arch-tag: e0f72d46-85f6-4b95-9069-285d969c9e0a -->
-

@@ -1,0 +1,24 @@
+#! /bin/sh
+
+# update the code that is brought directly into the tree
+cd ~/projects/ubuntu
+tla cat-config configs/canonical.com/launchpad/development | xargs -n 2 tla update -d
+
+# then check if there are unmerged changes
+cd ~/projects/ubuntu/launchpad
+tla changes 
+if [ $? -gt 0 ]; then
+    echo "You've got changes! Please commit them before refueling"
+    exit 1
+fi;
+
+# check for loose files
+tla tree-lint -t --strict
+if [ $? -gt 0 ]; then
+  echo "You have untagged files. Please add them and commit before refueling."
+  exit 1
+fi
+
+# now merge launchpad with the rocketfuel repo
+tla star-merge rocketfuel@canonical.com/launchpad--devel--0
+

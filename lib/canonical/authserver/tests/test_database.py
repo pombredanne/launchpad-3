@@ -15,10 +15,18 @@ from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 from canonical.authserver.database import DatabaseUserDetailsStorage
 from canonical.authserver.database import IUserDetailsStorage
 
-class TestDatabaseSetup(unittest.TestCase):
+from canonical.launchpad.ftests.harness import LaunchpadTestCase
+
+class TestDatabaseSetup(LaunchpadTestCase):
     def setUp(self):
-        self.connection = psycopg.connect('dbname=launchpad_test')
+        super(TestDatabaseSetup, self).setUp()
+        self.connection = self.connect()
         self.cursor = self.connection.cursor()
+
+    def tearDown(self):
+        self.cursor.close()
+        self.connection.close()
+        super(TestDatabaseSetup, self).tearDown()
 
 class DatabaseStorageTestCase(TestDatabaseSetup):
     def test_verifyInterface(self):
@@ -39,6 +47,11 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         # Getting by ID should give the same result as getting by email
         userDict2 = storage._getUserInteraction(self.cursor, userDict['id'])
         self.assertEqual(userDict, userDict2)
+
+        # Getting by nickname should also give the same result
+        # Note: 'name1' is Mark's nickname in the sampledata
+        userDict3 = storage._getUserInteraction(self.cursor, 'name1')
+        self.assertEqual(userDict, userDict3)
 
     def test_getUserMissing(self):
         # Getting a non-existent user should return {}
@@ -141,6 +154,11 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(displayname, userDict['displayname'])
         self.assertEqual(emailaddresses, userDict['emailaddresses'])
 
+        # Check that the nickname was correctly generated (and that getUser
+        # returns the same values that createUser returned)
+        userDict2 = storage._getUserInteraction(self.cursor, 'test1')
+        self.assertEqual(userDict, userDict2)
+
     # FIXME: behaviour of this case isn't defined yet
     ##def test_createUserFailure(self):
     ##    # Creating a user with a loginID that already exists should fail
@@ -179,10 +197,6 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
                                                       'fred@bedrock', ssha,
                                                       newSsha)
         self.assertEqual({}, userDict)
-
-    def tearDown(self):
-        # Remove dummy data added to DB.
-        self.connection.rollback()
 
 
 def test_suite():

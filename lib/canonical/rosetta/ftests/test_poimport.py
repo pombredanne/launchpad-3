@@ -9,7 +9,7 @@ from zope.component.tests.placelesssetup import PlacelessSetup
 
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database import Person, POTemplate, \
-     Product, LanguageSet, POMessageSet, POMessageIDSighting
+     Product, LanguageSet, POMsgSet, POTMsgSet, POMsgIDSighting
 from canonical.rosetta.pofile_adapters import MessageProxy, \
      TemplateImporter, POFileImporter
 from canonical.launchpad.database import Project
@@ -28,9 +28,13 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         super(POImportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
         utilityService.provideUtility(ILanguageSet, LanguageSet(), '')
-        canonical.lp.initZopeless()
+        self.ztm = canonical.lp.initZopeless()
         self.pot = file(os.path.join(here, 'gnome-terminal.pot'))
         self.po = file(os.path.join(here, 'gnome-terminal-cy.po'))
+
+    def tearDown(self):
+        self.ztm.uninstall()
+        super(POImportTestCase, self).tearDown()
 
     def testTemplateImporter(self):
         try:
@@ -59,37 +63,38 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
                                     title='GNOME Terminal main template',
                                     description='GNOME Terminal main template',
                                     path=self.pot.name,
-                                    isCurrent=True,
-                                    dateCreated='NOW',
+                                    iscurrent=True,
+                                    datecreated='NOW',
                                     copyright='yes',
                                     priority=1,
-                                    branch=1,
+                                    branchID=1,
                                     license=1,
-                                    messageCount=0,
-                                    owner=XXXperson)
+                                    messagecount=0,
+                                    ownerID=XXXperson.id)
         importer = TemplateImporter(poTemplate, XXXperson)
         importer.doImport(self.pot)
-        get_transaction().commit()
+        self.ztm.commit()
         # try a second time to see if it breaks
         self.pot.seek(0)
         importer.doImport(self.pot)
-        get_transaction().commit()
-        POMessageSet._connection.cache.clear()
-        sets = POMessageSet.select('potemplate=%d AND pofile IS NULL' % poTemplate.id)
+        self.ztm.commit()
+        sets = POTMsgSet.select('potemplate=%d and sequence > 0' % poTemplate.id)
         assert sets.count() == 513, '%d message sets instead of 513' % sets.count()
         for msgset in list(sets):
             # All messages should have the sequence > 0
             # XXX: We are assuming you are cleaning up the DB between tests.
             assert msgset.sequence > 0
-            sighting = POMessageIDSighting.selectBy(
-                        poMessageSetID=msgset.id,
-                        poMessageID_ID=msgset.primeMessageID_.id)[0]
-            assert sighting.inLastRevision
+            sighting = POMsgIDSighting.selectBy(
+                        potmsgsetID=msgset.id,
+                        pomsgid_ID=msgset.primemsgid_.id)[0]
+            assert sighting.inlastrevision
         return
         # TODO: add some code that actually tests the database
         # here is an attempt
         # but the transaction has to be committed (subtransaction?)
         # so that the test is relevant
+        # XXX: Carlos Perello Marin 19/10/04: Review after the database
+        # changes.
         msg = poTemplate["evolution addressbook %s"]
         old_sighting = msg.getMessageIDSighting(0)
         print old_sighting, repr(old_sighting.poMessageID_.text), old_sighting.lastSeen
@@ -115,7 +120,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
                               title='GNOME Terminal',
                               shortDesc='The GNOME terminal emulator',
                               description='The GNOME terminal emulator',
-                              owner=XXXperson)
+                              ownerID=XXXperson.id)
         try:
             poTemplate = POTemplate.selectBy(productID = product.id,
                                                     name='gnome-terminal')[0]
@@ -126,33 +131,33 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
                                     title='GNOME Terminal main template',
                                     description='GNOME Terminal main template',
                                     path=self.pot.name,
-                                    isCurrent=True,
-                                    dateCreated='NOW',
+                                    iscurrent=True,
+                                    datecreated='NOW',
                                     copyright='yes',
                                     priority=1,
-                                    branch=1,
+                                    branchID=1,
                                     license=1,
-                                    messageCount=0,
-                                    owner=XXXperson)
+                                    messagecount=0,
+                                    ownerID=XXXperson.id)
         try:
             poFile = poTemplate.poFile('cy')
         except KeyError:
             poFile = poTemplate.newPOFile(XXXperson, 'cy')
         importer = POFileImporter(poFile, XXXperson)
         importer.doImport(self.po)
-        get_transaction().commit()
+        self.ztm.commit()
         # try a second time to see if it breaks
         self.po.seek(0)
         importer.doImport(self.po)
         # check that there aren't duplicates in the db
-        POMessageSet._connection.cache.clear()
         for message in importer.parser.messages:
-            msgid = message._msgset.primeMessageID_
-            results = POMessageSet.select('''
-                poTemplate = %d AND
-                poFile = %d AND
-                primeMsgID = %d
-                ''' % (poTemplate.id, poFile.id, msgid.id))
+            msgid = message._potmsgset.primemsgid_
+            results = POMsgSet.select('''
+                POMsgSet.poFile = %d AND
+                POMsgSet.potmsgset = POTMsgSet.id AND
+                POTMsgSet.primemsgid = %d
+                ''' % (poFile.id, msgid.id),
+                clauseTables=('POTMsgSet', 'POMsgSet'))
             assert results.count() == 1, '%d message sets' % results.count()
             assert results[0].sequence > 0
 

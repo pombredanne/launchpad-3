@@ -155,7 +155,11 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
         super(POExportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
         utilityService.provideUtility(ILanguageSet, LanguageSet(), '')
-        canonical.lp.initZopeless()
+        self.ztm = canonical.lp.initZopeless()
+
+    def tearDown(self):
+        self.ztm.uninstall()
+        super(POExportTestCase, self).tearDown()
 
     def testPoExportAdapter(self):
         try:

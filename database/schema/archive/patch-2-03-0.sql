@@ -1,14 +1,14 @@
 SET client_min_messages TO error;
 
-/* Migrate sourcepackagerelease reference from Binarypackage to Build
+/* Migrate sourcepackagerelease reference from BinaryPackage to Build
     for Soyuz
  */
 ALTER TABLE Build ADD COLUMN sourcepackagerelease integer REFERENCES 
-    SourcepackageRelease(id);
+    SourcePackageRelease(id);
 UPDATE Build 
-    SET sourcepackagerelease = Binarypackage.sourcepackagerelease
-    FROM Binarypackage
-    WHERE Build.id = Binarypackage.build;
+    SET sourcepackagerelease = BinaryPackage.sourcepackagerelease
+    FROM BinaryPackage
+    WHERE Build.id = BinaryPackage.build;
 ALTER TABLE Build ALTER COLUMN sourcepackagerelease SET NOT NULL;
-ALTER TABLE Binarypackage DROP COLUMN sourcepackagerelease;
+ALTER TABLE BinaryPackage DROP COLUMN sourcepackagerelease;
 

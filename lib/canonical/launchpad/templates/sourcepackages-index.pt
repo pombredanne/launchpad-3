@@ -6,7 +6,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Sourcepackages With Bugs</h1>
+    <h1>SourcePackages With Bugs</h1>
 
     <div class="documentDescription">
         These are the sourcepackages for which we have assigned bugs.
@@ -19,14 +19,14 @@
         </tr> 
         <tr tal:repeat="pkg context/withBugs"
             tal:attributes="onclick
-                string:window.location='../sourcepackage/${pkg/name}';">
+                string:window.location='../package/${pkg/name}';">
             <td>
                 <a href="#" 
-                    tal:attributes="href string:../sourcepackage/${pkg/name}/"
-                    tal:content="pkg/name">$SourcepackageName.name</a>
+                    tal:attributes="href string:../package/${pkg/name}/"
+                    tal:content="pkg/name">$SourcePackageName.name</a>
             </td>
             <td tal:content="pkg/shortdesc">
-                $Sourcepackage.shortdesc
+                $SourcePackage.shortdesc
             </td>
         </tr>
     </table>

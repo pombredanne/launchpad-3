@@ -85,7 +85,7 @@ class Doap(SQLThing):
 
 
     def getSourcePackage(self, name):
-        return self._query_single("""SELECT id FROM Sourcepackage WHERE
+        return self._query_single("""SELECT id FROM SourcePackage WHERE
                                      sourcepackagename = (SELECT id from
                                      sourcepackagename WHERE name = %s);""",
                                   (name,))
@@ -184,25 +184,25 @@ class Doap(SQLThing):
         ## multiple devels and so
         try:
             name = data['devels'].keys()[0]
-            email = data['devels'][name]            
+            email = data['devels'][name]
             name = self.ensure_string_format(name)
             email = self.ensure_string_format(email)
 
             ## XXX:(multiple+owner) cprov
             ## We don't support multiple owners, so, use the first
             name = name.split(',')[0]
-            email = email.split(',')[0]            
+            email = email.split(',')[0]
             owner = self.ensurePerson(name, email)[0]
         except:
             print '@ Exception on Owner Field !!! '
-	    try: 
-		print '@\tDEBUG:', name
-		print '@\tDEBUG:', email
-	    except:
-		print '@\tDEBUG: No Devel'
+            try:
+                print '@\tDEBUG:', name
+                print '@\tDEBUG:', email
+            except:
+                print '@\tDEBUG: No Devel'
 
             ## in case of 
-	    owner = 1
+            owner = 1
                 
         ## both have project
         name = self.ensure_string_format(data['project'])
@@ -234,6 +234,23 @@ class Doap(SQLThing):
             homepage = None
 
 
+        ## Original HOST
+        ## XXX: bad usage of try ...
+        try:
+            sf = data['sf']
+        except:
+            sf = None
+
+        try:
+            fm = data['fm']
+        except:
+            fm = None
+
+        try:
+            sv = data['sv']
+        except:
+            sv = None
+
         ## XXX: (missed+fields) cprov 20041015
         ## Request this field in sourceforge.py
         wiki = None
@@ -250,8 +267,8 @@ class Doap(SQLThing):
                   "datecreated":         datecreated,
                   "homepageurl":         homepage,
                   "wikiurl":             wiki,
-                  "sourceforgeproject":  data['sf'],
-                  "freshmeatproject":    data['fm'],
+                  "sourceforgeproject":  sf,
+                  "freshmeatproject":    fm,
                   }
                                           
         self._insert("project", dbdata)
@@ -289,31 +306,31 @@ class Doap(SQLThing):
         if project_result:
             project_id = project_result[0]
             
-        if self.getProduct(project_id, data['project']):        
+        if self.getProduct(project_id, data['project']):
             print '@\tSkipping Already Added Project'        
             return 
 
         ## both have devels        
         try:
             name = data['devels'].keys()[0]
-            email = data['devels'][name]           
+            email = data['devels'][name]
             name = self.ensure_string_format(name)
             email = self.ensure_string_format(email)
             ## XXX:(multiple+owner) cprov
             ## We don't support multiple owners, so, use the first
             name = name.split(',')[0]
-            email = email.split(',')[0]            
+            email = email.split(',')[0]
             owner = self.ensurePerson(name, email)[0]
         except:
             print '@ Exception on Owner Field !!! '
-	    try: 
-		print '@\tDEBUG:', name
-		print '@\tDEBUG:', email
-	    except:
-		print '@\tDEBUG: No Devel'
+            try:
+                print '@\tDEBUG:', name
+                print '@\tDEBUG:', email
+            except:
+                print '@\tDEBUG: No Devel'
 
             ## in case of 
-	    owner = 1
+            owner = 1
 
             
         ## both have project
@@ -372,9 +389,27 @@ class Doap(SQLThing):
         except:
             listurl = None
         
+        ## Original HOST
+        ## XXX: bad usage of try ...
+        try:
+            sf = data['sf']
+        except:
+            sf = None
+
+        try:
+            fm = data['fm']
+        except:
+            fm = None
+
+        try:
+            sv = data['sv']
+        except:
+            sv = None
+
+
         ## XXX: (missed+fields) cprov 20041015
         ## Request this field in sourceforge.py
-        wiki = None
+        ##wiki = None
         download = None
 
 
@@ -393,8 +428,8 @@ class Doap(SQLThing):
                   "listurl":           listurl,
                   "programminglang":   plang,
                   "downloadurl":       download,
-                  "sourceforgeproject":  data['sf'],
-                  "freshmeatproject":    data['fm'],                  
+                  "sourceforgeproject":  sf,
+                  "freshmeatproject":    fm,                  
                 }
                                           
         self._insert("product", dbdata)

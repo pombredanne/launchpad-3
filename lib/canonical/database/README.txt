@@ -16,7 +16,7 @@ may change, but the convention may still remain.
       Project, Product, ProductSeries, ProductRelease
 
     soyuz.py Soyuz (Ubuntu Distribution Management)
-      Sourcepackage, SourcepackageName, Binarypackage, Distro,
+      SourcePackage, SourcePackageName, BinaryPackage, Distro,
       DistroRelease, DistroArchRelease, Component, Section,
       Builder, Build
 
@@ -31,6 +31,6 @@ may change, but the convention may still remain.
    python -i harness.py
 
    person = canonical.launchpad.database.Person.get(1)
-   spackage = canonical.launchpad.database.Sourcepackage.get(1)
+   spackage = canonical.launchpad.database.SourcePackage.get(1)
    ... etc
    

@@ -1,0 +1,31 @@
+<configure xmlns="http://namespaces.zope.org/browser">
+
+  <!-- Declare robots.txt files for the root, and all apps. -->
+
+  <page
+      for="canonical.publication.RootObject"
+      name="robots.txt"
+      template="templates/robots.txt"
+      permission="zope.Public"
+      />
+
+  <page
+      for="canonical.rosetta.RosettaApplication"
+      name="robots.txt"
+      template="templates/robots.txt"
+      permission="zope.Public"
+      />
+  <page
+      for="canonical.soyuz.SoyuzApplication"
+      name="robots.txt"
+      template="templates/robots.txt"
+      permission="zope.Public"
+      />
+  <page
+      for="canonical.malone.MaloneApplication"
+      name="robots.txt"
+      template="templates/robots.txt"
+      permission="zope.Public"
+      />
+
+</configure>

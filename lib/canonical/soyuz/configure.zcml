@@ -3,15 +3,6 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     >
 
-  <!-- Content directives.  We need to make sure SubURLs and other kinds of
-       traversal work properly.  We also need to make security declarations.
-    -->
-  <content class="canonical.soyuz.SoyuzApplication">
-    <!--<allow attributes="__call__ foo"/>-->
-    <implements interface="canonical.publication.IHasSuburls"/>
-  </content>
-
-
   <!-- This view registers 'soyuz' as a suburl of RootObject. -->
   <browser:suburl
       for="canonical.publication.RootObject"
@@ -76,11 +67,6 @@
       permission="zope.Public"
       name="projects"
       />
-
-  <content class="canonical.launchpad.interfaces.IPackages">
-    <implements interface="canonical.publication.IHasSuburls"/>
-  </content>
-
 
   <include file="pages.zcml" />
   <include file="resources.zcml" />

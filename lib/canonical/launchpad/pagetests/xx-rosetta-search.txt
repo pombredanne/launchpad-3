@@ -1,0 +1,279 @@
+
+This tests searching for projects in Rosetta.
+
+  >>> print http(r"""
+  ... GET /rosetta/search-results?q=gnome HTTP/1.1
+  ... Referer: http://localhost:9000/rosetta
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: 7564
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+  <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+  <BLANKLINE>
+  <BLANKLINE>
+  <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+        lang="en">
+    <head>
+      <title>Rosetta: Search results for
+          "gnome"</title>
+      <!-- Plone style sheet -->
+      <style type="text/css" media="screen">@import url(++resource++plone.css);</style>
+      <!-- Rosetta style sheet -->
+      <style type="text/css" media="screen">@import url(++resource++launchpad.css);</style>
+      <!-- Launchpad JS code -->
+      <script type="text/javascript" src="++resource++launchpad.js"></script>
+    </head>
+  <BLANKLINE>
+    <body>
+        <div id="portal-top">
+                 <a href="/rosetta">
+                     <img src="++resource++rosetta.png" alt="Rosetta" />
+                 </a>
+  <BLANKLINE>
+  <BLANKLINE>
+        </div>
+  <BLANKLINE>
+            <ul id="portal-globalnav">
+  <BLANKLINE>
+  <BLANKLINE>
+              <li class="plain">
+                <a href="http://localhost:8080/ubuntu">Ubuntu</a>
+              </li>
+  <BLANKLINE>
+  <BLANKLINE>
+              <li class="plain">
+                <a href="/foaf">People</a>
+              </li>
+  <BLANKLINE>
+  <BLANKLINE>
+              <li class="plain">
+                <a href="/doap">Projects</a>
+              </li>
+  <BLANKLINE>
+  <BLANKLINE>
+              <li class="plain">
+                <a href="/malone">Malone</a>
+              </li>
+  <BLANKLINE>
+              <li class="selected">
+                <a href="/rosetta">Rosetta</a>
+              </li>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+              <li class="plain">
+                <a href="/soyuz">Soyuz</a>
+              </li>
+  <BLANKLINE>
+  <BLANKLINE>
+              <li class="plain">
+                <a href="/lists">Lists</a>
+              </li>
+            </ul>
+  <BLANKLINE>
+        <div id="portal-personaltools">
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+          <span>
+              Not logged in.
+          </span>
+  <BLANKLINE>
+          &mdash;
+  <BLANKLINE>
+          <a href="/rosetta/translator">Translator Dashboard</a>
+  <BLANKLINE>
+          &mdash;
+  <BLANKLINE>
+          <a href="/rosetta/maintainer">Project Maintainer Dashboard</a>
+  <BLANKLINE>
+          &mdash;
+  <BLANKLINE>
+          <a href="/rosetta/prefs">My Preferences</a>
+  <BLANKLINE>
+        </div>
+  <BLANKLINE>
+        <div id="portal-breadcrumbs">
+          You are here:
+          <span>
+  <BLANKLINE>
+  <BLANKLINE>
+          </span>
+          <span>
+  <BLANKLINE>
+              <span>
+                  <a href="/rosetta">rosetta</a>
+                  <span class="breadcrumbSeparator"> &raquo; </span>
+              </span>
+          </span>
+          <span>
+  <BLANKLINE>
+              <span>
+                  <a href="/rosetta/search-results">search-results</a>
+  <BLANKLINE>
+              </span>
+          </span>
+        </div>
+  <BLANKLINE>
+        <div class="visualClear"></div>
+  <BLANKLINE>
+        <table id="portal-columns">
+          <tbody>
+            <tr>
+  <BLANKLINE>
+              <!-- start of the left (by default at least) column -->
+              <td id="portal-column-one">
+                <div class="visualPadding">
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                  &nbsp;
+                </div>
+              </td>
+              <!-- end of the left (by default at least) column -->
+  <BLANKLINE>
+              <td id="portal-column-content">
+                <div id="region-content">
+                    <div>
+  <BLANKLINE>
+      <h1>Search</h1>
+  <BLANKLINE>
+      <form action="search-results" method="GET">
+      <fieldset>
+          <legend>Search</legend>
+  <BLANKLINE>
+          <div class="field">
+              <label>Project name</label>
+              <div class="formHelp">
+              Enter the name or type of project.
+              </div>
+              <input name="q" type="text" value="gnome" />
+              <a href="search">Advanced Search</a>
+          </div>
+  <BLANKLINE>
+          <div class="formControls">
+              <input type="submit" value="Search" />
+          </div>
+      </fieldset></form>
+  <BLANKLINE>
+      <!-- No query string was provided. -->
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+      <!-- Query string was provided. -->
+  <BLANKLINE>
+      <div>
+  <BLANKLINE>
+  <BLANKLINE>
+          <div>
+              <!-- Some search results were found. -->
+  <BLANKLINE>
+              <h2>Search Results</h2>
+  <BLANKLINE>
+              <strong>
+              Projects matching your query: <span>2</span>
+              </strong>
+  <BLANKLINE>
+              <dl>
+                  <div>
+                      <dt>
+                          <a href="projects/gnome">The GNOME Project</a>
+  <BLANKLINE>
+                          <!--
+                          <span class="discreet"
+                                title="Relevance">
+                              [<span>85</span>%]
+                          </span>
+  <BLANKLINE>
+                          <span class="discreet">
+                          last updated by
+                          <span>Author</span>,
+                          <span>24th of March, 2004</span>
+                          </span>
+                          -->
+                      </dt>
+  <BLANKLINE>
+                      <dd>The Gnome Project was founded (when?) to build on the success of early applications using the Gtk GUI toolkit. Many of those applications are still part of Gnome, and the Gtk toolkit remains an essential part of Gnome.
+  <BLANKLINE>
+  Gnome applications cover the full spectrum from office productivity applications to games, digital camera applications, and of course the Gnome Panel which acts as a launcher and general access point for apps on the desktop.</dd>
+                  </div>
+                  <div>
+                      <dt>
+                          <a href="projects/ubuntu">The Ubuntu Project</a>
+  <BLANKLINE>
+                          <!--
+                          <span class="discreet"
+                                title="Relevance">
+                              [<span>85</span>%]
+                          </span>
+  <BLANKLINE>
+                          <span class="discreet">
+                          last updated by
+                          <span>Author</span>,
+                          <span>24th of March, 2004</span>
+                          </span>
+                          -->
+                      </dt>
+  <BLANKLINE>
+                      <dd>The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community, especially the Gnome Project. While the full range of KDE and other desktop environments are available, Ubuntu's Gnome desktop receives most of the polish and support work done for each release.
+  <BLANKLINE>
+  Ubuntu also includes work to unify the translation of common open source desktop applications and the tracking of bugs across multiple distributions.</dd>
+                  </div>
+              </dl>
+  <BLANKLINE>
+              <p>
+              Did you not find what you were looking for? Try the <a href="">Advanced Search</a> for more precise search options.
+              </p>
+  <BLANKLINE>
+              <!-- Duplicated above. -->
+              <p>
+              If you wish to translate a project which is not yet in Rosetta, you
+              can <a href="projects/+request">Request a Project</a>.
+              </p>
+  <BLANKLINE>
+              <!-- Batch Navigation -->
+              <!-- XXX -->
+              <!--
+              <div class="listingBar">
+              Batch navigation
+              </div>
+              -->
+  <BLANKLINE>
+          </div> <!-- condition: view/resultCount -->
+  <BLANKLINE>
+      </div> <!-- condition: view/queryProvided -->
+  <BLANKLINE>
+  </div>
+                </div>
+              </td>
+  <BLANKLINE>
+              <!-- start of right (by default at least) column -->
+              <td id="portal-column-two">
+                <div class="visualPadding">
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                  &nbsp;
+                </div>
+              </td>
+              <!-- end of the right (by default at least) column -->
+  <BLANKLINE>
+            </tr>
+          </tbody>
+        </table>
+        <!-- end column wrapper -->
+  <BLANKLINE>
+        <div class="visualClear">&nbsp;</div>
+  <BLANKLINE>
+        <div id="portal-footer">
+            Copyright 2004 Canonical Ltd.<br />
+            <a href="sitemap">Site map</a> &mdash;
+            <a href="legal">Legal</a>
+        </div>
+    </body>
+  </html>
+  <BLANKLINE>
+  <BLANKLINE>

@@ -9,12 +9,12 @@
 ALTER TABLE distribution ADD COLUMN lucilleconfig text;
 ALTER TABLE distrorelease ADD COLUMN lucilleconfig text;
 
-/* Rename SourcepackageUpload and add serial primary key */
+/* Rename SourcePackageUpload and add serial primary key */
 
-ALTER TABLE SourcepackageUpload RENAME TO SourcepackagePublishing;
-ALTER TABLE SourcepackagePublishing ADD COLUMN id integer;
+ALTER TABLE SourcePackageUpload RENAME TO SourcePackagePublishing;
+ALTER TABLE SourcePackagePublishing ADD COLUMN id integer;
 CREATE SEQUENCE sourcepackagepublishing_id_seq;
-ALTER TABLE SourcepackagePublishing 
+ALTER TABLE SourcePackagePublishing 
     ALTER COLUMN id SET DEFAULT nextval('sourcepackagepublishing_id_seq');
 
 /*

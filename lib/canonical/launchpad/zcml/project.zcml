@@ -46,6 +46,15 @@
             lp:url="doap/projects/$Project.name/+newbugtracker" />
     </browser:pages>
 
+    <!-- XXX Mark Shuttleworth 18/10/04
+             this needs to disappear or be integrated with Layers -->
+    <browser:pages for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public">
+        <browser:page name="+malone-index"
+            template="../templates/malone-project-index.pt"
+            lp:url="malone/projects/$Project.name/index" />
+    </browser:pages>
+
     <browser:traverse
         for="canonical.launchpad.interfaces.IProject"
         getter="getProduct" />

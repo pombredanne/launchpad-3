@@ -1,0 +1,57 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+
+    <!-- BugWatch -->
+    <browser:addform
+        name="+new"
+        schema="canonical.launchpad.interfaces.IBugWatch"
+        for="canonical.launchpad.interfaces.IBugWatchContainer"
+        label="Add Watch"
+        fields="bugtracker remotebug"
+        content_factory="canonical.launchpad.database.BugWatchFactory"
+        arguments=""
+        keyword_arguments="bugtracker remotebug"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="malone/bugs/$Bugs.id/watches/+new" />
+
+    <browser:editform
+        name="+edit"
+        schema="canonical.launchpad.interfaces.IBugWatch"
+        label="Change Bug Watch"
+        permission="launchpad.AnyPerson"
+        template="../templates/default-editform.pt"
+        fields="bugtracker remotebug"
+        lp:url="malone/bugs/$Bug.id/watches/$Watch.id/+edit" />
+
+    <!--BugWatchContainer -->
+    <content class="canonical.launchpad.database.BugWatchContainer">
+        <allow interface="canonical.launchpad.interfaces.IBugWatchContainer" />
+        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+    </content>
+
+    <utility
+        factory="canonical.launchpad.database.BugWatchContainer"
+        provides="canonical.launchpad.interfaces.IBugWatchContainer" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugWatchContainer"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IBugWatchContainer"
+        getter="__getitem__" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugWatchContainer"
+        permission="zope.Public">
+        <browser:page name="+index"
+            template="../templates/watches-index.pt"
+            lp:url="malone/bugs/$Bug.id/watches/index" />
+    </browser:pages>
+
+</configure>

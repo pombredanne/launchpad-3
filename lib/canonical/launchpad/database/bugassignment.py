@@ -7,9 +7,9 @@ from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import *
-
-from canonical.launchpad.database.package import SourcePackage
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.bugcontainer import BugContainerBase
 
 class ProductBugAssignment(SQLBase):
     """A relationship between a Product and a Bug."""
@@ -31,12 +31,23 @@ class ProductBugAssignment(SQLBase):
                           default=None)
 
 
-class SourcepackageBugAssignment(SQLBase):
-    """A relationship between a Sourcepackage and a Bug."""
+class ProductBugAssignmentContainer(BugContainerBase):
+    """A container for ProductBugAssignment"""
 
-    implements(ISourcepackageBugAssignment)
+    implements(IProductBugAssignmentContainer)
+    table = ProductBugAssignment
 
-    _table = 'SourcepackageBugAssignment'
+
+def ProductBugAssignmentFactory(context, **kw):
+    return ProductBugAssignment(bug=context.context.bug, **kw)
+
+
+class SourcePackageBugAssignment(SQLBase):
+    """A relationship between a SourcePackage and a Bug."""
+
+    implements(ISourcePackageBugAssignment)
+
+    _table = 'SourcePackageBugAssignment'
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug')
     sourcepackage = ForeignKey(dbName='sourcepackage', notNull=True,
@@ -51,5 +62,18 @@ class SourcepackageBugAssignment(SQLBase):
                                    foreignKey='BinaryPackageName', default=None)
     assignee = ForeignKey(dbName='assignee', foreignKey='Person',
                           default=None)
+
+
+class SourcePackageBugAssignmentContainer(BugContainerBase):
+    """A container for SourcePackageBugAssignment"""
+
+    implements(ISourcePackageBugAssignmentContainer)
+    table = SourcePackageBugAssignment
+
+
+def SourcePackageBugAssignmentFactory(context, **kw):
+    return SourcePackageBugAssignment(bug=context.context.bug,
+                                      binarypackagename=None,
+                                      **kw)
 
 

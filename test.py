@@ -22,6 +22,9 @@ import sys, os
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(here, 'lib'))
 
+# Set PYTHONPATH environment variable for spawned processes
+os.environ['PYTHONPATH'] = ':'.join(sys.path)
+
 # This is a terrible hack to divorce the FunctionalTestSetup from
 # its assumptions about the ZODB.
 from zope.app.tests.functional import FunctionalTestSetup

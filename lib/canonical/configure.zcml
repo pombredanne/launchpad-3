@@ -3,152 +3,137 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
-  <include file="meta.zcml" />
-  <includeOverrides file="defaultview-meta.zcml" />
+    <include file="meta.zcml" />
+    <includeOverrides file="defaultview-meta.zcml" />
 
-  <browser:skin name="launchpad"
-                interface="canonical.launchpad.layers.LaunchpadLayer"/>
-  <browser:skin name="rosetta"
-                interface="canonical.launchpad.layers.RosettaLayer"/>
-  <browser:skin name="ubuntulinux"
-                interface="canonical.launchpad.layers.UbuntuLinuxLayer"/>
-  <browser:defaultSkin name="launchpad" />
+    <browser:skin name="launchpad"
+                    interface="canonical.launchpad.layers.LaunchpadLayer"/>
+    <browser:skin name="rosetta"
+                    interface="canonical.launchpad.layers.RosettaLayer"/>
+    <browser:skin name="ubuntulinux"
+                    interface="canonical.launchpad.layers.UbuntuLinuxLayer"/>
+    <browser:defaultSkin name="launchpad" />
 
-  <!-- This needs to be included early on because it defines permissions. -->
-  <include package="canonical.lp" />
+    <!-- This needs to be included early on because it defines permissions. -->
+    <include package="canonical.lp" />
 
-  <!-- The default Zope 3 configuration of the SimpleComponentTraverser is
-       that it applies to any object that provides Interface.
-       This excludes objects that we're using just as instances of classes
-       without providing any interfaces.
-    -->
-  <view
-      for="*"
-      type="zope.publisher.interfaces.browser.IBrowserRequest"
-      provides="zope.publisher.interfaces.browser.IBrowserPublisher"
-      factory="zope.app.publication.traversers.SimpleComponentTraverser"
-      permission="zope.Public"
-      />
-
-  <!-- This is the HTTP server, set up to do ZODB-free publication.  -->
-  <utility
-      name="HTTP"
-      component="canonical.publication.http"
-      provides="zope.app.server.servertype.IServerType"
-      />
-
-  <!-- This is the HTTP server, with post-mortem debugging support,
-       set up to do ZODB-free publication.  -->
-  <utility
-      name="PostmortemDebuggingHTTP"
-      component="canonical.publication.pmhttp"
-      provides="zope.app.server.servertype.IServerType"
-      />
-
-  <!-- This is the HTTP server, but making each request have the
-       DebugLayer as the first layer searched.  Effectively, this turns
-       on the debug error pages. -->
-  <utility
-      name="DebugLayerHTTP"
-      component="canonical.publication.debughttp"
-      provides="zope.app.server.servertype.IServerType"
-      />
-
-  <!-- This view registers the objects marked with IHasSuburls as being
-       able to have suburls.  This will become part of the custom suburl
-       zcml directive.
-    -->
-  <view
-      for="canonical.publication.IHasSuburls"
-      type="zope.publisher.interfaces.browser.IBrowserRequest"
-      provides="zope.publisher.interfaces.browser.IBrowserPublisher"
-      factory="canonical.publication.SubURLTraverser"
-      permission="zope.Public"
-      />
-
-  <!-- This is an index.html view on the root object.
-       The root object is not ever published itself.  Only its views are.
-    -->
-  <browser:page
-      for="canonical.publication.RootObject"
-      name="index.html"
-      template="launchpad/templates/root-index.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="canonical.publication.RootObject"
-      name="lists"
-      template="mailman-index.html"
-      permission="zope.Public"
-      />
-
-  <include file="browser-exception.zcml" />
-  <include package="canonical.launchpad.vocabularies" />
-  <include package="canonical.widgets" />
-  <include package="canonical.database" />
-  <include package="canonical.auth" />
-  <include package="canonical.launchpad.zcml" />
-
-
-  <!-- enable the error reporting service at /errors -->
-  <browser:suburl
-      for="canonical.publication.RootObject"
-      name="errors"
-      utility="zope.app.errorservice.interfaces.ILocalErrorReportingService"
-      />
-
-  <content class="zope.app.errorservice.RootErrorReportingService">
-    <require
+    <!-- The default Zope 3 configuration of the SimpleComponentTraverser is
+        that it applies to any object that provides Interface.
+        This excludes objects that we're using just as instances of classes
+        without providing any interfaces.
+        -->
+    <view
+        for="*"
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        provides="zope.publisher.interfaces.browser.IBrowserPublisher"
+        factory="zope.app.publication.traversers.SimpleComponentTraverser"
         permission="zope.Public"
-        interface="zope.app.errorservice.interfaces.IErrorReportingService"
         />
-    <require
-        permission="zope.Public"
-        interface="zope.app.errorservice.interfaces.ILocalErrorReportingService"
+
+    <!-- This is the HTTP server, set up to do ZODB-free publication.  -->
+    <utility
+        name="HTTP"
+        component="canonical.publication.http"
+        provides="zope.app.server.servertype.IServerType"
         />
-    </content>
-  <serviceType
-      id="ErrorLogging"
-      interface="zope.app.errorservice.interfaces.IErrorReportingService" 
-      />
 
-  <utility
-      provides="zope.app.errorservice.interfaces.ILocalErrorReportingService"
-      component="canonical.publication.globalErrorUtility"
-      />
-  <service 
-      serviceType="ErrorLogging"
-      permission="zope.Public"
-      component="canonical.publication.globalErrorService" 
-      />
+    <!-- This is the HTTP server, with post-mortem debugging support,
+        set up to do ZODB-free publication.  -->
+    <utility
+        name="PostmortemDebuggingHTTP"
+        component="canonical.publication.pmhttp"
+        provides="zope.app.server.servertype.IServerType"
+        />
 
-  <browser:pages
-      for="zope.app.errorservice.interfaces.IErrorReportingService"
-      permission="zope.Public"
-      class="zope.app.errorservice.browser.EditErrorLog">
+    <!-- This is the HTTP server, but making each request have the
+        DebugLayer as the first layer searched.  Effectively, this turns
+        on the debug error pages. -->
+    <utility
+        name="DebugLayerHTTP"
+        component="canonical.publication.debughttp"
+        provides="zope.app.server.servertype.IServerType"
+        />
 
+    <!-- This is an index.html view on the root object.
+        The root object is not ever published itself.  Only its views are.
+        -->
     <browser:page
+        for="canonical.publication.RootObject"
         name="index.html"
-        template="launchpad/templates/errorservice-index.pt"
+        template="launchpad/templates/root-index.pt"
+        permission="zope.Public"
         />
+
     <browser:page
-        name="configure.html"
-        template="launchpad/templates/errorservice-config.pt"
+        for="canonical.publication.RootObject"
+        name="lists"
+        template="mailman-index.html"
+        permission="zope.Public"
         />
-    <browser:page
-        name="edit.html"
-        attribute="updateProperties"
+
+    <include file="browser-exception.zcml" />
+    <include package="canonical.widgets" />
+    <include package="canonical.database" />
+    <include package="canonical.auth" />
+    <include package="canonical.launchpad" />
+
+    <!-- enable the error reporting service at /errors -->
+    <browser:suburl
+        for="canonical.publication.RootObject"
+        name="errors"
+        utility="zope.app.errorservice.interfaces.ILocalErrorReportingService"
         />
-    <browser:page
-        name="showEntry.html"
-        template="launchpad/templates/errorservice-entry.pt"
+
+    <content class="zope.app.errorservice.RootErrorReportingService">
+        <require
+            permission="zope.Public"
+            interface="zope.app.errorservice.interfaces.IErrorReportingService"
+            />
+        <require
+            permission="zope.Public"
+            interface="zope.app.errorservice.interfaces.ILocalErrorReportingService"
+            />
+        </content>
+    <serviceType
+        id="ErrorLogging"
+        interface="zope.app.errorservice.interfaces.IErrorReportingService" 
         />
-    <browser:page
-        name="showTextTBEntry.html"
-        template="launchpad/templates/errorservice-tbentry.pt"
+
+    <utility
+        provides="zope.app.errorservice.interfaces.ILocalErrorReportingService"
+        component="canonical.publication.globalErrorUtility"
         />
-  </browser:pages>
+    <service 
+        serviceType="ErrorLogging"
+        permission="zope.Public"
+        component="canonical.publication.globalErrorService" 
+        />
+
+    <browser:pages
+        for="zope.app.errorservice.interfaces.IErrorReportingService"
+        permission="zope.Public"
+        class="zope.app.errorservice.browser.EditErrorLog">
+
+        <browser:page
+            name="index.html"
+            template="launchpad/templates/errorservice-index.pt"
+            />
+        <browser:page
+            name="configure.html"
+            template="launchpad/templates/errorservice-config.pt"
+            />
+        <browser:page
+            name="edit.html"
+            attribute="updateProperties"
+            />
+        <browser:page
+            name="showEntry.html"
+            template="launchpad/templates/errorservice-entry.pt"
+            />
+        <browser:page
+            name="showTextTBEntry.html"
+            template="launchpad/templates/errorservice-tbentry.pt"
+            />
+    </browser:pages>
 
 </configure>
-<!-- arch-tag: 55275af7-7bbe-4d25-9596-0df3cb6c4a1f -->

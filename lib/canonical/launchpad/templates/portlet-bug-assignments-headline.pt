@@ -1,0 +1,135 @@
+
+<!--
+    This is the main bug page assignments portal. It should show only
+    the assignments that are critical to see in the current context.
+    Other assignments, in all their glory, can be displayed on a
+    specialised assignments page.
+-->
+
+<table class="listing" style="width: 100%;">
+    <thead>
+        <tr>
+            <th title="Source Package Assignment">Upstream / Package</th>
+            <th title="State">State</th>
+            <th title="Severity">Sev</th>
+            <th title="Priority">Pri</th>
+            <th title="Assignee">Assigned to</th>
+        </tr>
+    </thead>
+
+
+    <tbody>
+        <!-- Upstream Assignments -->
+        <tr tal:repeat="bugass context/productassignment">
+           
+            <td>
+                <img src="++resource++product_icon.gif" 
+                     title="Product Assignment" />
+                <a href=""
+                   tal:attributes="href
+                   string:/doap/projects/${bugass/product/project/name}/${bugass/product/name}"
+                   tal:content="bugass/product/name">
+                $Product.name
+                </a>
+            </td>
+            
+            <td><acronym tal:content="bugass/bugstatus/lp:BugAssignmentStatus"
+                         tal:attributes="title
+                         string:XXX${bugass/bugstatus/lp:BugAssignmentStatus}">
+                $ProductBugAssignment.bugstatus
+                </acronym>
+            </td>
+
+            <td>
+                <acronym title="Critical
+This bug is essential to fix as soon as possible. It affects system stability, data integrity and / or remote access security."
+                         tal:content="bugass/severity/lp:BugSeverity"
+                         tal:attributes="class
+                         string:severity${bugass/severity/lp:BugSeverity},
+                                         title
+                                         string:severity${bugass/severity/lp:BugSeverity}"
+                >Critical</acronym>
+            </td>
+
+            <td>
+                <acronym class="priorityMedium"
+                         title="Medium Priority. This is a medium priority bug for the maintainer."
+                         tal:content="bugass/priority/lp:BugPriority"
+                         tal:attributes="class string:priority${bugass/priority/lp:BugPriority}"
+                >Medium</acronym>
+            </td>
+            
+            <td title="Assigned To">
+                <a tal:condition="bugass/assignee"
+                   tal:attributes="href string:/malone/bugs/assigned?name=${bugass/assignee/name}">
+                    <img src="++resource++user.gif" alt="" 
+                    /><span tal:replace="bugass/assignee/browsername">
+                    assignee.browsername
+                    </span>
+                </a>
+            </td>
+        
+        </tr>
+
+
+        <!-- Distribution Package Assignments -->
+        <tr tal:repeat="bugass context/packageassignment">
+           
+            <td tal:attributes="class string:packageName severity${bugass/severity/lp:BugSeverity}Row">
+                <img src="++resource++product_icon.gif" 
+                     title="Package Assignment" />
+                <a href=""
+                   tal:attributes="href string:/malone/package/${bugass/sourcepackage/name}"
+                   tal:content="bugass/sourcepackage/name">
+                $SourcePackageName.name
+                </a>
+            </td>
+            
+            <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
+                $SourcePackageBugAssignment.bugstatus
+            </td>
+
+            <td>
+                <acronym title="Critical Severity.
+This bug is essential to fix as soon as possible. It affects system stability, data integrity and / or remote access security."
+                         tal:content="bugass/severity/lp:BugSeverity"
+                         tal:attributes="class string:severity${bugass/severity/lp:BugSeverity}"
+                >C</acronym>
+            </td>
+
+            <td>
+                <acronym class="priorityMedium"
+                         title="Medium Priority. This is a medium priority bug for the maintainer."
+                         tal:content="bugass/priority/lp:BugPriority"
+                         tal:attributes="class string:priority${bugass/priority/lp:BugPriority}"
+                >=</acronym>
+            </td>
+            
+            <td title="Mr. FixMe">
+                <a tal:condition="bugass/assignee"
+                   tal:attributes="href string:/malone/bugs/assigned?name=${bugass/assignee/name}">
+                    <img src="++resource++user.gif" alt="" 
+                    /><span tal:replace="bugass/assignee/browsername">
+                    loginname
+                    </span>
+                </a>
+            </td>
+        
+        </tr>
+
+    </tbody>
+</table>
+
+<a href="packageassignments/+new"
+    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+    title="Add new reference to an existing Source Package that is affected.">
+    <img src="++resource++add.gif" alt="+" />
+    Add Package
+</a>
+                
+<a href="productassignments/+new"
+    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+    title="Add new reference to a Product that is affected.">
+    <img src="++resource++add.gif" alt="+" />
+    Add Product
+</a>

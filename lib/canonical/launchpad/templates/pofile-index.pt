@@ -5,7 +5,7 @@
 
 <head>
     <title metal:fill-slot="title">Rosetta:
-        <span tal:replace="context/poTemplate/title">template title</span>:
+        <span tal:replace="context/potemplate/title">template title</span>:
         <span tal:replace="context/language/englishName">template
             language</span></title>
     <!-- Plone style sheet -->
@@ -18,14 +18,14 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Translation of <span tal:replace="context/poTemplate/name">PO Template</span>
+    <h1>Translation of <span tal:replace="context/potemplate/name">PO Template</span>
         into <span tal:replace="context/language/englishName">Language</span></h1>
 
     <p>
     Completeness: <span tal:replace="view/completeness">N%</span>
     <br/>
     Messages in the POT file:
-        <span tal:replace="context/poTemplate/__len__">N</span>
+        <span tal:replace="context/potemplate/__len__">N</span>
     <br/>
     Untranslated messages: <span tal:replace="view/untranslated">N</span>
     <br/>

@@ -1,0 +1,132 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- ProductBugAssignmentContainer -->
+    <content class="canonical.launchpad.database.ProductBugAssignmentContainer">
+        <allow interface="canonical.launchpad.interfaces.IProductBugAssignmentContainer" />
+        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+    </content>
+
+    <utility
+        factory="canonical.launchpad.database.ProductBugAssignmentContainer"
+        provides="canonical.launchpad.interfaces.IProductBugAssignmentContainer" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
+        getter="__getitem__" />
+
+    <browser:pages for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
+        permission="zope.Public">
+        <browser:page name="+index"
+            template="../templates/productbugassignments-index.pt"
+            lp:url="malone/bugs/$Bug.id/productassignments/index" />
+    </browser:pages>
+
+    <browser:addform
+        name="+new"
+        schema="canonical.launchpad.interfaces.IProductBugAssignment"
+        for="canonical.launchpad.interfaces.IProductBugAssignmentContainer"
+        label="Add Product Bug Assignment"
+        fields="product bugstatus priority severity assignee"
+        content_factory="canonical.launchpad.database.ProductBugAssignmentFactory"
+        arguments=""
+        keyword_arguments="product bugstatus priority severity"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="malone/bugs/$Bug.id/productassignments/+new" />
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IProductBugAssignment"
+        schema="canonical.launchpad.interfaces.IProductBugAssignment"
+        fields="product bugstatus priority severity assignee"
+        label="Edit Product Bug Assignment"
+        permission="launchpad.AnyPerson"
+        template="../templates/default-editform.pt"
+        lp:url="malone/bugs/$Bug.id/productassignments/$ProductBugAssignment.id/+edit" />
+
+    <!--SourcePackageBugAssignmentContainer -->
+    <content class="canonical.launchpad.database.SourcePackageBugAssignmentContainer">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer" />
+        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+    </content>
+
+    <utility
+        factory="canonical.launchpad.database.SourcePackageBugAssignmentContainer"
+        provides="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
+        getter="__getitem__" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
+        permission="zope.Public">
+        <browser:page name="+index"
+            template="../templates/sourcepackagebugassignments-index.pt"
+            lp:url="malone/bugs/$Bug.id/sourcepackageassignments/index" />
+    </browser:pages>
+
+    <browser:addform
+        name="+new"
+        schema="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
+        label="Add SourcePackage Bug Assignment"
+        fields="sourcepackage bugstatus priority severity binarypackagename assignee"
+        content_factory="canonical.launchpad.database.SourcePackageBugAssignmentFactory"
+        arguments=""
+        keyword_arguments="sourcepackage bugstatus priority severity"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="malone/bugs/$Bug.id/sourcepackageassignments/+new" />
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
+        schema="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
+        fields="bugstatus priority severity binarypackagename assignee"
+        label="Edit SourcePackage Bug Assignment"
+        permission="launchpad.AnyPerson"
+        template="../templates/default-editform.pt"
+        lp:url="malone/bugs/$Bug.id/sourcepackageassignments/$SourcePackageBugAssignment.id/+edit" />
+
+    <!-- BugsAssignedReport -->
+    <!-- TODO: figure out why we need to give explicit attributes instead of
+               using set_schema-->
+    <content class="canonical.launchpad.database.BugsAssignedReport">
+        <allow interface="canonical.launchpad.interfaces.IBugsAssignedReport" />
+        <require
+            permission="zope.View"
+            set_attributes="user minseverity" />
+    </content>
+
+    <utility
+        factory="canonical.launchpad.database.BugsAssignedReport"
+        provides="canonical.launchpad.interfaces.IBugsAssignedReport" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugsAssignedReport"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugsAssignedReport"
+        class="canonical.launchpad.browser.BugsAssignedReportView"
+        permission="launchpad.AnyPerson">
+        <browser:page name="+index"
+              template="../templates/malone-bugsassigned.pt"
+              lp:url="malone/assigned/" />
+    </browser:pages>
+
+</configure>

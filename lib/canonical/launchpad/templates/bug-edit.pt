@@ -61,7 +61,7 @@
             <div class="field"><input type="text" style="width:100%" /></div>
           </div>
         
-          <div metal:use-macro="context/@@form_macros/widget_rows" />
+          <div metal:use-macro="context/@@widget_macros/launchpad_widget_rows" />
         
           <div class="separator"></div>
         

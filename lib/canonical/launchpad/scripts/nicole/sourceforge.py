@@ -1,11 +1,15 @@
 #!/usr/bin/python
 
 #
-# Retrieve project details from sourceforge / freshmeat
+# Retrieve project details from sourceforge / freshmeat / savannah.gnu.org
 #
 
-# Version 20041004
-
+## Added by cprov 20041022
+#-> use "sv" instead of "savannah.gnu.org", tricky, isn't it ?
+#
+#-> add to dict the field [self.repository] as project_url
+#
+# Version 20041021
 ##############################################################
 # Primary way to use this library is using:
 #
@@ -13,7 +17,9 @@
 #
 # Where:
 #    projname is a string like 'python', and 
-#    repository is either 'sf' for SourceForge, or 'fm' for FreshMeat.
+#    repository is either 'sf' for SourceForge, or 'fm' for FreshMeat,
+#    or 'savannah.gnu.org' for, err, savannah.gnu.org.
+#    NOTE: savannah.gnu.org works for non-GNU projects on savannah.nongnu.org as well.
 #
 # If no repository is passed, the default is 'sf'.
 #
@@ -34,7 +40,7 @@
 #
 # list: This is a list of mailing list URLs for the project.
 #       * ONLY IMPLEMENTED FOR SOURCEFORGE *
-#       Note: This retrieves an additional page from sf.net to get the list URLs.
+#       Note: This retrieves an additional page from sf.net to get the list URLs
 #       Example: ['http://lists.sourceforge.net/mailman/listinfo/mediaportal-cvs']
 #
 # screenshot: This is the URL of a screenshot of the project.
@@ -58,6 +64,8 @@ import urllib2
 import re
 import string
 
+from BeautifulSoup import BeautifulSoup, BeautifulStoneSoup
+
 # Constants
 Error = 'sourceforge.py error'
 
@@ -71,6 +79,8 @@ def makeURL(project, repository='sf'):
 		url = 'http://sourceforge.net/projects/'+project+'/'
 	elif repository=='fm':
 		url = 'http://freshmeat.net/projects/'+project+'/'
+	elif repository=='sv':
+		url = 'http://savannah.gnu.org/projects/'+project+'/'
 	else: raise Error, 'invalid repository: '+repository
 	return url
 
@@ -98,35 +108,80 @@ class ProjectPage:
 	# in those classes...
 	def __init__(self, project, repository='sf'):
 		self.project = project
+		# handle alternative names of repositories:
+		if repository=='sourceforge' or repository=='sourceforge.net':
+			repository = 'sf'
+		if repository=='freshmeat' or repository=='freshmeat.net':
+			repository = 'fm'
+		if repository=='savannah.nongnu.org' or repository=='savanah.gnu.org':
+			# Note that savannah.gnu.org redirects to savannah.nongnu.org for non-GNU projects
+			# but the redirect is handled transparently - we can code for the one case and it still works.
+			repository = 'sv'
 		self.repository = repository
 		self.url = makeURL(self.project, self.repository)
 		self.html = getHTML(self.url)
 		if self.html == None: raise Error, 'Could not retrieve project details - perhaps project not found on '+self.repository
 		self.theDict = {}
+		### SOURCEFORGE ###
 		if self.repository == 'sf':
 			if string.find(self.html, 'Invalid Project') > -1:
 				raise Error, 'Project not found on '+self.repository
+		### FRESHMEAT ###
 		elif self.repository == 'fm':
 			if string.find(self.html, 'The project name you specified could not be found in our database') > -1:
 				raise Error, 'Project not found on '+self.repository
+		### SAVANNAH.GNU.ORG ###
+		elif self.repository == 'sv':
+			if string.find(self.html, '<h3 class="feedbackerror">Invalid group [#1]; </h3><p>That group does not exist.</p>') > -1:
+				raise Error, 'Project not found on '+self.repository
+		self.soup = BeautifulSoup(self.html)
 		self.makeDict()
 
 	def getProjectName(self):
+		### SOURCEFORGE ###
 		if self.repository == 'sf':
 			result = re.search('Project: .*Summary', self.html)
 			s = self.html[result.start()+9:result.end()-9]
 			return s
+		### FRESHMEAT ###
 		elif self.repository == 'fm':
 			start = string.find(self.html, '<title>freshmeat.net: Project details for ')
 			start = start + 42
 			end = string.find(self.html, '</title>', start)
 			s = string.strip(self.html[start:end])
 			return s
+		### SAVANNAH.GNU.ORG ###
+		elif self.repository == 'sv':
+			start = string.find(self.html, '<h2 class="toptitle">')
+			if start == -1: return None
+			start = string.find(self.html, 'class="icon">', start) + 13
+			end = string.find(self.html, ' - Summary</h2>', start)
+			s = string.strip(self.html[start:end])
+			return s
 		else:
 			return None
 
+	#def getRSSPage(self):
+	#	### SOURCEFORGE ###
+	#	if self.repository == 'sf':
+	#		start = string.find(self.html, '/export/rss2_project.php?group_id=')
+	#		if start == -1: return None
+	#		end = string.find(self.html, '">', start)
+	#		rssUrl = 'http://sourceforge.net' + self.html[start:end]
+	#		self.rsspage = getHTML(rssUrl)
+	#		start = string.find(self.rsspage, '<p><b>Project summary (including basic statistics)</b><br />')
+	#		if start == -1: return -1 ######### CHANGE TO NONE ############
+	#		start = string.find(self.rsspage, '<a href="', start) + 9
+	#		end = string.find(self.rsspage, '">', start)
+	#		rssSummaryPageUrl = self.rsspage[start:end]
+	#		self.rssSummaryPage = getHTML(rssSummaryPageUrl)
+	#		return rssSummaryPageUrl
+	#		### WE WOULD WANT TO PARSE THE RSS PAGE HERE ###
+
+
 
 	def getDescription(self):
+		### SOURCEFORGE ###
 		if self.repository == 'sf':
 			start = string.find(self.html, 'Summary</A>')
 			if start == -1: return None
@@ -137,6 +192,7 @@ class ProjectPage:
 			s = string.strip(s)
 			s = string.join(string.split(s, '\r\n'), ' ')
 			return s
+		### FRESHMEAT ###
 		elif self.repository == 'fm':
 			start = string.find(self.html, '<b>About:</b>')
 			if start == -1: return None
@@ -146,25 +202,54 @@ class ProjectPage:
 			s = string.strip(s)
 			s = string.join(string.split(s, '\r\n'), ' ')
 			return s
+		### SAVANNAH.GNU.ORG ###
+		elif self.repository == 'sv':
+			start = string.find(self.html, '<tr><td class="indexcenter"><p>')
+			if start == -1: return None
+			start = string.find(self.html, '<p>', start+31)+3
+			end = string.find(self.html, '</p>', start)
+			s = self.html[start:end]
+			s = string.strip(s)
+			s = string.join(string.split(s, '\r\n'), ' ')
+			s = string.join(string.split(s, '<br /> '), ' ')
+			if s[:64] == 'This project has not yet submitted a short description. You can ':
+				return None
+			return s
 		else:
 			return None
 
 	def getHomePage(self):
+		### SOURCEFORGE ###
 		if self.repository == 'sf':
-			result = re.search('href.*Home\ Page', self.html)
-			if result == None: return None
-			s = self.html[result.start()+6:result.end()-11]
-			return s
+			#result = re.search('href.*Home\ Page', self.html)
+			#if result == None: return None
+			#s = self.html[result.start()+6:result.end()-11]
+			#return s
+			homePage = None
+			a = self.soup('a', {'class': 'tabs'})
+			for link in a:
+				if link.contents[0] == 'Home Page':
+					homePage = link['href']
+			return homePage
+		### FRESHMEAT ###
 		elif self.repository == 'fm':
 			start = string.find(self.html, 'Homepage:')
 			if start == -1: return None
 			start = string.find(self.html, 'http://', start)
 			end = string.find(self.html, '</a>', start)
 			return self.html[start:end]
+		### SAVANNAH.GNU.ORG ###
+		elif self.repository == 'sv':
+			start = string.find(self.html, '&nbsp;Project Homepage</a></td>')
+			if start == -1: return None
+			start = string.rfind(self.html, '<a href="', 0, start)
+			end = string.find(self.html, '">', start)
+			return self.html[start+9:end]
 		else:
 			return None
 
 	def getProgramminglang(self):
+		### SOURCEFORGE ###
 		if self.repository == 'sf':
 			result = re.search('Programming\ Language.*BR>', self.html)
 			if result == None: return None
@@ -182,6 +267,7 @@ class ProjectPage:
 				lang = lang[:end]
 				langlist.append(lang)
 			return langlist
+		### FRESHMEAT ###
 		elif self.repository == 'fm':
 			start = string.find(self.html, '[Programming Language]')
 			if start == -1: return None
@@ -202,6 +288,7 @@ class ProjectPage:
 			return None
 
 	def getNaturallang(self):
+		### SOURCEFORGE ###
 		if self.repository == 'sf':
 			result = re.search('Natural\ Language.*BR>', self.html)
 			if result == None: return None
@@ -219,13 +306,12 @@ class ProjectPage:
 				lang = lang[:end]
 				langlist.append(lang)
 			return langlist
-		elif self.repository == 'fm':
-			return None
 		else:
 			return None
 
 	def getMailinglist(self):
 		# Check for mailing list page
+		### SOURCEFORGE ###
 		if self.repository == 'sf':
 			start = string.find(self.html, '&nbsp;Mailing Lists</A>')
 			if start == -1: return None
@@ -247,6 +333,7 @@ class ProjectPage:
 			# Construct return list
 			if urls: return urls
 			else: return None
+		### FRESHMEAT ###
 		elif self.repository == 'fm':
 			#
 			# Note: for FreshMeat, this currently only works for projects that point
@@ -283,6 +370,7 @@ class ProjectPage:
 		# only freshmeat has screenshots
 		if self.repository == 'sf':
 			return None
+		### FRESHMEAT ###
 		elif self.repository == 'fm':
 			start = string.find(self.html, '<a target="screenshot"')
 			if start == -1: return None
@@ -293,6 +381,7 @@ class ProjectPage:
 		else: return None
 
 	def getDevels(self):
+		### SOURCEFORGE ###
 		if self.repository == 'sf':
 			# We can get list of project admins with @sf.net emails
 			start = string.find(self.html, 'Project Admins:</SPAN>')
@@ -317,6 +406,7 @@ class ProjectPage:
 				email = admin + '@users.sourceforge.net'
 				devels[name] = email
 			return devels
+		### FRESHMEAT ###
 		elif self.repository == 'fm':
 			# We can get a single author and obfuscated email address
 			start = string.find(self.html, '<b>Author:</b>')
@@ -334,6 +424,51 @@ class ProjectPage:
 			email = unobfuscate_fm_email(email)
 			return {name: email}
 		else: return None
+
+	def getReleases(self):
+		### SOURCEFORGE ###
+		if self.repository == 'sf':
+			aLinks = self.soup('a')
+			fileLinks = []
+			for link in aLinks:
+				if 'showfiles' in str(link):
+					fileLinks.append(link)
+
+			for link in fileLinks:
+				try:
+					if link['class'] == 'tabs':
+						fileLinks.remove(link)
+				except: pass
+			releases = []
+			# now only have the correct a links for the released files
+			counter = 0
+			for link in fileLinks:
+				if counter == 0:
+					releasedFile = str(link.next)
+					version = str(link.next.next.next.next)
+					fileDate = str(link.next.next.next.next.next.next.next)
+					if releasedFile <> '[View ALL Project Files]':
+						releases.append((releasedFile, version, fileDate))
+					counter = counter + 1
+				elif counter == 2: counter = 0
+				else: counter = counter + 1
+			return releases
+		### FRESHMEAT ###
+		elif self.repository == 'fm':
+			aLinks = self.soup('a')
+			fileLinks = []
+			for link in aLinks:
+				if '/branches/' in str(link):
+					fileLinks.append(link)
+			releases = []
+			for link in fileLinks:
+				releasedFile = str(link.next)
+				version = str(link.next.next.next.next.next.next.next)
+				fileDate = string.strip(str(link.next.next.next.next.next.next.next.next.next.next.next))
+				releases.append((releasedFile, version, fileDate))
+			return releases
+		else:
+			return None
 
 
 	def makeDict(self):
@@ -366,14 +501,13 @@ class ProjectPage:
 		#
 		naturallang = self.getNaturallang()
 		if naturallang: self.theDict['naturallang'] = naturallang
+		#
+		releases = self.getReleases()
+		if releases: self.theDict['releases'] = releases
 
-		if self.repository == 'sf':
-			self.theDict['sf'] = self.url
-			self.theDict['fm'] = None
-		if self.repository == 'fm':
-			self.theDict['sf'] = None
-			self.theDict['fm'] = self.url
-		
+		## Insert the Project Original 
+		self.theDict[self.repository] = self.url
+
 	def getDict(self):
 		return self.theDict
 

@@ -5,13 +5,43 @@ Set up the test data in the database first.
 """
 __metaclass__ = type
 
-import os
+import os, sys
 import unittest
 import sets
+import harness
 
 from canonical.functional import FunctionalDocFileSuite
 
 here = os.path.dirname(os.path.realpath(__file__))
+
+class SetUpPTs(harness.LaunchpadTestCase):
+    def setUp(self):
+        """Setup the database"""
+        super(SetUpPTs, self).setUp()
+
+    def tearDown(self):
+        """But don't tear it down, so other tests in the suite can use it"""
+        pass
+
+    def test_setUpDatabase(self):
+        # Fake test to ensure setUp is called. This stuff is really only
+        # working by accident.
+        pass
+
+class TearDownPTs(harness.LaunchpadTestCase):
+    def setUp(self):
+        """Don't setup the database - it is already"""
+        self._cons = []
+        pass
+
+    def tearDown(self):
+        """Tear down the database"""
+        super(TearDownPTs, self).tearDown()
+
+    def test_tearDownDatabase(self):
+        # Fake test to ensure tearDown is called.
+        pass
+'''
 
 class SetUpPTs(unittest.TestCase):
 
@@ -31,6 +61,8 @@ class TearDownPTs(unittest.TestCase):
 
     def test_tearDownDatabase(self):
         pass
+'''
+
 
 def test_suite():
     suite = unittest.TestSuite()
@@ -56,7 +88,6 @@ def test_suite():
     unnumberedfilenames.sort()
 
     for filename in unnumberedfilenames + numberedfilenames:
-        print filename
         suite.addTest(
             FunctionalDocFileSuite(
                 os.path.normpath(os.path.join('..', 'pagetests', filename)))

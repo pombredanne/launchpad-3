@@ -1,6 +1,6 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-  <!-- TODO: Consider splitting this into multiple files, matching the .py -->
+    <!-- TODO: Consider splitting this into multiple files, matching the .py -->
 
     <content class="canonical.launchpad.database.Bug">
         <allow interface="canonical.launchpad.interfaces.IBug" />
@@ -46,12 +46,12 @@
                 set_schema="canonical.launchpad.interfaces.IProductBugAssignment" />
     </content>
 
-    <content class="canonical.launchpad.database.SourcepackageBugAssignment">
+    <content class="canonical.launchpad.database.SourcePackageBugAssignment">
         <allow 
-            interface="canonical.launchpad.interfaces.ISourcepackageBugAssignment"/>
+            interface="canonical.launchpad.interfaces.ISourcePackageBugAssignment"/>
         <require
             permission="zope.View"
-            set_schema="canonical.launchpad.interfaces.ISourcepackageBugAssignment"
+            set_schema="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
             />
     </content>
 

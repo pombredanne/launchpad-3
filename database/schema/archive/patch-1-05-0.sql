@@ -3,8 +3,8 @@ SET client_min_messages TO error;
 /*
  * names must be UNIQUE within their context, and all lower case
  */
-ALTER TABLE Sourcepackage ADD UNIQUE (name);
-ALTER TABLE Sourcepackage ADD CHECK (name = lower(name));
+ALTER TABLE SourcePackage ADD UNIQUE (name);
+ALTER TABLE SourcePackage ADD CHECK (name = lower(name));
 
 -- Project already UNIQUE
 ALTER TABLE Project ADD CHECK (name = lower(name));
@@ -16,7 +16,7 @@ ALTER TABLE Bug DROP CONSTRAINT bug_nickname_key;
 ALTER TABLE Bug ADD UNIQUE (name);
 ALTER TABLE Bug ADD CHECK (name = lower(name));
 
-ALTER TABLE BinarypackageName ADD CHECK (name = lower(name));
+ALTER TABLE BinaryPackageName ADD CHECK (name = lower(name));
 
 /*
  * Email addresses must be UNIQUE regardless of case. We preserve case,

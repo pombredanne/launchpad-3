@@ -11,12 +11,18 @@ SETUPFLAGS=
 Z3LIBPATH=$(shell pwd)/sourcecode/zope/src
 HERE:=$(shell pwd)
 
+default: test
+
 check:
 	$(MAKE) -C sourcecode build
+	# Run all tests. test_on_merge.py takes care of setting up the
+	# database.
+	./test_on_merge.py canonical
+
 	# Run the pagetests.  Ensure that launchpad is not running using
 	# the launchpad_test database, and that nothing else is using that
 	# database, or the tests will hang until these processes exit.
-	./test_on_merge.py -f canonical.launchpad.ftest
+	#./test_on_merge.py -f canonical.launchpad.ftest
 
 XXXcheck: build
 	$(MAKE) -C sourcecode check

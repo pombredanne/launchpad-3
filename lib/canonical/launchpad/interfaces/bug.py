@@ -1,14 +1,24 @@
 # arch-tag: 2C926820-E0AE-11D8-A7D9-000D9329A36C
 
 from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('malone')
-from zope.interface import Interface, Attribute
+_ = MessageIDFactory('launchpad')
+from zope.interface import Interface, Attribute, classImplements
 
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
+from zope.schema.interfaces import IText
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
-from canonical.lp import dbschema
+from canonical.launchpad.fields.bug import BugSummary
 
+# FIELDS
+
+class IBugSummary(IText):
+    """A Field that implements a Bug Summary"""
+
+classImplements(BugSummary, IBugSummary)
+
+
+# CONTENT
 class IBug(Interface):
     """The core bug entry."""
 
@@ -20,15 +30,29 @@ class IBug(Interface):
             )
     name = TextLine(
             title=_('Nickname'), required=False,
+            description=_("""A short and unique name for this bug. Very few
+                bugs have a nickname, they are just bugs that are so
+                significant that people will actually remember the
+                name."""),
             )
     title = TextLine(
             title=_('Bug Title'), required=True,
+            description=_("""The title of the bug should be no more than 70
+            characters, and is displayed in every bug list or report. It
+            should be as clear as possible in the space allotted."""),
             )
-    shortdesc = Text(
-            title=_('Short Description'), required=True,
+    shortdesc = BugSummary(
+            title=_('Summary'), required=True,
+            description=_("""The bug summary is a single paragraph
+            description that should capture the essence of the bug, where it
+            has been observed, and what triggers it."""),
             )
     description = Text(
             title=_('Description'), required=True,
+            description=_("""The bug description should be a detailed
+            description of this bug, including the steps required to
+            reproduce the bug if it is reproducable, and the platforms on which
+            it is found if it is platform specific.""")
             )
     ownerID = Int(
             title=_('Owner'), required=True, readonly=True
@@ -66,8 +90,8 @@ class IBug(Interface):
     messages = Attribute('SQLObject.Multijoin of IBugMessages')
     people = Attribute('SQLObject.Multijoin of IPerson')
     productassignment = Attribute('SQLObject.Multijoin of IProductBugAssigment')
-    sourceassignment = Attribute(
-            'SQLObject.Multijoin of ISourcepackageBugAssignment'
+    packageassignment = Attribute(
+            'SQLObject.Multijoin of ISourcePackageBugAssignment'
             )
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
@@ -77,53 +101,33 @@ class IBug(Interface):
 
     url = Attribute('Generated URL based on data and reference type')
 
-
-class IBugTrackerSet(Interface):
-    """An interface for the BugTrackerSet. This models a set of BugTracker's
-    (either the full set in the db or a subset). Each BugTracker is a
-    distinct instance of a bug tracking tool. For example,
-    bugzilla.mozilla.org is distinct from bugzilla.gnome.org.
-    """
-    def __getitem__(name):
-        """Get a BugTracker by its name in the database. NB! We do not want to
-        expose the BugTracker.id to the world so we use its name.
-        """
-
-    def __iter__():
-        """Iterate through BugTrackers."""
-
-
-class IBugAttachment(Interface):
-    """A file attachment to an IBugMessage."""
-
-    id = Int(
-            title=_('ID'), required=True, readonly=True,
-            )
-    bugmessageID = Int(
-            title=_('Bug Message ID'), required=True, readonly=True,
-            )
-    bugmessage = Attribute('Bug Message')
-    name = TextLine(
-            title=_('Name'), required=False, readonly=False,
-            )
-    description = Text(
-            title=_('Description'), required=True, readonly=False,
-            )
-    libraryfile = Int(
-            title=_('Library File'), required=True, readonly=False,
-            )
-    datedeactivated = Datetime(
-            title=_('Date deactivated'), required=False, readonly=False,
-            )
-
-class IMaloneApplication(Interface):
-    """Malone application class."""
-
+# XXX Mark Shuttleworth comments: we can probably get rid of this and
+# consolidate around IBug
 class IMaloneBug(IBug, IAddFormCustomization):
     pass
 
-class IMaloneBugAttachment(IBugAttachment, IAddFormCustomization):
-    pass
+
+class IMaloneBugAddForm(IMaloneBug):
+    ''' Information we need to create a bug '''
+    #email = TextLine(title=_("Your Email Address"))
+    product = Choice(
+            title=_("Product"), required=False,
+            vocabulary="Product",
+            )
+    sourcepackage = Choice(
+            title=_("Source Package"), required=False,
+            description=_("""The distro package in which this bug exists and
+            needs to be fixed. Bugs might be related to distribution
+            packaging of the upstream software, or they might be upstream
+            bugs that affect that source package."""),
+            vocabulary="SourcePackage",
+            )
+    binarypackage = Choice(
+            title=_("Binary Package"), required=False,
+            vocabulary="BinaryPackage"
+            )
+    owner = Int(title=_("Owner"), required=True)
+
 
 # Interfaces for containers
 
@@ -135,231 +139,4 @@ class IBugContainer(IAddFormCustomization):
 
     def __iter__():
         """Iterate through Bugs."""
-
-class IBugAttachmentContainer(IAddFormCustomization):
-    """A container for IBugAttachment objects."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get an Attachment."""
-
-    def __iter__():
-        """Iterate through BugAttachments for a given bug."""
-
-class IBugExternalRefContainer(Interface):
-    """A container for IBugExternalRef objects."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get a BugExternalRef."""
-
-    def __iter__():
-        """Iterate through BugExternalRefs for a given bug."""
-
-class IBugWatchContainer(Interface):
-    """A container for IBugWatch objects."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get a BugWatch"""
-
-    def __iter__():
-        """Iterate through BugWatches for a given bug."""
-
-class ISourcepackageContainer(Interface):
-    """A container for ISourcePackage objects."""
-
-    def __getitem__(key):
-        """Get an ISourcePackage by name"""
-
-    def __iter__():
-        """Iterate through Sourcepackages."""
-
-    def bugassignments(self, orderby='-id'):
-        """Sequence of SourcepackageBugAssignment, in order"""
-
-    def withBugs(self):
-        """Return a sequence of Sourcepackage, that have bugs assigned to
-        them. In future, we might pass qualifiers to further limit the list
-        that is returned, such as a name filter."""
-
-class IBugSubscriptionContainer(Interface):
-    """A container for IBugSubscription objects."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get a BugSubscription object."""
-
-    def __iter__():
-        """Iterate through bug subscribers for this bug."""
-
-    def delete(id):
-        """Delete a subscription."""
-
-class IBugMessagesView(IAddFormCustomization):
-    """BugMessage views"""
-
-class IBugExternalRefsView(IAddFormCustomization):
-    """BugExternalRef views"""
-
-class IBugActivity(Interface):
-    """A log of all things that have happened to a bug."""
-
-    bug = Int(title=_('Bug ID'))
-    datechanged = Datetime(title=_('Date Changed'))
-    person = Int(title=_('Person'))
-    whatchanged = TextLine(title=_('What Changed'))
-    oldvalue = TextLine(title=_('Old Value'))
-    newvalue = TextLine(title=_('New Value'))
-    message = Text(title=_('Message'))
-
-class IBugExternalRef(Interface):
-    """An external reference for a bug, not supported remote bug systems."""
-
-    id = Int(
-            title=_('ID'), required=True, readonly=True
-            )
-    bug = Int(
-            title=_('Bug ID'), required=True, readonly=True,
-            )
-    bugreftype = Choice(
-            title=_('Bug Ref Type'), required=True, readonly=False,
-            vocabulary='BugRef',
-            )
-    data = TextLine(
-            title=_('Data'), required=True, readonly=False,
-            )
-    description = Text(
-            title=_('Description'), required=True, readonly=False,
-            )
-    datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True,
-            )
-    owner = Int(
-            title=_('Owner'), required=False, readonly=True,
-            )
-
-    def url():
-        """Return the url of the external resource."""
-
-class IBugMessage(Interface):
-    """A message about a bug."""
-
-    id = Int(
-            title=_('ID'), required=True, readonly=True,
-            )
-    bug = Int(
-            title=_('Bug ID'), required=True, readonly=True,
-            )
-    datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True,
-            )
-    title = TextLine(
-            title=_('Title'), required=True, readonly=True,
-            )
-    contents = Text(
-            title=_('Contents'), required=True, readonly=True,
-            )
-    personmsg = Int(
-            title=_('Person'), required=False, readonly=True,
-            )
-    parent = Int(
-            title=_('Parent'), required=False, readonly=True,
-            )
-    distribution = Int(
-            title=_('Distribution'), required=False, readonly=True,
-            )
-    rfc822msgid = TextLine(
-            title=_('RFC822 Msg ID'), required=True, readonly=True,
-            )
-    attachments = Attribute('Bug Attachments')
-
-class IBugSubscription(Interface):
-    """The relationship between a person and a bug."""
-
-    id = Int(title=_('ID'), readonly=True, required=True)
-    person = Choice(
-            title=_('Person ID'), required=True, vocabulary='Person',
-            readonly=True,
-            )
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    subscription = Choice(
-            title=_('Subscription'), required=True, readonly=False,
-            vocabulary='Subscription',
-            )
-class IBugTrackerType(Interface):
-    """A type of supported remote bug system, eg Bugzilla."""
-
-    id = Int(title=_('ID'))
-    name = TextLine(title=_('Name'))
-    title = TextLine(title=_('Title'))
-    description = Text(title=_('Description'))
-    homepage = TextLine(title=_('Homepage'))
-    owner = Int(title=_('Owner'))
-
-class IBugTracker(Interface):
-    """A remote a bug system."""
-
-    id = Int(title=_('ID'))
-    bugtrackertype = Int(title=_('Bug System Type'))
-    name = TextLine(title=_('Name'))
-    title = TextLine(title=_('Title'))
-    shortdesc = Text(title=_('Short Description'))
-    baseurl = TextLine(title=_('Base URL'))
-    owner = Int(title=_('Owner'))
-    contactdetails = Text(title=_('Contact details'))
-
-class IBugWatch(Interface):
-    """A bug on a remote system."""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    bugtracker = Choice(title=_('Bug System'), required=True,
-            vocabulary='BugTracker')
-    remotebug = TextLine(title=_('Remote Bug'), required=True, readonly=False)
-    # TODO: default should be NULL, but column is NOT NULL
-    remotestatus = TextLine(
-            title=_('Remote Status'), required=True, readonly=True, default=u''
-            )
-    lastchanged = Datetime(
-            title=_('Last Changed'), required=True, readonly=True
-            )
-    lastchecked = Datetime(
-            title=_('Last Checked'), required=True, readonly=True
-            )
-    datecreated = Datetime(
-            title=_('Date Created'), required=True, readonly=True
-            )
-    owner = Int(
-            title=_('Owner'), required=True, readonly=True
-            )
-
-class IBugProductRelationship(Interface):
-    """A relationship between a Product and a Bug."""
-
-    bug = Int(title=_('Bug'))
-    product = Int(title=_('Product'))
-    bugstatus = Int(title=_('Bug Status'))
-    priority = Int(title=_('Priority'))
-    severity = Int(title=_('Severity'))
-
-
-#
-# Bug Report Objects
-#
-
-
-class IBugsAssignedReport(Interface):
-
-    user = Attribute("The user for whom this report will be generated")
-
-    def assignedBugs():
-        """An iterator over ALL the bugs directly or indirectly assigned
-        to the person."""
-
-
 

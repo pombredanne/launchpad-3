@@ -12,7 +12,7 @@ from canonical.launchpad.interfaces import *
 #
 # we need malone.browser.newBugTracker
 #
-from canonical.malone.browser import newBugTracker
+from canonical.launchpad.browser.bugtracker import newBugTracker
 
 #
 # Traversal functions that help us look up something

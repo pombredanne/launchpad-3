@@ -206,8 +206,9 @@ class SourcePackageRelease(AbstractPackageRelease):
                 fname = f[-1]
                 print "\t\t+ %s/%s" % (self.directory, fname);
                 alias = getLibraryAlias( "%s/%s" % (self.package_root, self.directory), fname )
-                print "\t\t\t= %s" % alias
-                db.createSourcePackageReleaseFile(self, fname, alias)
+                if alias is not None:
+                    print "\t\t\t= %s" % alias
+                    db.createSourcePackageReleaseFile(self, fname, alias)
             
 
 class BinaryPackageRelease(AbstractPackageRelease):
@@ -298,8 +299,9 @@ class BinaryPackageRelease(AbstractPackageRelease):
             fdir = self.filename[:self.filename.rfind("/")]
             print "\t\t+ %s" % self.filename
             alias = getLibraryAlias( "%s/%s" % (self.package_root, fdir), fname)
-            print "\t\t\t= %s" % alias
-            db.createBinaryPackageFile( self, alias )
+            if alias is not None:
+                print "\t\t\t= %s" % alias
+                db.createBinaryPackageFile( self, alias )
 
     def is_created(self, db):
         return db.getBinaryPackage(self.package, self.version)

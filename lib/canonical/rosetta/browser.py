@@ -23,6 +23,10 @@ from canonical.rosetta.pofile import POHeader
 charactersPerLine = 50
 
 def count_lines(text):
+    '''Count the number of physical lines in a string. This is always at least
+    as large as the number of logical lines in a string.
+    '''
+
     count = 0
 
     for line in text.split('\n'):
@@ -62,7 +66,7 @@ def request_languages(request):
     # If the user is authenticated, try seeing if they have any languages set.
 
     if person is not None:
-        languages = list(person.languages())
+        languages = person.languages
 
         if languages:
             return languages
@@ -77,8 +81,20 @@ def request_languages(request):
 def parse_cformat_string(s):
     '''Parse a printf()-style format string into a sequence of interpolations
     and non-interpolations.'''
+
+    # The sequence '%%' is not counted as an interpolation. Perhaps splitting
+    # into 'special' and 'non-special' sequences would be better.
+
+    # This function works on the basis that s can be one of three things: an
+    # empty string, a string beginning with a sequence containing no
+    # interpolations, or a string beginning with an interpolation.
+
+    # Check for an empty string.
+
     if s == '':
         return ()
+
+    # Check for a interpolation-less prefix.
 
     match = re.match('(%%|[^%])+', s)
 
@@ -86,11 +102,15 @@ def parse_cformat_string(s):
         t = match.group(0)
         return (('string', t),) + parse_cformat_string(s[len(t):])
 
+    # Check for an interpolation sequence at the beginning.
+
     match = re.match('%[^diouxXeEfFgGcspn]*[diouxXeEfFgGcspn]', s)
 
     if match:
         t = match.group(0)
         return (('interpolation', t),) + parse_cformat_string(s[len(t):])
+
+    # Give up.
 
     raise ValueError(s)
 
@@ -274,19 +294,29 @@ class LanguageTemplates:
                 pass
             else:
                 total = len(template)
-                currentCount = poFile.currentCount
-                rosettaCount = poFile.rosettaCount
-                updatesCount = poFile.updatesCount
+                currentCount = poFile.currentcount
+                rosettaCount = poFile.rosettacount
+                updatesCount = poFile.updatescount
                 nonUpdatesCount = currentCount - updatesCount
                 translated = currentCount  + rosettaCount
                 untranslated = total - translated
 
-                currentPercent = float(currentCount) / total * 100
-                rosettaPercent = float(rosettaCount) / total * 100
-                updatesPercent = float(updatesCount) / total * 100
-                nonUpdatesPercent = float (nonUpdatesCount) / total * 100
-                translatedPercent = float(translated) / total * 100
-                untranslatedPercent = float(untranslated) / total * 100
+                try:
+                    currentPercent = float(currentCount) / total * 100
+                    rosettaPercent = float(rosettaCount) / total * 100
+                    updatesPercent = float(updatesCount) / total * 100
+                    nonUpdatesPercent = float (nonUpdatesCount) / total * 100
+                    translatedPercent = float(translated) / total * 100
+                    untranslatedPercent = float(untranslated) / total * 100
+                except ZeroDivisionError:
+                    # XXX: I think we will see only this case when we don't have
+                    # anything to translate.
+                    currentPercent = 0
+                    rosettaPercent = 0
+                    updatesPercent = 0
+                    nonUpdatesPercent = 0
+                    translatedPercent = 0
+                    untranslatedPercent = 100
 
                 # NOTE: To get a 100% value:
                 # 1.- currentPercent + rosettaPercent + untranslatedPercent
@@ -322,24 +352,10 @@ class ViewPOTemplate:
         else:
             return "%s messages" % N
 
-    # XXX: hardcoded value
-    def isPlural(self):
-        if len(self.context.sighting('23').pluralText) > 0:
-            return True
-        else:
-            return False
-
     def languages(self):
         languages = list(self.context.languages())
         languages.sort(lambda a, b: cmp(a.englishName, b.englishName))
         return languages
-
-
-def traverseIPOTemplate(potemplate, request, name):
-    try:
-        return potemplate.poFile(name)
-    except KeyError:
-        pass
 
 
 class ViewPOFile:
@@ -355,10 +371,10 @@ class ViewPOFile:
 
     def completeness(self):
         return "%.2f%%" % (
-            float(self.context.translatedCount()) / len(self.context.poTemplate) * 100)
+            float(self.context.translatedCount()) / len(self.context.potemplate) * 100)
 
     def untranslated(self):
-        return len(self.context.poTemplate) - len(self.context)
+        return len(self.context.potemplate) - len(self.context)
 
     def editSubmit(self):
         if "SUBMIT" in self.request.form:
@@ -400,16 +416,15 @@ class ViewPreferences:
         return getUtility(ILanguageSet)
 
     def selectedLanguages(self):
-        return list(self.person.languages())
+        return self.person.languages
 
     def submit(self):
-        person = self.person
         self.submitted_personal = False
         self.error_msg = None
 
         if "SAVE-LANGS" in self.request.form:
             if self.request.method == "POST":
-                oldInterest = list(person.languages())
+                oldInterest = self.person.languages
 
                 if 'selectedlanguages' in self.request.form:
                     if isinstance(self.request.form['selectedlanguages'], list):
@@ -425,10 +440,10 @@ class ViewPreferences:
                     for language in self.languages():
                         if language.englishName == englishName:
                             if language not in oldInterest:
-                                person.addLanguage(language)
+                                self.person.addLanguage(language)
                 for language in oldInterest:
                     if language.englishName not in newInterest:
-                        person.removeLanguage(language)
+                        self.person.removeLanguage(language)
             else:
                 raise RuntimeError("This form must be posted!")
         elif "SAVE-PERSONAL" in self.request.form:
@@ -436,13 +451,13 @@ class ViewPreferences:
                 # First thing to do, check the password if it's wrong we stop.
                 currentPassword = self.request.form['currentPassword']
                 ssha = SSHADigestEncryptor()
-                if currentPassword and ssha.validate(currentPassword, person.password):
+                if currentPassword and ssha.validate(currentPassword, self.person.password):
                     # The password is valid
                     password1 = self.request.form['newPassword1']
                     password2 = self.request.form['newPassword2']
                     if password1 and password1 == password2:
                         try:
-                            person.password = ssha.encrypt(password1)
+                            self.person.password = ssha.encrypt(password1)
                         except UnicodeEncodeError:
                             self.error_msg = \
                                 "The password can only have ascii characters."
@@ -452,14 +467,14 @@ class ViewPreferences:
                             "The two passwords you entered did not match."
 
                     given = self.request.form['given']
-                    if given and person.givenname != given:
-                        person.givenname = given
+                    if given and self.person.givenname != given:
+                        self.person.givenname = given
                     family = self.request.form['family']
-                    if family and person.familyname != family:
-                        person.familyname = family
+                    if family and self.person.familyname != family:
+                        self.person.familyname = family
                     display = self.request.form['display']
-                    if display and person.displayname != display:
-                        person.displayname = display
+                    if display and self.person.displayname != display:
+                        self.person.displayname = display
                 else:
                     self.error_msg = "The username or password you entered is not valid."
             else:
@@ -473,15 +488,17 @@ class ViewSearchResults:
         self.context = context
         self.request = request
 
-        self.projects = getUtility(IProjectSet)
-        self.queryProvided = 'q' in request.form and \
-            request.form.get('q')
-        self.query = request.form.get('q')
+        query = request.form.get('q')
 
-        if self.queryProvided:
-            self.results = self.projects.search(self.query)
-            self.resultCount = self.results.count()
+        if query is not None and query is not u'':
+            self.query = query
+            self.queryProvided = True
+            self.results = getUtility(IProjectSet).search(query,
+                search_products = True)
+            self.resultCount = len(list(self.results))
         else:
+            self.query = None
+            self.queryProvided = False
             self.results = []
             self.resultCount = 0
 
@@ -489,7 +506,7 @@ class ViewSearchResults:
 class ViewPOExport:
     def __call__(self):
         pofile = self.context
-        poExport = POExport(pofile.poTemplate)
+        poExport = POExport(pofile.potemplate)
         languageCode = pofile.language.code
         exportedFile = poExport.export(languageCode)
 
@@ -504,7 +521,7 @@ class ViewMOExport:
 
     def __call__(self):
         pofile = self.context
-        poExport = POExport(pofile.poTemplate)
+        poExport = POExport(pofile.potemplate)
         languageCode = pofile.language.code
         exportedFile = poExport.export(languageCode)
 
@@ -609,9 +626,12 @@ class TranslatePOTemplate:
                 # As we don't have teh pofile, the completeness is 0
                 self.completeness[language.code] = 0
             else:
-                self.pluralForms[language.code] = pofile.pluralForms
-                self.completeness[language.code] = \
-                    float(pofile.translatedCount()) / len(pofile.poTemplate) * 100
+                self.pluralForms[language.code] = pofile.pluralforms
+                try:
+                    self.completeness[language.code] = \
+                        float(pofile.translatedCount()) / len(pofile.potemplate) * 100
+                except ZeroDivisionError:
+                    self.completeness[language.code] = 0
 
         self.badLanguages = [ all_languages[x] for x in self.pluralForms
             if self.pluralForms[x] is None ]
@@ -691,11 +711,18 @@ class TranslatePOTemplate:
             return self._makeURL(offset = self.offset + self.count)
 
     def _mungeMessageID(self, text, flags):
-        # Convert leading and trailing spaces on each line to open boxes.
+        '''Convert leading and trailing spaces on each line to open boxes
+        (U+2423).'''
 
         lines = []
 
         for line in xml_escape(text).split('\n'):
+            # Pattern:
+            # - group 1: zero or more spaces: leading whitespace
+            # - group 2: zero or more groups of (zero or
+            #   more spaces followed by one or more non-spaces): maximal
+            #   string which doesn't begin or end with whitespace
+            # - group 3: zero or more spaces: trailing whitespace
             match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
 
             if match:
@@ -705,7 +732,7 @@ class TranslatePOTemplate:
                     u'\u2423' * len(match.group(3)))
             else:
                 raise AssertionError(
-                    "Regular expression that should always match didn't.")
+                    "A regular expression that should always match didn't.")
 
         for i in range(len(lines)):
             if 'c-format' in flags:
@@ -737,6 +764,9 @@ class TranslatePOTemplate:
         }
 
     def _messageSet(self, set):
+        # XXX: Carlos Perello Marin 18/10/04: If a msgset does not have any
+        # sighting this code will fail, it should never happens so it's not a
+        # priority bug, but we should try to be smart about it.
         messageIDs = set.messageIDs()
         isPlural = len(list(messageIDs)) > 1
         messageID = self._messageID(messageIDs[0], set.flags())
@@ -758,9 +788,9 @@ class TranslatePOTemplate:
             'messageID' : messageID,
             'messageIDPlural' : messageIDPlural,
             'sequence' : set.sequence,
-            'fileReferences': set.fileReferences,
-            'commentText' : set.commentText,
-            'sourceComment' : set.sourceComment,
+            'fileReferences': set.filereferences,
+            'commentText' : set.commenttext,
+            'sourceComment' : set.sourcecomment,
             'translations' : translations,
         }
 
@@ -771,6 +801,12 @@ class TranslatePOTemplate:
             yield self._messageSet(set)
 
     def submitTranslations(self):
+        '''Handle a form submission for the translation page. The form
+        contains translations, some of which will be unchanged, some of which
+        will be modified versions of old translations and some of which will
+        be new.
+        '''
+
         self.submitted = False
 
         if not "SUBMIT" in self.request.form:
