@@ -42,11 +42,30 @@ def doctest_simple_CalendarEventMixin_replace():
 
     """
 
+
+def doctest_weeknum_bounds():
+    """Unit test for schoolbell.utils.weeknum_bounds.
+
+    Check that weeknum_bounds is the reverse of datetime.isocalendar().
+
+        >>> from datetime import date
+        >>> from schoolbell.utils import weeknum_bounds
+        >>> d = date(2000, 1, 1)
+        >>> while d < date(2010, 1, 1):
+        ...     year, weeknum, weekday = d.isocalendar()
+        ...     l, h = weeknum_bounds(year, weeknum)
+        ...     assert l <= d <= h
+        ...     d += d.resolution
+
+    """
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(doctest.DocTestSuite())
     suite.addTest(doctest.DocTestSuite('schoolbell.mixins'))
     suite.addTest(doctest.DocTestSuite('schoolbell.simple'))
+    suite.addTest(doctest.DocTestSuite('schoolbell.utils'))
     suite.addTest(doctest.DocTestSuite('schoolbell.browser',
                         optionflags=doctest.ELLIPSIS | doctest.REPORT_UDIFF))
     return suite

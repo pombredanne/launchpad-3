@@ -7,6 +7,7 @@ These include various date manipulation routines.
 import calendar
 from datetime import datetime, date, timedelta, tzinfo
 
+
 def prev_month(date):
     """Calculate the first day of the previous month for a given date.
 
@@ -84,8 +85,20 @@ def week_start(date, first_day_of_week=0):
         delta += 7
     return date - timedelta(delta)
 
+
 def weeknum_bounds(year, weeknum):
-    """Calculates the inclusive date bounds for a (year, weeknum) tuple.
+    """Calculate the inclusive date bounds for a (year, weeknum) tuple.
+
+    Week numbers are as defined in ISO 8601 and returned by
+    datetime.date.isocalendar().
+
+        >>> weeknum_bounds(2003, 52)
+        (datetime.date(2003, 12, 22), datetime.date(2003, 12, 28))
+        >>> weeknum_bounds(2004, 1)
+        (datetime.date(2003, 12, 29), datetime.date(2004, 1, 4))
+        >>> weeknum_bounds(2004, 2)
+        (datetime.date(2004, 1, 5), datetime.date(2004, 1, 11))
+
     """
     # The first week of a year is at least 4 days long, so January 4th
     # is in the first week.
@@ -95,9 +108,25 @@ def weeknum_bounds(year, weeknum):
     weekend = weekstart + timedelta(days=6)
     return (weekstart, weekend)
 
+
 def check_weeknum(year, weeknum):
-    """Checks to see whether a (year, weeknum) tuple refers to a real
-    ISO week number."""
+    """Check to see whether a (year, weeknum) tuple refers to a real
+    ISO week number.
+
+        >>> check_weeknum(2004, 1)
+        True
+        >>> check_weeknum(2004, 53)
+        True
+        >>> check_weeknum(2004, 0)
+        False
+        >>> check_weeknum(2004, 54)
+        False
+        >>> check_weeknum(2003, 52)
+        True
+        >>> check_weeknum(2003, 53)
+        False
+
+    """
     weekstart, weekend = weeknum_bounds(year, weeknum)
     isoyear, isoweek, isoday = weekstart.isocalendar()
     return (year, weeknum) == (isoyear, isoweek)

@@ -3,10 +3,14 @@ Calendars
 
 Some objects in Launchpad have calendars.  Actually, currently only persons
 (and teams) have calendars, but it is planned to add them to products and
-projects as well
+projects as well.
 
 Calendaring code makes use of the SchoolBell library (Python package
 `schoolbell`), which comes from the SchoolTool project (www.schooltool.org).
+It is not available on the website just yet, because it was extracted from core
+schooltool code, but it will be in the near future.  (Ignore the 'schoolbell'
+branch on source.schooltool.org -- the SchoolBell application is different from
+the SchoolBell library; we will try to settle naming issues soon.)
 
 Launchpad calendars have some additional attributes such as title and owner,
 defined in the ILaunchpadCalendar interface (that extends schoolbell's
@@ -61,4 +65,61 @@ None so far.  All calendar content objects and views are protected with
 zope.Public, which means that, for example, anonymous users can alter any
 calendar in the system.  Obviously this needs to be changed before calendaring
 can be merged to the mainline.
+
+
+TODO
+----
+
+- Finish browser views for calendars.  This is the biggest task.  Looking into
+  SchoolTool's (http://source.schooltool.org/) calendar browser views might be
+  useful here (src/schooltool/browser/cal.py + assorted page templates),
+  although I expect Launchpad views will do at least some things differently.
+
+- Resolve timezone issues that are currently breaking browser views (James
+  Henstridge was working on this issue, I think):
+    + You cannot compare a datetime with timezone info with a datetime without
+      timezone info.
+    + CalendarEvent SQL object stores datetimes with timezone info
+    + Browser views create datetime objects with timezone info and pass them
+      as arguments to ICalendar.expend.  Things break.
+
+- Add links to calendars from person pages.  Perhaps add portlets that list
+  days with events in the current month?
+
+- Add an edit form for calendar events.
+    + As the interfaces currently go, calendar events are immutable, and the
+      proper way to modify it is to create a new event object:
+        calendar.removeEvent(original_event)
+        calendar.addEvent(original_event.replace(attr1=newvalue,
+                                                 attr2=newvalue...))
+    + This probably does not make much sense for Launchpad where you can just
+      change the attributes of calendar event objects.
+
+- Re-add recurring event support (it was disabled to make prototyping easier).
+  SchoolBell interfaces currently define the recurrence rule as a single attribute
+  providing one of four recurrence rule interfaces; perhaps it can be simulated
+  with a property.  Or perhaps SchoolBell's interfaces aren't general enough
+  and could be changed to be more convenient.  Talk to me (Marius Gedminas,
+  <marius@pov.lt>) if you have ideas.
+
+- Rewrite traversal to calendars to use traverser functions rather than browser views
+  (see the XXX above).
+
+- Write and hook up the iCalendar upload view (HTTP PUT requests).  Writing it should
+  be easy -- use schoolbell.icalendar.read_icalendar().  Hooking it up is
+  difficult (see the description above).
+
+- Add calendar composition.  A function to combine a bunch of calendars and give one
+  read-only calendar is trivial to write (disclaimer: I wrote it but didn't test it):
+
+        import itertools
+        from schoolbell.simple import ImmutableCalendar
+
+        def combine_calendars(*args):
+            """Combine a number of calendars into a single read-only calendar."""
+            return ImmutableCalendar(itertools.chain(*args))
+
+
+If you have any questions about the schoolbell library or calendaring in
+Launchpad, feel free to email Marius Gedminas <marius@pov.lt>.
 
