@@ -13,118 +13,74 @@
 
 <body>
 
-<div metal:fill-slot="main" >
+<div metal:fill-slot="main"
+     tal:define="languages view/languages">
 
     <h1>Personal preferences</h1>
+    
+    
+    <h2>My Languages</h2>
+    
+    <p class="formHelp">
+    Add or remove languages in your language list by double clicking the entries or using the labeled buttons. Use <code>Ctrl</code> to select multiple elements. 
+    </p>
 
     <div tal:content="view/submit" />
 
-    <h2>My personal information</h2>
-
-    <p class="formHelp">
-    Here you are able to change your personal information like name and password.
-    </p>
-
-    <form action="prefs" method="post" tal:define="translator view/person">
-        <div tal:condition="view/submitted_personal">
-            <p class="error" tal:condition="view/error_msg">
-                <span tal:content="view/error_msg">error</span>
-            </p>
-        </div>
-
-        <div tal:condition="not: view/error_msg">
-            <p>
-            The changes to your account settings have been saved.
-            </p>
-        </div>
-
-        <fieldset>
-            Please enter your existing password to confirm account changes.
-            <br/>
-            Password: <input type="password" name="currentPassword" />
-            <br/>
-            <hr/>
-            Given name: <input type="text" name="given"
-                            tal:attributes="value translator/givenname"/>
-            Family name: <input type="text" name="family"
-                            tal:attributes="value translator/familyname" />
-            <br/>
-            Display name: <input type="text" name="display"
-                tal:attributes="value translator/displayname" />
-            <br/>
-            New Password: <input type="password" name="newPassword1" />
-            <br/>
-            Re-enter new Password: <input type="password" name="newPassword2" />
-            <br/>
-            <div class="formControls">
-                <input type="submit" name="SAVE-PERSONAL" value="Save" />
-            </div>
-        </fieldset>
-    </form>
-
-    <h2>My Languages</h2>
-
-    <p class="formHelp">
-    Add or remove languages in your language list by double clicking the entries or using the labeled buttons. Use <code>Ctrl</code> to select multiple elements.
-    </p>
-
-    <form action="prefs" method="post"
-    onSubmit="javascript:selectAllWords();return true;"
-    tal:define="languages view/languages; selectedLanguages view/selectedLanguages" >
-
+    <form action="translator" method="post" 
+          onsubmit="selectAllWords();return false;">
+    
         <div style="float: left;">
             <label>Available languages</label>
             <br />
             <!-- These are the available languages. -->
-            <select id="prefs-available-languages"
-                    naoe="availablelanguages"
+            <select id="prefs-available-languages" 
+                    name="availablelanguages" 
                     size="10"
                     style="width: 20em;"
-                    multiple="multiple"
+                    multiple="multiple" 
                     ondblclick="javascript:addSelectedKeywords('prefs-available-languages','prefs-selected-languages');return false;">
 
                     <option tal:repeat="language languages"
-                            tal:content="language/englishName"
+                            tal:content="language/name"
                             tal:attributes="name language/code" />
 
             </select>
         </div>
-
+        
         <div style="float: left; padding-top: 5em;">
-            <input type="submit"
-                   name="add"
-                   value="Add to my languages &raquo;"
+            <input type="submit" 
+                   name="add" 
+                   value="Add to my languages &raquo;" 
                    onclick="javascript:addSelectedKeywords('prefs-available-languages','prefs-selected-languages');return false;"
                    />
         </div>
-
+        
         <div style="float: left;">
               <label>My languages</label>
               <br />
               <!--  These are the selected languages. -->
-              <select id="prefs-selected-languages"
-                      name="selectedlanguages"
-                      size="10"
+              <select id="prefs-selected-languages" 
+                      name="selectedlanguages" 
+                      size="10" 
                       style="width: 20em;"
-                      multiple="multiple"
+                      multiple="multiple" 
                       ondblclick="javascript:removeWords('prefs-selected-languages');return false;">
-
-                      <option tal:repeat="language selectedLanguages"
-                      tal:content="language/englishName"
-                  tal:attributes="name language/code" />
-
+                      <option>Dummy</option>
+              
               </select>
               <br />
-              <input type="submit"
-                     name="remove"
-                     value="&laquo; Remove selected languages"
+              <input type="submit" 
+                     name="remove" 
+                     value="&laquo; Remove selected languages" 
                      onclick="javascript:removeWords('prefs-selected-languages');return false;">
-        </div>
-
+        </div>    
+    
         <div class="formControls">
-            <input type="submit" name="SAVE-LANGS" value="Save" />
+            <input type="submit" name="LANGUAGES" value="Save" />
         </div>
     </form>
+    
 </div>
 
 </body>

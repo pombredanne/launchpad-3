@@ -2,7 +2,14 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="rosetta">
-<body><div metal:fill-slot="main">
+<body>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/referencePortlet" />
+</metal:rightportlets>
+
+
+<div metal:fill-slot="main">
 
 
 <div id="content" class="documentEditable">
@@ -49,8 +56,8 @@
             $Bug.description
         </div>
     
-        <fieldset class="collapsible">
-            <legend><img src="++resource++arrowDown.gif" /> Follow-up</legend>
+        <fieldset class="collapsible collapsed">
+            <legend>Follow-up</legend>
       
             <!--
             <div class="field">
@@ -126,34 +133,26 @@
         <h2>Portlet material</h2>
 
         <fieldset class="collapsible">
-            <legend><img src="++resource++arrowDown.gif" 
-                    /> Product Assignments</legend>
+            <legend>Product Assignments</legend>
             <div tal:replace="structure view/productAssignmentPortlet" />
         </fieldset>
 
         <fieldset class="collapsible">
-            <legend><img src="++resource++arrowDown.gif" 
-                    /> Sourcepackage Assignments</legend>
+            <legend>Sourcepackage Assignments</legend>
             <div tal:replace="structure view/sourcepackageAssignmentPortlet" />
         </fieldset>
 
-        <fieldset class="collapsible">
-            <legend><img src="++resource++arrowDown.gif" />
-                External References
-            </legend>
-            <div tal:replace="structure view/referencePortlet" />
-        </fieldset>
     
         <fieldset class="collapsible">
-            <legend><img src="++resource++arrowDown.gif" /> Watches</legend>
+            <legend>Watches</legend>
             <div tal:replace="structure view/watchPortlet" />
         </fieldset>
 
         <fieldset class="collapsible">
-            <legend><img src="++resource++arrowDown.gif" /> People</legend>
+            <legend>People</legend>
             <div tal:replace="structure view/peoplePortlet" />
         </fieldset>
-    
+
     </div>
 </div>
 

@@ -1,0 +1,22 @@
+<div class="portlet">
+    <h6>External References</h6>
+
+    <div class="portletBody">
+        <div class="portletContent odd"
+             tal:repeat="ref context/externalrefs">
+            
+            <a tal:content="ref/description"
+                tal:attributes="title ref/bugreftype/lp:BugExternalReferenceType;
+                                href ref/url;">
+                The reference
+            </a>
+
+        </div>
+        
+        <div class="portletContent even">
+            <form action="references/+new" method="post">
+                <input type="submit" value="Add Reference" />
+            </form>
+        </div> 
+    </div>
+</div>

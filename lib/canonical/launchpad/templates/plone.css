@@ -3,19 +3,9 @@
 **
 ** Copyright Alexander Limi - http://www.plonesolutions.com
 **
-** Additional Plone 2 work:
-** Joe Geldart & Tom Croucher - http://www.netalleynetworks.com
-** Michael Zeltner - http://niij.org
-** Geir Bækholt - http://www.plonesolutions.com
-**
 ** All you guys rock :)
 **
 ** Style sheet documentation can be found at http://plone.org/documentation
-**
-** You should preferrably use ploneCustom.css to add your own CSS classes and to
-** customize your portal, as these are the base fundaments of Plone, and will
-** change and be refined in newer versions. Keeping your changes in
-** ploneCustom.css will make it easier to upgrade.
 **
 ** Feel free to use whole or parts of this for your own designs, but give credit
 ** where credit is due.
@@ -326,7 +316,7 @@ del {
     margin: 0;
     padding: 0;
     text-align: right;
-    text-transform: lowercase;
+    text-transform: none;
     width: 50%;
     white-space: nowrap;
     z-index: 2;
@@ -356,7 +346,7 @@ del {
     margin-right: 0.5em;
     padding: 0em 2em;
     text-decoration: none;
-    text-transform: lowercase;
+    text-transform: none;
 }
 #portal-globalnav li.selected a {
     /* The selected tab. There's only one of this */
@@ -385,7 +375,7 @@ del {
     padding: 0em 3em 0em 3em;
     margin: 0;
     text-align: right;
-    text-transform: lowercase;
+    text-transform: none;
     list-style: none;
 }
 #portal-personaltools .portalUser {
@@ -421,7 +411,7 @@ del {
     border-bottom-width: 1px;
     padding-left: 2em;
     padding-right: 2em;
-    text-transform: lowercase;
+    text-transform: none;
 }
 .addFavorite {
     vertical-align: bottom;
@@ -453,7 +443,7 @@ del {
     padding: 0em 2em;
     line-height: normal;
     text-decoration: none;
-    text-transform: lowercase;
+    text-transform: none;
     z-index: 1;
 }
 .contentViews .selected a {
@@ -477,7 +467,7 @@ del {
     border-right: 1px solid #74ae0b;
     color: #578308;
     text-align: right;
-    text-transform: lowercase;
+    text-transform: none;
     padding: 0 0 0 1em;
     z-index: 2;
     height: 1.2em;
@@ -759,7 +749,7 @@ del {
     font-size: 85%;
     margin-bottom: 1em;
     padding: 1px 1px 1px 15px;
-    text-transform: lowercase;
+    text-transform: none;
 }
 .context,
 .documentEditable * .context {
@@ -768,7 +758,7 @@ del {
     font-size: 85%;
     margin-bottom: 1em;
     padding: 1px 1px 1px 15px;
-    text-transform: lowercase;
+    text-transform: none;
 }
 .destructive,
 .documentEditable * .destructive {
@@ -778,7 +768,7 @@ del {
     font-size: 85%;
     margin-bottom: 1em;
     padding: 1px 1px 1px 15px;
-    text-transform: lowercase;
+    text-transform: none;
 }
 input.searchButton {
     font-size: 100%;
@@ -786,7 +776,7 @@ input.searchButton {
     background: White url(http://plone.org/search_icon.gif) 2px 1px no-repeat;
     cursor: pointer;
     padding: 1px 1px 1px 15px;
-    text-transform: lowercase;
+    text-transform: none;
 
 }
 .noborder,
@@ -903,7 +893,7 @@ input.searchButton {
     border-right: 1px solid #7a9ec6;
     font-weight: normal;
     padding: 0em 1em 0em 1em;
-    text-transform: lowercase;
+    text-transform: none;
 }
 .listing .top {
     border-left: 1px solid White;
@@ -1157,7 +1147,7 @@ ol.visualNoMarker {
     border-width: 1px;
     padding: 0em 1em;
     text-align: center;
-    text-transform: lowercase;
+    text-transform: none;
     vertical-align: top;
     margin: 1em 0em;
     font-size: 94%;

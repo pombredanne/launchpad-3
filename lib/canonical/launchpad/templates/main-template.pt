@@ -49,20 +49,20 @@
 
             <li class="selected"
                 tal:condition="python:'/foaf' in path_info">
-              <a href="/foaf">people</a>
+              <a href="/foaf">People</a>
             </li>
             <li class="plain"
                 tal:condition="python:'/foaf' not in path_info">
-              <a href="/foaf">people</a>
+              <a href="/foaf">People</a>
             </li>
 
             <li class="selected"
                 tal:condition="python:'/doap' in path_info">
-              <a href="/doap">projects</a>
+              <a href="/doap">Projects</a>
             </li>
             <li class="plain"
                 tal:condition="python:'/doap' not in path_info">
-              <a href="/doap">projects</a>
+              <a href="/doap">Projects</a>
             </li>
 
             <li class="selected"
@@ -103,6 +103,18 @@
           </ul>
 
       <div id="portal-personaltools">
+
+        <span tal:condition="request/lp:person">
+            Logged in as
+            <span tal:replace="request/lp:person/displayname">Foo Bar</span>
+        </span>
+
+        <span tal:condition="not: request/lp:person">
+            Not logged in.
+        </span>
+
+        &mdash;
+
         <a href="/rosetta/translator">Translator Dashboard</a>
 
         &mdash;
@@ -131,42 +143,44 @@
         </span>
       </div>
 
-      <div style="text-align: right; padding-right: 2em">
-        <span tal:condition="request/lp:person">
-            Logged in as
-            <span tal:replace="request/lp:person/displayname">Foo Bar</span>
-        </span>
-
-        <span tal:condition="not: request/lp:person">
-            Not logged in.
-        </span>
-      </div>
-
       <div class="visualClear"></div>
 
       <table id="portal-columns">
         <tbody>
           <tr>
-            <td id="portal-column-content">
-              <div style="float: right; margin-top: 1em;">
-                <a href="javascript:this.print();">
-                    <img src="++resource++print.gif"
-                         alt="Print"
-                         title="Print this page" />
-                </a>
+
+            <!-- start of the left (by default at least) column -->
+            <td id="portal-column-one"
+                metal:define-slot="column_one">
+              <div class="visualPadding">
+                <metal:portlets define-slot="portlets_one">
                 
-                <a href="sendto">
-                    <img src="++resource++sendto.gif"
-                         alt="Send to"
-                         title="Send this page to somebody" />
-                </a>
+                </metal:portlets>
+                &nbsp;
               </div>
+            </td>
+            <!-- end of the left (by default at least) column -->
+
+            <td id="portal-column-content">
               <div id="region-content">
                   <metal:main define-slot="main">
                   <p>Main content area.</p>
                   </metal:main>
               </div>
             </td>
+
+            <!-- start of right (by default at least) column -->
+            <td id="portal-column-two"
+                metal:define-slot="column_two">
+              <div class="visualPadding">
+                <metal:portlets define-slot="portlets_two">
+                
+                </metal:portlets>
+                &nbsp;
+              </div>
+            </td>
+            <!-- end of the right (by default at least) column -->
+
           </tr>
         </tbody>
       </table>

@@ -171,18 +171,18 @@ class MaloneBugAddForm(object):
 # the MaloneBugView class with its ViewPageTemplateFile attributes
 class MaloneBugView(object):
     # XXX fix these horrific relative paths
-    watchPortlet = ViewPageTemplateFile('../launchpad/templates/bug-watch-portlet.pt')
+    watchPortlet = ViewPageTemplateFile('../launchpad/templates/portlet-bug-watch.pt')
     productAssignmentPortlet = ViewPageTemplateFile(
-            '../launchpad/templates/bug-productassignment-portlet.pt'
+            '../launchpad/templates/portlet-bug-productassignment.pt'
             )
     sourcepackageAssignmentPortlet = ViewPageTemplateFile(
-            '../launchpad/templates/bug-sourcepackageassignment-portlet.pt'
+            '../launchpad/templates/portlet-bug-sourcepackageassignment.pt'
             )
     referencePortlet = ViewPageTemplateFile(
-            '../launchpad/templates/bug-reference-portlet.pt'
+            '../launchpad/templates/portlet-bug-reference.pt'
             )
     peoplePortlet = ViewPageTemplateFile(
-            '../launchpad/templates/bug-people-portlet.pt'
+            '../launchpad/templates/portlet-bug-people.pt'
             )
 
 class MaloneBugAttachment(BugAttachment, BugContainerBase):
