@@ -3,6 +3,7 @@
 
 /* Ready to go except for what to call them? */
 
+CREATE VIEW VSourcePackageInDistro AS
 SELECT DISTINCT 
     sourcepackage.id, 
     sourcepackage.shortdesc,
@@ -25,6 +26,7 @@ AND sourcepackagerelease.sourcepackage = sourcepackage.id
 AND sourcepackagepublishing.distrorelease = distrorelease.id 
 AND sourcepackage.sourcepackagename = sourcepackagename.id;
 
+CREATE VIEW VSourcePackageReleasePublishing AS
 SELECT 
     sourcepackagerelease.id, 
     sourcepackagename.name,

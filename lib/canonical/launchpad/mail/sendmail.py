@@ -78,11 +78,9 @@ def sendmail(message):
         message['Reply-To'] = message['from']
 
     # Add an Errors-To: header for future bounce handling
-    # XXX: Need to put in a valid email address to catch bounces before
-    # rollout. Needed even if we don't do bounce processing, so that the
-    # poor sod in the To: header doesn't get them -- stub 2004-10-21
+    # Currently bounces@canonical.com silently drops them.
     del message['Errors-To']
-    message['Errors-To'] = 'nobody@example.com'
+    message['Errors-To'] = 'bounces@canonical.com'
 
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
