@@ -794,7 +794,7 @@ class POFile(SQLBase):
                     RosettaSight.pomsgset = POMsgSet.id AND
                     RosettaSight.inlastrevision = FALSE AND
                     RosettaSight.active = TRUE)
-            ''' % self.id, clauseTables=('POMsgSet PotSet',)).count()
+            ''' % self.id, clauseTables=('POTMsgSet',)).count()
         self.set(currentCount=current,
                  updateCount=updates,
                  rosettaCount=rosetta)
