@@ -1404,10 +1404,3 @@ VALUES ((SELECT id FROM Distrorelease WHERE name = 'grumpy'),
 	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))),
 	1);
 
--- Packaging
-INSERT INTO Packaging (sourcepackage, packaging, product)
-VALUES ((SELECT id FROM Sourcepackage WHERE id = 
-	 (SELECT id from SourcepackageName WHERE name = 'mozilla-firefox')),
-	1, -- dbschema.Packaging.PRIME
-	(SELECT id FROM Product WHERE name = 'firefox'));
-	

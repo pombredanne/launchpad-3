@@ -29,6 +29,7 @@ all: base
 	psql -d ${DBNAME} -f ../sampledata-soyuz.sql
 	psql -d ${DBNAME} -f ../sampledata-malone.sql
 	psql -d ${DBNAME} -f ../sampledata-rosetta.sql
+	psql -d ${DBNAME} -f ../sampledata-soyuz-extra.sql
 	psql -d ${DBNAME} -f comments.sql
 
 .PHONY: default base all
