@@ -121,7 +121,7 @@
 
           <tr tal:condition="context/gpg">
             <td>GPG:</td>
-            <td><a href="+key" tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}"></a></td>
+            <td><a href="+gpg" tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}"></a></td>
           </tr>
 
           <tr tal:condition="context/sshkeys">

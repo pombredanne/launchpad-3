@@ -348,6 +348,21 @@ class EmailAddressEditView(PersonView):
             emailaddress.destroySelf()
             return True
 
+
+class GPGKeyView(object):
+
+    def __init__(self, context, request):
+        self.request = request
+        self.context = context
+
+    def show(self):
+        request = self.request
+        if request is not None:
+            request.response.setHeader('Content-Type', 'text/plain')
+
+        return self.context.gpg.pubkey
+
+
 class SSHKeyView(PersonView):
     def form_action(self):
         if self.request.get("REQUEST_METHOD") != "POST":
