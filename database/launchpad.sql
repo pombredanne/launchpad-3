@@ -1639,6 +1639,7 @@ CREATE TABLE ProductBugAssignment (
   to keep track of it.
 */
 CREATE TABLE BugActivity (
+  id            serial PRIMARY KEY,
   bug           integer NOT NULL REFERENCES Bug,
   datechanged   timestamp NOT NULL,
   person        integer NOT NULL,
