@@ -61,7 +61,7 @@ run: inplace
             $(STARTSCRIPT) -C $(CONFFILE)
 
 debug: principals.zcml
-	PYTHONPATH=`pwd`/src:$(PYTHONPATH) $(PYTHON) -i -c \
+	PYTHONPATH=$(Z3LIBPATH):$(PYTHONPATH) $(PYTHON) -i -c \
             "from zope.app import Application;\
              app = Application('Data.fs', 'site.zcml')()"
 
