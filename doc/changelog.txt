@@ -2,6 +2,33 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-07 05:35:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1374
+
+    Summary:
+      Remove obsolete difflib fork
+    Revision:
+      launchpad--devel--0--patch-1374
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-156
+       Remove dupes and tidy security.cfg
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-157
+       Remove obsolete difflib fork
+    
+
+    removed files:
+     lib/canonical/.arch-ids/difflib.py.id lib/canonical/difflib.py
+
+    modified files:
+     database/schema/security.cfg doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-156
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-157
+
+
 2005-03-06 09:25:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1373
 
     Summary:
