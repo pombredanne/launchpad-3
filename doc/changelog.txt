@@ -2,6 +2,65 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-10 18:58:14 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1410
+
+    Summary:
+      axe the Anorak Search Page (TM). axe it real good.
+    Revision:
+      launchpad--devel--0--patch-1410
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-399
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-400
+       axe the Anorak Search Page (TM). axe it real good.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/=id
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/browser/distribution.py
+     lib/canonical/launchpad/templates/malone-index.pt
+
+    renamed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-list.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-list.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-quick-search-submittedbyme.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-quick-search-submittedbyme.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-quick-search-text.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-quick-search-text.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-quick-search-todo.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-quick-search-todo.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-search-package-firefox.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-search-package-firefox.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-search-status-accepted.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids/xx-bug-search-status-accepted.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-list.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-list.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-submittedbyme.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-quick-search-submittedbyme.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-text.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-quick-search-text.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-todo.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-quick-search-todo.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-search-package-firefox.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-search-package-firefox.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-search-status-accepted.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/deprecated/xx-bug-search-status-accepted.txt
+
+    new directories:
+     lib/canonical/launchpad/pagetests/standalone/deprecated
+     lib/canonical/launchpad/pagetests/standalone/deprecated/.arch-ids
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-399
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-400
+
+
 2005-03-10 16:20:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1409
 
     Summary:

@@ -60,7 +60,7 @@ class DistributionSetAddView(AddView):
     ow = CustomWidgetFactory(ObjectWidget, Distribution)
     sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
     options_widget = sw
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -91,10 +91,10 @@ class DistributionSetAddView(AddView):
         domain = self.request.get("domain", "")
         person = IPerson(self.request.principal, None)
 
-        
+
         if not person:
             return False
-        
+
         if not title:
             return False
 

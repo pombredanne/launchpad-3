@@ -101,6 +101,12 @@ class BugTasksView:
                            int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
 
+        # XXX: Brad Bollenbach, 2005-03-10: Effectively "disable"
+        # the Anorak Search Page for now by redirecting to the
+        # Malone front page. We'll reenable this page if user
+        # feedback necessitates.
+        self.request.response.redirect("/malone")
+
     def search(self):
         """Find the bug tasks the user wants to see."""
         ba_params = []
