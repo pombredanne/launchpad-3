@@ -46,7 +46,7 @@ class IPerson(Interface):
     # XXX: These fields are used only to generate the form to create a
     # new person.
     email = TextLine(title=_('Email'), required=True)
-    password2 = Password(title=_('Retype Password'), required=True)
+    password2 = Password(title=_('Confirm Password'), required=True)
 
     # Properties of the Person object.
     gpg = Attribute("GPG")

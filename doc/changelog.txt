@@ -2,6 +2,51 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-13 22:34:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1198
+
+    Summary:
+      Template fixes, pagetests fixes and additions. Some reverted changes
+    Revision:
+      launchpad--devel--0--patch-1198
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-77
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-78
+       Some fixes (mainly avoiding python:) in page templates.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-79
+       Reverting change that used getUtility(ILaunchBag).user
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-80
+       One broken change reverted. Some templates/pagetests fixes and a new pagetest
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-person-emails.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-person-emails.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-person-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-team-list.txt
+     lib/canonical/launchpad/templates/foaf-join.pt
+     lib/canonical/launchpad/templates/foaf-newaccount.pt
+     lib/canonical/launchpad/templates/person-edit.pt
+     lib/canonical/launchpad/templates/person-emails.pt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/zcml/person.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-77
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-78
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-79
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-80
+
+
 2005-01-13 18:18:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1197
 
     Summary:
