@@ -16,7 +16,7 @@
         arguments=""
         keyword_arguments="bugtracker remotebug"
         permission="launchpad.AnyPerson"
-        template="../templates/default-addform.pt"
+        template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bugs.id/watches/+new" />
 
     <browser:editform

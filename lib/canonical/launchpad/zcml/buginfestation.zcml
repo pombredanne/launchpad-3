@@ -24,7 +24,7 @@
         arguments=""
         keyword_arguments="productrelease infestationstatus"
         permission="launchpad.AnyPerson"
-        template="../templates/default-addform.pt"
+        template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/productinfestations/+new" />
 
     <browser:editform

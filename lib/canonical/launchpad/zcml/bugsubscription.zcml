@@ -16,7 +16,7 @@
         arguments=""
         keyword_arguments="subscription person"
         permission="launchpad.AnyPerson"
-        template="../templates/default-addform.pt"
+        template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/people/+new" />
 
     <browser:editform

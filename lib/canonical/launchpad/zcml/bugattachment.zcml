@@ -37,7 +37,7 @@
         arguments=""
         keyword_arguments="name description libraryfile"
         permission="launchpad.AnyPerson"
-        template="../templates/default-addform.pt"
+        template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/attachments/+new"
         />
 

@@ -40,7 +40,7 @@
         arguments=""
         keyword_arguments="product bugstatus priority severity"
         permission="launchpad.AnyPerson"
-        template="../templates/default-addform.pt"
+        template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/productassignments/+new" />
 
     <browser:editform
@@ -89,7 +89,7 @@
         arguments=""
         keyword_arguments="sourcepackage bugstatus priority severity"
         permission="launchpad.AnyPerson"
-        template="../templates/default-addform.pt"
+        template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/sourcepackageassignments/+new" />
 
     <browser:editform

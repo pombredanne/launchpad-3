@@ -28,7 +28,7 @@
         arguments=""
         keyword_arguments="bugreftype data description"
         permission="launchpad.AnyPerson"
-        template="../templates/default-addform.pt"
+        template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bugs.id/references/+new" />
 
     <browser:editform
