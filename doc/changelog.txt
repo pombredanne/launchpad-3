@@ -2,6 +2,47 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 18:25:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1189
+
+    Summary:
+      Added SourcePackageNameSet and Added some hidden fields to import automatically hoary's .po and .pot files
+    Revision:
+      launchpad--devel--0--patch-1189
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-479
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-480
+       Synced the POTemplate db schema with the SQLObject definition
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-481
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-482
+       Added SourcePackageNameSet
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-483
+       Added some hidden fields to import automatically hoary's .po and .pot files
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/zcml/sourcepackage.zcml
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-479
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-480
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-481
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-482
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-483
+
+
 2005-01-12 18:20:41 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1188
 
     Summary:

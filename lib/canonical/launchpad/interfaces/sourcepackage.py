@@ -94,6 +94,14 @@ class ISourcePackageName(Interface):
         """Return the name"""
 
 
+class ISourcePackageNameSet(Interface):
+    """A set of SourcePackageName"""
+    def __getitem__(name):
+        """Retrieve a sourcepackage by name."""
+    def __iter__():
+        """Iterate over names"""
+
+
 class ISourcePackageSet(Interface):
     """A set for ISourcePackage objects."""
 

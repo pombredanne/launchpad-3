@@ -17,6 +17,7 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, \
                                            ISourcePackageReleasePublishing, \
                                            ISourcePackage, \
                                            ISourcePackageName, \
+                                           ISourcePackageNameSet, \
                                            ISourcePackageSet, \
                                            ISourcePackageInDistroSet, \
                                            ISourcePackageUtility
@@ -275,10 +276,25 @@ class SourcePackageName(SQLBase):
     implements(ISourcePackageName)
     _table = 'SourcePackageName'
 
-    name = StringCol(dbName='name', notNull=True)
+    name = StringCol(dbName='name', notNull=True, unique=True,
+        alternateID=True)
 
     def __unicode__(self):
         return self.name
+
+
+class SourcePackageNameSet(object):
+    implements(ISourcePackageNameSet)
+
+    def __getitem__(self, name):
+        try:
+            return SourcePackageName.byName(name)
+        except SQLObjectNotFound:
+            raise KeyError, name
+
+    def __iter__(self):
+        for sourcepackagename in SourcePackageName.select():
+            yield sourcepackagename
 
 
 class SourcePackageRelease(SQLBase):

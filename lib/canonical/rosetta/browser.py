@@ -18,7 +18,7 @@ from zope.publisher.browser import FileUpload
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILanguageSet, IPerson, \
     IProjectSet, IProductSet, IPasswordEncryptor, IRequestLocalLanguages, \
-    IRequestPreferredLanguages
+    IRequestPreferredLanguages, IDistributionSet, ISourcePackageNameSet
 
 from canonical.launchpad.database import Language, Person, POTemplate, POFile
 
@@ -329,7 +329,7 @@ class ProductView:
                 # For more info, look at bug #116
                 self.status_message = 'There was an unknow error getting the file.'
             return
-                    
+
         filename = file.filename
 
         if filename.endswith('.pot'):
@@ -346,16 +346,45 @@ class ProductView:
                 # The file is not correct
                 self.status_message= 'Please, review the po file seems to have a problem'
 
+            # This part is only used for our internal script to upload .po and
+            # .pot files from the web interface. If we don't have all fields,
+            # someone is playing with us so just ignore it.
+            if ('_distribution' in self.form and
+                '_release' in self.form and
+                '_sourcepackage' in self.form):
+                distribution = self.form['_distribution']
+                release = self.form['_release']
+                sourcepackage = self.form['_sourcepackage']
+
+                try:
+                    distro = getUtility(IDistributionSet)[distribution]
+                    distrorelease = distro[release]
+                except KeyError:
+                    # The distribution or release does not exists in the
+                    # database, we ignore the error and continue.
+                    distrorelease = None
+
+                try:
+                    sourcepackagename = getUtility(
+                        ISourcePackageNameSet)[sourcepackage]
+                except KeyError:
+                    # The SourcePackage does not exists.
+                    sourcepackagename = None
+            else:
+                distrorelease = None
+                sourcepackagename = None
             # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
-            # check to see if there is an existing product with
+            # check to see if there is an existing potemplate with
             # this name.
-            # Now create a new product in the db
+            # Now create a new potemplate in the db
             potemplate = POTemplate(
                 product=self.context.id,
                 name=name,
                 title=title,
                 iscurrent=False,
-                owner=owner)
+                owner=owner,
+                distrorelease=distrorelease.id,
+                sourcepackagename=sourcepackagename.id)
 
             self._templates.append(potemplate)
 

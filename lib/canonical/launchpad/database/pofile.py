@@ -201,6 +201,10 @@ class POTemplate(SQLBase, RosettaStats):
         default=None)
     rawimportstatus = IntCol(dbName='rawimportstatus', notNull=True,
         default=RosettaImportStatus.IGNORE.value)
+    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+        dbName='sourcepackagename', notNull=False, default=None)
+    distrorelease = ForeignKey(foreignKey='DistroRelease',
+        dbName='distrorelease', notNull=False, default=None)
 
     poFiles = MultipleJoin('POFile', joinColumn='potemplate')
 
