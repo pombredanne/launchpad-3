@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-26 17:35:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1256
+
+    Summary:
+      remove self from pyarch interface
+    Revision:
+      launchpad--devel--0--patch-1256
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-51
+       remove self from pyarch interface
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/interfaces/pyarch.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-51
+
+
 2005-01-26 17:26:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1255
 
     Summary:
