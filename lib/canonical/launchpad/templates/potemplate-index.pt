@@ -88,12 +88,10 @@
         <tbody>
             <tr tal:repeat="language view/languages"
                 tal:attributes="onclick
-                string:window.location='${language/code}'">
-                <a tal:attributes="href
-                    string:+translate?languages=${language/code}">
+                string:window.location='${language/translateURL}'">
+                <a tal:attributes="href language/translateURL">
                     <td>
-                        <a tal:attributes="href
-                        string:+translate?languages=${language/code}"
+                        <a tal:attributes="href language/translateURL"
                         tal:content="language/name">Language
                         Name</a></td>
                     <td tal:content="language/poTranslated">0</td>

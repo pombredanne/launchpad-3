@@ -53,4 +53,13 @@
         lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate"
         />
 
+    <browser:page
+        name="+tar-export"
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        permission="zope.Public"
+        class="canonical.rosetta.browser.POTemplateTarExport"
+        attribute="__call__"
+        lp:url="Rosetta/products/$Product.name/$POTemplate.name/+translate"
+        />
+
 </configure>

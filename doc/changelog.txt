@@ -2,6 +2,86 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-25 23:33:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1253
+
+    Summary:
+      Rosetta browser code refacrtoring, minor UI fix, tar exports
+    Revision:
+      launchpad--devel--0--patch-1253
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-424
+       initial Rosetta tar export implementation
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-425
+       change row-level links to match non-row-level links
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-426
+       changes to Rosetta browser code from the tar export pre-merge review
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-427
+       add unit test for tar exports
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-428
+       change tar export code to generate gzipped archives
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-429
+       refactor TemplateLanguages to use an additional TemplateLanguage class
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-430
+       fix an error introduced by my previous commit
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-431
+       add attibute translateURL to TemplateLanguage to avoid duplication in page templates
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-432
+       clarify ViewPOTemplate.languages()
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-433
+       clarify POView.templates()
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-434
+       more changes to tar exports from reviews
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-435
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-436
+       implement more changes from tar export code review
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-437
+       fix tar export test case
+    
+
+    new files:
+     lib/canonical/rosetta/tests/.arch-ids/test_tarexport.py.id
+     lib/canonical/rosetta/tests/test_tarexport.py
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/potemplate-index.pt
+     lib/canonical/launchpad/templates/product-translations.pt
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-424
+     daf@canonical.com--2004/launchpad--devel--0--patch-425
+     daf@canonical.com--2004/launchpad--devel--0--patch-426
+     daf@canonical.com--2004/launchpad--devel--0--patch-427
+     daf@canonical.com--2004/launchpad--devel--0--patch-428
+     daf@canonical.com--2004/launchpad--devel--0--patch-429
+     daf@canonical.com--2004/launchpad--devel--0--patch-430
+     daf@canonical.com--2004/launchpad--devel--0--patch-431
+     daf@canonical.com--2004/launchpad--devel--0--patch-432
+     daf@canonical.com--2004/launchpad--devel--0--patch-433
+     daf@canonical.com--2004/launchpad--devel--0--patch-434
+     daf@canonical.com--2004/launchpad--devel--0--patch-435
+     daf@canonical.com--2004/launchpad--devel--0--patch-436
+     daf@canonical.com--2004/launchpad--devel--0--patch-437
+
+
 2005-01-25 21:24:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1252
 
     Summary:
