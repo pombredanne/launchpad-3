@@ -13,8 +13,7 @@
 
 <body>
 
-<div metal:fill-slot="main"
-     tal:define="languages view/languages; selectedLanguages view/selectedLanguages" >
+<div metal:fill-slot="main" >
 
     <h1>Personal preferences</h1>
     
@@ -27,7 +26,8 @@
 
     <div tal:content="view/submit" />
 
-    <form action="prefs" method="post">
+    <form action="prefs" method="post" onsubmit="selectAllWords();return true;"
+          tal:define="languages view/languages; selectedLanguages view/selectedLanguages" >
     
         <div style="float: left;">
             <label>Available languages</label>
