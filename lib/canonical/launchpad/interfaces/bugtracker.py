@@ -27,6 +27,10 @@ class IBugTracker(Interface):
     baseurl = TextLine(title=_('Base URL'))
     owner = Int(title=_('Owner'))
     contactdetails = Text(title=_('Contact details'))
+    watches = Attribute(_('The remote watches on this bug tracker.'))
+
+    def watchcount():
+        """Return the number of watches on this bugtracker."""
 
 
 class IBugTrackerSet(Interface):
@@ -35,6 +39,7 @@ class IBugTrackerSet(Interface):
     distinct instance of a bug tracking tool. For example,
     bugzilla.mozilla.org is distinct from bugzilla.gnome.org.
     """
+
     def __getitem__(name):
         """Get a BugTracker by its name in the database. NB! We do not want to
         expose the BugTracker.id to the world so we use its name.

@@ -90,7 +90,8 @@ def BugFactory(*args, **kw):
 
     # If the user has specified a product, create the ProductBugAssignment
     if kw.get('product', None):
-        ProductBugAssignment(bug=bug, product=kw['product'], owner=kw['owner'])
+        ProductBugAssignment(bug=bug,
+                             product=kw['product'].id, owner=kw['owner'])
 
     if kw.get('sourcepackage', None):
         SourcePackageBugAssignment(

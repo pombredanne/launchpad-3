@@ -2,25 +2,25 @@
 
 # update the code that is brought directly into the tree
 cd ~/projects/ubuntu
-tla cat-config configs/canonical.com/launchpad/development | xargs -n 2 tla update -d
+baz cat-config configs/canonical.com/launchpad/development | xargs -n 2 baz update -d
 
 # then check if there are unmerged changes
 cd ~/projects/ubuntu/launchpad
-tla changes 
+baz changes 
 if [ $? -gt 0 ]; then
     echo "You've got changes! Please commit them before refueling"
     exit 1
 fi;
 
 # check for loose files
-tla tree-lint -t --strict
+baz tree-lint -t --strict
 if [ $? -gt 0 ]; then
   echo "You have untagged files. Please add them and commit before refueling."
   exit 1
 fi
 
 # now merge launchpad with the rocketfuel repo
-tla star-merge rocketfuel@canonical.com/launchpad--devel--0
+baz star-merge rocketfuel@canonical.com/launchpad--devel--0
 
 # check for conflicts, and if none exist, commit the merge
 test -z $(find . -name "*.orig" -or -name "*.rej" -print)
@@ -29,12 +29,12 @@ if [ $? -gt 0 ]; then
   echo "         any additional work."
   exit 1
 else
-  tla changes
+  baz changes
   if [ $? -gt 0 ]; then
     # commit the merged changes
-    tla commit -s "merge rocketfuel"
+    baz commit -s "merge rocketfuel"
     # show the commited star-merge delta
-    tla delta --diffs $(tla logs | tail -2) | less
+    baz delta --diffs $(baz logs | tail -2) | less
   fi
 fi
 

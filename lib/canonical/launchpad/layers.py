@@ -23,6 +23,9 @@ class RosettaLayer(LaunchpadLayer):
 class MaloneLayer(LaunchpadLayer):
     """The `MaloneLayer` layer."""
 
+class ButtressLayer(LaunchpadLayer):
+    """The `ButtressLayer` layer."""
+
 class UbuntuLinuxLayer(IBrowserRequest):
     """The `UbuntuLinuxLayer` layer."""
 

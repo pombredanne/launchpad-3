@@ -75,11 +75,11 @@ def notify_bug_added(bug_add_form, event):
     owner = "(no owner)"
     spname = "(none)"
     pname = "(none)"
-    if bug_add_form.owner:
+    if getattr(bug_add_form, 'owner', None):
         owner = bug_add_form.owner.displayname
-    if bug_add_form.sourcepackage:
+    if getattr(bug_add_form, 'sourcepackage', None):
         spname = bug_add_form.sourcepackage.sourcepackagename.name
-    if bug_add_form.product:
+    if getattr(bug_add_form, 'product', None):
         pname = bug_add_form.product.displayname
 
     msg = """\

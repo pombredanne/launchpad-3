@@ -13,22 +13,13 @@ class IBugWatch(Interface):
     bugtracker = Choice(title=_('Bug System'), required=True,
             vocabulary='BugTracker')
     remotebug = TextLine(title=_('Remote Bug'), required=True, readonly=False)
-    # TODO: default should be NULL, but column is NOT NULL
-    remotestatus = TextLine(
-            title=_('Remote Status'), required=True, readonly=True, default=u''
-            )
-    lastchanged = Datetime(
-            title=_('Last Changed'), required=True, readonly=True
-            )
-    lastchecked = Datetime(
-            title=_('Last Checked'), required=True, readonly=True
-            )
+    remotestatus = TextLine(title=_('Remote Status'))
+    lastchanged = Datetime(title=_('Last Changed'))
+    lastchecked = Datetime(title=_('Last Checked'))
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True
             )
-    owner = Int(
-            title=_('Owner'), required=True, readonly=True
-            )
+    owner = Int(title=_('Owner'), required=True, readonly=True)
 
 
 class IBugWatchSet(Interface):

@@ -22,6 +22,7 @@
       <th>Title</th>
       <th>Home Page</th>
       <th>Owner</th>
+      <th>Watches</th>
     </tr>
     <tr tal:repeat="bugtracker context"
         tal:attributes="onclick string:window.location='${bugtracker/name}';
@@ -32,6 +33,7 @@
         <td tal:content="bugtracker/baseurl">$Bugtracker.baseurl</td>
         <td tal:content="bugtracker/owner/browsername"
             class="people">$Bugtracker.owner"</td>
+        <td tal:content="bugtracker/watchcount">bugcount</td>
     </tr>
   </table>
 

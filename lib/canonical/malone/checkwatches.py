@@ -53,7 +53,8 @@ def main():
     # We want 1 day, but we'll use 23 hours because we can't count on the cron
     # job hitting exactly the same time every day
     watches = BugWatch.select(
-        "(lastchecked < (now() at time zone 'UTC' - interval '23 hours'))")
+        """(lastchecked < (now() at time zone 'UTC' - interval '23 hours') OR
+          lastchecked IS NULL)""")
     for watch in watches:
         check_one_watch(watch)
 

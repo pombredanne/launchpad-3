@@ -40,7 +40,11 @@ class BugTracker(SQLBase):
     baseurl = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person',
                 notNull=True)
-    contactdetails = StringCol(notNull=True)
+    contactdetails = StringCol(notNull=False)
+    watches = MultipleJoin('BugWatch', joinColumn='bugtracker')
+
+    def watchcount(self):
+        return len(list(self.watches))
 
 
 class BugTrackerSet(object):

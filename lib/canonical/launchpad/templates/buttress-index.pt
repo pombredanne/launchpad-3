@@ -1,0 +1,22 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@malone_template/master"
+    i18n:domain="buttress">
+<body>
+<div metal:fill-slot="main">
+
+    <h1>Welcome to The Buttress!</h1>
+
+    <p class="documentDescription">The Buttress is a Launchpad application
+    to keep track of all the upstream and distribution code that is
+    registered with the Launchpad and published using the Gnu Arch protocol,
+    interoperable with the Bazaar revision control system.</p>
+
+    <ul>
+        <li><a href="upstream">See upstream code branches</a></li>
+    </ul>
+
+</div>
+</body>
+</html>
+

@@ -68,6 +68,8 @@ class Product(SQLBase):
 
     bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
 
+    branches = MultipleJoin('Branch', joinColumn='product')
+
     sourcesources = MultipleJoin('SourceSource', joinColumn='product')
 
     sourcepackages = RelatedJoin('SourcePackage', joinColumn='product',

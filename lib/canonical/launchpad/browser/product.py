@@ -15,7 +15,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 
 from canonical.launchpad.database import Project, Product, SourceSource, \
         SourceSourceSet, ProductSeries, ProductSeriesSet, Bug, \
-        ProductBugAssignment
+        ProductBugAssignment, BugFactory
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -49,6 +49,9 @@ class ProductView(object):
 
     latestBugPortlet = ViewPageTemplateFile(
         '../templates/portlet-latest-bugs.pt')
+
+    branchesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-branches.pt')
 
     def __init__(self, context, request):
         self.context = context
@@ -146,13 +149,10 @@ class ProductFileBugView(AddView):
         kw = {}
         for item in data.items():
             kw[str(item[0])] = item[1]
-        kw['ownerID'] = owner.id
+        kw['product'] = self.context
         # create the bug
-        bug = Bug(**kw)
+        bug = BugFactory(**kw)
         notify(ObjectCreatedEvent(bug))
-        # create productbugassignment
-        bpa = ProductBugAssignment(productID=self.context.id,
-                                   bugID=bug.id)
         return bug
 
     def nextURL(self):

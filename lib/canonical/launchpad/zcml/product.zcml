@@ -107,9 +107,8 @@
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report Bug on Upstream Product"
         fields="title shortdesc description owner"
-        content_factory="canonical.launchpad.database.BugFactory"
-        arguments=""
         class="canonical.launchpad.browser.ProductFileBugView"
+        arguments=""
         keyword_arguments="title shortdesc description owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
@@ -120,5 +119,8 @@
            class="zope.app.form.browser.TextWidget"
            displayWidth="55" />
     </browser:addform>
+    <!--
+        content_factory="canonical.launchpad.database.BugFactory"
+    -->
 
 </configure>
