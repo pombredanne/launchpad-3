@@ -10,9 +10,9 @@ To run the server, just run this file ("rpcdaemon.py").
 
 from twisted.web import xmlrpc
 from sqlobject import connectionForURI
-from canonical.arch.sqlbase import SQLBase
+from canonical.arch.sqlbase import SQLBase, quote
 from canonical.database.malone import Bug
-import xmlrpclib, sqlobject, sre
+import xmlrpclib, sqlobject
 
 class RPCDaemon(xmlrpc.XMLRPC):
     """XMLRPC daemon handler.
@@ -54,7 +54,7 @@ class RPCDaemon(xmlrpc.XMLRPC):
             'datecreated': str(bug.datecreated),
             'title': bug.title,
             'description': bug.description,
-            #'duplicateof': bug.duplicateof,
+            'duplicateof': bug.duplicateof,
         }
         return data
 
@@ -77,29 +77,32 @@ class RPCDaemon(xmlrpc.XMLRPC):
             bug = Bug.get(id)
         except sqlobject.main.SQLObjectNotFound:
             return ["error", "Bug not found"]
-	return ["result", getattr(bug,field)]
+        try:
+            result = getattr(bug,field)
+        except AttributeError:
+            return ["error", "Field not found"]
+	return ["result", result]
 
     def cmd_show(self, args):
         if len(args) < 1:
-            return ["error", "Not enough arguments"]
+            return ["error", "Too few arguments"]
         if len(args) > 1:
             return ["error", "Too many arguments"]
-        if not sre.search(r'^\d+$',args[0]):
+        if not args[0].isdigit():
             return ["error", "The bug ID must be a number"]
-        id = int(args[0])
-        try:
-            bug = Bug.get(id)
-        except sqlobject.main.SQLObjectNotFound:
-            return ["error", "Bug not found"]
-	return ["result", self.serialize_bug(bug)]
+        return self.cmd_list_bugs(["id",args[0]])
 
     def cmd_list_bugs(self, args):
         #if len(args) > 0:
         #    return ["error", "Too many arguments"]
         #id = int(args[0])
+        field = args[0]
+        search = args[1]
         try:
-            buglist = list(Bug.select("lower(title) like '%%%s%%'" %
-                args[0].lower()))
+            buglist = list(Bug.select("lower(%s) like %s" %
+                # lower(title) like '%foo%'
+                (field, quote("%%%s%%" % args[0].lower() ))
+                ))
         except sqlobject.main.SQLObjectNotFound:
             return ["error", "No bugs found"]
 	return ["result", self.serialize_buglist(buglist)]
