@@ -40,6 +40,11 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         userDict2 = storage._getUserInteraction(self.cursor, userDict['id'])
         self.assertEqual(userDict, userDict2)
 
+        # Getting by nickname should also give the same result
+        # Note: 'name1' is Mark's nickname in the sampledata
+        userDict3 = storage._getUserInteraction(self.cursor, 'name1')
+        self.assertEqual(userDict, userDict3)
+
     def test_getUserMissing(self):
         # Getting a non-existent user should return {}
         storage = DatabaseUserDetailsStorage(None)
@@ -140,6 +145,11 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertNotEqual({}, userDict)
         self.assertEqual(displayname, userDict['displayname'])
         self.assertEqual(emailaddresses, userDict['emailaddresses'])
+
+        # Check that the nickname was correctly generated (and that getUser
+        # returns the same values that createUser returned)
+        userDict2 = storage._getUserInteraction(self.cursor, 'test1')
+        self.assertEqual(userDict, userDict2)
 
     # FIXME: behaviour of this case isn't defined yet
     ##def test_createUserFailure(self):
