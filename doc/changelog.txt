@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 20:49:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1423
+
+    Summary:
+      response to security.py code review
+    Revision:
+      launchpad--devel--0--patch-1423
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-408
+       response to security.py code review
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/security.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-408
+
+
 2005-03-11 19:17:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1422
 
     Summary:
