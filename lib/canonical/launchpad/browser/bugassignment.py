@@ -1,5 +1,7 @@
 from sqlobject.sqlbuilder import AND, IN
 
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import IPerson
 from canonical.launchpad.database import Person, \
      SourcePackageBugAssignment, ProductBugAssignment
@@ -84,6 +86,12 @@ class BugAssignmentsView(object):
     DEFAULT_STATUS = (
         int(dbschema.BugAssignmentStatus.NEW),
         int(dbschema.BugAssignmentStatus.ACCEPTED))
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.batch = Batch(self.search(), int(request.get('batch_start', 0)))
+        self.batchnav = BatchNavigator(self.batch, request)
 
     def search(self):
         """Find the bug assignments the user wants to see."""

@@ -152,6 +152,22 @@ table.rowNavigation th:hover {
     cursor: default;
 }
 
+/* batch navigation links */
+
+.batchnav tr:hover {
+    background-color: white;
+}
+
+.batchnav td:hover {
+    background-color: white;
+}
+
+.batchnav td {
+    text-align: center;
+    border-top: 1px solid #364970;
+    vertical-align: bottom;">
+}
+
 /* Bug status markers */
 
 .bug-confirmed {
