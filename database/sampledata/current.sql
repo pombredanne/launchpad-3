@@ -715,6 +715,10 @@ INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefir
 
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc) VALUES (2, '2004-09-24 20:58:04.572546', 'blackhole', 'Blackhole Trash folder', 'The Trash folder seems to have significant problems! At the moment, dragging an item to the trash results in immediate deletion. The item does not appear in the Trash, it is just deleted from my hard disk. There is no undo or ability to recover the deleted file. Help!', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 'Everything put into the folder "Trash" disappears!');
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc) VALUES (1, '2004-09-24 20:58:04.553583', NULL, 'Firefox does not support SVG', 'The SVG standard 1.0 is complete, and draft implementations for Firefox exist. One of these implementations needs to be integrated with the base install of Firefox. Ideally, the implementation needs to include support for the manipulation of SVG objects from JavaScript to enable interactive and dynamic SVG drawings.', 12, NULL, 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 0, '2004-09-24 00:00:00', 'Firefox needs to support embedded SVG images, now that the standard has been finalised.');
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, shortdesc) VALUES (3, '2004-10-05 00:00:00', NULL, 'Bug Title Test', 'y idu yifdxhfgffxShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
+Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo
+
+Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xoShirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo', 16, NULL, 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 0, '2004-10-05 00:00:00', 'Shirtpkdf jlkdsj;lkd lkjd hlkjfds gkfdsg kfd glkfd gifdsytoxdiytxoiufdytoidxf yxoigfyoigfxuyfxoiug yxoiuy oiugf hyoifxugyoixgfuy xoiuyxoiyxoifuy xo');
 
 
 
@@ -722,6 +726,7 @@ INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (1, 11, 1, 2)
 INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (2, 2, 1, 3);
 INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (3, 10, 1, 3);
 INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (4, 12, 1, 1);
+INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (5, 11, 2, 2);
 
 
 
@@ -730,12 +735,13 @@ INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (4, 12, 1, 1)
 
 INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackage, assignee) VALUES (1, 1, 1, 2, 4, 2, NULL, NULL);
 INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackage, assignee) VALUES (2, 2, 1, 2, 4, 2, NULL, 12);
+INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, priority, severity, binarypackage, assignee) VALUES (3, 3, 1, 1, 2, 3, NULL, NULL);
 
 
 
 INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (2, 2, 1, 1, 2, 2, NULL);
+INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (1, 1, 1, 1, 3, 2, 5);
 INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (5, 1, 4, 1, 1, 2, 1);
-INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (1, 1, 1, 1, 3, 2, NULL);
 
 
 
@@ -754,6 +760,7 @@ INSERT INTO bugsystemtype (id, name, title, description, homepage, "owner") VALU
 
 
 
+INSERT INTO bugsystem (id, bugsystemtype, name, title, shortdesc, baseurl, "owner", contactdetails) VALUES (2, 1, 'gnome-bugzilla', 'Gnome GBug GTracker', 'This is the Gnome Bugzilla bug tracking system. It covers all the applications in the Gnome Desktop and Gnome Fifth Toe.', 'http://bugzilla.gnome.org/bugzilla/', 16, 'Jeff Waugh, in his pants.');
 INSERT INTO bugsystem (id, bugsystemtype, name, title, shortdesc, baseurl, "owner", contactdetails) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker is the grand-daddy of bugzillas. This is where Bugzilla was conceived, born and raised. This bugzilla instance covers all Mozilla products such as Firefox, Thunderbird and Bugzilla itself.', 'http://bugzilla.mozilla.org/', 12, 'Carrier pigeon only');
 
 
@@ -761,6 +768,7 @@ INSERT INTO bugsystem (id, bugsystemtype, name, title, shortdesc, baseurl, "owne
 INSERT INTO bugwatch (id, bug, bugsystem, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12);
 INSERT INTO bugwatch (id, bug, bugsystem, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (2, 1, 1, '2000', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1);
 INSERT INTO bugwatch (id, bug, bugsystem, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (3, 1, 1, '123543', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1);
+INSERT INTO bugwatch (id, bug, bugsystem, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (4, 2, 2, '3224', '', '2004-10-05 00:00:00', '2004-10-05 00:00:00', '2004-10-05 00:00:00', 1);
 
 
 
@@ -1063,15 +1071,15 @@ SELECT pg_catalog.setval('posubscription_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('bug_id_seq', 2, true);
+SELECT pg_catalog.setval('bug_id_seq', 3, true);
 
 
 
-SELECT pg_catalog.setval('bugsubscription_id_seq', 4, true);
+SELECT pg_catalog.setval('bugsubscription_id_seq', 5, true);
 
 
 
-SELECT pg_catalog.setval('sourcepackagebugassignment_id_seq', 2, true);
+SELECT pg_catalog.setval('sourcepackagebugassignment_id_seq', 3, true);
 
 
 
@@ -1091,11 +1099,11 @@ SELECT pg_catalog.setval('bugsystemtype_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('bugsystem_id_seq', 1, true);
+SELECT pg_catalog.setval('bugsystem_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('bugwatch_id_seq', 3, true);
+SELECT pg_catalog.setval('bugwatch_id_seq', 4, true);
 
 
 
