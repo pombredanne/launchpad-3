@@ -1,1 +1,103 @@
-<include package="sqlos" />
+<!-- Include minimal parts of sqlos.  Not including the browser views or
+     non-essential factories.
+  -->
+<configure xmlns="http://namespaces.zope.org/zope" i18n_domain="sqlos"
+           package="sqlos">
+
+  <include file="permissions.zcml" />
+  <include package=".auth" />
+
+
+  <content class=".container.SQLObjectContainer">
+
+    <implements interface="zope.app.container.interfaces.IContentContainer" />
+
+    <require
+        permission="zope.View"
+        interface="zope.app.container.interfaces.IReadContainer"
+        />
+
+    <require
+        permission="zope.ManageContent"
+        interface="zope.app.container.interfaces.IWriteContainer"
+        />
+
+    <require
+        permission="zope.View"
+        attributes="select"
+        />
+
+  </content>
+
+  <class class=".adapter.MySQLAdapter">
+    <require
+        permission="zope.Public"
+        interface=".interfaces.IZopeSQLConnection"
+        />
+  </class>
+
+  <class class=".adapter.PostgresAdapter">
+    <require
+        permission="zope.Public"
+        interface=".interfaces.IZopeSQLConnection"
+        />
+  </class>
+
+  <class class=".adapter.SybaseAdapter">
+    <require
+        permission="zope.Public"
+        interface=".interfaces.IZopeSQLConnection"
+        />
+  </class>
+
+  <class class=".adapter.SQLiteAdapter">
+    <require
+        permission="zope.Public"
+        interface=".interfaces.IZopeSQLConnection"
+        />
+  </class>
+
+  <class class="sqlobject.cache.CacheSet">
+    <require
+        permission="zope.Public"
+        interface=".interfaces.ICacheSet"
+        />
+  </class>
+
+  <class class="sqlobject.main.SelectResults">
+    <require
+        permission="zope.Public"
+        interface=".interfaces.ISelectResults"
+        />
+  </class>
+
+  <class class="sqlobject.dbconnection.Iteration">
+    <require
+        permission="zope.Public"
+        interface=".interfaces.IIterator"
+        />
+  </class>
+
+  <!--
+    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+    For now, you need to change the factory here if you want
+    to use a diferent connection type.
+    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  -->
+
+  <adapter
+      provides=".interfaces.IZopeSQLConnection"
+      for="zope.app.rdb.interfaces.IZopeConnection"
+      permission="zope.Public"
+      factory=".adapter.PostgresAdapter"
+      />
+
+  <adapter
+      provides="zope.app.container.interfaces.INameChooser"
+      for="sqlos.interfaces.container.ISQLObjectContainer"
+      permission="zope.Public"
+      factory=".adapter.SQLObjectNameChooser"
+      />
+
+</configure>
+
