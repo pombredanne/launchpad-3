@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-14 22:01:20 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1314
+
+    Summary:
+      add evolution package import sample data
+    Revision:
+      launchpad--devel--0--patch-1314
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-97
+       update sample data
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-98
+       add evolution package import sample data
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-99
+       doh, update the sourcesource sequence number too
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-97
+     robert.collins@canonical.com/launchpad--devel--0--patch-98
+     robert.collins@canonical.com/launchpad--devel--0--patch-99
+
+
 2005-02-14 14:20:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1313
 
     Summary:
