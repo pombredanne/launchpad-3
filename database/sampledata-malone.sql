@@ -185,3 +185,36 @@ INSERT INTO BugMessage (bug, title, contents, rfc822msgid) VALUES (
     'Problem exists between chair and keyboard',
     'foo@example.com-332342--1231'
     );
+
+INSERT INTO BugExternalRef (bug, bugreftype, data, description, owner) VALUES (
+    (SELECT id FROM Bug WHERE name='blackhole'),
+    1,
+    45,
+    'Some junk has to go here because the field is NOT NULL',
+    (SELECT id FROM Person WHERE displayname='Sample Person')
+    );
+INSERT INTO BugExternalRef (bug, bugreftype, data, description, owner) VALUES (
+    (SELECT id FROM Bug WHERE name='blackhole'),
+    2,
+    'http://www.mozilla.org',
+    'The homepage of the project this bug is on, for no particular reason',
+    (SELECT id FROM Person WHERE displayname='Sample Person')
+    );
+
+INSERT INTO BugSystem (bugsystemtype, name, title, shortdesc, baseurl, owner,
+    contactdetails) VALUES (
+    (SELECT id FROM BugSystemType WHERE name='bugzilla'),
+    'mozilla.org',
+    'The Mozilla.org Bug Tracker',
+    'The Mozilla.org bug tracker',
+    'http://www.example.com/bugtracker',
+    (SELECT id FROM Person WHERE displayname='Sample Person'),
+    'Carrier pidgeon only'
+    );
+INSERT INTO BugWatch (bug, bugsystem, remotebug, remotestatus, owner) VALUES (
+    (SELECT id FROM Bug WHERE name='blackhole'),
+    (SELECT id FROM BugSystem WHERE name='mozilla.org'),
+    '42',
+    99, -- UNKNOWN
+    (SELECT id FROM Person WHERE displayname='Sample Person')
+    );

@@ -98,10 +98,10 @@
         schema="canonical.database.malone.IBugMessage"
         for=".interfaces.IBugMessagesView"
         label="Add a Comment"
-        fields="title contents personmsg distribution"
+        fields="title contents"
         content_factory=".browser.BugMessageFactory"
         arguments=""
-        keyword_arguments="title contents personmsg distribution"
+        keyword_arguments="title contents"
         permission="zope.View"
         template="templates/default-addform.pt"
         lp:url="malone/bugs/$Bug.id/messages/+new"
@@ -128,52 +128,74 @@
     template="templates/default-editform.pt"
     lp:url="non" /> -->
 
-  <addform
-    name="new-sa"
-    schema="canonical.database.malone.ISourcepackageBugAssignment"
-    for="canonical.database.malone.IBug"
-    label="Add Sourcepackage Bug Assignment"
-    fields="sourcepackage bugstatus priority severity"
-    content_factory=".browser.SourcepackageBugAssignmentFactory"
-    arguments=""
-    keyword_arguments="sourcepackage bugstatus priority severity"
-    permission="zope.View"
-    template="templates/default-addform.pt"
-    lp:url="none" />
+    <addform
+        name="new-sa"
+        schema="canonical.database.malone.ISourcepackageBugAssignment"
+        for="canonical.database.malone.IBug"
+        label="Add Sourcepackage Bug Assignment"
+        fields="sourcepackage bugstatus priority severity"
+        content_factory=".browser.SourcepackageBugAssignmentFactory"
+        arguments=""
+        keyword_arguments="sourcepackage bugstatus priority severity"
+        permission="zope.View"
+        template="templates/default-addform.pt"
+        lp:url="none" />
 
-  <addform
-    name="+new"
-    schema="canonical.database.malone.IBugExternalRef"
-    for=".browser.IBugExternalRefContainer"
-    label="Add External Reference"
-    fields="bugreftype data description"
-    content_factory=".browser.BugExternalRefFactory"
-    arguments=""
-    keyword_arguments="bugreftype data description"
-    permission="zope.View"
-    template="templates/default-addform.pt"
-    lp:url="malone/bugs/$Bugs.id/references/+new" />
+    <addform
+        name="+new"
+        schema="canonical.database.malone.IBugExternalRef"
+        for=".browser.IBugExternalRefContainer"
+        label="Add External Reference"
+        fields="bugreftype data description"
+        content_factory=".browser.BugExternalRefFactory"
+        arguments=""
+        keyword_arguments="bugreftype data description"
+        permission="zope.View"
+        template="templates/default-addform.pt"
+        lp:url="malone/bugs/$Bugs.id/references/+new" />
 
-  <editform
-    name="+edit"
-    schema="canonical.database.malone.IBugExternalRef"
-    label="Change Bug External Reference"
-    permission="zope.View"
-    template="templates/default-editform.pt"
-    fields="bugreftype data description"
-    lp:url="malone/bugs/$Bug.id/references/$Reference.id/+edit" />
+    <editform
+        name="+edit"
+        schema="canonical.database.malone.IBugExternalRef"
+        label="Change Bug External Reference"
+        permission="zope.View"
+        template="templates/default-editform.pt"
+        fields="bugreftype data description"
+        lp:url="malone/bugs/$Bug.id/references/$Reference.id/+edit" />
 
-  <addform
-    name="+new"
-    schema="canonical.database.malone.IBugSubscription"
-    for=".browser.IBugSubscriptionContainer"
-    label="Add Person"
-    fields="subscription person"
-    content_factory=".browser.BugSubscriptionFactory"
-    arguments=""
-    keyword_arguments="subscription person"
-    permission="zope.View"
-    template="templates/default-addform.pt"
-    lp:url="malone/bugs/$Bug.id/person/+new" />
+    <addform
+        name="+new"
+        schema="canonical.database.malone.IBugWatch"
+        for=".browser.IBugWatchContainer"
+        label="Add Watch"
+        fields="bugsystem remotebug"
+        content_factory=".browser.BugWatchFactory"
+        arguments=""
+        keyword_arguments="bugsystem remotebug"
+        permission="zope.View"
+        template="templates/default-addform.pt"
+        lp:url="malone/bugs/$Bugs.id/watches/+new" />
+
+    <editform
+        name="+edit"
+        schema="canonical.database.malone.IBugWatch"
+        label="Change Bug Watch"
+        permission="zope.View"
+        template="templates/default-editform.pt"
+        fields="bugsystem remotebug"
+        lp:url="malone/bugs/$Bug.id/watches/$Watch.id/+edit" />
+
+    <addform
+        name="+new"
+        schema="canonical.database.malone.IBugSubscription"
+        for=".browser.IBugSubscriptionContainer"
+        label="Add Person"
+        fields="subscription person"
+        content_factory=".browser.BugSubscriptionFactory"
+        arguments=""
+        keyword_arguments="subscription person"
+        permission="zope.View"
+        template="templates/default-addform.pt"
+        lp:url="malone/bugs/$Bug.id/person/+new" />
 
 </configure>

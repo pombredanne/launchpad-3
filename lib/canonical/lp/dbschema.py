@@ -1111,6 +1111,43 @@ class BugAssignmentStatus(DBSchema):
         This bug has been closed by the maintainer.
         ''')
 
+""" stub -- Hmm... doesn't look like we need this. Nuke it later when I'm sure
+
+class RemoteBugStatus(DBSchema):
+    '''Bug Assignment Status
+
+    The status of a bug in a remote bug tracker. We map known statuses
+    to one of these values, and use UNKNOWN if we are unable to map
+    the remote status.
+    '''
+
+    NEW = Item(1, '''
+        New
+
+        This is a new bug and has not yet been accepted by the maintainer
+        of this product or source package.
+        ''')
+
+    OPEN = Item(2, '''
+        Open
+
+        This bug has been reviewed and accepted by the maintainer, and
+        is still open.
+        ''')
+
+    CLOSED = Item(3, '''
+        Closed
+
+        This bug has been closed by the maintainer.
+        ''')
+
+    UNKNOWN = Item(99, '''
+        Unknown
+
+        The remote bug status cannot be determined.
+        ''')
+"""
+
 
 class BugPriority(DBSchema):
     """Bug Priority

@@ -52,6 +52,17 @@ class IBugExternalRefContainer(Interface):
     def __iter__():
         """Iterate through BugExternalRefs for a given bug."""
 
+class IBugWatchContainer(Interface):
+    """A container for IBugWatch objects."""
+
+    bug = Int(title=_("Bug id"), readonly=True)
+
+    def __getitem__(key):
+        """Get a BugWatch"""
+
+    def __iter__():
+        """Iterate through BugWatches for a given bug."""
+
 class IProjectContainer(Interface):
     """A container for IProject objects."""
 

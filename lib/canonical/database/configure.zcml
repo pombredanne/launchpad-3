@@ -20,6 +20,18 @@
             set_schema="canonical.database.malone.IBugExternalRef" />
     </content>
 
+    <content class="canonical.database.malone.BugSystem">
+        <allow interface="canonical.database.malone.IBugSystem" />
+        <require permission="zope.View"
+            set_schema="canonical.database.malone.IBugSystem" />
+    </content>
+
+    <content class="canonical.database.malone.BugWatch">
+        <allow interface="canonical.database.malone.IBugWatch" />
+        <require permission="zope.View"
+            set_schema="canonical.database.malone.IBugWatch" />
+    </content>
+
     <content class="canonical.database.malone.BugMessage">
         <allow interface="canonical.database.malone.IBugMessage" />
     </content>

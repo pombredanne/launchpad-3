@@ -42,6 +42,17 @@
       factory=".browser.BugExternalRefContainer"
       provides=".interfaces.IBugExternalRefContainer" />
 
+  <content class=".browser.BugWatchContainer">
+      <allow interface=".interfaces.IBugWatchContainer" />
+      <allow 
+          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+  </content>
+
+  <utility
+      factory=".browser.BugWatchContainer"
+      provides=".interfaces.IBugWatchContainer" />
+
+
   <content class=".browser.BugSubscriptionContainer">
     <allow interface=".interfaces.IBugSubscriptionContainer" />
   </content>

@@ -6,7 +6,9 @@ from datetime import datetime
 from email.Utils import make_msgid
 from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
+from canonical.database.malone import BugWatch
 from canonical.database.doap import Product, Sourcepackage, Binarypackage
 from canonical.database import sqlbase
 
@@ -15,14 +17,12 @@ _ = MessageIDFactory('malone')
 
 from canonical.lp import dbschema
 
-# TODO: These interfaces should probably be moved into this file, since there
-# is only ever one class implementing them
 from interfaces import \
         IBugMessagesView, IBugExternalRefsView, \
         IMaloneBug, IMaloneBugAttachment, \
         IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
         IBugSubscriptionContainer, IProjectContainer, \
-        ISourcepackageContainer
+        ISourcepackageContainer, IBugWatchContainer
 
 # TODO: Anything that relies on these imports should not be in this file!
 from canonical.database.malone import \
@@ -38,6 +38,8 @@ def traverseBug(bug, request, name):
         return BugExternalRefContainer(bug=bug.id)
     elif name == 'people':
         return BugSubscriptionContainer(bug=bug.id)
+    elif name == 'watches':
+        return BugWatchContainer(bug=bug.id)
     else:
        raise KeyError, name
 
@@ -131,6 +133,10 @@ class MaloneBugAddForm(object):
         for k,v in kw.items():
             setattr(self, k, v)
 
+# TODO: It should be possible to specify all this via ZCML and not require
+# the MaloneBugView class with its ViewPageTemplateFile attributes
+class MaloneBugView(object):
+    watchesPortlet = ViewPageTemplateFile('templates/bug-watches-portlet.pt')
 
 class MaloneBugAttachment(BugAttachment, BugContainerBase):
     implements(IMaloneBugAttachment)
@@ -336,6 +342,35 @@ def BugExternalRefFactory(context, **kw):
     owner = 1 # Will be id of logged in user
     datecreated = datetime.utcnow()
     return BugExternalRef(bug=bug, owner=owner, datecreated=datecreated, **kw)
+
+class BugWatchContainer(BugContainerBase):
+    """A container for BugWatch"""
+
+    implements(IBugWatchContainer)
+    table = BugWatch
+
+    def __init__(self, bug=None):
+        self.bug = bug
+
+    def __getitem__(self, id):
+       try:
+            return self.table.select(self.table.q.id == id)[0]
+       except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select(self.table.q.bug == self.bug):
+            yield row
+
+def BugWatchFactory(context, **kw):
+    bug = context.context.bug
+    owner = 1 # XXX: Will be id of logged in user
+    now = datetime.utcnow()
+    return BugWatch(
+            bug=bug, owner=owner, datecreated=now, lastchanged=now,
+            lastchecked=now, **kw
+            )
 
 
 class BugSubscriptionContainer(BugContainerBase):

@@ -30,6 +30,7 @@ BugStatusVocabulary = dbschema.vocabulary(dbschema.BugAssignmentStatus)
 BugPriorityVocabulary = dbschema.vocabulary(dbschema.BugPriority)
 BugSeverityVocabulary = dbschema.vocabulary(dbschema.BugSeverity)
 BugRefVocabulary = dbschema.vocabulary(dbschema.BugExternalReferenceType)
+#RemoteBugStatusVocabulary = dbschema.vocabulary(dbschema.RemoteBugStatus)
 
 def is_allowed_filename(value):
     if '/' in value: # Path seperator
@@ -104,6 +105,7 @@ class IBug(Interface):
     sourceassignment = Attribute(
             'SQLObject.Multijoin of ISourcepackageBugAssignment'
             )
+    watches = Attribute('SQLObject.Multijoin of IBugWatch')
 
 class Bug(SQLBase):
     """A bug."""
@@ -135,6 +137,7 @@ class Bug(SQLBase):
     productassignment = MultipleJoin('ProductBugAssignment', joinColumn='bug')
     sourceassignment = MultipleJoin('SourcepackageBugAssignment',
                                     joinColumn='bug')
+    watches = MultipleJoin('BugWatch', joinColumn='bug')
 
     def _set_title(self, value):
         # Record changes of title in activity log
@@ -487,18 +490,64 @@ class IBugSystem(Interface):
     baseurl = TextLine(title=_('Base URL'))
     owner = Int(title=_('Owner'))
 
+class BugSystem(SQLBase):
+    _table = 'BugSystem'
+    _columns = [
+        ForeignKey(name='bugsystemtype', dbName='bugsystemtype',
+                foreignKey='BugSystemType', notNull=True),
+        StringCol('name', notNull=True, unique=True),
+        StringCol('title', notNull=True),
+        StringCol('shortdesc', notNull=True),
+        StringCol('baseurl', notNull=True),
+        ForeignKey(name='owner', dbName='owner', foreignKey='Person',
+                notNull=True),
+        StringCol('contactdetails', notNull=True),
+        ]
+
 class IBugWatch(Interface):
     """A bug on a remote system."""
 
-    id = Int(title=_('ID'))
-    bug = Int(title=_('Bug ID'))
-    bugsystem = Int(title=_('Bug System'))
-    remotebug = Int(title=_('Remote Bug'))
-    remotestatus = Int(title=_('Remote Status'))
-    lastchanged = Datetime(title=_('Last Changed'))
-    lastchecked = Datetime(title=_('Last Checked'))
-    datecreated = Datetime(title=_('Date Created'))
-    owner = Int(title=_('Owner'))
+    id = Int(title=_('ID'), required=True, readonly=True)
+    bug = Int(title=_('Bug ID'), required=True, readonly=True)
+    bugsystem = Choice(title=_('Bug System'), required=True,
+            vocabulary='BugSystem')
+    remotebug = TextLine(title=_('Remote Bug'), required=True, readonly=False)
+    # TODO: default should be NULL, but column is NOT NULL
+    remotestatus = TextLine(
+            title=_('Remote Status'), required=True, readonly=True, default=u''
+            )
+    #remotestatus = Choice(
+    #        title=_('Remote Status'), vocabulary=RemoteBugStatusVocabulary,
+    #        required=True, default=int(dbschema.RemoteBugStatus.UNKNOWN))
+    lastchanged = Datetime(
+            title=_('Last Changed'), required=True, readonly=True
+            )
+    lastchecked = Datetime(
+            title=_('Last Checked'), required=True, readonly=True
+            )
+    datecreated = Datetime(
+            title=_('Date Created'), required=True, readonly=True
+            )
+    owner = Int(
+            title=_('Owner'), required=True, readonly=True
+            )
+
+class BugWatch(SQLBase):
+    implements(IBugWatch)
+    _table = 'BugWatch'
+    _columns = [
+        ForeignKey(name='bug', dbName='bug', foreignKey='Bug', notNull=True),
+        ForeignKey(name='bugsystem', dbName='bugsystem',
+                foreignKey='BugSystem', notNull=True),
+        StringCol('remotebug', notNull=True),
+        # TODO: Default should be NULL, but column is NOT NULL
+        StringCol('remotestatus', notNull=True, default=''),
+        DateTimeCol('lastchanged', notNull=True),
+        DateTimeCol('lastchecked', notNull=True),
+        DateTimeCol('datecreated', notNull=True),
+        ForeignKey(name='owner', dbName='owner', foreignKey='Person',
+                notNull=True),
+        ]
 
 class IBugProductRelationship(Interface):
     """A relationship between a Product and a Bug."""

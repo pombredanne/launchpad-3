@@ -7,11 +7,13 @@ from zope.schema.interfaces import IVocabulary, IVocabularyTokenized
 from zope.schema.vocabulary import SimpleTerm
 
 from canonical.database.doap import Sourcepackage, Product, Binarypackage
+from canonical.database.malone import BugSystem
 
 __metaclass__ = type
 
 class TitledTableVocabulary(object):
     implements(IVocabulary, IVocabularyTokenized)
+    _orderBy = 'name'
     def __init__(self, context):
         self.context = context
 
@@ -57,21 +59,22 @@ class TitledTableVocabulary(object):
 
 class SourcepackageVocabulary(TitledTableVocabulary):
     _table = Sourcepackage
-    _orderBy = 'name'
 
 class ProductVocabulary(TitledTableVocabulary):
     _table = Product
-    _orderBy = 'name'
 
 # We cannot refer to a Binarypackage unambiguously by a name, as
 # we have no assurace that a generated name using $BinarypackageName.name
 # and $Binarypackage.version will be unique
 class BinarypackageVocabulary(TitledTableVocabulary):
-    _table  = Binarypackage
+    _table = Binarypackage
     _orderBy = 'id'
     def _toTerm(self, pkg):
         return SimpleTerm(pkg.id, pkg.id, pkg.title)
 
     def getTermByToken(self, token):
         return self.getTerm(token)
+
+class BugSystemVocabulary(TitledTableVocabulary):
+    _table = BugSystem
 

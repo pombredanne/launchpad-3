@@ -80,6 +80,10 @@
       name="index" />
 
   <browser:defaultView
+      for="canonical.malone.interfaces.IBugWatchContainer"
+      name="index" />
+
+  <browser:defaultView
       for="canonical.malone.interfaces.IBugSubscriptionContainer"
       name="index" />
 
@@ -91,20 +95,9 @@
       for=".interfaces.IMaloneBugAttachment"
       function=".browser.traverseBugAttachment" />
 
-  <vocabulary
-      name="Product"
-      factory=".vocabulary.ProductVocabulary" />
-
-  <vocabulary
-      name="Sourcepackage"
-      factory=".vocabulary.SourcepackageVocabulary" />
-
-  <vocabulary
-      name="Binarypackage"
-      factory=".vocabulary.BinarypackageVocabulary" />
-
   <include file="pages.zcml" />
   <include file="forms.zcml" />
   <include file="resources.zcml" />
+  <include file="vocabulary.zcml" />
 
 </configure>
