@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-15 19:44:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1439
+
+    Summary:
+      turn back on chunkydiff, which i accidentally turned off...
+    Revision:
+      launchpad--devel--0--patch-1439
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-03-15 16:35:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1438
 
     Summary:
