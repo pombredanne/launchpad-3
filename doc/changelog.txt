@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-18 15:52:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1212
+
+    Summary:
+      Enable POTranslation.translation to store huge values by indexing on a hash instead of the contents
+    Revision:
+      launchpad--devel--0--patch-1212
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-84
+       merge rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-85
+       Enable POTranslation.translation to store huge values by indexing on a hash instead of the contents
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-26-0.sql.id
+     database/schema/patch-6-26-0.sql
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-84
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-85
+
+
 2005-01-18 12:56:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1211
 
     Summary:

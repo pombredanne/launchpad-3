@@ -1441,6 +1441,25 @@ class POTranslation(SQLBase):
 
     _table = 'POTranslation'
 
+    # alternateID=False because we have to select by hash in order to do
+    # index lookups.
     translation = StringCol(dbName='translation', notNull=True, unique=True,
-        alternateID=True)
+        alternateID=False)
+
+    def byTranslation(cls, key):
+        '''Return a POTranslation object for the given translation'''
+
+        # We can't search directly on msgid, because this database column
+        # contains values too large to index. Instead we search on its
+        # hash, which *is* indexed
+        r = POMsgID.select('sha1(translation) = sha1(%s)' % quote(key))
+        assert len(r) in (0,1), 'Database constraint broken'
+        if len(r) == 1:
+            return r[0]
+        else:
+            # To be 100% compatible with the alternateID behaviour, we should
+            # raise SQLObjectNotFound instead of KeyError
+            raise SQLObjectNotFound(key)
+    byTranslation = classmethod(byTranslation)
+
 
