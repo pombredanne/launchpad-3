@@ -16,12 +16,14 @@ default: all
 test: create 
 	@ echo "* Loading base database schema"
 	@ psql -d ${TEST_DBNAME} -f launchpad-6-00-0.sql | grep : | cat
+	@ echo "* Installing tsearch2 into ts2 schema"
+	@ env LP_DBNAME=${TEST_DBNAME} python fti.py --setup-only
 	@ echo "* Patching the database schema"
-	@ ls -1 patch*.sql | sort | xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
-	@ echo "* Loading language data"
-	@ psql -d ${TEST_DBNAME} -f ../languages.sql | grep : | cat
+	@ ls -1 patch*.sql |sort| xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
 	@ echo "* Setting up full text indexes"
 	@ env LP_DBNAME=${TEST_DBNAME} python fti.py
+	@ echo "* Loading language data"
+	@ psql -d ${TEST_DBNAME} -f ../languages.sql | grep : | cat
 	@ echo "* Loading sample data"
 	@ psql -d ${TEST_DBNAME} -f ../sampledata/current.sql | grep : | cat
 	@ echo "* Setting up full text indexes"

@@ -85,7 +85,7 @@ COMMENT ON COLUMN OSFileInPackage.createdoninstall IS 'Whether or not the file i
 -- Distribution
 
 COMMENT ON TABLE Distribution IS 'Distribution: A soyuz distribution. A distribution is a collection of DistroReleases. Distributions often group together policy and may be referred to by a name such as "Ubuntu" or "Debian"';
-COMMENT ON COLUMN Distribution.name IS 'The name of the distribution. Usually lower-case. E.g. "ubuntu" or "debian"';
+COMMENT ON COLUMN Distribution.name IS 'The unique name of the distribution as a short lowercase name suitable for use in a URL.';
 COMMENT ON COLUMN Distribution.title IS 'The title of the distribution. More a "display name" as it were. E.g. "Ubuntu" or "Debian GNU/Linux"';
 COMMENT ON COLUMN Distribution.description IS 'A description of the distribution. More detailed than the title, this column may also contain information about the project this distribution is run by.';
 COMMENT ON COLUMN Distribution.domainname IS 'The domain name of the distribution. This may be used both for linking to the distribution and for context-related stuff.';
@@ -95,7 +95,7 @@ COMMENT ON COLUMN Distribution.owner IS 'The person in launchpad who is in ultim
 
 COMMENT ON TABLE DistroRelease IS 'DistroRelease: A soyuz distribution release. A DistroRelease is a given version of a distribution. E.g. "Warty" "Hoary" "Sarge" etc.';
 COMMENT ON COLUMN DistroRelease.distribution IS 'The distribution which contains this distrorelease.';
-COMMENT ON COLUMN DistroRelease.name IS 'The name of the distrorelease. This is usually a short name in lower case and would be used in sources.list configuration. E.g. "warty" "sarge" "sid"';
+COMMENT ON COLUMN DistroRelease.name IS 'The unique name of the distrorelease. This is a short name in lower case and would be used in sources.list configuration and in generated URLs. E.g. "warty" "sarge" "sid"';
 COMMENT ON COLUMN DistroRelease.title IS 'The display-name title of the distrorelease E.g. "Warty Warthog"';
 COMMENT ON COLUMN DistroRelease.description IS 'The long detailed description of the release. This may describe the focus of the release or other related information.';
 COMMENT ON COLUMN DistroRelease.version IS 'The version of the release. E.g. warty would be "4.10" and hoary would be "5.4"';
