@@ -100,13 +100,9 @@ def quote(x):
 
     >>> sqlrepr(datetime(2003, 12, 4, 13, 45, 50), 'postgres')
     "'2003-12-04'"
-    >>> sqlrepr(date(2003, 12, 4), 'postgres')
-    "'2003-12-04'"
-    >>> sqlrepr(time(13, 45, 50), 'postgres')
-    "'13:45:-1'"
 
     """
-    if isinstance(x, (datetime, date, time)):
+    if isinstance(x, datetime):
         return "'%s'" % x
     return sqlrepr(x, 'postgres')
 
