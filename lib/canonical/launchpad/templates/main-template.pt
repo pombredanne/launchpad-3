@@ -102,15 +102,6 @@
               <a href="/bazaar">Bazaar</a>
             </li>
 
-            <li class="selected"
-                tal:condition="python:'/codeofconduct' in path_info">
-              <a href="/codeofconduct">CoC</a>
-            </li>
-            <li class="plain"
-                tal:condition="python:'/codeofconduct' not in path_info">
-              <a href="/codeofconduct">Coc</a>
-            </li>
-
           </ul>
 
       <div id="portal-personaltools"

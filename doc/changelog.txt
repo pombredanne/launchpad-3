@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-22 12:59:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1338
+
+    Summary:
+      Reverting misapplied changes on main-template.pt
+    Revision:
+      launchpad--devel--0--patch-1338
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-511
+       removing weird tab for CoC from main-template.pt
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/main-template.pt
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-511
+
+
 2005-02-22 03:59:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1337
 
     Summary:
