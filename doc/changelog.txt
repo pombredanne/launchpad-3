@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-17 15:23:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1450
+
+    Summary:
+      Dogfood was looping on some emails with no 'To' address. Stick in some asserts to ensure this doesn't happen.
+    Revision:
+      launchpad--devel--0--patch-1450
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-205
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-206
+       Dogfood was looping on some emails with no 'To' address. Stick in some asserts to ensure this doesn't happen.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/mail/sendmail.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-205
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-206
+
+
 2005-03-17 11:55:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1449
 
     Summary:

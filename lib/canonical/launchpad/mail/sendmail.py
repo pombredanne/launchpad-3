@@ -65,9 +65,10 @@ def sendmail(message):
  
     """
     assert isinstance(message, Message), 'Not an email.Message.Message'
-    assert 'to' in message, 'No To: header'
-    assert 'from' in message, 'No From: header'
-    assert 'subject' in message, 'No Subject: header'
+    assert 'to' in message and bool(message['to']), 'No To: header'
+    assert 'from' in message and bool(message['from']), 'No From: header'
+    assert 'subject' in message and bool(message['subject']), \
+            'No Subject: header'
 
     from_addr = message['from']
     to_addrs = message['to'].split(',')
