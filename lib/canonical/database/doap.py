@@ -184,6 +184,8 @@ class IBinarypackage(Interface):
     copyright = Text(required=False)
     licence = Text(required=False)
 
+    title = TextLine(required=True, readonly=True)
+
 class Binarypackage(SQLBase):
     implements(IBinarypackage)
     _columns = [
@@ -222,6 +224,10 @@ class Binarypackage(SQLBase):
         StringCol('copyright'),
         StringCol('licence'),
         ]
+    
+    def _title(self):
+        return '%s-%s' % (self.binarypackagename.name, self.version)
+    title = property(_title, None)
 
 class IBinarypackageName(Interface):
     id = Int(title=_('ID'), required=True)

@@ -111,12 +111,18 @@ class MaloneBug(Bug):
 class IMaloneBugAddForm(IMaloneBug):
     ''' Information we need to create a bug '''
     #email = TextLine(title=_("Your Email Address"))
-    product = Int(title=_("Product"), required=False)
+    product = Choice(
+            title=_("Product"), required=False,
+            vocabulary="Product",
+            )
     sourcepackage = Choice(
             title=_("Source Package"), required=False,
-            vocabulary='Sourcepackage',
+            vocabulary="Sourcepackage",
             )
-    binarypackage = Int(title=_("Binary Package"), required=False)
+    binarypackage = Choice(
+            title=_("Binary Package"), required=False,
+            vocabulary="Binarypackage"
+            )
 
 
 class MaloneBugAddForm(object):

@@ -92,8 +92,16 @@
       function=".browser.traverseBugAttachment" />
 
   <vocabulary
+      name="Product"
+      factory=".vocabulary.ProductVocabulary" />
+
+  <vocabulary
       name="Sourcepackage"
       factory=".vocabulary.SourcepackageVocabulary" />
+
+  <vocabulary
+      name="Binarypackage"
+      factory=".vocabulary.BinarypackageVocabulary" />
 
   <include file="pages.zcml" />
   <include file="forms.zcml" />
