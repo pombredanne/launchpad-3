@@ -5,7 +5,7 @@
 import canonical.lp, time
 import sqlos.connection
 
-from canonical.launchpad.database import ProjectSet
+from canonical.launchpad.database import ProductSet
 
 class ImportDaemon:
     def setUp(self):
@@ -18,17 +18,15 @@ class ImportDaemon:
         # We create the connection every time to prevent a problem with cached
         # data that don't let the daemon to see changes done from launchpad.
         self.setUp()
-        projectSet = ProjectSet()
-        for project in projectSet:
-            project.displayname
-            for product in project.products():
-                for template in product.poTemplatesToImport():
-                    # We have a template with raw data to be imported.
-                    yield template
-                for template in product.potemplates:
-                    for pofile in template.poFilesToImport():
-                        # We have a po with raw data to be imported.
-                        yield pofile
+        productSet = ProductSet()
+        for product in productSet:
+            for template in product.poTemplatesToImport():
+                # We have a template with raw data to be imported.
+                yield template
+            for template in product.potemplates:
+                for pofile in template.poFilesToImport():
+                    # We have a po with raw data to be imported.
+                    yield pofile
 
     def run(self):
         while True:

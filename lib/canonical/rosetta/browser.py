@@ -1000,33 +1000,36 @@ class ViewImportQueue:
         queue = []
         
         id = 0
-        for project in getUtility(IProjectSet):
-            for product in project.products():
-                for template in product.potemplates:
-                    if template.rawimportstatus == RosettaImportStatus.PENDING:
-                        retdict = {
-                            'id': 'pot_%d' % template.id,
-                            'project': project.displayname,
-                            'product': product.displayname,
-                            'template': template.name,
-                            'language': '-',
-                            'importer': template.rawimporter.displayname,
-                            'importdate' : template.daterawimport,
-                        }
-                        queue.append(retdict)
-                        id += 1
-                    for pofile in template.poFilesToImport():
-                        retdict = {
-                            'id': 'po_%d' % pofile.id,
-                            'project': project.displayname,
-                            'product': product.displayname,
-                            'template': template.name,
-                            'language': pofile.language.englishname,
-                            'importer': pofile.rawimporter.displayname,
-                            'importdate' : pofile.daterawimport,
-                        }
-                        queue.append(retdict)
-                        id += 1
+        for product in getUtility(IProductSet):
+            if product.project is not None:
+                project_name = product.project.displayname
+            else:
+                project_name = '-'
+            for template in product.potemplates:
+                if template.rawimportstatus == RosettaImportStatus.PENDING:
+                    retdict = {
+                        'id': 'pot_%d' % template.id,
+                        'project': project_name,
+                        'product': product.displayname,
+                        'template': template.name,
+                        'language': '-',
+                        'importer': template.rawimporter.displayname,
+                        'importdate' : template.daterawimport,
+                    }
+                    queue.append(retdict)
+                    id += 1
+                for pofile in template.poFilesToImport():
+                    retdict = {
+                        'id': 'po_%d' % pofile.id,
+                        'project': project_name,
+                        'product': product.displayname,
+                        'template': template.name,
+                        'language': pofile.language.englishname,
+                        'importer': pofile.rawimporter.displayname,
+                        'importdate' : pofile.daterawimport,
+                    }
+                    queue.append(retdict)
+                    id += 1
         return queue
 
     def submit(self):
