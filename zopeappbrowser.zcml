@@ -9,6 +9,13 @@
     -->
   <include package="zope.app.traversing.browser" />
 
+  <!-- Skins -->
+
+  <include package="zope.app.basicskin" />
+  <include package="zope.app.rotterdam" />
+
+  <browser:defaultSkin name="Rotterdam" />
+
   <!--  Don't need this stuff.
   <include package="zope.app.container.browser" />
   <include package="zope.app.registration.browser" />
