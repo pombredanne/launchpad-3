@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 20:55:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1498
+
+    Summary:
+      fix https://launchpad.ubuntu.com/malone/bugs/261
+    Revision:
+      launchpad--devel--0--patch-1498
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-450
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-451
+       fix https://launchpad.ubuntu.com/malone/bugs/261
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/bugtask-management/.arch-ids/xx-edit-bug-task-severity.txt.id
+     lib/canonical/launchpad/pagetests/bugtask-management/xx-edit-bug-task-severity.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/mailnotification.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-450
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-451
+
+
 2005-03-24 20:32:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1497
 
     Summary:

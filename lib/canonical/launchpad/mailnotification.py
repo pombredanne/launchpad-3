@@ -152,7 +152,7 @@ def notify_bugtask_edited(modified_bugtask, event):
         fields = (
             ("status", lambda v: v.title),
             ("priority", lambda v: v.title),
-            ("severity", lambda v: BugSeverity.items[v].title),
+            ("severity", lambda v: v.title),
             ("binarypackagename", lambda v: (v and v.name) or "(none)"),
             ("assignee", lambda v: (v and v.displayname) or "(not assigned)")))
 
