@@ -17,7 +17,9 @@ from canonical.launchpad.interfaces import IMessage, IMessageSet, \
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
 
-
+# XXX: Brad Bollenbach, 2005-03-31: Circular import.
+# See BugMessageFactory down below.
+# from canonical.launchpad.database import BugMessage
 
 class Message(SQLBase):
     """A message. This is an RFC822-style message, typically it would be
@@ -60,10 +62,22 @@ class MessageSet:
         return Message.selectBy(rfc822msgid=rfc822msgid)[0]
 
 
-def BugMessageFactory(context, **kw):
+def BugMessageFactory(addview=None, title=None, contents=None):
+    """Create a BugMessage.
+
+    This factory depends on ILaunchBag.user to figure out the message
+    owner and the bug on which to add the message. addview is not used
+    inside this factory.
+
+    Returns an IBugMessage.
+    """
     from canonical.launchpad.database import BugMessage
+
     msg = Message(
-        parent=None, ownerID = getUtility(ILaunchBag).user.id,
-        rfc822msgid=make_msgid('malone'), **kw)
-    bmsg = BugMessage(bug = getUtility(ILaunchBag).bug.id, message = msg.id)
+        parent = None, ownerID = getUtility(ILaunchBag).user.id,
+        rfc822msgid = make_msgid('malone'), contents = contents,
+        title = title)
+    bmsg = BugMessage(
+        bug = getUtility(ILaunchBag).bug.id, message = msg.id)
+
     return bmsg

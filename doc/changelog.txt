@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-31 22:13:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1535
+
+    Summary:
+      refactor BugMessageFactory API to usefully describe how to use it, primarily by removing **kw mystery API and improving the docstring. add XXX about circular import.
+    Revision:
+      launchpad--devel--0--patch-1535
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-475
+       refactor BugMessageFactory API to usefully describe how to use it, primarily by removing **kw mystery API and improving the docstring. add XXX about circular import.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/message.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-475
+
+
 2005-03-31 21:58:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1534
 
     Summary:
