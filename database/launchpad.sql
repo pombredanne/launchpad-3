@@ -4,8 +4,9 @@
 
 /*
 
+  CONVENTIONS
+        - all dates and timestamps MUST be in UTC
   TODO
-
         - re-evalutate some of the "text" field types, they might need
 	  to be "bytea"
 	  unless we can guarantee utf-8
@@ -19,6 +20,9 @@
 
 
   v0.99-dev:
+        - add BugAttachmentContent.id for Stuart Bishop
+        - make ProductRelease.version NOT NULL and add a .changelog
+        - don't require homepageurl for Project or Product
         - add ChangesetFileHash.id for Robert Weir
         - rename UpstreamRelease to ProductRelease
   v0.98:
@@ -27,7 +31,7 @@
 	- BugInfestation: dateverified and verifiedby need to be NULL
 	  if its not verified
 	- set a lot of datecreated and lastverified etc fields to
-	  DEFAULT CURRENT_TIMESTAMP
+	  DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 	- use Andrew Bennett's way of putting comments inside the table
 	  def, above the
 	  line being commented, it makes lines shorter.
@@ -624,7 +628,7 @@ CREATE TABLE BranchLabel (
 */
 CREATE TABLE Manifest (
   id               serial PRIMARY KEY,
-  datecreated      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   owner            integer NOT NULL REFERENCES Person
 );
 
@@ -679,8 +683,8 @@ CREATE TABLE Project (
     name         text NOT NULL UNIQUE,
     title        text NOT NULL,
     description  text NOT NULL,
-    datecreated  timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    homepageurl  text NOT NULL
+    datecreated  timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    homepageurl  text
     );
 
 
@@ -714,8 +718,8 @@ CREATE TABLE Product (
   name          text NOT NULL,
   title         text NOT NULL,
   description   text NOT NULL,
-  datecreated   timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  homepageurl   text NOT NULL,
+  datecreated   timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  homepageurl   text,
   manifest      integer REFERENCES Manifest,
   UNIQUE ( project, name ),
   -- ( id, project ) must be unique so it can be a foreign key
@@ -745,11 +749,12 @@ CREATE TABLE ProductRelease (
   product          integer NOT NULL REFERENCES Product,
   datereleased     timestamp NOT NULL,
   -- the version without anything else, "1.3.29"
-  version          text,
+  version          text NOT NULL,
   -- the GSV Name "The Warty Web Release"
   title            text,
   description      text,
-  owner            integer REFERENCES Person,
+  changelog        text,
+  owner            integer NOT NULL REFERENCES Person,
   UNIQUE ( product, version )
 );
 
@@ -1026,7 +1031,7 @@ CREATE TABLE SourcepackageRelease (
   creator                integer NOT NULL REFERENCES Person,
   -- "2.0.48-3"
   version                text NOT NULL,
-  dateuploaded           timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  dateuploaded           timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   -- see Source Package Urgency schema
   urgency                integer NOT NULL,
   dscsigningkey          integer REFERENCES GPGKey,
@@ -1371,7 +1376,7 @@ CREATE TABLE POTemplate (
   description           text NOT NULL,
   copyright             text NOT NULL,
   license               integer NOT NULL REFERENCES License,
-  datecreated           timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated           timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   path                  text NOT NULL,
   iscurrent             boolean NOT NULL,
   -- the total number of POMsgSet's associated with this POTemplate
@@ -1499,8 +1504,8 @@ CREATE TABLE RosettaPOTranslationSighting (
   language             integer NOT NULL REFERENCES Language,
   potranslation        integer NOT NULL REFERENCES POTranslation,
   license              integer NOT NULL REFERENCES License,
-  dateprovided         timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  datetouched          timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  dateprovided         timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  datetouched          timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   pluralform           integer,
   CHECK ( pluralform >= 0 )
 );
@@ -1521,7 +1526,7 @@ CREATE TABLE POComment (
   language            integer REFERENCES Language,
   potranslation       integer REFERENCES POTranslation,
   commenttext         text NOT NULL,
-  datecreated         timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated         timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   person              integer REFERENCES Person
 );
 
@@ -1593,7 +1598,7 @@ CREATE TABLE POSubscription (
 */
 CREATE TABLE Bug (
   id                      serial PRIMARY KEY,
-  datecreated             timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated             timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   nickname                text UNIQUE,
   title                   text NOT NULL,
   description             text NOT NULL,
@@ -1635,11 +1640,11 @@ CREATE TABLE BugInfestation (
   explicit         boolean NOT NULL,
   -- see Bug Infestation Status schema
   infestation      integer NOT NULL,
-  datecreated      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   creator          integer NOT NULL REFERENCES Person,
   dateverified     timestamp,
   verifiedby       integer REFERENCES Person,
-  lastmodified     timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lastmodified     timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   lastmodifiedby   integer NOT NULL REFERENCES Person,
   PRIMARY KEY ( bug, coderelease )
 );
@@ -1725,7 +1730,7 @@ CREATE TABLE BugExternalref (
   bugreftype  integer NOT NULL,
   data        text NOT NULL,
   description text NOT NULL,
-  datecreated timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   owner       integer NOT NULL REFERENCES Person
 );
 
@@ -1779,9 +1784,9 @@ CREATE TABLE BugWatch (
   bugsystem        integer NOT NULL REFERENCES BugSystem,
   remotebug        text NOT NULL, -- unique identifier of bug in that system
   remotestatus     text NOT NULL, -- textual representation of status
-  lastchanged      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  lastchecked      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  datecreated      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  lastchanged      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  lastchecked      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  datecreated      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   owner            integer NOT NULL REFERENCES Person
 );
 
@@ -1823,13 +1828,13 @@ CREATE TABLE BugAttachment (
   uploads over time, each revision gets a changecomment.
 */
 CREATE TABLE BugattachmentContent (
+  id             serial PRIMARY KEY,
   bugattachment  integer NOT NULL REFERENCES BugAttachment,
-  daterevised    timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  daterevised    timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   changecomment  text NOT NULL,
   content        bytea NOT NULL,
   mimetype       text,
-  owner          integer REFERENCES Person,
-  PRIMARY KEY ( bugattachment, daterevised )
+  owner          integer REFERENCES Person
 );
 
 
@@ -1870,7 +1875,7 @@ CREATE TABLE BugRelationship (
 CREATE TABLE BugMessage (
   id                   serial PRIMARY KEY,
   bug                  integer NOT NULL REFERENCES Bug,
-  datecreated          timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  datecreated          timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   -- short title or subject of comment / message
   title                text NOT NULL,
   -- the message or full email with headers

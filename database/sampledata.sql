@@ -61,3 +61,9 @@ INSERT INTO Product ( project, owner, name, title, description, homepageurl ) VA
 
 
 
+-- ProductRelease
+INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
+INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
+INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
+INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
+INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
