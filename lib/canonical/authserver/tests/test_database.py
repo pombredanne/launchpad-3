@@ -144,6 +144,31 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # FIXME: behaviour of this case isn't defined yet
     ##def test_createUserFailure(self):
     ##    # Creating a user with a loginID that already exists should fail
+
+    def test_changePassword(self):
+        storage = DatabaseUserDetailsStorage(None)
+        # Changing a password should return a user dict with that user's details
+        ssha = SSHADigestEncryptor().encrypt('supersecret!', self.fredsalt)
+        newSsha = SSHADigestEncryptor().encrypt('testing123')
+        userDict = storage._changePasswordInteraction(self.cursor,
+                                                      'fred@bedrock', ssha,
+                                                      newSsha)
+        self.assertNotEqual({}, userDict)
+
+        # In fact, it should return the same dict as getUser
+        goodDict = storage._getUserInteraction(self.cursor, 'fred@bedrock')
+        self.assertEqual(goodDict, userDict)
+        
+    def test_changePasswordFailure(self):
+        storage = DatabaseUserDetailsStorage(None)
+        # Changing a password without giving the right current pw should fail
+        # (i.e. return {})
+        ssha = SSHADigestEncryptor().encrypt('WRONG', self.fredsalt)
+        newSsha = SSHADigestEncryptor().encrypt('testing123')
+        userDict = storage._changePasswordInteraction(self.cursor,
+                                                      'fred@bedrock', ssha,
+                                                      newSsha)
+        self.assertEqual({}, userDict)
         
     def tearDown(self):
         # Remove dummy data added to DB.

@@ -132,6 +132,33 @@ class DatabaseUserDetailsStorage(object):
             'emailaddresses': list(emailAddresses)
         }
                 
+    def changePassword(self, loginID, sshaDigestedPassword,
+                       newSshaDigestedPassword):
+        ri = self.connectionPool.runInteraction
+        return ri(self._changePasswordInteraction, loginID,
+                  sshaDigestedPassword, newSshaDigestedPassword)
+
+    def _changePasswordInteraction(self, transaction, loginID,
+                                   sshaDigestedPassword,
+                                   newSshaDigestedPassword):
+        userDict = self._authUserInteraction(transaction, loginID,
+                                             sshaDigestedPassword)
+        if not userDict:
+            return {}
+
+        personID = userDict['id']
+        
+        transaction.execute(
+            "UPDATE Person "
+            "SET password = '%s' "
+            "WHERE Person.id = %d "
+            % (str(newSshaDigestedPassword).replace("'", "''"),
+               personID)
+        )
+        
+        userDict['salt'] = saltFromDigest(newSshaDigestedPassword)
+        return userDict
+
     def _getPerson(self, transaction, loginID):
         transaction.execute(
             "SELECT Person.id, Person.displayname, Person.password "
@@ -161,7 +188,7 @@ class DatabaseUserDetailsStorage(object):
         row = list(row)
         passwordDigest = row[2]
         if passwordDigest:
-            salt = passwordDigest.decode('base64')[20:].encode('base64')
+            salt = saltFromDigest(passwordDigest)
         else:
             salt = ''
 
@@ -175,4 +202,12 @@ class DatabaseUserDetailsStorage(object):
             % (personID,)
         )
         return [row[0] for row in transaction.fetchall()]
+
+
+def saltFromDigest(digest):
+    """Extract the salt from a SSHA digest.
+
+    :param digest: base64-encoded digest
+    """
+    return digest.decode('base64')[20:].encode('base64')
 
