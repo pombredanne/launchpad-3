@@ -22,8 +22,12 @@ class RosettaProjects:
         return RosettaProject.selectBy(name=name.encode('ascii'))[0]
 
     def new(self, name, title, url, description, owner):
-        return RosettaProject(name=name, title=title, url=url,
-            description=description, owner=owner, datecreated='now')
+        if type(url) != NoneType:
+            url = url.encode('ascii')
+        return RosettaProject(name=name.encode('ascii'),
+            title=title.encode('ascii'), url=url,
+            description=description.encode('ascii'),
+            owner=owner, datecreated='now')
 
 
 class RosettaProject(SQLBase):
@@ -44,11 +48,11 @@ class RosettaProject(SQLBase):
     productsIter = MultipleJoin('RosettaProduct', joinColumn='project')
 
     def products(self):
-        return iter(productsIter)
+        return iter(self.productsIter)
 
     def poTemplates(self):
-        for p in self.products:
-            for t in p.poTemplates:
+        for p in self.products():
+            for t in p.poTemplates():
                 yield t
 
     def poTemplate(self, name):

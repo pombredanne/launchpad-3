@@ -20,8 +20,8 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
 
     def setUp(self):
         super(POExportTestCase, self).setUp()
-        utilityService = getService(servicenames.Utilities)
-        utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
+#        utilityService = getService(servicenames.Utilities)
+#        utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
         SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
 
     def testPoExportAdapter(self):
