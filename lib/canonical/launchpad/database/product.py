@@ -289,6 +289,10 @@ class ProductSet:
         else:
             return ret[0]
 
+    def createProduct(self, **kw):
+        """Proxyed Method to create a new Product """
+        return Product(**kw)
+
     def forReview(self):
         return Product.select("reviewed IS FALSE")
 

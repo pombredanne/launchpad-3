@@ -2,26 +2,26 @@
 
 __metaclass__ = type
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form.browser.add import AddView
-from zope.interface import implements
-from zope.schema import TextLine, Int, Choice
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.component import getUtility
 import zope.security.interfaces
 
 from sqlobject.sqlbuilder import AND, IN, ISNULL
 
 from canonical.lp import dbschema
 from canonical.database.sqlbase import quote
-from canonical.launchpad.vocabularies import ValidPersonVocabulary, MilestoneVocabulary
-from canonical.launchpad.database import Project, Product, SourceSource, \
-        SourceSourceSet, ProductSeries, ProductSeriesSet, Bug, \
-        BugFactory, ProductMilestoneSet, Milestone, BugTask, Person
+from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
+     MilestoneVocabulary
+
+from canonical.launchpad.database import Product, ProductSeriesSet, Bug, \
+     BugFactory, ProductMilestoneSet, Milestone, BugTask, SourceSourceSet,\
+     Person
+
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet
 from canonical.launchpad.browser.productrelease import newProductRelease
 
@@ -81,16 +81,17 @@ class ProductView:
         """
         # check that we are processing the correct form, and that
         # it has been POST'ed
-        if not self.form.get("Update", None)=="Update Product":
+        form = self.form
+        if form.get("Update", None) != "Update Product":
             return
-        if not self.request.method == "POST":
+        if self.request.method != "POST":
             return
         # Extract details from the form and update the Product
-        self.context.displayname = self.form['displayname']
-        self.context.title = self.form['title']
-        self.context.shortdesc = self.form['shortdesc']
-        self.context.description = self.form['description']
-        self.context.homepageurl = self.form['homepageurl']
+        self.context.displayname = form['displayname']
+        self.context.title = form['title']
+        self.context.shortdesc = form['shortdesc']
+        self.context.description = form['description']
+        self.context.homepageurl = form['homepageurl']
         notify(ObjectModifiedEvent(self.context))
         # now redirect to view the product
         self.request.response.redirect(self.request.URL[-1])
@@ -99,17 +100,22 @@ class ProductView:
         return iter(self.context.sourcesources())
 
     def newSourceSource(self):
-        if not self.form.get("Register", None)=="Register Revision Control System":
+        form = self.form
+        if (form.get("Register") != "Register Revision Control System"):
             return
-        if not self.request.method=="POST":
+        if self.request.method != "POST":
             return
         owner = IPerson(self.request.principal)
-        ss = self.context.newSourceSource(self.form, owner)
-        self.request.response.redirect('+sources/'+self.form['name'])
+        #XXX: cprov 20050107
+        # pushing form instead of **kw (BAD API)
+        ss = self.context.newSourceSource(form, owner)
+        self.request.response.redirect('+sources/'+ form['name'])
 
     def newProductRelease(self):
         # default owner is the logged in user
         owner = IPerson(self.request.principal)
+        #XXX: cprov 20050107
+        # pushing form instead of **kw (BAD API)
         pr = newProductRelease(self.form, self.context, owner)
  
     def newseries(self):
@@ -122,6 +128,8 @@ class ProductView:
             return
         if not self.request.method == "POST":
             return
+        #XXX: cprov 20050107
+        # pushing form instead of **kw (BAD API)
         series = self.context.newseries(self.form)
         # now redirect to view the page
         self.request.response.redirect('+series/'+series.name)
@@ -129,16 +137,17 @@ class ProductView:
     def latestBugs(self, quantity=5):
         """Return <quantity> latest bugs reported against this product."""
         buglist = self.context.bugs
-        bugsdated = []
-        for bugass in buglist:
-            bugsdated.append( (bugass.datecreated, bugass) )
-        bugsdated.sort(); bugsdated.reverse()
-        buglist = []
-        for bug in bugsdated[:quantity]:
-            buglist.append(bug[1])
-        buglist.reverse()
-        return buglist
+        # Sort the bugs by datecreated and return the last <quantity> bugs.
+        bugsdated = [(bugass.datecreated, bugass) for bugass in buglist]
+        bugsdated.sort()
+        last_few_bugs = bugsdated[-quantity:]
+        return [bugass for sortkey, bugass in last_few_bugs]
 
+# XXX cprov 20050107
+# This class needs revision for:
+#  * not using BugTask directly
+#  * code improves
+#  * use Authorization component
 class ProductBugsView:
     DEFAULT_STATUS = (
         int(dbschema.BugAssignmentStatus.NEW),
@@ -151,7 +160,8 @@ class ProductBugsView:
         if param_searchtext:
             try:
                 int(param_searchtext)
-                self.request.response.redirect("/malone/bugs/" + param_searchtext)
+                self.request.response.redirect("/malone/bugs/" +
+                                               param_searchtext)
             except ValueError:
                 """
                 Use full text indexing. We can't use like to search text
@@ -159,7 +169,8 @@ class ProductBugsView:
                 XXX: Stuart Bishop, 2004-12-02 Pull this commented code
                 after confirming if we stick with tsearch2
 
-                # XXX: Brad Bollenbach, 2004-11-26: I always found it particularly
+                # XXX: Brad Bollenbach, 2004-11-26:
+                # I always found it particularly
                 # unhelpful that sqlobject doesn't have this by default, for DB
                 # backends that support it.
                 def ILIKE(expr, string):
@@ -270,6 +281,8 @@ class ProductFileBugView(AddView):
 
     __used_for__ = IProduct
 
+    #XXX cprov 20050107
+    # Can we use the IBug instead of the content class ?
     ow = CustomWidgetFactory(ObjectWidget, Bug)
     sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
     options_widget = sw
@@ -284,10 +297,11 @@ class ProductFileBugView(AddView):
         # add the owner information for the bug
         owner = IPerson(self.request.principal, None)
         if not owner:
-            raise zope.security.interfaces.Unauthorized, "Need an authenticated bug owner"
+            raise zope.security.interfaces.Unauthorized(
+                "Need an authenticated bug owner")
         kw = {}
-        for item in data.items():
-            kw[str(item[0])] = item[1]
+        for key, value in data.items():
+            kw[str(key)] = value
         kw['product'] = self.context
         # create the bug
         bug = BugFactory(**kw)
@@ -303,19 +317,20 @@ class ProductSetView:
     __used_for__ = IProductSet
 
     def __init__(self, context, request):
+        
         self.context = context
         self.request = request
-        self.form = self.request.form
-        self.soyuz = self.form.get('soyuz', None)
-        self.rosetta = self.form.get('rosetta', None)
-        self.malone = self.form.get('malone', None)
-        self.bazaar = self.form.get('bazaar', None)
-        self.text = self.form.get('text', None)
+        form = self.request.form
+        self.soyuz = form.get('soyuz', None)
+        self.rosetta = form.get('rosetta', None)
+        self.malone = form.get('malone', None)
+        self.bazaar = form.get('bazaar', None)
+        self.text = form.get('text', None)
         self.searchrequested = False
-        if (self.text is not None or \
-            self.bazaar is not None or \
-            self.malone is not None or \
-            self.rosetta is not None or \
+        if (self.text is not None or
+            self.bazaar is not None or 
+            self.malone is not None or 
+            self.rosetta is not None or 
             self.soyuz is not None):
             self.searchrequested = True
         self.results = None
@@ -356,12 +371,16 @@ class ProductSetAddView(AddView):
         # add the owner information for the product
         owner = IPerson(self.request.principal, None)
         if not owner:
-            raise zope.security.interfaces.Unauthorized, "Need an authenticated owner"
+            raise zope.security.interfaces.Unauthorized(
+                "Need an authenticated bug owner")
         kw = {}
-        for item in data.items():
-            kw[str(item[0])] = item[1]
+        for key, value in data.items():
+            kw[str(key)] = value
         kw['owner'] = owner
-        product = Product(**kw)
+        # grab a ProductSet utility 
+        product_util = getUtility(IProductSet)
+        # create a brand new Product
+        product = product_util.createProduct(**kw)
         notify(ObjectCreatedEvent(product))
         self._nextURL = kw['name']
         return product

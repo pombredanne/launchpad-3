@@ -2,6 +2,45 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-07 18:45:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1161
+
+    Summary:
+      Cleaner DocStrings for Project/Product name and requested improves in browser/product.py
+    Revision:
+      launchpad--devel--0--patch-1161
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-441
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-442
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-443
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-444
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-445
+       Cleaner DocStrings for Project/Product name and requested improves in browser/product.py
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/project.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-441
+     celso.providelo@canonical.com/launchpad--devel--0--patch-442
+     celso.providelo@canonical.com/launchpad--devel--0--patch-443
+     celso.providelo@canonical.com/launchpad--devel--0--patch-444
+     celso.providelo@canonical.com/launchpad--devel--0--patch-445
+
+
 2005-01-07 16:55:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1160
 
     Summary:
