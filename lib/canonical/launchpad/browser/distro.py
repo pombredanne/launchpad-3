@@ -16,11 +16,6 @@ from canonical.launchpad.interfaces import IPerson
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.interfaces import IDistroTools
 
-# XXX: get rid of database dependencies
-from canonical.launchpad.database import Distribution
-from canonical.launchpad.database import DistributionRole
-from canonical.launchpad.database import DistroReleaseRole
-
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages 
@@ -281,8 +276,10 @@ class AddDistroRoleView(AddRoleViewBase):
         return self.context.distribution
 
     def create_role_user(self, container_id, person, role):
-        return DistributionRole(distribution=container_id,
-                                personID=person, role=role)
+        d_util = getUtility(IDistroTools)        
+        return d_util.createDistributionRole(container_id,
+                                             person,
+                                             role)
 
     def get_roles(self):
         return dbschema.DistributionRole.items
@@ -295,8 +292,10 @@ class AddDistroReleaseRoleView(AddRoleViewBase):
         return self.context.release
     
     def create_role_user(self, container_id, person, role):
-        return DistroReleaseRole(distrorelease=container_id,
-                                 personID=person, role=role)
+        d_util = getUtility(IDistroTools)                
+        return d_util.createDistroReleaseRole(container_id,
+                                              person,
+                                              role)
     
     def get_roles(self):
         return dbschema.DistroReleaseRole.items

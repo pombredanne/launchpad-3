@@ -23,6 +23,9 @@
 
      <div class="portletContent even">
      <ul>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
+      Home Page</a></li>
+
      <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
       Releases</a></li>
 
@@ -42,6 +45,8 @@
    <div class="portletBody">
      <div class="portletContent even">
      <ul>
+     <li><a tal:attributes="href string:../../">     
+         <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span></a></li>
      <li><a tal:attributes="href string:../">     
          <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
      <span tal:content="context/sourcepackagerelease/version">Version</span>

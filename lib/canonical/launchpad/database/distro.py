@@ -320,12 +320,17 @@ class DistroTools(object):
         ## What about domain ???        
         name = title.lower()
         
-        return Distribution(name=name,
-                            title=title,
-                            description=description,
-                            domainname=domain,
-                            owner=owner)
+        distro = Distribution(name=name,
+                              title=title,
+                              description=description,
+                              domainname=domain,
+                              owner=owner)
 
+        self.createDistributionRole(distro.id, owner,
+                                    dbschema.DistributionRole.DM.value)
+
+        return distro
+        
 
     def createDistroRelease(self, owner, title, distribution, shortdesc,
                             description, version, parent):
@@ -336,22 +341,34 @@ class DistroTools(object):
         ## XXX: cprov 20041207
         ## Define missed fields
 
-        return DistroRelease(name=name,
-                             distribution=distribution,
-                             title=title,
-                             shortdesc=shortdesc,
-                             description=description,
-                             version=version,
-                             owner=owner,
-                             parentrelease=int(parent),
-                             datereleased=datetime.utcnow(),
-                             components=1,
-                             releasestate=1,
-                             sections=1,
-                             lucilleconfig='')
+        release = DistroRelease(name=name,
+                                distribution=distribution,
+                                title=title,
+                                shortdesc=shortdesc,
+                                description=description,
+                                version=version,
+                                owner=owner,
+                                parentrelease=int(parent),
+                                datereleased=datetime.utcnow(),
+                                components=1,
+                                releasestate=1,
+                                sections=1,
+                                lucilleconfig='')
 
+        self.createDistroReleaseRole(release.id, owner,
+                                     dbschema.DistroReleaseRole.RM.value)
+
+        return release
+    
     def getDistroReleases(self):
         return DistroRelease.select()
     
 
+    def createDistributionRole(self, container_id, person, role):
+        return DistributionRole(distribution=container_id,
+                                personID=person, role=role)
+
+    def createDistroReleaseRole(self, container_id, person, role):
+        return DistroReleaseRole(distrorelease=container_id,
+                                 personID=person, role=role)
 

@@ -22,6 +22,9 @@
 
      <div class="portletContent even">
      <ul>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
+      Home Page</a></li>
+
      <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
       Releases</a></li>
 
