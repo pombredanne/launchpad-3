@@ -629,6 +629,10 @@ class TranslatePOTemplate:
         else:
             self.languages = request_languages(request)
 
+        # Submit any translations.
+
+        self.submitTranslations()
+
         # Get plural form and completeness information.
         #
         # For each language:
@@ -713,10 +717,6 @@ class TranslatePOTemplate:
         # Get a TabIndexGenerator.
 
         self.tig = TabIndexGenerator()
-
-        # Submit any translations.
-
-        self.submitTranslations()
 
     def makeTabIndex(self):
         return self.tig.generate()

@@ -39,7 +39,7 @@ def createUser(givenName, familyName, displayname, email, password=None):
 
     encrypted_password = SSHADigestEncryptor().encrypt(password)
 
-    initZopeless()
+    ztm = initZopeless()
 
     # XXX: We don't check if the person already exists.
     person = Person(
@@ -53,6 +53,8 @@ def createUser(givenName, familyName, displayname, email, password=None):
         person = person,
         email = email,
         status = int(EmailAddressStatus.NEW))
+
+    ztm.commit()
 
     return (person, password, encrypted_password)
 
