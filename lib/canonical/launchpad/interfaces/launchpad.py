@@ -17,7 +17,32 @@ __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IHasOwner', 'IHasAssignee', 'IHasProduct', 
            'IHasProductAndAssignee', 'IOpenLaunchBag',
            'IAging', 'IHasDateCreated',
-           'ILaunchBag')
+           'ILaunchBag', 'ICrowd', 'ILaunchpadCelebrities')
+
+
+class ILaunchpadCelebrities(Interface):
+
+    buttsource = Attribute("The 'buttsource' team.")
+
+
+class ICrowd(Interface):
+
+    def __contains__(person_or_team_or_anything):
+        """Return True if the given person_or_team_or_anything is in the crowd.
+
+        Note that a particular crowd can choose to answer "True" to this
+        question, if that is what it is supposed to do.  So, crowds that
+        contain other crowds will want to allow the other crowds the
+        opportunity to answer __contains__ before that crowd does.
+        """
+
+    def __add__(crowd):
+        """Return a new ICrowd that is this crowd added to the given crowd.
+
+        The returned crowd contains the person or teams in
+        both this crowd and the given crowd.
+        """
+
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.

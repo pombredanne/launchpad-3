@@ -42,6 +42,7 @@ from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.karma import *
 from canonical.launchpad.interfaces.language import *
+from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.maintainership import *
 from canonical.launchpad.interfaces.manifestentry import *

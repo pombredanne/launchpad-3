@@ -2,6 +2,66 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-01 12:05:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1538
+
+    Summary:
+      start of crowd stuff, added symlink for pygettextpo
+    Revision:
+      launchpad--devel--0--patch-1538
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-345
+       The start of LaunchpadCelebrities and Crowds from TeamParticipationUsage.  Still much re-organization and refinement and completion to be done.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-346
+       added note to self in celebrities.txt
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-347
+       added symlink for gettextpo.so
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-348
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-349
+       added missing launchpad.zcml
+    
+
+    new files:
+     lib/.arch-ids/gettextpo.so.id
+     lib/canonical/launchpad/components/.arch-ids/crowd.py.id
+     lib/canonical/launchpad/components/crowd.py
+     lib/canonical/launchpad/doc/.arch-ids/celebrities.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/crowd.txt.id
+     lib/canonical/launchpad/doc/celebrities.txt
+     lib/canonical/launchpad/doc/crowd.txt
+     lib/canonical/launchpad/utilities/.arch-ids/celebrities.py.id
+     lib/canonical/launchpad/utilities/celebrities.py
+     lib/canonical/launchpad/zcml/.arch-ids/crowd.zcml.id
+     lib/canonical/launchpad/zcml/.arch-ids/launchpad.zcml.id
+     lib/canonical/launchpad/zcml/crowd.zcml
+     lib/canonical/launchpad/zcml/launchpad.zcml lib/gettextpo.so
+
+    removed files:
+     lib/canonical/launchpad/zcml/.arch-ids/launchpad.zcml.id
+     lib/canonical/launchpad/zcml/launchpad.zcml
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/launchpad.py
+     lib/canonical/launchpad/utilities/__init__.py
+     lib/canonical/launchpad/zcml/configure.zcml
+     {arch}/=tagging-method
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-345
+     steve.alexander@canonical.com/launchpad--devel--0--patch-346
+     steve.alexander@canonical.com/launchpad--devel--0--patch-347
+     steve.alexander@canonical.com/launchpad--devel--0--patch-348
+     steve.alexander@canonical.com/launchpad--devel--0--patch-349
+
+
 2005-03-31 23:41:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1537
 
     Summary:

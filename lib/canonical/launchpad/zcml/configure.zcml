@@ -25,6 +25,7 @@
     <include file="build.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
+    <include file="crowd.zcml" />
     <include file="cveref.zcml" />
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />

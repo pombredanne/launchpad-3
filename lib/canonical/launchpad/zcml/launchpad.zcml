@@ -4,6 +4,11 @@
   i18n_domain="canonical.launchpad"
 >
 
+  <utility
+      factory="canonical.launchpad.utilities.LaunchpadCelebrities"
+      provides="canonical.launchpad.interfaces.ILaunchpadCelebrities">
+  </utility>
+
   <!-- Login and logout pages. -->
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadApplication"

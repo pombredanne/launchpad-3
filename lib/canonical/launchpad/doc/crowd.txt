@@ -1,0 +1,127 @@
+
+
+  >>> from canonical.launchpad.ftests import login
+  >>> login('launchpad.anonymous')
+
+A person is adaptable to ICrowd.
+
+  >>> from canonical.launchpad.interfaces import IPersonSet, ICrowd
+  >>> from zope.component import getUtility
+  >>> personset = getUtility(IPersonSet)
+  >>> sabdfl = personset.getByName('sabdfl')
+  >>> print sabdfl.name
+  sabdfl
+  >>> sabdfl_crowd = ICrowd(sabdfl)
+
+The person is in that crowd.
+
+  >>> sabdfl in sabdfl_crowd
+  True
+
+
+A team is adaptable to ICrowd, but it gets a different adapter than that used
+for a person.
+
+  >>> buttsource = personset.getByName('buttsource')
+  >>> print buttsource.name
+  buttsource
+  >>> buttsource_crowd = ICrowd(buttsource)
+
+The team is in that crowd.
+
+  >>> buttsource in buttsource_crowd
+  True
+
+sabdfl is not in that crowd, because he is not in the buttsource team.
+
+  >>> sabdfl in buttsource_crowd
+  False
+
+lifeless is in the buttsource team.  So, lifeless is in that crowd.
+
+  >>> lifeless = personset.getByName('lifeless')
+  >>> print lifeless.name
+  lifeless
+  >>> lifeless in buttsource_crowd
+  True
+
+Adding sabdfl_crowd to the buttsource_crowd gives us a crowd that contains
+sabdfl and the buttsource team and lifeless, but not stevea.
+This tests ICrowd(team).__add__.
+
+  >>> combined_crowd = buttsource_crowd + sabdfl_crowd
+  >>> stevea = personset.getByName('stevea')
+  >>> stevea not in combined_crowd
+  True
+  >>> lifeless in combined_crowd
+  True
+  >>> sabdfl in combined_crowd
+  True
+  >>> buttsource in combined_crowd
+  True
+
+Now, to try it the other way around: adding buttsource_crowd to sabdfl_crowd.
+This tests ICrowd(person).__add__.
+
+  >>> combined_crowd = sabdfl_crowd + buttsource_crowd
+  >>> lifeless in combined_crowd
+  True
+  >>> sabdfl in combined_crowd
+  True
+  >>> buttsource in combined_crowd
+  True
+
+There is an AnyPersonCrowd that contains any person or team.
+
+  >>> from canonical.launchpad.components.crowd import AnyPersonCrowd
+  >>> sabdfl in AnyPersonCrowd()
+  True
+  >>> buttsource in AnyPersonCrowd()
+  True
+  >>> buttsource_crowd in AnyPersonCrowd()
+  False
+
+Adding an AnyPersonCrowd to some other crowd works as expected.
+
+  >>> combined_crowd = sabdfl_crowd + AnyPersonCrowd()
+  >>> sabdfl in combined_crowd
+  True
+  >>> stevea in combined_crowd
+  True
+
+Same goes for the other way around.
+
+  >>> combined_crowd = AnyPersonCrowd() + sabdfl_crowd
+  >>> sabdfl in combined_crowd
+  True
+  >>> stevea in combined_crowd
+  True
+
+
+The EmptyCrowd doens't contain anything.
+
+  >>> from canonical.launchpad.components.crowd import EmptyCrowd
+  >>> sabdfl in EmptyCrowd()
+  False
+  >>> buttsource_crowd in EmptyCrowd()
+  False
+
+Adding a crowd to EmptyCrowd, and vice versa, gives you essentially that crowd.
+
+  >>> combined_crowd = EmptyCrowd() + buttsource_crowd
+  >>> buttsource in combined_crowd
+  True
+  >>> sabdfl in combined_crowd
+  False
+  >>> lifeless in combined_crowd
+  True
+
+  >>> combined_crowd = buttsource_crowd + EmptyCrowd()
+  >>> buttsource in combined_crowd
+  True
+  >>> sabdfl in combined_crowd
+  False
+  >>> lifeless in combined_crowd
+  True
+
+
