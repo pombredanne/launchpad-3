@@ -15,15 +15,15 @@ class IDistribution(Interface):
 
 
 
-class IDistroReleaseRole(Interface):
-    """A DistroReleaseRole Object """
+class IDistroreleaserole(Interface):
+    """A Distroreleaserole Object """
     distrorelease= Attribute("Release")
     person = Attribute("Person")
     role = Attribute("Role")
     rolename = Attribute("Rolename")
     
 
-class IDistributionRole(Interface):
+class IDistributionrole(Interface):
     """A Distribution Role Object"""
     distribution = Attribute("Distribution")
     person = Attribute("Person")
@@ -31,7 +31,7 @@ class IDistributionRole(Interface):
     rolename = Attribute("Rolename")
 
 
-class IRelease(Interface):
+class IDistrorelease(Interface):
     """A Release Object"""
     distribution = Attribute("The release's reference.")
     name= Attribute("The release's name.")

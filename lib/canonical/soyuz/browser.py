@@ -20,7 +20,7 @@ from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID 
 
 # app components
-from canonical.soyuz.sql import SoyuzDistribution, Release, Person
+from canonical.soyuz.sql import Distribution, Distrorelease, Person
 from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
 
@@ -53,11 +53,11 @@ class DistrosSearchView(object):
             title = title.replace('%', '%%')
             description = description.replace('%', '%%')
 
-            name_like = LIKE(SoyuzDistribution.q.name,
+            name_like = LIKE(Distribution.q.name,
                              "%%" + name + "%%")
-            title_like = LIKE(SoyuzDistribution.q.title,
+            title_like = LIKE(Distribution.q.title,
                               "%%" + title + "%%")
-            description_like = LIKE(SoyuzDistribution.q.\
+            description_like = LIKE(Distribution.q.\
                                     description,
                                     "%%" + description + "%%")
 
@@ -73,7 +73,7 @@ class DistrosSearchView(object):
 
             query = AND(name_like, title_like, description_like) 
 
-            self.results = SoyuzDistribution.select(query)
+            self.results = Distribution.select(query)
             self.entries = self.results.count()
             enable_results = True                
 
@@ -388,7 +388,7 @@ class DistrosAddView(object):
             ##XXX: (authserver) cprov 20041003
             ## The owner is hardcoded to Mark.
             ## Authserver Security/Authentication Issues ?!?!
-            self.results = SoyuzDistribution(name=name, title=title, \
+            self.results = Distribution(name=name, title=title, \
                                              description=description,\
                                              domainname='domain', owner=1)
             ##XXX: (results) cprov 20041003
@@ -450,13 +450,13 @@ class ReleasesAddView(object):
             ## Parentrelease is hardcoded to "warty", should the users
             ## be able to select then now ??
             
-            self.results = Release(distribution=self.context.distribution.id,
-                                   name=name, title=title,
-                                   shortdesc=shortdesc,
-                                   description=description,version=version,
-                                   components=1, releasestate=1,sections=1,
-                                   datereleased='2004-08-15 10:00', owner=1,
-                                   parentrelease=1, lucilleconfig='')
+            self.results = Distrorelease(distribution=self.context.distribution.id,
+                                         name=name, title=title,
+                                         shortdesc=shortdesc,
+                                         description=description,version=version,
+                                         components=1, releasestate=1,sections=1,
+                                         datereleased='2004-08-15 10:00', owner=1,
+                                         parentrelease=1, lucilleconfig='')
             ##XXX: (results) cprov 20041003
             ## again
             enable_added = True

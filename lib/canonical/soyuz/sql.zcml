@@ -47,18 +47,13 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.Distribution">
-    <allow interface="canonical.launchpad.interfaces.IDistribution"/>
+  <content class="canonical.soyuz.sql.Distributionrole">
+    <allow interface="canonical.launchpad.interfaces.IDistributionrole"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.DistributionRole">
-    <allow interface="canonical.launchpad.interfaces.IDistributionRole"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.soyuz.sql.DistroReleaseRole">
-    <allow interface="canonical.launchpad.interfaces.IDistroReleaseRole"/>
+  <content class="canonical.soyuz.sql.Distroreleaserole">
+    <allow interface="canonical.launchpad.interfaces.IDistroreleaserole"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
@@ -77,7 +72,7 @@
   </content>
 
   <content class="canonical.launchpad.database.EmailAddress">
-    <allow interface="canonical.launchpad.interfaces.ISoyuzEmailAddress"/>
+    <allow interface="canonical.launchpad.interfaces.IEmailAddress"/>
     <require
      permission="zope.Public"
      set_attributes="email status"
@@ -144,23 +139,23 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.SoyuzBuild">
+  <content class="canonical.soyuz.sql.Build">
     <allow interface="canonical.launchpad.interfaces.IBuild"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzBuilder">
+  <content class="canonical.launchpad.database.Builder">
     <allow interface="canonical.launchpad.interfaces.IBuilder"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzProcessor">
+  <content class="canonical.launchpad.database.Processor">
     <allow interface="canonical.launchpad.interfaces.IProcessor"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzProcessorFamily">
-    <allow interface="canonical.launchpad.interfaces.IProcessorFamily"/>
+  <content class="canonical.launchpad.database.Processorfamily">
+    <allow interface="canonical.launchpad.interfaces.IProcessorfamily"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
@@ -199,8 +194,8 @@
   </content>
   
 
-  <content class="canonical.soyuz.sql.Release">
-    <allow interface="canonical.launchpad.interfaces.IRelease"/>
+  <content class="canonical.soyuz.sql.Distrorelease">
+    <allow interface="canonical.launchpad.interfaces.IDistrorelease"/>
     <require
      permission="zope.Public"
      set_attributes="distribution name title shortdesc description version components sections releasestate datereleased owner"
@@ -217,13 +212,15 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.SoyuzDistribution">
+  <content class="canonical.soyuz.sql.Distribution">
     <allow interface="canonical.launchpad.interfaces.IDistribution"/>
     <require
      permission="zope.Public"
      set_attributes="name title description"
      />
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
+
 
   <content class="canonical.soyuz.sql.Person">
     <allow interface="canonical.launchpad.interfaces.IPerson"/>
@@ -240,12 +237,12 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzComponent">
+  <content class="canonical.launchpad.database.Component">
     <allow interface="canonical.launchpad.interfaces.IComponent"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.launchpad.database.SoyuzSection">
+  <content class="canonical.launchpad.database.Section">
     <allow interface="canonical.launchpad.interfaces.ISection"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
@@ -257,11 +254,11 @@
   
   <!-- removed SoyuzProject and SoyuzProduct because these should be handled
   by DOAP
-  <content class="canonical.soyuz.importd.SoyuzProject">
+  <content class="canonical.soyuz.importd.Project">
     <allow interface="canonical.launchpad.interfaces.IProject"/>
   </content>
   
-  <content class="canonical.soyuz.importd.SoyuzProduct">
+  <content class="canonical.soyuz.importd.Product">
     <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
   -->

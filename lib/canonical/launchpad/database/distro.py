@@ -17,16 +17,16 @@ from canonical.launchpad.database import Product, Project
 from canonical.lp import dbschema
 
 # interfaces and database 
-from canonical.launchpad.interfaces import IDistributionRole, IDistroReleaseRole, \
-                                           IDistribution, IRelease
+from canonical.launchpad.interfaces import IDistributionrole, IDistroreleaserole, \
+                                           IDistribution, IDistrorelease
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
 from canonical.launchpad.database.package import Sourcepackage, Binarypackage
 from canonical.launchpad.database.person import Person
 
-class DistributionRole(SQLBase):
+class Distributionrole(SQLBase):
 
-    implements(IDistributionRole)
+    implements(IDistributionrole)
 
     _table = 'Distributionrole'
     _columns = [
@@ -38,6 +38,9 @@ class DistributionRole(SQLBase):
         ]
 
     def _rolename(self):
+        # XXX: Daniel Debonzi 2004-10-14
+        # dbschema name should be changed to
+        # Distributionrole 
         for role in dbschema.DistributionRole.items:
             if role.value == self.role:
                 return role.title
@@ -46,22 +49,23 @@ class DistributionRole(SQLBase):
     rolename = property(_rolename)
         
 
-class DistroReleaseRole(SQLBase):
+class Distroreleaserole(SQLBase):
 
-    implements(IDistroReleaseRole)
+    implements(IDistroreleaserole)
 
     _table = 'Distroreleaserole'
     _columns = [
         ForeignKey(name='person', dbName='person', foreignKey='Person',
                    notNull=True),
         ForeignKey(name='distrorelease', dbName='distrorelease',
-                   foreignKey='Release',
+                   foreignKey='Distrorelease',
                    notNull=True),
         IntCol('role', dbName='role')
         ]
 
     def _rolename(self):
-        # FIXME: using DistributionRole dbschema instead of DistroRelease
+        # XXX: Daniel Debonzi 2004-10-14
+        # using DistributionRole dbschema instead of DistroRelease
         for role in dbschema.DistributionRole.items:
             if role.value == self.role:
                 return role.title
@@ -70,7 +74,7 @@ class DistroReleaseRole(SQLBase):
     rolename = property(_rolename)
 
 
-class SoyuzDistribution(SQLBase):
+class Distribution(SQLBase):
 
     implements(IDistribution)
 
@@ -87,23 +91,23 @@ class SoyuzDistribution(SQLBase):
 
 
 
-class SoyuzDistroArchRelease(SQLBase):
+class Distroarchrelease(SQLBase):
     """A release of an architecture on a particular distro."""
 
-    _table = 'DistroArchRelease'
+    _table = 'Distroarchrelease'
 
     _columns = [
         ForeignKey(name='distrorelease', dbName='distrorelease',
-                   foreignKey='SoyuzDistroRelease', notNull=True),
+                   foreignKey='Distrorelease', notNull=True),
         ForeignKey(name='processorfamily', dbName='processorfamily',
-                   foreignKey='SoyuzProcessorFamily', notNull=True),
+                   foreignKey='Processorfamily', notNull=True),
         StringCol('architecturetag', dbName='architecturetag', notNull=True),
         ForeignKey(name='owner', dbName='owner', foreignKey='Person', 
                    notNull=True),
     ]
 
-class SoyuzComponent(SQLBase):
-    """ Soyuz Component table SQLObject """
+class Component(SQLBase):
+    """  Component table SQLObject """
 
     _table = 'Component'
 
@@ -111,8 +115,8 @@ class SoyuzComponent(SQLBase):
         StringCol('name', dbName='name', notNull=True),
         ]
 
-class SoyuzSection(SQLBase):
-    """ Soyuz Section table SQLObject """
+class Section(SQLBase):
+    """  Section table SQLObject """
 
     _table = 'Section'
 
@@ -120,14 +124,14 @@ class SoyuzSection(SQLBase):
         StringCol('name', dbName='name', notNull=True),
         ]
 
-class Release(SQLBase):
-    """DistroRelease SQLObject"""
-    implements(IRelease)
+class Distrorelease(SQLBase):
+    """Distrorelease SQLObject"""
+    implements(IDistrorelease)
 
-    _table = 'DistroRelease'
+    _table = 'Distrorelease'
     _columns = [
         ForeignKey(name='distribution', dbName='distribution',
-                   foreignKey='SoyuzDistribution', notNull=True),
+                   foreignKey='Distribution', notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('title', dbName='title', notNull=True),
         StringCol('shortdesc', dbName='shortdesc', notNull=True),
@@ -140,7 +144,7 @@ class Release(SQLBase):
         IntCol('releasestate', dbName='releasestate', notNull=True),
         DateTimeCol('datereleased', dbName='datereleased', notNull=True),
         ForeignKey(name='parentrelease', dbName='parentrelease',
-                   foreignKey='Release', notNull=False),
+                   foreignKey='Distrorelease', notNull=False),
         ForeignKey(name='owner', dbName='owner', foreignKey='Person',
                    notNull=True),
         StringCol('lucilleconfig', dbName='lucilleconfig', notNull=False)
@@ -204,8 +208,3 @@ class Release(SQLBase):
     binarycount = property(binarycount)
 
 
-#
-#FIX ME
-
-class Distribution(SoyuzDistribution):
-    pass

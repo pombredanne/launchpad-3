@@ -15,15 +15,15 @@ from canonical.database.sqlbase import SQLBase, quote
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IProcessor, \
-                                           IProcessorFamily
+                                           IProcessorfamily
 
-class SoyuzProcessor(SQLBase):
+class Processor(SQLBase):
     implements(IProcessor)
 
     _table = 'Processor'
     _columns = [
         ForeignKey(name='family', dbName='family',
-                   foreignKey='SoyuzProcessorFamily', notNull=True),
+                   foreignKey='Processorfamily', notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('title', dbName='title', notNull=True),
         StringCol('description', dbName='description', notNull=True),
@@ -31,8 +31,8 @@ class SoyuzProcessor(SQLBase):
                    foreignKey='Person', notNull=True),
         ]
 
-class SoyuzProcessorFamily(SQLBase):
-    implements(IProcessorFamily)
+class Processorfamily(SQLBase):
+    implements(IProcessorfamily)
 
     _table = 'ProcessorFamily'
     _columns = [

@@ -17,8 +17,8 @@ class IProcessor(Interface):
     description = Attribute("The Processor Description")
     owner = Attribute("The Processor Owner")
     
-class IProcessorFamily(Interface):
-    """The SQLObject ProcessorFamily Interface"""
+class IProcessorfamily(Interface):
+    """The SQLObject Processorfamily Interface"""
     name = Attribute("The Processor Family Name")
     title = Attribute("The Processor Family Title")
     description = Attribute("The Processor Name Description")

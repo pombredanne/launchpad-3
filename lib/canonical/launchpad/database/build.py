@@ -21,22 +21,22 @@ from canonical.launchpad.interfaces.build import IBuild, IBuilder
 # Build related SQLObjects
 #
 
-class SoyuzBuild(SQLBase):
+class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
     _columns = [
         DateTimeCol('datecreated', dbName='datecreated', notNull=True),
         ForeignKey(name='processor', dbName='processor',
-                   foreignKey='SoyuzProcessor', notNull=True),
+                   foreignKey='Processor', notNull=True),
         ForeignKey(name='distroarchrelease', dbName='distroarchrelease', 
-                   foreignKey='SoyuzDistroArchRelease', notNull=True),
+                   foreignKey='DistroArchRelease', notNull=True),
         IntCol('buildstate', dbName='buildstate', notNull=True),
         DateTimeCol('datebuilt', dbName='datebuilt'),
         DateTimeCol('buildduration', dbName='buildduration'),
         ForeignKey(name='buildlog', dbName='buildlog',
                    foreignKey='LibraryFileAlias'),
         ForeignKey(name='builder', dbName='builder',
-                   foreignKey='SoyuzBuilder'),
+                   foreignKey='Builder'),
         ForeignKey(name='gpgsigningkey', dbName='gpgsigningkey',
                    foreignKey='GPGKey'),
         StringCol('changes', dbName='changes'),
@@ -47,13 +47,13 @@ class SoyuzBuild(SQLBase):
 
 
 
-class SoyuzBuilder(SQLBase):
+class Builder(SQLBase):
     implements(IBuilder)
 
     _table = 'Builder'
     _columns = [
         ForeignKey(name='processor', dbName='processor',
-                   foreignKey='SoyuzProcessor', notNull=True),
+                   foreignKey='Processor', notNull=True),
         StringCol('fqdn', dbName='fqdn'),
         StringCol('name', dbName='name'),
         StringCol('title', dbName='title'),

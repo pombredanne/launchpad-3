@@ -22,18 +22,18 @@ from canonical.launchpad.database import Product, Project
 from canonical.launchpad.database.person import Person
 
 
-class SoyuzPackagePublishing(SQLBase):
+class PackagePublishing(SQLBase):
 
     _table = 'PackagePublishing'
     
     _columns = [
         ForeignKey(name='binaryPackage', foreignKey='Binarypackage', 
                    dbName='binarypackage', notNull=True),
-        ForeignKey(name='distroArchrelease', dbName='distroArchrelease',
-                   foreignKey='SoyuzDistroArchRelease', notNull=True),
+        ForeignKey(name='distroarchrelease', dbName='distroArchrelease',
+                   foreignKey='Distroarchrelease', notNull=True),
         ForeignKey(name='component', dbName='component',
-                   foreignKey='SoyuzComponent', notNull=True),
-        ForeignKey(name='section', dbName='section', foreignKey='SoyuzSection',
+                   foreignKey='Component', notNull=True),
+        ForeignKey(name='section', dbName='section', foreignKey='Section',
                    notNull=True),
         IntCol('priority', dbName='priority', notNull=True),
     ]
@@ -48,12 +48,12 @@ class Binarypackage(SQLBase):
         StringCol('version', dbName='version', notNull=True),
         StringCol('shortdesc', dbName='shortdesc', notNull=True, default=""),
         StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='build', dbName='build', foreignKey='SoyuzBuild',
+        ForeignKey(name='build', dbName='build', foreignKey='Build',
                    notNull=True),
         IntCol('binpackageformat', dbName='binpackageformat', notNull=True),
         ForeignKey(name='component', dbName='component',
-                   foreignKey='SoyuzComponent', notNull=True),
-        ForeignKey(name='section', dbName='section', foreignKey='SoyuzSection',
+                   foreignKey='Component', notNull=True),
+        ForeignKey(name='section', dbName='section', foreignKey='Section',
                    notNull=True),
         IntCol('priority', dbName='priority'),
         StringCol('shlibdeps', dbName='shlibdeps'),
@@ -138,19 +138,19 @@ class SourcePackageRelease(SQLBase):
         DateTimeCol('dateuploaded', dbName='dateuploaded', notNull=True,
                     default='NOW'),
         IntCol('urgency', dbName='urgency', notNull=True),
-        ForeignKey(name='component', foreignKey='SoyuzComponent', dbName='component'),
+        ForeignKey(name='component', foreignKey='Component', dbName='component'),
         StringCol('changelog', dbName='changelog'),
         StringCol('builddepends', dbName='builddepends'),
         StringCol('builddependsindep', dbName='builddependsindep'),
     ]
 
-    builds = MultipleJoin('SoyuzBuild', joinColumn='sourcepackagerelease')
+    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease')
 
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.distro import SoyuzDistroArchRelease
+        from canonical.launchpad.database.distro import Distroarchrelease
 
-        archReleases = Set(SoyuzDistroArchRelease.select(
+        archReleases = Set(Distroarchrelease.select(
             'PackagePublishing.distroarchrelease = DistroArchRelease.id '
             'AND DistroArchRelease.distrorelease = %d '
             'AND PackagePublishing.binarypackage = BinaryPackage.id '

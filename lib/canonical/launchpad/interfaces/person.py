@@ -73,29 +73,6 @@ class IEmailAddress(Interface):
     person = Int(
         title=_('Person'), required=True,
         )
-    
-# XXX: Daniel Debonzi 2004-10-14
-# It should not been used anymore
-class ISoyuzPerson(Interface):
-    """A person"""
-    # use id instead unique name
-    id = Attribute("ID for a person")
-    givenname = Attribute("Given name")
-    familyname = Attribute("Family name")
-    displayname = Attribute("Display name")
-    teamowner = Attribute("The Team Owner") 
-    teamdescription = Attribute("The Team Description")
-    karma = Attribute("Karma")
-    karmatimestamp = Attribute("Karma Time stamp")
-    password = Attribute("Password")
-    name = Attribute("Login or Nick")
-    
-
-class ISoyuzEmailAddress(Interface):
-    """Email aka our unique name"""
-    person = Attribute("Owner")
-    email = Attribute("Email")
-    status = Attribute("Status")
     statusname = Attribute("StatusName")
 
 
