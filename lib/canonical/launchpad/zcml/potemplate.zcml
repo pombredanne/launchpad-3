@@ -9,7 +9,8 @@
     <content class="canonical.launchpad.database.POTemplate">
         <require permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOTemplate"
-            set_attributes="rawimportstatus"/>
+            set_attributes="name title description copyright path
+                            priority rawimportstatus"/>
     </content>
 
     <browser:traverse
@@ -24,6 +25,9 @@
     <browser:page name="+index"
         template="../templates/potemplate-index.pt"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/+index" />
+    <browser:page name="+edit"
+        template="../templates/potemplate-edit.pt"
+        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/+edit" />
     <browser:page name="upload"
         template="../templates/potemplate-upload.pt"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/upload" />

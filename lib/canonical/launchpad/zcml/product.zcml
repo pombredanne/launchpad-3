@@ -68,6 +68,9 @@
         <browser:page name="+rosetta-index"
             template="../templates/rosetta-product-index.pt"
             lp:url="Rosetta/projects/$Project.name/$Product.name/index" />
+        <browser:page name="+newpotemplate"
+            template="../templates/potemplate-new.pt"
+            lp:url="Rosetta/projects/$Project.name/+newpotemplate" />
     </browser:pages>
 
     <browser:pages

@@ -65,11 +65,14 @@
             </p>
 
             <h2 tal:content="template/title">Template</h2>
-
+            
             <p>
+            <a tal:attributes="href string:${template/name}/+edit">Edit this
+                template.</a>
+            <br />
             <a tal:attributes="href string:${template/name}/translate"
                 >Translate this template into all selected languages.</a>
-            <br/>
+            <br />
             <a tal:attributes="href string:${template/name}/upload"
                 >Upload data for this template.</a>
             </p>
@@ -147,6 +150,10 @@
 
         </div>
     </tal:block> <!-- condition="view/templates -->
+    <div>
+        <img src="/++resource++add.gif" />
+        <a href="+newpotemplate">Add a new template</a>
+	</div>
 
 </div>
 

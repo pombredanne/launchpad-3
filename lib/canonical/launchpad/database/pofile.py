@@ -91,8 +91,10 @@ class POTemplate(SQLBase):
     rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
         notNull=False, default=None)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False)
-    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False)
+    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
+        default=None)
+    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=True,
+        default=DEFAULT)
 
 
     def currentMessageSets(self):

@@ -13,6 +13,7 @@ from cStringIO import StringIO
 from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import ILanguageSet, IPerson
 from canonical.launchpad.interfaces import IProjectSet, IPasswordEncryptor
 from canonical.launchpad.database import Language, Person, POTemplate, POFile
@@ -193,7 +194,7 @@ class ViewProduct:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
+        self.form = self.request.form
         self.languages = request_languages(self.request)
 
     def templates(self):
@@ -205,6 +206,48 @@ class ViewProduct:
         else:
             raise RuntimeError(
                 "Can't generate TemplateLanguages without templates.")
+
+    # This method has been "stolen" from the newproduct one.
+    def newpotemplate(self):
+        #
+        # Handle a request to create a new potemplate for this project.
+        # The code needs to extract all the relevant form elements,
+        # then call the POTemplate creation methods.
+        #
+        if not self.form.get("Register", None)=="Register POTemplate":
+            return
+        if not self.request.method == "POST":
+            return
+        # Extract the details from the form
+        name = self.form['name']
+        title = self.form['title']
+        description = self.form['description']
+        copyright = self.form['copyright']
+        path = self.form['path']
+        priority = self.form['priority']
+        # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
+        # check to see if there is an existing product with
+        # this name.
+        # get the launchpad person who is creating this product
+        # XXX: Carlos Perello Marin 27/11/04 We should force this page to be
+        # used under authenticated users.
+#        owner = IPerson(self.request.principal)
+        # Now create a new product in the db
+        potemplate = POTemplate(product=self.context.id,
+                                priority=priority,
+                                branch=1,
+                                name=name,
+                                title=title,
+                                description=description,
+                                copyright=copyright,
+                                license=1,
+                                datecreated=UTC_NOW,
+                                path=path,
+                                iscurrent=False,
+                                messagecount=0)
+#                                owner=owner)
+        # now redirect to view the page
+        self.request.response.redirect(name)
 
 
 class TemplateLanguages:
@@ -298,6 +341,13 @@ class TemplateLanguages:
 
 
 class ViewPOTemplate:
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = self.request.form
+        self.languages = request_languages(self.request)
+
     def num_messages(self):
         N = len(self.context)
         if N == 0:
@@ -311,6 +361,32 @@ class ViewPOTemplate:
         languages = list(self.context.languages())
         languages.sort(lambda a, b: cmp(a.englishName, b.englishName))
         return languages
+
+    def edit(self):
+        """
+        Update the contents of a POTemplate. This method is called by a
+        tal:dummy element in a page template. It checks to see if a
+        form has been submitted that has a specific element, and if
+        so it continues to process the form, updating the fields of
+        the database as it goes.
+        """
+        # check that we are processing the correct form, and that
+        # it has been POST'ed
+        if not self.form.get("Update", None)=="Update POTemplate":
+            return
+        if not self.request.method == "POST":
+            return
+        # Extract details from the form and update the POTemplate
+        self.context.name = self.form['name']
+        self.context.title = self.form['title']
+        self.context.description = self.form['description']
+        self.context.copyright = self.form['copyright']
+        self.context.path = self.form['path']
+        self.context.priority = self.form['priority']
+        
+        # now redirect to view the potemplate. This lets us follow the
+        # template in case the user changed the name
+        self.request.response.redirect('../' + self.context.name)
 
 
 class ViewPOFile:
