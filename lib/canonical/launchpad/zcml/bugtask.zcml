@@ -190,9 +190,6 @@
         class="canonical.launchpad.database.BugTasksReport"
         provides="canonical.launchpad.interfaces.IBugTasksReport">
         <allow interface="canonical.launchpad.interfaces.IBugTasksReport" />
-        <require
-            permission="zope.Public"
-            set_attributes="user minseverity minpriority showclosed" />
     </securedutility>
 
     <browser:defaultView

@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-30 23:12:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1526
+
+    Summary:
+      refactor BugTasksReport as per SteveA's suggestion to not have settable attributes on a securedutility. other small code cleanup.
+    Revision:
+      launchpad--devel--0--patch-1526
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-467
+       remove unused imports in canonical.malone.browser
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-468
+       refactor BugTasksReport as per SteveA's suggestion to not have settable attributes on a securedutility.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/templates/bugs-assigned.pt
+     lib/canonical/launchpad/zcml/bugtask.zcml
+     lib/canonical/malone/browser.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-467
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-468
+
+
 2005-03-30 22:28:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1525
 
     Summary:

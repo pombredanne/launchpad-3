@@ -283,78 +283,74 @@ class BugTasksReport:
 
     implements(IBugTasksReport)
 
-    def __init__(self):
-        # initialise the user to None, will raise an exception if the
-        # calling class does not set this to a person.id
-        self.user = None
-        self.minseverity = 0
-        self.minpriority = 0
-        self.showclosed = False
-
     # bugs assigned (i.e. tasks) to packages maintained by the user
-    def maintainedPackageBugs(self):
+    def maintainedPackageBugs(self, user, minseverity, minpriority, showclosed):
         querystr = (
             "BugTask.sourcepackagename = Maintainership.sourcepackagename AND "
             "BugTask.distribution = Maintainership.distribution AND "
             "Maintainership.maintainer = %s AND "
             "BugTask.severity >= %s AND "
             "BugTask.priority >= %s") % (
-            self.user.id, self.minseverity, self.minpriority)
+            user.id, minseverity, minpriority)
         clauseTables = ('Maintainership',)
 
-        if not self.showclosed:
+        if not showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
         return list(BugTask.select(querystr, clauseTables=clauseTables))
 
     # bugs assigned (i.e. tasks) to products owned by the user
-    def maintainedProductBugs(self):
+    def maintainedProductBugs(self, user, minseverity, minpriority, showclosed):
         querystr = (
             "BugTask.product = Product.id AND "
             "Product.owner = %s AND "
             "BugTask.severity >= %s AND "
             "BugTask.priority >= %s") % (
-            self.user.id, self.minseverity, self.minpriority)
+            user.id, minseverity, minpriority)
 
         clauseTables = ('Product',)
 
-        if not self.showclosed:
+        if not showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
         return list(BugTask.select(querystr, clauseTables=clauseTables))
 
     # package bugs assigned specifically to the user
-    def packageAssigneeBugs(self):
+    def packageAssigneeBugs(self, user, minseverity, minpriority, showclosed):
         querystr = (
             "BugTask.sourcepackagename IS NOT NULL AND "
             "BugTask.assignee = %s AND "
             "BugTask.severity >= %s AND "
             "BugTask.priority >= %s") % (
-            self.user.id, self.minseverity, self.minpriority)
-        if not self.showclosed:
+            user.id, minseverity, minpriority)
+        if not showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
         return list(BugTask.select(querystr))
 
     # product bugs assigned specifically to the user
-    def productAssigneeBugs(self):
+    def productAssigneeBugs(self, user, minseverity, minpriority, showclosed):
         querystr = (
             "BugTask.product IS NOT NULL AND "
             "BugTask.assignee =%s AND "
             "BugTask.severity >=%s AND "
             "BugTask.priority >=%s") % (
-            self.user.id, self.minseverity, self.minpriority)
-        if not self.showclosed:
+            user.id, minseverity, minpriority)
+        if not showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
         return list(BugTask.select(querystr))
 
     # all bugs assigned to a user
-    def assignedBugs(self):
+    def assignedBugs(self, user, minseverity, minpriority, showclosed):
         bugs = Set()
-        for bugtask in self.maintainedPackageBugs():
+        for bugtask in self.maintainedPackageBugs(
+            user, minseverity, minpriority, showclosed):
             bugs.add(bugtask.bug)
-        for bugtask in self.maintainedProductBugs():
+        for bugtask in self.maintainedProductBugs(
+            user, minseverity, minpriority, showclosed):
             bugs.add(bugtask.bug)
-        for bugtask in self.packageAssigneeBugs():
+        for bugtask in self.packageAssigneeBugs(
+            user, minseverity, minpriority, showclosed):
             bugs.add(bugtask.bug)
-        for bugtask in self.productAssigneeBugs():
+        for bugtask in self.productAssigneeBugs(
+            user, minseverity, minpriority, showclosed):
             bugs.add(bugtask.bug)
 
         buglistwithdates = [(bug.datecreated, bug) for bug in bugs]

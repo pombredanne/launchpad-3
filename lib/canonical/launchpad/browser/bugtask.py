@@ -1,14 +1,14 @@
 __metaclass__ = type
 
-from sqlobject.sqlbuilder import AND, IN, ISNULL, OR, SQLOp
-
 from zope.schema.vocabulary import getVocabularyRegistry
+from zope.component import getUtility
+
+from sqlobject.sqlbuilder import AND, IN, ISNULL, OR, SQLOp
 
 from canonical.launchpad.browser.bug import BugView
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
-from canonical.launchpad.interfaces import IPerson
-from canonical.launchpad.database import Bug, BugTask, Person
+from canonical.launchpad.interfaces import IPerson, IPersonSet
 from canonical.lp import dbschema
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      ProductVocabulary, SourcePackageNameVocabulary
@@ -20,25 +20,52 @@ class BugTasksReportView:
         self.context = context
         self.request = request
         self.form = self.request.form
+        self.user = None
+
         # default to showing bugs assigned to the logged in user.
         username = self.form.get('name', None)
-        if username: self.context.user = Person.selectBy(name=username)[0]
+        if username:
+            self.user = getUtility(IPersonSet).getByName(username)
         else:
-            try: self.context.user = IPerson(self.request.principal)
-            except TypeError: pass
-        # default to showing even wishlist bugs
-        self.context.minseverity = int(self.form.get('minseverity', 0))
-        self.context.minpriority = int(self.form.get('minpriority', 0))
-        if self.form.get('showclosed', None)=='yes':
-            self.context.showclosed = True
+            # XXX: Brad Bollenbach, 2005-03-30: Why does this seem
+            # to set self.user to something other than None even
+            # when viewed by an anonymous user? Investigate.
+            self.user = IPerson(self.request.principal)
 
+        # default to showing even wishlist bugs
+        self.minseverity = int(self.form.get('minseverity', 0))
+        self.minpriority = int(self.form.get('minpriority', 0))
+        if self.form.get('showclosed', None) == 'yes':
+            self.showclosed = True
+        else:
+            self.showclosed = False
+
+    def maintainedPackageBugs(self):
+        return self.context.maintainedPackageBugs(
+            self.user, self.minseverity, self.minpriority, self.showclosed)
+
+    def maintainedProductBugs(self):
+        return self.context.maintainedProductBugs(
+            self.user, self.minseverity, self.minpriority, self.showclosed)
+
+    def packageAssigneeBugs(self):
+        return self.context.packageAssigneeBugs(
+            self.user, self.minseverity, self.minpriority, self.showclosed)
+
+    def productAssigneeBugs(self):
+        return self.context.productAssigneeBugs(
+            self.user, self.minseverity, self.minpriority, self.showclosed)
+
+    def assignedBugs(self):
+        return self.context.assignedBugs(
+            self.user, self.minseverity, self.minpriority, self.showclosed)
 
     # TODO: replace this with a smart vocabulary and widget
     def userSelector(self):
         html = '<select name="name">\n'
         for person in self.allPeople():
             html = html + '<option value="'+person.name+'"'
-            if person==self.context.user:
+            if person==self.user:
                 html = html + ' selected="yes"'
             html = html + '>'
             html = html + person.browsername() + '</option>\n'
@@ -50,7 +77,7 @@ class BugTasksReportView:
         html = '<select name="minseverity">\n'
         for item in dbschema.BugSeverity.items:
             html = html + '<option value="' + str(item.value) + '"'
-            if item.value==self.context.minseverity:
+            if item.value==self.minseverity:
                 html = html + ' selected="yes"'
             html = html + '>'
             html = html + str(item.title)
@@ -63,7 +90,7 @@ class BugTasksReportView:
         html = '<select name="minpriority">\n'
         for item in dbschema.BugPriority.items:
             html = html + '<option value="' + str(item.value) + '"'
-            if item.value==self.context.minpriority:
+            if item.value==self.minpriority:
                 html = html + ' selected="yes"'
             html = html + '>'
             html = html + str(item.title)
@@ -73,13 +100,13 @@ class BugTasksReportView:
 
     def showClosedSelector(self):
         html = '<input type="checkbox" id="showclosed" name="showclosed" value="yes"'
-        if self.context.showclosed:
+        if self.showclosed:
             html = html + ' checked="yes"'
         html = html + ' />'
         return html
 
     def allPeople(self):
-        return Person.select('password IS NOT NULL')
+        return [p for p in getUtility(IPersonSet).getAll() if p.password]
 
 # XXX: 2004-11-13, Brad Bollenbach: Much of the code in BugTasksView
 # is a dirty hack in the abscense of a more clean way of handling generating
