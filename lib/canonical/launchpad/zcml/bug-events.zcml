@@ -10,7 +10,7 @@
 <subscriber
    for="canonical.launchpad.interfaces.IBugAddForm
         zope.app.event.interfaces.IObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karmasubscribers.bug_added" />
+   factory="canonical.launchpad.subscribers.karma.bug_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
@@ -40,7 +40,7 @@
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage
         zope.app.event.interfaces.IObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karmasubscribers.bug_comment_added" />
+   factory="canonical.launchpad.subscribers.karma.bug_comment_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugProductInfestation

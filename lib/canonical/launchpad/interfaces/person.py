@@ -140,8 +140,12 @@ class IPerson(Interface):
     def browsername():
         """Return a textual name suitable for display in a browser."""
 
-    def assignKarma(karmafield, points=None):
-        """Assign <points> worth of karma to this Person."""
+    def assignKarma(karmatype, points=None):
+        """Assign <points> worth of karma to this Person.
+        
+        If <points> is None, then get the default number of points from the
+        given karmatype.
+        """
 
     def addLanguage(language):
         """Add a new language to the list of know languages."""

@@ -1,19 +1,21 @@
-""" karmasubscribers.py -- handles all karma assignments done in the
-launchpad application."""
+# Copyright 2004 Canonical Ltd.  All rights reserved.
+
+""" karma.py -- handles all karma assignments done in the launchpad 
+application."""
 
 from canonical.launchpad.database import Person
 from canonical.launchpad.mailnotification import get_changes
-from canonical.lp.dbschema import KarmaField, BugTaskStatus
+from canonical.lp.dbschema import KarmaType, BugTaskStatus
 
 
 def bug_added(bug, event):
     owner = getattr(bug, 'owner', None)
     if owner:
-        owner.assignKarma(KarmaField.BUG_REPORT)
+        owner.assignKarma(KarmaType.BUG_REPORT)
 
 
 def bug_comment_added(bugmessage, event):
-    bugmessage.message.owner.assignKarma(KarmaField.BUG_COMMENT)
+    bugmessage.message.owner.assignKarma(KarmaType.BUG_COMMENT)
 
 
 def bug_task_modified(task, event):
@@ -29,5 +31,5 @@ def bug_task_modified(task, event):
             if changes[field]["new"] == BugTaskStatus.FIXED:
                 # Can we assume that this is the user that really fixed
                 # the bug and give Karma points to him?
-                person.assignKarma(KarmaField.BUG_FIX)
+                person.assignKarma(KarmaType.BUG_FIX)
 

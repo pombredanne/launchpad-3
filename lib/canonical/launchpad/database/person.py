@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces import IIrcIDSet, IArchUserIDSet
 from canonical.launchpad.interfaces import ISSHKeySet, IJabberIDSet
 from canonical.launchpad.interfaces import IWikiNameSet
 from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
+from canonical.launchpad.interfaces import IKarmaPointsManager
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.interfaces import ISourcePackageSet, IEmailAddressSet
 from canonical.launchpad.interfaces import ICodeOfConductConf
@@ -39,7 +40,7 @@ from canonical.launchpad.database.logintoken import LoginToken
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import KarmaField
+from canonical.lp.dbschema import KarmaType
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.lp.dbschema import TeamSubscriptionPolicy
 from canonical.lp.dbschema import TeamMembershipStatus
@@ -188,18 +189,18 @@ class Person(SQLBase):
                             ORDER BY datefirstseen DESC)))
             ''')
 
-    def assignKarma(self, karmafield, points=None):
-        if karmafield.schema is not KarmaField:
-            raise TypeError('"%s" is not a valid KarmaField value')
+    def assignKarma(self, karmatype, points=None):
+        if karmatype.schema is not KarmaType:
+            raise TypeError('"%s" is not a valid KarmaType value')
         if points is None:
             try:
-                points = KARMA_POINTS[karmafield]
+                points = getUtility(IKarmaPointsManager).getPoints(karmatype)
             except KeyError:
                 # What about defining a default number of points?
                 points = 0
                 # Print a warning here, cause someone forgot to add the
-                # karmafield to KARMA_POINTS.
-        Karma(person=self, karmafield=karmafield, points=points)
+                # karmatype to KARMA_POINTS.
+        Karma(person=self, karmatype=karmatype, points=points)
         # XXX: salgado, 2005-01-12: I think we should recalculate the karma
         # here, but first we must define karma points and depreciation
         # methods.
@@ -984,21 +985,11 @@ class Karma(SQLBase):
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     points = IntCol(dbName='points', notNull=True, default=0)
-    karmafield = EnumCol(dbName='karmafield', notNull=True, schema=KarmaField)
+    karmatype = EnumCol(dbName='karmatype', notNull=True, schema=KarmaType)
     datecreated = DateTimeCol(dbName='datecreated', notNull=True,
                               default='NOW')
 
-    def _karmafieldname(self):
-        return self.karmafield.title
-
-    karmafieldname = property(_karmafieldname)
-
-
-# XXX: These points are totally *CRAP*.
-KARMA_POINTS = {KarmaField.BUG_REPORT: 10,
-                KarmaField.BUG_FIX: 20,
-                KarmaField.BUG_COMMENT: 5,
-                KarmaField.WIKI_EDIT: 2,
-                KarmaField.WIKI_CREATE: 3,
-                KarmaField.PACKAGE_UPLOAD: 10}
+    def _karmatypename(self):
+        return self.karmatype.title
+    karmatypename = property(_karmatypename)
 

@@ -41,7 +41,7 @@ __all__ = (
 'EmailAddressStatus',
 'HashAlgorithms',
 'ImportTestStatus',
-'KarmaField',
+'KarmaType',
 'ManifestEntryType',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
@@ -1866,16 +1866,16 @@ class RosettaImportStatus(DBSchema):
         """)
 
 
-class KarmaField(DBSchema):
+class KarmaType(DBSchema):
     # If you add a new Item here, please remember to add it to 
     # canonical.launchpad.database.person.KARMA_POINTS too. 
-    # XXX: This KarmaField is a good candidate for leaving dbschema and
+    # XXX: This KarmaType is a good candidate for leaving dbschema and
     # get into the database.
     """Karma Field
 
     This schema documents the different kinds of Karma that can be
     assigned to a person. A person have a list of assigned Karmas and
-    each of these Karmas have a KarmaField.
+    each of these Karmas have a KarmaType.
     """
 
     WIKI_EDIT = Item(1, """

@@ -1594,9 +1594,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karma'::pg_catalog.regclass;
 
-INSERT INTO karma (id, karmafield, datecreated, person, points) VALUES (1, 4, '2005-01-14 12:20:12.820778', 12, 10);
-INSERT INTO karma (id, karmafield, datecreated, person, points) VALUES (2, 4, '2005-01-14 12:27:03.702622', 12, 10);
-INSERT INTO karma (id, karmafield, datecreated, person, points) VALUES (3, 4, '2005-01-14 12:35:39.548665', 12, 10);
+INSERT INTO karma (id, karmatype, datecreated, person, points) VALUES (1, 4, '2005-01-14 12:20:12.820778', 12, 10);
+INSERT INTO karma (id, karmatype, datecreated, person, points) VALUES (2, 4, '2005-01-14 12:27:03.702622', 12, 10);
+INSERT INTO karma (id, karmatype, datecreated, person, points) VALUES (3, 4, '2005-01-14 12:35:39.548665', 12, 10);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karma'::pg_catalog.regclass;

@@ -2,6 +2,61 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 17:51:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1494
+
+    Summary:
+      Fix karma code according to the KarmaImplementation spec.
+    Revision:
+      launchpad--devel--0--patch-1494
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--karma--0--patch-1
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1466
+    
+     * guilherme.salgado@canonical.com/launchpad--karma--0--patch-2
+       Fix karma code according to the KarmaImplementation spec.
+    
+     * guilherme.salgado@canonical.com/launchpad--karma--0--patch-3
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--karma--0--patch-4
+       Adding patch to rename karmafield to karmatype.
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-11-0.sql.id
+     database/schema/patch-11-11-0.sql
+     database/schema/pending/.arch-ids/salgado-karma.sql.id
+     database/schema/pending/salgado-karma.sql
+     lib/canonical/launchpad/components/.arch-ids/karma.py.id
+     lib/canonical/launchpad/components/karma.py
+     lib/canonical/launchpad/zcml/.arch-ids/karma.zcml.id
+     lib/canonical/launchpad/zcml/karma.zcml
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     doc/changelog.txt lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/karma.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/subscribers/karma.py
+     lib/canonical/launchpad/zcml/bug-events.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/lp/dbschema.py
+
+    renamed files:
+     lib/canonical/launchpad/subscribers/.arch-ids/karmasubscribers.py.id
+       ==> lib/canonical/launchpad/subscribers/.arch-ids/karma.py.id
+     lib/canonical/launchpad/subscribers/karmasubscribers.py
+       ==> lib/canonical/launchpad/subscribers/karma.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--karma--0--patch-1
+     guilherme.salgado@canonical.com/launchpad--karma--0--patch-2
+     guilherme.salgado@canonical.com/launchpad--karma--0--patch-3
+     guilherme.salgado@canonical.com/launchpad--karma--0--patch-4
+
+
 2005-03-24 15:14:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1493
 
     Summary:
