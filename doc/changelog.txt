@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-06 07:59:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1155
+
+    Summary:
+      tweaks
+    Revision:
+      launchpad--devel--0--patch-1155
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-59
+       Guess changelog encoding
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-60
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-61
+       Merge from rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/changelog.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-59
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-60
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-61
+
+
 2005-01-06 01:54:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1154
 
     Summary:
