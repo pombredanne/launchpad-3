@@ -2,6 +2,56 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-03 15:06:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1274
+
+    Summary:
+      Add missing BranchLabel table and Manifest.owner column to db classes
+    Revision:
+      launchpad--devel--0--patch-1274
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/lauchpad--importd-fixes--0--base-0
+       tag of david.allouche@canonical.com--2004/launchpad--debug-zopeless--1.8--patch-3
+    
+     * andrew.bennetts@canonical.com/lauchpad--importd-fixes--0--patch-1
+       Add a hack to resync the db connection after putting a file in the librarian
+    
+     * andrew.bennetts@canonical.com/lauchpad--importd-fixes--0--patch-2
+       Add missing BranchLabel table and Manifest.owner column to db classes
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-52
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-53
+       Add missing BranchLabel table and Manifest.owner column to db classes
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-54
+       Add a hack to resync the db connection after putting a file in the librarian
+    
+     * david.allouche@canonical.com--2004/launchpad--hct-fixes--1.8--patch-1
+       Add missing BranchLabel table and Manifest.owner column to db classes
+    
+     * david.allouche@canonical.com--2004/launchpad--hct-fixes--1.8--patch-2
+       Add a hack to resync the db connection after putting a file in the librarian
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/doap/fileimporter.py
+     lib/canonical/launchpad/database/branch.py
+     lib/canonical/launchpad/database/manifest.py
+
+    new patches:
+     andrew.bennetts@canonical.com/lauchpad--importd-fixes--0--base-0
+     andrew.bennetts@canonical.com/lauchpad--importd-fixes--0--patch-1
+     andrew.bennetts@canonical.com/lauchpad--importd-fixes--0--patch-2
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-52
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-53
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-54
+     david.allouche@canonical.com--2004/launchpad--hct-fixes--1.8--patch-1
+     david.allouche@canonical.com--2004/launchpad--hct-fixes--1.8--patch-2
+
+
 2005-02-03 14:55:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1273
 
     Summary:
