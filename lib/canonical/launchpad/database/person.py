@@ -144,7 +144,7 @@ class PersonSet(object):
 
     def __getitem__(self, personid):
         """See IPersonSet."""
-	return Person.get(personid)
+        return Person.get(personid)
 
 
 def personFromPrincipal(principal):

@@ -184,25 +184,25 @@ class Doap(SQLThing):
         ## multiple devels and so
         try:
             name = data['devels'].keys()[0]
-            email = data['devels'][name]            
+            email = data['devels'][name]
             name = self.ensure_string_format(name)
             email = self.ensure_string_format(email)
 
             ## XXX:(multiple+owner) cprov
             ## We don't support multiple owners, so, use the first
             name = name.split(',')[0]
-            email = email.split(',')[0]            
+            email = email.split(',')[0]
             owner = self.ensurePerson(name, email)[0]
         except:
             print '@ Exception on Owner Field !!! '
-	    try: 
-		print '@\tDEBUG:', name
-		print '@\tDEBUG:', email
-	    except:
-		print '@\tDEBUG: No Devel'
+            try:
+                print '@\tDEBUG:', name
+                print '@\tDEBUG:', email
+            except:
+                print '@\tDEBUG: No Devel'
 
             ## in case of 
-	    owner = 1
+            owner = 1
                 
         ## both have project
         name = self.ensure_string_format(data['project'])
@@ -289,31 +289,31 @@ class Doap(SQLThing):
         if project_result:
             project_id = project_result[0]
             
-        if self.getProduct(project_id, data['project']):        
+        if self.getProduct(project_id, data['project']):
             print '@\tSkipping Already Added Project'        
             return 
 
         ## both have devels        
         try:
             name = data['devels'].keys()[0]
-            email = data['devels'][name]           
+            email = data['devels'][name]
             name = self.ensure_string_format(name)
             email = self.ensure_string_format(email)
             ## XXX:(multiple+owner) cprov
             ## We don't support multiple owners, so, use the first
             name = name.split(',')[0]
-            email = email.split(',')[0]            
+            email = email.split(',')[0]
             owner = self.ensurePerson(name, email)[0]
         except:
             print '@ Exception on Owner Field !!! '
-	    try: 
-		print '@\tDEBUG:', name
-		print '@\tDEBUG:', email
-	    except:
-		print '@\tDEBUG: No Devel'
+            try:
+                print '@\tDEBUG:', name
+                print '@\tDEBUG:', email
+            except:
+                print '@\tDEBUG: No Devel'
 
             ## in case of 
-	    owner = 1
+            owner = 1
 
             
         ## both have project

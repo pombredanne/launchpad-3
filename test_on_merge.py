@@ -4,7 +4,9 @@
 """Tests that get run automatically on a merge."""
 
 import sys
-import os
+import os, os.path
+import tabnanny
+from StringIO import StringIO
 
 def main():
     """Call test.py with whatever arguments this script was run with.
@@ -15,6 +17,17 @@ def main():
     Otherwise, print output and exit(1).
     """
     here = os.path.dirname(os.path.realpath(__file__))
+
+    org_stdout = sys.stdout
+    sys.stdout = StringIO()
+    tabnanny.check(os.path.join(here, 'lib', 'canonical'))
+    tabnanny_results = sys.stdout.getvalue()
+    sys.stdout = org_stdout
+    if len(tabnanny_results) > 0:
+        print '---- tabnanny bitching ----'
+        print tabnanny_results
+        print '---- end tabnanny bitching ----'
+        return 1
     stdin, out, err = os.popen3('cd %s; python test.py %s < /dev/null' %
         (here, ' '.join(sys.argv[1:])))
     errlines = err.readlines()
