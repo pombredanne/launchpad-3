@@ -4,7 +4,7 @@ from canonical.arch.sqlbase import SQLBase, quote
 from canonical.rosetta.interfaces import *
 from sqlobject import ForeignKey, MultipleJoin, IntCol, BoolCol, StringCol, \
     DateTimeCol
-from zope.interface import implements
+from zope.interface import implements, directlyProvides
 from zope.component import getUtility
 from canonical.rosetta import pofile
 from types import NoneType
@@ -219,6 +219,71 @@ class RosettaProduct(SQLBase):
         return count
 
 
+def createMessageIDSighting(messageSet, messageID):
+    """Creates in the database a new message ID sighting.
+
+    Returns None.
+    """
+
+    RosettaPOMessageIDSighting(
+        poMessageSet=messageSet,
+        poMessageID_=messageID,
+        dateFirstSeen="NOW",
+        dateLastSeen="NOW",
+        inLastRevision=False,
+        pluralForm=0)
+
+
+def createMessageSetFromMessageID(poTemplate, messageID, poFile=None):
+    """Creates in the database a new message set.
+
+    As a side-effect, creates a message ID sighting in the database for the
+    new set's prime message ID.
+
+    Returns that message set.
+    """
+    messageSet = RosettaPOMessageSet(
+        poTemplateID=potemplate.id,
+        poFile=poFile,
+        primeMessageID_=messageID,
+        sequence=0,
+        isComplete=False,
+        obsolete=False,
+        fuzzy=False,
+        commentText='',
+        fileReferences='',
+        sourceComment='',
+        flagsComment='')
+
+    createMessageIDSighting(messageSet, messageID)
+
+    return messageSet
+
+
+def createMessageSetFromText(potemplate_or_pofile, text):
+    context = potemplate_or_pofile
+
+    if isinstance(text, unicode):
+        text = text.encode('utf-8')
+
+    messageIDs = RosettaPOMessageID.selectBy(msgid=text)
+    if messageIDs.count() == 0:
+        # If there are no existing message ids, create a new one.
+        # We do not need to check whether there is already a message set
+        # with the given text in this template.
+        messageID = RosettaPOMessageID(msgid=text)
+    else:
+        # Otherwise, use the existing one.
+        assert messageIDs.count() == 1
+        messageID = messageIDs[0]
+
+        if context.hasMessageID(messageID):
+            raise KeyError("There is already a message set for"
+                           " this template, file and primary msgid")
+
+    return context.createMessageSetFromMessageID(messageID)
+
+
 class RosettaPOTemplate(SQLBase):
     implements(IEditPOTemplate)
 
@@ -290,29 +355,43 @@ class RosettaPOTemplate(SQLBase):
             '''
             % self.id, orderBy='sequence')
 
-    def __iter__(self, offset=0, count=None):
-        if count == None:
-            return iter(self.currentMessageSets()[offset:])
-        else:
-            return iter(self.currentMessageSets()[offset:offset+count])
+    def __iter__(self):
+            return iter(self.currentMessageSets())
 
     def __len__(self):
         '''Return the number of CURRENT MessageSets in this POTemplate.'''
         # XXX: Should we use the cached value POTemplate.messageCount instead?
         return self.currentMessageSets().count()
 
-    def __getitem__(self, msgid):
-        if type(msgid) is unicode:
-            msgid = msgid.encode('utf-8')
-        msgid_obj = RosettaPOMessageID.selectBy(msgid=msgid)
-        if msgid_obj.count() == 0:
+    def __getitem__(self, key):
+        if isinstance(key, slice):
+            return RosettaPOMessageSet.select('''
+                potemplate = %d AND
+                pofile is NULL AND
+                sequence > 0
+                ''' % self.id)[key]
+
+        if isinstance(key, unicode):
+            text = key.encode('utf-8')
+        elif isinstance(key, string):
+            text = key
+        else:
+            raise TypeError, "Can't index with this type."
+
+        results = RosettaPOMessageID.selectBy(msgid=text)
+
+        if results.count() == 0:
             raise KeyError, msgid
-        msgid_obj = msgid_obj[0]
+
+        messageID = results[0]
+
         sets = RosettaPOMessageSet.select('''
             potemplate = %d AND
             pofile IS NULL AND
-            primemsgid = %d
+            primemsgid = %d AND
+            sequence > 0
             ''' % (self.id, msgid_obj.id))
+
         if sets.count() == 0:
             raise KeyError, msgid
         else:
@@ -323,49 +402,6 @@ class RosettaPOTemplate(SQLBase):
         self._connection.query('UPDATE POMsgSet SET sequence = 0'
                                ' WHERE potemplate = %d AND pofile IS NULL'
                                % self.id)
-
-    def makeMessageSet(self, text, pofile=None, update=False):
-        if type(text) is unicode:
-            text = text.encode('utf-8')
-        messageIDs = RosettaPOMessageID.selectBy(msgid=text)
-        if messageIDs.count() == 0:
-            messageID = RosettaPOMessageID(msgid=text)
-        else:
-            assert messageIDs.count() == 1
-            messageID = messageIDs[0]
-            if pofile is None:
-                pofileID = None
-            else:
-                pofileID = pofile.id
-            existing = RosettaPOMessageSet.selectBy(
-                poTemplateID=self.id,
-                poFileID=pofileID,
-                primeMessageID_ID=messageID.id)
-            if existing.count():
-                assert existing.count() == 1
-                if not update:
-                    raise KeyError, "There is already a message set for " \
-                          "this template, file and primary msgid"
-                existing = existing[0]
-                return existing
-        msgSet = RosettaPOMessageSet(poTemplate=self,
-                                   poFile=pofile,
-                                   primeMessageID_=messageID,
-                                   sequence=0,
-                                   isComplete=False,
-                                   obsolete=False,
-                                   fuzzy=False,
-                                   commentText='',
-                                   fileReferences='',
-                                   sourceComment='',
-                                   flagsComment='')
-        sighting = RosettaPOMessageIDSighting(poMessageSet=msgSet,
-                                              poMessageID_=messageID,
-                                              dateFirstSeen="NOW",
-                                              dateLastSeen="NOW",
-                                              inLastRevision=False,
-                                              pluralForm=0)
-        return msgSet
 
     def newPOFile(self, person, language_code, variant=None):
         try:
@@ -419,6 +455,20 @@ class RosettaPOTemplate(SQLBase):
 
     def rosettaCount(self, language):
         return self.poFile(language).rosettaCount
+
+    def hasMessageID(self, messageID):
+        results = RosettaPOMessageSet.selectBy(
+            poTemplateID=self.id,
+            poFileID=None,
+            primeMessageID_ID=messageID.id)
+
+        return results.count() > 0
+
+    def createMessageSetFromMessageID(self, messageID):
+        return createMessageSetFromMessageID(self, messageID)
+
+    def createMessageSetFromText(self, text):
+        return createMessageSetFromText(self, text)
 
 
 class RosettaPOFile(SQLBase):
@@ -525,9 +575,23 @@ class RosettaPOFile(SQLBase):
                                ' WHERE pofile = %d'
                                % self.id)
 
+    def hasMessageID(self, messageID):
+        results = RosettaPOMessageSet.selectBy(
+            poTemplateID=self.poTemplate.id,
+            poFileID=self.id,
+            primeMessageID_ID=messageID.id)
+
+        return results.count() > 0
+
+    def createMessageSetFromMessageID(self, messageID):
+        return createMessageSetFromMessageID(self.poTemplate, messageID, self)
+
+    def createMessageSetFromText(self, text):
+        return createMessageSetFromText(self, text)
+
 
 class RosettaPOMessageSet(SQLBase):
-    implements(IEditPOMessageSet)
+    implements(IEditPOTemplateOrPOFileMessageSet)
 
     _table = 'POMsgSet'
 
@@ -544,6 +608,21 @@ class RosettaPOMessageSet(SQLBase):
         StringCol(name='sourceComment', dbName='sourcecomment', notNull=False),
         StringCol(name='flagsComment', dbName='flagscomment', notNull=False),
     ]
+
+    def __init__(self, **kw):
+        SQLBase.__init__(self, **kw)
+
+        poFile = None
+
+        if kw.has_key('poFile'):
+            poFile = kw['poFile']
+
+        if poFile is None:
+            # this is a IPOTemplateMessageSet
+            directlyProvides(self, IPOTemplateMessageSet)
+        else:
+            # this is a IPOFileMessageSet
+            directlyProvides(self, IEditPOFileMessageSet)
 
     def messageIDs(self):
         return RosettaPOMessageID.select('''
@@ -599,7 +678,8 @@ class RosettaPOMessageSet(SQLBase):
 
     def translationsForLanguage(self, language):
         if self.poFile is not None:
-            raise RuntimeError, "Naughty!"
+            raise RuntimeError, """This method cannot be used with PO template
+                message sets!"""
 
         # Find the number of plural forms.
 

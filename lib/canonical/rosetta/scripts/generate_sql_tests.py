@@ -3,20 +3,20 @@
 
 import sys
 
-interfaces = [
-    'Projects',
-    'Project',
-    'Product',
-    'EditPOTemplate',
-    'EditPOFile',
-    'EditPOMessageSet',
-    'POMessageID',
-    'POTranslationSighting',
-    'POTranslation',
-    'Branch',
-    'Person',
-    'Language',
-    'Languages'
+tests = [
+    ('IProjects', 'RosettaProjects'),
+    ('IProject', 'RosettaProject'),
+    ('IProduct', 'RosettaProduct'),
+    ('IEditPOTemplate', 'RosettaPOTemplate'),
+    ('IEditPOFile', 'RosettaPOFile'),
+    ('IEditPOTemplateOrPOFileMessageSet', 'RosettaPOMessageSet'),
+    ('IPOMessageID', 'RosettaPOMessageID'),
+    ('IPOTranslationSighting', 'RosettaPOTranslationSighting'),
+    ('IPOTranslation', 'RosettaPOTranslation'),
+    ('IBranch', 'RosettaBranch'),
+    ('IPerson', 'RosettaPerson'),
+    ('ILanguage', 'RosettaLanguage'),
+    ('ILanguages', 'RosettaLanguages'),
     ]
 
 if '-c' in sys.argv:
@@ -26,6 +26,7 @@ elif '-o' in sys.argv:
 else:
     raise "no mode specified -- use '-c' (class) or '-o' (object)"
 
+# Preamble.
 print """#!/usr/bin/python
 
 # YO! Generated code -- modify at your peril!
@@ -52,15 +53,10 @@ if mode == 'object':
     print "SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))"
     print
 
-for i in interfaces:
-    interface = "I%s" % i
+for t in tests:
+    (interface, implementation) = t
 
-    if i.startswith('Edit'):
-        implementation = "Rosetta%s" % i[4:]
-    else:
-        implementation = "Rosetta%s" % i
-
-    print "def test_verify_sql_%s():" % i.lower()
+    print "def test_verify_sql_%s():" % interface[1:].lower()
     print "    '''"
     print "    >>> from canonical.rosetta.interfaces import %s" % interface
     print "    >>> from canonical.rosetta.sql import %s" % implementation
@@ -74,6 +70,7 @@ for i in interfaces:
     print "    '''"
     print
 
+# Postamble.
 print """
 def test_suite():
     suite = DocTestSuite()

@@ -52,31 +52,20 @@
     <!-- Navigation doodads. -->
 
     <div class="listingBar">
-        <span class="previous">
-            <!-- Link to beginning, if this is not the beginning page. -->
-            <span tal:condition="not:view/atBeginning">
-                <a tal:attributes="href view/beginningURL">&laquo; Beginning</a>
-            </span>
+        <!-- Link to previous page and beginning, if this is not the beginning page. -->
+        <span class="previous" tal:condition="not:view/atBeginning">
+            <a tal:attributes="href view/beginningURL">&laquo; Beginning</a>
 
-            <!-- Link to previous page, if it's not the beginning page. -->
-            <span tal:condition="python: view.offset - view.count > 0">
-                <a tal:attributes="href view/previousURL">&laquo; Previous
-                    <span tal:replace="view/count">5</span> messages</a>
-            </span>
+            <a tal:attributes="href view/previousURL">&laquo; Previous
+                <span tal:replace="view/count">5</span> messages</a>
         </span>
 
-        <span class="next">
-            <!-- Link to next page, if it's not the end page. -->
-            <span tal:condition="python:
-                    view.offset + 2 * view.count < len(context)">
-                <a tal:attributes="href view/nextURL">Next
-                    <span tal:replace="view/count">5</span> messages &raquo;</a>
-            </span>
+        <!-- Link to next page and end, if tis is not the end page. -->
+        <span class="next" tal:condition="not:view/atEnd">
+            <a tal:attributes="href view/nextURL">Next
+                <span tal:replace="view/count">5</span> messages &raquo;</a>
 
-            <!-- Link to end page, if this is not the end page. -->
-            <span tal:condition="not:view/atEnd">
-                <a tal:attributes="href view/endURL">End &raquo;</a>
-            </span>
+            <a tal:attributes="href view/endURL">End &raquo;</a>
         </span>
         &nbsp;
     </div>

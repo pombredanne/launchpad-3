@@ -330,7 +330,9 @@ class TranslatePOTemplate:
         }
 
     def messageSets(self):
-        for set in self.context.__iter__(self.offset, self.count):
+        # XXX: The call to __getitem__() should be replaced with a [] when the
+        # implicit __getslice__ problem has been fixed.
+        for set in self.context.__getitem__(slice(self.offset, self.offset+self.count)):
             yield self._messageSet(set)
 
     def submitTranslations(self):

@@ -1,5 +1,6 @@
-from ipofile import IPOHeader, IPOMessage
-from pofile import POHeader, POMessage, POParser, POInvalidInputError
+from canonical.rosetta.ipofile import IPOHeader, IPOMessage
+from canonical.rosetta.pofile import POHeader, POMessage, POParser, POInvalidInputError
+from canonical.rosetta.interfaces import IPOTemplate, IPOFile
 from zope.interface import implements
 import sets
 
@@ -209,9 +210,10 @@ class MessageProxy(POMessage):
 
 
 class TemplateImporter(object):
-    def __init__(self, potemplate, changeset, person):
+    __used_for__ = IPOTemplate
+
+    def __init__(self, potemplate, person):
         self.potemplate = potemplate
-        self.changeset = changeset # are we going to use this?
         self.len = 0
         self.parser = POParser(translation_factory=self)
         self.person = person
@@ -230,7 +232,7 @@ class TemplateImporter(object):
         try:
             msgset = self.potemplate[msgid]
         except KeyError:
-            msgset = self.potemplate.makeMessageSet(msgid, update=True)
+            msgset = self.potemplate.createMessageSetFromText(msgid)
         else:
             try:
                 msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
@@ -258,9 +260,10 @@ class TemplateImporter(object):
 
 
 class POFileImporter(object):
-    def __init__(self, pofile, changeset, person):
+    __used_for__ = IPOFile
+
+    def __init__(self, pofile, person):
         self.pofile = pofile
-        self.changeset = changeset # are we going to use this?
         self.len = 0
         self.parser = POParser(translation_factory=self)
         self.person = person
@@ -284,7 +287,7 @@ class POFileImporter(object):
         try:
             msgset = self.pofile[msgid]
         except KeyError:
-            msgset = self.pofile.poTemplate.makeMessageSet(msgid, self.pofile, update=True)
+            msgset = self.pofile.createMessageSetFromText(msgid)
         else:
             msgset.getMessageIDSighting(0, allowOld=True).dateLastSeen = "NOW"
         self.len += 1

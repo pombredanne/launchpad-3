@@ -151,13 +151,19 @@ class IPOTemplate(Interface):
     def __len__():
         """Returns the number of Current IPOMessageSets in this template."""
 
-    def __iter__(offset=0, count=None):
+    def __iter__():
         """Return an iterator over Current IPOMessageSets in this template."""
 
-    def __getitem__(msgid):
-        """Get the IPOMessageSet for this template that has the
-        given primary message ID. Note that this will also find old
-        (not current) MessageSets"""
+    def __getitem__(key):
+        """Extract one or several POMessageSets from this template.
+
+        If the key is a string or a unicode object, returns the
+        IPOTemplateMessageSet in this template that has a primary message ID
+        with the given text.
+
+        If the key is a slice, returns the message IDs by sequence within the
+        given slice.
+        """
 
     def languages():
         """Return an iterator over languages that this template's messages are
@@ -201,6 +207,27 @@ class IPOTemplate(Interface):
         but there was no translation in the PO file for this language when we
         last parsed it."""
 
+    def hasMessageID(msgid):
+        """Check whether a message set with the given message ID exists within
+        this PO file."""
+
+    def createMessageSetFromMessageID(msgid):
+        """Creates in the database a new message set.
+
+        As a side-effect, creates a message ID sighting in the database for the
+        new set's prime message ID.
+
+        Returns the newly created message set.
+        """
+    def createMessageSetFromText(text):
+        """Creates in the database a new message set.
+
+        Similar to createMessageSetFromMessageID, but takes a text object
+        (unicode or string) rather than a message ID.
+
+        Returns the newly created message set.
+        """
+
     # TODO provide a way to look through non-current message ids.
 
 
@@ -210,12 +237,10 @@ class IEditPOTemplate(IPOTemplate):
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
-    def makeMessageSet(messageid_text, pofile=None, update=False):
-        """Add a message set to this template.  Primary message ID
-        is 'messageid_text'.
-        If one already exists, behaviour depends on 'update'; if
-        update is allowed, the existing one is and returned.  If it is
-        not, then a KeyError is raised."""
+    #def makeMessageSet(messageid_text, pofile=None):
+    #    """Add a message set to this template.  Primary message ID
+    #    is 'messageid_text'.
+    #    If one already exists, a KeyError is raised."""
 
     def newPOFile(person, language_code, variant=None):
         """Create and return a new po file in the given language. The
@@ -251,7 +276,7 @@ class IPOFile(Interface):
         The number of msgsets matched to the potemplate that have a
         non-fuzzy translation in the PO file when we last parsed it
         """)
-    
+
     updatesCount = Attribute("""
         The number of msgsets where we have a newer translation in
         rosetta than the one in the PO file when we last parsed it
@@ -298,6 +323,10 @@ class IPOFile(Interface):
         given primary message ID. Note that this will also find old
         (not current) MessageSets"""
 
+    def hasMessageID(msgid):
+        """Check whether a message set with the given message ID exists within
+        this PO file."""
+
 
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
@@ -313,22 +342,47 @@ class IPOMessageSet(Interface):
 
     poTemplate = Attribute("""The template this set is associated with.""")
 
-    poFile = Attribute("""The PO file this set is associated with, if it's
-        associated with a PO file. For sets from PO templates, this is
-        None.""")
-
-    # Invariant: poTemplate == None || poFile == None
-    # Invariant: poTemplate != None || poFile != None
-
-    # Rephrased:
-    # Invariant: ((poTemplate == None) && (poFile != None)) ||
-    #            ((poTemplate != None) && (poFile == None))
-
-    # XXX: test that
+    # The primary message ID is the same as the message ID with plural
+    # form 0 -- i.e. it's redundant. However, it acts as a cached value.
 
     primeMessageID_ = Attribute("The primary message ID of this set.")
 
     sequence = Attribute("The ordering of this set within its file.")
+
+    def messageIDs():
+        """Return an iterator over this set's message IDs."""
+
+    def getMessageIDSighting(plural_form):
+        """Return the message ID sighting that is current and has the
+        plural form provided."""
+
+
+class IEditPOMessageSet(IPOMessageSet):
+    """Interface for editing a MessageSet."""
+
+    def makeMessageIDSighting(text, plural_form, update=False):
+        """Return a new message ID sighting that points back to us.
+        If one already exists, behaviour depends on 'update'; if update
+        is allowed, the existing one is "touched" and returned.  If it
+        is not, then a KeyError is raised."""
+
+
+class IPOTemplateMessageSet(IPOMessageSet):
+    def translationsForLanguage(language):
+        """Return an iterator over translation strings for this set in the
+        given language.
+
+        This method is applicable to PO template sets only.
+
+        XXX: This is quite UI-oriented. Refactor?
+        """
+
+# No IEditPOTemplateMessageSet.
+
+class IPOFileMessageSet(IPOMessageSet):
+    poFile = Attribute("""The PO file this set is associated with, if it's
+        associated with a PO file. For sets from PO templates, this is
+        None.""")
 
     isComplete = Attribute("For PO file message sets, whether the "
         "translation is complete or not. (I.e. all message IDs have "
@@ -368,31 +422,12 @@ class IPOMessageSet(Interface):
         Flags for this set.
         """)
 
-    def messageIDs():
-        """Return an iterator over this set's message IDs."""
-
-    def getMessageIDSighting(plural_form, allowOld=False):
-        """Return the message ID sighting that is current and has the
-        plural form provided.  If allowOld is True, include non-current."""
-
-    # The primary message ID is the same as the message ID with plural
-    # form 0 -- i.e. it's redundant. However, it acts as a cached value.
-
     def nplurals():
         """Number of message IDs that have to point to this message set
         for it to be complete."""
 
     def translations():
         """Return an iterator over this set's translations."""
-
-    def translationsForLanguage(language):
-        """Return an iterator over translation strings for this set in the
-        given language.
-
-        This method is applicable to PO template sets only.
-
-        XXX: This is quite UI-oriented. Refactor?
-        """
 
     def getTranslationSighting(plural_form, allowOld=False):
         """Return the translation sighting that is current and has the
@@ -402,14 +437,8 @@ class IPOMessageSet(Interface):
         """Return an iterator over current translation sightings."""
 
 
-class IEditPOMessageSet(IPOMessageSet):
+class IEditPOFileMessageSet(IPOFileMessageSet):
     """Interface for editing a MessageSet."""
-
-    def makeMessageIDSighting(text, plural_form, update=False):
-        """Return a new message ID sighting that points back to us.
-        If one already exists, behaviour depends on 'update'; if update
-        is allowed, the existing one is "touched" and returned.  If it
-        is not, then a KeyError is raised."""
 
     def makeTranslationSighting(person, text, plural_form, update=False, fromPOFile=False):
         """Return a new translation sighting that points back to us.
@@ -419,6 +448,11 @@ class IEditPOMessageSet(IPOMessageSet):
         fromPOFile should be true when the sighting is coming from a POFile
         in the upstream source - so that the inLatestRevision field is
         set accordingly."""
+
+
+class IEditPOTemplateOrPOFileMessageSet(IPOTemplateMessageSet,
+        IEditPOFileMessageSet):
+    pass
 
 
 class IPOMessageIDSighting(Interface):
