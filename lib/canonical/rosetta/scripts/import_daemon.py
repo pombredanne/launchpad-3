@@ -4,6 +4,7 @@
 
 import canonical.lp, time
 import sqlos.connection
+import logging
 
 from canonical.launchpad.database import ProductSet
 
@@ -15,17 +16,25 @@ class ImportDaemon:
         self._tm = canonical.lp.initZopeless()
 
     def commit(self):
-        self._tm.commit()
+        try:
+            self._tm.commit()
+        except:
+            # We don't want to die, so we ignore any exception.
+            logging.warning('We got an error committing the transaction',
+                exc_info = 1)
 
     def nextImport(self):
         productSet = ProductSet()
         for product in productSet:
             for template in product.poTemplatesToImport():
                 # We have a template with raw data to be imported.
+                logging.info('Importing the template %s' % template.name)
                 yield template
             for template in product.potemplates:
                 for pofile in template.poFilesToImport():
                     # We have a po with raw data to be imported.
+                    logging.info('Importing the %s translation of %s' % (
+                        pofile.language.englishname, pofile.potemplate.name))
                     yield pofile
 
     def run(self):
@@ -53,7 +62,7 @@ class ImportDaemon:
                 SQLBase._connection.rollback()
                 SQLBase._connection.begin()
 
-            
+
 if __name__ == '__main__':
     daemon = ImportDaemon()
 

@@ -1086,7 +1086,7 @@ class POFile(SQLBase, RosettaStats):
 
         # XXX: Carlos Perello Marin 20/12/2004 All this code should be moved
         # into person.py, most of it comes from gina.
-        
+
         first_left_angle = last_translator.find("<")
         first_right_angle = last_translator.find(">")
         name = last_translator[:first_left_angle].replace(",","_")
@@ -1099,7 +1099,10 @@ class POFile(SQLBase, RosettaStats):
             # as the owner.
             person = self.rawimporter
         else:
-            person_set = getUtility(IPersonSet)
+            # This import is here to prevent circular dependencies.
+            from canonical.launchpad.database.person import PersonSet
+
+            person_set = PersonSet()
 
             person = person_set.getByEmail(email)
 
@@ -1117,8 +1120,12 @@ class POFile(SQLBase, RosettaStats):
                     familyname = " ".join(items[1:])
 
                 # We create a new user without a password.
-                person = person_set.createPerson(name, givenname,
-                    familyname, None, email)
+                try:
+                    person = person_set.createPerson(name, givenname,
+                        familyname, None, email)
+                except:
+                    # We had a problem creating the person...
+                    person = None
 
                 if person is None:
                     # XXX: Carlos Perello Marin 20/12/2004 We have already
@@ -1132,15 +1139,15 @@ class POFile(SQLBase, RosettaStats):
             file = StringIO.StringIO(rawdata)
 
             importer.doImport(file)
-                
+
             self.rawimportstatus = RosettaImportStatus.IMPORTED.value
-    
+
             # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
             # a race condition that prevents the statistics to be calculated
             # correctly. DON'T copy this, ask Andrew first.
             for object in SQLBase._connection._dm.objects:
                 object.sync()
-            
+
             # Now we update the statistics after this new import
             self.updateStatistics(newImport=True)
 
