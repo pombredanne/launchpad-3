@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-01 20:29:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1355
+
+    Summary:
+      Added the .sql patch needed to implement the PoTemplateLinkages spec
+    Revision:
+      launchpad--devel--0--patch-1355
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-567
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-568
+       Added the .sql patch needed to implement the PoTemplateLinkages spec
+    
+
+    new files:
+     database/schema/pending/.arch-ids/carlos-potemplate-linkages.sql.id
+     database/schema/pending/carlos-potemplate-linkages.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-567
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-568
+
+
 2005-03-01 20:18:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1354
 
     Summary:
