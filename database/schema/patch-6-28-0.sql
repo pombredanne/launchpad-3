@@ -1,8 +1,10 @@
-ALTER TABLE Bug ADD COLUMN private BOOLEAN;
-COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
+set client_min_messages = ERROR;
 
-UPDATE Bug
-SET private = FALSE;
+ALTER TABLE Bug ADD COLUMN private BOOLEAN;
+
+UPDATE Bug SET private = FALSE;
 
 ALTER TABLE Bug ALTER COLUMN private SET NOT NULL;
 ALTER TABLE Bug ALTER COLUMN private SET DEFAULT FALSE;
+
+UPDATE LaunchpadDatabaseRevision SET major=6, minor=28, patch=0;

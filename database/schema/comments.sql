@@ -115,6 +115,7 @@ COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import: 0 pending
 */
 COMMENT ON TABLE Bug IS 'A software bug that requires fixing. This particular bug may be linked to one or more products or sourcepackages to identify the location(s) that this bug is found.';
 COMMENT ON COLUMN Bug.name IS 'A lowercase name uniquely identifying the bug';
+COMMENT ON COLUMN Bug.private IS 'Is this bug private? If so, only explicit subscribers will be able to see it';
 COMMENT ON TABLE ProductBugAssignment IS 'Links a given Bug to a particular product.';
 COMMENT ON COLUMN ProductBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
 COMMENT ON TABLE SourcepackageBugAssignment IS 'Links a given Bug to a particular sourcepackage.';

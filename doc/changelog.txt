@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-24 05:26:21 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1242
+
+    Summary:
+      Bug.private db patch
+    Revision:
+      launchpad--devel--0--patch-1242
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-98
+       Private bugs DB update
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-28-0.sql.id
+     database/schema/patch-6-28-0.sql
+
+    removed files:
+     database/schema/pending/.arch-ids/bradb-bug-privacy.sql.id
+     database/schema/pending/bradb-bug-privacy.sql
+
+    modified files:
+     database/schema/comments.sql doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-98
+
+
 2005-01-22 14:33:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1241
 
     Summary:
