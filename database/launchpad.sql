@@ -33,6 +33,7 @@
 	  - ManifestEntry
 	  - ArchConfigEntry
 	- clean up comments to fit inside 72 character terminals
+	- add Changeset.name for Robert Weir
   v0.97:
         - rename Membership.label to Membership.role
 	- rename EmailAddress.label to EmailAddress.status
@@ -497,6 +498,7 @@ CREATE TABLE Changeset (
   id             serial PRIMARY KEY,
   branch         integer NOT NULL REFERENCES Branch,
   datecreated    timestamp NOT NULL,
+  name           text NOT NULL,
   logmessage     text NOT NULL,
   archid         integer REFERENCES ArchUserID,
   gpgkey         integer REFERENCES GPGKey,
