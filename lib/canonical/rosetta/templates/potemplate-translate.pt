@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-    <div tal:content="view/submitTranslations" />
+    <div tal:content="structure view/submitTranslations" />
     <!--
     <div tal:condition="not: view/submitted">
     -->
@@ -70,11 +70,17 @@
         &nbsp;
     </div>
 
-    <!-- The actual translation form. -->
+    <!-- The translation form. -->
 
     <form method="post" tal:attributes="action request/URL">
         <tal:msgstring repeat="set view/messageSets">
             <fieldset class="message-strings">
+                <input type="hidden"
+                    tal:attributes="
+                        name string:set_${set/id}_msgid;
+                        value set/messageID/text
+                        " />
+
                 <legend>String #<span tal:replace="set/sequence">120</span></legend>
 
                 <!-- Simple message. -->
@@ -89,19 +95,22 @@
                     <div class="field" tal:repeat="language view/languages">
                         <label class="language-code"
                             tal:content="language/englishName">pt_BR</label>:
+
                         <br/>
+
                         <input type="text"
                             tal:condition="not:set/messageID/isMultiline"
                             tal:attributes="
-                                name string:t_${set/id}_${language/code};
+                                name string:set_${set/id}_translation_${language/code};
                                 value python:set['translations'][language][0];
                                 " />
                         <textarea
                             tal:condition="set/messageID/isMultiline"
-                            tal:attributes="name string:t_${set/id}_${language/code};
-                                            rows set/messageID/lines"
-                            tal:content="python:set['translations'][language][0]"
-                            ></textarea>
+                            tal:attributes="
+                                name string:set_${set/id}_translation_${language/code};
+                                rows set/messageID/lines"
+                            tal:content="python:set['translations'][language][0]
+                            "></textarea>
                     </div>
                 </tal:simple-message>
 
@@ -123,14 +132,14 @@
 
                         <div class="field" tal:repeat="i python:
                                 range(view.pluralForms[language.code])">
+
                             <input type="text"
                                 tal:attributes="
                                     name
-                                    string:t_${set/id}_${language/code}_${i};
+                                    string:set_${set/id}_translation_${language/code}_${i};
                                     value
                                     python:set['translations'][language][i];
-                                    "
-                                />
+                                    " />
                             <!--
                             <img src="++resource++info.gif" title="Example: 1 dead horse." />
                             -->

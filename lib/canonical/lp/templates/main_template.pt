@@ -21,9 +21,13 @@
                   tal:condition="python:'/rosetta' in path_info">
                    <img src="++resource++rosetta.png" alt="Rosetta" />
                </a>
-               <a href="/rosetta"
+               <a href="/malone"
                   tal:condition="python:'/malone' in path_info">
-                   <img src="++resource++malone.png" alt="Rosetta" />
+                   <img src="++resource++malone.png" alt="Malone" />
+               </a>
+               <a href="/soyuz"
+                  tal:condition="python:'/soyuz' in path_info">
+                   <img src="++resource++soyuz.png" alt="Soyuz" />
                </a>
       </div>
       

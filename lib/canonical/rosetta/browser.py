@@ -337,33 +337,54 @@ class TranslatePOTemplate:
         if not "SUBMIT" in self.request.form:
             return None
 
-        from pprint import pformat
-        from xml.sax.saxutils import escape
         self.submitted = True
 
-        translations = []
+        sets = {}
 
-        for field in self.request.form:
-            value = self.request.form[field]
-
-            # singular
-
-            match = re.match('^t_(\d+)_([a-z]+)$', field)
+        for key in self.request.form:
+            match = re.match('set_(\d+)_msgid$', key)
 
             if match:
-                translations.append((int(match.group(1)), match.group(2),
-                    value))
+                id = int(match.group(1))
+                sets[id] = {}
+                sets[id]['msgid'] = self.request.form[key]
+                sets[id]['translations'] = {}
 
-            # plural
-
-            match = re.match('^t_(\d+)_([a-z]+)_(\d+)$', field)
+        for key in self.request.form:
+            match = re.match(r'set_(\d+)_translation_([a-z]+)$', key)
 
             if match:
-                translations.append((int(match.group(1)), match.group(2),
-                    int(match.group(3)), value))
+                id = int(match.group(1))
+                code = match.group(2)
 
-        # XXX: database code goes here
-        # If the PO file doesn't exist, we need to create it first.
+                sets[id]['translations'][code] = {}
+                sets[id]['translations'][code][0] = self.request.form[key]
 
-        return translations
+                #msgid = msgids[index]
+                #set = potemplate[msgid]
+
+                # Validation goes here.
+
+                # Database update goes here.
+                # If the PO file doesn't exist, we need to create it first.
+
+                # set.submitRosettaTranslation(language, person, msgstrs)
+
+                continue
+
+            match = re.match(r'set_(\d+)_translation_([a-z]+)_(\d+)$', key)
+
+            if match:
+                id = int(match.group(1))
+                code = match.group(2)
+                pluralform = int(match.group(3))
+
+                if not code in sets[id]['translations']:
+                    sets[id]['translations'][code] = {}
+
+                sets[id]['translations'][code][pluralform] = self.request.form[key]
+
+        from pprint import pformat
+        from xml.sax.saxutils import escape
+        return "<pre>" + escape(pformat(sets)) + "</pre>"
 

@@ -4,35 +4,35 @@
 <!-- Created with Sodipodi ("http://www.sodipodi.com/") -->
 <svg
    id="svg559"
-   sodipodi:version="0.32"
+   sodipodi:version="0.33"
    width="99.99999mm"
-   height="20mm"
-   sodipodi:docname="rosetta.svg"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
+   height="22mm"
+   sodipodi:docname="/home/daf/src/canonical/dists/launchpad/lib/canonical/rosetta/images/rosetta.svg"
    inkscape:version="0.39"
-   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   sodipodi:docbase="/home/daf/src/canonical/dists/launchpad/lib/canonical/rosetta/images"
+   xmlns="http://www.w3.org/2000/svg"
    xmlns:cc="http://web.resource.org/cc/"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:dc="http://purl.org/dc/elements/1.1/"
-   sodipodi:docbase="/home/daf/src/canonical/dists/launchpad/lib/canonical/rosetta/images">
+   xmlns:xlink="http://www.w3.org/1999/xlink">
   <defs
      id="defs561" />
   <sodipodi:namedview
      id="base" />
   <path
-     style="font-size:12.000;fill:#ffffff;fill-rule:evenodd;stroke:#84a9d9;stroke-width:3.096084;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1.0000;"
+     style="font-size:12.000;fill:#ffffff;fill-rule:evenodd;stroke:#84a9d9;stroke-width:2.7250;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1.0000;stroke-dasharray:none;"
      d="M 45.03162 24.56577 C 68.79131 24.69957 69.22834 34.62512 69.35817 39.71525 C 69.30092 48.82754 51.63524 53.61844 46.82819 54.10400 C 46.55304 56.88788 46.52067 60.93421 51.06874 65.33664 C 43.75297 63.63717 39.41532 58.87869 38.83264 54.31442 C 28.79774 52.85773 19.30944 47.83836 19.07035 39.82855 C 18.74664 34.40645 22.04811 24.43546 45.03162 24.56577 z "
      id="path563"
      sodipodi:nodetypes="cscccss" />
   <path
-     style="font-size:12.000;fill:#ffffff;fill-rule:evenodd;stroke:#6f99cf;stroke-width:2.798384;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1.0000000;"
+     style="font-size:12.000;fill:#ffffff;fill-rule:evenodd;stroke:#6f99cf;stroke-width:2.4250;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1.0000000;stroke-dasharray:none;"
      d="M 29.91221 9.602664 C 50.22675 9.717052 50.60041 18.20341 50.71142 22.55547 C 50.66248 30.34647 35.55831 34.44270 31.44828 34.85787 C 31.21303 37.23808 31.18534 40.69772 35.07394 44.46177 C 28.81896 43.00872 25.11026 38.94022 24.61208 35.03777 C 16.03222 33.79231 7.919743 29.50073 7.715318 22.65234 C 7.438540 18.01645 10.26129 9.491252 29.91221 9.602664 z "
      id="path566"
      sodipodi:nodetypes="cscccss" />
   <path
-     style="font-size:12.000;fill:#ffffff;fill-rule:evenodd;stroke:#5f93d9;stroke-width:3.527750;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1.0000;"
+     style="font-size:12.000;fill:#ffffff;fill-rule:evenodd;stroke:#5f93d9;stroke-width:3.1500;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1.0000;stroke-dasharray:none;"
      d="M 66.47080 15.50026 C 91.79001 15.64282 92.25574 26.21990 92.39410 31.64415 C 92.33307 41.35458 73.50788 46.45994 68.38530 46.97739 C 68.09209 49.94400 68.05760 54.25594 72.90420 58.94733 C 65.10822 57.13631 60.48584 52.06548 59.86492 47.20159 C 49.17132 45.64931 39.06021 40.30047 38.80543 31.76488 C 38.46046 25.98687 41.97863 15.36139 66.47080 15.50026 z "
      id="path567"
      sodipodi:nodetypes="cscccss" />
@@ -42,12 +42,14 @@
      y="50.6212974"
      id="text568"
      sodipodi:linespacing="100%"
-     transform="scale(1.190802,1.190802)"><tspan
-       x="187.74191"
-       y="50.621296"
+     transform="scale(1.190802,1.190802)">
+    <tspan
+       x="187.741913"
+       y="50.6212959"
        sodipodi:role="line"
        id="tspan577"
-       style="stroke:#7a9ec6;stroke-opacity:1.0000000;fill:#8fb3d9;fill-opacity:0.94117647;stroke-width:1.4695978;stroke-dasharray:none;stroke-miterlimit:4.0000000;">Rosetta</tspan></text>
+       style="stroke:#7a9ec6;stroke-opacity:1.0000000;fill:#8fb3d9;fill-opacity:0.94117647;stroke-width:1.4695978;stroke-dasharray:none;stroke-miterlimit:4.0000000;">Rosetta</tspan>
+  </text>
   <metadata
      id="metadata10">
     <rdf:RDF
