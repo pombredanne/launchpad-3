@@ -16,7 +16,10 @@
 	- create custom schema systems for components, etc.
         - add Series to products and projects
 	- setup translatable package descriptions
-        - mirror recent changes to dia
+	  - mirror recent changes to dia
+  GROUCH
+	- TranslationEffortPOTemplate.category must be from a
+	  schema that matches TranslationEffort.categories
   CHANGES
 
 
@@ -33,6 +36,23 @@
         - add BugSubscription.id
         - add ProductBugAssignment.id, moving existing pk to unique constraint
         - add SourcepackageBugAssignment.id, and add unique constraint
+	- add POMsgSet.flagscomment for Carlos
+	- rename TranslationEffortPOTemplateRelationship to
+	  TranslationEffortPOTemplate
+	- add TranslationEffort.categories
+	- add TranslationEffortPOTemplate.category
+	- add POFile.filename and POFile.variant
+	- add Project.shortdesc
+	- add Project.wikiurl and homepageurl
+	- remove POTemplate.project (we have .product)
+	- make Country.title and .description NULLable
+	- add POTranslationSighting.source ENUM
+	- add DOAP-related tables ProductCVSModule, ProductBKBranch
+	  and ProductSVNModule
+	- add ProjectRole and ProductRole
+	- add DOAP fields for Product:
+	  - screenshotsurl, wikiurl, listurl, programminglang
+	  - downloadurl, lastdoap
   v0.98:
         - merge SourceSource table from Andrew Bennetts
 	- change SourceSource.homepageurl to SourceSource.product
@@ -178,7 +198,7 @@ DROP TABLE ArchArchiveLocationSigner;
 DROP TABLE BugSubscription;
 DROP TABLE SpokenIn;
 DROP TABLE Country;
-DROP TABLE TranslationEffortPOTemplateRelationship;
+DROP TABLE TranslationEffortPOTemplate;
 DROP TABLE POComment;
 DROP TABLE BranchRelationship;
 DROP TABLE ProjectBugsystem;
@@ -226,8 +246,6 @@ DROP TABLE ChangesetFileHash;
 DROP TABLE ChangesetFile;
 DROP TABLE ChangesetFileName;
 DROP TABLE ManifestEntry;
-DROP TABLE ProductLabel;
-DROP TABLE Product;
 DROP TABLE Manifest;
 DROP TABLE Changeset;
 DROP TABLE BranchLabel;
@@ -235,11 +253,18 @@ DROP TABLE Branch;
 DROP TABLE ArchNamespace;
 DROP TABLE ArchArchiveLocation;
 DROP TABLE ArchArchive;
+DROP TABLE ProductCVSModule;
+DROP TABLE ProductSVNModule;
+DROP TABLE ProductBKBranch;
+DROP TABLE ProductLabel;
+DROP TABLE ProductRole;
+DROP TABLE Product;
 DROP TABLE POTranslation;
 DROP TABLE ProjectRelationship;
 DROP TABLE POMsgID;
 DROP TABLE Language;
 DROP TABLE TranslationEffort;
+DROP TABLE ProjectRole;
 DROP TABLE Project;
 DROP TABLE EmailAddress;
 DROP TABLE GPGKey;
@@ -262,6 +287,13 @@ DROP TABLE Label;
 DROP TABLE Schema;
 DROP TABLE Person;
 
+
+
+/*
+  FOAF: MODEL OF A PERSON IN LAUNCHPAD
+  Based on the FOAF ("Friend of a Friend") model
+  from Ed Dumbill.
+*/
 
 
 /*
@@ -290,41 +322,6 @@ CREATE TABLE Person (
   karma                 integer,
   karmatimestamp        timestamp
 );
-
-
-
-/*
-  REVELATION. THE SOYUZ METADATA
-*/
-
-
-/*
-  Schema
-  This is the (finger finger) "metadata" (finger finger).
-*/
-CREATE TABLE Schema (
-  id             serial PRIMARY KEY,
-  name           text NOT NULL,
-  title          text NOT NULL,
-  description    text NOT NULL,
-  owner          integer NOT NULL REFERENCES Person,
-  extensible     boolean NOT NULL DEFAULT false
-);
-
-
-
-/*
-  Label
-  The set of labels in all schemas
-*/
-CREATE TABLE Label (
-  id             serial PRIMARY KEY,
-  schema         integer NOT NULL REFERENCES Schema,
-  name           text NOT NULL,
-  title          text NOT NULL,
-  description    text NOT NULL
-);
-
 
 
 
@@ -410,17 +407,6 @@ CREATE TABLE IRCID (
 
 
 /*
-  PersonLabel
-  A neat way to attach tags to people...
-*/
-CREATE TABLE PersonLabel (
-  person       integer NOT NULL REFERENCES Person,
-  label        integer NOT NULL REFERENCES Label
-);
-
-
-
-/*
   Membership
   A table of memberships. It's only valid to have a membership
   in a team, not a non-team person.
@@ -450,6 +436,227 @@ CREATE TABLE TeamParticipation (
   team         integer NOT NULL REFERENCES Person,
   person       integer NOT NULL REFERENCES Person,
   PRIMARY KEY ( team, person )
+);
+
+
+
+/*
+  REVELATION. THE SOYUZ METADATA
+*/
+
+
+/*
+  Schema
+  This is the (finger finger) "metadata" (finger finger).
+*/
+CREATE TABLE Schema (
+  id             serial PRIMARY KEY,
+  name           text NOT NULL,
+  title          text NOT NULL,
+  description    text NOT NULL,
+  owner          integer NOT NULL REFERENCES Person,
+  extensible     boolean NOT NULL DEFAULT false
+);
+
+
+
+/*
+  Label
+  The set of labels in all schemas
+*/
+CREATE TABLE Label (
+  id             serial PRIMARY KEY,
+  schema         integer NOT NULL REFERENCES Schema,
+  name           text NOT NULL,
+  title          text NOT NULL,
+  description    text NOT NULL
+);
+
+
+
+/*
+  PersonLabel
+  A neat way to attach tags to people... this table is
+  here, not in the FOAF section, because we need to 
+  define Label before we can use it.
+*/
+CREATE TABLE PersonLabel (
+  person       integer NOT NULL REFERENCES Person,
+  label        integer NOT NULL REFERENCES Label
+);
+
+
+
+/*
+  DOAP. DESCRIPTION OF A PROJECT
+  This is the Launchpad subsystem that models the open source world
+  of projects and products.
+*/
+
+
+
+/*
+ The Project table. This stores information about an open
+ source project, which can be translated or packaged, or
+ about which bugs can be filed.
+*/
+CREATE TABLE Project (
+    id           serial PRIMARY KEY,
+    owner        integer NOT NULL REFERENCES Person,
+    name         text NOT NULL UNIQUE,
+    title        text NOT NULL,
+    description  text NOT NULL,
+    datecreated  timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    homepageurl  text,
+    wikiurl      text,
+    -- the last DOAP we received for this project
+    lastdoap     text
+    );
+
+
+/*
+ The ProjectRelationship table. This stores information about
+ the relationships between open source projects. For example,
+ the Gnome project aggregates the GnomeMeeting project.
+*/
+CREATE TABLE ProjectRelationship (
+  subject       integer NOT NULL REFERENCES Project,
+  -- see Project Relationships schema
+  label         integer NOT NULL,
+  object        integer NOT NULL REFERENCES Project
+);
+
+
+
+/*
+  ProjectRole
+  The roles that a person can take on in a project.
+*/
+CREATE TABLE ProjectRole (
+  person        integer NOT NULL REFERENCES Person,
+  -- see Project Role schema
+  role          integer NOT NULL,
+  project       integer NOT NULL REFERENCES Project
+);
+
+
+/*
+  Product
+  A table of project products. A product is something that
+  can be built, or a branch of code that is useful elsewhere, or
+  a set of docs... some distinct entity. Products can be made
+  up of other products, but that is not reflected in this
+  database. For example, Firefax includes Gecko, both are
+  products.
+*/
+CREATE TABLE Product (
+  id               serial PRIMARY KEY,
+  project          integer NOT NULL REFERENCES Project,
+  owner            integer NOT NULL REFERENCES Person,
+  name             text NOT NULL,
+  title            text NOT NULL,
+  description      text NOT NULL,
+  datecreated      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  homepageurl      text,
+  screenshotsurl   text,
+  wikiurl          text,
+  listurl          text,
+  programminglang  text,
+  downloadurl      text,
+  -- the last DOAP we received for this product
+  lastdoap         text,
+  UNIQUE ( project, name ),
+  -- ( id, project ) must be unique so it can be a foreign key
+  UNIQUE ( id, project )
+);
+
+
+
+/*
+  ProductLabel
+  A label or metadata on a Product.
+*/
+CREATE TABLE ProductLabel (
+  product  integer NOT NULL REFERENCES Product,
+  label      integer NOT NULL REFERENCES Label,
+  PRIMARY KEY ( product, label )
+);
+
+
+
+/*
+  Product Role
+  The roles that a person has with regard to a
+  product.
+*/
+CREATE TABLE ProductRole (
+  person    integer NOT NULL REFERENCES Person,
+  -- see the Product Role schema
+  role      integer NOT NULL,
+  product   integer NOT NULL REFERENCES Product
+);
+
+
+/*
+  ProductRelease
+  A specific tarball release of Product.
+*/
+CREATE TABLE ProductRelease (
+  id               serial PRIMARY KEY,
+  product          integer NOT NULL REFERENCES Product,
+  datereleased     timestamp NOT NULL,
+  -- the version without anything else, "1.3.29"
+  version          text NOT NULL,
+  -- the GSV Name "The Warty Web Release"
+  title            text,
+  description      text,
+  changelog        text,
+  owner            integer NOT NULL REFERENCES Person,
+  UNIQUE ( product, version )
+);
+
+
+
+/*
+  ProductCVSModule
+  A CVS Module, initially based on the DOAP
+  model. this is specifically tied to a Product
+*/
+CREATE TABLE ProductCVSModule (
+  id           serial PRIMARY KEY,
+  product      integer NOT NULL REFERENCES Product,
+  anonroot     text NOT NULL,
+  module       text NOT NULL,
+  weburl       text
+);
+
+
+
+/*
+  ProductBKBranch
+  A BitKeeper Branch, initially based on the DOAP
+  model. This is specifically associated with a
+  Product.
+*/
+CREATE TABLE ProductBKBranch (
+  id           serial PRIMARY KEY,
+  product      integer NOT NULL REFERENCES Product,
+  locationurl  text NOT NULL,
+  weburl       text
+);
+
+
+
+/*
+  ProductSVNModule
+  A Subversion module, again tied to a Product. This
+  came from the DOAP model.
+*/
+CREATE TABLE ProductSVNModule (
+  id           serial PRIMARY KEY,
+  product      integer NOT NULL REFERENCES Product,
+  locationurl  text NOT NULL,
+  weburl       text
 );
 
 
@@ -534,7 +741,8 @@ CREATE TABLE Branch (
   archnamespace          integer NOT NULL REFERENCES ArchNamespace,
   title                  text NOT NULL,
   description            text NOT NULL,
-  owner                  integer REFERENCES Person
+  owner                  integer REFERENCES Person,
+  project                integer REFERENCES Product
 );
 
 
@@ -628,7 +836,6 @@ CREATE TABLE BranchLabel (
 
 
 
-
 /*
   Manifest
   A release manifest. This is sort of an Arch config
@@ -674,101 +881,6 @@ CREATE TABLE ManifestEntry (
 
 
 /*
-  FLOSS. THE OPEN SOURCE WORLD
-  This is the Launchpad subsystem that models the open source world
-  of projects and products.
-*/
-
-
-/*
- The Project table. This stores information about an open
- source project, which can be translated or packaged, or
- about which bugs can be filed.
-*/
-CREATE TABLE Project (
-    id           serial PRIMARY KEY,
-    owner        integer NOT NULL REFERENCES Person,
-    name         text NOT NULL UNIQUE,
-    title        text NOT NULL,
-    description  text NOT NULL,
-    datecreated  timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
-    homepageurl  text
-    );
-
-
-/*
- The ProjectRelationship table. This stores information about
- the relationships between open source projects. For example,
- the Gnome project aggregates the GnomeMeeting project.
-*/
-CREATE TABLE ProjectRelationship (
-  subject       integer NOT NULL REFERENCES Project,
-  -- see Project Relationships schema
-  label         integer NOT NULL,
-  object        integer NOT NULL REFERENCES Project
-);
-
-
-
-/*
-  Product
-  A table of project products. A product is something that
-  can be built, or a branch of code that is useful elsewhere, or
-  a set of docs... some distinct entity. Products can be made
-  up of other products, but that is not reflected in this
-  database. For example, Firefax includes Gecko, both are
-  products.
-*/
-CREATE TABLE Product (
-  id            serial PRIMARY KEY,
-  project       integer NOT NULL REFERENCES Project,
-  owner         integer NOT NULL REFERENCES Person,
-  name          text NOT NULL,
-  title         text NOT NULL,
-  description   text NOT NULL,
-  datecreated   timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
-  homepageurl   text,
-  manifest      integer REFERENCES Manifest,
-  UNIQUE ( project, name ),
-  -- ( id, project ) must be unique so it can be a foreign key
-  UNIQUE ( id, project )
-);
-
-
-
-/*
-  ProductLabel
-  A label or metadata on a Product.
-*/
-CREATE TABLE ProductLabel (
-  product  integer NOT NULL REFERENCES Product,
-  label      integer NOT NULL REFERENCES Label,
-  PRIMARY KEY ( product, label )
-);
-
-
-
-/*
-  ProductRelease
-  A specific tarball release of Product.
-*/
-CREATE TABLE ProductRelease (
-  id               serial PRIMARY KEY,
-  product          integer NOT NULL REFERENCES Product,
-  datereleased     timestamp NOT NULL,
-  -- the version without anything else, "1.3.29"
-  version          text NOT NULL,
-  -- the GSV Name "The Warty Web Release"
-  title            text,
-  description      text,
-  changelog        text,
-  owner            integer NOT NULL REFERENCES Person,
-  UNIQUE ( product, version )
-);
-
-
-
-/*
    BUTTRESS phase 2
 */
 
@@ -778,11 +890,11 @@ CREATE TABLE ProductRelease (
   A table to model Arch configs.
 */
 CREATE TABLE ArchConfig (
-  id              serial PRIMARY KEY,
+  id               serial PRIMARY KEY,
   name             text NOT NULL,
   title            text NOT NULL,
   description      text NOT NULL,
-  productrelease  integer REFERENCES ProductRelease,
+  productrelease   integer REFERENCES ProductRelease,
   owner            integer REFERENCES Person
 );
 
@@ -1324,8 +1436,8 @@ CREATE TABLE Country (
   iso3166code2        char(2) NOT NULL,
   iso3166code3        char(3) NOT NULL,
   name                text NOT NULL,
-  title               text NOT NULL,
-  description         text NOT NULL
+  title               text,
+  description         text
 );
 
 
@@ -1373,7 +1485,6 @@ CREATE TABLE License (
 */
 CREATE TABLE POTemplate (
   id                    serial PRIMARY KEY,
-  project               integer NOT NULL REFERENCES Project,
   product               integer NOT NULL REFERENCES Product,
   branch                integer REFERENCES Branch,
   -- see Translation Priority schema
@@ -1393,10 +1504,7 @@ CREATE TABLE POTemplate (
   owner                 integer REFERENCES Person,
   -- EITHER branch OR changeset:
   CHECK ( NOT ( branch IS NULL AND changeset IS NULL ) ),
-  CHECK ( NOT ( branch IS NOT NULL AND changeset IS NOT NULL ) ),
-  -- make sure, if we refer to a Product, that it is from
-  -- the same Project
-  FOREIGN KEY ( product, project ) REFERENCES Product ( id, project )
+  CHECK ( NOT ( branch IS NOT NULL AND changeset IS NOT NULL ) )
 );
 
 
@@ -1429,7 +1537,12 @@ CREATE TABLE POFile (
   owner                integer REFERENCES Person,
   -- the number of plural forms needed to translate this
   -- pofile.
-  pluralforms          integer NOT NULL
+  pluralforms          integer NOT NULL,
+  -- the dialect or other variation
+  variant              text,
+  -- the filename within the branch where we find this
+  -- PO file
+  filename             text
 );
 
 
@@ -1448,9 +1561,15 @@ CREATE TABLE POMsgSet (
   iscurrent           boolean NOT NULL,
   obsolete            boolean NOT NULL,
   fuzzy               boolean NOT NULL,
+  -- the free text comment of the msgset
   commenttext         text,
+  -- references to the specific lines of code that
+  -- use this messageset
   filereferences      text,
-  sourcecomment       text
+  -- The comment included in the source code
+  sourcecomment       text,
+  -- For example: c-source, python-source etc
+  flagscomment        text
 );
 
 
@@ -1489,6 +1608,9 @@ CREATE TABLE POTranslationSighting (
   iscurrent             boolean NOT NULL,
   pluralform            integer NOT NULL,
   deprecated            boolean NOT NULL DEFAULT FALSE,
+  -- where this translation came from, see the
+  -- Rosetta Translation Origin schema
+  origin                integer NOT NULL,
   person                integer REFERENCES Person,
   CHECK ( pluralform >= 0 ),
   -- these are the things that really define a translation
@@ -1554,22 +1676,24 @@ CREATE TABLE TranslationEffort (
   project               integer NOT NULL REFERENCES Project,
   name                  text NOT NULL UNIQUE,
   title                 text NOT NULL,
-  description           text NOT NULL
+  description           text NOT NULL,
+  categories            integer REFERENCES Schema
 );
 
 
 
 /*
-  TranslationeffortPOTemplateRelationship
+  TranslationEffortPOTemplate
   A translation project incorporates a POTfile that is under translation.
   The inheritance pointer allows this project to specify a custom
   translation inheritance sequence.
 */
-CREATE TABLE TranslationeffortPOTemplateRelationship (
+CREATE TABLE TranslationEffortPOTemplate (
   translationeffort  integer NOT NULL REFERENCES TranslationEffort ON DELETE CASCADE,
   potemplate         integer NOT NULL REFERENCES POTemplate,
   -- see Translation Priority schema
   priority           integer NOT NULL,
+  category           integer REFERENCES Label,
   UNIQUE (translationeffort , potemplate)
 );
 
@@ -1585,7 +1709,7 @@ CREATE TABLE TranslationeffortPOTemplateRelationship (
 CREATE TABLE POSubscription (
   id                   serial PRIMARY KEY,
   person               integer NOT NULL REFERENCES Person,
-  potemplate              integer NOT NULL REFERENCES POTemplate,
+  potemplate           integer NOT NULL REFERENCES POTemplate,
   language             integer REFERENCES Language,
   notificationinterval interval NOT NULL,
   lastnotified         timestamp
