@@ -322,17 +322,16 @@ Calendar stuff.
   border-collapse: collapse;
 }
 
-.cal-table th, .cal-table td.cal-daycell {
-  border: 1px solid black;
-}
-
 .cal-table th {
   text-align: center;
   color: black;
   background-color: #eee;
+  border: 1px solid black;
 }
 
 .cal-daycell {
+  height: 3em;
+  border: 1px solid black;
 }
 
 .cal-dayhead {

@@ -134,6 +134,7 @@ class MergedCalendar(CalendarMixin, EditableCalendarMixin):
 
     def __init__(self, person):
         self.id = None
+        self.owner = person
         self.person = person
         self.subscriptions = CalendarSubscriptionSet(self.person)
         self.revision = 0

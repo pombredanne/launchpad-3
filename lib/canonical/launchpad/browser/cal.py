@@ -177,7 +177,15 @@ class CalendarViewBase(object):
 
     def eventColour(self, event):
         return '#9db8d2'
-
+    def eventStart(self, event):
+        dtstart = event.dtstart.astimezone(self.user_timezone)
+        return dtstart.strftime('%H:%M')
+    def eventStartDate(self, event):
+        dtstart = event.dtstart.astimezone(self.user_timezone)
+        return dtstart.strftime('%Y-%m-%d')
+    def eventEnd(self, event):
+        dtend = (event.dtstart + event.duration).astimezone(self.user_timezone)
+        return dtend.strftime('%H:%M')
 
 class MonthInfo(object):
     def __init__(self, year, month):
@@ -191,7 +199,9 @@ class MonthInfo(object):
 class DayInfo(object):
     def __init__(self, date):
         self.date = date
-        self.dayname = daynames[self.date.weekday()]
+        self.dayname = '%s, %d %s' % (daynames[self.date.weekday()],
+                                      self.date.day,
+                                      monthnames[self.date.month - 1])
         self.dayURL = '../%04d-%02d-%02d' % (date.year,
                                              date.month,
                                              date.day)
@@ -202,12 +212,6 @@ class DayInfo(object):
         return len(self.events) != 0
     hasEvents = property(hasEvents)
 
-class EventInfo(object):
-    def __init__(self, event, user_timezone):
-        self.event = event
-        self.dtstart = event.dtstart.astimezone(user_timezone)
-        self.timestring = '%02d:%02d' % (self.dtstart.hour,
-                                         self.dtstart.minute)
 
 class CalendarDayView(CalendarViewBase):
     __used_for__ = ICalendarDay
@@ -347,7 +351,7 @@ class CalendarDayView(CalendarViewBase):
                     cols.append('')
                 else:
                     # Either None, or new event
-                    cols.append(ev and EventInfo(ev, self.user_timezone))
+                    cols.append(ev)
             yield { 'title': title, 'cols': tuple(cols),
                     'time': start.strftime("%H:%M"),
                     'addURL': '../+add?field.dtstart=%s' %
@@ -418,8 +422,8 @@ class CalendarWeekView(CalendarViewBase):
                          0, 0, 0, 0, self.user_timezone).astimezone(UTC)
         end = start + timedelta(weeks=1)
         for event in context.calendar.expand(start, end):
-            ev = EventInfo(event, self.user_timezone)
-            self.days[ev.dtstart.weekday()].events.append(ev)
+            dtstart = event.dtstart.astimezone(self.user_timezone)
+            self.days[dtstart.weekday()].events.append(event)
 
         self.layout = [ [ 1, 2 ],
                         [ 3, 4 ],
@@ -460,8 +464,8 @@ class CalendarMonthView(CalendarViewBase):
                          0, 0, 0, 0, self.user_timezone).astimezone(UTC)
 
         for event in context.calendar.expand(start, end):
-            ev = EventInfo(event, self.user_timezone)
-            self.days[ev.dtstart.day - 1].events.append(ev)
+            dtstart = event.dtstart.astimezone(self.user_timezone)
+            self.days[dtstart.day - 1].events.append(event)
 
         # lay out the dayinfo objects in a 2D grid
         self.layout = calendar.monthcalendar(context.year, context.month)
@@ -492,8 +496,8 @@ class CalendarYearView(CalendarViewBase):
         end = datetime(context.year+1, 1, 1,
                          0, 0, 0, 0, self.user_timezone).astimezone(UTC)
         for event in context.calendar.expand(start, end):
-            ev = EventInfo(event, self.user_timezone)
-            self.months[ev.dtstart.month - 1].days[ev.dtstart.day - 1].events.append(ev)
+            dtstart = event.dtstart.astimezone(self.user_timezone)
+            self.months[dtstart.month - 1].days[dtstart.day - 1].events.append(event)
 
         self.daynames = [ d[0] for d in daynames ]
         self.layout = [ [  1,  2,  3 ],
