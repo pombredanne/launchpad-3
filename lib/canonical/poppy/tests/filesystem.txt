@@ -2,7 +2,7 @@
 This is an implementation of IFileSystem which the FTP Server in Zope3
 uses to know what to do when people make FTP commands.
 
-    >>> from canonical.lucille.uploader.filesystem import UploadFileSystem
+    >>> from canonical.poppy.filesystem import UploadFileSystem
 
 The UploadFileSystem class implements the interface IFileSystem.
 

@@ -15,7 +15,7 @@ import logging
 import os
 import sys
 from zope.server.serverbase import ServerBase
-from canonical.lucille.uploader.filesystem import UploadFileSystem
+from canonical.poppy.filesystem import UploadFileSystem
 
 class Channel(FTPServerChannel):
 

@@ -2,6 +2,61 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-07 12:40:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1375
+
+    Summary:
+      Rename canonical.lucille.uploader to canonical.poppy
+    Revision:
+      launchpad--devel--0--patch-1375
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1374
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-1
+       Rename canonical.lucille.uploader to canonical.poppy
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/poppy/server.py
+     lib/canonical/poppy/tests/filesystem.txt
+
+    renamed files:
+     lib/canonical/lucille/uploader/.arch-ids/=id
+       ==> lib/canonical/poppy/.arch-ids/=id
+     lib/canonical/lucille/uploader/.arch-ids/__init__.py.id
+       ==> lib/canonical/poppy/.arch-ids/__init__.py.id
+     lib/canonical/lucille/uploader/.arch-ids/filesystem.py.id
+       ==> lib/canonical/poppy/.arch-ids/filesystem.py.id
+     lib/canonical/lucille/uploader/.arch-ids/server.py.id
+       ==> lib/canonical/poppy/.arch-ids/server.py.id
+     lib/canonical/lucille/uploader/tests/.arch-ids/=id
+       ==> lib/canonical/poppy/tests/.arch-ids/=id
+     lib/canonical/lucille/uploader/tests/.arch-ids/__init__.py.id
+       ==> lib/canonical/poppy/tests/.arch-ids/__init__.py.id
+     lib/canonical/lucille/uploader/tests/.arch-ids/filesystem.txt.id
+       ==> lib/canonical/poppy/tests/.arch-ids/filesystem.txt.id
+     lib/canonical/lucille/uploader/tests/.arch-ids/test_filesystem.py.id
+       ==> lib/canonical/poppy/tests/.arch-ids/test_filesystem.py.id
+
+    new directories:
+     lib/canonical/poppy/.arch-ids
+     lib/canonical/poppy/tests/.arch-ids
+
+    removed directories:
+     lib/canonical/lucille/uploader/.arch-ids
+     lib/canonical/lucille/uploader/tests/.arch-ids
+
+    renamed directories:
+     lib/canonical/lucille/uploader
+       ==> lib/canonical/poppy
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--base-0
+     daniel.silverstone@canonical.com--desktop/launchpad--upload-and-queue--0--patch-1
+
+
 2005-03-07 05:35:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1374
 
     Summary:
