@@ -103,6 +103,7 @@ class CursorWrapper(object):
         self.__dict__['_cursor'] = cursor
 
     def execute(self, cmd, params=None):
+        cmd = cmd.encode('utf8')
         if DEBUG:
             print >> sys.stderr, '%s [%r]' % (cmd, params)
         if params is None:

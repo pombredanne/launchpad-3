@@ -2,6 +2,55 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-08 16:46:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1287
+
+    Summary:
+      Install psycopg type converters so that psycopg automatically returns Unicode strings and datetime objects, and allow test suites to pass with new psycopgda
+    Revision:
+      launchpad--devel--0--patch-1287
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--dbconverters--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-108
+    
+     * stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-1
+       Install psycopg type converters on lp/__init__.py module load, ensuring everything uses them. psycopg will return Unicode strings and datetime instances in all situations.
+    
+     * stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-2
+       Fix system documentation tests
+    
+     * stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-3
+       Fix authserver to cope with Unicode comming from the database
+    
+     * stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-4
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-5
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-6
+       Disable test_disconnects again to get this through PQM
+    
+
+    modified files:
+     database/schema/pending/stub-derivation.sql
+     database/schema/security.py doc/changelog.txt
+     lib/canonical/authserver/database.py
+     lib/canonical/database/ftests/test_disconnects.py
+     lib/canonical/launchpad/doc/testing.txt
+     lib/canonical/lp/__init__.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--dbconverters--0--base-0
+     stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-1
+     stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-2
+     stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-3
+     stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-4
+     stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-5
+     stuart.bishop@canonical.com/launchpad--dbconverters--0--patch-6
+
+
 2005-02-08 10:06:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1286
 
     Summary:

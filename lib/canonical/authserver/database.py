@@ -208,7 +208,6 @@ class DatabaseUserDetailsStorage(object):
             return None
 
         row = list(row)
-        row[1] = row[1].decode('utf-8')
         passwordDigest = row[2]
         if passwordDigest:
             salt = saltFromDigest(passwordDigest)
@@ -246,5 +245,5 @@ def saltFromDigest(digest):
 
     :param digest: base64-encoded digest
     """
-    return digest.decode('base64')[20:].encode('base64')
+    return digest.encode('us-ascii').decode('base64')[20:].encode('base64')
 
