@@ -73,6 +73,9 @@ class TeamView(object):
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
         user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+
         return user.inTeam(self.context.teamowner)
 
     def userHaveMembershipEntry(self):

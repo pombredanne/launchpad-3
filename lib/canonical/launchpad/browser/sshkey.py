@@ -48,9 +48,9 @@ class SSHKeyEditView(object):
             return 'Invalid public key'
         
         if kind == 'ssh-rsa':
-            keytype = int(SSHKeyType.RSA)
+            keytype = SSHKeyType.RSA
         elif kind == 'ssh-dss':
-            keytype = int(SSHKeyType.DSA)
+            keytype = SSHKeyType.DSA
         else:
             return 'Invalid public key'
         

@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-21 21:18:17 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1468
+
+    Summary:
+      Fix team home page which was broken if you were not logged in and added a pagetest for it (I had tests for all team pages but the home). Fix a problem when removing sshkey, introduced when I removed all database code from the views and started using security proxied objects. Also added pagetests for add/del sshkeys.
+    Revision:
+      launchpad--devel--0--patch-1468
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-200
+       Fix a stupid but I introduced in TeamView and add a pagetest for the team's home page.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-201
+       Fix removal of ssh keys and add page test for it and for addition of ssh keys.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/95-add-sshkey.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/96-del-sshkey.txt.id
+     lib/canonical/launchpad/pagetests/foaf/95-add-sshkey.txt
+     lib/canonical/launchpad/pagetests/foaf/96-del-sshkey.txt
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-team-home.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-team-home.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/sshkey.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/interfaces/ssh.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-200
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-201
+
+
 2005-03-21 19:43:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1467
 
     Summary:

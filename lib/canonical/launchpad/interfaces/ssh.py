@@ -14,6 +14,9 @@ class ISSHKey(Interface):
     keytext = TextLine(title=_("Key text"), required=True)
     comment = TextLine(title=_("Comment describing this key"), required=True)
 
+    def destroySelf():
+        """Remove this SSHKey from the database."""
+
 
 class ISSHKeySet(Interface):
     """The set of SSHKeys."""
