@@ -106,7 +106,15 @@ class DebianBuildManager(BuildManager):
         elif self._state == 3:
             # Finished the sbuild run
             if success != 0:
-                self._slave.buildFail()
+                if success == 1:
+                    # deps failure
+                    self._slave.depFail()
+                elif success == 2:
+                    # space issue -> builderfail
+                    self._slave.builderFail()
+                else:
+                    # anything else is a buildfail
+                    self._slave.buildFail()
                 self._state = 10
                 self.alreadyfailed = True
                 self.doUnmounting()

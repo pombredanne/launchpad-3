@@ -29,6 +29,7 @@ class IDistroArchRelease(Interface):
     processorfamily = Attribute("ProcessorFamily")
     architecturetag = Attribute("ArchitectureTag")
     owner = Attribute("Owner")
+    chroot = Attribute("Chroot")
  
 class IDistroTools(Interface):
     """Interfaces to Tools for Distribution and DistroRelase Manipulation"""

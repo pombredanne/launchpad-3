@@ -33,9 +33,19 @@ class IBuilder(Interface):
     title = Attribute("The Builder Title")
     description = Attribute("The Builder Description")
     owner = Attribute("The Builder Owner")
+    builderok = Attribute("Whether or not the builder is ok")
+    failnotes = Attribute("The reason for a builder not being ok")
 
 class IBuildSet(Interface):
     """Inteface sor IBuildSet"""
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
         """return a build for a SourcePackageRelease and an ArchTag"""
         
+class IBuildQueue(Interface):
+    """A build queue entry"""
+    build = Attribute("The build in question")
+    builder = Attribute("The builder building the build")
+    created = Attribute("The datetime that the queue entry waw created")
+    buildstart = Attribute("The datetime of the last build attempt")
+    logtail = Attribute("The current tail of the log of the build")
+

@@ -147,7 +147,7 @@ class AliasSearchResource(resource.Resource):
 
     def _cb_getByAlias(self, row, alias, request):
         # Desired format is fileid/aliasid/filename
-        ret = "/%s/%s/%s\n" % (row.content.id, alias, row.filename)
+        ret = "/%s/%s/%s\n" % (row.content.id, alias, quote(row.filename))
         response = static.Data(ret.encode('utf-8'), 
                                'text/plain; charset=utf-8').render(request)
         request.write(response)
