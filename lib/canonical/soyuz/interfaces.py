@@ -304,6 +304,7 @@ class IRelease(Interface):
     binarycount = Attribute("Binary Packages Counter")
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
+    displayname = Attribute("Distrorelease Displayname")
 
 ################################################################
    

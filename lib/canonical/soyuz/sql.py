@@ -654,6 +654,12 @@ class Release(SQLBase):
                    notNull=True)
     ]
 
+    def displayname(self):
+        return "%s %s (%s)" % (self.distribution.title, self.version,
+                               self.title)
+
+    displayname = property(displayname)
+
     def parent(self):
         if self.parentrelease:
             return self.parentrelease.title
