@@ -7,7 +7,7 @@ from canonical.lp import dbschema
 import urlparse, urllib2
 
 # FIXME: Hard-coded config!
-librarianHost = 'localhost'
+librarianHost = 'macaroni.ubuntu.com'
 librarianPort = '9090'
 
 
