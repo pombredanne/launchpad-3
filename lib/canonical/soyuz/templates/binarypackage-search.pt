@@ -1,0 +1,44 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+
+<div metal:fill-slot="main">
+
+    <h1>Search Packages in
+    <spam tal:content="context/release/title"> TITLE </spam>
+    </h1>
+
+    <form name="search" action="" method="POST">
+    Name: <input type="text" name="name" 
+        tal:attributes="value request/name|nothing" />
+	<input type="hidden" name="release" tal:attributes="value context/release/name" />
+    <input type="submit" value="Search"/>
+    </form>
+
+    <ul>
+    <li tal:repeat="package view/results">  
+      <a tal:attributes="href package/name" tal:content="package/name">
+        PACKAGE
+      </a>
+       - 
+      <spam tal:content="package/shortdesc"> TITLE </spam>
+    </li>
+    </ul>
+
+</div>
+
+
+
+</body>
+</html>
