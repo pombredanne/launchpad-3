@@ -36,7 +36,6 @@ __all__ = ('ManifestEntryType', 'Packaging', 'BranchRelationships',
 'DistributionRole', 'DOAPRole')
 
 from zope.interface.advice import addClassAdvisor
-from zope.schema.vocabulary import SimpleVocabulary
 import sys
 
 
@@ -185,15 +184,6 @@ class DBSchema:
     name = "See lower-cased-spaces-inserted class name."
     items = ItemsDescriptor()
 
-
-# TODO: Make DBSchema classes provide an interface, so we can adapt IDBSchema
-# to IVocabulary
-def vocabulary(schema):
-    '''Adapt IDBSchema to IVocabulary'''
-    return SimpleVocabulary.fromItems([
-        (i.title, int(i)) for i in [getattr(schema, a) for a in dir(schema)]
-        if isinstance(i, Item)
-        ])
 
 class ManifestEntryType(DBSchema):
     """A Sourcerer Manifest.
