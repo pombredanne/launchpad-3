@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-19 11:00:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1217
+
+    Summary:
+      Optimize tests by not dropping the db if we are sure no changes have been made
+    Revision:
+      launchpad--devel--0--patch-1217
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-86
+       Don't drop db between tests if we can prove we don't have to, speeding up tests
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-87
+       Merge from Rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/ftests/pgsql.py
+     lib/canonical/launchpad/ftests/harness.py test.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-86
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-87
+
+
 2005-01-19 10:50:20 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1216
 
     Summary:

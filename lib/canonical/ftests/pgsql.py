@@ -16,6 +16,8 @@ from zope.app.rdb.interfaces import DatabaseException
 
 class ConnectionWrapper(object):
     real_connection = None
+    committed = False
+
     def __init__(self, real_connection):
         self.__dict__['real_connection'] = real_connection
         PgTestSetup.connections.append(self)
@@ -35,6 +37,16 @@ class ConnectionWrapper(object):
             self.__dict__['real_connection'].rollback()
         except psycopg.InterfaceError:
             pass
+
+    def commit(self):
+        # flag that a connection has had commit called. This allows
+        # optimizations by subclasses, since if no commit has been made,
+        # dropping and recreating the database might be unnecessary
+        try:
+            return self.__dict__['real_connection'].commit()
+        finally:
+            ConnectionWrapper.committed = True
+
 
     def __getattr__(self, key):
         return getattr(self.__dict__['real_connection'], key)
@@ -95,6 +107,7 @@ class PgTestSetup(object):
                     if 'being accessed by other users' not in x:
                         raise
                 time.sleep(0.1)
+            ConnectionWrapper.committed = False
         finally:
             con.close()
 

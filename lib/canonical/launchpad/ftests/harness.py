@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 import unittest
-from canonical.ftests.pgsql import PgTestSetup
+from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
 from canonical.functional import FunctionalTestSetup, FunctionalDocFileSuite
 
 from zope.app import zapi
@@ -62,11 +62,19 @@ class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
     dbname = 'launchpad_ftest' # Needs to match ftesting.zcml
 
+    reset_db = True
+
     def setUp(self):
-        super(LaunchpadTestSetup, self).setUp()
+        if LaunchpadTestSetup.reset_db:
+            super(LaunchpadTestSetup, self).setUp()
+        LaunchpadTestSetup.reset_db = False
 
     def tearDown(self):
-        super(LaunchpadTestSetup, self).tearDown()
+        if ConnectionWrapper.committed:
+            LaunchpadTestSetup.reset_db = True
+
+        if LaunchpadTestSetup.reset_db:
+            super(LaunchpadTestSetup, self).tearDown()
 
 class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
     txn = None
