@@ -82,13 +82,13 @@ class RosettaStats(object):
         # this object.
         return 0
 
-    def currentPercent(self, language=None):
-        try:
+    def currentPercentage(self, language=None):
+        if self.messageCount() > 0:
             percent = float(self.currentCount(language)) / self.messageCount()
             percent *= 100
-        except ZeroDivisionError:
+            percent = round(percent, 2)
+        else:
             percent = 0
-        percent = round(percent, 2)
         # We use float(str()) to prevent problems with some floating point
         # representations that could give us:
         # >>> x = 3.141592
@@ -102,13 +102,13 @@ class RosettaStats(object):
         # this object.
         return 0
 
-    def updatesPercent(self, language=None):
-        try:
+    def updatesPercentage(self, language=None):
+        if self.messageCount() > 0:
             percent = float(self.updatesCount(language)) / self.messageCount()
             percent *= 100
-        except ZeroDivisionError:
+            percent = round(percent, 2)
+        else:
             percent = 0
-        percent = round(percent, 2)
         return float(str(percent))
 
     def rosettaCount(self, language=None):
@@ -116,25 +116,25 @@ class RosettaStats(object):
         # this object.
         return 0
 
-    def rosettaPercent(self, language=None):
-        try:
+    def rosettaPercentage(self, language=None):
+        if self.messageCount() > 0:
             percent = float(self.rosettaCount(language)) / self.messageCount()
             percent *= 100
-        except ZeroDivisionError:
+            percent = round(percent, 2)
+        else:
             percent = 0
-        percent = round(percent, 2)
         return float(str(percent))
 
     def translatedCount(self, language=None):
         return self.currentCount(language) + self.rosettaCount(language)
 
-    def translatedPercent(self, language=None):
-        try:
+    def translatedPercentage(self, language=None):
+        if self.messageCount() > 0:
             percent = float(self.translatedCount(language)) / self.messageCount()
             percent *= 100
-        except ZeroDivisionError:
+            percent = round(percent, 2)
+        else:
             percent = 0
-        percent = round(percent, 2)
         return float(str(percent))
 
     def untranslatedCount(self, language=None):
@@ -145,15 +145,30 @@ class RosettaStats(object):
         else:
             return untranslated
 
-    def untranslatedPercent(self, language=None):
-        try:
+    def untranslatedPercentage(self, language=None):
+        if self.messageCount() > 0:
             percent = float(self.untranslatedCount(language)) / self.messageCount()
             percent *= 100
-        except ZeroDivisionError:
+            percent = round(percent, 2)
+        else:
             percent = 100
-        percent = round(percent, 2)
         return float(str(percent))
 
+    def nonUpdatesCount(self, language=None):
+        nonupdates = self.currentCount() - self.updatesCount()
+        if nonupdates < 0:
+            return 0
+        else:
+            return nonupdates
+
+    def nonUpdatesPercentage(self, language=None):
+        if self.messageCount() > 0:
+            percent = float(self.nonUpdatesCount(language)) / self.messageCount()
+            percent *= 100
+            percent = round(percent, 2)
+        else:
+            percent = 0
+        return float(str(percent))
 
 class POTemplate(SQLBase, RosettaStats):
     implements(IEditPOTemplate)
@@ -514,6 +529,8 @@ class POTemplate(SQLBase, RosettaStats):
         return self.createMessageSetFromMessageID(messageID)
 
     def doRawImport(self):
+        import logging
+        
         importer = TemplateImporter(self, self.rawimporter)
     
         file = StringIO.StringIO(base64.decodestring(self.rawfile))
@@ -524,6 +541,8 @@ class POTemplate(SQLBase, RosettaStats):
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             self.rawimportstatus = RosettaImportStatus.FAILED.value
+            logging.warning('We got an error importing %s' , self.name,
+            exc_info = 1)
         else:
             # The import has been done, we mark it that way.
             self.rawimportstatus = RosettaImportStatus.IMPORTED.value
@@ -1036,6 +1055,8 @@ class POFile(SQLBase, RosettaStats):
             return None
 
     def doRawImport(self):
+        import logging
+        
         importer = POFileImporter(self, self.rawimporter)
 
         file = StringIO.StringIO(base64.decodestring(self.rawfile))
@@ -1043,7 +1064,12 @@ class POFile(SQLBase, RosettaStats):
         try:
             importer.doImport(file)
         except:
+            # The import failed, we mark it as failed so we could review it
+            # later in case it's a bug in our code.
             self.rawimportstatus = RosettaImportStatus.FAILED.value
+            logging.warning(
+                'We got an error importing %s language for %s template' % (
+                    self.language.code, self.potemplate.name), exc_info = 1)
         else:
             self.rawimportstatus = RosettaImportStatus.IMPORTED.value
 

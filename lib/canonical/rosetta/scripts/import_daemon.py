@@ -8,6 +8,9 @@ import sqlos.connection
 from canonical.launchpad.database import ProductSet
 
 class ImportDaemon:
+    def __init__(self):
+        self.setUp()
+
     def setUp(self):
         self._tm = canonical.lp.initZopeless()
 
@@ -15,9 +18,6 @@ class ImportDaemon:
         self._tm.commit()
 
     def nextImport(self):
-        # We create the connection every time to prevent a problem with cached
-        # data that don't let the daemon to see changes done from launchpad.
-        self.setUp()
         productSet = ProductSet()
         for product in productSet:
             for template in product.poTemplatesToImport():
@@ -29,8 +29,11 @@ class ImportDaemon:
                     yield pofile
 
     def run(self):
+        from canonical.database.sqlbase import SQLBase
         while True:
+            found_any = False
             for object in self.nextImport():
+                found_any = True
                 # object could be a POTemplate or a POFile but both objects
                 # implement the doRawImport method so we don't need to care
                 # about it here.
@@ -39,8 +42,16 @@ class ImportDaemon:
                 # As soon as the import is done, we commit the transaction so
                 # it's not lost.
                 self.commit()
-            else:
+            if not found_any:
                 time.sleep(60)
+                # XXX: force a rollback/begin pair here to reset the
+                # transaction so we can see new pending imports.  There should
+                # be a way to do this without mucking about with
+                # SQLBase._connection, but calling self._tm.abort() doesn't
+                # seem to work.
+                #   -- Andrew Bennetts, 2004-12-16.
+                SQLBase._connection.rollback()
+                SQLBase._connection.begin()
 
             
 if __name__ == '__main__':

@@ -13,7 +13,7 @@ class IRosettaStats(Interface):
         object that have a non-fuzzy translation in its PO file for this
         language when we last parsed it."""
 
-    def currentPercent(language=None):
+    def currentPercentage(language=None):
         """Returns the percentage of current msgsets inside this object."""
 
     def updatesCount(language=None):
@@ -21,7 +21,7 @@ class IRosettaStats(Interface):
         newer translation in rosetta than the one in the PO file for this
         language, when we last parsed it."""
 
-    def updatesPercent(language=None):
+    def updatesPercentage(language=None):
         """Returns the percentage of updated msgsets inside this object."""
 
     def rosettaCount(language=None):
@@ -29,21 +29,29 @@ class IRosettaStats(Interface):
         but there was no translation in the PO file for this language when we
         last parsed it."""
 
-    def rosettaPercent(language=None):
+    def rosettaPercentage(language=None):
         """Returns the percentage of msgsets translated with Rosetta inside
         this object."""
 
     def translatedCount(language=None):
         """Returns the number of msgsets that are translated."""
     
-    def translatedPercent(language=None):
+    def translatedPercentage(language=None):
         """Returns the percentage of msgsets translated for this object."""
 
     def untranslatedCount(language=None):
         """Returns the number of msgsets that are untranslated."""
 
-    def untranslatedPercent(language=None):
+    def untranslatedPercentage(language=None):
         """Returns the percentage of msgsets untranslated for this object."""
+
+    def nonUpdatesCount(language=None):
+        """Returns the number of msgsets that are translated and don't have an
+        update from Rosetta."""
+
+    def nonUpdatesPercentage(language=None):
+        """Returns the percentage of msgsets for this object that are 
+        translated and don't have an update from Rosetta."""
 
 
 class IPOTemplate(IRosettaStats):

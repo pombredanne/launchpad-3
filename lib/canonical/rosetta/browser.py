@@ -344,18 +344,16 @@ class TemplateLanguages:
         currentCount = poFile.currentCount()
         rosettaCount = poFile.rosettaCount()
         updatesCount = poFile.updatesCount()
-        nonUpdatesCount = currentCount - updatesCount
+        nonUpdatesCount = poFile.nonUpdatesCount()
         translatedCount = poFile.translatedCount()
         untranslatedCount = poFile.untranslatedCount()
 
-        currentPercent = poFile.currentPercent()
-        rosettaPercent = poFile.rosettaPercent()
-        updatesPercent = poFile.updatesPercent()
-        nonUpdatesPercent = float(nonUpdatesCount) / total * 100
-        nonUpdatesPercent = round(nonUpdatesPercent, 2)
-        nonUpdatesPercent = float(str(nonUpdatesPercent))
-        translatedPercent = poFile.translatedPercent()
-        untranslatedPercent = poFile.untranslatedPercent()
+        currentPercent = poFile.currentPercentage()
+        rosettaPercent = poFile.rosettaPercentage()
+        updatesPercent = poFile.updatesPercentage()
+        nonUpdatesPercent = poFile.nonUpdatesPercentage()
+        translatedPercent = poFile.translatedPercentage()
+        untranslatedPercent = poFile.untranslatedPercentage()
 
         # NOTE: To get a 100% value:
         # 1.- currentPercent + rosettaPercent + untranslatedPercent
@@ -447,9 +445,7 @@ class ViewPOFile:
         return plural.split(';', 1)[1].split('=',1)[1].split(';', 1)[0].strip();
 
     def completeness(self):
-        completeness = float(self.context.translatedCount()) / self.context.messageCount()
-        completeness *= 100
-        return '%.2f%%' % round(completeness, 2)
+        return '%.2f%%' % self.context.translatedPercentage()
 
     def untranslated(self):
         return self.context.untranslatedCount()
