@@ -1,1 +1,4 @@
-<include package="canonical" file="debug.zcml"/>
+<configure xmlns="http://namespaces.zope.org/browser">
+
+<!-- obselete file. -->
+</configure>

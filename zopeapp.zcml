@@ -53,7 +53,7 @@
   <include package="zope.app.registration" />
 
   <!-- Services -->
-  <include package="zope.app.errorservice" />
+  <!-- <include package="zope.app.errorservice" /> -->
   <include package="zope.app.pluggableauth" />
   <include package="zope.app.site" />
   <include package="zope.app.adapter" />

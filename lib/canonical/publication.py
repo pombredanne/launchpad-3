@@ -18,7 +18,7 @@ from zope.event import notify
 from zope.interface import implements, Interface
 from zope.interface import providedBy
 
-from canonical.launchpad.skins import setAdditionalSkin
+import canonical.launchpad.skins as skins
 
 from zope.component import queryView, getDefaultViewName, queryMultiView
 from zope.component import getUtility
@@ -34,6 +34,10 @@ from zope.app.publication.browser import BrowserPublication as BrowserPub
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
 from zope.publisher.publish import publish
+
+from zope.app.errorservice import globalErrorReportingService
+from zope.app.errorservice.interfaces import ILocalErrorReportingService
+from zope.app.errorservice import RootErrorReportingService
 
 from zope.app.applicationcontrol.applicationcontrol \
      import applicationControllerRoot
@@ -100,7 +104,6 @@ class SubURLTraverser:
 class RootObject(Location):
     implements(IContainmentRoot, IHasSuburls)
 
-rootObject = ProxyFactory(RootObject(), NamesChecker("__class__"))
 
 
 class DebugView:
@@ -123,9 +126,11 @@ class DebugView:
         finally:
             del tb
 
+
 class IAfterTraverseEvent(Interface):
     """An event which gets sent after publication traverse; this
     should really be pushed into Zope proper """
+
 
 class AfterTraverseEvent(object):
     """An event which gets sent after publication traverse"""
@@ -133,6 +138,13 @@ class AfterTraverseEvent(object):
     def __init__(self, ob, request):
         self.object = ob
         self.request = request
+
+
+class ErrorReportingService(RootErrorReportingService):
+    """Error reporting service that copies tracebacks to the log by default.
+    """
+    copy_to_zlog = True
+
 
 class BrowserPublication(BrowserPub):
     """Subclass of z.a.publication.BrowserPublication that removes ZODB.
@@ -223,7 +235,7 @@ class BrowserPublication(BrowserPub):
         adapters = zapi.getService(zapi.servicenames.Adapters)
         skin = adapters.lookup((providedBy(request),), IDefaultSkin, '')
         if skin is not None:
-            setAdditionalSkin(request, skin)
+            skins.setAdditionalSkin(request, skin)
 
         # Try to authenticate against our registry
         prin_reg = getUtility(IPlacelessAuthUtility)
@@ -234,10 +246,6 @@ class BrowserPublication(BrowserPub):
                 raise Unauthorized # If there's no default principal
 
         request.setPrincipal(p)
-
-
-
-
 
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
@@ -279,6 +287,18 @@ class HTTPPublicationRequestFactory:
         return request
 
 
+class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
+    """RequestFactory that sets the DebugLayer on a request."""
+
+    def __call__(self, input_stream, output_steam, env):
+        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        # Mark the request with the 'canonical.launchpad.skins.debug' layer
+        request = HTTPPublicationRequestFactory.__call__(
+            self, input_stream, output_steam, env)
+        skins.setFirstSkin(request, skins.DebugLayer)
+        return request
+
+
 class PMDBHTTPServer(PublisherHTTPServer):
     """Enter the post-mortem debugger when there's an error"""
 
@@ -300,15 +320,25 @@ class PMDBHTTPServer(PublisherHTTPServer):
             raise
 
 
-
 http = ServerType(PublisherHTTPServer,
                   HTTPPublicationRequestFactory,
                   CommonAccessLogger,
                   8080, True)
-
 
 pmhttp = ServerType(PMDBHTTPServer,
                     HTTPPublicationRequestFactory,
                     CommonAccessLogger,
                     8081, True)
 
+debughttp = ServerType(PublisherHTTPServer,
+                       DebugLayerRequestFactory,
+                       CommonAccessLogger,
+                       8082, True)
+
+globalErrorService = ErrorReportingService()
+globalErrorUtility = ProxyFactory(
+    removeSecurityProxy(globalErrorService),
+    NamesChecker(ILocalErrorReportingService.names())
+    )
+
+rootObject = ProxyFactory(RootObject(), NamesChecker("__class__"))

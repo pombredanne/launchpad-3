@@ -45,6 +45,15 @@
       provides="zope.app.server.servertype.IServerType"
       />
 
+  <!-- This is the HTTP server, but making each request have the
+       DebugLayer as the first layer searched.  Effectively, this turns
+       on the debug error pages. -->
+  <utility
+      name="DebugLayerHTTP"
+      component="canonical.publication.debughttp"
+      provides="zope.app.server.servertype.IServerType"
+      />
+
   <!-- This view registers the objects marked with IHasSuburls as being
        able to have suburls.  This will become part of the custom suburl
        zcml directive.
@@ -79,6 +88,66 @@
   <include package="canonical.database" />
   <include package="canonical.auth" />
   <include package="canonical.launchpad.zcml" />
+
+
+  <!-- enable the error reporting service at /errors -->
+  <browser:suburl
+      for="canonical.publication.RootObject"
+      name="errors"
+      utility="zope.app.errorservice.interfaces.ILocalErrorReportingService"
+      />
+
+  <content class="zope.app.errorservice.RootErrorReportingService">
+    <require
+        permission="zope.Public"
+        interface="zope.app.errorservice.interfaces.IErrorReportingService"
+        />
+    <require
+        permission="zope.Public"
+        interface="zope.app.errorservice.interfaces.ILocalErrorReportingService"
+        />
+    </content>
+  <serviceType
+      id="ErrorLogging"
+      interface="zope.app.errorservice.interfaces.IErrorReportingService" 
+      />
+
+  <utility
+      provides="zope.app.errorservice.interfaces.ILocalErrorReportingService"
+      component="canonical.publication.globalErrorUtility"
+      />
+  <service 
+      serviceType="ErrorLogging"
+      permission="zope.Public"
+      component="canonical.publication.globalErrorService" 
+      />
+
+  <browser:pages
+      for="zope.app.errorservice.interfaces.IErrorReportingService"
+      permission="zope.Public"
+      class="zope.app.errorservice.browser.EditErrorLog">
+
+    <browser:page
+        name="index.html"
+        template="launchpad/templates/errorservice-index.pt"
+        />
+    <browser:page
+        name="configure.html"
+        template="launchpad/templates/errorservice-config.pt"
+        />
+    <browser:page
+        name="edit.html"
+        attribute="updateProperties"
+        />
+    <browser:page
+        name="showEntry.html"
+        template="launchpad/templates/errorservice-entry.pt"
+        />
+    <browser:page
+        name="showTextTBEntry.html"
+        template="launchpad/templates/errorservice-tbentry.pt"
+        />
+  </browser:pages>
 
 </configure>
 <!-- arch-tag: 55275af7-7bbe-4d25-9596-0df3cb6c4a1f -->

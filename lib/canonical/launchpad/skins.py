@@ -11,6 +11,9 @@ from zope.interface import directlyProvides, directlyProvidedBy
 def setAdditionalSkin(request, skin):
     directlyProvides(request, directlyProvidedBy(request) + skin)
 
+def setFirstSkin(request, skin):
+    directlyProvides(request, skin, directlyProvidedBy(request))
+
 class launchpad(IBrowserRequest):
     """The `launchpad` layer."""
 
@@ -19,4 +22,6 @@ class rosetta(launchpad):
 
 class ubuntulinux(IBrowserRequest):
     """The `ubuntulinux` layer."""
-    
+
+class DebugLayer(IBrowserRequest):
+    """The `DebugLayer` layer."""
