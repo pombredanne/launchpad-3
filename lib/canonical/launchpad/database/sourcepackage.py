@@ -331,8 +331,7 @@ class SourcePackageRelease(SQLBase):
         """Select from SourcePackageRelease.SelectResult that have
         version=version"""
 
-        clauseTables = ('SourcePackagePublishing', 'Build',
-                        'BinaryPackage')
+        clauseTables = ('SourcePackagePublishing',)
         
         query = sourcereleases.clause + \
                 ' AND SourcePackageRelease.version = %s' %quote(version)
