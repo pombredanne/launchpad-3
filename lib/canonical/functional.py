@@ -560,7 +560,7 @@ class SpecialOutputChecker(doctest.OutputChecker):
                 # In any case, return the whole thing.
                 newgot = got
         return doctest.OutputChecker.output_difference(
-            self, example, got, optionflags)
+            self, example, newgot, optionflags)
 
 def FunctionalDocFileSuite(*paths, **kw):
     globs = kw.setdefault('globs', {})
