@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 13:40:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1229
+
+    Summary:
+      PushMirrorAccess table for supermirror sftp server access
+    Revision:
+      launchpad--devel--0--patch-1229
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-01-21 13:26:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1228
 
     Summary:
