@@ -166,7 +166,12 @@ class IPerson(Interface):
         """Removed the language from the list of know languages."""
 
     def inTeam(team):
-        """Return true if this person is in the given team."""
+        """Return true if this person is in the given team.
+        
+        This method is meant to be called by objects which implement either
+        IPerson or ITeam, and it will return True when you ask if a Person is
+        a member of himself (i.e. person1.inTeam(person1)).
+        """
 
     def hasMembershipEntryFor(team):
         """Tell if this person is a direct member of the given team."""

@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-28 20:17:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1507
+
+    Summary:
+      Make all adapters in launchpad/security.py use user.inTeam(), because this is all we need to do to check if the user is a member of the team that is the owner of something or if the user is the owner.
+    Revision:
+      launchpad--devel--0--patch-1507
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-218
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-219
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-220
+       Make all adapters in launchpad/security.py use user.inTeam(), because this is all we need to do to check if the user is a member of the team that is the owner of something or if the user is the owner.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/security.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-218
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-219
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-220
+
+
 2005-03-28 15:11:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1506
 
     Summary:

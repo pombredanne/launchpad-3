@@ -54,12 +54,8 @@ class EditByOwnersOrAdmins(AuthorizationBase):
     usedfor = IHasOwner
 
     def checkAuthenticated(self, user):
-        if user.id == self.obj.owner.id:
-            return True
-        elif user.inTeam(getUtility(IPersonSet).getByName('admins')):
-            return True
-        else:
-            return False
+        admins = getUtility(IPersonSet).getByName('admins')
+        return user.inTeam(self.obj.owner) or user.inTeam(admins)
 
 
 class EditByOwnerOfProduct(EditByOwnersOrAdmins):
@@ -95,7 +91,7 @@ class EditMilestoneByProductMaintainer(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Authorize the product maintainer."""
-        return self.obj.product.owner.id == user.id
+        return user.inTeam(self.obj.product.owner)
 
 
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
@@ -163,15 +159,12 @@ class EditUpstreamBugTask(AuthorizationBase):
         If the maintainer or assignee is a team, everyone belonging to the team
         is allowed to edit the task.
         """
-        teampart = getUtility(ITeamParticipationSet)
-        for allowed_person in (self.obj.maintainer, self.obj.assignee):
-            if ITeam.providedBy(allowed_person):
-                if user in teampart.getAllMembers(allowed_person):
-                    return True
-            elif IPerson.providedBy(allowed_person):
-                if user is allowed_person:
-                    return True
-        return False
+        if user.inTeam(self.obj.maintainer):
+            return True
+        elif self.obj.assignee is not None and user.inTeam(self.obj.assignee):
+            return True
+        else:
+            return False
 
 
 class EditDistroBugTask(AuthorizationBase):
@@ -186,13 +179,8 @@ class EditDistroBugTask(AuthorizationBase):
         else:
             # private bug
             for subscription in self.obj.bug.subscriptions:
-                subscriber = subscription.person
-                if ITeam.providedBy(subscriber):
-                    if user.inTeam(subscriber):
-                        return True
-                else:
-                    if subscriber.id == user.id:
-                        return True
+                if user.inTeam(subscription.person):
+                    return True
 
             return False
 
@@ -211,13 +199,8 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
         else:
             # private bug
             for subscription in self.obj.bug.subscriptions:
-                subscriber = subscription.person
-                if ITeam.providedBy(subscriber):
-                    if user.inTeam(subscriber):
-                        return True
-                else:
-                    if subscriber.id == user.id:
-                        return True
+                if user.inTeam(subscription.person):
+                    return True
 
             return False
 
@@ -245,13 +228,8 @@ class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(AuthorizationBase)
         else:
             # private bug
             for subscription in self.obj.subscriptions:
-                subscriber = subscription.person
-                if ITeam.providedBy(subscriber):
-                    if user.inTeam(subscriber):
-                        return True
-                else:
-                    if subscriber.id == user.id:
-                        return True
+                if user.inTeam(subscription.person):
+                    return True
 
         return False
 
@@ -274,13 +252,8 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
         else:
             # private bug
             for subscription in self.obj.subscriptions:
-                subscriber = subscription.person
-                if ITeam.providedBy(subscriber):
-                    if user.inTeam(subscriber):
-                        return True
-                else:
-                    if subscriber.id == user.id:
-                        return True
+                if user.inTeam(subscription.person):
+                    return True
 
         return False
 
