@@ -1,0 +1,62 @@
+<tal:do-this-first tal:content="view/processForm" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Join 
+    <span tal:replace="context/browsername">Name</span></title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div id="content" class="documentEditable">
+  <div class="documentContent" id="region-content">
+
+    <tal:block tal:condition="view/joinAllowed">
+      <tal:block tal:condition="view/userCanRequestToJoin">
+        <h3>Are you sure you want to join 
+          <span tal:replace="context/browsername" />?</h3>
+
+        <p>This is a <span tal:replace="view/subscriptionPolicyDesc" /></p>
+
+        <p class="portalMessage" tal:condition="view/membershipStatusDesc" 
+           tal:content="view/membershipStatusDesc" />
+        <form name="join" action="" method="POST">
+        <table width="100%">
+          <tr><td>
+            <input type="submit" name="goback" value="Back to team" />
+          </td><td align="right">
+            <input type="submit" name="join" value="Join" />
+          </td></tr>
+        </table>
+        </form>
+      </tal:block>
+
+      <tal:block tal:condition="not: view/userCanRequestToJoin">
+        <p class="portalMessage" tal:content="view/membershipStatusDesc" />
+        <p><a href="./">Back to <span tal:replace="context/browsername" /></a></p>
+      </tal:block>
+    </tal:block>
+
+    <tal:block tal:condition="not: view/joinAllowed">
+      <h3><span tal:replace="context/browsername" /> is a restricted team.
+          Only a team administrator can add new members.</h3>
+      <p><a href="./">Back to <span tal:replace="context/browsername" /></a></p>
+    </tal:block>
+
+  </div>
+  </div>
+
+</div> 
+
+</body>
+</html>
+

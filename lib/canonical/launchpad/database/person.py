@@ -2,7 +2,7 @@
 
 __metaclass__ = type
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 # Zope interfaces
 from zope.interface import implements
@@ -201,16 +201,67 @@ class Person(SQLBase):
         # methods.
         self.karma += points
 
-    def inTeam(self, team_name):
-        team = Person.byName(team_name)
-        if not team.teamowner:
-            raise ValueError, '%s not a team!' % team_name
-
+    def inTeam(self, team):
         tp = TeamParticipation.selectBy(teamID=team.id, personID=self.id)
         if tp.count() > 0:
             return True
         else:
             return False
+
+    def hasMembershipEntryFor(self, team):
+        results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
+        return bool(results.count())
+
+    def unjoinTeam(self, team):
+        results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
+        assert results.count() <= 1
+        if results.count() == 0:
+            return False
+
+        tm = results[0]
+        if tm.status not in (int(TeamMembershipStatus.ADMIN),
+                             int(TeamMembershipStatus.APPROVED)):
+            return False
+
+        tm.status = int(TeamMembershipStatus.DEACTIVATED)
+        _cleanTeamParticipation(self, team)
+        return True
+
+    def joinTeam(self, team):
+        if self.inTeam(team):
+            return False
+
+        if team.subscriptionpolicy == int(TeamSubscriptionPolicy.RESTRICTED):
+            return False
+        elif team.subscriptionpolicy == int(TeamSubscriptionPolicy.MODERATED):
+            status = int(TeamMembershipStatus.PROPOSED)
+        elif team.subscriptionpolicy == int(TeamSubscriptionPolicy.OPEN):
+            status = int(TeamMembershipStatus.APPROVED)
+
+        days = team.defaultmembershipperiod
+        expires = None
+        if days:
+            expires = datetime.utcnow() + timedelta(days)
+
+        results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
+        if results.count() == 1:
+            tm = results[0]
+            if tm.status == TeamMembershipStatus.DECLINED:
+                # The user is a DECLINED member, we just have to change the
+                # status according to the team's subscriptionpolicy.
+                tm.status = status
+                tm.dateexpires = expires
+            else:
+                # The user is a member and the status is not DECLINED, there's
+                # nothing we can do for it.
+                return False
+        else:
+            TeamMembership(personID=self.id, teamID=team.id, status=status,
+                           dateexpires=expires)
+                           
+        if status == int(TeamMembershipStatus.APPROVED):
+            _fillTeamParticipation(self, team)
+        return True
 
     def getMembershipByMember(self, member):
         table = TeamMembership
@@ -275,10 +326,20 @@ class Person(SQLBase):
         return [m.team for m in memberships]
     teams = property(_teams)
 
+    def _superteams(self):
+        # XXX: salgado, 2005-02-22: Using getUtility() here is breaking the
+        # teamparticipation.txt doctest.
+        #teampart = getUtility(ITeamParticipationSet)
+        teampart = TeamParticipationSet()
+        return teampart.getSuperTeams(self)
+    superteams = property(_superteams)
+
     def _subteams(self):
-        teampart = getUtility(ITeamParticipationSet)
-        participations = teampart.getSubTeams(self.id)
-        return [p.team for p in participations]
+        # XXX: salgado, 2005-02-22: Using getUtility() here is breaking the
+        # teamparticipation.txt doctest.
+        #teampart = getUtility(ITeamParticipationSet)
+        teampart = TeamParticipationSet()
+        return teampart.getSubTeams(self)
     subteams = property(_subteams)
 
     def _distroroles(self):
@@ -404,8 +465,12 @@ class PersonSet(object):
 
     def newTeam(self, *args, **kw):
         """See IPersonSet."""
-        assert kw.get('teamownerID')
-        return Person(**kw)
+        ownerID = kw.get('teamownerID')
+        assert ownerID
+        owner = Person.get(ownerID)
+        team = Person(**kw)
+        _fillTeamParticipation(owner, team)
+        return team
 
     def newPerson(self, *args, **kw):
         """See IPersonSet."""
@@ -419,7 +484,14 @@ class PersonSet(object):
                 import SSHADigestEncryptor
             encryptor = SSHADigestEncryptor()
             kw['password'] = encryptor.encrypt(kw['password'])
-        return Person(**kw)
+
+        person = Person(**kw)
+        # "Each Person is a member of their own Team effectively, so there is a
+        #  TeamParticipation entry for each person, with themselves as the
+        #  member."
+        # More info: TeamParticipationUsage spec.
+        _fillTeamParticipation(person, person)
+        return person
 
     def getByName(self, name, default=None):
         """See IPersonSet."""
@@ -628,13 +700,23 @@ class TeamParticipationSet(object):
 
     implements(ITeamParticipationSet)
 
-    def getSubTeams(self, teamID):
-        clauseTables = ('person',)
-        query = ("team = %d "
-                 "AND Person.id = TeamParticipation.person "
-                 "AND Person.teamowner IS NOT NULL" % teamID)
+    def getAllMembers(self, team):
+        return [t.person for t in TeamParticipation.selectBy(teamID=team.id)]
 
-        return TeamParticipation.select(query, clauseTables=clauseTables)
+    def getSubTeams(self, team):
+        clauseTables = ('person',)
+        query = ("TeamParticipation.team = %d "
+                 "AND Person.id = TeamParticipation.person "
+                 "AND Person.teamowner IS NOT NULL" % team.id)
+        results = TeamParticipation.select(query, clauseTables=clauseTables)
+        return [t.person for t in results]
+
+    def getSuperTeams(self, team):
+        clauseTables = ('person',)
+        query = ("TeamParticipation.person = %d "
+                 "AND Person.id = TeamParticipation.team " % team.id)
+        results = TeamParticipation.select(query, clauseTables=clauseTables)
+        return [t.team for t in results]
 
 
 class TeamParticipation(SQLBase):
@@ -644,6 +726,62 @@ class TeamParticipation(SQLBase):
 
     team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+
+
+def _cleanTeamParticipation(person, team):
+    """Remove relevant entries in TeamParticipation for given person and team.
+
+    Remove all tuples "person, team" from TeamParticipation for the given
+    person and team (together with all its superteams), unless this person is
+    an indirect member of the given team. More information on how to use the 
+    TeamParticipation table can be found in the TeamParticipationUsage spec.
+    """
+    members = [person]
+    if person.teamowner is not None:
+        # The given person is, in fact, a team, and in this case we must 
+        # remove all of its members from the given team and from its 
+        # superteams.
+        # XXX: salgado, 2005-02-22: Using getUtility() here is breaking the
+        # teamparticipation.txt doctest.
+        #teampart = getUtility(ITeamParticipationSet)
+        teampart = TeamParticipationSet()
+        members.extend(teampart.getAllMembers(person))
+
+    for member in members:
+        for subteam in team.subteams:
+            # This person is an indirect member of this team. We cannot remove
+            # its TeamParticipation entry.
+            if member.inTeam(subteam):
+                break
+        else:
+            for t in team.superteams + [team]:
+                r = TeamParticipation.selectBy(personID=member.id, teamID=t.id)
+                if r.count() > 0:
+                    assert r.count() == 1
+                    r[0].destroySelf()
+
+
+def _fillTeamParticipation(person, team):
+    """Add relevant entries in TeamParticipation for given person and team.
+
+    Add a tuple "person, team" in TeamParticipation for the given team and all
+    of its superteams. More information on how to use the TeamParticipation 
+    table can be found in the TeamParticipationUsage spec.
+    """
+    members = [person]
+    if person.teamowner is not None:
+        # The given person is, in fact, a team, and in this case we must 
+        # add all of its members to the given team and to its superteams.
+        # XXX: salgado, 2005-02-22: Using getUtility() here is breaking the
+        # teamparticipation.txt doctest.
+        #teampart = getUtility(ITeamParticipationSet)
+        teampart = TeamParticipationSet()
+        members.extend(teampart.getAllMembers(person))
+
+    for member in members:
+        for t in team.superteams + [team]:
+            if not member.inTeam(t):
+                TeamParticipation(personID=member.id, teamID=t.id)
 
 
 class Karma(SQLBase):

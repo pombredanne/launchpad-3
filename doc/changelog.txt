@@ -2,6 +2,143 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-25 13:40:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1343
+
+    Summary:
+      Join/Unjoin teams working as specified in TeamMembership/TeamMembershipPolicies. Got TeamParticipation correctly filled/cleaned when a Person Join/Unjoin a team. Doctests and pagetests for everything.
+    Revision:
+      launchpad--devel--0--patch-1343
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--base-0
+       tag of guilherme.salgado@canonical.com/launchpad--team-membership--0--patch-11
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-1
+       merging a last sampledata change from launchpad--team-membership--0
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-2
+       Fix {teammembership,teamparticipation}_id_seq in sampledata.
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-3
+       New function fillTeamParticipation() which add TP entries for a given person and team. Make use of fillTeamParticipation() when creating a new team/person.
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-4
+       Do not add TeamMembership entries for the team owner.
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-5
+       merge from launchpad--team-membership--0
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-6
+       Adding team's edit page and a pagetest for it
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-7
+       Removing unused page templates
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-8
+       got joining of teams working according to team's subscriptionpolicy. some pagetests to make sure the join pages are not crashing. will extend them to check if the join really succeeded.
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-9
+       Renaming Person.isMember() to Person.isMemberOf(). Extending *.team-join.* pagetests to actually check if the join suceeded.
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-10
+       Duh! I forgot to add the team-edit page template on patch-6
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-11
+       Fixed Person.joinTeam() to handle DECLINED members. Display join/unjoin links on team's page when the user can join/unjoin. Made the join page more informative on all possible cases of a user trying to join a team.
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-12
+       Finally got TeamParticipation correctly filled upon addition of new members/subteams. Adding a teamparticipation doctest that checks if TeamParticipation is being correctly filled. Fixed Person.inTeam() to accept a team as argument instead of the team name. Started working on the team unjoin feature.
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-13
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-14
+       Changed security.cfg to allow DELETE on teamparticipation. Fixed userCanRequestToJoin() so we always have 'Join' links in OPEN teams (unless the user is already a member). Finished _clearTeamParticipation(person, team), to remove a person from a given team and all its superteams and extended teamparticipation doctest to test it.
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-15
+       Always show 'Join' links for open teams. New pagetest for Unjoining a team.
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-16
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-17
+       empty commit
+    
+
+    new files:
+     lib/canonical/launchpad/doc/.arch-ids/teamparticipation.txt.id
+     lib/canonical/launchpad/doc/teamparticipation.txt
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/00-foaf-team-join.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/01-foaf-team-join-alreadyjoined.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/15-foaf-editteam.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/20-foaf-restricted-team-join.txt.id
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids/=id
+     lib/canonical/launchpad/pagetests/foaf/00-foaf-team-join.txt
+     lib/canonical/launchpad/pagetests/foaf/01-foaf-team-join-alreadyjoined.txt
+     lib/canonical/launchpad/pagetests/foaf/15-foaf-editteam.txt
+     lib/canonical/launchpad/pagetests/foaf/20-foaf-restricted-team-join.txt
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-team-unjoin.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-team-unjoin.txt
+     lib/canonical/launchpad/templates/.arch-ids/team-edit.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/team-join.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/team-unjoin.pt.id
+     lib/canonical/launchpad/templates/team-edit.pt
+     lib/canonical/launchpad/templates/team-join.pt
+     lib/canonical/launchpad/templates/team-unjoin.pt
+
+    removed files:
+     lib/canonical/launchpad/templates/.arch-ids/people-add.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/person-join.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/person-newteam.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/person-unjoin.pt.id
+     lib/canonical/launchpad/templates/people-add.pt
+     lib/canonical/launchpad/templates/person-join.pt
+     lib/canonical/launchpad/templates/person-newteam.pt
+     lib/canonical/launchpad/templates/person-unjoin.pt
+
+    modified files:
+     database/sampledata/current.sql database/schema/security.cfg
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/person.txt
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/templates/team-index.pt
+     lib/canonical/launchpad/zcml/person.zcml
+     lib/canonical/lp/dbschema.py
+
+    renamed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-newteam.txt.id
+       ==> lib/canonical/launchpad/pagetests/foaf/.arch-ids/10-foaf-newteam.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-newteam.txt
+       ==> lib/canonical/launchpad/pagetests/foaf/10-foaf-newteam.txt
+
+    new directories:
+     lib/canonical/launchpad/pagetests/foaf
+     lib/canonical/launchpad/pagetests/foaf/.arch-ids
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--base-0
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-1
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-2
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-3
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-4
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-5
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-6
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-7
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-8
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-9
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-10
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-11
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-12
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-13
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-14
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-15
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-16
+     guilherme.salgado@canonical.com/launchpad--team-membership--1--patch-17
+
+
 2005-02-25 08:00:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1342
 
     Summary:

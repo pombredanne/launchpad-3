@@ -8,6 +8,7 @@ from canonical.database.sqlbase import quote, flushUpdates
 from canonical.lp.dbschema import EmailAddressStatus, SSHKeyType
 from canonical.lp.dbschema import LoginTokenType
 from canonical.lp.dbschema import TeamMembershipStatus
+from canonical.lp.dbschema import TeamSubscriptionPolicy
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -29,6 +30,7 @@ from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
 
 from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.browser.editview import SQLObjectEditView
 
 # zope imports
 from zope.event import notify
@@ -146,6 +148,12 @@ class TeamAddView(AddView):
         return team
 
 
+class TeamEditView(SQLObjectEditView):
+
+    def __init__(self, context, request):
+        SQLObjectEditView.__init__(self, context, request)
+
+
 class PersonView(object):
     """A simple View class to be used in Person's pages where we don't have
     actions and all we need is the context/request."""
@@ -167,7 +175,8 @@ class PersonView(object):
 
 class TeamView(object):
     """A simple View class to be used in Team's pages where we don't have
-    actions and all we need is the context/request."""
+    actions to process.
+    """
 
     def __init__(self, context, request):
         self.context = context
@@ -175,6 +184,133 @@ class TeamView(object):
 
     def allMembersCount(self):
         return len(self.context.approvedmembers + self.context.administrators)
+
+    def userInTeam(self):
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+
+        return user.inTeam(self.context)
+
+    def subscriptionPolicyDesc(self):
+        policy = self.context.subscriptionpolicy
+        if policy == int(TeamSubscriptionPolicy.RESTRICTED):
+            return "Restricted team. Only administrators can add new members"
+        elif policy == int(TeamSubscriptionPolicy.MODERATED):
+            return ("Moderated team. New subscriptions are subjected to "
+                    "approval by one of the team's administrators.")
+        elif policy == int(TeamSubscriptionPolicy.OPEN):
+            return "Open team. Any user can join and no approval is required"
+
+    def membershipStatusDesc(self):
+        tm = self._getMembership()
+        if tm is None:
+            return "You are not a member of this team."
+
+        if tm.status == int(TeamMembershipStatus.PROPOSED):
+            desc = ("You are currently a proposed member of this team."
+                    "Your subscription depends on approval by one of the "
+                    "team's administrators.")
+        elif tm.status == int(TeamMembershipStatus.APPROVED):
+            desc = ("You are currently an approved member of this team.")
+        elif tm.status == int(TeamMembershipStatus.ADMIN):
+            desc = ("You are currently an administrator of this team.")
+        elif tm.status == int(TeamMembershipStatus.DEACTIVATED):
+            desc = "Your subscription for this team is currently deactivated."
+            if tm.reviewercomment is not None:
+                desc += "The reason provided for the deactivation is: '%s'" % \
+                        tm.reviewercomment
+        elif tm.status == int(TeamMembershipStatus.EXPIRED):
+            desc = ("Your subscription for this team is currently expired, "
+                    "waiting for renewal by one of the team's administrators.")
+        elif tm.status == int(TeamMembershipStatus.DECLINED):
+            desc = ("Your subscription for this team is currently declined. "
+                    "Clicking on the 'Join' button will put you on the "
+                    "proposed members queue, waiting for approval by one of "
+                    "the team's administrators")
+
+        return desc
+
+    def userCanRequestToUnjoin(self):
+        """Return true if the user can request to unjoin this team.
+
+        The user can request only if its subscription status is APPROVED or
+        ADMIN.
+        """
+        tm = self._getMembership()
+        if tm is None:
+            return False
+
+        allowed = [TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
+        if tm.status in allowed:
+            return True
+        else:
+            return False
+
+    def userCanRequestToJoin(self):
+        """Return true if the user can request to join this team.
+
+        The user can request if it never asked to join this team, if it
+        already asked and the subscription status is DECLINED or if the team's
+        subscriptionpolicy is OPEN and the user is not an APPROVED or ADMIN
+        member.
+        """
+        tm = self._getMembership()
+        if tm is None:
+            return True
+
+        adminOrApproved = [int(TeamMembershipStatus.APPROVED),
+                           int(TeamMembershipStatus.ADMIN)]
+        open = TeamSubscriptionPolicy.OPEN
+        if tm.status == TeamMembershipStatus.DECLINED or \
+           (tm.status not in adminOrApproved and \
+            tm.team.subscriptionpolicy == open):
+            return True
+        else:
+            return False
+
+    def _getMembership(self):
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return None
+        tm = TeamMembership.selectBy(personID=user.id, teamID=self.context.id)
+        if tm.count() == 1:
+            return tm[0]
+        else:
+            return None
+
+    def joinAllowed(self):
+        """Return True if this is not a restricted team."""
+        restricted = int(TeamSubscriptionPolicy.RESTRICTED)
+        return self.context.subscriptionpolicy != restricted
+
+
+class TeamJoinView(TeamView):
+
+    def processForm(self):
+        if self.request.method != "POST" or not self.userCanRequestToJoin():
+            # Nothing to do
+            return
+
+        user = getUtility(ILaunchBag).user
+        if self.request.form.get('join'):
+            user.joinTeam(self.context)
+
+        self.request.response.redirect('./')
+
+
+class TeamUnjoinView(TeamView):
+
+    def processForm(self):
+        if self.request.method != "POST" or not self.userCanRequestToUnjoin():
+            # Nothing to do
+            return
+
+        user = getUtility(ILaunchBag).user
+        if self.request.form.get('unjoin'):
+            user.unjoinTeam(self.context)
+
+        self.request.response.redirect('./')
 
 
 class PersonEditView(object):

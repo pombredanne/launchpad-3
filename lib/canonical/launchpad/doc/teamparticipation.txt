@@ -1,0 +1,100 @@
+TeamParticipation
+=================
+
+The TeamParticipation table stores both direct and indirect members of a team.
+More information can be found in the TeamParticipationUsage spec.
+
+First of all, create some teams:
+
+>>> from canonical.launchpad.database import Person, TeamParticipationSet
+>>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+>>> teampart = TeamParticipationSet()
+>>> policy = int(TeamSubscriptionPolicy.OPEN)
+>>> p = Person.byName('name16')
+>>> t1 = Person(subscriptionpolicy=policy, name='t1', teamowner=p)
+>>> t2 = Person(subscriptionpolicy=policy, name='t2', teamowner=p)
+>>> t3 = Person(subscriptionpolicy=policy, name='t3', teamowner=p)
+>>> t4 = Person(subscriptionpolicy=policy, name='t4', teamowner=p)
+>>> t5 = Person(subscriptionpolicy=policy, name='t5', teamowner=p)
+
+
+Now, add p as a member of t3, ...
+
+>>> p.joinTeam(t3)
+True
+>>> for m in teampart.getAllMembers(t3):
+...     print m.name
+name16
+
+... t3 as a member of t2, ...
+
+>>> t3.joinTeam(t2)
+True
+>>> for m in teampart.getAllMembers(t2):
+...     print m.name
+t3
+name16
+
+... t2 as a member of t1, ...
+
+>>> t2.joinTeam(t1)
+True
+>>> for m in teampart.getAllMembers(t1):
+...     print m.name
+t2
+t3
+name16
+
+... t2 as a member of t5, ...
+
+>>> t2.joinTeam(t5)
+True
+>>> for m in teampart.getAllMembers(t5):
+...     print m.name
+t2
+t3
+name16
+
+... t5 as a member of t4
+
+>>> t5.joinTeam(t4)
+True
+>>> for m in teampart.getAllMembers(t4):
+...     print m.name
+t5
+t2
+t3
+name16
+
+
+Now let's remove some members to see what happens:
+
+>>> p.unjoinTeam(t3)
+True
+>>> len(teampart.getAllMembers(t3))
+0
+
+>>> for m in teampart.getAllMembers(t2):
+...     print m.name
+t3
+
+>>> for m in teampart.getAllMembers(t4):
+...     print m.name
+t5
+t2
+t3
+
+>>> for m in teampart.getAllMembers(t5):
+...     print m.name
+t2
+t3
+
+>>> t2.unjoinTeam(t5)
+True
+>>> for m in teampart.getAllMembers(t5):
+...     print m.name
+
+>>> for m in teampart.getAllMembers(t4):
+...     print m.name
+t5
+
