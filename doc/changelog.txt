@@ -2,6 +2,51 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 09:01:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1178
+
+    Summary:
+      Make initZopeless behave better when called multiple times -- but still warn about it.
+    Revision:
+      launchpad--devel--0--patch-1178
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-305
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-306
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-307
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-308
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-309
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-310
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-311
+       Make initZopeless behave better when called multiple times -- but still warn about it.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/database/sqlbase.py
+     lib/canonical/lp/ftests/test_zopeless.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-305
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-306
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-307
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-308
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-309
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-310
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-311
+
+
 2005-01-11 23:32:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1177
 
     Summary:
