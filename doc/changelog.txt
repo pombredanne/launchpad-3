@@ -2,6 +2,45 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-22 13:12:42 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1240
+
+    Summary:
+      add malone vision doc
+    Revision:
+      launchpad--devel--0--patch-1240
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-727
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-728
+       skip messages that cannot be stored in the db
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-729
+       import psycopg to get ProgrammingError
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-730
+       add malone vision doc to docs
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-731
+       merge rocketfuel
+    
+
+    new files:
+     doc/.arch-ids/malone.txt.id doc/malone.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/malone/debsync/malone.py
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-727
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-728
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-729
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-730
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-731
+
+
 2005-01-22 02:58:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1239
 
     Summary:

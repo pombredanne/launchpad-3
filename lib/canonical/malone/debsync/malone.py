@@ -5,6 +5,9 @@ Based on debzilla/bugzilla.py by Matt Zimmerman
 (c) Canonical Ltd 2004
 """
 
+import sys
+import psycopg
+
 from canonical.launchpad.database import *
 from canonical.launchpad.validators.name import valid_name
 from canonical.foaf.nickname import generate_nick
@@ -12,6 +15,7 @@ from canonical.database.sqlbase import quote
 from canonical.lp.encoding import guess as ensure_unicode
 from canonical.lp.dbschema import EmailAddressStatus
 from sets import Set
+
 
 
 class Launchpad:
@@ -193,11 +197,16 @@ class Launchpad:
             title = 'message without subject'
         title = ensure_unicode(title)
         contents = ensure_unicode(message.as_string())
-        newmsg = Message(title=title,
-                         contents=contents,
-                         rfc822msgid=msgid,
-                         owner=owner,
-                         datecreated=datecreated)
+        try:
+            newmsg = Message(title=title,
+                             contents=contents,
+                             rfc822msgid=msgid,
+                             owner=owner,
+                             datecreated=datecreated)
+        except psycopg.ProgrammingError:
+            print 'ERROR STORING %s IN DATABASE:' % msgid
+            print '    ', sys.exc_value
+            return None
         return newmsg
         
     def add_sourcepackage(self, srcpkgname, distroname, maintainer):
