@@ -226,7 +226,7 @@ class ProductMapper(Mapper):
         product._product=dbproduct
     def getByName(self, name, project):
         """returns the product 'name' in project, from the database."""
-        return self.findByName(self.sanitize(name), project).next()
+        return self.findByName(self.sanitize(name), project).next()._product
     def findByName(self, likePattern, project):
         """find products in a project... may want to extend to optional project (all projects)"""
         for product in self._find(dbProduct, "name like '%s' and product.project='%d'" % (likePattern, project._project.id), SoyuzProduct, project):
