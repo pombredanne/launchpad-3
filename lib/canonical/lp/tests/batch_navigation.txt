@@ -40,7 +40,7 @@ You can ask for the previous and next results' links:
 Finally, you can ask for the links for each of the result pages:
 
   >>> reindeer_batch_navigator.batchPageURLs()
-  [{1: 'http://www.example.com/foo?batch_start=0&batch_end=3'}, {2: 'http://www.example.com/foo?batch_start=3&batch_end=6'}, {3: 'http://www.example.com/foo?batch_start=6&batch_end=9'}]
+  [{'[1]': 'http://www.example.com/foo?batch_start=0&batch_end=3'}, {2: 'http://www.example.com/foo?batch_start=3&batch_end=6'}, {3: 'http://www.example.com/foo?batch_start=6&batch_end=9'}, {'_last_': 'http://www.example.com/foo?batch_start=6&batch_end=9'}]
 
 TODO:
 
