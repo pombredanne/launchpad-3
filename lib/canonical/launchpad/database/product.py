@@ -41,7 +41,8 @@ class Product(SQLBase):
     owner = ForeignKey(foreignKey="Person", dbName="owner",
                        notNull=True)
 
-    name = StringCol(dbName='name', notNull=True, alternateID=True, unique=True)
+    name = StringCol(dbName='name', notNull=True, alternateID=True,
+                     unique=True)
 
     displayname = StringCol(dbName='displayname', notNull=True)
 
@@ -293,12 +294,21 @@ class ProductSet:
         else:
             return ret[0]
 
-    def createProduct(self, **kw):
+    def createProduct(self, owner, name, displayname, title, shortdesc,
+                      description, project=None, homepageurl=None,
+                      screenshotsurl=None, wikiurl=None,
+                      downloadurl=None, freshmeatproject=None,
+                      sourceforgeproject=None):
         """Create a new Product"""
-        # XXX cprov 20050112
-        # Avoid using obscure **kw, we should have explicit
-        # keyword arguments.
-        return Product(**kw)
+        return Product(owner=owner, name=name, displayname=displayname,
+                       title=title, project=project, shortdesc=shortdesc,
+                       description=description,
+                       homepageurl=homepageurl,
+                       screenshotsurl=screenshotsurl,
+                       wikiurl=wikiurl,
+                       downloadurl=downloadurl,
+                       freshmeatproject=freshmeatproject,
+                       sourceforgeproject=sourceforgeproject)
     
     def forReview(self):
         return Product.select("reviewed IS FALSE")

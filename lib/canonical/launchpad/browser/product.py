@@ -414,8 +414,15 @@ class ProductSetAddView(AddView):
         product_util = getUtility(IProductSet)
         # create a brand new Product
         # XXX cprov 20050112
-        # Don't use collapsed dict as argument, use the
-        # expanded  
+        # -> try to don't use collapsed dict as argument, use it expanded
+        # XXX cprov 20050117
+        # The required field are:
+        #    def createProduct(owner, name, displayname, title, shortdesc,
+        #                      description, project=None, homepageurl=None,
+        #                      screenshotsurl=None, wikiurl=None,
+        #                      downloadurl=None, freshmeatproject=None,
+        #                      sourceforgeproject=None):
+        # make sure you have those required keys in the kw dict 
         product = product_util.createProduct(**kw)
         notify(ObjectCreatedEvent(product))
         self._nextURL = kw['name']

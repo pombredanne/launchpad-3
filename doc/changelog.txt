@@ -2,6 +2,69 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-20 21:17:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1224
+
+    Summary:
+      Killing **kw args and Adding Product link on Person Packages
+    Revision:
+      launchpad--devel--0--patch-1224
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-465
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-466
+       redesign createProduct
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-467
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-468
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-469
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-470
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-471
+       add product link in person-packages template
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-472
+       typo on person-packages.pt
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-473
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-474
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-475
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/templates/person-packages.pt
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-465
+     celso.providelo@canonical.com/launchpad--devel--0--patch-466
+     celso.providelo@canonical.com/launchpad--devel--0--patch-467
+     celso.providelo@canonical.com/launchpad--devel--0--patch-468
+     celso.providelo@canonical.com/launchpad--devel--0--patch-469
+     celso.providelo@canonical.com/launchpad--devel--0--patch-470
+     celso.providelo@canonical.com/launchpad--devel--0--patch-471
+     celso.providelo@canonical.com/launchpad--devel--0--patch-472
+     celso.providelo@canonical.com/launchpad--devel--0--patch-473
+     celso.providelo@canonical.com/launchpad--devel--0--patch-474
+     celso.providelo@canonical.com/launchpad--devel--0--patch-475
+
+
 2005-01-20 19:15:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1223
 
     Summary:
