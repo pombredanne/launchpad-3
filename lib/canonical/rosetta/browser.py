@@ -323,8 +323,8 @@ class TranslatorDashboard:
 #                        if language.englishName == englishName:
 #                            if language.code not in self.interest:
 #                                self.interest.append(language)
-            else:
-                raise RuntimeError("must post this form!")
+        else:
+            raise RuntimeError("must post this form!")
 
 
 class ViewSearchResults:
