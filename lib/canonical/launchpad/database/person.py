@@ -40,6 +40,7 @@ from canonical.launchpad.database.logintoken import LoginToken
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.searchbuilder import NULL
 
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import KarmaType
@@ -564,6 +565,17 @@ class PersonSet(object):
             return results[0]
         else:
             return default
+
+    def search(self, password=None):
+        """See IPersonSet."""
+        query = None
+        if password:
+            if password == NULL:
+                query = "password IS NULL"
+            else:
+                query = "password = '%s'" % quote(password)
+
+        return Person.select(query)
 
     def nameIsValidForInsertion(self, name):
         if not valid_name(name) or self.getByName(name) is not None:

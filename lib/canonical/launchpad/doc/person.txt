@@ -2,27 +2,33 @@ Person
 ======
 
 In Launchpad, the Person class is overloaded to represent both people
-and teams. The way to tell if a Person represents a person or a team
-is to check its teamowner attribute
+and teams. Let's log in as Robert Collins to ensure we have the
+privileges to do what we're going to demonstrate.
 
->>> from canonical.launchpad.database import Person
+>>> from zope.component import getUtility
+>>> from canonical.launchpad.interfaces import IPersonSet
+>>> from canonical.launchpad.ftests import login
 
->>> buttsource = Person.byName('buttsource')
+>>> login("robertc@robertcollins.net")
+
+Access to people (Persons or Teams) is done through the IPersonSet
+utility:
+
+>>> personset = getUtility(IPersonSet)
+>>> buttsource = personset.getByName('buttsource')
 >>> buttsource.teamowner is None
 False
->>> lifeless = Person.byName('lifeless')
+>>> lifeless = personset.getByName('lifeless')
 >>> lifeless.teamowner is None
 True
 
-Person has an inTeam method to allow us to easily check if a person is a
-member of a team. It accepts the team name as a string, which is the
-common use case when checking permissions.
+An IPerson has an inTeam method to allow us to easily check if a
+person is a member of a team. It accepts the team name as a string,
+which is the common use case when checking permissions.
 
->>> lifeless = Person.byName('lifeless')
->>> ddaa = Person.byName('ddaa')
+>>> ddaa = personset.getByName('ddaa')
 >>> lifeless.inTeam(buttsource) and ddaa.inTeam(buttsource)
 True
-
 
 If a Person is not a Team then the Person object will not provide the
 ITeam interface.
@@ -45,3 +51,19 @@ False
 >>> ITeam.providedBy(buttsource)
 True
 
+Searching for People
+====================
+
+If you want to do a more complex query to find people, use
+IPersonSet.search.
+
+>>> from canonical.launchpad.searchbuilder import NULL
+>>> valid_people = personset.search(password = NULL)
+>>> valid_people.count()
+21
+
+Passing no args would return all people:
+
+>>> all_people = personset.search()
+>>> all_people.count()
+30

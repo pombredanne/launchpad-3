@@ -13,6 +13,7 @@ from canonical.lp import dbschema
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      ProductVocabulary, SourcePackageNameVocabulary
 from canonical.database.sqlbase import quote
+from canonical.launchpad.searchbuilder import NULL
 
 # Bug Reports
 class BugTasksReportView:
@@ -106,7 +107,7 @@ class BugTasksReportView:
         return html
 
     def allPeople(self):
-        return [p for p in getUtility(IPersonSet).getAll() if p.password]
+        return getUtility(IPersonSet).search(password = NULL)
 
 # XXX: 2004-11-13, Brad Bollenbach: Much of the code in BugTasksView
 # is a dirty hack in the abscense of a more clean way of handling generating

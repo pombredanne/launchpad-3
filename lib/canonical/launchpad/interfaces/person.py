@@ -311,6 +311,23 @@ class IPersonSet(Interface):
         Return the default value if there is no such person.
         """
 
+    def search(password=None):
+        # The search API is minimal for the moment, to solve an
+        # immediate problem. It will gradually be filled out with
+        # more parameters as necessary.
+        """Return a set of IPersons that satisfy the query arguments.
+
+        Keyword arguments should always be used. The argument passing
+        semantics are as follows:
+
+        * personset.search(arg = 'foo'): Match all IPersons where
+          IPerson.arg == 'foo'.
+
+        * personset.search(arg = NULL): Match all the IPersons where
+          IPerson.arg IS NULL.
+        """
+        pass
+
     def getAll():
         """Return all Persons and Teams."""
 
