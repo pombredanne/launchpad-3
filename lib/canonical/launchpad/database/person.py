@@ -9,6 +9,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.constants import UTC_NOW
 
 # canonical imports
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet,  \
@@ -25,15 +26,16 @@ class Person(SQLBase):
     implements(IPerson)
 
     _columns = [
-        StringCol('name', default=None),
+        StringCol('name'),
         StringCol('displayname', default=None),
         StringCol('givenname', default=None),
         StringCol('familyname', default=None),
         StringCol('password', default=None),
-        ForeignKey(name='teamowner', foreignKey='Person', dbName='teamowner'),
+        ForeignKey(name='teamowner', foreignKey='Person', dbName='teamowner',
+            default=None),
         StringCol('teamdescription', default=None),
-        IntCol('karma'),
-        DateTimeCol('karmatimestamp')
+        IntCol('karma', default=0),
+        DateTimeCol('karmatimestamp', default=UTC_NOW)
     ]
 
     _emailsJoin = MultipleJoin('RosettaEmailAddress', joinColumn='person')

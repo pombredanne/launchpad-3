@@ -6,10 +6,11 @@
 import os, popen2, smtplib
 from textwrap import wrap
 
+from canonical.foaf.nickname import generate_nick
 from canonical.lp import initZopeless
 from canonical.lp.dbschema import EmailAddressStatus
 from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
-from canonical.launchpad.database import RosettaPerson, RosettaEmailAddress
+from canonical.launchpad.database import Person, EmailAddress
 from optparse import OptionParser
 from zope.component.tests.placelesssetup import PlacelessSetup
 
@@ -41,16 +42,17 @@ def createUser(givenName, familyName, displayname, email, password=None):
     initZopeless()
 
     # XXX: We don't check if the person already exists.
-    person = RosettaPerson(
-        givenName=givenName,
-        familyName=familyName,
-        displayname=displayname,
-        password=encrypted_password)
+    person = Person(
+        name = generate_nick(email),
+        givenname = givenName,
+        familyname = familyName,
+        displayname = displayname,
+        password = encrypted_password)
 
-    email = RosettaEmailAddress(
-        person=person,
-        email=email,
-        status=int(EmailAddressStatus.NEW))
+    email = EmailAddress(
+        person = person,
+        email = email,
+        status = int(EmailAddressStatus.NEW))
 
     return (person, password, encrypted_password)
 
