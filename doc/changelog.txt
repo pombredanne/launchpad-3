@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-14 14:20:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1313
+
+    Summary:
+      log when an unhandled rcstype is encountered in sourcesource repository calculation
+    Revision:
+      launchpad--devel--0--patch-1313
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-96
+       log when an unhandled rcstype is encountered in sourcesource repository calculation
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/sourcesource.py
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-96
+
+
 2005-02-14 10:48:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1312
 
     Summary:
