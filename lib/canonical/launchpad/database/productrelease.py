@@ -28,8 +28,10 @@ class ProductRelease(SQLBase):
     changelog = StringCol(notNull=False, default=None)
     owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)
     productseries = ForeignKey(dbName='productseries', foreignKey='ProductSeries')
+    manifest = ForeignKey(dbName='manifest', foreignKey='Manifest', default=None)
     
     files = MultipleJoin('ProductReleaseFile', joinColumn='productrelease')
+                         
 
 
 class ProductReleaseFile(SQLBase):

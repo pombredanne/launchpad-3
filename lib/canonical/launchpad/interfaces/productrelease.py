@@ -22,6 +22,7 @@ class IProductRelease(Interface):
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
     productseries = Int(title=_('Product Series'))
+    manifest = Attribute("Manifest")
 
     files = Attribute(_('Iterable of product release files'))
     
