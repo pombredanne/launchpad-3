@@ -81,6 +81,15 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
                                                 ssha)
         self.assertEqual({}, userDict)
 
+    def test_authUserNullPassword(self):
+        # Authing a user with a NULL password should always return {}
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('supersecret!')
+        # The 'admins' user in the sample data has no password, so we use that.
+        userDict = storage._authUserInteraction(self.cursor, 'admins', ssha)
+        self.assertEqual({}, userDict)
+
+
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
     def setUp(self):
@@ -112,6 +121,38 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
 
         # In fact, it should return the same dict as getUser
         goodDict = storage._getUserInteraction(self.cursor, 'fred@bedrock')
+        self.assertEqual(goodDict, userDict)
+
+    def test_authUserByNickname(self):
+        # Authing a user by their nickname should work, just like an email
+        # address in test_authUser.
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('supersecret!', self.fredsalt)
+        userDict = storage._authUserInteraction(self.cursor, 'fflintst', ssha)
+        self.assertNotEqual({}, userDict)
+
+        # In fact, it should return the same dict as getUser
+        goodDict = storage._getUserInteraction(self.cursor, 'fflintst')
+        self.assertEqual(goodDict, userDict)
+        
+        # And it should be the same as returned by looking them up by email
+        # address.
+        goodDict = storage._getUserInteraction(self.cursor, 'fred@bedrock')
+        self.assertEqual(goodDict, userDict)
+
+    def test_authUserByNicknameNoEmailAddr(self):
+        # Just like test_authUserByNickname, but for a user with no email
+        # address.  The result should be the same.
+        self.cursor.execute(
+            "DELETE FROM EmailAddress WHERE email = 'fred@bedrock'"
+        )
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('supersecret!', self.fredsalt)
+        userDict = storage._authUserInteraction(self.cursor, 'fflintst', ssha)
+        self.assertNotEqual({}, userDict)
+
+        # In fact, it should return the same dict as getUser
+        goodDict = storage._getUserInteraction(self.cursor, 'fflintst')
         self.assertEqual(goodDict, userDict)
 
     def test_authUserBadPassword(self):

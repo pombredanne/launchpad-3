@@ -63,6 +63,10 @@ class DatabaseUserDetailsStorage(object):
             # No-one found
             return {}
 
+        if passwordDigest is None:
+            # The user has no password, which means they can't login.
+            return {}
+        
         if passwordDigest.rstrip() != sshaDigestedPassword.rstrip():
             # Wrong password
             return {}
@@ -174,10 +178,10 @@ class DatabaseUserDetailsStorage(object):
         query = (
             "SELECT Person.id, Person.displayname, Person.password "
             "FROM Person "
-            "INNER JOIN EmailAddress ON EmailAddress.person = Person.id "
         )
         transaction.execute(
             query + 
+            "INNER JOIN EmailAddress ON EmailAddress.person = Person.id "
             "WHERE lower(EmailAddress.email) = '%s' "
             % (str(loginID).lower().replace("'", "''"),)
         )

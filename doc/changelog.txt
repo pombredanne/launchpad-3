@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-22 03:59:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1337
+
+    Summary:
+      Minor fixes (with tests) for the authserver
+    Revision:
+      launchpad--devel--0--patch-1337
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-null-password-fix--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1335
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-null-password-fix--0--patch-1
+       Minor fixes and some tests.  The most significant difference is that less tracebacks will be logged.
+    
+     * andrew.bennetts@canonical.com/launchpad--authserver-null-password-fix--0--patch-2
+       Comment a test method a little more
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/authserver/database.py
+     lib/canonical/authserver/ftests/test_database.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--authserver-null-password-fix--0--base-0
+     andrew.bennetts@canonical.com/launchpad--authserver-null-password-fix--0--patch-1
+     andrew.bennetts@canonical.com/launchpad--authserver-null-password-fix--0--patch-2
+
+
 2005-02-22 01:04:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1336
 
     Summary:
