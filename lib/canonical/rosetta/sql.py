@@ -21,7 +21,7 @@ standardTemplateTopComment = '''# PO template for %(productname)s
 # Copyright (c) %(copyright)s %(year)s
 # This file is distributed under the same license as the %(productname)s package.
 # PROJECT MAINTAINER OR MAILING LIST <EMAIL@ADDRESS>, %(year)s.
-# 
+#
 '''
 
 # XXX: project-id-version needs a version
@@ -42,7 +42,7 @@ standardPOFileTopComment = '''# %(languagename)s translation for %(productname)s
 # Copyright (c) %(copyright)s %(year)s
 # This file is distributed under the same license as the %(productname)s package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
-# 
+#
 '''
 
 standardPOFileHeader = '''msgid ""
@@ -1147,6 +1147,21 @@ class RosettaPerson(SQLBase):
                 Product.project = Project.id
             ORDER BY ???
             '''
+
+    def translatedTemplates(self):
+        '''
+        SELECT * FROM POTemplate WHERE
+            id IN (SELECT potemplate FROM pomsgset WHERE
+                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
+                    origin = 2
+                ORDER BY datefirstseen DESC))
+        '''
+        return RosettaPOTemplate.select('''
+            id IN (SELECT potemplate FROM pomsgset WHERE
+                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
+                    origin = 2
+                ORDER BY datefirstseen DESC))
+            ''')
 
     _labelsJoin = RelatedJoin('RosettaLabel', joinColumn='person',
         otherColumn='label', intermediateTable='PersonLabel')

@@ -20,9 +20,9 @@ class POExport:
 
     def export(self, language):
         poFile = self.potfile.poFile(language)
-        
+
         message = POMessage()
-        
+
         message.comment = unicode(poFile.comment)
         message.msgstr = unicode(poFile.header)
         if poFile.headerFuzzy:
@@ -69,7 +69,7 @@ class POTFileDirectToDatabase:
 
     def export(self, language):
         cr = self.cnx.cursor()
-        
+
         # We get the potfile identificator
         cr.execute(
             """SELECT potfile FROM POTFile
@@ -87,7 +87,7 @@ class POTFileDirectToDatabase:
             # but it should be added if it does not exists.
             row = cr.fetchone()
             lang_id = row[0]
-            
+
             # Now, we look for an existent translation
             # to get its headers
             cr.execute(
@@ -95,7 +95,7 @@ class POTFileDirectToDatabase:
                     WHERE potfile=%(potfile)d AND
                           language=%(lang_id)d""",
                 { 'potfile': potfile[0], 'lang_id': lang_id })
-           
+
             # First, we extract/generate the .po header.
             message = POMessage()
 #            message.msgid = u""
@@ -116,7 +116,7 @@ class POTFileDirectToDatabase:
                 # of using 'ENCODING' like gettext does. It's my way
                 # of promote UTF-8.
                 message.msgstr = u"""Project-Id-Version: PACKAGE VERSION
-Report-Msgid-Bugs-To: 
+Report-Msgid-Bugs-To:
 POT-Creation-Date: 2004-07-18 23:00+0200
 PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
 Last-Translator: FULL NAME <EMAIL@ADDRESS>
@@ -128,14 +128,14 @@ Content-Transfer-Encoding: 8bit"""
 
             header = pofile.POHeader(message)
             header.finish()
-                        
+
             # First we extract the valid msgid looking at the .pot ones
             cr.execute(
                 """SELECT pomsgid, "references", generatedcomment,
                           flags, plural FROM POTMsgIDSighting
                     WHERE potfile = %d AND iscurrent = TRUE
                     ORDER BY sequence""" % potfile)
-                    
+
             messages = []
             cr_msgid = self.cnx.cursor()
             cr_msgid_plural = self.cnx.cursor()
@@ -145,13 +145,13 @@ Content-Transfer-Encoding: 8bit"""
             cr_po = self.cnx.cursor()
             for row in cr.fetchall():
                 message = POMessage()
-                
+
                 # We can assume that it will always exists
                 # because we have a reference from a POTFile
                 cr_msgid.execute(
                     "SELECT msgid FROM POMsgID WHERE pomsgid = %d" % row[0])
                 msg_row = cr_msgid.fetchone()
-                
+
                 # The string is stored inside Postgresql as UTF-8
                 message.msgid = unicode(msg_row[0], "UTF-8")
 
@@ -171,7 +171,7 @@ Content-Transfer-Encoding: 8bit"""
                 if row[3]:
                     message.flags.update(
                         [flag.strip() for flag in str(row[3]).split(',')])
-                
+
                 # First we look at Rosetta translations
                 # and we sort them with datetouched so we
                 # can pick the latest one easily.
@@ -206,14 +206,14 @@ Content-Transfer-Encoding: 8bit"""
                               obsolete=FALSE
                         ORDER BY lastseen, pluralform, fuzzy""",
                     { 'pofile': pofile, 'pomsgid': row[0] })
-               
+
                 if cr_po.rowcount > 0:
                     po_row = cr_po.fetchone()
                     po_ts = po_row[2]
 
                     # We choose the Rosetta translation if it's newer than the
                     # po one or we only have fuzzy strings with .po files.
-                    if (cr_rosetta.rowcount > 0 and 
+                    if (cr_rosetta.rowcount > 0 and
                        (rosetta_ts >= po_ts or bool(po_row[4]))):
                         # Rosetta wins
                         translation_row = rosetta_row
@@ -234,15 +234,15 @@ Content-Transfer-Encoding: 8bit"""
 
                 if translation_row:
                     # We have a translation available.
-                  
+
                     # The main msgstr is needed to get the comments.
                     translation = translation_row[0]
-                    
+
                     cr_msgstr.execute(
                         """SELECT text FROM POTranslation
                             WHERE potranslation = %d""" % translation)
                     msgstr_row = cr_msgstr.fetchone()
-                    
+
                     if row[4]:
                         # If it's a plural form
                         message.msgstrPlurals.append(
@@ -294,7 +294,7 @@ Content-Transfer-Encoding: 8bit"""
                     for comment_row in  cr_comments.fetchall():
                         message.comment +=  unicode(comment_row[0] + '\n',
                                                     "UTF-8")
-                
+
                 messages.append(message)
 
             # We DUMP the .po

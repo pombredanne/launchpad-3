@@ -48,11 +48,11 @@
             <label>Translator interest</label>
 
             <div class="formHelp">
-            Check this box if you're interested in translating the 
-            application when it becomes available.
+            Check this box if you're interested in translating the application
+            when it becomes available.
             </div>
 
-            <input type="checkbox" checked="checked" /> 
+            <input type="checkbox" checked="checked" />
             I'm interested in becoming a translator for this project.
 
         </div>

@@ -34,7 +34,7 @@ if __name__ == '__main__':
             # If we don't get a password from command line, we generate one
             # automaticaly.
             pwgen = popen2.Popen3('/usr/bin/pwgen -s -1', True)
-            
+
             # Now we wait until the command ends
             status = pwgen.wait()
 
@@ -43,7 +43,7 @@ if __name__ == '__main__':
                     # The command worked
                     options.password = pwgen.fromchild.read()
                     options.password = options.password.strip('\n')
-                
+
                 else:
                     print "There was an error executing pwgen: " + \
                         pwgen.childerr.read()
@@ -57,7 +57,7 @@ if __name__ == '__main__':
         passEncrypted = ssha.encrypt(options.password)
 
         SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
-       
+
         # XXX: We don't check if the person already exists
         person = RosettaPerson(givenName=options.given,
                                familyName=options.family,
@@ -69,7 +69,7 @@ if __name__ == '__main__':
         # XXX: Implement an email submit with all information filled so the
         # user knows his/her password.
         print "The password: " + options.password + " The encrypted: " + passEncrypted
-        
+
     else:
         # XXX: We should do this message more descriptive.
         print "Please, review the command line, we need more options..."

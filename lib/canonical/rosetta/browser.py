@@ -129,7 +129,7 @@ class ViewProject:
 
             # NOTE: To get a 100% value:
             # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent 
+            # 2.- translatedPercent + untranslatedPercent
             # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
             # untranslatedPercent
             retdict = {
@@ -139,7 +139,7 @@ class ViewProject:
                 'poCurrentCount': currentCount,
                 'poRosettaCount': rosettaCount,
                 'poUpdatesCount' : updatesCount,
-                'poNonUpdatesCount' : nonUpdatesCount, 
+                'poNonUpdatesCount' : nonUpdatesCount,
                 'poTranslated': translated,
                 'poUntranslated': untranslated,
                 'poCurrentPercent': currentPercent,
@@ -183,7 +183,7 @@ class LanguageTemplates:
                 'poCurrentCount': 0,
                 'poRosettaCount': 0,
                 'poUpdatesCount' : 0,
-                'poNonUpdatesCount' : 0, 
+                'poNonUpdatesCount' : 0,
                 'poTranslated': 0,
                 'poUntranslated': len(template),
                 'poCurrentPercent': 0,
@@ -216,7 +216,7 @@ class LanguageTemplates:
 
                 # NOTE: To get a 100% value:
                 # 1.- currentPercent + rosettaPercent + untranslatedPercent
-                # 2.- translatedPercent + untranslatedPercent 
+                # 2.- translatedPercent + untranslatedPercent
                 # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
                 # untranslatedPercent
                 retdict.update({
@@ -224,7 +224,7 @@ class LanguageTemplates:
                     'poCurrentCount': currentCount,
                     'poRosettaCount': rosettaCount,
                     'poUpdatesCount' : updatesCount,
-                    'poNonUpdatesCount' : nonUpdatesCount, 
+                    'poNonUpdatesCount' : nonUpdatesCount,
                     'poTranslated': translated,
                     'poUntranslated': untranslated,
                     'poCurrentPercent': currentPercent,
@@ -298,29 +298,34 @@ class ViewPOFile:
             self.submitted = False
             return ""
 
+
 class TranslatorDashboard:
     def projects(self):
         return getUtility(IProjects)
+
+
+class ViewPreferences:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.person = IPerson(self.request.principal, None)
+
+        # XXX
+        if self.person is None:
+            self.person = fake_person()
 
     def languages(self):
         return getUtility(ILanguages)
 
     def selectedLanguages(self):
-        person = self.translator()
-        return list(person.languages())
-
-    def translator(self):
-        person = IPerson(self.request.principal, None)
-        if person is None:
-            # XXX
-            person = fake_person()
-
-        return person
+        return list(self.person.languages())
 
     def submit(self):
-        person = self.translator()
+        person = self.person
         self.submitted_personal = False
         self.error_msg = None
+
         if "SAVE-LANGS" in self.request.form:
             if self.request.method == "POST":
                 oldInterest = list(person.languages())
@@ -401,7 +406,6 @@ class ViewSearchResults:
 
 
 class ViewPOExport:
-
     def __call__(self):
         pofile = self.context
         poExport = POExport(pofile.poTemplate)
@@ -413,6 +417,7 @@ class ViewPOExport:
         self.request.response.setHeader('Content-disposition',
                 'attachment; filename="%s.po"' % languageCode)
         return exportedFile
+
 
 class ViewMOExport:
 
@@ -436,7 +441,7 @@ class ViewMOExport:
             if os.WEXITSTATUS(status) == 0:
                 # The command worked
                 output = msgfmt.fromchild.read()
-                
+
                 self.request.response.setHeader('Content-Type',
                     'application/x-gmo')
                 self.request.response.setHeader('Content-Length',
@@ -851,7 +856,7 @@ class LanguageTranslationEffortCategories:
 
             # NOTE: To get a 100% value:
             # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent 
+            # 2.- translatedPercent + untranslatedPercent
             # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
             # untranslatedPercent
             retdict = {
@@ -861,7 +866,7 @@ class LanguageTranslationEffortCategories:
                 'poCurrentCount': currentCount,
                 'poRosettaCount': rosettaCount,
                 'poUpdatesCount' : updatesCount,
-                'poNonUpdatesCount' : nonUpdatesCount, 
+                'poNonUpdatesCount' : nonUpdatesCount,
                 'poTranslated': translated,
                 'poUntranslated': untranslated,
                 'poCurrentPercent': currentPercent,
@@ -891,4 +896,19 @@ class ViewTranslationEffortCategory:
             person = fake_person()
             for language in person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
+
+class LogIn:
+
+    def isSameHost(self, url):
+        """Returns True if the url appears to be from the same host as
+        we are."""
+        return url.startswith(self.request.getApplicationURL())
+
+    def login(self):
+        referer = self.request.getHeader('referer')  # Traditional w3c speling
+        if referer and self.isSameHost(referer):
+            self.request.response.redirect(referer)
+        else:
+            self.request.response.redirect(self.request.getURL(1))
+        return ''
 

@@ -93,9 +93,9 @@
         class="canonical.rosetta.browser.ViewPOExport"
         attribute="__call__"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code/po" />
-	
+
   <page name="mo"
-  	for="canonical.rosetta.interfaces.IPOFile"
+        for="canonical.rosetta.interfaces.IPOFile"
         permission="zope.Public"
         class="canonical.rosetta.browser.ViewMOExport"
         attribute="__call__"
@@ -139,12 +139,18 @@
   </pages>
 
   <pages for="canonical.rosetta.interfaces.IRosettaApplication"
-         permission="zope.Public"
+         permission="launchpad.AnyPerson"
          class="canonical.rosetta.browser.TranslatorDashboard"
          >
     <page name="translator"
           template="templates/dashboard-translator.pt"
           lp:url="Rosetta/translator" />
+  </pages>
+
+  <pages for="canonical.rosetta.interfaces.IRosettaApplication"
+         permission="zope.Public"
+         class="canonical.rosetta.browser.ViewPreferences"
+         >
     <page name="prefs"
           template="templates/rosetta-preferences.pt"
           lp:url="Rosetta/prefs" />
@@ -158,6 +164,13 @@
           template="templates/search-results.pt"
           lp:url="Rosetta/search-results" />
   </pages>
+
+  <page for="canonical.rosetta.interfaces.IRosettaApplication"
+        class="canonical.rosetta.browser.LogIn"
+        permission="launchpad.AnyPerson"
+        name="+login"
+        attribute="login"
+        lp:url="Rosetta/+login" />
 
 </configure>
 <!-- arch-tag: bd9952cf-5198-4ab5-a97f-8d2d9893b313 -->

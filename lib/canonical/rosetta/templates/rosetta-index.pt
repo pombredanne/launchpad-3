@@ -26,6 +26,11 @@
     Rosetta">about</a> page to find out more about Rosetta.
     </div>
 
+    <p>
+    You might like to
+    <a href="+login">log in</a>.
+    </p>
+
     <form action="search-results"
           method="get">
     <fieldset>
@@ -53,7 +58,7 @@
             <th>Title</th>
             <th>Description</th>
         </thead>
-        
+
         <tbody>
             <tr tal:attributes="onclick string:window.location='XXXpackage-url';">
                 <td><a href="XXXpackage-url">mozilla-firefox</a></td>
@@ -68,7 +73,7 @@
                 <td>Is it an application or a web site? Who knows!</td>
             </tr>
         </tbody>
-    
+
     </table>
 
 

@@ -14,7 +14,7 @@ class POSyntaxError(Exception):
     """ Syntax error in a po file """
     def __init__(self, lno=None):
         self.lno = lno
-        
+
     def __str__(self):
         if self.lno:
             return 'Po file: syntax error on line %d' % self.lno
@@ -26,7 +26,7 @@ class POInvalidInputError(Exception):
     def __init__(self, lno=None, msg=None):
         self.lno = lno
         self.msg = msg
-        
+
     def __str__(self):
         if self.msg:
             return self.msg
@@ -40,7 +40,7 @@ class POSyntaxWarning(Warning):
     def __init__(self, lno=0, msg=None):
         self.lno = lno
         self.msg = msg
-        
+
     def __str__(self):
         if self.msg:
             return self.msg
@@ -120,7 +120,7 @@ class POMessage(object):
 
         >>> unicode(POMessage(msgid="foo", msgstr="bar"))
         u'msgid "foo"\nmsgstr "bar"'
-        
+
         obsolete entries are prefixed with #~
         >>> unicode(POMessage(msgid="foo", msgstr="bar", flags=("fuzzy",), obsolete=True))
         u'#, fuzzy\n#~ msgid "foo"\n#~ msgstr "bar"'
@@ -463,7 +463,7 @@ class POParser(object):
     def append(self):
         if self._partial_transl:
             for message in self.messages:
-		if message.msgid == self._partial_transl['msgid']:
+                if message.msgid == self._partial_transl['msgid']:
                     raise POInvalidInputError('Po file: duplicate msgid on line %d'
                                               % self._lineno)
             transl = self.translation_factory(header=self.header,
@@ -505,7 +505,7 @@ class POParser(object):
         if l[:2] == '#~':
             obsolete = True
             l = l[2:].lstrip()
-        # If we get a comment line after a msgstr or a line starting with 
+        # If we get a comment line after a msgstr or a line starting with
         # msgid, this is a new entry
         # XXX: l.startswith('msgid') is needed because not all msgid/msgstr
         # pairs have a leading comment
@@ -658,7 +658,7 @@ def _write_inner(writer, header):
 
 def write(f, header, recode=None, use_replace=False):
     """Write a message catalog to an encoded file.
-    
+
     Second argument should be a IPOHeader object.  The messages to
     dump are acquired from its 'messages' attribute.
 

@@ -17,6 +17,8 @@
 
     <h1>Translator's Dashboard</h1>
 
+    <!-- XXX XXX XXX XXX -->
+    <div tal:condition="python: False">
     <div class="rosettaDashboardElement">
         <h2>My current projects</h2>
 
@@ -43,7 +45,6 @@
         <input type="submit" value="Remove selected project from list" />
     </div>
 
-
     <div class="rosettaDashboardElement">
         <h2>Available/Recommended projects</h2>
 
@@ -53,7 +54,7 @@
         or you can search for specific projects that you know you want to translate.
         </div>
 
-        Project search: 
+        Project search:
         <input type="text" />
         <input type="submit" value="Search" class="searchButton"/>
 
@@ -80,13 +81,46 @@
         </table>
         <input type="submit" value="Add selected project to list" />
 
+        <!--
         <p>
         Is the project you're looking for not listed?
         <a href="interest">Register interest to get the project into the system</a>
         </p>
+        -->
 
     </div>
+    <!-- XXX XXX XXX XXX -->
+    </div> <!-- condition: python: False -->
 
+    <tal:block condition="not: view/person">
+        <p>
+        You must authenticate yourself before you can set your preferences.
+        </p>
+    </tal:block>
+
+    <tal:block condition="view/person">
+        <h2>Recently Translated Templates</h2>
+
+        <tal:block define="templates
+                python: list(view.person.translatedTemplates())[:10]">
+
+            <p tal:condition="not: templates">
+            No recently translated projects.
+            </p>
+
+            <ul tal:condition="templates">
+                <li tal:repeat="template templates">
+                    <a
+                        tal:define="
+                            project template/product/project/name;
+                            product template/product/name;
+                            "
+                        tal:attributes="href string: projects/${project}/${product}/${template/name}"
+                        tal:content="template/name">foo template</a>
+                </li>
+            </ul>
+        </tal:block>
+    </tal:block> <!-- condition: view/person -->
 </div>
 
 </body>

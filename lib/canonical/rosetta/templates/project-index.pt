@@ -67,7 +67,7 @@
                     <td><span tal:replace="product/poTranslated">0</span></td>
                     <td><span tal:replace="product/poUntranslated">0</span></td>
                     <td>
-	                <img src="++resource++green-bar.png"
+                    <img src="++resource++green-bar.png"
                              height="15"
                              alt="Translated & non updated graph"
                              tal:condition="product/poNonUpdatesCount"
@@ -79,13 +79,13 @@
                                tal:condition="product/poUpdatesCount"
                                tal:attributes="width product/poUpdatesPercent;
                                                title string: Updates: ${product/poUpdatesPercent}%"
-			/><img src="++resource++dwelled-bar.png"
+            /><img src="++resource++dwelled-bar.png"
                                height="15"
                                alt="Rosetta additions graph"
                                tal:condition="product/poRosettaCount"
                                tal:attributes="width product/poRosettaPercent;
                                                title string: Rosetta additions: ${product/poRosettaPercent}%"
-			/><img src="++resource++red-bar.png"
+            /><img src="++resource++red-bar.png"
                                height="15"
                                alt="Fuzzy graph"
                                tal:condition="product/poUntranslated"
@@ -97,7 +97,7 @@
         </table>
 
     </div> <!-- tal:condition="view/thereAreProducts -->
-  
+
     <div tal:condition="not: view/thereAreProducts">
         <p>
         Rosetta doesn't currently know of any product for

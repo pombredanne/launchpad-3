@@ -44,7 +44,7 @@ if __name__ == '__main__':
             raise RuntimeError("No %s specified." % name)
 
     SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
-       
+
     person = RosettaPerson.get(int(options.owner))
     if person is None:
         raise RuntimeError("The person %s does not exists." % options.owner)
