@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-01 15:15:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1545
+
+    Summary:
+      Fixed a bug getting the country from your ip + test
+    Revision:
+      launchpad--devel--0--patch-1545
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-587
+       Merge from rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-588
+       Fixed a typo + test for it
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-589
+       Merge from rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/helpers.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-587
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-588
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-589
+
+
 2005-04-01 14:39:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1544
 
     Summary:

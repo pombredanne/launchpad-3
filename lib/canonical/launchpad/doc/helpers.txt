@@ -94,3 +94,24 @@ A mix of all previous cases.
     >>> getValidNameFromString(original_string)
     'evil-string-not-following-our-rules'
 
+
+requestCountry
+--------------
+
+    >>> from canonical.launchpad.helpers import requestCountry
+
+Check if the function gets a country for localhost.
+
+    >>> dummy_request = {'REMOTE_ADDR': '127.0.0.1'}
+    >>> country = requestCountry(dummy_request)
+    >>> country is not None
+    True
+
+If we don't have REMOTE_ADDR or HTTP_X_FORWARDED_FOR keys inside the request,
+the country is unknown.
+
+    >>> dummy_request = {}
+    >>> country = requestCountry(dummy_request)
+    >>> country is None
+    True
+
