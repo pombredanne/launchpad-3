@@ -77,6 +77,8 @@ class Product(SQLBase):
 
     sourceforgeproject = StringCol(notNull=False, default=None)
 
+    autoupdate = BoolCol(notNull=True, default=False)
+
     #
     # useful Joins
     #

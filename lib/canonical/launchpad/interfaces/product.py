@@ -58,6 +58,9 @@ class IProduct(Interface):
     freshmeatproject = TextLine(title=_('Freshmeat Project'),
         required=False)
 
+    autoupdate = Bool(title=_('Autoupdate'), description=_("""Whether or not
+        this product's attributes are autoupdated."""))
+
     manifest = Attribute(_('Manifest'))
 
     active = Bool(title=_('Active'), description=_("""Whether or not
