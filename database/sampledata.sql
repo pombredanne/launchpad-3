@@ -67,3 +67,374 @@ INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , 
 INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
 INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
 INSERT INTO ProductRelease ( product, datereleased, version, owner ) VALUES ( , , '',  );
+
+
+
+/* 
+ SQL data to populate Soyuz DB and get some results
+*/
+
+
+--Sourcepackage
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'),
+         'mozilla-firefox', 'Ubuntu Mozilla Firefox Source Package', 
+         'text');
+
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Steve Alexander'),
+         'mozilla-thunderbird', 'Ubuntu Mozilla Thunderbird Source Package', 
+         'text');
+
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts'),
+         'python-twisted', 'Python Twisted Source Package', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Dave Miller'),
+         'bugzila', 'Bugzila Source Package', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'James Blackwell'),
+         'tla-arch', 'Arch tla Source Package', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Christian Reis'),
+         'kiwi2', 'Kiwi2 Source Package', 
+         'text');
+INSERT INTO Sourcepackage (maintainer, name, title, description)
+VALUES ((SELECT id FROM Person WHERE presentationname = 'Alexander Limi'),
+         'plone', 'Plone Source Package', 
+         'text');
+
+
+--SourcepackageRelease
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-firefox'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'),
+        '0.9.1-1',
+        timestamp '2004-06-29 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'mozilla-thunderbird'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Steve Alexander'),
+        '0.9.1-2',
+        timestamp '2004-06-30 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'python-twisted'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts'),
+        '0.9.1-3',
+        timestamp '2004-07-01 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'bugzila'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Dave Miller'),
+        '0.9.1-4',
+        timestamp '2004-07-02 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'tla-arch'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'James Blackwell'),
+        '0.9.1-5',
+        timestamp '2004-07-03 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'kiwi2'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Christian Reis'),
+        '0.9.1-6',
+        timestamp '2004-07-04 00:00',
+        1);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+                                  version, dateuploaded, urgency)
+VALUES ((SELECT id FROM Sourcepackage WHERE name = 'plone'),
+ 	1,
+        (SELECT id FROM Person WHERE presentationname = 'Alexander Limi'),
+        '0.9.1-7',
+        timestamp '2004-07-05 00:00',
+        1);
+
+
+--Manifest
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-06-29 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-06-30 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Steve Alexander')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-01 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-02 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Dave Miller')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-03 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'James Blackwell')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-04 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Christian Reis')
+ );
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (timestamp '2004-07-05 00:00',  
+ (SELECT id FROM Person WHERE presentationname = 'Alexander Limi')
+ );
+
+
+--CodeRelease
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-29 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-30 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-30 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-01 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-01 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-02 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-02 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-03 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-03 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-04 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-04 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-05 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
+
+
+--ArchArchive
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('mozilla', 'Mozilla', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('thunderbird', 'Thunderbid', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('twisted', 'Twisted', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('bugzila', 'Bugzila', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('arch', 'Arch', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('kiwi2', 'Kiwi2', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('plone', 'Plone', 'text', false);
+
+--Archnamespace
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (1, 'mozilla', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (2, 'tunderbird', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (3, 'twisted', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (4, 'bugzila', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (5, 'arch', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (6, 'kiwi2', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (7, 'plone', true);
+
+
+--Branch
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'mozilla'),
+        'Mozilla Firefox 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'thunderbird'),
+        'Mozilla Thunderbird 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Steve Alexander')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'twisted'),
+        'Python Twisted 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Andrew Bennetts')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'bugzila'),
+        'Bugzila 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Dave Miller')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'arch'),
+        'Arch 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'James Blackwell')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'kiwi2'),
+        'Kiwi2 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Christian Reis')); 
+
+INSERT INTO Branch (archnamespace, title, description, owner)
+VALUES ((SELECT id FROM ArchArchive WHERE name = 'plone'),
+        'Plone 0.9.1', 'text',
+ (SELECT id FROM Person WHERE presentationname = 'Alexander Limi')); 
+
+--schema
+INSERT INTO schema (name, title, description, owner) 
+VALUES('Mark schema', 'TITLE', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'));
+
+--label
+INSERT INTO label (schema, name, title, description) 
+VALUES(1, 'TAR', 'TAR title', 'TAR Description');
+
+/*
+--Manifest
+INSERT INTO Manifest (owner) 
+VALUES ((select id from Person where presentationname='Mark Shuttleworth'));
+*/
+
+
+
+/* 
+ SQL data to populate Soyuz DB and get some results
+ 
+
+Canonical Software
+cprov
+debonzi
+*/
+
+
+--CodeRelease
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-29 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-06-30 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-30 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-01 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-01 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-02 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-02 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-03 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-03 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-04 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-04 00:00'));
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
+VALUES ((SELECT id FROM SourcepackageRelease WHERE dateuploaded = timestamp '2004-07-05 00:00'),
+ (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
+
+
+--ArchArchive
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('mozilla', 'Mozilla', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('thunderbird', 'Thunderbid', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('twisted', 'Twisted', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('bugzila', 'Bugzila', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('arch', 'Arch', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('kiwi2', 'Kiwi2', 'text', false);
+
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('plone', 'Plone', 'text', false);
+
+--Archnamespace
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (1, 'mozilla', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (2, 'tunderbird', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (3, 'twisted', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (4, 'bugzila', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (5, 'arch', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (6, 'kiwi2', true);
+
+INSERT INTO Archnamespace (archarchive, category,visible) 
+VALUES (7, 'plone', true);
+
+
+--schema
+INSERT INTO schema (name, title, description, owner) 
+VALUES('Mark schema', 'TITLE', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'));
+
+--label
+INSERT INTO label (schema, name, title, description) 
+VALUES(1, 'TAR', 'TAR title', 'TAR Description');
+
+/*
+--Manifest
+INSERT INTO Manifest (owner) 
+VALUES ((select id from Person where presentationname='Mark Shuttleworth'));
+*/
+
+
+
