@@ -51,7 +51,13 @@ def rdfsplit(inFileName, outputDir):
         for outLine in header:
             outFile.write(outLine)
 
-        for outLine in rdfLines[projStartLine:projEndLine]:
+        for outLine in rdfLines[projStartLine:projEndLine-1]:
+            outFile.write(outLine)
+
+        # Write the <local_status> line.
+        outFile.write('    <local_status>NEW</local_status>\n')
+        
+        for outLine in rdfLines[projEndLine-1:projEndLine]:
             outFile.write(outLine)
 
         for outLine in footer:

@@ -1070,13 +1070,13 @@ class IChangeset(IDirName):
     def iter_removed_files(all=False):
         """WRITEME"""
 
-    def removed_file(self, name):
+    def removed_file(name):
         """WRITEME"""
 
-    def iter_created_dirs(self, all=False):
+    def iter_created_dirs(all=False):
         """Iterator over tuples (id, dest) for created directories."""
 
-    def iter_removed_dirs(self, all=False):
+    def iter_removed_dirs(all=False):
         """Iterator over tuples (id, orig) for removed directories."""
 
 

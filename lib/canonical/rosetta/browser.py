@@ -3,13 +3,18 @@
 
 __metaclass__ = type
 
-import base64, popen2, os, os.path, re, sys
+import base64
+import popen2
+import os
+import re
+import tarfile
+
 from math import ceil
+from sets import Set
 from xml.sax.saxutils import escape as xml_escape
 from StringIO import StringIO
 
 from zope.component import getUtility
-from zope.i18n.interfaces import IUserPreferredLanguages
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
@@ -20,7 +25,7 @@ from canonical.launchpad.interfaces import ILanguageSet, IPerson, \
     IProjectSet, IProductSet, IPasswordEncryptor, IRequestLocalLanguages, \
     IRequestPreferredLanguages, IDistributionSet, ISourcePackageNameSet
 
-from canonical.launchpad.database import Language, Person, POTemplate, POFile
+from canonical.launchpad.database import Person, POTemplate, POFile
 
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
@@ -279,14 +284,12 @@ def check_tar(tf, pot_paths, po_paths):
     '''
 
     # Check that at most one .pot file was found.
-
     if len(pot_paths) > 1:
         return (
             "More than one PO template was found in the tar file you "
             "uploaded. This is not currently supported.")
 
     # Check the syntax of the .pot file, if present.
-
     if len(pot_paths) > 0:
         pot_contents = tf.extractfile(pot_paths[0]).read()
 
@@ -296,7 +299,6 @@ def check_tar(tf, pot_paths, po_paths):
                 "file you uploaded.")
 
     # Complain if no files at all were found.
-
     if len(pot_paths) == 0 and len(po_paths) == 0:
         return (
             "The tar file you uploaded could not be imported. This may be "
@@ -532,14 +534,10 @@ class ProductView:
                 import_tar(potemplate, owner, tf, pot_paths, po_paths))
 
     def templates(self):
-        if self._templangs is not None:
-            return self._templangs
-        templates = self._templates
-        templangs = []
-        for template in templates:
-            templangs.append(TemplateLanguages(template,
-                self.languages))
-        self._templangs = templangs
+        if self._templangs is None:
+            self._templangs = [TemplateLanguages(template, self.languages)
+                               for template in self._templates]
+
         return self._templangs
 
 
@@ -548,81 +546,67 @@ class TemplateLanguages:
 
     def __init__(self, template, languages):
         self.template = template
+        self.name = template.name
+        self.title = template.title
         self._languages = languages
-
-        self.name = self.template.name
-        self.title = self.template.title
 
     def languages(self):
         for language in self._languages:
-            yield self._language(language)
+            yield TemplateLanguage(self.template, language)
 
-    def _language(self, language):
-        retdict = {
-            'hasPOFile' : False,
-            'name': language.englishname,
-            'title': self.title,
-            'code' : language.code,
-            'poLen': len(self.template),
-            'lastChangedSighting' : None,
-            'poCurrentCount': 0,
-            'poRosettaCount': 0,
-            'poUpdatesCount' : 0,
-            'poNonUpdatesCount' : 0,
-            'poTranslated': 0,
-            'poUntranslated': self.template.messageCount(),
-            'poCurrentPercent': 0,
-            'poRosettaPercent': 0,
-            'poUpdatesPercent' : 0,
-            'poNonUpdatesPercent' : 0,
-            'poTranslatedPercent': 0,
-            'poUntranslatedPercent': 100,
-        }
 
-        try:
-            poFile = self.template.getPOFileByLang(language.code)
-        except KeyError:
-            return retdict
+class TemplateLanguage:
+    """Support class for ProductView."""
 
-        total = poFile.messageCount()
-        currentCount = poFile.currentCount()
-        rosettaCount = poFile.rosettaCount()
-        updatesCount = poFile.updatesCount()
-        nonUpdatesCount = poFile.nonUpdatesCount()
-        translatedCount = poFile.translatedCount()
-        untranslatedCount = poFile.untranslatedCount()
+    def __init__(self, template, language):
+        self.name = language.englishname
+        self.code = language.code
+        self.translateURL = '+translate?languages=' + self.code
 
-        currentPercent = poFile.currentPercentage()
-        rosettaPercent = poFile.rosettaPercentage()
-        updatesPercent = poFile.updatesPercentage()
-        nonUpdatesPercent = poFile.nonUpdatesPercentage()
-        translatedPercent = poFile.translatedPercentage()
-        untranslatedPercent = poFile.untranslatedPercentage()
+        poFile = template.queryPOFileByLang(language.code)
 
-        # NOTE: To get a 100% value:
-        # 1.- currentPercent + rosettaPercent + untranslatedPercent
-        # 2.- translatedPercent + untranslatedPercent
-        # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
-        # untranslatedPercent
-        retdict.update({
-            'hasPOFile' : True,
-            'poLen': total,
-            'lastChangedSighting' : poFile.lastChangedSighting(),
-            'poCurrentCount': currentCount,
-            'poRosettaCount': rosettaCount,
-            'poUpdatesCount' : updatesCount,
-            'poNonUpdatesCount' : nonUpdatesCount,
-            'poTranslated': translatedCount,
-            'poUntranslated': untranslatedCount,
-            'poCurrentPercent': currentPercent,
-            'poRosettaPercent': rosettaPercent,
-            'poUpdatesPercent' : updatesPercent,
-            'poNonUpdatesPercent' : nonUpdatesPercent,
-            'poTranslatedPercent': translatedPercent,
-            'poUntranslatedPercent': untranslatedPercent,
-        })
+        if poFile is not None:
+            # NOTE: To get a 100% value:
+            # 1.- currentPercent + rosettaPercent + untranslatedPercent
+            # 2.- translatedPercent + untranslatedPercent
+            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
+            #   untranslatedPercent
 
-        return retdict
+            self.hasPOFile = True
+            self.poLen = poFile.messageCount()
+            self.lastChangedSighting = poFile.lastChangedSighting()
+
+            self.poCurrentCount = poFile.currentCount()
+            self.poRosettaCount = poFile.rosettaCount()
+            self.poUpdatesCount = poFile.updatesCount()
+            self.poNonUpdatesCount = poFile.nonUpdatesCount()
+            self.poTranslated = poFile.translatedCount()
+            self.poUntranslated = poFile.untranslatedCount()
+
+            self.poCurrentPercent = poFile.currentPercentage()
+            self.poRosettaPercent = poFile.rosettaPercentage()
+            self.poUpdatesPercent = poFile.updatesPercentage()
+            self.poNonUpdatesPercent = poFile.nonUpdatesPercentage()
+            self.poTranslatedPercent = poFile.translatedPercentage()
+            self.poUntranslatedPercent = poFile.untranslatedPercentage()
+        else:
+            self.hasPOFile = False
+            self.poLen = len(template)
+            self.lastChangedSighting = None
+
+            self.poCurrentCount = 0
+            self.poRosettaCount = 0
+            self.poUpdatesCount = 0
+            self.poNonUpdatesCount = 0
+            self.poTranslated = 0
+            self.poUntranslated = template.messageCount()
+
+            self.poCurrentPercent = 0
+            self.poRosettaPercent = 0
+            self.poUpdatesPercent = 0
+            self.poNonUpdatesPercent = 0
+            self.poTranslatedPercent = 0
+            self.poUntranslatedPercent = 100
 
 
 class ViewPOTemplate:
@@ -646,16 +630,24 @@ class ViewPOTemplate:
             return "%s messages" % N
 
     def languages(self):
-        from sets import Set
-        translated_languages = list(self.context.languages())
-        prefered_languages = self.request_languages
-        languages = translated_languages + prefered_languages
-        languages = list(Set(languages))
+        '''Iterate languages shown when viewing this PO template.
+
+        Yields a TemplateLanguage object for each language this template has
+        been translated into, and for each of the user's languages.
+        '''
+
+        # Languages the template has been translated into.
+        translated_languages = Set(self.context.languages())
+
+        # The user's languages.
+        prefered_languages = Set(self.request_languages)
+
+        # Merge the sets, convert them to a list, and sort them.
+        languages = list(translated_languages | prefered_languages)
         languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
 
-        languages_info = TemplateLanguages(self.context, languages)
-
-        return languages_info.languages()
+        for language in languages:
+            yield TemplateLanguage(self.context, language)
 
     def edit(self):
         """
@@ -1258,6 +1250,8 @@ class TranslatePOTemplate:
                 # This code is rather ugly. It would be much nicer if there
                 # was a method for POTemplate which indicates whether there is
                 # a messageID with the given text in the template.
+                #
+                # See https://launchpad.ubuntu.com/malone/bugs/95.
                 # -- Dafydd Harries, 2005/01/20
 
                 try:
@@ -1323,6 +1317,13 @@ class ViewImportQueue:
         return queue
 
     def submit(self):
+        # XXX
+        # POTemplate and POFile should be used via utilities rather than
+        # directly.
+        #
+        # https://dogfood.ubuntu.com/malone/bugs/222
+        # -- Dafydd Harries, 2005/01/21
+
         if self.request.method == "POST":
 
             for key in self.request.form:
@@ -1343,4 +1344,73 @@ class ViewImportQueue:
                     pofile = POFile.get(id)
 
                     pofile.doRawImport()
+
+class POTemplateTarExport:
+    '''View class for exporting a tarball of translations.'''
+
+    def make_tar_gz(self, poExporter):
+        '''Generate a gzipped tar file for the context PO template. The export
+        method of the given poExporter object is used to generate PO files.
+        The contents of the tar file as a string is returned.
+        '''
+
+        # Create a new StringIO-backed gzipped tarfile.
+        outputbuffer = StringIO()
+        archive = tarfile.open('', 'w:gz', outputbuffer)
+
+        # XXX
+        # POTemplate.name and Language.code are unicode objects, declared
+        # using SQLObject's StringCol. The name/code being unicode means that
+        # the filename given to the tarfile module is unicode, and the
+        # filename is unicode means that tarfile writes unicode objects to the
+        # backing StringIO object, which causes a UnicodeDecodeError later on
+        # when StringIO attempts to join together its buffers. The .encode()s
+        # are a workaround. When SQLObject has UnicodeCol, we should be able t
+        # fix this properly.
+        # -- Dafydd Harries, 2005/01/20
+
+        # Create the directory the PO files will be put in.
+        directory = 'rosetta-%s' % self.context.name.encode('utf-8')
+        dirinfo = tarfile.TarInfo(directory)
+        dirinfo.type = tarfile.DIRTYPE
+        archive.addfile(dirinfo)
+
+        # Put a file in the archive for each PO file this template has.
+        for poFile in self.context.poFiles:
+            if poFile.variant is not None:
+                raise RuntimeError("PO files with variants are not supported.")
+
+            code = poFile.language.code.encode('utf-8')
+            name = '%s.po' % code
+
+            # Export the PO file.
+            contents = poExporter.export(code)
+
+            # Put it in the archive.
+            fileinfo = tarfile.TarInfo("%s/%s" % (directory, name))
+            fileinfo.size = len(contents)
+            archive.addfile(fileinfo, StringIO(contents))
+
+        archive.close()
+
+        return outputbuffer.getvalue()
+
+    def __call__(self):
+        '''Generates a tarball for the context PO template, sets up the
+        response (status, content length, etc.) and returns the PO template
+        generated so that it can be returned as the body of the request.
+        '''
+
+        # This exports PO files for us from the context template.
+        poExporter = POExport(self.context)
+
+        # Generate the tarball.
+        body = self.make_tar_gz(poExporter)
+
+        self.request.response.setStatus(200)
+        self.request.response.setHeader('Content-Type', 'application/x-tar')
+        self.request.response.setHeader('Content-Encoding', 'gzip')
+        self.request.response.setHeader('Content-Length', len(body))
+
+        return body
 

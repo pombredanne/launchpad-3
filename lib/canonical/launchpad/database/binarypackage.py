@@ -1,4 +1,7 @@
+# Python imports
+import os
 from sets import Set
+from urllib2 import URLError
 
 # Zope imports
 from zope.interface import implements
@@ -9,29 +12,30 @@ from sqlobject import MultipleJoin
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
 
+from canonical.librarian.client import FileDownloadClient
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IBinaryPackage, \
-    IBinaryPackageUtility, IBinaryPackageName, IBinaryPackageNameSet
+    IBinaryPackageUtility, IBinaryPackageName, IBinaryPackageNameSet, \
+    IDownloadURL
+
 from canonical.launchpad.database.publishing import PackagePublishing
 
 class BinaryPackage(SQLBase):
     implements(IBinaryPackage)
     _table = 'BinaryPackage'
     binarypackagename = ForeignKey(dbName='binarypackagename', 
-                   foreignKey='BinaryPackageName', notNull=True)
+                                 foreignKey='BinaryPackageName', notNull=True)
     version = StringCol(dbName='version', notNull=True)
     shortdesc = StringCol(dbName='shortdesc', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
-    build = ForeignKey(dbName='build', foreignKey='Build',
-                   notNull=True)
+    build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     binpackageformat = IntCol(dbName='binpackageformat', notNull=True)
-    component = ForeignKey(dbName='component',
-                   foreignKey='Component', notNull=True)
-    section = ForeignKey(dbName='section', foreignKey='Section',
-                   notNull=True)
+    component = ForeignKey(dbName='component', foreignKey='Component',
+                           notNull=True)
+    section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
     priority = IntCol(dbName='priority')
     shlibdeps = StringCol(dbName='shlibdeps')
     depends = StringCol(dbName='depends')
@@ -44,6 +48,10 @@ class BinaryPackage(SQLBase):
     installedsize = IntCol(dbName='installedsize')
     copyright = StringCol(dbName='copyright')
     licence = StringCol(dbName='licence')
+    architecturespecific = BoolCol(dbName='architecturespecific')
+
+    files = MultipleJoin('BinaryPackageFile',
+                         joinColumn='binarypackage')
 
     def _title(self):
         return '%s-%s' % (self.binarypackagename.name, self.version)
@@ -63,7 +71,8 @@ class BinaryPackage(SQLBase):
         
         :returns: iterable of SourcePackageReleases
         """
-        return self.build.sourcepackagerelease.sourcepackage.current(distroRelease)
+        return self.build.sourcepackagerelease.sourcepackage.current(\
+                                                              distroRelease)
 
     def lastversions(self):
         """Return the SUPERCEDED BinaryPackages in a DistroRelease
@@ -73,8 +82,9 @@ class BinaryPackage(SQLBase):
         # Daniel Debonzi: To get the lastest versions of a BinaryPackage
         # Im suposing that one BinaryPackage is build for only one
         # DistroRelease (Each DistroRelease compile all its Packages). 
-        # (BinaryPackage.build.distroarchrelease = PackagePublishing.distroarchrelease
-        #  where PackagePublishing.binarypackage = BinaryPackage.id)
+        # (BinaryPackage.build.distroarchrelease = \
+        # PackagePublishing.distroarchrelease
+        # where PackagePublishing.binarypackage = BinaryPackage.id)
         # When it is not true anymore, probably it should
         # be retrieved in a view class where I can use informations from
         # the launchbag.
@@ -94,7 +104,11 @@ class BinaryPackage(SQLBase):
         return list(BinaryPackage.select(query,
                                          clauseTables=clauseTable,
                                          distinct=True))
-                    
+
+    #
+    # Properties
+    #
+    
     def _priority(self):
         for priority in dbschema.BinaryPackagePriority.items:
             if priority.value == self.priority:
@@ -127,6 +141,35 @@ class BinaryPackage(SQLBase):
         except KeyError:
             return 'Unknown'
     status = property(_status)
+
+    def files_url(self):
+        """Return an URL to Download this Package"""
+        # XXX: Daniel Debonzi 20050125
+        # Get librarian host and librarian download port from
+        # invironment variables until we have it configurable
+        # somewhere.
+        librarian_host = os.environ.get('LB_HOST', 'localhost')
+        librarian_port = int(os.environ.get('LB_DPORT', '8000'))
+
+        downloader = FileDownloadClient(librarian_host, librarian_port)
+
+        urls = []
+
+        for _file in self.files:
+            try:
+                url = downloader.getURLForAlias(_file.libraryfile.id)
+            except URLError:
+                # librarian not runnig or file not avaiable
+                pass
+            else:
+                name = _file.libraryfile.filename
+            
+                urls.append(DownloadURL(name, url))
+
+        return urls
+
+    files_url = property(files_url)
+
 
     def __getitem__(self, version):        
         clauseTables = ["Build",]        
@@ -307,3 +350,10 @@ class BinaryPackageNameSet:
         clauseTables = Set(['BinaryPackage'])
         # XXX sabdfl 12/12/04 not done yet
 
+
+class DownloadURL(object):
+    implements(IDownloadURL)
+
+    def __init__(self, filename, fileurl):
+        self.filename = filename
+        self.fileurl = fileurl

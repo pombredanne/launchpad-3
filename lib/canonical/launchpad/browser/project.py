@@ -57,6 +57,9 @@ class ProjectView(object):
     detailsPortlet = ViewPageTemplateFile(
         '../templates/portlet-project-details.pt')
 
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-project-actions.pt')
+
     calendarInfoPortlet = CalendarInfoPortlet(
         '../templates/portlet-calendar-info.pt')
 

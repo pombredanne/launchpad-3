@@ -6,9 +6,10 @@ __metaclass__ = type
 
 from zope.interface import implements, Interface
 
+from canonical.lp.dbschema import BugSubscription
 from canonical.launchpad.interfaces import IAuthorization, IHasOwner, \
     IPerson, ISourceSource, ISourceSourceAdmin, IMilestone, IHasProduct, \
-    IHasProductAndAssignee
+    IHasProductAndAssignee, IBugTask
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -94,3 +95,30 @@ class EditByProductOwnerOrAssignee(EditByProductOwner):
         return (
             super(EditByProductOwnerOrAssignee, self).checkPermission(person) or
             self.obj.assignee.id == person.id)
+
+
+class PublicToAllOrPrivateToExplicitSubscribers(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedfor = IBugTask
+
+    def checkPermission(self, person):
+        """Allow any user to see non-private bugs, but only explicit subscribers to
+        see private bugs.
+        """
+        if not self.obj.bug.private:
+            # public bug
+            return True
+        else:
+            # private bug
+            watch_or_cc = (
+                BugSubscription.WATCH.value, BugSubscription.CC.value)
+            for subscription in self.obj.bug.subscriptions:
+                if (subscription.person.id == person.id and 
+                    subscription.subscription in watch_or_cc):
+                    return True
+
+        return False
+
+    def checkUnauthenticated(self):
+        """Allow anonymous users to see non-private bugs only."""
+        return not self.obj.bug.private

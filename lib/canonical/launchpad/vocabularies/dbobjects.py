@@ -299,6 +299,17 @@ class PersonVocabulary(NamedSQLObjectVocabulary):
         return [self._toTerm(obj) for obj in objs]
 
 
+class ValidOwnerVocabulary(PersonVocabulary):
+    """
+    ValidOwnerVocabulary implements a Vocabulary Describing valid Owner
+    entities, People and Teams, according the Ubuntu Membership
+    Management System.
+    """
+    ## XXX cprov 20050124
+    ## Waiting for the FOAF support to follow implementation path.
+    pass
+
+
 class ValidPersonVocabulary(PersonVocabulary):
     def __iter__(self):
         kw = {}

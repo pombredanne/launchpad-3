@@ -79,6 +79,9 @@ class IBug(Interface):
             title=_('Activity Timestamp'), required=True, readonly=True,
             #default=datetime.utcnow,
             )
+    private = Bool(
+            title=_("Is this bug security-related?"), required=False,
+            default=False)
 
     activity = Attribute('SQLObject.Multijoin of IBugActivity')
     messages = Attribute('SQLObject.RelatedJoin of IMessages')
@@ -131,39 +134,4 @@ class IBugSet(IAddFormCustomization):
     def __iter__():
         """Iterate through Bugs."""
 
-class IBugTask(Interface):
-    """A description of a bug needing fixing in a particular product
-    or package."""
-    id = Int(title=_("Bug Task #"))
-    bug = Int(title=_("Bug #"))
-    product = Choice(title=_('Product'), required=False, vocabulary='Product')
-    sourcepackagename = Choice(
-        title=_("Source Package Name"), required=False, vocabulary='SourcePackageName')
-    distribution = Choice(
-        title=_("Distribution"), required=False, vocabulary='Distribution')
-    milestone = Choice(
-        title=_('Target'), required=False, vocabulary='Milestone')
-    status = Choice(
-        title=_('Bug Status'), vocabulary='BugStatus',
-        default=int(dbschema.BugTaskStatus.NEW))
-    priority = Choice(
-        title=_('Priority'), vocabulary='BugPriority',
-        default=int(dbschema.BugPriority.MEDIUM))
-    severity = Choice(
-        title=_('Severity'), vocabulary='BugSeverity',
-        default=int(dbschema.BugSeverity.NORMAL))
-    assignee = Choice(
-        title=_('Assignee'), required=False, vocabulary='ValidPerson')
-    binarypackagename = Choice(
-            title=_('Binary PackageName'), required=False,
-            vocabulary='BinaryPackageName'
-            )
-    dateassigned = Datetime()
-    datecreated  = Datetime()
-    owner = Int() 
-    maintainer = TextLine(
-        title=_("Maintainer"), required=True, readonly=True)
-    bugtitle = TextLine(
-        title=_("Bug Title"), required=True, readonly=True)
-    bugdescription = Text(
-        title=_("Bug Description"), required=False, readonly=True)
+

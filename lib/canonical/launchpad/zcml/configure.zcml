@@ -58,6 +58,9 @@
     <include file="potranslationsighting.zcml" />
     <include file="potranslation.zcml" />
     <include file="calendar.zcml" />
+    <include file="files.zcml" />
+    <include file="package.zcml" />
+
 
     <include file="widgets.zcml" />
     <include file="fields.zcml" />

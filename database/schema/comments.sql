@@ -98,6 +98,7 @@ COMMENT ON COLUMN POTemplate.sourcepackagename IS 'A reference to a sourcepackag
 COMMENT ON COLUMN POTemplate.distrorelease IS 'A reference to the distribution from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.sourcepackagerelease IS 'The sourcepackagerelease from where this POTemplate was imported last time.';
 COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time. This field is temporal, if you use it add a note at https://dogfood.ubuntu.com/malone/bugs/220/';
+COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a po file for a given product.';

@@ -10,7 +10,7 @@ from email.Utils import make_msgid
 
 from zope.interface import implements
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBug, IBugAddForm, IBugSet
@@ -49,6 +49,7 @@ class Bug(SQLBase):
     activityscore = IntCol(dbName='activityscore', notNull=True, default=0)
     activitytimestamp = DateTimeCol(dbName='activitytimestamp', notNull=True,
                                     default=DEFAULT)
+    private = BoolCol(notNull=True, default=False)
     
     # useful Joins
     activity = MultipleJoin('BugActivity', joinColumn='bug')

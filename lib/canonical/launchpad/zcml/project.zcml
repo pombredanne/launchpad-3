@@ -93,7 +93,7 @@
         schema="canonical.launchpad.interfaces.IProject"
         label="Review Upstream Project Details:"
         fields="name displayname title shortdesc description homepageurl
-                wikiurl sourceforgeproject freshmeatproject active
+                wikiurl sourceforgeproject freshmeatproject owner active
                 reviewed"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-editform.pt"

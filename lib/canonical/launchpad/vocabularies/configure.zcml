@@ -41,6 +41,11 @@
         />
 
     <vocabulary
+        name="ValidOwner"
+        factory="canonical.launchpad.vocabularies.ValidOwnerVocabulary"
+        />
+
+    <vocabulary
         name="ProductRelease"
         factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
         />

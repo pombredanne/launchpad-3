@@ -32,9 +32,20 @@
       </td>
       <td>
         <select name="searchfor">
-          <option value="all">People and Teams</option>
-          <option value="peopleonly">People</option>
-          <option value="teamsonly">Teams</option>
+          <tal:block tal:define="searchfor request/searchfor|nothing">
+          <option tal:condition="python: searchfor == 'all'"
+                  value="all" selected>People and Teams</option>
+          <option tal:condition="python: searchfor != 'all'"
+                  value="all">People and Teams</option>
+          <option tal:condition="python: searchfor == 'peopleonly'"
+                  value="peopleonly" selected>People</option>
+          <option tal:condition="python: searchfor != 'peopleonly'"
+                  value="peopleonly">People</option>
+          <option tal:condition="python: searchfor == 'teamsonly'"
+                  value="teamsonly" selected>Teams</option>
+          <option tal:condition="python: searchfor != 'teamsonly'"
+                  value="teamsonly">Teams</option>
+          </tal:block>
         </select>
       </td>
       <td>named</td>

@@ -20,10 +20,13 @@ class IProduct(IHasOwner):
     # in SQLObject soon. 12/10/04
     id = Int(title=_('The Product ID'))
     
-    project = Choice(title=_('Project'), required=False,
-        vocabulary='Project')
+    project = Choice(title=_('Project'), required=False, vocabulary='Project', 
+                     description=_("""Optional related Project. Used to group
+                     similar products in a coherent way."""))
     
-    owner = Int(title=_('Owner'))
+    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
+                   description=_("""Product owner, it can either a valid
+                   Person or Team inside Launchpad context."""))
 
     name = TextLine(title=_('Name'), description=_("""The short name of this
         product, which must be unique among all the products. It should be

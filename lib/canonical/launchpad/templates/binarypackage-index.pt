@@ -44,6 +44,21 @@
            PRIORITY</span>
 	</li>
 
+        <li>
+           <b>Download Packages</b>
+             <div  tal:define="files context/files_url">
+               <ul tal:condition="files">
+                  <li tal:repeat="file files">
+                    <a 
+                      tal:content="file/filename"
+                      tal:attributes="href file/fileurl" /> 
+                  </li>
+               </ul>
+               <i tal:condition="not:files">
+                 No files available for download.
+               </i>
+             </div>
+
         <li><b>Source package:</b>
            <a tal:define="spackage context/build/sourcepackagerelease/sourcepackage"
 	         tal:content="spackage/sourcepackagename/name"
