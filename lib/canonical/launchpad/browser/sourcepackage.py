@@ -31,6 +31,9 @@ class SourcePackageReleasePublishingView(object):
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-sourcepackagerelease-actions.pt')
 
+    lastversionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-sourcepackagerelease-lastversions.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -75,6 +78,9 @@ class SourcePackageReleasePublishingView(object):
                            changelog)
         return changelog
 
+    def lastversions(self):
+        return list(self.context.sourcepackage.lastversions\
+                                       (self.bag.distrorelease))
 
 class SourcePackageInDistroSetView(object):
 

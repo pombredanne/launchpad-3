@@ -183,6 +183,10 @@ class SourcePackageBugsView:
 
 class BinaryPackageView(object):
     """View class for BinaryPackage"""
+
+    lastversionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-binarypackage-lastversions.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request

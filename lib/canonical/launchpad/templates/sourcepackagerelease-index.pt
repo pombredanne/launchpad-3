@@ -20,6 +20,7 @@
 
   <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure view/actionsPortlet" />
+    <div tal:replace="structure view/lastversionsPortlet" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main" id="content" class="documentEditable">

@@ -12,6 +12,13 @@
 
 <body>
 
+  <metal:leftportlets fill-slot="portlets_one">
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/lastversionsPortlet" />
+  </metal:rightportlets>
+
   <div metal:fill-slot="main" id="content" class="documentEditable">
     <div class="documentContent" id="region-content">
       <h1>
@@ -38,20 +45,17 @@
 	</li>
 
       </ul>
-<!-- xxxxxxxxxxxxxxxxxxxx -->
-<fieldset>
-  <table width="100%">
 
-    <tr>
-
-      <td width="50%" valign="top">
-        <div align="center">
-	  <h4>Package Dependences</h4>
-	</div>
-	  <ul>
-	    <i tal:condition="not:view/depends"> 
-	      Not Available
-	    </i>
+      <table width="100%">
+        <tr>
+          <td width="50%" valign="top">
+            <div align="center">
+	      <h4>Package Dependences</h4>
+	    </div>
+	    <ul>
+	      <i tal:condition="not:view/depends"> 
+	        Not Available
+	      </i>
 	    <span tal:repeat="bindepends view/depends">
 	      <li>
 	        <a tal:content="bindepends/name"
@@ -62,17 +66,17 @@
 		</tal:dummy> 
 	      </li> 
 	    </span> 
-	  </ul> 
-      </td>
+	    </ul> 
+          </td>
 
-      <td width="50%" valign="top">
-        <div align="center">
-          <h4>Package Recommends</h4>
-	</div>
-	  <ul>
-	    <i tal:condition="not:view/recommends">
-	      Not Available
-	    </i>
+          <td width="50%" valign="top">
+            <div align="center">
+              <h4>Package Recommends</h4>
+	    </div>
+	    <ul>
+	      <i tal:condition="not:view/recommends">
+	        Not Available
+	      </i>
 	    <span tal:repeat="binrecommends view/recommends">
 	      <li>
 	        <a tal:content="binrecommends/name"
@@ -83,18 +87,16 @@
 		</tal:dummy>
 	      </li>
 	    </span>
-	  </ul>
-      </td>
+	    </ul>
+         </td>
+      </tr>
 
-    </tr>
+      <tr>
 
-
-    <tr>
-
-      <td width="50%" valign="top">
-        <div align="center">
-          <h4>Package Conflicts</h4>
-	</div>
+        <td width="50%" valign="top">
+          <div align="center">
+            <h4>Package Conflicts</h4>
+	  </div>
 	  <ul>
 	    <i tal:condition="not:view/conflicts">
 	      Not Available
@@ -110,16 +112,16 @@
 	      </li>
 	    </span>
 	  </ul>
-      </td>
+        </td>
 
-      <td width="50%" valign="top">
-        <div align="center">
-          <h4>Package Replaces</h4>
-	</div>
-	  <ul>
-	    <i tal:condition="not:view/replaces">
-	      Not Available
-	    </i>
+        <td width="50%" valign="top">
+          <div align="center">
+            <h4>Package Replaces</h4>
+	  </div>
+	    <ul>
+	      <i tal:condition="not:view/replaces">
+	        Not Available
+	      </i>
 	    <span tal:repeat="binreplaces view/replaces">
 	      <li>
 	        <a tal:content="binreplaces/name"
@@ -131,16 +133,15 @@
 	      </li>
 	    </span>
 	  </ul>
-      </td>
+        </td>
+      </tr>
 
-    </tr>
+      <tr>
 
-    <tr>
-
-      <td width="50%" valign="top">
-        <div align="center">
-          <h4>Package Suggests</h4>
-	</div>
+        <td width="50%" valign="top">
+          <div align="center">
+            <h4>Package Suggests</h4>
+	  </div>
 	  <ul>
 	    <i tal:condition="not:view/suggests">
 	      Not Available
@@ -156,12 +157,12 @@
 	      </li>
 	    </span>
 	  </ul>
-      </td>
+        </td>
 
-      <td width="50%" valign="top">
-        <div align="center">
-	   <h4>Package Provides</h4>
-	</div>
+        <td width="50%" valign="top">
+          <div align="center">
+	     <h4>Package Provides</h4>
+  	  </div>
 	  <ul>
 	    <i tal:condition="not:view/provides">
 	      Not Available
@@ -176,29 +177,10 @@
 	      </li>
 	    </span>
 	  </ul>
-      </td>
-
+        </td>
     </tr>
 
    </table>
-</fieldset>
-<!-- xxxxxxxxxxxxxxxxxxxx -->
-
-      <!-- XXX: Daniel Debonzi. Should it be a portlet? --> 
-      <fieldset tal:define="lastversions context/lastversions">
-   	<legend>
-	   Last Packages
-        </legend>
-	  <ul tal:condition="lastversions">
-	    <li tal:repeat="lastversion lastversions">
-	      <a tal:content="lastversion/version" tal:attributes="href
-	                      lastversion/version">0.0.0-0</a>
-	    </li>
-	  </ul>
-	  <i tal:condition="not:context/lastversions">
-	    No last versions for this package.
-	  </i>
-      </fieldset>
 
     </div>
   </div>

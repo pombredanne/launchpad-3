@@ -84,6 +84,17 @@ class BinaryPackage(SQLBase):
         """Return the SUPERCEDED BinaryPackages in a DistroRelease
            that comes from the same SourcePackage"""
 
+        #
+        # Daniel Debonzi: To get the lastest versions of a BinaryPackage
+        # Im suposing that one BinaryPackage is build for only one
+        # DistroRelease (Each DistroRelease compile all its Packages). 
+        # (BinaryPackage.build.distroarchrelease = PackagePublishing.distroarchrelease
+        #  where PackagePublishing.binarypackage = BinaryPackage.id)
+        # When it is not true anymore, probably it should
+        # be retrieved in a view class where I can use informations from
+        # the launchbag.
+        #
+        
         clauseTable = ('PackagePublishing', 'BinaryPackageName',)
         query = ('PackagePublishing.binarypackage = BinaryPackage.id '
                  'AND BinaryPackage.binarypackagename = BinaryPackageName.id '
@@ -109,6 +120,14 @@ class BinaryPackage(SQLBase):
 
     def _status(self):
         """Get the BinaryPackage Status"""
+
+        #
+        # Daniel Debonzi: To get the lastest versions of a BinaryPackage
+        # Im suposing that one BinaryPackage is build for only one
+        # DistroRelease. If it will happen to have a BinaryPackage
+        # Builded for one DistroRelease included in other DistroReleases
+        # It might be reviewed
+        #
 
         try:
             packagepublishing = PackagePublishing.\

@@ -46,6 +46,12 @@ class ISourcePackage(Interface):
 
     def getBugSourcePackages(distrorelease):
         """Get SourcePackages in a DistroRelease with BugAssignement"""
+
+    def lastversions(distrorelease):
+        """
+        Get the lastest version of a
+        sourcepackagerelease in a distrorelease
+        """
         
 class ISourcePackageinDistro(Interface):
     """A SourcePackage in Distro PG View"""
