@@ -3,7 +3,16 @@
 from zope.interface import Interface
 
 class IUserDetailsStorage(Interface):
-    
+    """A storage for details about users.
+
+    Many of the methods defined here return *user dicts*.  A user dict is a
+    dictionary containing:
+        :id:             person id (integer, doesn't change ever)
+        :displayname:    full name, for display
+        :emailaddresses: list of email addresses
+        :salt:           salt of a SSHA digest, base64-encoded.
+    """
+
     def getUser(loginID):
         """Get a user
 
@@ -24,6 +33,13 @@ class IUserDetailsStorage(Interface):
         
         :returns: user dict, or TBD if there is an error such as a database
             constraint being violated.
+        """
+
+    def changePassword(loginID, sshaDigestedPassword, newSshaDigestedPassword):
+        """Change a password
+
+        :param sshaDigestedPassword: SSHA digest of the current password.
+        :param newSshaDigestedPassword: SSHA digest of the new password.
         """
 
 
