@@ -26,7 +26,7 @@
 
   </browser:pages>
 
-  <include file="pages.zcml"/>
+  <!-- <include file="pages.zcml"/> -->
   <include file="resources.zcml" />
 
   <adapter
