@@ -2,6 +2,50 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-09 12:33:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1395
+
+    Summary:
+      Mirror tables for RegularPullMirrorManagement work by debonzi
+    Revision:
+      launchpad--devel--0--patch-1395
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-168
+       Work on Mirror patch
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-169
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-170
+       Mirror tables for RegularPullMirrorManagement work by debonzi
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-171
+       Mirror and related tables' permissions
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-172
+       Update database documentation
+    
+
+    modified files:
+     database/schema/comments.sql database/schema/launchpad.html
+     database/schema/patch-11-02-0.sql database/schema/security.cfg
+     doc/changelog.txt
+
+    renamed files:
+     database/schema/pending/.arch-ids/debonzi-mirror.sql.id
+       ==> database/schema/.arch-ids/patch-11-02-0.sql.id
+     database/schema/pending/debonzi-mirror.sql
+       ==> database/schema/patch-11-02-0.sql
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-168
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-169
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-170
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-171
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-172
+
+
 2005-03-09 11:19:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1394
 
     Summary:

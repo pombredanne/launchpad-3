@@ -7,9 +7,9 @@ CREATE TABLE Mirror(
     baseurl         text NOT NULL,
     country         integer NOT NULL CONSTRAINT mirror_country_fk
                     REFERENCES Country,
-    name            text NOT NULL,
+    name            text NOT NULL UNIQUE,
     description     text NOT NULL,
-    freshness       integer,
+    freshness       integer NOT NULL DEFAULT 99,
     lastcheckeddate timestamp without time zone,
     approved        boolean NOT NULL DEFAULT FALSE
 );
@@ -30,12 +30,13 @@ CREATE TABLE MirrorSourceContent(
     id                serial PRIMARY KEY,
     mirror            integer NOT NULL CONSTRAINT mirrorsourcecontent_mirror_fk
                         REFERENCES Mirror ,
-    distroarchrelease integer NOT NULL
-                        CONSTRAINT mirrorsourcecontent_distroarchrelease_fk
-                        REFERENCES DistroArchRelease,
+    distrorelease     integer NOT NULL
+                        CONSTRAINT mirrorsourcecontent_distrorelease_fk
+                        REFERENCES DistroRelease,
     component         INTEGER NOT NULL
                         CONSTRAINT mirrorsourcecontent_component_fk
                         REFERENCES Component
 );
 
+INSERT INTO LaunchpadDatabaseRevision VALUES (11,2,0);
 
