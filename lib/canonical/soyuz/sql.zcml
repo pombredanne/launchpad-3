@@ -252,16 +252,6 @@
     <allow interface="canonical.launchpad.interfaces.IProjectSet"/>
   </content>
   
-  <!-- removed SoyuzProject and SoyuzProduct because these should be handled
-  by DOAP
-  <content class="canonical.soyuz.importd.Project">
-    <allow interface="canonical.launchpad.interfaces.IProject"/>
-  </content>
-  
-  <content class="canonical.soyuz.importd.Product">
-    <allow interface="canonical.launchpad.interfaces.IProduct"/>
-  </content>
-  -->
   
 
 	

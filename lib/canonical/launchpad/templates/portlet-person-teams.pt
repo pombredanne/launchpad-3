@@ -8,7 +8,5 @@
    </li>
    </ul>
 
-   <a tal:condition="not:context/person/teamowner" 
-      href="+add">Create a New Team</a>
  </div>
 </fieldset>

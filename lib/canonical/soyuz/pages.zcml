@@ -90,7 +90,6 @@
 	/>
 
 
-<traverse for="canonical.soyuz.sql.DistroReleaseApp" getter="getPackageContainer" />
 
    <pages for="canonical.soyuz.sql.DistroReleaseApp"
 	  allowed_attributes="results sources binaries"
@@ -317,27 +316,27 @@
 
 
   <page for="canonical.soyuz.sql.PersonApp"
-         permission="launchpad.AnyPerson"
-	 class="canonical.soyuz.browser.TeamAddView"
-	 template="../launchpad/templates/soyuz-person-add.pt"
-         lp:url="Soyuz/people/$person.id/+add"
-	 name="+add"
+        permission="launchpad.AnyPerson"
+	class="canonical.soyuz.browser.TeamAddView"
+	template="../launchpad/templates/soyuz-person-add.pt"
+        lp:url="Soyuz/people/$person.id/+add"
+	name="+add"
        />
 
   <page for="canonical.soyuz.sql.PersonApp"
-         permission="launchpad.AnyPerson"
-	 class="canonical.soyuz.browser.PersonEditView"
-	 template="../launchpad/templates/person-edit.pt"
-         lp:url="Soyuz/people/$person.id/+edit"
-	 name="+edit"
+        permission="launchpad.AnyPerson"
+	class="canonical.soyuz.browser.PersonEditView"
+	template="../launchpad/templates/person-edit.pt"
+        lp:url="Soyuz/people/$person.id/+edit"
+	name="+edit"
        />
 
   <page for="canonical.soyuz.sql.PersonApp"
-         permission="zope.Public"
-	 class="canonical.soyuz.browser.TeamJoinView"
-	 template="../launchpad/templates/person-join.pt"
-         lp:url="Soyuz/people/$person.id/+join"
-	 name="+join"
+        permission="launchpad.AnyPerson"
+	class="canonical.soyuz.browser.TeamJoinView"
+	template="../launchpad/templates/person-join.pt"
+        lp:url="Soyuz/people/$person.id/+join"
+	name="+join"
        />
 
 <traverse for="canonical.soyuz.sql.DistroBinariesApp" 
@@ -413,72 +412,6 @@
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/$version/$archtag/index.html"
 	/>
    </pages>
-
-
-<!--  packages stuff -->
-
-  <page for="canonical.launchpad.interfaces.IPackages"
-        permission="zope.Public"
-        name="index.html"
-        template="../launchpad/templates/packages-index.pt"
-        lp:url="Soyuz/packages/"
-        />
-
-  <page for="canonical.launchpad.interfaces.IPackageSet"
-        permission="zope.Public"
-        name="index.html"
-        template="../launchpad/templates/package-list.pt"
-        lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/$package_type/$Package.id/index.html"
-        />
-
-  <page for="canonical.launchpad.interfaces.IPackageSet"
-        permission="zope.Public"
-        name="+search"
-        template="../launchpad/templates/package-search.pt"
-        lp:url="Soyuz/distros/$Distribution.name/$Release.name/source/+search"
-        />
-
-  <page for="canonical.launchpad.interfaces.IPackageSet"
-        permission="zope.Public"
-        name="+new"
-        template="../launchpad/templates/package-new.pt"
-        lp:url="Soyuz/distros/$Distribution.name/$Release.name/source/+new"
-        />
-
-
-  <page for="canonical.launchpad.interfaces.IBinaryPackage"
-        permission="zope.Public"
-        name="index.html"
-        template="../launchpad/templates/package-index.pt"
-        lp:url="Soyuz/distros/$Distribution.name/$Release.name/binary/index.html"
-        />
-
-  <pages for="canonical.launchpad.interfaces.ISourcePackageRelease"
-         permission="zope.Public">
-
-    <page name="index.html"
-          template="../launchpad/templates/package-index.pt"
-          lp:url="Soyuz/distros/$Distribution.name/$Release.name/source/index.html"
-	/>
-
-  </pages>
-
-  <pages for="canonical.launchpad.interfaces.IProjectSet"
-         permission="zope.Public">
-
-    <page name="index.html"
-          template="../launchpad/templates/soyuz-projects-index.pt"
-          lp:url="Soyuz/projects/index.html"
-          />
-    <page name="search-results"
-          template="../launchpad/templates/soyuz-search-results.pt"
-          lp:url="Soyuz/projects/search-results"
-          />
-    <page name="+new"
-          template="../launchpad/templates/soyuz-project-add.pt"
-          lp:url="Soyuz/projects/+new"
-          />
-  </pages>
 
 </configure>
 <!-- arch-tag: d60390fd-285e-4aa1-844e-24e11159e74c -->

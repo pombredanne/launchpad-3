@@ -28,14 +28,18 @@
     <div id="content" class="documentEditable">
         <ul class="contentViews">
             <li id="contentview-view" class="selected">
-                <a>View</a>
+                <a href=".">View</a>
             </li>
 
             <li id="contentview-edit" class="plain">
                 <a href="+edit">Edit</a>
             </li>
 
-        <li id="contentview-packages" class="plain">
+            <li id="contentview-add" class="plain">
+                <a href="+add">Add</a>
+            </li>
+
+            <li id="contentview-packages" class="plain">
                 <a href="+packages">Packages</a>
             </li>
         </ul>
@@ -149,7 +153,7 @@
         </div>
     </div>
 </div>
-
+ 
 
 </body>
 </html>

@@ -7,6 +7,8 @@ from datetime import datetime
 
 from apt_pkg import ParseTagFile
 
+import tempfile, os
+
 ## DOAP is inside our current Launchpad production DB
 DOAPDB = "launchpad_dev"
 
@@ -19,7 +21,10 @@ UPDATE = False
 ## of requests reached by second
 SLEEP = 20
 
-PACKAGES = 'Sources'
+package_root = "/ubuntu/"
+distrorelease = "hoary"
+component = "main"
+
 
 ## Projects not found
 LIST = 'nicole_notfound'
@@ -56,7 +61,12 @@ def get_current_packages(source):
     ##        index += 1
 
     ## Get SourceNames from Sources file (MAIN)
-    sources = ParseTagFile(open(source))
+    sources_zipped = os.path.join(package_root, "dists", distrorelease,
+                                  component, "source", "Sources.gz")
+    srcfd, sources_tagfile = tempfile.mkstemp()
+    os.system("gzip -dc %s > %s" % (sources_zipped,
+                                    sources_tagfile))
+    sources = ParseTagFile(os.fdopen(srcfd))
     while sources.Step():        
         packagenames.append(sources.Section['Package'])
         index += 1

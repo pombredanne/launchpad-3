@@ -13,38 +13,10 @@
 <body>
 
 <div metal:fill-slot="main">
-    <h1>Join Team</h1>
-
-    <div class="documentDescription">	
-    <p> Here you can Join the 
-    <span tal:content="context/person/displayname">TEAM</span>
-    </div>
+    <h1>Team Joined</h1>
     
-    <div>
-    <form name="add" action="" method="POST">
-    <fieldset>
-    <legend><h3>Join Team</h3><legend>
-	<table>
-	<tr><td>
-	<div class="dummy">
-	    <label>ID</label>
-	    <div class="formHelp">
-	    Enter the Person ID.
-            </div>
-	    <input class="formHelp" type="text" name="id" 
-	    tal:attributes="value request/id|nothing"/>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="formControls">
-	  <input type="submit" value="Join"/>
-	</div>
-	</td></tr>
-	</table>
-  </form>
-  </div>
 
-  <tla:block tal:condition="view/join_action">
+  <tal:block tal:condition="view/join_action">
   <div>
   <h4><a tal:attributes="href string:../${context/person/name}"
          tal:content="context/person/displayname">
@@ -52,7 +24,7 @@
 	 <a tal:attributes="href string:../${view/person/name}"
          tal:content="view/person/displayname"></a></h4>
   </div>
-  </tla:block>
+  </tal:block>
 
 </div>
 

@@ -83,15 +83,6 @@ class DistroReleaseApp(object):
         self.release = release
         self.roles=DistroReleaseRole.selectBy(distroreleaseID=self.release.id) 
 
-    def getPackageContainer(self, name):
-        container = {
-            'source': SourcePackages,
-            'binary': BinaryPackages,
-        }
-        if container.has_key(name):
-            return container[name](self.release)
-        else:
-            raise KeyError, name
 
     def findSourcesByName(self, pattern):
         return SourcePackage.findSourcesByName(self.release, pattern)
@@ -109,7 +100,7 @@ class DistroReleasesApp(object):
                                                  self.distribution.id,
                                                  name=name)[0])
     def __iter__(self):
-    	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
+        return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
 
 
 # Source app component Section (src) 
@@ -281,7 +272,8 @@ class DistroSourcesApp(object):
                                                         name=name)[0])
 
     def __iter__(self):
-    	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
+        return iter(DistroRelease.selectBy(distributionID=\
+                                           self.distribution.id))
 
 class DistroReleaseTeamApp(object):
     def __init__(self, release):
@@ -303,7 +295,8 @@ class DistroTeamApp(object):
                                                      name=name)[0])
 
     def __iter__(self):
-    	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
+        return iter(DistroRelease.selectBy(distributionID=\
+                                           self.distribution.id))
 
 
 class PeopleApp(object):
@@ -492,9 +485,9 @@ class DistroReleaseBinaryReleaseApp(object):
         # status that comes from SourcePackageRelease
         sourceReleases = self.binarypackagerelease.current(distrorelease)
 
-        sourceReleases = \
-             SourcePackageRelease.selectByBinaryVersion(sourceReleases,
-                                                                 version)
+        sourceReleases = SourcePackageRelease.\
+                         selectByBinaryVersion(sourceReleases,
+                                               version)
 
         self.archs = None
 
@@ -600,104 +593,9 @@ class DistroBinariesApp(object):
         return DistroReleaseBinariesApp(release)
     
     def __iter__(self):
-      	return iter(DistroRelease.selectBy(distributionID=self.distribution.id))
+        return iter(DistroRelease.selectBy(distributionID=\
+                                           self.distribution.id))
 
-# end of binary app component related data ....
-  
-
-class SourcePackages(object):
-    """Container of SourcePackage objects.
-
-    Used for web UI.
-    """
-# XXX: Daniel Debonzi 2004-10-20
-# I comment out this class because
-# as far as I know it is not been used anymore
-# If it breaks you code, please uncoment and
-# drop a note here. Otherwise Ill remove it
-
-##     implements(ISourcePackageSet)
-
-##     table = SourcePackageRelease
-##     clauseTables = ('SourcePackage', 'SourcePackagePublishing',)
-
-##     def __init__(self, release):
-##         self.release = release
-        
-##     def _query(self):
-##         return (
-##             'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
-##             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-##             'AND SourcePackagePublishing.distrorelease = %d '
-##             % (self.release.id))
-        
-##     def __getitem__(self, name):
-##         # XXX: (mult_results) Daniel Debonzi 2004-10-13
-##         # What about multiple results?
-##         #      (which shouldn't happen here...)
-
-##         query = self._query() + \
-##                 ' AND name = %s' % quote(name)
-##         try:
-##             return self.table.select(query, clauseTables=self.clauseTables)[0]
-##         except IndexError:
-##             # Convert IndexErrors into KeyErrors so that Zope will give a
-##             # NotFound page.
-##             raise KeyError, name
-
-
-##     def __iter__(self):
-##         for bp in self.table.select(self._query(),
-##                                     clauseTables=self.clauseTables):
-##             yield bp
-
-
-## Doesn't work as expected !!!!
-## (Deprecated)
-# XXX: Daniel Debonzi 2004-10-20
-# I comment out this class because
-# as far as I know it is not been used anymore
-# If it breaks you code, please uncoment and
-# drop a note here. Otherwise Ill remove it
-class BinaryPackages(object):
-    """Container of BinaryPackage objects.
-
-    Used for web UI.
-    """
-##     implements(IBinaryPackageSet)
-
-##     clauseTables = ('BinaryPackageUpload', 'DistroArchRelease')
-
-##     def __init__(self, release):
-##         self.release = release
-
-##     def _query(self):
-##         return (
-##             'BinaryPackageUpload.binarypackagebuild = BinaryPackageBuild.id '
-##             'AND BinaryPackageUpload.distroarchrelease = DistroArchRelease.id '
-##             'AND DistroArchRelease.distrorelease = %d '
-##             % (self.release.id))
-        
-##     def __getitem__(self, name):
-##         # XXX: (mult_results) Daniel Debonzi 2004-10-13
-##         # What about multiple results?
-##         #(which shouldn't happen here...)
-
-##         query = self._query() + \
-##                 (' AND BinaryPackageBuild.binarypackage = BinaryPackage.id'
-##                  ' AND BinaryPackage.name = %s'
-##                  % quote(name) )
-##         try:
-##             return self.table.select(query, clauseTables=self.clauseTables)[0]
-##         except IndexError:
-##             # Convert IndexErrors into KeyErrors so that Zope will give a
-##             # NotFound page.
-##             raise KeyError, name
-
-##     def __iter__(self):
-##         for bp in self.table.select(self._query(),
-##                                     clauseTables=self.clauseTables):
-##             yield bp
 
 
 # arch-tag: 8dbe3bd2-94d8-4008-a03e-f5c848d6cfa7

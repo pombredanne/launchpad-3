@@ -11,15 +11,6 @@
       <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
-    <!-- XXX comments from Mark Shuttleworth: the Soyuz BinaryPackages and
-            SourcePackages objects should be merged into BinaryPackageSet
-            and SourcePackageSet by 16/10/04 unless their continued existence
-            is justified 
-            -->
-    <content class="canonical.soyuz.sql.SourcePackages">
-        <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
-        <implements interface="zope.app.container.interfaces.IItemContainer"/>
-    </content>
 
     <!-- SourcePackage -->
     <content class="canonical.launchpad.database.SourcePackage">

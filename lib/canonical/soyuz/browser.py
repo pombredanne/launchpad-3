@@ -178,6 +178,7 @@ class TeamAddView(object):
 
     def add_action(self):
         enable_added = False
+    
         displayname = self.request.get("displayname", "")
         teamdescription = self.request.get("teamdescription", "")
         email = self.request.get("email", "")
@@ -190,10 +191,7 @@ class TeamAddView(object):
                 self.error_msg = 'Password does not match'
                 return enable_added
 
-            #XXX: (team+authserver) cprov 20041003
-            ##  The team is owned by the current ID now,
-            ##  but it should comes from authserver
-            teamowner = self.context.id
+            teamowner = IPerson(self.request.principal).id
 
             self.results = createTeam(displayname,
                                       teamowner,
@@ -222,20 +220,21 @@ class TeamJoinView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.permission = False
 
     def join_action(self):
         enable_join = False
-        
-        dummy_id = self.request.get("id", "")
+
+        self.person = IPerson(self.request.principal)
+
         ## XXX: (proposed+member) cprov 20041003
         ##  Join always as PROPOSED MEMBER 
         role = dbschema.MembershipRole.MEMBER.value
         status = dbschema.MembershipStatus.PROPOSED.value
 
-        if dummy_id:
-            self.person = Person.get(dummy_id)
+        if self.person:
             ##XXX: (uniques) cprov 20041003
-            self.results = Membership(personID=dummy_id,
+            self.results = Membership(personID=self.person.id,
                                       team=self.context.id,
                                       role=role,
                                       status=status)
@@ -243,7 +242,7 @@ class TeamJoinView(object):
             ##XXX: (teamparticipation) cprov 20041003
             ## How to do it recursively as it is suposed to be,
             ## I mean flatten participation ...            
-            self.results = TeamParticipation(personID=dummy_id,
+            self.results = TeamParticipation(personID=self.person.id,
                                              teamID=self.context.id)
             
             enable_join = True
@@ -284,14 +283,15 @@ class PersonEditView(object):
         self.request = request
         self.results = []
         self.permission = False
-
+        
         try:
-            if IPerson(self.request.principal).id ==\
-                   self.context.person.id:
+            pid = IPerson(self.request.principal).id
+            
+            if (pid == self.context.person.id) or \
+               (pid == self.context.person.teamowner.id):
                 self.permission = True
         except:
             pass
-
 
     def edit_action(self):
         enable_edited = False

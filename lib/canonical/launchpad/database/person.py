@@ -161,6 +161,8 @@ def createTeam(displayname, teamowner, teamdescription,
     ssha = SSHADigestEncryptor()
     password = ssha.encrypt(password)
 
+    role = dbschema.MembershipRole.ADMIN.value
+    status = dbschema.MembershipStatus.CURRENT.value
 
     team = Person(displayname=displayname,
                   givenname=None,
@@ -175,6 +177,11 @@ def createTeam(displayname, teamowner, teamdescription,
     EmailAddress(person=team.id,
                  email=email,
                  status=int(dbschema.EmailAddressStatus.NEW))
+
+    Membership(personID=teamowner,
+               team=team.id,
+               role=role,
+               status=status)
 
     TeamParticipation(personID=teamowner,
                       teamID=team.id)

@@ -44,8 +44,8 @@
       <tr>
       <td> 
         <a tal:attributes="href string:../../../../people/${team/person/name}"
-           tal:content="team/person/displayname">
-           Displayname</a></td>
+            tal:content="team/person/displayname">
+            Displayname</a></td>
       <td><span tal:content="team/rolename">ROLE</span></td></tr>
     </tal:block>
   </table>

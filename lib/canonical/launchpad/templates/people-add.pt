@@ -104,9 +104,9 @@
 
   <tal:block tal:condition="process">
   <div>
-  <h4><a tal:attributes="href view/results/name"
+  <p> <a tal:attributes="href view/results/name"
          tal:content="request/displayname">
-         PEOPLE</a> added</h4>
+         PEOPLE</a> added.
   </div>
   </tal:block>
 

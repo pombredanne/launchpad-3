@@ -24,6 +24,10 @@
             <a>Edit</a>
         </li>
 
+	<li id="contentview-add" class="plain">
+            <a href="+add">Add</a>
+        </li>
+
 	<li id="contentview-packages" class="plain">
             <a href="+packages">Packages</a>
         </li>
@@ -33,12 +37,12 @@
 
       <div class="portalMessage" 
            tal:condition="not:view/permission">
-	   Warning: You are not authorized to change this page. If you
-	   change something your changes will be lost.
+	   <p>Warning: You are not authorized to change this page. If you
+	      change something your changes will be lost.
 	   <div align="right"><a href="index.html"><i>back</i></a></div>
       </div>
 
-
+    <div tal:condition="view/permission">
     <h1>Edit <span tal:content="context/person/displayname">DISPLAYNAME</span> 
 	Information</h1>
 
@@ -182,15 +186,16 @@
 	</table>
   </form>
   </div>
-
+  
   <tla:block tal:condition="view/edit_action">
   <div>
-  <h4><a tal:attributes="href string:../${context/name}"
+  <p> <a tal:attributes="href string:../${context/person/name}"
          tal:content="context/person/displayname">PERSON</a>
-    Modified</h4>
+    Modified
   </div>
   </tla:block>
-
+  
+  </div>
 </div>
 </div>
 </div>
