@@ -329,7 +329,6 @@ class BugContainer(BugContainerBase):
 def BugAdder(object):
     def createAndAdd(self, *args, **kw):
         '''Add a bug from an IMaloneBugAddForm'''
-        import pdb; pdb.set_trace()
         kw = {}
         attrs = ['name', 'title', 'shortdesc', 'description', 'duplicateof',]
         for a in attrs:
