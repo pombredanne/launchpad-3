@@ -9,6 +9,7 @@ from zope.security.interfaces import Unauthorized
 from zope.security.management import newInteraction
 from transaction import get_transaction
 from canonical.lp.placelessauth.interfaces import IPlacelessAuthUtility
+import canonical.zodb
 
 from zope.event import notify
 from zope.interface import implements, Interface
@@ -20,6 +21,7 @@ from zope.publisher.browser import BrowserRequest
 
 from zope.app.publication.interfaces import IPublicationRequestFactory
 from zope.app.publication.interfaces import BeforeTraverseEvent
+from zope.app.publication.zopepublication import Cleanup
 from zope.app.publication.http import HTTPPublication
 from zope.app.publication.browser import BrowserPublication as BrowserPub
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -130,9 +132,8 @@ class BrowserPublication(BrowserPub):
     superclass of z.a.publication.BrowserPublication.
     """
 
-    def __init__(self, db=None):
-        # note, no ZODB
-        pass
+    def __init__(self, db):
+        self.db = db
 
     def getApplication(self, request):
         # If the first name is '++etc++process', then we should
@@ -151,9 +152,22 @@ class BrowserPublication(BrowserPub):
     # If this becomes untrue at some point, the code will need to be
     # revisited.
 
+    # XXX move me
+
     def beforeTraversal(self, request):
         newInteraction(request)
         get_transaction().begin()
+
+        # Open the ZODB.
+        conn = self.db.open('')
+        cleanup = Cleanup(conn.close)
+        request.hold(cleanup)  # Close the connection on request.close()
+
+        self.openedConnection(conn)
+
+        root = conn.root()
+        canonical.zodb.handle_before_traversal(root)
+
         # Big boot for fixing SQLOS transaction issues - nuke the
         # connection cache at the start of a transaction. This shouldn't
         # affect performance much, as psycopg does connection pooling.
@@ -206,8 +220,8 @@ class HTTPPublicationRequestFactory:
     implements(IPublicationRequestFactory)
 
     def __init__(self, db):
-        self._http = HTTPPublication(db)
-        self._browser = BrowserPublication()
+        ## self._http = HTTPPublication(db)
+        self._browser = BrowserPublication(db)
 
     def __call__(self, input_stream, output_steam, env):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
@@ -217,8 +231,9 @@ class HTTPPublicationRequestFactory:
             request = BrowserRequest(input_stream, output_steam, env)
             request.setPublication(self._browser)
         else:
-            request = HTTPRequest(input_stream, output_steam, env)
-            request.setPublication(self._http)
+            raise NotImplementedError()
+            ## request = HTTPRequest(input_stream, output_steam, env)
+            ## request.setPublication(self._http)
 
         return request
 
