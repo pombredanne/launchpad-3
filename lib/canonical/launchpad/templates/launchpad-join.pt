@@ -13,7 +13,7 @@
 
 <div metal:fill-slot="main">
 
-  <div tal:condition="not: view/success">
+  <div tal:condition="not: view/registration_success">
     <h1>Join The Launchpad</h1>
 
     <div class="formHelp">
@@ -24,8 +24,8 @@
       we will never disclose, share or sell your personal information.
     </div>
 
-    <div class="portalMessage" tal:condition="view/errormessage"
-         tal:content="structure view/errormessage" />
+    <div class="portalMessage" tal:condition="view/registration_error"
+         tal:content="structure view/registration_error" />
 
     <p> </p>
 
@@ -46,7 +46,7 @@
     </div>
   </div>
 
-  <div tal:condition="view/success">
+  <div tal:condition="view/registration_success">
 
     <h1>Thank You</h1>
 

@@ -2,6 +2,114 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-30 16:02:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1519
+
+    Summary:
+      mpt's changes to merge login/register pages, together with mine and brad's pagetests fixes.
+    Revision:
+      launchpad--devel--0--patch-1519
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-454
+       cherrypick registration fixes from mpt
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-455
+       fix 6 pagetests that broke from changes mpt made to the login/registration functionality
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-456
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-457
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-458
+       fix so that the maintainer name is displayed correctly on task view/edit screens
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-224
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-225
+       IPersonSet.new{Person,Team} don't need *args.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-226
+       mpt's changes to merge login/register pages
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-227
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-228
+       First try to get teamparticipation.txt passing on rocketfuel.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-229
+       Second try to get teamparticipation.txt passing on rocketfuel.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-230
+       Fix some stuff to try to find out why teamparticipation.txt is failing in rocketfuel.
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-14
+       removing my over-eager CSS
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-15
+       merge rocketfuel
+    
+     * mpt@canonical.com/launchpad--devel--0--patch-16
+       checkpoint commit for bradb to help debug pagetest breakage
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/bugtask-management/.arch-ids/xx-view-editable-bug-task.txt.id
+     lib/canonical/launchpad/pagetests/bugtask-management/.arch-ids/xx-view-non-editable-bug-task.txt.id
+     lib/canonical/launchpad/pagetests/bugtask-management/xx-view-editable-bug-task.txt
+     lib/canonical/launchpad/pagetests/bugtask-management/xx-view-non-editable-bug-task.txt
+     lib/canonical/launchpad/zcml/.arch-ids/launchpad.zcml.id
+     lib/canonical/launchpad/zcml/launchpad.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/doc/teamparticipation.txt
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/05-set-bug-private-as-member-of-maintainer-team.txt
+     lib/canonical/launchpad/pagetests/foaf/00-createaccount.txt
+     lib/canonical/launchpad/pagetests/foaf/01-login.txt
+     lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-login-and-join-links.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/15-upstream-product-main-page-viewed-by-maintainer.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/16-upstream-product-main-page-viewed-by-non-maintainer.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/50-private-upstream-bug-not-accessible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/70-private-upstream-task-not-accessible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/95-make-bug-private-as-implicit-subscriber.txt
+     lib/canonical/launchpad/templates/launchpad-join.pt
+     lib/canonical/launchpad/templates/launchpad-login.pt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/main-template.pt
+     lib/canonical/launchpad/webapp/configure.zcml
+     lib/canonical/launchpad/webapp/login.py
+     lib/canonical/launchpad/zcml/bugtask.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-454
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-455
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-456
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-457
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-458
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-224
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-225
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-226
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-227
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-228
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-229
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-230
+     mpt@canonical.com/launchpad--devel--0--patch-14
+     mpt@canonical.com/launchpad--devel--0--patch-15
+     mpt@canonical.com/launchpad--devel--0--patch-16
+
+
 2005-03-30 09:44:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1518
 
     Summary:

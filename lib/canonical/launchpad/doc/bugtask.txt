@@ -218,7 +218,7 @@ associate the same bug with this product:
     >>> foobar = personset.get(16)
     >>> foo_team = personset.newTeam(
     ...     subscriptionpolicy = policy, name = 'foo',
-    ...     teamownerID = foobar.id)
+    ...     displayname = "The Foo Team", teamownerID = foobar.id)
     >>> foo_product = productset.createProduct(
     ...     owner = foo_team.id, name = 'foo-product',
     ...     displayname = 'foo product', title = 'Foo',
@@ -229,6 +229,8 @@ associate the same bug with this product:
     ...     severity = SEVERITY_NORMAL)
     >>> upstream_task.maintainer == foo_team
     True
+    >>> upstream_task.maintainer_displayname
+    u'The Foo Team'
 
 Then let's login as the Sample Person user:
 

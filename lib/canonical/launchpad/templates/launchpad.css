@@ -440,10 +440,6 @@ body {
   font-size: smaller;
 }
 
-ul {
-    line-height: 1em !important;
-}
-
 li {
     margin-bottom: 0 !important;
 }
@@ -462,6 +458,16 @@ li.edit, ul.edit li {
 
 abbr, address {
 	font-style: inherit;
+}
+
+th {
+  text-align: right;
+}
+thead th {
+  text-align: center;
+}
+thead {
+  vertical-align: bottom;
 }
 
 /* Launchpad-wide */

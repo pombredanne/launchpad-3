@@ -249,7 +249,7 @@ class Person(SQLBase):
         if reviewer is not None:
             # Make sure the reviewer is either the team owner or one of the
             # administrators.
-            pass
+            assert reviewer in self.administrators + [self.teamowner]
 
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
@@ -293,14 +293,11 @@ class Person(SQLBase):
         assert self.teamowner is None
 
         results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
-        assert results.count() <= 1
-        if results.count() == 0:
-            return False
+        assert results.count() == 1
 
         tm = results[0]
-        if tm.status not in (TeamMembershipStatus.ADMIN,
-                             TeamMembershipStatus.APPROVED):
-            return False
+        assert tm.status in (TeamMembershipStatus.ADMIN,
+                             TeamMembershipStatus.APPROVED)
 
         team.setMembershipStatus(self, TeamMembershipStatus.DEACTIVATED)
         return True
@@ -534,7 +531,7 @@ class PersonSet(object):
         else:
             return person
 
-    def newTeam(self, *args, **kw):
+    def newTeam(self, **kw):
         """See IPersonSet."""
         ownerID = kw.get('teamownerID')
         assert ownerID
@@ -543,7 +540,7 @@ class PersonSet(object):
         _fillTeamParticipation(owner, team)
         return team
 
-    def newPerson(self, *args, **kw):
+    def newPerson(self, **kw):
         """See IPersonSet."""
         assert not kw.get('teamownerID')
         if kw.has_key('password'):

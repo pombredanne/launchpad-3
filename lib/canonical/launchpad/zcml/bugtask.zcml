@@ -73,7 +73,7 @@
         for="canonical.launchpad.interfaces.IEditableUpstreamBugTask"
         class="canonical.launchpad.browser.bug.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="product maintainer bugtitle bugdescription milestone
+        fields="product maintainer_displayname bugtitle bugdescription milestone
                 status priority severity assignee"
         label="Edit Product Bug Task"
         permission="launchpad.Edit"
@@ -85,7 +85,7 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IReadOnlyUpstreamBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="product maintainer bugtitle bugdescription milestone
+        fields="product maintainer_displayname bugtitle bugdescription milestone
                 status priority severity assignee"
         label="Product Bug Task"
         permission="launchpad.View"

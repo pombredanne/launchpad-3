@@ -18,6 +18,8 @@ First of all, create some teams:
 >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
 >>> from canonical.lp.dbschema import TeamMembershipStatus
 
+>>> from canonical.database.sqlbase import flush_database_updates
+
 >>> teampart = getUtility(ITeamParticipationSet)
 >>> o = TeamSubscriptionPolicy.OPEN
 >>> m = TeamSubscriptionPolicy.MODERATED
@@ -82,6 +84,7 @@ to addMember() it.
 
 Now let's remove some members to see what happens:
 
+>>> flush_database_updates()
 >>> p.leave(t3)
 True
 >>> len(teampart.getAllMembers(t3))

@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
       tal:attributes="lang default_language|default;
                       xml:lang default_language|default;">
-<head>
+  <head>
     <metal:block define-slot="title"></metal:block>
     <!-- Plone style sheet -->
     <style type="text/css"
@@ -14,23 +14,27 @@
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/@@/launchpad.js"></script>
     <link rel="shortcut icon" href="/@@/defaultFavicon.gif" />
-</head>
+  </head>
 
-<body>
+  <body>
 
     <div class="page-header">
         <div class="page-header-ribbon">
             <div class="user" tal:condition="not: request/lp:person">
-                <a href="/+login">Log In</a>
+                <a href="/+login">Log in / Register</a>
             </div>
             <div class="user" tal:condition="request/lp:person">
                 Welcome,
-                <a tal:attributes="href string:/people/${request/lp:person/name}">
-                <span tal:replace="request/lp:person/displayname">Foo Bar</span></a>
+                <a
+                  tal:attributes="href string:/people/${request/lp:person/name}"
+                  tal:content="request/lp:person/displayname"
+                >
+                  [An error has occurred in Launchpad. Please report the address of this page to a Launchpad admin.]
+                </a>
                 &ndash;
                 Prefs
                 &ndash;
-                <a href="/+logout">Log Out</a>
+                <a href="/+logout">Log out</a>
             </div>
             <address>
                <span tal:replace="structure request/fmt:breadcrumbs" /><br />
@@ -93,7 +97,7 @@
         <div id="portal-personaltools"
              style="text-align: left;"
              tal:define="path_info request/PATH_INFO">
-           App Tabs Here
+           &nbsp;
         </div>
         </tal:block>
 

@@ -22,8 +22,6 @@ from canonical.lp.dbschema import TeamSubscriptionPolicy
 
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.foaf.nickname import generate_nick
-
 
 class TeamAddView(AddView):
 

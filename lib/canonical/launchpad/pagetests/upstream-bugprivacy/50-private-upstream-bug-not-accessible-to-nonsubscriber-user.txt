@@ -1,4 +1,4 @@
-
+View bugs on Mozilla Firefox as Foo Bar:
 
   >>> print http(r"""
   ... GET /malone/products/firefox HTTP/1.1
@@ -7,15 +7,12 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-              Welcome,
-  ...
-              Foo Bar</a>
-  ...
-  ...
       <h1>Upstream Bugs for:
           Mozilla Firefox
       </h1>
   ...
+
+Note that Foo Bar doesn't have the permissions to see bug #7.
 
   >>> print http(r"""
   ... GET /malone/bugs/7 HTTP/1.1

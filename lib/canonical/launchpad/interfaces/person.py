@@ -251,15 +251,17 @@ class IPersonSet(Interface):
         <name> will be valid if valid_name(name) returns True.
         """
 
-    def newPerson(*args, **kwargs):
+    def newPerson(**kwargs):
         """Create a new Person with given keyword arguments.
+
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
         to see what keyword arguments are allowed."""
 
-    def newTeam(*args, **kwargs):
+    def newTeam(**kwargs):
         """Create a new Team with given keyword arguments.
+
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation

@@ -1,4 +1,5 @@
-
+Foo Bar is about to edit bug #2. Foo Bar is a member of the Ubuntu
+Team, which is one of the maintainers on this bug.
 
   >>> print http(r"""
   ... GET /malone/bugs/2/+edit HTTP/1.1
@@ -7,16 +8,6 @@
   ... Cookie: launchpad=rD7snMSOdWFans5Ukm95CcGOHkM8hBYGxDWm0XnZgjudpcjHC7VGSE
   ... """)
   HTTP/1.1 200 Ok
-  ...
-              <div class="user">
-                  Welcome,
-                  <a href="/people/name16">
-                  Foo Bar</a>
-                  &ndash;
-                  Prefs
-                  &ndash;
-                  <a href="/+logout">Log Out</a>
-              </div>
   ...
       <h4>Related People:</h4>
   <BLANKLINE>
@@ -69,6 +60,10 @@
       </div>
   ...
 
+Foo Bar sets the bug private, and all implicit subscriptions are thus
+made explicit including, of course, the Ubuntu Team of which Foo Bar
+is a member.
+
   >>> print http(r"""
   ... POST /malone/bugs/2/+edit HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
@@ -109,16 +104,6 @@
   ... -----------------------------115180199804837416230138857--
   ... """)
   HTTP/1.1 200 Ok
-  ...
-              <div class="user">
-                  Welcome,
-                  <a href="/people/name16">
-                  Foo Bar</a>
-                  &ndash;
-                  Prefs
-                  &ndash;
-                  <a href="/+logout">Log Out</a>
-              </div>
   ...
       <h4>Related People:</h4>
   <BLANKLINE>
