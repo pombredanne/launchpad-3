@@ -1807,7 +1807,7 @@ SELECT pg_catalog.setval('bugattachment_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sourcesource_id_seq', 1, false);
+SELECT pg_catalog.setval('sourcesource_id_seq', 2, false);
 
 
 
