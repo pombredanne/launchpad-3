@@ -493,6 +493,8 @@ class Launchpad(SQLThing):
         return ret
 
     def getSectionByName(self, section):
+        if '/' in section:
+            section = section[section.find('/')+1:]
         if section in self.sectcache:
             return self.sectcache[section]
         ret = self._query_single("""SELECT id FROM section
@@ -504,6 +506,8 @@ class Launchpad(SQLThing):
         return ret
 
     def addSection(self, section):
+        if '/' in section:
+            section = section[section.find('/')+1:]
         try:
             self.getSectionByName(section)
         except:

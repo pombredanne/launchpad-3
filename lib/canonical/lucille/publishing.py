@@ -5,12 +5,13 @@
 import os
 from canonical.lucille.pool import Poolifier
 
-from canonical.launchpad.database import PackagePublishing, SourcePackagePublishing
+from canonical.lp.dbschema import PackagePublishingStatus, \
+                                  PackagePublishingPriority
 
-from canonical.lp.dbschema import PackagePublishingStatus
+from StringIO import StringIO
 
 class Publisher(object):
-    """Publisher is the base class used to provide the facility to publish
+    """Publisher is the class used to provide the facility to publish
     files in the pool of a Distribution. The publisher objects will be
     instantiated by the archive build scripts and will be used throughout
     the processing of each DistroRelease and DistroArchRelease in question
@@ -85,3 +86,72 @@ class Publisher(object):
             filename = pubrec.lfaname.encode('utf-8')
             self._publish( source, component, filename, pubrec.pfalias )
             pubrec.pp.status = PackagePublishingStatus.PUBLISHED.value
+
+    def publishOverrides(self, sourceoverrides, binaryoverrides, \
+                         overrideroot, defaultcomponent = "main"):
+        """Given the provided sourceoverrides and binaryoverrides, output
+        a set of override files for use in apt-ftparchive.
+
+        The files will be written to overrideroot with filenames of the form:
+        override.<distrorelease>.<component>[.src]
+
+        Attributes which must be present in sourceoverrides are:
+        drname, spname, cname, sname
+
+        Attributes which must be present in binaryoverrides are:
+        drname, spname, cname, sname, priority
+
+        The binary priority will be mapped via the values in dbschema.py
+        """
+
+        # overrides[distrorelease][component][src/bin] = list of lists
+        overrides = {}
+
+        prio = {}
+        for p in PackagePublishingPriority._items:
+            prio[p] = PackagePublishingPriority._items[p].title.lower()
+
+        for so in sourceoverrides:
+            distrorelease = so.drname.encode('utf-8')
+            component = so.cname.encode('utf-8')
+            section = so.sname.encode('utf-8')
+            sourcepackagename = so.spname.encode('utf-8')
+            if component != defaultcomponent:
+                section = "%s/%s" % (component,section)
+            overrides.setdefault(distrorelease, {})
+            overrides[distrorelease].setdefault(component, {})
+            overrides[distrorelease][component].setdefault('src', [])
+            overrides[distrorelease][component]['src'].append( (sourcepackagename,section) )
+
+        for bo in binaryoverrides:
+            distrorelease = bo.drname.encode('utf-8')
+            component = bo.cname.encode('utf-8')
+            section = bo.sname.encode('utf-8')
+            binarypackagename = bo.bpname.encode('utf-8')
+            priority = bo.priority
+            if priority not in prio:
+                raise ValueError, "Unknown priority value %d" % priority
+            priority = prio[priority]
+            if component != defaultcomponent:
+                section = "%s/%s" % (component,section)
+            overrides.setdefault(distrorelease, {})
+            overrides[distrorelease].setdefault(component, {})
+            overrides[distrorelease][component].setdefault('bin', [])
+            overrides[distrorelease][component]['bin'].append( (binarypackagename,priority,section) )
+
+        # Now generate the files on disk...
+        for distrorelease in overrides:
+            for component in overrides[distrorelease]:
+                f = open("%s/override.%s.%s" % (overrideroot, distrorelease, component), "w")
+                for tup in overrides[distrorelease][component]['bin']:
+                    f.write("\t".join(tup))
+                    f.write("\n")
+                    
+                f.close()
+
+                f = open("%s/override.%s.%s.src" % (overrideroot, distrorelease, component), "w")
+                for tup in overrides[distrorelease][component]['src']:
+                    f.write("\t".join(tup))
+                    f.write("\n")
+                f.close()
+                

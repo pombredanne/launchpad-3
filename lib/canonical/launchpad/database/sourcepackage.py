@@ -40,6 +40,7 @@ class SourcePackageRelease(SQLBase):
         StringCol('changelog', dbName='changelog'),
         StringCol('builddepends', dbName='builddepends'),
         StringCol('builddependsindep', dbName='builddependsindep'),
+        ForeignKey(name='section', foreignKey='Section', dbName='section'),
     ]
 
     builds = MultipleJoin('Build', joinColumn='sourcepackagerelease')

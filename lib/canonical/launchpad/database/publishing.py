@@ -121,7 +121,7 @@ class PublishedBinaryPackageOverrides(SQLBase):
 
     drname = StringCol(dbName='drname', unique=False, default=None,
                        notNull=True)
-    spname = StringCol(dbName='spname', unique=False, default=None,
+    bpname = StringCol(dbName='bpname', unique=False, default=None,
                        notNull=True)
     cname = StringCol(dbName='cname', unique=False, default=None,
                        notNull=True)
