@@ -434,7 +434,9 @@ CREATE TABLE Membership (
   role        integer NOT NULL, 
   /* see Membership Status schema */
   status      integer NOT NULL,
-  PRIMARY KEY ( person, team )
+  -- a person can only have one membership in
+  -- a given team
+  UNIQUE ( person, team )
 );
 
 
@@ -452,7 +454,9 @@ CREATE TABLE TeamParticipation (
   id           serial PRIMARY KEY,
   team         integer NOT NULL REFERENCES Person,
   person       integer NOT NULL REFERENCES Person,
-  PRIMARY KEY ( team, person )
+  -- a person can only have one participation in a
+  -- team.
+  UNIQUE ( team, person )
 );
 
 
@@ -1672,6 +1676,9 @@ CREATE TABLE POTemplate (
   -- when we last parsed the Template.
   messagecount          integer NOT NULL,
   owner                 integer REFERENCES Person,
+  -- make sure that a potemplate name is unique in
+  -- a given product
+  UNIQUE ( product, name ),
   -- if we refer to a changeset make sure that it's
   -- one where the branch is consistent for that changeset.
   FOREIGN KEY ( changeset, branch ) REFERENCES Changeset ( id, branch )
