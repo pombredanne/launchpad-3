@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 14:19:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1231
+
+    Summary:
+      Rosetta janitoring
+    Revision:
+      launchpad--devel--0--patch-1231
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-421
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-422
+       tidy up PO template ZCML
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-423
+       fixes to Rosetta browser code based on pychecker output
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/browser.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-421
+     daf@canonical.com--2004/launchpad--devel--0--patch-422
+     daf@canonical.com--2004/launchpad--devel--0--patch-423
+
+
 2005-01-21 14:13:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1230
 
     Summary:

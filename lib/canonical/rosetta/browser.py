@@ -297,7 +297,7 @@ def check_tar(tf, pot_paths, po_paths):
 
     # Complain if no files at all were found.
 
-    if pot_paths is () and po_paths is ():
+    if len(pot_paths) == 0 and len(po_paths) == 0:
         return (
             "The tar file you uploaded could not be imported. This may be "
             "because there was more than one 'po' directory, or because the "
@@ -319,7 +319,6 @@ def import_tar(potemplate, importer, tf, pot_paths, po_paths):
     for path in pot_paths:
         import_pot_or_po(potemplate, importer, tf.extractfile(path).read())
 
-    languages = getUtility(ILanguageSet)
     bad = []
 
     for path in po_paths:
@@ -460,7 +459,7 @@ class ProductView:
             tf = string_to_tarfile(contents)
             pot_paths, po_paths = examine_tarfile(tf)
 
-            if pot_paths is ():
+            if len(pot_paths) == 0:
                 self.status_message = (
                     "No PO templates were found in the tar file you "
                     "uploaded. A PO template file must be present when "
@@ -1254,6 +1253,12 @@ class TranslatePOTemplate:
 
                 # Check that this is a translation for a message set that's
                 # actually in the template.
+
+                # XXX
+                # This code is rather ugly. It would be much nicer if there
+                # was a method for POTemplate which indicates whether there is
+                # a messageID with the given text in the template.
+                # -- Dafydd Harries, 2005/01/20
 
                 try:
                     pot_set = self.context[msgid_text]
