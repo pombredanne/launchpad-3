@@ -8,6 +8,7 @@ import sha
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.event import notify
 
 from zope.security.proxy import removeSecurityProxy
 
@@ -22,6 +23,9 @@ from canonical.launchpad.webapp.interfaces import ILoggedOutEvent
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
+from canonical.launchpad.webapp.interfaces import BasicAuthLoggedInEvent
+from canonical.launchpad.webapp.interfaces import \
+    CookieAuthPrincipalIdentifiedEvent
 
 
 def handle(event):
@@ -58,7 +62,7 @@ class PlacelessAuthUtility:
             'Anonymous', 'Anonymous', 'Anonymous User')
         self.nobody.__parent__ = self
 
-    def _authenticateUsingBasicAuth(self, credentials):
+    def _authenticateUsingBasicAuth(self, credentials, request):
         login = credentials.getLogin()
         if login is not None:
             login_src = getUtility(IPlacelessLoginSource)
@@ -66,6 +70,7 @@ class PlacelessAuthUtility:
             if principal is not None:
                 password = credentials.getPassword()
                 if principal.validate(password):
+                    notify(BasicAuthLoggedInEvent(request, login, principal))
                     return principal
 
     def _authenticateUsingCookieAuth(self, request):
@@ -76,7 +81,17 @@ class PlacelessAuthUtility:
         else:
             personid = authdata['personid']
             login_src = getUtility(IPlacelessLoginSource)
-            return login_src.getPrincipal(personid)
+            # Note, not notifying a LoggedInEvent here as for session-based
+            # auth the login occurs when the login form is submitted, not
+            # on each request.
+            principal = login_src.getPrincipal(personid)
+            if principal is None:
+                raise RuntimeError(
+                    "User is authenticated in session, but principal is not"
+                    " available in login source.")
+            else:
+                notify(CookieAuthPrincipalIdentifiedEvent(principal, request))
+                return principal
 
     def authenticate(self, request):
         """See IAuthenticationService."""
@@ -88,12 +103,14 @@ class PlacelessAuthUtility:
         #       now, use basic auth by specifying ILoginPassword.
         credentials = ILoginPassword(request, None)
         if credentials is not None and credentials.getLogin() is not None:
-            return self._authenticateUsingBasicAuth(credentials)
+            return self._authenticateUsingBasicAuth(credentials, request)
         else:
             # Hack to make us not even think of using a session if there
             # isn't already a cookie there.
             if request.cookies.get('launchpad') is not None:
                 return self._authenticateUsingCookieAuth(request)
+            else:
+                return None
 
     def unauthenticatedPrincipal(self):
         """See IAuthenticationService."""

@@ -2,6 +2,61 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-05 17:00:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1151
+
+    Summary:
+      Added 'login' attribute to the LaunchBag that gives the user id / email address that was used to log in, whether by cookie auth or by basic auth.
+    Revision:
+      launchpad--devel--0--patch-1151
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-286
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-287
+       added logged-in events for basic auth and cookie auth.  added interface to a utility that will be used by code to get information about the logged-in person and the metadata about how they logged in.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-288
+       removed xxxLoginInfo interfaces, as they are not the right way to do what i need to do.  added PrincipalIdentified events in addition to LoggedInEvents.  (thanks daniel silverstone for helping me find good words for concepts.)  added login to the launchbox.  all that is needed now is an event handler to set the login attribute of the launchbox whenever a principal is identified.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-289
+       removed the complex forms of LoggedInEvent interfaces, keeping just the simple one.  added a subscriber to PrincipalIdentifiedEvent that sets the login attribute of the launchbag.  in the future, we might use this to set the user too, instead of getting the user from the interaction.  that would need some thought, though.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-290
+       made system doctest ftest use all .txt files in launchpad/doc/.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-291
+       made launchbag.txt thoroughly test the login attribute of the launchbag.  fixed bugs revealed during writing the test.  made the login attribute cleared on a logout.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-292
+       improved xxx comment in launchbag test.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-293
+       refuel
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/launchbag.txt
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+     lib/canonical/launchpad/interfaces/launchpad.py
+     lib/canonical/launchpad/webapp/authentication.py
+     lib/canonical/launchpad/webapp/configure.zcml
+     lib/canonical/launchpad/webapp/interfaces.py
+     lib/canonical/launchpad/webapp/launchbag.py
+     lib/canonical/launchpad/webapp/login.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-286
+     steve.alexander@canonical.com/launchpad--devel--0--patch-287
+     steve.alexander@canonical.com/launchpad--devel--0--patch-288
+     steve.alexander@canonical.com/launchpad--devel--0--patch-289
+     steve.alexander@canonical.com/launchpad--devel--0--patch-290
+     steve.alexander@canonical.com/launchpad--devel--0--patch-291
+     steve.alexander@canonical.com/launchpad--devel--0--patch-292
+     steve.alexander@canonical.com/launchpad--devel--0--patch-293
+
+
 2005-01-05 15:01:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1150
 
     Summary:

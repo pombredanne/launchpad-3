@@ -105,6 +105,16 @@
         factory="canonical.launchpad.webapp.authentication.handle"
         />
 
+    <subscriber
+        for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
+        factory="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
+        />
+
+    <subscriber
+        for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
+        factory="canonical.launchpad.webapp.launchbag.reset_login_in_launchbag_on_logout"
+        />
+
     <utility
         factory="canonical.launchpad.webapp.authentication.SSHADigestEncryptor"
         provides="canonical.launchpad.interfaces.IPasswordEncryptor"

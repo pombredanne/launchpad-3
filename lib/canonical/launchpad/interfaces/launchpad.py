@@ -142,10 +142,12 @@ class ILaunchBag(Interface):
     distribution = Attribute('Distribution, or None')
     distrorelease = Attribute('DistroRelease, or None')
     sourcepackage = Attribute('Sourcepackage, or None')
-    sourcepackagereleasepublishing = Attribute('SourcepackageReleasePublishing, or None')
+    sourcepackagereleasepublishing = Attribute(
+        'SourcepackageReleasePublishing, or None')
     bug = Attribute('Bug, or None')
 
     user = Attribute('Currently authenticated person, or None')
+    login = Attribute('The login used by the authenticated person, or None')
 
 
 class IOpenLaunchBag(ILaunchBag):
@@ -154,4 +156,6 @@ class IOpenLaunchBag(ILaunchBag):
         or ignored, or whatever'''
     def clear():
         '''Empty the bag'''
+    def setLogin(login):
+        '''Set the login to the given value.'''
 
