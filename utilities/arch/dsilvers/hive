@@ -225,6 +225,8 @@ Usage: hive out <hivename> <summary>
     except HiveError, er:
         print "Problem extracting changeset: %s" % er
 
+    return 0
+
 def cmd_obliterate(hive, args):
     """Obliterate a hive element
 Usage: hive obliterate <element>

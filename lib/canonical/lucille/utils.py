@@ -18,7 +18,7 @@ def prefix_multi_line_string(str, prefix, include_blank_lines=0):
 def extract_component_from_section(section, default_component = "main"):
     component = ""
     if section.find("/") != -1:
-        component,section = section.split("/")
+        component, section = section.split("/")
     else:
         component = default_component
 
@@ -60,7 +60,7 @@ def build_file_list(tagfile, is_dsc = False, default_component = "main" ):
         if priority == "":
             priority = "-"
 
-        (section, component) = extract_component_from_section(section)
+        (section, component) = extract_component_from_section(section, default_component)
 
         files[name] = {
             "md5sum": md5,
@@ -116,6 +116,7 @@ class ParseMaintError(Exception):
     """
 
     def __init__(self, message):
+        Exception.__init__(self)
         self.args = message,;
         self.message = message;
 
