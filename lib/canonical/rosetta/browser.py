@@ -109,21 +109,33 @@ class ViewProjects:
         if not self.request.method == "POST":
             return False
 
-        request_email = 'daf@muse.19inch.net'
+        from_email = 'Rosetta <launchpad@canonical.com>'
+        to_email = 'Dafydd Harries <daf@muse.19inch.net>'
 
         try:
             smtp = smtplib.SMTP('localhost')
-            smtp.sendmail('launchpad@canonical.com', request_email,
-                "From: rosetta\n"
+            smtp.sendmail(from_email, to_email,
+                "From: %s\n"
                 "To: %s\n"
                 "Subject: Rosetta project request: %s\n"
                 "\n"
-                "Name: %s\n"
-                "Description:\n"
-                "%s" % (
-                    request_email,
+                "Name: %s\n\n"
+                "Homepage: %s\n\n"
+                "Download page: %s\n\n"
+                "Description\n"
+                "-----------\n\n"
+                "%s\n\n"
+                "Revision Control Information\n"
+                "----------------------------\n\n"
+                "%s\n"
+                % (
+                    from_email,
+                    to_email,
                     self.request.form['name'],
                     self.request.form['name'],
+                    self.request.form['homepage'],
+                    self.request.form['download-page'],
+                    self.request.form['revision-control-info'],
                     self.request.form['description']))
         except smtplib.SMTPException, e:
             self.error = e

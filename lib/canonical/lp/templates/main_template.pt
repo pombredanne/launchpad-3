@@ -110,6 +110,18 @@
         </span>
       </div>
 
+      <div tal:condition="request/lp:person"
+            style="text-align: right; padding-right: 2em">
+        <span tal:condition="request/lp:person">
+            Logged in as <span tal:replace="request/lp:person/displayName">
+                Foo Bar</span>
+        </span>
+
+        <span tal:condition="not: request/lp:person">
+            Not logged in.
+        </span>
+      </div>
+
       <div class="visualClear"></div>
 
       <table id="portal-columns">

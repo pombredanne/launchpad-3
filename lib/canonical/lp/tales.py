@@ -27,7 +27,7 @@ class RequestAPI:
         self.request = request
 
     def person(self):
-        return IPerson(self.request.principal)
+        return IPerson(self.request.principal, None)
     person = property(person)
 
 

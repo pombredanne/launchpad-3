@@ -52,10 +52,22 @@
     <form method="POST" tal:attributes="action request/URL">
     <fieldset>
         <p>
-        <label>Name</label>: <input type="text" name="name" />
+        <label>Name</label> <input type="text" name="name" />
         </p>
 
+        <p>
+        <label>Project Homepage</label>
+            <input type="text" name="homepage" size="50" />
+        </p>
+
+        <p>
+        <label>Project Download Page</label>
+            <input type="text" name="download-page" size="50" />
+        </p>
+
+        <p>
         <label>Description</label>
+        </p>
 
         <p>
         In your description, please include several paragraphs about the intent
@@ -63,20 +75,19 @@
         highlights of the software involved.
         </p>
 
-        <textarea name="description" rows="15">
-Description:
+        <textarea name="description" rows="15"></textarea>
 
-&lt;Insert description here&gt;
+        <p>
+        <label>Revision Control Information</label>
+        </p>
 
-Project homepage: http://
+        <p>
+        Please give details of any CVS/Subversion/Arch/etc. repositories the
+        project has.
+        </p>
 
-Project download page: http://
+        <textarea name="revision-control-info" rows="5"></textarea>
 
-Details of CVS/Subversion/Arch repository, if applicable:
-
-&lt;Insert revision control details here&gt;
-
-</textarea>
         <br/>
         <input type="submit" name="SUBMIT" value="Submit" />
     </fieldset>
