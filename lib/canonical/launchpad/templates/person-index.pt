@@ -53,10 +53,11 @@
           </tr>
           </tal:dummy>
 
-          <tal:dummy tal:condition="not: context/preferredemail">
+          <tal:dummy tal:condition="not: context/validatedemails">
           <tr>
             <td>Email:</td>
-            <td>Please <a href="+emails">set your preferred email.</a></td>
+            <td>0 validated email addresses 
+              [ <a href="+emails">Add or validate emails</a> ]</td>
           </tr>
           </tal:dummy>
 

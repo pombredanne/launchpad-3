@@ -411,7 +411,6 @@ class ITeamMembershipSubset(Interface):
         """
 
 
-
 class ITeamParticipation(Interface):
     """Team Participation for Users"""
     id = Int(title=_('ID'), required=True, readonly=True)

@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 15:14:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1493
+
+    Summary:
+      Remove hardcoded dbhost so I can keep using PGHOST. Display a better message when the user have no preferred email address set.
+    Revision:
+      launchpad--devel--0--patch-1493
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-211
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-212
+       Better message when the user have no preferred email address set.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-213
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-214
+       Fix dsn to hardcode only the 'launchpad' username and leave the dbhost to environment settings.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/templates/person-index.pt
+     package-includes/launchpad-sql-configure-normal.zcml
+     package-includes/launchpad-sql-configure-testing.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-211
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-212
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-213
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-214
+
+
 2005-03-24 15:03:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1492
 
     Summary:
