@@ -118,7 +118,7 @@ class DistroReleaseApp(object):
         return result
 
     def bugSourcePackages(self):
-        return SourcePackageInDistro.getBugSourcePackages(self.release)
+        return Set(self.release.getBugSourcePackages())
 
 class DistroReleasesApp(object):
     implements(IDistroReleasesApp, IAuthorization)

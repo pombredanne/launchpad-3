@@ -22,7 +22,8 @@ from canonical.launchpad.interfaces import IDistributionRole, IDistroReleaseRole
                                            IDistribution, IDistroRelease, IDistrosSet
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
-from canonical.launchpad.database.sourcepackage import SourcePackage
+from canonical.launchpad.database.sourcepackage import SourcePackage, \
+                                                       SourcePackageInDistro
 from canonical.launchpad.database.binarypackage import BinaryPackage
 from canonical.launchpad.database.person import Person
 
@@ -267,6 +268,23 @@ class DistroRelease(SQLBase):
         return counts
 
     bugCounter = property(bugCounter)
+
+       
+
+    def getBugSourcePackages(self):
+        """Get SourcePackages in a DistroRelease with BugAssignement"""
+
+        clauseTables=["SourcePackageBugAssignment",]
+        query = ("VSourcePackageInDistro.distrorelease = %i AND "
+                 "VSourcePackageInDistro.id = SourcePackageBugAssignment.sourcepackage AND "
+                 "(SourcePackageBugAssignment.bugstatus != %i OR "
+                 "SourcePackageBugAssignment.bugstatus != %i)"
+                 %(self.id,
+                   int(dbschema.BugAssignmentStatus.FIXED),
+                   int(dbschema.BugAssignmentStatus.REJECTED)))
+
+        return SourcePackageInDistro.select(query, clauseTables=clauseTables)
+
 
 
 class DistrosSet(object):

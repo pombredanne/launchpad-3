@@ -221,7 +221,6 @@ class SourcePackageSet(object):
         # get packages by distro
         return SourcePackageInDistro.select("maintainer = %d" % personID,
                                             orderBy='name')
-   
 
 class SourcePackageName(SQLBase):
     implements(ISourcePackageName)

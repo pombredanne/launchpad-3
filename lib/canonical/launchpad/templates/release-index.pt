@@ -91,45 +91,12 @@
    </th></tr>
    <tr><td>
      <div>
-      <table width="100%">
-      <legend><h4>Release Bugs</h4></legend>
-      <tr><td>
-        <fieldset>
-        <div>
-	<table>
-	<tr><th>Total Bugs:</th><th tal:content="python:context.release.bugCounter[0]">TOTAL</th></tr>
-	<tr><th>New Bugs:</th><th tal:content="python:context.release.bugCounter[1]">NEW</th></tr>
-	<tr><th>Opened Bugs:</th><th tal:content="python:context.release.bugCounter[2]">OPEN</th></tr>
-	<tr><th>Closed Bugs:</th><th tal:content="python:context.release.bugCounter[3]">CLOSED</th></tr>
-	</table>
-	</div>
-      </td></tr>
-      </table>
-     </div> 
-   </td><td>
-     <div class="dummy">
-      <table width="100%">
-      <legend><h4>Releases Translations (XXX)</h4></legend>
-      <tr><td>
-        <fieldset>
-        <div>
-	<table>
-	<tr><th>Welsh</th></tr>
-	<tr><th>English</th></tr>
-	<tr><th>Japanese</th></tr>
-	</table>
-	</div>
-      </td></tr>
-      </table>
      </div>   
    </td></tr>
-   <tr>
-   <th align="right">
-   <a href="+bugs">More <span tal:content="context/release/title"/> Bugs</a>
-   </th><th align="right">
-   <a href="+translations">More <span
-      tal:content="context/release/title"/> Translations</a> 
-   </th></tr>
+<!--    <tr> -->
+<!--    <th align="right"> -->
+<!--    <a href="+bugs">More <span tal:content="context/release/title"/> Bugs</a> -->
+<!--    </th> -->
    <tr><td>
      <div>
       <table width="100%">
