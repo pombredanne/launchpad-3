@@ -1,3 +1,9 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+#
+# This is a Twisted application config file.  To run, use:
+#     twistd -noy sftp.tac
+# or similar.  Refer to the twistd(1) man page for details.
+
 from supermirrorsftp import sftponly
 from twisted.cred import portal
 from twisted.conch.ssh import keys

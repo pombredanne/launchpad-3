@@ -1,3 +1,5 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 from canonical.authserver.client.sshkeys import TwistedAuthServer
 
 from twisted.conch import avatar, unix
