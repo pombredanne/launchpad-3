@@ -23,7 +23,8 @@ from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 from schoolbell.simple import SimpleCalendarEvent
 from canonical.launchpad.interfaces import \
      IPerson, IRequestTzInfo, ICalendarDay, ICalendarWeek, ICalendarOwner, \
-     ICalendarMonth, ICalendarYear,  ICalendarEventCollection
+     ILaunchpadCalendar, ICalendarMonth, ICalendarYear, \
+     ICalendarEventCollection
 
 from canonical.launchpad.database import Calendar, CalendarEvent
 from canonical.launchpad.components.cal import CalendarSubscriptionSet
@@ -55,6 +56,13 @@ monthnames = [
     _("November"),
     _("December")
     ]
+
+colours = [
+    { 'code': '#ffffff', 'name': _('White') },
+    { 'code': '#9db8d2', 'name': _('Blue') },
+    { 'code': '#9dd2b8', 'name': _('Green') },
+    ]
+
 
 UTC = pytz.timezone('UTC')
 
@@ -561,11 +569,8 @@ class ViewCalendarEvent(object):
             self.request.response.redirect('+display')
 
 class ViewCalendarSubscriptions(object):
-    colours = [
-        { 'code': '#ffffff', 'name': _('White') },
-        { 'code': '#9db8d2', 'name': _('Blue') },
-        { 'code': '#9dd2b8', 'name': _('Green') },
-        ]
+    colours = colours
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -574,6 +579,9 @@ class ViewCalendarSubscriptions(object):
         self._subscriptions = CalendarSubscriptionSet(person)
 
     def subscriptions(self):
+        # XXXX should make sure that calendars for person and teams they
+        # are a member of are always in the subscription list.
+        #  - jamesh 2005-01-25
         for cal in self._subscriptions:
             yield { 'id': cal.id, 'title': cal.title,
                     'subscribed': True,
@@ -598,6 +606,34 @@ class ViewCalendarSubscriptions(object):
                 colour = self.request.get('colour.%d' % id, None)
                 if colour:
                     self._subscriptions.setColour(calendar, colour)
+
+class ViewCalendarSubscribe(object):
+    colours = colours
+
+    def __init__(self, context, request):
+        self.context = ILaunchpadCalendar(context)
+        self.request = request
+
+        person = IPerson(request.principal, None)
+        self._subscriptions = CalendarSubscriptionSet(person)
+
+    def subscribed(self):
+        return self.context in self._subscriptions
+    def colour(self):
+        return self._subscriptions.getColour(self.context)
+
+    def submit(self):
+        if 'UPDATE_SUBMIT' in self.request.form:
+            if self.request.method != "POST":
+                raise RuntimeError("This form must be posted!")
+
+            if self.request.form.get('subscribe', None) != 'no':
+                self._subscriptions.subscribe(self.context)
+            else:
+                self._subscriptions.unsubscribe(self.context)
+            colour = self.request.get('colour', None)
+            if colour:
+                self._subscriptions.setColour(self.context, colour)
 
 
 class CalendarInfoPortletView(object):

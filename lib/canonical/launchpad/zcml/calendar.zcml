@@ -65,6 +65,15 @@
       for="schoolbell.interfaces.ICalendar"
       function="canonical.launchpad.browser.traverseCalendar" />
 
+  <browser:page
+      name="+subscribe"
+      for="canonical.launchpad.interfaces.ILaunchpadCalendar"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.ViewCalendarSubscribe"
+      template="../templates/calendar-subscribe.pt"
+      lp:url="$obj/calendar/+subscribe" />
+
+
   <content class="canonical.launchpad.browser.CalendarEventCollection">
     <allow interface="canonical.launchpad.interfaces.ICalendarEventCollection" />
   </content>
@@ -222,14 +231,12 @@
       />
   </browser:editform>
 
-  <browser:pages
+  <browser:page
+      name="+subscriptions"
       for="canonical.launchpad.interfaces.ILaunchpadMergedCalendar"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.ViewCalendarSubscriptions">
-    <browser:page
-        name="+subscriptions"
-        template="../templates/calendar-subscriptions.pt"
-        lp:url="/calendar/+subscripitions" />
-  </browser:pages>
+      class="canonical.launchpad.browser.ViewCalendarSubscriptions"
+      template="../templates/calendar-subscriptions.pt"
+      lp:url="/calendar/+subscripitions" />
 
 </configure>

@@ -124,7 +124,8 @@ class CalendarSubscriptionSet(object):
         if calendar.id is None:
             raise ValueError('calendar has no identifier')
         if calendar not in self:
-            CalendarSubscription(person=self.owner, calendar=calendar)
+            CalendarSubscription(personID=self.owner.id,
+                                 calendarID=calendar.id)
     def unsubscribe(self, calendar):
         if calendar.id is None:
             raise ValueError('calendar has no identifier')
@@ -134,12 +135,12 @@ class CalendarSubscriptionSet(object):
 
     def getColour(self, calendar):
         if calendar.id is None:
-            return defaultColour
+            return self.defaultColour
         for sub in CalendarSubscription.selectBy(personID=self.owner.id,
                                                  calendarID=calendar.id):
             return sub.colour
         else:
-            return defaultColour
+            return self.defaultColour
     def setColour(self, calendar, colour):
         if not re.match(r'#[0-9A-Fa-f]{6}', colour):
             raise ValueError('invalid colour value "%s"' % colour)
