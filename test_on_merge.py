@@ -5,6 +5,7 @@
 
 import sys
 import os, os.path
+import popen2
 import tabnanny
 import checkarchtag
 from StringIO import StringIO
@@ -40,11 +41,14 @@ def main():
         return 1
 
     print 'Running tests.'
-    stdin, out, err = os.popen3('cd %s; python test.py %s < /dev/null' %
-        (here, ' '.join(sys.argv[1:])))
+    proc = popen2.Popen3('cd %s; python test.py %s < /dev/null' %
+        (here, ' '.join(sys.argv[1:])), True)
+    stdin, out, err = proc.tochild, proc.fromchild, proc.childerr
     errlines = err.readlines()
     dataout = out.read()
-    test_ok = errlines[-1] == 'OK\n'
+    exitcode = proc.wait()
+    test_ok = ((os.WIFEXITED(exitcode) and os.WEXITSTATUS(exitcode) == 0) and
+               (errlines[-1] == 'OK\n'))
 
     if test_ok:
         print errlines[1]

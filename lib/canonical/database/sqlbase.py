@@ -108,34 +108,35 @@ class ZopelessTransactionManager(object):
     namespace pollution.
 
     Quick & dirty doctest:
+    XXX: DISABLED!  This should be turned into a functional test.
 
-    >>> from canonical.lp import dbname
-    >>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
-
-    The _connection attribute of SQLBase should now be a descriptor that returns
-    sqlobject.dbconnection.Transaction instances.
-
-    >>> from sqlobject.dbconnection import Transaction
-    >>> t1 = SQLBase._connection
-    >>> isinstance(t1, Transaction)
-    True
-
-    And it should give the same connection to the same thread over multiple
-    accesses.
-    
-    >>> t2 = SQLBase._connection
-    >>> t1 is t2
-    True
-
-    And different in different threads:
-
-    >>> from threading import Thread, Lock, Event
-    >>> l = []
-    >>> t = Thread(target=lambda: l.append(SQLBase._connection))
-    >>> t.start()
-    >>> t.join()
-    >>> l[0] is not t1
-    True
+    #>>> from canonical.lp import dbname
+    #>>> ztm = ZopelessTransactionManager('postgres:///' + dbname)
+    #
+    #The _connection attribute of SQLBase should now be a descriptor that returns
+    #sqlobject.dbconnection.Transaction instances.
+    #
+    #>>> from sqlobject.dbconnection import Transaction
+    #>>> t1 = SQLBase._connection
+    #>>> isinstance(t1, Transaction)
+    #True
+    #
+    #And it should give the same connection to the same thread over multiple
+    #accesses.
+    #
+    #>>> t2 = SQLBase._connection
+    #>>> t1 is t2
+    #True
+    #
+    #And different in different threads:
+    #
+    #>>> from threading import Thread, Lock, Event
+    #>>> l = []
+    #>>> t = Thread(target=lambda: l.append(SQLBase._connection))
+    #>>> t.start()
+    #>>> t.join()
+    #>>> l[0] is not t1
+    #True
 
     XXX: This bit is overly dependent on the db...
     Show that concurrent transactions in different threads work correctly
@@ -180,7 +181,7 @@ class ZopelessTransactionManager(object):
     Cleanup -- make sure this doctest leaves things in the same state it found
     them.
 
-    >>> ztm.uninstall()
+    #>>> ztm.uninstall()
 
     """
 
