@@ -32,7 +32,11 @@
 
     <p>
     Rosetta is a web-based translation tool.
-    </p>
+</p>
+
+    <h2><a title="Malone" href="malone">Malone</a></h2>
+
+    <p>Malone is a web-based bug tracking tool.</p>
 
     <h2><a title="Projects" href="doap">Projects</a></h2>
 
