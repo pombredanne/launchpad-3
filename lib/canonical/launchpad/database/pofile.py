@@ -227,7 +227,8 @@ class POTemplate(SQLBase):
             translated_condition = 'TRUE'
 
         results = POTMsgSet.select(
-            'POTMsgSet.potemplate = %d AND %s AND %s' %
+            'POTMsgSet.potemplate = %d AND %s AND %s '
+            'ORDER BY POTMsgSet.sequence' %
                 (self.id, translated_condition, current_condition))
 
         if slice is not None:
