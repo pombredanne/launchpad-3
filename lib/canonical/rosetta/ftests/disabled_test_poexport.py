@@ -155,7 +155,8 @@ class POExportTestCase(LaunchpadFunctionalTestCase):
         try:
             project = Project.selectBy(name = 'gnome')[0]
             product = Product.selectBy(projectID = project.id, name = 'evolution')[0]
-            poTemplate = POTemplate.selectBy(productID = product.id, name='evolution-2.0')[0]
+            poTemplate = POTemplate.selectBy(productID = product.id,
+                name='hoary-2.0')[0]
         except IndexError, e:
             raise IndexError, "Couldn't find record in database, please import sampledata.sql to do the tests."
         export = POExport(poTemplate)

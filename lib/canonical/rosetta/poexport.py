@@ -19,7 +19,7 @@ class POExport:
         self.potfile = potfile
 
     def export(self, language):
-        poFile = self.potfile.poFile(language)
+        poFile = self.potfile.getPOFileByLang(language)
 
         header = POHeader(
             commentText = poFile.topcomment,
