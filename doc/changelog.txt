@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-11 12:06:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1303
+
+    Summary:
+      Moved the cron scripts to their new home
+    Revision:
+      launchpad--devel--0--patch-1303
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-565
+       Moved the cron scripts to their new home
+    
+
+    modified files:
+     doc/changelog.txt
+
+    renamed files:
+     lib/canonical/launchpad/scripts/.arch-ids/rosetta-poimport.py.id
+       ==> cronscripts/.arch-ids/rosetta-poimport.py.id
+     lib/canonical/launchpad/scripts/.arch-ids/rosetta-poupload_tar.py.id
+       ==> cronscripts/.arch-ids/rosetta-poupload_tar.py.id
+     lib/canonical/launchpad/scripts/rosetta-poimport.py
+       ==> cronscripts/rosetta-poimport.py
+     lib/canonical/launchpad/scripts/rosetta-poupload_tar.py
+       ==> cronscripts/rosetta-poupload_tar.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-565
+
+
 2005-02-11 11:43:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1302
 
     Summary:
