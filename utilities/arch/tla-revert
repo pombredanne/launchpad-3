@@ -1,0 +1,32 @@
+#!/bin/sh
+# arch-tag: f9a6c8bf-f1dc-44e4-9ebd-0e07da32bb87
+
+# tla-revert file
+#
+# Dafydd Harries, 2004.
+#
+# Reverts changes made to file.
+#
+# TODO:
+# - Relax the restriction on where it's run from.
+# - Deal with multiple files at once.
+# - Make it fail more gracefully when no changes have been made to the
+#   specified file.
+
+if ! tla tree-root -s; then
+	echo "not in the root of an Arch tree"
+	exit 1
+fi
+
+if test "`pwd`" != "`tla tree-root`"; then
+	echo "not in the root of an Arch tree"
+	exit 1
+fi
+
+if test -z "$1"; then
+	echo "usage: $0 file"
+	exit 1
+fi
+
+cd `tla tree-root` && tla file-diffs $1 | patch -p1 -R
+
