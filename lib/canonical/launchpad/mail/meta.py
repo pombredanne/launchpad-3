@@ -17,13 +17,23 @@ class IStubMailerDirective(IMailerDirective):
             required=True,
             )
 
-def stubMailerHandler(_context, name, from_addr, to_addr):
+    mailer = ASCII(
+            title=u"Mailer to use",
+            description=u"""\
+                Which registered mailer to use, such as configured with
+                the smtpMailer or sendmailMailer directives""",
+                required=False,
+                default='sendmail',
+                )
+
+
+def stubMailerHandler(_context, name, from_addr, to_addr, mailer='sendmail'):
     _context.action(
            discriminator = ('utility', IMailer, name),
            callable = handler,
            args = (
                'Utilities', 'provideUtility',
-               IMailer, StubMailer(from_addr, [to_addr]), name,
+               IMailer, StubMailer(from_addr, [to_addr], mailer), name,
                )
            )
 

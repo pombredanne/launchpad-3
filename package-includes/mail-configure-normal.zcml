@@ -29,8 +29,16 @@
         xmlns:mail="http://namespaces.zope.org/mail"
         i18n_domain="zope">
 
+        <mail:smtpMailer
+            name="smtp"
+            hostname="localhost"
+            port="25"
+            username="biggus"
+            password="dickus"
+            />
+  
         <mail:stubMailer
-            name="stub"
+            name="stub" mailer="smtp"
             from_addr="stuart.bishop@canonical.com"
             to_addr="stuart.bishop@canonical.com"
             />

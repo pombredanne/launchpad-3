@@ -14,16 +14,17 @@ class StubMailer(object):
     """
     implements(IMailer)
 
-    def __init__(self, from_addr, to_addrs):
+    def __init__(self, from_addr, to_addrs, mailer):
         self.from_addr = from_addr
         self.to_addrs = to_addrs
+        self.mailer = mailer
 
     def send(self, from_addr, to_addrs, message):
         log = getLogger('canonical.launchpad.mail')
         log.info('Email from %s to %s being redirected to %s' % (
             from_addr, ','.join(to_addrs), ','.join(self.to_addrs)
             ))
-        sendmail = zapi.getUtility(IMailer, 'sendmail')
+        sendmail = zapi.getUtility(IMailer, self.mailer)
         sendmail.send(self.from_addr, self.to_addrs, message)
 
 test_emails = []
