@@ -107,6 +107,79 @@ class SourceSource(SQLBase):
         product=ProductMapper().getByName(productname, project)
         self.product=product
 
+    def _get_repository(self):
+        if self.rcstype == RCSTypeEnum.cvs:
+            return self.cvsroot
+        elif self.rcstype == RCSTypeEnum.svn:
+            return self.svnrepository
+        else:
+            # FIXME!
+            return None
+
+    # Translate importd.Job.Job's instance variables to database columns by
+    # creating some simple properties.  [Note that SQLObject turns _get_* and
+    # _sets_* methods into properties automagically]
+    #FIXME: buildbot should updated this on mirror completion.
+    def _get_TYPE(self):
+ #       if self.lastsynced is None:
+        if self.frequency is None or int(self.frequency) == 0:
+            return 'import'
+        else:
+            return 'sync'
+    def _get_package_files(self):
+        if self.package_files_collapsed is None: return None
+        return self.package_files_collapsed.split()
+    def _get_RCS(self): return RCSNames[self.rcstype]
+    def _set_RCS(self, value): self.rcstype = getattr(RCSTypeEnum, value)
+    def _get_module(self): return self.cvsmodule
+    def _set_module(self, value): self.cvsmodule = value
+    def _get_category(self): return self.newbranchcategory
+    def _set_category(self, value): return self.newbranchcategory
+    def _get_archivename(self): return self.newarchive
+    def _set_archivename(self, value): self.archivename = value
+    def _get_branchfrom(self): return self.cvsbranch # FIXME: assumes cvs!
+    def _set_branchfrom(self, value): self.cvsbranch = value # FIXME: ditto
+    def _get_branchto(self): return self.newbranchbranch
+    def _set_branchto(self, value): self.newbranchbranch = value
+    def _get_archversion(self): return self.newbranchversion
+    def _set_archversion(self, value): self.newbranchversion = value
+    
+    def buildJob(self):
+        # FIXME: The rest of this method can probably be deleted now.
+        # it so can't, inheritance doesn't work here.
+        from importd.Job import CopyJob
+        job = CopyJob()
+        job.repository = str(self.repository)
+ #       if self.lastsynced is None:
+        if self.syncingapproved is None:
+	#self.frequency is None or int(self.frequency) == 0:
+            job.TYPE = 'import'
+            if self.cvstarfileurl is not None and self.cvstarfileurl != "":
+                job.repository = str(self.cvstarfileurl)
+            job.frequency=0
+        else:
+            job.TYPE = 'sync'
+
+            job.frequency=int(self.frequency)
+
+        job.tagging_rules=[]
+
+  
+        job.name = str(self.name)
+        job.RCS = RCSNames[self.rcstype]
+        job.svnrepository = self.svnrepository
+        job.module = str(self.cvsmodule)
+
+        job.category = str(self.newbranchcategory)
+        job.archivename = str(self.newarchive)
+        job.branchfrom = str(self.cvsbranch) # FIXME: assumes cvs!
+        job.branchto = str(self.newbranchbranch)
+        job.archversion = str(self.newbranchversion)
+
+        job.package_distro = self.package_distro
+        job.package_files = self.package_files
+        return job
+
 
 class SourceSourceSet(object):
     """The set of SourceSource's."""
