@@ -11,9 +11,11 @@ from canonical.launchpad.interfaces.project import *
 from canonical.launchpad.interfaces.product import *
 from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.bug import *
+from canonical.launchpad.interfaces.bugassignment import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.person import *
 from canonical.launchpad.interfaces.translationeffort import *
+from canonical.launchpad.interfaces.infestation import *
 
 # these will go...
 from canonical.launchpad.iandrew import *

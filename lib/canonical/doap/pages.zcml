@@ -31,20 +31,4 @@
             lp:url="doap/+to-do" />
     </pages>
 
-    <pages for ="canonical.launchpad.interfaces.ISourceSourceSet"
-        permission="zope.Public">
-    </pages>
-
-    <traverse for="canonical.launchpad.interfaces.ISourceSourceSet"
-            getter="__getitem__" />
-
-    <pages for="canonical.launchpad.interfaces.ISourceSource"
-           permission="launchpad.AnyPerson"
-           class="canonical.soyuz.browser.SourceSourceView" >
-           <page name="+index"
-                 template="../launchpad/templates/sourcesource-index.pt"
-                 lp:url="Doap/project/$Project.name/$Product.name/+sources/$SourceSource.name/"
-                 />
-    </pages>
-
 </configure>

@@ -27,10 +27,6 @@
       permission="zope.Public"
       name="projects" />
 
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.ISourceSource"
-      name="+index" />
-
   <include file="pages.zcml" />
   <include file="resources.zcml" />
   <include file="vocabulary.zcml" />

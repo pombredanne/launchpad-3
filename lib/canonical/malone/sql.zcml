@@ -136,12 +136,4 @@
         factory=".browser.BugSubscriptionContainer"
         provides="canonical.launchpad.interfaces.IBugSubscriptionContainer" />
 
-    <content class=".browser.SourcepackageContainer">
-        <allow interface="canonical.launchpad.interfaces.ISourcepackageContainer" />
-    </content>
-
-    <utility
-        factory=".browser.SourcepackageContainer"
-        provides="canonical.launchpad.interfaces.ISourcepackageContainer" />
-
 </configure>

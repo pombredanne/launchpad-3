@@ -4,8 +4,9 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    i18n_domain="launchpad"
-    xmlns:i18n="http://namespaces.zope.org/i18n">
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
     
     <!-- This is class Example -->
     <!-- CONTENT CLASSES -->

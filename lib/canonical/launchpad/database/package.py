@@ -93,10 +93,10 @@ class Binarypackage(SQLBase):
 
     def lastversions(self, distroRelease):
         last = list(SoyuzSourcePackageRelease.select(
-            'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
-            ' AND SourcepackageUpload.distrorelease = %d'
+            'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
+            ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcePackageUpload.uploadstatus = %d'
+            ' AND SourcepackagePublishing.uploadstatus = %d'
             ' ORDER BY sourcePackageRelease.dateuploaded DESC'
             % (distroRelease.id, self.build.sourcepackagerelease.sourcepackage.id,dbschema.SourceUploadStatus.SUPERCEDED)
         ))
@@ -227,18 +227,16 @@ class Sourcepackage(SQLBase):
     implements(ISourcePackage)
 
     _table = 'SourcePackage'
-    _columns = [
-        ForeignKey(name='maintainer', foreignKey='Person',
-                   dbName='maintainer', notNull=True),
-        ForeignKey(name='sourcepackagename',
-                   foreignKey='SourcepackageName',
-                   dbName='sourcepackagename', notNull=True),
-        StringCol('shortdesc', dbName='shortdesc', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        ForeignKey(name='manifest', foreignKey='Manifest',
-                   dbName='manifest', default=None),
-        ForeignKey(name='distro', foreignKey='Distribution', dbName='distro'),
-    ]
+
+    maintainer = ForeignKey(foreignKey='Person', dbName='maintainer', notNull=True)
+    sourcepackagename = ForeignKey(foreignKey='SourcepackageName',
+                   dbName='sourcepackagename', notNull=True)
+    shortdesc = StringCol(dbName='shortdesc', notNull=True)
+    description = StringCol(dbName='description', notNull=True),
+    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest',
+                          default=None)
+    distro = ForeignKey(foreignKey='Distribution', dbName='distro')
+
     releases = MultipleJoin('SoyuzSourcePackageRelease',
                             joinColumn='sourcepackage')
 
@@ -276,10 +274,10 @@ class Sourcepackage(SQLBase):
 
     def uploadsByStatus(self, distroRelease, status):
         uploads = list(SoyuzSourcePackageRelease.select(
-            'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
-            ' AND SourcepackageUpload.distrorelease = %d'
+            'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
+            ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcePackageUpload.uploadstatus = %d'
+            ' AND SourcepackagePublishing.uploadstatus = %d'
             % (distroRelease.id, self.id, status)
         ))
 
@@ -298,10 +296,10 @@ class Sourcepackage(SQLBase):
         :returns: iterable of SourcePackageReleases
         """
         sourcepackagereleases = SoyuzSourcePackageRelease.select(
-            'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
-            ' AND SourcepackageUpload.distrorelease = %d'
+            'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
+            ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcepackageRelease.sourcepackage = %d'
-            ' AND SourcePackageUpload.uploadstatus = %d'
+            ' AND SourcepackagePublishing.uploadstatus = %d'
             % (distroRelease.id, self.id, dbschema.SourceUploadStatus.PUBLISHED)
         )
 
@@ -309,10 +307,10 @@ class Sourcepackage(SQLBase):
 
     def lastversions(self, distroRelease):
         last = list(SoyuzSourcePackageRelease.select(
-            'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
-            ' AND SourcepackageUpload.distrorelease = %d'
+            'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id'
+            ' AND SourcepackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
-            ' AND SourcePackageUpload.uploadstatus = %d'
+            ' AND SourcepackagePublishing.uploadstatus = %d'
             ' ORDER BY sourcePackageRelease.dateuploaded DESC'
             % (distroRelease.id, self.id,dbschema.SourceUploadStatus.SUPERCEDED)
         ))

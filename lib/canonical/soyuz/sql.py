@@ -92,9 +92,9 @@ class DistroReleaseApp(object):
 
     def _sourcequery(self):
         return (
-            'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
+            'SourcepackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-            'AND SourcePackageUpload.distrorelease = %d '
+            'AND SourcepackagePublishing.distrorelease = %d '
             'AND SourcePackage.sourcepackagename = SourcePackageName.id'
             % (self.release.id))
         
@@ -280,7 +280,7 @@ class DistroReleaseSourcesApp(object):
     # FIXME:docstring says this contains SourcePackage objects, but it seems to
     # contain releases.  Is this a bug or is the docstring wrong?
     table = SoyuzSourcePackageRelease
-    clauseTables = ('SourcePackage', 'SourcePackageUpload')
+    clauseTables = ('Sourcepackage', 'SourcepackagePublishing')
 
     def __init__(self, release):
         self.release = release
@@ -288,16 +288,16 @@ class DistroReleaseSourcesApp(object):
         
     def _query(self):
         return (
-            'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
-            'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-            'AND SourcePackageUpload.distrorelease = %d '
-            'AND SourcePackage.sourcepackagename = SourcePackageName.id'
+            'SourcepackagePublishing.sourcepackagerelease=SourcepackageRelease.id '
+            'AND SourcepackageRelease.sourcepackage = Sourcepackage.id '
+            'AND SourcepackagePublishing.distrorelease = %d '
+            'AND Sourcepackage.sourcepackagename = SourcepackageName.id'
             % (self.release.id))
         
     def findPackagesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
         query = self._query() + \
-                (' AND SourcePackageName.name ILIKE %s'
+                (' AND SourcepackageName.name ILIKE %s'
                  % quote('%%' + pattern + '%%')
                  )
         return Sourcepackage.select(query)[:500]
@@ -305,9 +305,8 @@ class DistroReleaseSourcesApp(object):
     def __getitem__(self, name):
         # XXX: What about multiple results?
         #      (which shouldn't happen here...)
-
         query = self._query() + \
-                (' AND SourcePackageName.name = '
+                (' AND SourcepackageName.name = '
                  '%s' % quote(name))
         try:
             release = self.table.select(query,
@@ -474,7 +473,7 @@ class PersonApp(object):
             self.gpg = None
 
     def _getsourcesByPerson(self):
-        query = ('SourcePackageUpload.sourcepackagerelease = '
+        query = ('SourcepackagePublishing.sourcepackagerelease = '
                  'SourcePackageRelease.id '
                  'AND SourcePackageRelease.sourcepackage = '
                  'SourcePackage.id '
@@ -547,8 +546,8 @@ class DistroReleaseBinaryReleaseApp(object):
         except:
             self.binarypackagerelease = binarypackagerelease[0]
 
-        query = ('SourcePackageUpload.distrorelease = DistroRelease.id '
-                 'AND SourcePackageUpload.sourcepackagerelease = %i '
+        query = ('SourcepackagePublishing.distrorelease = DistroRelease.id '
+                 'AND SourcepackagePublishing.sourcepackagerelease = %i '
                  %(self.binarypackagerelease.build.sourcepackagerelease.id))
 
 
@@ -695,16 +694,16 @@ class SourcePackages(object):
     implements(ISourcePackageSet)
 
     table = SoyuzSourcePackageRelease
-    clauseTables = ('SourcePackage', 'SourcePackageUpload',)
+    clauseTables = ('SourcePackage', 'SourcepackagePublishing',)
 
     def __init__(self, release):
         self.release = release
         
     def _query(self):
         return (
-            'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
+            'SourcepackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-            'AND SourcePackageUpload.distrorelease = %d '
+            'AND SourcepackagePublishing.distrorelease = %d '
             % (self.release.id))
         
     def __getitem__(self, name):

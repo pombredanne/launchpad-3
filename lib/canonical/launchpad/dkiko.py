@@ -19,7 +19,7 @@ from canonical.lp import dbschema
 # interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageRelease, IManifestEntry, \
                                            IBranch, IChangeset, \
-                                           ISourcePackage, ISoyuzPerson, \
+                                           ISourcepackage, ISoyuzPerson, \
                                            IBinaryPackage, \
                                            IDistributionRole, IDistroReleaseRole, \
                                            IDistribution, IRelease, \
@@ -141,16 +141,6 @@ class BranchRelationship(SQLBase):
         return [br for br in dbschema.BranchRelationships
                 if br == self.label][0]
         
-
-
-
-
-
-
-
-    
-
-
     def nameSelector(self, sourcepackage=None, selected=None):
         html = '<select name="binarypackagename">\n'
         if not sourcepackage: binpkgs = self._table.select()

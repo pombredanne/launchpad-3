@@ -15,6 +15,8 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces import *
 
+from canonical.launchpad.database.bugassignment \
+        import SourcepackageBugAssignment, ProductBugAssignment
 from canonical.launchpad.database.package import Sourcepackage
 from canonical.launchpad.database.product import Product
 
@@ -198,50 +200,6 @@ class BugSubscription(SQLBase):
         IntCol('subscription', notNull=True)
     ]
 
-class ProductBugAssignment(SQLBase):
-    """A relationship between a Product and a Bug."""
-
-    implements(IProductBugAssignment)
-
-    _table = 'ProductBugAssignment'
-
-    _columns = [
-        ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
-        ForeignKey(name='product', dbName='product', foreignKey='Product'),
-        IntCol(name='bugstatus',
-            notNull=True, default=int(dbschema.BugAssignmentStatus.NEW)
-            ),
-        IntCol(name='priority',
-            notNull=True, default=int(dbschema.BugPriority.MEDIUM),
-            ),
-        IntCol(name='severity',
-            notNull=True, default=int(dbschema.BugSeverity.NORMAL),
-            ),
-        ForeignKey(name='assignee', dbName='assignee', foreignKey='Person', default=None)
-        ]
-
-
-class SourcepackageBugAssignment(SQLBase):
-    """A relationship between a Sourcepackage and a Bug."""
-
-    implements(ISourcepackageBugAssignment)
-
-    _table = 'SourcepackageBugAssignment'
-
-    _columns = [
-        ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
-        ForeignKey(name='sourcepackage',
-                   dbName='sourcepackage', foreignKey='Sourcepackage'),
-        IntCol('bugstatus', default=int(dbschema.BugAssignmentStatus.NEW)),
-        IntCol('priority', default=int(dbschema.BugPriority.MEDIUM)),
-        IntCol('severity', default=int(dbschema.BugSeverity.NORMAL)),
-        ForeignKey(name='binarypackagename', dbName='binarypackagename',
-                   foreignKey='BinarypackageName', default=None),
-        ForeignKey(name='assignee', dbName='assignee',
-                   foreignKey='Person', notNull=True, default=None),
-        ]
-
-
 class BugTrackerType(SQLBase):
     """A type of supported remote  bug system. eg Bugzilla."""
 
@@ -303,6 +261,7 @@ class BugTrackerSet(object):
             yield row
 
 
+
 class BugWatch(SQLBase):
     implements(IBugWatch)
     _table = 'BugWatch'
@@ -319,36 +278,6 @@ class BugWatch(SQLBase):
         ForeignKey(name='owner', dbName='owner', foreignKey='Person',
                 notNull=True),
         ]
-
-
-class BugProductInfestation(SQLBase):
-    implements(IBugProductInfestation)
-    _table = 'BugProductInfestation'
-    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    explicit = IntCol(notNull=True, default=False)
-    productrelease = ForeignKey(dbName="productrelease", foreignKey='ProductRelease', notNull=False, default=None)
-    infestation = IntCol(notNull=False, default=None)
-    datecreated = DateTimeCol(notNull=True)
-    creator = ForeignKey(dbName="creator", foreignKey='Person', notNull=True)
-    dateverified = DateTimeCol(notNull=False)
-    verifiedby = ForeignKey(dbName="verifiedby", foreignKey='Person', notNull=False, default=None)
-    lastmodified = DateTimeCol(notNull=True)
-    lastmodifiedby = ForeignKey(dbName="lastmodifiedby", foreignKey='Person', notNull=True)
-
-class BugPackageInfestation(SQLBase):
-    implements(IBugPackageInfestation)
-    _table = 'BugPackageInfestation'
-    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
-    explicit = IntCol(notNull=True, default=False)
-    sourcepackagerelease = ForeignKey(
-        foreignKey='SourcePackageRelease', notNull=True)
-    infestation = ForeignKey(foreignKey='BugInfestationType', notNull=True)
-    datecreated = DateTimeCol(notNull=True)
-    creator = ForeignKey(foreignKey='Person', notNull=True)
-    dateverified = DateTimeCol()
-    verifiedby = ForeignKey(foreignKey='Person')
-    lastmodified = DateTimeCol()
-    lastmodifiedby = ForeignKey(foreignKey='Person')
 
 # REPORTS
 class BugsAssignedReport(object):

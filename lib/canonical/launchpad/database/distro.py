@@ -171,12 +171,12 @@ class Release(SQLBase):
     def sourcecount(self):
         q =  """SELECT COUNT (DISTINCT sourcepackagename.name)
                 FROM sourcepackagename, Sourcepackage,
-                SourcepackageRelease, SourcepackageUpload
+                SourcepackageRelease, SourcepackagePublishing
                 WHERE sourcepackagename.id = sourcepackage.sourcepackagename
-                AND SourcePackageUpload.sourcepackagerelease=
+                AND SourcepackagePublishing.sourcepackagerelease=
                                                   SourcePackageRelease.id
                 AND SourcePackageRelease.sourcepackage = SourcePackage.id
-                AND SourcePackageUpload.distrorelease = %s;""" % (self.id)
+                AND SourcepackagePublishing.distrorelease = %s;""" % (self.id)
 
         db = Sourcepackage._connection._connection
         db_cursor = db.cursor()

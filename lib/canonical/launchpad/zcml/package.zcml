@@ -1,0 +1,100 @@
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+    
+    <!--BinaryPackages
+        XXX comments from Mark Shuttleworth: the Soyuz BinaryPackages and
+            SourcePackages objects should be merged into BinarypackageSet
+            and SourcepackageSet by 16/10/04 unless their continued existence
+            is justified 
+            -->
+    <content class="canonical.soyuz.sql.BinaryPackages">
+        <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+    <content class="canonical.soyuz.sql.SourcePackages">
+        <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+    <!-- Sourcepackage -->
+    <content class="canonical.launchpad.database.Sourcepackage">
+        <allow interface="canonical.launchpad.interfaces.ISourcepackage" />
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+    <vocabulary
+        name="Sourcepackage"
+        factory="canonical.launchpad.vocabulary.SourcepackageVocabulary" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcepackage"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ISourcepackage"
+        permission="zope.Public"
+        class="canonical.malone.browser.SourcepackageView">
+        <browser:page
+            name="+index"
+            template="../templates/malone-sourcepackage-index.pt"
+            lp:url="malone/sourcepackage/$Sourcepackage.name/+malone-index" />
+    </browser:pages>
+
+    <!-- SourcepackageName -->
+    <content class="canonical.launchpad.database.SourcepackageName">
+        <allow interface="canonical.launchpad.interfaces.ISourcepackageName" />
+    </content>
+
+    <!-- Binarypackage -->
+    <content class="canonical.launchpad.database.Binarypackage">
+        <allow interface="canonical.launchpad.interfaces.IBinarypackage" />
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+    <vocabulary
+        name="Binarypackage"
+        factory="canonical.launchpad.vocabulary.BinarypackageVocabulary" />
+
+    <!-- Binarypackagename -->
+    <content class="canonical.launchpad.database.BinarypackageName">
+        <allow interface="canonical.launchpad.interfaces.IBinarypackageName" />
+    </content>
+
+    <vocabulary
+        name="BinarypackageName"
+        factory="canonical.launchpad.vocabulary.BinarypackageNameVocabulary" />
+
+    <!-- SourcepackageContainer -->
+    <content class="canonical.malone.browser.SourcepackageContainer">
+        <allow interface="canonical.launchpad.interfaces.ISourcepackageContainer" />
+    </content>
+
+    <utility
+        factory="canonical.malone.browser.SourcepackageContainer"
+        provides="canonical.launchpad.interfaces.ISourcepackageContainer" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ISourcepackageContainer"
+        getter="__getitem__" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcepackageContainer"
+        name="+index" />
+
+    <browser:pages for="canonical.launchpad.interfaces.ISourcepackageContainer"
+        permission="zope.Public">
+        <browser:page 
+            name="+index"
+            template="../templates/sourcepackages-index.pt"
+            lp:url="malone/sourcepackages/+index" />
+    </browser:pages>
+
+
+
+</configure>

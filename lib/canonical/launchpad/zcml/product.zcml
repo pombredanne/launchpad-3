@@ -27,7 +27,7 @@
     <!-- VOCABULARIES -->
     <vocabulary
         name="Product"
-        factory="canonical.malone.vocabulary.ProductVocabulary" />
+        factory="canonical.launchpad.vocabulary.ProductVocabulary" />
 
 
 
@@ -76,6 +76,5 @@
 
 
     <!--FORMS-->
-
 
 </configure>

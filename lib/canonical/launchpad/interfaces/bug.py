@@ -9,15 +9,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.lp import dbschema
 
-# Vocabularies
-SubscriptionVocabulary = dbschema.vocabulary(dbschema.BugSubscription)
-InfestationVocabulary = dbschema.vocabulary(dbschema.BugInfestationStatus)
-BugStatusVocabulary = dbschema.vocabulary(dbschema.BugAssignmentStatus)
-BugPriorityVocabulary = dbschema.vocabulary(dbschema.BugPriority)
-BugSeverityVocabulary = dbschema.vocabulary(dbschema.BugSeverity)
-BugRefVocabulary = dbschema.vocabulary(dbschema.BugExternalReferenceType)
-#RemoteBugStatusVocabulary = dbschema.vocabulary(dbschema.RemoteBugStatus)
-
+from canonical.launchpad.vocabularies.dbschema import *
 
 class IBug(Interface):
     """The core bug entry."""
@@ -168,50 +160,6 @@ class IBugExternalRefContainer(Interface):
     def __iter__():
         """Iterate through BugExternalRefs for a given bug."""
 
-class IProductBugAssignmentContainer(Interface):
-    """A container for IProductBugAssignment objects."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get a ProductBugAssignment"""
-
-    def __iter__():
-        """Iterate through ProductBugAssignments for a given bug."""
-
-class ISourcepackageBugAssignmentContainer(Interface):
-    """A container for ISourcepackageBugAssignment objects."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get a SourcepackageBugAssignment"""
-
-    def __iter__():
-        """Iterate through SourcepackageBugAssignments for a given bug."""
-
-class IBugProductInfestationContainer(Interface):
-    """A container for IBugProductInfestations."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get a BugProductInfestation."""
-
-    def __iter__():
-        """Iterate through BugProductInfestations for a given bug."""
-
-class IBugPackageInfestationContainer(Interface):
-    """A container for IBugPackageInfestations."""
-
-    bug = Int(title=_("Bug id"), readonly=True)
-
-    def __getitem__(key):
-        """Get a BugPackageInfestation."""
-
-    def __iter__():
-        """Iterate through BugPackageInfestations for a given bug."""
-
 class IBugWatchContainer(Interface):
     """A container for IBugWatch objects."""
 
@@ -345,86 +293,6 @@ class IBugSubscription(Interface):
             title=_('Subscription'), required=True, readonly=False,
             vocabulary=SubscriptionVocabulary
             )
-class IProductBugAssignment(Interface):
-    """The status of a bug with regard to a product."""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    product = Choice(
-            title=_('Product'), required=True,
-            vocabulary='Product'
-            )
-    bugstatus = Choice(title=_('Bug Status'),
-                       vocabulary=BugStatusVocabulary)
-    priority = Choice(title=_('Priority'),
-                      vocabulary=BugPriorityVocabulary)
-    severity = Choice(title=_('Severity'),
-                      vocabulary=BugSeverityVocabulary)
-    assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
-
-class ISourcepackageBugAssignment(Interface):
-    """The status of a bug with regard to a source package."""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    sourcepackage = Choice(
-            title=_('Source Package'), required=True, readonly=True,
-            vocabulary='Sourcepackage'
-            )
-    bugstatus = Choice(
-            title=_('Bug Status'), vocabulary=BugStatusVocabulary,
-            required=True, default=int(dbschema.BugAssignmentStatus.NEW),
-            )
-    priority = Choice(
-            title=_('Priority'), vocabulary=BugPriorityVocabulary,
-            required=True, default=int(dbschema.BugPriority.MEDIUM),
-            )
-    severity = Choice(
-            title=_('Severity'), vocabulary=BugSeverityVocabulary,
-            required=True, default=int(dbschema.BugSeverity.NORMAL),
-            )
-    binarypackagename = Choice(
-            title=_('Binary PackageName'), required=False,
-            vocabulary='BinarypackageName'
-            )
-    assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
-
-class IBugProductInfestation(Interface):
-    """A bug that shows up in a product release as a result of having
-    first been reported in a code release from which the product release
-    was derived."""
-
-    id = Int(title=_("Bug Product Infestation ID"), required=True, readonly=True)
-    bug = Int(title=_('Bug ID'))
-    explicit = Bool(title=_('Explicitly Created by a Human'))
-    productrelease = Choice(title=_('Product Release'),
-                            vocabulary='ProductRelease')
-    infestation = Choice(title=_('Infestation'),
-                         vocabulary=InfestationVocabulary)
-    datecreated = Datetime(title=_('Date Created'))
-    creator = Int(title=_('Creator'))
-    dateverified = Datetime(title=_('Date Verified'))
-    verifiedby = Int(title=_('Verified By'))
-    lastmodified = Datetime(title=_('Last Modified'))
-    lastmodifiedby = Int(title=_('Last Modified By'))
-
-class IBugPackageInfestation(Interface):
-    """A bug that shows up in a source package release as a result of
-    having first been reported in a code release from which the
-    source package release was derived."""
-
-    bug = Int(title=_('Bug ID'))
-    sourcepackagerelease = Int(title=_('Source Package Release'))
-    explicit = Bool(title=_('Explicitly Created by a Human'))
-    infestation = Choice(title=_('Infestation'),
-                         vocabulary=InfestationVocabulary)
-    datecreated = Datetime(title=_('Date Created'))
-    creator = Int(title=_('Creator'))
-    dateverified = Datetime(title=_('Date Verified'))
-    verifiedby = Int(title=_('Verified By'))
-    lastmodified = Datetime(title=_('Last Modified'))
-    lastmodifiedby = Int(title=_('Last Modified By'))
-
 class IBugTrackerType(Interface):
     """A type of supported remote bug system, eg Bugzilla."""
 

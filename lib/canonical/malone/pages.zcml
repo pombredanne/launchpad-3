@@ -119,25 +119,6 @@
             lp:url="malone/bugtrackers/$BugTracker.name/+edit" />
     </pages>
 
-    <pages for="canonical.launchpad.interfaces.ISourcepackageContainer"
-        permission="zope.Public">
-        <page name="index"
-            template="../launchpad/templates/sourcepackages-index.pt"
-            lp:url="malone/sourcepackages/index" />
-    </pages>
-
-    <traverse for="canonical.launchpad.interfaces.ISourcepackageContainer"
-      getter="__getitem__" />
-
-    <pages
-        for="canonical.launchpad.interfaces.ISourcepackage"
-        permission="zope.Public"
-        class=".browser.SourcepackageView">
-        <page name="+malone-index"
-            template="../launchpad/templates/malone-sourcepackage-index.pt"
-            lp:url="malone/sourcepackage/$Sourcepackage.name/index" />
-    </pages>
-
     <pages
         for="canonical.launchpad.interfaces.IBugExternalRefContainer"
         permission="zope.Public">

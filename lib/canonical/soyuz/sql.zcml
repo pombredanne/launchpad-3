@@ -225,16 +225,6 @@
      />
   </content>
 	
-  <content class="canonical.soyuz.sql.BinaryPackages">
-    <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.soyuz.sql.SourcePackages">
-    <allow interface="canonical.launchpad.interfaces.IPackageSet"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
   <content class="canonical.soyuz.sql.SoyuzSourcePackageRelease">
     <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
@@ -281,17 +271,6 @@
   </content>
   -->
   
-  <content class="canonical.launchpad.database.SourceSource">
-    <allow interface="canonical.launchpad.interfaces.ISourceSource"/>
-    <require
-     permission="launchpad.AnyPerson"
-     set_attributes="title description cvsroot cvsbranch cvsmodule
-                     cvstarfileurl svnrepository releaseroot releaseverstyle
-                     releasefileglobe newarchive newbranchcategory
-                     newbranchbranch newbranchversion product"
-     />
-  </content>
-
 
 	
 <!--DUMMY CONTENT -->

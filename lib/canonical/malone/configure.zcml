@@ -58,10 +58,6 @@
       name="+index" />
 
   <browser:defaultView
-      for="canonical.launchpad.interfaces.ISourcepackageContainer"
-      name="index" />
-
-  <browser:defaultView
       for="canonical.launchpad.interfaces.IBugContainer"
       name="index" />
 
@@ -80,10 +76,6 @@
   <browser:defaultView
       for="canonical.launchpad.interfaces.IMaloneBugAttachment"
       name="index" />
-
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.ISourcepackage"
-      name="+malone-index" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBugExternalRefContainer"
@@ -124,6 +116,5 @@
   <include file="pages.zcml" />
   <include file="forms.zcml" />
   <include file="resources.zcml" />
-  <include file="vocabulary.zcml" />
 
 </configure>

@@ -83,3 +83,23 @@ class IProduct(Interface):
         where we have a translation in Rosetta but there was no translation
         in the PO file for this language when we last parsed it."""
 
+class IProductRelease(Interface):
+    """A specific release (i.e. has a version) of a product. For example,
+    Mozilla 1.7.2 or Apache 2.0.48."""
+    id = Int(title=_('ID'), required=True, readonly=True)
+    product = Choice(
+        title=_('Product'), required=True, vocabulary='Product')
+    datereleased = Datetime(
+        title=_('Date Released'), required=True, readonly=True)
+    version = TextLine(
+        title=_('Version'), required=True, readonly=True)
+    title = TextLine(
+        title=_('Title'), required=True, readonly=True)
+    description = Text(
+        title=_("Description"), required=True)
+    changelog = Text(
+        title=_('Changelog'), required=True)
+    ownerID = Int(
+        title=_('Owner'), required=True, readonly=True)
+    owner = Attribute("The owner's IPerson")
+    
