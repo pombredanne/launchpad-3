@@ -1,0 +1,50 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
+Format: 1.7
+Date: Thu, 23 Sep 2004 22:44:03 +0100
+Source: binutils
+Binary: binutils-dev binutils-hppa64 binutils-multiarch binutils binutils-doc
+Architecture: source i386 all
+Version: 2.15-4
+Distribution: unstable
+Urgency: low
+Maintainer: James Troup <james@nocrew.org>
+Changed-By: James Troup <james@nocrew.org>
+Description: 
+ binutils   - The GNU assembler, linker and binary utilities
+ binutils-dev - The GNU binary utilities (BFD development files)
+ binutils-doc - Documentation for the GNU assembler, linker and binary utilities
+ binutils-multiarch - Binary utilities that support multi-arch targets
+Closes: 272149
+Changes: 
+ binutils (2.15-4) unstable; urgency=low
+ .
+   * 120_mips_xgot_multigot_workaround.dpatch: new patch from Thiemo Seufer
+     to make multigot/xgot handling exclusive and fix mozilla builds on
+     mipsen.  Closes: #272149
+Files: 
+ af0bfc05d7d73714357f162e1d1ecf0b 1401 devel standard binutils_2.15-4.dsc
+ 2cf84daeca019220f5f3753121f012bb 36466 devel standard binutils_2.15-4.diff.gz
+ 1b29cd83dd589d65a4e4d6175d20ecf9 426536 doc optional binutils-doc_2.15-4_all.deb
+ 4273f4d0a451e2e40bced3b113cc408b 2222880 devel standard binutils_2.15-4_i386.deb
+ d4f3cfc00d155f2cec04c6c89996879a 2812822 devel extra binutils-dev_2.15-4_i386.deb
+ ab53bf819d632bf183835ba55edcdd28 7955284 devel extra binutils-multiarch_2.15-4_i386.deb
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.2.5 (GNU/Linux)
+
+iQIVAwUBQVNHpdfD8TGrKpH1AQIbVg/8Cr6EisTok3Acbn67AcuSeZM65jLcgq2d
+ZzdPKWyqt5bOzoi22YrHXhrvfIQdTG6BmNN5QUfD3G34pgLhX8UArlOIJxqhYR3m
+0aFn4HIztpsvn8/hXluxsj1xTwNbOadiAKJgpB1pY8BKWSH1yk2o83O70zxyL9s+
+PZBaiVXsutIaJFNy0bLEOD3m1yeCpefqDw71Me6av9gMtTNJSSLHoZhNOqqAYWD8
+o5i5Uzuz1zWJV0tK9YsGG3fiiiQeIAACc9eHxPN4wo24iOwSSNNa8/FP1A+ZAJFk
+fKrnp0kQ6mtY8RBbE9lbiurV11/lEK2gXU+x9EMdVWyVPPwYdhJQy4a1CUGCVKkL
+HkIper4qmdnPNWC3q3USSuAmVaOBRzyf6tigCkYK8RhSw8W4xeOhyUo57Rkz1WBN
+YYVaurKWehmQWsBBja6C16vrErdxQCjsCAhLDeqOcY+PIdtlJi2/BZ1FM3IpbVMK
+OVpbr5UWL6O1lZNYt2wxWOKRQb/WtcT8GXQWczO6fD3hENVn7Xinmp7ogjgmyYuY
+50co6ncaHEuPufZwGsOYu697HlJClV/9bGXbi9O1GdFfOFfy9Q0wZOnKKyx+zQ1v
+xnvbh3biTGhjGjzCMRWPSv33/d6mNQPYex4d4cnuuJfPqVXjJDSqXZpY9GJlv3hf
+yrFF5LuRMIQ=
+=onhK
+-----END PGP SIGNATURE-----
