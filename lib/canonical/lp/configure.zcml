@@ -8,7 +8,7 @@
         -->
       <browser:page
           name="main_template"
-          template="../launchpad/templates/template.pt"
+          template="../launchpad/templates/main-template.pt"
           />
       <browser:page
           name="no-url-yet"
