@@ -34,6 +34,9 @@
 	  - ArchConfigEntry
 	- clean up comments to fit inside 72 character terminals
 	- add Changeset.name for Robert Weir
+	- add ArchNamespace and move attributes there from Branch
+	- Add BugActivity.id as a primary key for Andrew Veitch
+	- Fix typo BugInfestation.createor -> BugInfestation.creator
   v0.97:
         - rename Membership.label to Membership.role
 	- rename EmailAddress.label to EmailAddress.status
@@ -200,6 +203,7 @@ DROP TABLE Manifest;
 DROP TABLE Changeset;
 DROP TABLE BranchLabel;
 DROP TABLE Branch;
+DROP TABLE ArchNamespace;
 DROP TABLE ArchArchiveLocation;
 DROP TABLE ArchArchive;
 DROP TABLE POTranslation;
@@ -474,20 +478,39 @@ CREATE TABLE ArchArchiveLocationSigner (
 
 
 /*
+  ArchNamespace
+  This is a table to capture the vagaries of the Arch
+  namespace. Branch is a "place we hang changesets"
+  but each Branch needs a Namespace where it lives. If
+  the TLA naming system were to change later we would
+  only need to change ArchNamespace, not Branch. Also,
+  A Branch is guaranteed to be a place where changesets
+  can be put, not just a placeholder.
+*/
+CREATE TABLE ArchNamespace (
+  id                     serial PRIMARY KEY,
+  archarchive            integer NOT NULL REFERENCE ArchArchive,
+  category               text NOT NULL,
+  branch                 text,
+  version                text
+);
+
+
+
+/*
   Branch
   An Arch Branch in the Launchpad system.
 */
 CREATE TABLE Branch (
   id                     serial PRIMARY KEY,
-  archive                integer NOT NULL REFERENCES ArchArchive,
-  category               text NOT NULL,
-  branch                 text,
-  version                text,
+  archnamespace          integer NOT NULL REFERENCES ArchNamespace,
   title                  text NOT NULL,
   description            text NOT NULL,
   visible                boolean NOT NULL,
   owner                  integer REFERENCES Person
 );
+
+
 
 
 /*
@@ -1553,7 +1576,7 @@ CREATE TABLE BugInfestation (
   -- see Bug Infestation Status schema
   infestation      integer NOT NULL,
   datecreated      timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  createor         integer NOT NULL REFERENCES Person,
+  creator          integer NOT NULL REFERENCES Person,
   dateverified     timestamp,
   verifiedby       integer REFERENCES Person,
   lastmodified     timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
