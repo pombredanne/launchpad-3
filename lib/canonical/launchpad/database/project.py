@@ -15,7 +15,8 @@ from canonical.database.sqlbase import SQLBase, quote
 
 # Launchpad interfaces
 from canonical.launchpad.interfaces import IProject, IProjectSet, \
-                                           IProjectBugTracker
+                                           IProjectBugTracker,\
+                                           IObjectAuthorization
 
 # Import needed database objects
 from canonical.launchpad.database.product import Product
@@ -25,7 +26,7 @@ from sets import Set
 class Project(SQLBase):
     """A Project"""
 
-    implements(IProject)
+    implements(IProject, IObjectAuthorization)
 
     _table = "Project"
 
@@ -50,6 +51,18 @@ class Project(SQLBase):
     _bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
                                            otherColumn='bugtracker',
                                            intermediateTable='ProjectBugTracker')
+
+    def checkPermission(self, principal, permission):
+        if permission == "launchpad.Edit":
+            owner = getattr(self.owner, 'id', None)
+            user = getattr(principal, 'id', None)
+            # XXX cprov 20050104
+            # Uncovered case when Onwer is a Team
+            
+            # prevent NOT LOGGED and uncertain NO OWNER
+            if owner and user:
+                # I'm the product owner and want to edit
+                return user == owner
 
     def bugtrackers(self):
         for bugtracker in self._bugtrackers:

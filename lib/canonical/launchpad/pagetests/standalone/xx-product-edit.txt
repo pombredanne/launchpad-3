@@ -1,0 +1,14 @@
+
+
+  >>> print http(r"""
+  ... GET /doap/products/firefox/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+      <title>Edit Upstream Details: Mozilla Firefox
+      </title>
+  ...
+            <h1>Edit Upstream Product Details:</h1>
+  ...

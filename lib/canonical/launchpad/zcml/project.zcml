@@ -81,7 +81,7 @@
         label="Edit Open Source Project Details:"
         fields="displayname title shortdesc description homepageurl
                 wikiurl sourceforgeproject freshmeatproject"
-        permission="launchpad.AnyPerson"
+        permission="launchpad.Edit"
         template="../templates/project-edit.pt"
         lp:url="doap/projects/$Project.name/+edit">
     </browser:editform>

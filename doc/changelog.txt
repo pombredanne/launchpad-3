@@ -2,6 +2,88 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-05 14:21:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1149
+
+    Summary:
+      setup permission to edit product/project and add pagetests
+    Revision:
+      launchpad--devel--0--patch-1149
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-427
+       Nicole grabbing data only from Freshmeat
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-428
+       star merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-429
+       merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-430
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-431
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-432
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-433
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-434
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-435
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-436
+       fine tunning on project/product edit permissions
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-437
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-438
+       add correct authorization on xx-project-edit.txt
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-439
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-440
+       add pagetest for product-index and edit
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-product-edit.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-product-index.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-product-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-product-index.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/pagetests/standalone/xx-project-edit.txt
+     lib/canonical/launchpad/scripts/nicole/nicole.py
+     lib/canonical/launchpad/zcml/project.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-427
+     celso.providelo@canonical.com/launchpad--devel--0--patch-428
+     celso.providelo@canonical.com/launchpad--devel--0--patch-429
+     celso.providelo@canonical.com/launchpad--devel--0--patch-430
+     celso.providelo@canonical.com/launchpad--devel--0--patch-431
+     celso.providelo@canonical.com/launchpad--devel--0--patch-432
+     celso.providelo@canonical.com/launchpad--devel--0--patch-433
+     celso.providelo@canonical.com/launchpad--devel--0--patch-434
+     celso.providelo@canonical.com/launchpad--devel--0--patch-435
+     celso.providelo@canonical.com/launchpad--devel--0--patch-436
+     celso.providelo@canonical.com/launchpad--devel--0--patch-437
+     celso.providelo@canonical.com/launchpad--devel--0--patch-438
+     celso.providelo@canonical.com/launchpad--devel--0--patch-439
+     celso.providelo@canonical.com/launchpad--devel--0--patch-440
+
+
 2005-01-05 04:06:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1148
 
     Summary:
