@@ -560,7 +560,7 @@ VALUES ('La ubicación y jerarquía de las carpetas de contactos de Evolution ha
 INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obsolete,
 		      fuzzy, commenttext)
 VALUES (68, 5, 1, 1, TRUE, FALSE, FALSE,
-	'This is an example of commenttext for a multiline msgset');
+	' This is an example of commenttext for a multiline msgset');
 INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
 			     datelastseen, inlastrevision, pluralform)
 VALUES (21, 68, now(), now(), TRUE, 0);

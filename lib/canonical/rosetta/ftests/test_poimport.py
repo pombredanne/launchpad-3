@@ -7,7 +7,8 @@ from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
 from canonical.rosetta.interfaces import ILanguages
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
-     RosettaProduct, RosettaLanguages, RosettaPOMessageSet
+     RosettaProduct, RosettaLanguages, RosettaPOMessageSet, \
+     RosettaPOMessageIDSighting
 from canonical.rosetta.pofile_adapters import MessageProxy, \
      TemplateImporter, POFileImporter
 from canonical.database.doap import DBProject
@@ -73,18 +74,18 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         importer = TemplateImporter(poTemplate, XXXperson)
         self.pot.seek(0)
         importer.doImport(self.pot)
-        # check that there aren't duplicates in the db
         get_transaction().commit()
         RosettaPOMessageSet._connection.cache.clear()
-        for message in importer.parser.messages:
-            msgid = message._msgset.primeMessageID_
-            results = RosettaPOMessageSet.select('''
-                poTemplate = %d AND
-                poFile IS NULL AND
-                primeMsgID = %d
-                ''' % (poTemplate.id, msgid.id))
-            assert results.count() == 1, '%d message sets' % results.count()
-            assert results[0].sequence > 0
+        sets = RosettaPOMessageSet.select('potemplate=%d AND pofile IS NULL' % poTemplate.id)
+        assert sets.count() == 513, '%d message sets instead of 513' % sets.count()
+        for msgset in list(sets):
+            # All messages should have the sequence > 0
+            # XXX: We are assuming you are cleaning up the DB between tests.
+            assert msgset.sequence > 0
+            sighting = RosettaPOMessageIDSighting.selectBy(
+                        poMessageSetID=msgset.id,
+                        poMessageID_ID=msgset.primeMessageID_.id)[0]
+            assert sighting.inLastRevision
         return
         # TODO: add some code that actually tests the database
         # here is an attempt
