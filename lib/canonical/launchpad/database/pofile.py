@@ -15,7 +15,7 @@ from zope.app.datetimeutils import SyntaxError, DateError, DateTimeError, \
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase, quote, flushUpdates
 
 # canonical imports
 from canonical.launchpad.interfaces import IPOTMsgSet, \
@@ -74,14 +74,6 @@ standardPOFileHeader = (
 "X-Rosetta-Version: 0.1\n"
 "Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n"
 )
-
-def _sqlobject_sync_hack():
-    # XXX: Andrew Bennetts 2004-12-17: Really BIG AND UGLY fix to prevent
-    # a race condition that prevents the statistics to be calculated
-    # correctly. DON'T copy this, ask Andrew first.
-    # https://dogfood.ubuntu.com/malone/bugs/226/
-    for object in list(SQLBase._connection._dm.objects):
-        object.sync()
 
 def _attachRawFileData(raw_file_data, contents, importer):
     # Initial check to be sure that the content is a valid .po/.pot file, if
@@ -224,8 +216,11 @@ class POTemplate(SQLBase, RosettaStats):
         default=None)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
+    sourcepackageversion = StringCol(dbName='sourcepackageversion',
+        notNull=False, default=None)
     distrorelease = ForeignKey(foreignKey='DistroRelease',
         dbName='distrorelease', notNull=False, default=None)
+    header = StringCol(dbName='header', notNull=False, default=None)
 
     poFiles = MultipleJoin('POFile', joinColumn='potemplate')
 
@@ -337,6 +332,7 @@ class POTemplate(SQLBase, RosettaStats):
                     poset.potmsgset = POTMsgSet.id AND
                     poset.pofile = pofile.id AND
                     pofile.language = language.id AND
+                    pofile.variant IS NULL AND
                     language.code IN (%s) AND
                     iscomplete = FALSE
                 ''' % language_codes
@@ -348,6 +344,7 @@ class POTemplate(SQLBase, RosettaStats):
                     poset.potmsgset = POTMsgSet.id AND
                     poset.pofile = pofile.id AND
                     pofile.language = language.id AND
+                    pofile.variant IS NULL AND
                     language.code IN (%s)
                 ''' % language_codes
 
@@ -374,15 +371,14 @@ class POTemplate(SQLBase, RosettaStats):
         '''This returns the set of languages for which we have
         POFiles for this POTemplate. NOTE that variants are simply
         ignored, if we have three variants for en_GB we will simply
-        return a single record for en_GB.'''
+        return the one with variant=NULL.'''
 
-        # XXX: Carlos Perello Marin 15/10/04: As SQLObject does not have
-        # SELECT DISTINCT we use Sets, as soon as it's fixed we should change
-        # this.
-        return Set(Language.select('''
-            POFile.language = Language.id AND
-            POFile.potemplate = %d
-            ''' % self.id, clauseTables=('POFile', 'Language')))
+        return Language.select("POFile.language = Language.id AND"
+                               " POFile.potemplate = %d AND"
+                               " POFile.variant IS NULL" % self.id,
+                               clauseTables=('POFile', 'Language'),
+                               distinct=True
+                               )
 
     def poFilesToImport(self):
         for pofile in iter(self.poFiles):
@@ -598,7 +594,7 @@ class POTemplate(SQLBase, RosettaStats):
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
-            _sqlobject_sync_hack()
+            flushUpdates()
 
             # We update the cached value that tells us the number of msgsets this
             # .pot file has
@@ -1308,7 +1304,7 @@ class POFile(SQLBase, RosettaStats):
 
             # Ask for a sqlobject sync before reusing the data we just
             # updated.
-            _sqlobject_sync_hack()
+            flushUpdates()
 
             # Now we update the statistics after this new import
             self.updateStatistics(newImport=True)
@@ -1600,7 +1596,7 @@ class POMsgSet(SQLBase):
 
 
         # Ask for a sqlobject sync before reusing the data we just updated.
-        _sqlobject_sync_hack()
+        flushUpdates()
 
         # Implicit set of iscomplete. If we have all translations, it's 
         # complete, if we lack a translation, it's not complete.

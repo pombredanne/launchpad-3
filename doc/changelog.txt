@@ -2,6 +2,275 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-16 14:19:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1323
+
+    Summary:
+      Improved the tarball attachment into rosetta and some bug fixes. Changes reviewed by Steve
+    Revision:
+      launchpad--devel--0--patch-1323
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--base-0
+       tag of carlos.perello@canonical.com--2004/launchpad--devel--0--patch-555
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-1
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-2
+       The select method does not need pomsgsetID but pomsgset
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-3
+       Made less strict the parser when the plural forms found are not the same that are specified
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-4
+       If the po header has a wrong value, instead of raise an exception, just print a warning.
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-5
+       Added the sourcepackageversion field to the POTemplate object and interface
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-6
+       Added code to detect already imported tarballs so we ignore them and also try to detect renamed potemplates based on their path.
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-7
+       Applied review changes from the main branch
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-8
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-9
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-10
+       Applied more fixes after Steve's review
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-11
+       Removed warnings from the script output
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-12
+       Forgot to initialize potemplate
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-13
+       Added support to store the .pot's header into the database
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-14
+       Merged latest changes from my main branch
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-15
+       Added support to be able to attach .po files with variant part
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-16
+       Before downloading the tarball we check if we really need it
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-17
+       Merged with my main branch
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-18
+       Merged again from main branch
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-19
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-20
+       raised the right exception when the encoding is not know
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-21
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-22
+       Applied changes after Steve's review
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-23
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-24
+       Removed a hardcoded value
+    
+
+    modified files:
+     cronscripts/rosetta-poupload_tar.py
+     database/schema/restoredump.sh doc/changelog.txt
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/rosetta/pofile.py
+     lib/canonical/rosetta/pofile_adapters.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-2
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-3
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-4
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-5
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-6
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-7
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-8
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-9
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-10
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-11
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-12
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-13
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-14
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-15
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-16
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-17
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-18
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-19
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-20
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-21
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-22
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-23
+     carlos.perello@canonical.com--2004/launchpad--potarattach-fixes--0--patch-24
+
+
+2005-02-16 14:14:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1322
+
+    Summary:
+      Turn _sqlobject_sync_hack into flushUpdates
+    Revision:
+      launchpad--devel--0--patch-1322
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-329
+       Merge from rocketfuel
+    
+     * andrew.bennetts@canonical.com/launchpad--devel--0--patch-330
+       Turn _sqlobject_sync_hack into flushUpdates
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/database/sqlbase.py
+     lib/canonical/launchpad/database/pofile.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-329
+     andrew.bennetts@canonical.com/launchpad--devel--0--patch-330
+
+
+2005-02-16 13:19:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1321
+
+    Summary:
+      Old kiko gina changes + refuel
+    Revision:
+      launchpad--devel--0--patch-1321
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-434
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-435
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-436
+       merge from kiko. Gina changes
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-437
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-438
+       star-merge from rocketfuel
+    
+     * kiko@async.com.br/launchpad--brazilian--0--patch-62
+       FUEL FUEL FUEL
+    
+     * kiko@async.com.br/launchpad--brazilian--0--patch-63
+       Gina needs love: fix CreateSourcePackageRelease and allow more package names
+    
+     * kiko@async.com.br/launchpad--brazilian--0--patch-64
+       Ensuring first and last line go into changes entry as well (doh)
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/gina/changelog.py
+     lib/canonical/launchpad/scripts/gina/classes.py
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-434
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-435
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-436
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-437
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-438
+     kiko@async.com.br/launchpad--brazilian--0--patch-62
+     kiko@async.com.br/launchpad--brazilian--0--patch-63
+     kiko@async.com.br/launchpad--brazilian--0--patch-64
+
+
+2005-02-16 13:02:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1320
+
+    Summary:
+      add evolution cvs source in sample data
+    Revision:
+      launchpad--devel--0--patch-1320
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-59
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-60
+       add evolution cvs source in sample data
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-59
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-60
+
+
+2005-02-16 12:09:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1319
+
+    Summary:
+      allow overriding of fileimporter.librarianHost by $LIBRARIAN_HOST
+    Revision:
+      launchpad--devel--0--patch-1319
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-57
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-58
+       allow overriding of fileimporter.librarianHost by $LIBRARIAN_HOST
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/doap/fileimporter.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-57
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-58
+
+
+2005-02-15 21:03:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1318
+
+    Summary:
+      update the sourcesource smaple data to be useful in buildbot package calling tests
+    Revision:
+      launchpad--devel--0--patch-1318
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-103
+       merge from rf
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-104
+       update the sourcesource smaple data to be useful in buildbot package calling tests
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-103
+     robert.collins@canonical.com/launchpad--devel--0--patch-104
+
+
 2005-02-15 14:51:17 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1317
 
     Summary:

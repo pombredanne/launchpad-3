@@ -247,6 +247,7 @@ class SourcePackageRelease(AbstractPackageRelease):
 
     def backpropogate(self, db):
         if not hasattr(self,"changelog"):
+            print "Cannot backpropagate %s, no changelog" % self.package
             return # We do not backpropogate unless we parsed the changelog
         
         for release in self.changelog[1:]:

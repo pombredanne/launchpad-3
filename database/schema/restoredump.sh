@@ -29,5 +29,5 @@ pg_restore -l ${DMP} | grep ACL >> r.listing
 
 dropdb ${DBNAME}
 createdb -E UNICODE ${DBNAME}
-pg_restore -U postgres --no-acl --no-owner -L r.listing -d rest -v ${DMP} 2>&1 | grep -v NOTICE
+pg_restore -U postgres --no-acl --no-owner -L r.listing -d ${DBNAME} -v ${DMP} 2>&1 | grep -v NOTICE
 env LP_DBNAME=${DBNAME} python security.py
