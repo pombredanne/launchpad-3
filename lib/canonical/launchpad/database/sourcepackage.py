@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, \
                                            ISourcePackageContainer
 
 from canonical.launchpad.database.product import Product
-
+from canonical.launchpad.database.binarypackage import BinaryPackage
 
 class SourcePackageRelease(SQLBase):
     """A source package release, e.g. apache 2.0.48-3"""
@@ -230,3 +230,31 @@ class SourcePackageName(SQLBase):
     _table = 'SourcePackageName'
 
     name = StringCol(dbName='name', notNull=True)
+
+class SourcePackageSelection(object):
+    """This class have some util queries to get related SourcePackage results"""
+    # XXX. Daniel Henrique Debonzi 2004-10-19
+    # There is no interface defined for this class yet.
+    # Should be implemented since everybody agree with this class
+
+    def findSourcesByName(klass, distrorelease, pattern):
+        """Search for SourcePackages in a distrorelease that matches a pattern"""
+
+        pattern = pattern.replace('%', '%%')
+        query = ('SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
+                  'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+                  'AND SourcePackagePublishing.distrorelease = %d '
+                  'AND SourcePackage.sourcepackagename = SourcePackageName.id'
+                  % (distrorelease.id) +
+                 ' AND (SourcePackageName.name ILIKE %s'
+                 % quote('%%' + pattern + '%%')
+                 + ' OR SourcePackage.shortdesc ILIKE %s)'
+                 % quote('%%' + pattern + '%%'))
+        
+        # XXX: Daniel Debonzi 2004-10-19
+        # Returning limited results until
+        # sql performanse issues been solved
+        return SourcePackage.select(query)[:500]
+
+    findSourcesByName = classmethod(findSourcesByName)
+

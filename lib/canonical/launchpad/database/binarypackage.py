@@ -12,36 +12,36 @@ from canonical.lp import dbschema
 # interfaces and database 
 from canonical.launchpad.interfaces import IBinaryPackage, \
                                            IBinaryPackageName
-
-
+# The import is done inside BinaryPackage.maintainer to avoid circular import
+##from canonical.launchpad.database.sourcepackage import SourcePackageRelease
 
 class BinaryPackage(SQLBase):
     implements(IBinaryPackage)
     _table = 'BinaryPackage'
     binarypackagename = ForeignKey(dbName='binarypackagename', 
-                   foreignKey='BinaryPackageName', notNull=True),
-    version = StringCol(dbName='version', notNull=True),
-    shortdesc = StringCol(dbName='shortdesc', notNull=True, default=""),
-    description = StringCol(dbName='description', notNull=True),
+                   foreignKey='BinaryPackageName', notNull=True)
+    version = StringCol(dbName='version', notNull=True)
+    shortdesc = StringCol(dbName='shortdesc', notNull=True, default="")
+    description = StringCol(dbName='description', notNull=True)
     build = ForeignKey(dbName='build', foreignKey='Build',
-                   notNull=True),
-    binpackageformat = IntCol(dbName='binpackageformat', notNull=True),
+                   notNull=True)
+    binpackageformat = IntCol(dbName='binpackageformat', notNull=True)
     component = ForeignKey(dbName='component',
-                   foreignKey='Component', notNull=True),
+                   foreignKey='Component', notNull=True)
     section = ForeignKey(dbName='section', foreignKey='Section',
-                   notNull=True),
-    priority = IntCol(dbName='priority'),
-    shlibdeps = StringCol(dbName='shlibdeps'),
-    depends = StringCol(dbName='depends'),
-    recommends = StringCol(dbName='recommends'),
-    suggests = StringCol(dbName='suggests'),
-    conflicts = StringCol(dbName='conflicts'),
-    replaces = StringCol(dbName='replaces'),
-    provides = StringCol(dbName='provides'),
-    essential = BoolCol(dbName='essential'),
-    installedsize = IntCol(dbName='installedsize'),
-    copyright = StringCol(dbName='copyright'),
-    licence = StringCol(dbName='licence'),
+                   notNull=True)
+    priority = IntCol(dbName='priority')
+    shlibdeps = StringCol(dbName='shlibdeps')
+    depends = StringCol(dbName='depends')
+    recommends = StringCol(dbName='recommends')
+    suggests = StringCol(dbName='suggests')
+    conflicts = StringCol(dbName='conflicts')
+    replaces = StringCol(dbName='replaces')
+    provides = StringCol(dbName='provides')
+    essential = BoolCol(dbName='essential')
+    installedsize = IntCol(dbName='installedsize')
+    copyright = StringCol(dbName='copyright')
+    licence = StringCol(dbName='licence')
 
     def _title(self):
         return '%s-%s' % (self.binarypackagename.name, self.version)
@@ -53,6 +53,10 @@ class BinaryPackage(SQLBase):
     name = property(name)
 
     def maintainer(self):
+        # The import is here to avoid a circular import. See top of module.
+        from canonical.launchpad.database.sourcepackage import \
+             SourcePackageRelease
+
         return self.sourcepackagerelease.sourcepackage.maintainer
     maintainer = property(maintainer)
 
@@ -61,9 +65,17 @@ class BinaryPackage(SQLBase):
         
         :returns: iterable of SourcePackageReleases
         """
+        # The import is here to avoid a circular import. See top of module.
+        from canonical.launchpad.database.sourcepackage import \
+             SourcePackageRelease
+
         return self.build.sourcepackagerelease.sourcepackage.current(distroRelease)
 
     def lastversions(self, distroRelease):
+        # The import is here to avoid a circular import. See top of module.
+        from canonical.launchpad.database.sourcepackage import \
+             SourcePackageRelease
+
         last = list(SourcePackageRelease.select(
             'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
             ' AND SourcePackagePublishing.distrorelease = %d'

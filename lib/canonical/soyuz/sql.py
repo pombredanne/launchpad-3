@@ -34,7 +34,8 @@ from canonical.launchpad.database import BinaryPackage, Build, \
                                          IrcID, Membership, TeamParticipation,\
                                          DistributionRole, DistroReleaseRole, \
                                          SourceSource, \
-                                         RCSTypeEnum, Branch, Changeset
+                                         RCSTypeEnum, Branch, Changeset, \
+                                         SourcePackageSelection
 
 #
 # 
@@ -91,22 +92,13 @@ class DistroReleaseApp(object):
         else:
             raise KeyError, name
 
-    def _sourcequery(self):
-        return (
-            'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id '
-            'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
-            'AND SourcePackagePublishing.distrorelease = %d '
-            'AND SourcePackage.sourcepackagename = SourcePackageName.id'
-            % (self.release.id))
-        
     def findSourcesByName(self, pattern):
-        pattern = pattern.replace('%', '%%')
-        query = (self._sourcequery() +
-                 ' AND (SourcePackageName.name ILIKE %s'
-                 % quote('%%' + pattern + '%%')
-                 + ' OR SourcePackage.shortdesc ILIKE %s)'
-                 % quote('%%' + pattern + '%%'))        
-        return SourcePackage.select(query)[:500]
+        # XXX: Daniel Debonzi 2004-10-19
+        # This is a sugestion to make sql queries existents inside
+        # this file available for all aplications.
+        # The SourcePackageSelection class is in
+        # database.sourcepackage.py
+        return SourcePackageSelection.findSourcesByName(self.release, pattern)
 
     where = (
         'PackagePublishing.binarypackage = BinaryPackage.id AND '
@@ -292,12 +284,12 @@ class DistroReleaseSourcesApp(object):
             % (self.release.id))
         
     def findPackagesByName(self, pattern):
-        pattern = pattern.replace('%', '%%')
-        query = self._query() + \
-                (' AND SourcePackageName.name ILIKE %s'
-                 % quote('%%' + pattern + '%%')
-                 )
-        return SourcePackage.select(query)[:500]
+        # XXX: Daniel Debonzi 2004-10-19
+        # This is a sugestion to make sql queries existents inside
+        # this file available for all aplications.
+        # The SourcePackageSelection class is in
+        # database.sourcepackage.py
+        return SourcePackageSelection.findSourcesByName(self.release, pattern)
 
     def __getitem__(self, name):
         # XXX: (mult_results) Daniel Debonzi 2004-10-13
