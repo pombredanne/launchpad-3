@@ -2,7 +2,7 @@
 # Author: Rob Weir <rob.weir@canonical.com>
 # Copyright (C) 2004 Canonical Software
 
-from arch import NameParser
+from pybaz import NameParser
 
 from zope.interface import implements, classProvides
 from canonical.launchpad.interfaces import INamespaceObject, ISourceTreeAPI, \
@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces import INamespaceObject, ISourceTreeAPI, \
 
 
 from canonical.launchpad import database
-import arch
+import pybaz as arch
 
 ###############################################################################
 ### NamespaceObject

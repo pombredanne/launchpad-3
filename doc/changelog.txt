@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-13 17:23:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1311
+
+    Summary:
+      use pybaz rather than pyarch
+    Revision:
+      launchpad--devel--0--patch-1311
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-90
+       merge from rocketfuel
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-91
+       merge from rf
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-92
+       use pybaz rather than pyarch
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/arch/broker.py
+     lib/canonical/arch/tests/test_broker.py
+     lib/canonical/arch/tests/test_framework.py
+     lib/canonical/launchpad/database/archbranch.py
+     lib/canonical/launchpad/interfaces/pyarch.py
+     lib/canonical/sourcerer/lib/importer.py
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-90
+     robert.collins@canonical.com/launchpad--devel--0--patch-91
+     robert.collins@canonical.com/launchpad--devel--0--patch-92
+
+
 2005-02-13 12:18:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1310
 
     Summary:

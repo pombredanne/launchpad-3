@@ -16,7 +16,7 @@ from canonical.launchpad.database.archarchive import ArchiveMapper,\
                                                      ArchNamespace,\
                                                      ArchArchive
 
-from arch import arch
+import pybaz as arch
 
 class Branch(SQLBase):
     """An ordered revision sequence in arch"""
