@@ -2,6 +2,208 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-05 10:45:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1560
+
+    Summary:
+      hand merge scott
+    Revision:
+      launchpad--devel--0--patch-1560
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--scott-review--0--base-0
+       tag of scott@canonical.com--2005/launchpad--devel--0--patch-28
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--scott-review--0--patch-1
+       star-merge from scott@netsplit.com--2005/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--scott-review--0--patch-2
+       Fix things in response to review
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--hct-db-wibble--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1397
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--hct-db-wibble--0--patch-1
+       Rearrange canonical.launchpad.database a little; add Distribution.getDevelopmentReleases and DistroRelease.getPublishedReleases and SourcePackage.products for Scott's HCT work
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-2
+       add some functions for banzai lp backend
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-3
+       merge rocketfuel changes
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-4
+       remove owner from manifest
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-5
+       add (not to be merged) sql patch to drop owner from manifest
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-6
+       add almost-reasonable sample data for hct/sourcerer/banzai
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-7
+       (REALLY) add almost-reasonable sample data for hct/sourcerer/banzai
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-8
+       more functionality for sourcerer/hct
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-9
+       chew on rocketfuel
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-10
+       steal all of Kinnison's work
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-11
+       those old mergin' blues
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-12
+       oops, merge left-overs
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-13
+       repair merge damage
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-14
+       fix last circular import problem
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-15
+       fix test case for ManifestEntryType
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-16
+       more banzai support
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-17
+       add sample data and related joins to librarian
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-18
+       ya take one down, it conflicts an' ya frown, 98 patchsets to merge from rocketfuel
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-19
+       actually update sequences so you can insert afterwards
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-20
+       remove distroarchrelease from distrorelease.py
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-21
+       more librarian sample data
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-22
+       fix sequence for libraryfilecontent
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-23
+       add Product.getPackage(distro) and packaging sampledata
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-24
+       add a netapplet published in warty to sampledata
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-25
+       packaging and sourcesource sample data
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-26
+       merge rocketfuel changes
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-27
+       add tests and docstrings as per review
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-28
+       merge with rocketfuel
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-29
+       fix a thinko
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-30
+       rocketfuel sync
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-31
+       remove unused sequence
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-32
+       dear baz, these go here, not where you put them, kthxbye
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-33
+       merge Kinnison's fixes
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-34
+       fix circular import bug, and use magic sourcepackage table
+    
+     * scott@canonical.com--2005/launchpad--devel--0--patch-35
+       fixes for banzai
+    
+
+    new files:
+     database/schema/pending/.arch-ids/keybuk-manifest.sql.id
+     database/schema/pending/keybuk-manifest.sql
+     lib/canonical/launchpad/doc/.arch-ids/branch.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/changeset.txt.id
+     lib/canonical/launchpad/doc/branch.txt
+     lib/canonical/launchpad/doc/changeset.txt
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/database/sqlbase.py
+     lib/canonical/launchpad/database/archbranch.py
+     lib/canonical/launchpad/database/archchangeset.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/distroarchrelease.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/librarian.py
+     lib/canonical/launchpad/database/manifest.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/doc/distribution.txt
+     lib/canonical/launchpad/doc/distrorelease.txt
+     lib/canonical/launchpad/interfaces/distribution.py
+     lib/canonical/launchpad/interfaces/distrorelease.py
+     lib/canonical/launchpad/interfaces/manifest.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/productseries.py
+     lib/canonical/launchpad/interfaces/pyarch.py
+     lib/canonical/launchpad/interfaces/sourcepackage.py
+     lib/canonical/launchpad/webapp/tests/test_tales.py
+     lib/canonical/lp/dbschema.py
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--scott-review--0--base-0
+     daniel.silverstone@canonical.com--desktop/launchpad--scott-review--0--patch-1
+     daniel.silverstone@canonical.com--desktop/launchpad--scott-review--0--patch-2
+     daniel.silverstone@canonical.com--laptop/launchpad--hct-db-wibble--0--base-0
+     daniel.silverstone@canonical.com--laptop/launchpad--hct-db-wibble--0--patch-1
+     scott@canonical.com--2005/launchpad--devel--0--patch-2
+     scott@canonical.com--2005/launchpad--devel--0--patch-3
+     scott@canonical.com--2005/launchpad--devel--0--patch-4
+     scott@canonical.com--2005/launchpad--devel--0--patch-5
+     scott@canonical.com--2005/launchpad--devel--0--patch-6
+     scott@canonical.com--2005/launchpad--devel--0--patch-7
+     scott@canonical.com--2005/launchpad--devel--0--patch-8
+     scott@canonical.com--2005/launchpad--devel--0--patch-9
+     scott@canonical.com--2005/launchpad--devel--0--patch-10
+     scott@canonical.com--2005/launchpad--devel--0--patch-11
+     scott@canonical.com--2005/launchpad--devel--0--patch-12
+     scott@canonical.com--2005/launchpad--devel--0--patch-13
+     scott@canonical.com--2005/launchpad--devel--0--patch-14
+     scott@canonical.com--2005/launchpad--devel--0--patch-15
+     scott@canonical.com--2005/launchpad--devel--0--patch-16
+     scott@canonical.com--2005/launchpad--devel--0--patch-17
+     scott@canonical.com--2005/launchpad--devel--0--patch-18
+     scott@canonical.com--2005/launchpad--devel--0--patch-19
+     scott@canonical.com--2005/launchpad--devel--0--patch-20
+     scott@canonical.com--2005/launchpad--devel--0--patch-21
+     scott@canonical.com--2005/launchpad--devel--0--patch-22
+     scott@canonical.com--2005/launchpad--devel--0--patch-23
+     scott@canonical.com--2005/launchpad--devel--0--patch-24
+     scott@canonical.com--2005/launchpad--devel--0--patch-25
+     scott@canonical.com--2005/launchpad--devel--0--patch-26
+     scott@canonical.com--2005/launchpad--devel--0--patch-27
+     scott@canonical.com--2005/launchpad--devel--0--patch-28
+     scott@canonical.com--2005/launchpad--devel--0--patch-29
+     scott@canonical.com--2005/launchpad--devel--0--patch-30
+     scott@canonical.com--2005/launchpad--devel--0--patch-31
+     scott@canonical.com--2005/launchpad--devel--0--patch-32
+     scott@canonical.com--2005/launchpad--devel--0--patch-33
+     scott@canonical.com--2005/launchpad--devel--0--patch-34
+     scott@canonical.com--2005/launchpad--devel--0--patch-35
+
+
 2005-04-05 03:09:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1559
 
     Summary:

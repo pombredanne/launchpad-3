@@ -1,0 +1,23 @@
+Arch Changesets
+===============
+
+The Changeset table holds information about an Arch Changeset, with
+reference to the Arch Branch that it is on.
+
+We need to represent this as an Arch "package" string suitable for
+the command-line tool.  So we provide a function to do that.
+
+We login anonymously:
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('launchpad.anonymous')
+
+We can get a Changeset object in the normal way:
+
+    >>> from canonical.launchpad.database.archchangeset import Changeset
+    >>> changeset = Changeset.get(3)
+
+Calling getPackageName() should yield the full string:
+
+    >>> print changeset.getPackageName()
+    mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0

@@ -30,6 +30,12 @@ class Changeset(SQLBase):
                    default=None),
     ]
 
+    def getPackageName(self):
+        """Arch package name for the changeset."""
+        packagename = self.branch.getPackageName()
+        packagename += "--" + self.name
+        return packagename
+
 class ChangesetFileName(SQLBase):
     """A filename from a changeset"""
 

@@ -333,6 +333,7 @@ INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, 
 INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real proejcts ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''asap'':26 ''move'':22 ''real'':12,24 ''sync'':3,5,6,15 ''still'':7 ''assign'':9 ''process'':19 ''product'':13 ''proejct'':25 ''unassign'':1,2,4,14', false);
 INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate) VALUES (10, NULL, 2, 'python-gnome2-dev', 'python gnome2 dev', 'python gnome2 dev', 'Python bindings for the GNOME desktop environment', 'Python bindings for the GNOME desktop environment', '2004-09-24 20:58:00.674409', 'http://www.daa.com.au/~james/software/pygtk/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, '''dev'':4,7,10 ''bind'':12,19 ''gnome'':15,22 ''gnome2'':3,6,9 ''python'':2,5,8,11,18 ''desktop'':16,23 ''environ'':17,24 ''python-gnome2-dev'':1', false);
 INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''web'':9,14 ''browser'':10,15 ''firefox'':1,3,5,8,13 ''mozilla'':2,4,7,12', false);
+INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate) VALUES (11, 5, 12, 'netapplet', 'NetApplet', 'Network Applet', 'The Novell Network Applet', 'Displays current network status and allows network switching', '2005-03-10 16:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'product'::pg_catalog.regclass;
@@ -351,6 +352,7 @@ INSERT INTO productseries (id, product, name, displayname, shortdesc) VALUES (1,
 INSERT INTO productseries (id, product, name, displayname, shortdesc) VALUES (2, 4, 'firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser');
 INSERT INTO productseries (id, product, name, displayname, shortdesc) VALUES (3, 5, 'evolution', 'Evolution', 'Evolution is an email client, addressbook and calendar application that is very well integrated with te Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.');
 INSERT INTO productseries (id, product, name, displayname, shortdesc) VALUES (4, 8, 'thunderbird', 'Mozilla Thunderbird', 'The Mozilla Thunderbird email client');
+INSERT INTO productseries (id, product, name, displayname, shortdesc) VALUES (5, 11, 'releases', 'NetApplet Releases', 'Releases of Network Applet');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productseries'::pg_catalog.regclass;
@@ -520,6 +522,7 @@ Updated translations:
    - en_CA (Adam Weinberger)
    - lt (Zygimantas Berucka)', 12, NULL, 3, NULL);
 INSERT INTO productrelease (id, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries, manifest) VALUES (2, '2004-06-28 00:00:00', '0.8', NULL, NULL, NULL, 12, NULL, 4, NULL);
+INSERT INTO productrelease (id, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries, manifest) VALUES (7, '2005-03-10 16:20:00', '1.0', NULL, NULL, NULL, 12, NULL, 5, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productrelease'::pg_catalog.regclass;
@@ -588,6 +591,26 @@ INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (8, 8, 'gnome', 'evolution', '2.0', false);
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (9, 9, 'iso-codes', 'iso-codes', '0.35', false);
 
+INSERT INTO archnamespace (id, archarchive, category, branch, version,
+			   visible)
+	VALUES (10, 1, 'mozilla', 'release', '0.9.2', true);
+
+INSERT INTO archnamespace (id, archarchive, category, branch, version,
+			   visible)
+	VALUES (11, 1, 'mozilla', 'release', '0.9.1', true);
+
+INSERT INTO archnamespace (id, archarchive, category, branch, version,
+			   visible)
+	VALUES (12, 1, 'mozilla', 'release', '0.9', true);
+
+INSERT INTO archnamespace (id, archarchive, category, branch, version,
+			   visible)
+	VALUES (13, 1, 'mozilla', 'release', '0.8', true);
+
+INSERT INTO archnamespace (id, archarchive, category, branch, version,
+			   visible)
+	VALUES (14, 8, 'evolution', 'MAIN', '0', true);
+
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archnamespace'::pg_catalog.regclass;
 
@@ -604,8 +627,27 @@ INSERT INTO branch (id, archnamespace, title, description, "owner", product) VAL
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (9, 9, 'Iso-codes 0.35', 'text', 13, 7);
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (8, 8, 'Evolution 2.0', 'text', 13, 5);
 
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) values (10, 10, 'Mozilla Firefox 0.9.2', 'text', 1, 4);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) values (11, 11, 'Mozilla Firefox 0.9.1', 'text', 1, 4);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) values (12, 12, 'Mozilla Firefox 0.9', 'text', 1, 4);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) values (13, 13, 'Mozilla Firefox 0.8', 'text', 1, 4);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) values (14, 14, 'Evolution HEAD', 'text', 1, 5);
+
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'branch'::pg_catalog.regclass;
+
+
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey)
+	VALUES (1, 10, '2005-03-09 15:45:00', 'base-0',
+		'Import of Mozilla Firefox 0.9.2', NULL, NULL);
+
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey)
+	VALUES (2, 11, '2005-03-09 15:50:00', 'base-0',
+		'Import of Mozilla Firefox 0.9.1', NULL, NULL);
+
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey)
+	VALUES (3, 12, '2005-03-09 15:55:00', 'base-0',
+		'Import of Mozilla Firefox 0.9', NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'changeset'::pg_catalog.regclass;
@@ -659,23 +701,66 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifest'::pg_catalog.regclass;
 
-INSERT INTO manifest (id, datecreated, uuid) VALUES (1, '2004-06-29 00:00:00', '1');
-INSERT INTO manifest (id, datecreated, uuid) VALUES (2, '2004-06-30 00:00:00', '2');
-INSERT INTO manifest (id, datecreated, uuid) VALUES (3, '2004-07-01 00:00:00', '3');
-INSERT INTO manifest (id, datecreated, uuid) VALUES (4, '2004-07-02 00:00:00', '4');
-INSERT INTO manifest (id, datecreated, uuid) VALUES (5, '2004-07-03 00:00:00', '5');
-INSERT INTO manifest (id, datecreated, uuid) VALUES (6, '2004-07-04 00:00:00', '6');
-INSERT INTO manifest (id, datecreated, uuid) VALUES (7, '2004-07-05 00:00:00', '7');
-INSERT INTO manifest (id, datecreated, uuid) VALUES (8, '2004-06-29 00:00:00', '8');
-INSERT INTO manifest (id, datecreated, uuid) VALUES (9, '2004-06-29 00:00:00', '9');
-INSERT INTO manifest (id, datecreated, uuid) VALUES (14, '2005-03-24 00:00:00', 'e0451064-b405-4f52-b387-ebfc1a7ee297');
+INSERT INTO manifest (id, datecreated, uuid)
+	VALUES (1, '2005-03-09 15:50:00',
+		'24fce331-655a-4e17-be55-c718c7faebd0');
 
+UPDATE productrelease SET manifest=1 WHERE id=5;
+
+INSERT INTO manifest (id, datecreated, uuid)
+	VALUES (2, '2005-03-09 15:55:00',
+		'bf819b15-10b3-4d1e-9963-b787753e8fb2');
+
+UPDATE productrelease SET manifest=2 WHERE id=4;
+
+INSERT INTO manifest (id, datecreated, uuid)
+	VALUES (3, '2005-03-09 16:00:00',
+		'2a18a3f1-eec5-4b72-b23c-fb46c8c12a88');
+
+UPDATE productrelease SET manifest=3 WHERE id=3;
+
+INSERT INTO manifest (id, datecreated, uuid)
+	VALUES (4, '2005-03-09 16:05:00',
+		'97b4ece8-b3c5-4e07-b529-6c76b59a5455');
+
+UPDATE productrelease SET manifest=4 WHERE id=1;
+
+INSERT INTO manifest (id, datecreated, uuid) VALUES (14, '2005-03-24 00:00:00', 'e0451064-b405-4f52-b387-ebfc1a7ee297');
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifest'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifestentry'::pg_catalog.regclass;
 
+INSERT INTO manifestentry (id, manifest, sequence, branch, changeset,
+			   entrytype, path, patchon, dirname)
+	VALUES (1, 1, 1, 10, 1,
+		4, 'firefox-0.9.2.tar.gz', NULL, 'firefox-0.9.2/');
+
+INSERT INTO manifestentry (id, manifest, sequence, branch, changeset,
+			   entrytype, path, patchon, dirname)
+	VALUES (2, 2, 1, 11, 2,
+		4, 'firefox-0.9.1.tar.gz', NULL, 'firefox-0.9.1/');
+
+INSERT INTO manifestentry (id, manifest, sequence, branch, changeset,
+			   entrytype, path, patchon, dirname)
+	VALUES (3, 2, 2, NULL, NULL,
+		1, 'firefox-0.9.1.tar.gz/random/', NULL, NULL);
+
+INSERT INTO manifestentry (id, manifest, sequence, branch, changeset,
+			   entrytype, path, patchon, dirname)
+	VALUES (4, 3, 1, 12, 3,
+		5, 'firefox-0.9.zip', NULL, 'firefox-0.9/');
+
+INSERT INTO manifestentry (id, manifest, sequence, branch, changeset,
+			   entrytype, path, patchon, dirname)
+	VALUES (5, 3, 2, 12, NULL,
+		6, 'firefox-0.9_unix.patch', 1, 'firefox-0.9_unix/');
+
+INSERT INTO manifestentry (id, manifest, sequence, branch, changeset,
+			   entrytype, path, patchon, dirname)
+	VALUES (6, 4, 1, 13, NULL,
+		3, 'firefox-0.8.ar', NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifestentry'::pg_catalog.regclass;
@@ -799,13 +884,20 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'libraryfilecontent'::pg_catalog.regclass;
 
-
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (1, NOW(), NULL, 178859, '378b3498ead213d35a82033a6e9196014a5ef25c');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (2, NOW(), NULL, 9922560, 'a57faa6287aee2c58e115673a119c6083d31d1b9');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (3, NOW(), NULL, 309386, 'b218ca7b52fa813550e3f14cdcf3ba68606e4446');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (4, NOW(), NULL, 162927750, 'cfbd3ee1f510c66d49be465b900a3334e8488184');
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilecontent'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'libraryfilealias'::pg_catalog.regclass;
 
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (1, 1, 'netapplet-1.0.0.tar.gz', 'application/x-gtar', NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (2, 1, 'netapplet_1.0.0.orig.tar.gz', 'application/x-gtar', NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (3, 2, 'firefox-0.9.2.tar.gz', 'application/x-gtar', NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (4, 3, 'evolution-1.0.tar.gz', 'application/x-gtar', NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilealias'::pg_catalog.regclass;
@@ -813,7 +905,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productreleasefile'::pg_catalog.regclass;
 
-
+INSERT INTO productreleasefile (id, productrelease, libraryfile, filetype) VALUES (1, 7, 1, 1);
+INSERT INTO productreleasefile (id, productrelease, libraryfile, filetype) VALUES (2, 5, 3, 1);
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productreleasefile'::pg_catalog.regclass;
 
@@ -822,6 +915,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagename'::
 
 INSERT INTO sourcepackagename (id, name) VALUES (1, 'mozilla-firefox-dummy');
 INSERT INTO sourcepackagename (id, name) VALUES (9, 'evolution');
+INSERT INTO sourcepackagename (id, name) VALUES (10, 'netapplet');
 INSERT INTO sourcepackagename (id, name) VALUES (14, 'pmount');
 
 
@@ -832,6 +926,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packaging'::pg_catal
 
 INSERT INTO packaging (packaging, product, id, sourcepackagename, distrorelease) VALUES (1, 4, 1, 1, 3);
 INSERT INTO packaging (packaging, product, id, sourcepackagename, distrorelease) VALUES (1, 5, 2, 9, 3);
+INSERT INTO packaging (packaging, product, id, sourcepackagename, distrorelease) VALUES (1, 5, 4, 9, 1);
+INSERT INTO packaging (packaging, product, id, sourcepackagename, distrorelease) VALUES (1, 11, 3, 10, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packaging'::pg_catalog.regclass;
@@ -839,8 +935,11 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagerelease'::pg_catalog.regclass;
 
+
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (14, 1, '0.9', '2004-09-27 11:57:13', 1, 1, 1, 'Mozilla dummy Changelog......', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'bacula-common (= 1.34.6-2), bacula-director-common (= 1.34.6-2), postgresql-client (>= 7.4)', NULL, NULL, 1, NULL, 1, 1, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (15, 1, '1.0', '2004-09-27 11:57:13', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 9, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (16, 1, '1.0-1', '2005-03-10 16:30:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 10, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 10, 1, 1);
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, 14, 1, 14, 3, 1);
 
 
@@ -849,16 +948,18 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagereleasefile'::pg_catalog.regclass;
 
-
+INSERT INTO sourcepackagereleasefile (id, sourcepackagerelease, libraryfile, filetype) VALUES (1, 16, 2, 1);
+INSERT INTO sourcepackagereleasefile (id, sourcepackagerelease, libraryfile, filetype) VALUES (2, 15, 4, 1);
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagereleasefile'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcepackagepublishing'::pg_catalog.regclass;
 
-INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 15, 2, 2, 1, 1, '2004-09-27 11:57:13', NULL);
+INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (3, 15, 2, 2, 1, 1, '2004-09-27 11:57:13', NULL);
 INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 14, 2, 1, 1, 1, '2004-09-27 11:57:13', NULL);
-INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (3, 15, 2, 3, 1, 1, '2004-09-27 11:57:13', NULL);
+INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (3, 16, 2, 5, 1, 1, '2004-03-10 16:30:00', NULL);
+INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (1, 17, 2, 4, 1, 1, '2004-03-14 18:00:00', NULL);
 INSERT INTO sourcepackagepublishing (distrorelease, sourcepackagerelease, status, id, component, section, datepublished, scheduleddeletiondate) VALUES (3, 20, 2, 8, 1, 1, NULL, NULL);
 
 
@@ -1423,7 +1524,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sourcesource'::pg_catalog.regclass;
 
-INSERT INTO sourcesource (id, name, title, description, product, cvsroot, cvsmodule, cvstarfile, cvstarfileurl, cvsbranch, svnrepository, releaseroot, releaseverstyle, releasefileglob, releaseparentbranch, branch, lastsynced, syncinterval, rcstype, hosted, upstreamname, processingapproved, syncingapproved, newarchive, newbranchcategory, newbranchbranch, newbranchversion, packagedistro, packagefiles_collapsed, "owner", currentgpgkey, fileidreference, branchpoint, autotested, datestarted, datefinished, sourcepackagename, distrorelease) VALUES (2, 'evolution-head', 'Evolution CVS HEAD', 'CVS import job for Evolution HEAD', 5, ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome', 'evolution', NULL, '', 'MAIN', '', '', NULL, '', NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, 'gnome@arch.ubuntu.com', 'evolution', 'MAIN', '0', NULL, NULL, 16, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL);
+INSERT INTO sourcesource (id, name, title, description, product, cvsroot, cvsmodule, cvstarfile, cvstarfileurl, cvsbranch, svnrepository, releaseroot, releaseverstyle, releasefileglob, releaseparentbranch, branch, lastsynced, syncinterval, rcstype, hosted, upstreamname, processingapproved, syncingapproved, newarchive, newbranchcategory, newbranchbranch, newbranchversion, packagedistro, packagefiles_collapsed, "owner", currentgpgkey, fileidreference, branchpoint, autotested, datestarted, datefinished, sourcepackagename, distrorelease) VALUES (2, 'evolution-head', 'Evolution CVS HEAD', 'CVS import job for Evolution HEAD', 5, ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome', 'evolution', NULL, '', 'MAIN', '', '', NULL, '', NULL, 14, NULL, NULL, 1, NULL, NULL, NULL, NULL, 'gnome@arch.ubuntu.com', 'evolution', 'MAIN', '0', NULL, NULL, 16, NULL, NULL, NULL, 0, NULL, NULL, NULL, NULL);
 INSERT INTO sourcesource (id, name, title, description, product, cvsroot, cvsmodule, cvstarfile, cvstarfileurl, cvsbranch, svnrepository, releaseroot, releaseverstyle, releasefileglob, releaseparentbranch, branch, lastsynced, syncinterval, rcstype, hosted, upstreamname, processingapproved, syncingapproved, newarchive, newbranchcategory, newbranchbranch, newbranchversion, packagedistro, packagefiles_collapsed, "owner", currentgpgkey, fileidreference, branchpoint, autotested, datestarted, datefinished, sourcepackagename, distrorelease) VALUES (1, 'evolution', 'evolution-warty', 'Package job for Warty Evolution', 5, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 4, NULL, 'evolution', '2005-01-14 17:35:39.548665', NULL, 'evolution@arch.ubuntu.com', NULL, NULL, NULL, 'warty', NULL, 2, NULL, NULL, NULL, 0, NULL, NULL, 9, 3);
 
 
@@ -1753,7 +1854,7 @@ SELECT pg_catalog.setval('projectrelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('product_id_seq', 10, true);
+SELECT pg_catalog.setval('product_id_seq', 11, true);
 
 
 
@@ -1761,11 +1862,11 @@ SELECT pg_catalog.setval('productlabel_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productseries_id_seq', 4, true);
+SELECT pg_catalog.setval('productseries_id_seq', 5, true);
 
 
 
-SELECT pg_catalog.setval('productrelease_id_seq', 6, true);
+SELECT pg_catalog.setval('productrelease_id_seq', 7, true);
 
 
 
@@ -1789,15 +1890,15 @@ SELECT pg_catalog.setval('archarchivelocation_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('archnamespace_id_seq', 9, true);
+SELECT pg_catalog.setval('archnamespace_id_seq', 14, true);
 
 
 
-SELECT pg_catalog.setval('branch_id_seq', 9, true);
+SELECT pg_catalog.setval('branch_id_seq', 14, true);
 
 
 
-SELECT pg_catalog.setval('changeset_id_seq', 1, false);
+SELECT pg_catalog.setval('changeset_id_seq', 3, true);
 
 
 
@@ -1821,7 +1922,7 @@ SELECT pg_catalog.setval('manifest_id_seq', 14, true);
 
 
 
-SELECT pg_catalog.setval('manifestentry_id_seq', 1, false);
+SELECT pg_catalog.setval('manifestentry_id_seq', 6, true);
 
 
 
@@ -1861,14 +1962,15 @@ SELECT pg_catalog.setval('distroarchrelease_id_seq', 6, true);
 
 
 
-SELECT pg_catalog.setval('libraryfilecontent_id_seq', 1, false);
+SELECT pg_catalog.setval('libraryfilecontent_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('libraryfilealias_id_seq', 1, false);
+SELECT pg_catalog.setval('libraryfilealias_id_seq', 4, true);
 
 
 
+SELECT pg_catalog.setval('sourcepackagename_id_seq', 14, true);
 SELECT pg_catalog.setval('sourcepackagename_id_seq', 14, true);
 
 
@@ -2035,7 +2137,7 @@ SELECT pg_catalog.setval('distroreleasequeuebuild_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('sourcepackagereleasefile_id_seq', 1, false);
+SELECT pg_catalog.setval('sourcepackagereleasefile_id_seq', 1, true);
 
 
 
@@ -2091,7 +2193,7 @@ SELECT pg_catalog.setval('branchrelationship_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('productreleasefile_id_seq', 1, false);
+SELECT pg_catalog.setval('productreleasefile_id_seq', 2, true);
 
 
 
@@ -2111,7 +2213,7 @@ SELECT pg_catalog.setval('buildqueue_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('packaging_id_seq', 2, true);
+SELECT pg_catalog.setval('packaging_id_seq', 4, true);
 
 
 

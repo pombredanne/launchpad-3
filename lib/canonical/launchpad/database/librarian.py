@@ -1,5 +1,5 @@
 from canonical.database.sqlbase import SQLBase
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
+from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol, RelatedJoin
 
 class LibraryFileContent(SQLBase):
     """A pointer to file content in the librarian."""
@@ -27,4 +27,13 @@ class LibraryFileAlias(SQLBase):
         StringCol('filename', dbName='filename', notNull=True),
         StringCol('mimetype', dbName='mimetype', notNull=True),
     ]
+
+    products = RelatedJoin('ProductRelease', joinColumn='libraryfile',
+                           otherColumn='productrelease',
+                           intermediateTable='ProductReleaseFile');
+
+    sourcepackages = RelatedJoin('SourcePackageRelease',
+                                 joinColumn='libraryfile',
+                                 otherColumn='sourcepackagerelease',
+                                 intermediateTable='SourcePackageReleaseFile');
 

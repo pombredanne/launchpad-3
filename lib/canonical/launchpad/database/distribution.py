@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 from zope.interface import implements
+from zope.exceptions import NotFoundError
 
 from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound, \
     StringCol, ForeignKey, MultipleJoin, BoolCol, DateTimeCol
@@ -10,6 +11,8 @@ from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound, \
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.launchpad.database.bug import BugTask
 from canonical.launchpad.database.publishedpackage import PublishedPackageSet
+from canonical.launchpad.database.distrorelease import DistroRelease
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.lp.dbschema import BugTaskStatus, DistributionReleaseStatus
 from canonical.launchpad.interfaces import IDistribution, IDistributionSet, \
     IDistroPackageFinder, ITeamMembershipSubset, ITeam
@@ -84,8 +87,30 @@ class Distribution(SQLBase):
             counts.append(count)
 
         return counts
+
+    def getRelease(self, name_or_version):
+        """See IDistribution."""
+        try:
+            return DistroRelease.selectBy(distributionID=self.id,
+                                          name=name_or_version)[0]
+        except IndexError:
+            try:
+                return DistroRelease.selectBy(distributionID=self.id,
+                                              version=name_or_version)[0]
+            except IndexError:
+                raise NotFoundError
+
     bugCounter = property(bugCounter)
 
+    def getDevelopmentReleases(self):
+        """See IDistribution."""
+        return DistroRelease.selectBy(
+            distributionID = self.id,
+            releasestatus = DistributionReleaseStatus.DEVELOPMENT )
+
+    def getSourcePackage(self, name):
+        """See IDistribution."""
+        return SourcePackage(name, self.currentrelease)
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""

@@ -362,24 +362,14 @@ class ManifestEntryType(DBSchema):
     that branch into the package.
     """
 
-    TAR = Item(1, """
-        A Tar File
+    DIR = Item(1, """
+        A Directory
 
-        This branch will be tarred up and installed in the source
-        package as a tar file. Typically, the package build system
-        will know how to untar that code and use it during the build.
+        This is a special case of Manifest Entry Type, and tells
+        sourcerer simply to create an empty directory with the given name.
         """)
 
-    PATCH = Item(2, """
-        Patch File
-
-        This branch will be brought into the source file as a patch
-        against another branch. Usually, the patch is stored in the
-        "patches" directory, then applied at build time by the source
-        package build scripts.
-        """)
-
-    COPY = Item(3, """
+    COPY = Item(2, """
         Copied Source code
 
         This branch will simply be copied into the source package at
@@ -389,20 +379,36 @@ class ManifestEntryType(DBSchema):
         rather than depending on a system-installed shared library.
         """)
 
-    DIR = Item(4, """
-        A Directory
+    FILE = Item(3, """
+        Binary file
 
-        This is a special case of Manifest Entry Type, and tells
-        sourcerer simply to create an empty directory with the given name.
+        This is another special case of Manifest Entry Type that tells
+        sourcerer to create a branch containing just the file given.
         """)
 
-    IGNORE = Item(5, """
-        An Item To Ignore
+    TAR = Item(4, """
+        A Tar File
 
-        This manifest entry type tells sourcerer to ignore something
-        in the source package. For example, there might be a file which
-        looks like a patch but isn't one (a shell script called xxx.patch
-        is typical).
+        This branch will be tarred up and installed in the source
+        package as a tar file. Typically, the package build system
+        will know how to untar that code and use it during the build.
+        """)
+
+    ZIP = Item(5, """
+        A Zip File
+
+        This branch will be zipped up and installed in the source
+        package as a zip file. Typically, the package build system
+        will know how to unzip that code and use it during the build.
+        """)
+
+    PATCH = Item(6, """
+        Patch File
+
+        This branch will be brought into the source file as a patch
+        against another branch. Usually, the patch is stored in the
+        "patches" directory, then applied at build time by the source
+        package build scripts.
         """)
 
 

@@ -28,3 +28,5 @@ class IManifest(Interface):
         that is guaranteed to identify this manifest uniquely."""),
         required=True, readonly=True)
 
+    entries = Attribute(_("""List of entries in this manifest, sorted in
+    sequence order."""))

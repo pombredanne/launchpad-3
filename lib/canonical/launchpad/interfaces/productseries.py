@@ -22,7 +22,7 @@ class IProductSeries(Interface):
     shortdesc = Text(title=_("Short Description"), required=True)
     # convenient joins
     releases = Attribute(_("An iterator over the releases in this \
-                                  Series."))
+                                  Series, sorted with latest release first."))
     def getRelease(version):
         """Get the release in this series that has the specified version."""
 

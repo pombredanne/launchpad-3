@@ -72,6 +72,11 @@ class IDistroRelease(IHasOwner):
         """Return an iterator over binary packages with a name that matches
         this one."""
 
+    def getPublishedReleases(sourcepackage_or_name):
+        """Given a SourcePackageName, return a list of the currently
+        published SourcePackageReleases as SourcePackagePublishing records.
+        """
+
 class IDistroReleaseSet(Interface):
     """The set of distro releases."""
 
@@ -82,3 +87,14 @@ class IDistroReleaseSet(Interface):
         """Return a set of distroreleases that can be translated in
         rosetta."""
 
+    def findByName(self, name):
+        """Find a DistroRelease by name.
+
+        Returns a list of matching distributions, which may be empty.
+        """
+
+    def findByVersion(self, version):
+        """Find a DistroRelease by version.
+
+        Returns a list of matching distributions, which may be empty.
+        """

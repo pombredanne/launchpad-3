@@ -37,6 +37,13 @@ class LaunchpadStyle(Style):
     def pythonClassToAttr(self, className):
         return className.lower()
 
+    # dsilvers: 20050322: If you take this method out; then RelativeJoin
+    # instances in our SQLObject classes cause the following error:
+    # AttributeError: 'LaunchpadStyle' object has no attribute 'tableReference'
+    def tableReference(self, table):
+        """Return the tablename mapped for use in RelativeJoin statements."""
+        return table.__str__()
+
 
 class SQLBase(SQLOS):
     """Base class to use instead of SQLObject/SQLOS.

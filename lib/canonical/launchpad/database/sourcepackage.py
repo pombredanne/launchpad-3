@@ -10,7 +10,8 @@ from zope.interface import implements
 
 # SQL Imports
 from sqlobject import MultipleJoin
-from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol
+from sqlobject import StringCol, ForeignKey, MultipleJoin, DateTimeCol, \
+     RelatedJoin
 from canonical.database.sqlbase import SQLBase, quote
 
 # Launchpad Imports
@@ -119,9 +120,17 @@ class SourcePackage(object):
         name. Later, we want to use the PublishingMorgue table to get a
         proper set of sourcepackage releases specific to this
         distrorelease."""
-        return SourcePackageRelease.selectBy(sourcepackagename=self.sourcepackagename)
+        return SourcePackageRelease.select(
+                SourcePackageRelease.q.sourcepackagenameID == self.sourcepackagename.id,
+                orderBy=["version"]
+                )
     releases = property(releases)
 
+    products = RelatedJoin('Product', intermediateTable='Packaging')
+
+    #
+    # Properties
+    #
     def name(self):
         return self.sourcepackagename.name
     name = property(name)

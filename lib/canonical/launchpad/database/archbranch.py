@@ -35,6 +35,18 @@ class Branch(SQLBase):
     subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
     objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')
 
+    def getPackageName(self):
+        """See IBranch."""
+        packagename = self.archnamespace.archive.name
+        if self.archnamespace.category:
+            packagename += '/' + self.archnamespace.category
+            if self.archnamespace.branch:
+                packagename += '--' + self.archnamespace.branch
+                if self.archnamespace.version:
+                    packagename += '--' + self.archnamespace.version
+        return packagename
+
+
     def _get_repository(self):
         repository = self.archive.name
         if self.category:

@@ -16,15 +16,19 @@ from sqlobject import StringCol, ForeignKey, MultipleJoin, BoolCol, \
                       DateTimeCol
 
 from canonical.database.sqlbase import SQLBase
-from canonical.lp import dbschema
-from canonical.lp.dbschema import EnumCol
+from canonical.lp.dbschema import PackagePublishingStatus, BugTaskStatus, \
+     EnumCol, DistributionReleaseStatus
 
 # interfaces and database
 from canonical.launchpad.interfaces import IDistroRelease, IPOTemplateSet, \
-     IDistroReleaseSet
+     IDistroReleaseSet, ISourcePackageName
 
-from canonical.launchpad.database import SourcePackageInDistro, \
-    SourcePackageSet, PublishedPackageSet, PackagePublishing
+from canonical.launchpad.database.sourcepackageindistro \
+        import SourcePackageInDistro
+from canonical.launchpad.database.publishedpackage import PublishedPackageSet
+from canonical.launchpad.database.publishing \
+        import PackagePublishing, SourcePackagePublishing
+from canonical.launchpad.database import SourcePackageSet
 
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 # sabdfl 30/03/05 grrr.... this should be in its own file, please fix it
@@ -49,7 +53,7 @@ class DistroRelease(SQLBase):
     sections = ForeignKey(
         dbName='sections', foreignKey='Schema', notNull=True)
     releasestatus = EnumCol(notNull=True,
-                            schema=dbschema.DistributionReleaseStatus)
+                            schema=DistributionReleaseStatus)
     datereleased = DateTimeCol(notNull=True)
     parentrelease =  ForeignKey(
         dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
@@ -71,13 +75,9 @@ class DistroRelease(SQLBase):
     status = property(status)
 
     def sourcecount(self):
-        """See canonical.launchpad.interfaces.distrorelease.IDistroRelease."""
-        # Import inside method to avoid circular import
-        # See the top of the file
-        from canonical.launchpad.database import SourcePackagePublishing
         query = ('SourcePackagePublishing.status = %s '
                  'AND SourcePackagePublishing.distrorelease = %s'
-                 % (dbschema.PackagePublishingStatus.PUBLISHED.value,
+                 % (PackagePublishingStatus.PUBLISHED.value,
                     self.id))
         return SourcePackagePublishing.select(query).count()
     sourcecount = property(sourcecount)
@@ -89,7 +89,7 @@ class DistroRelease(SQLBase):
                  'AND PackagePublishing.distroarchrelease = '
                  'DistroArchRelease.id '
                  'AND DistroArchRelease.distrorelease = %s'
-                 % (dbschema.PackagePublishingStatus.PUBLISHED.value,
+                 % (PackagePublishingStatus.PUBLISHED.value,
                     self.id))
         return PackagePublishing.select(
             query, clauseTables=clauseTables).count()
@@ -115,8 +115,8 @@ class DistroRelease(SQLBase):
                  "VSourcePackageInDistro.name = BugTask.sourcepackagename AND "
                  "(BugTask.status != %i OR BugTask.status != %i)"
                  %(self.id,
-                   dbschema.BugTaskStatus.FIXED,
-                   dbschema.BugTaskStatus.REJECTED))
+                   BugTaskStatus.FIXED,
+                   BugTaskStatus.REJECTED))
 
         return SourcePackageInDistro.select(
             query, clauseTables=clauseTables, distinct=True)
@@ -145,7 +145,24 @@ class DistroRelease(SQLBase):
                       arch,
                       self.distribution.name,
                       self.name )
-
+            
+    def getPublishedReleases(self, sourcepackage_or_name):
+        """See IDistroRelease."""
+        if ISourcePackageName.providedBy(sourcepackage_or_name):
+            sourcepackage = sourcepackage_or_name
+        else:
+            sourcepackage = sourcepackage_or_name.name
+        published = SourcePackagePublishing.select(
+            """
+            distrorelease = %d AND
+            status = %d AND
+            sourcepackagerelease = sourcepackagerelease.id AND
+            sourcepackagerelease.sourcepackagename = %d
+            """ % (self.id,
+                   PackagePublishingStatus.PUBLISHED.value,
+                   sourcepackage.id),
+            clauseTables = [ 'SourcePackageRelease' ])
+        return list(published)
 
 class DistroReleaseSet:
     implements(IDistroReleaseSet)
@@ -157,3 +174,11 @@ class DistroReleaseSet:
         return DistroRelease.select(
             "POTemplate.distrorelease=DistroRelease.id",
             clauseTables=['POTemplate'], distinct=True)
+
+    def findByName(self, name):
+        """See IDistroReleaseSet."""
+        return DistroRelease.selectBy(name=name)
+
+    def findByVersion(self, version):
+        """See IDistroReleaseSet."""
+        return DistroRelease.selectBy(version=version)

@@ -20,7 +20,7 @@ class ProductSeries(SQLBase):
     shortdesc = StringCol(notNull=True)
     # useful joins
     releases = MultipleJoin('ProductRelease', joinColumn='productseries',
-            orderBy=['version'])
+                            orderBy='version')
 
     def getRelease(self, version):
         for release in self.releases:
