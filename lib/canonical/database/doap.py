@@ -120,10 +120,15 @@ class DBProject(SQLBase):
         # Rosetta defines 'owner' as a Person not an int, but doesn't use it.
         ##ForeignKey(name='owner', foreignKey='RosettaPerson', notNull=True),
         StringCol('name', notNull=True),
+        StringCol('displayname', notNull=True),
         StringCol('title', notNull=True),
+        StringCol('shortdesc', notNull=True),
         StringCol('description', notNull=True),
+        # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
         DateTimeCol('datecreated', notNull=True),
-        StringCol('homepageurl')
+        StringCol('homepageurl', notNull=False, default=None),
+        StringCol('wikiurl', notNull=False, default=None),
+        StringCol('lastdoap', notNull=False, default=None)
     ]
 
     products = MultipleJoin('Product', joinColumn='project')
@@ -172,15 +177,17 @@ class Product(SQLBase):
                 notNull=True
                 ),
         StringCol('name', notNull=True),
+        StringCol('displayname', notNull=True),
         StringCol('title', notNull=True),
+        StringCol('shortdesc', notNull=True),
         StringCol('description', notNull=True),
         DateTimeCol('datecreated', notNull=True),
-        StringCol('homepageurl'),
-        StringCol('screenshotsurl'),
-        StringCol('wikiurl'),
-        StringCol('programminglang'),
-        StringCol('downloadurl'),
-        StringCol('lastdoap'),
+        StringCol('homepageurl', notNull=False, default=None),
+        StringCol('screenshotsurl', notNull=False, default=None),
+        StringCol('wikiurl', notNull=False, default=None),
+        StringCol('programminglang', notNull=False, default=None),
+        StringCol('downloadurl', notNull=False, default=None),
+        StringCol('lastdoap', notNull=False, default=None),
         ]
 
     bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
