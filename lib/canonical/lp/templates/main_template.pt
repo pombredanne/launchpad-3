@@ -84,23 +84,28 @@
       <div id="portal-personaltools">
         Dashboards:
         <a href="/rosetta/translator">[Translator]</a>
-        
+
         <a href="/rosetta/maintainer">[Project Maintainer]</a>
-        
+
         &mdash;
 
         <a href="/rosetta/prefs">My Preferences</a>
 
       </div>
-      
+
       <div id="portal-breadcrumbs">
-        You are here
+        You are here:
         <span tal:define="parts python:request.get('PATH_INFO').split('/')"
-              tal:repeat="crumb parts">
-          <a tal:attributes="href python:'/'.join(parts[0:repeat['crumb'].number()])"
-             tal:content="crumb">home</a>
-          <span tal:condition="not:repeat/crumb/end"
-                class="breadcrumbSeparator"> &raquo; </span>
+            tal:repeat="crumb parts">
+
+            <span tal:condition="
+                    python: crumb and not crumb.startswith('++')">
+                <a tal:attributes="href
+                        python:'/'.join(parts[0:repeat['crumb'].number()])"
+                    tal:content="crumb">home</a>
+                <span tal:condition="not:repeat/crumb/end"
+                    class="breadcrumbSeparator"> &raquo; </span>
+            </span>
         </span>
       </div>
 
@@ -156,7 +161,7 @@
                     <th>Used for</th>
                 </tr>
             </thead>
-            
+
             <tbody>
                 <tr>
                     <td><span class="discreet">Comment</span></td>
