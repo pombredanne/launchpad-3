@@ -264,21 +264,6 @@ class ViewPOFile:
 
 
 class TranslatorDashboard:
-    # XXX: This class should be refactored and finished as soon as I (Carlos)
-    # could talk with Steve about the way to fetch the list of languages
-    # selected from the UI, please, ignore this code until then.
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        
-        self.person = IPerson(self.request.principal, None)
-        if self.person is None:
-            # XXX: Temporal hack, to be removed as soon as we have the login
-            # template working. The code duplication is just to be easier to
-            # remove this hack when is not needed anymore.
-            self.person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
-        self.interest = list(self.person.languages())
-
     def projects(self):
         return getUtility(IProjects)
 
@@ -286,37 +271,47 @@ class TranslatorDashboard:
         return getUtility(ILanguages)
 
     def selectedLanguages(self):
-        return self.interest
+        person = IPerson(self.request.principal, None)
+        if person is None:
+            # XXX: Temporal hack, to be removed as soon as we have the login
+            # template working. The code duplication is just to be easier to
+            # remove this hack when is not needed anymore.
+            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+                
+        return list(person.languages())
 
     def submit(self):
         if "SAVE" in self.request.form:
-#            if self.request.method == "POST":
-#                oldInterest = self.person.languages()
-#                for language in self.oldInterest:
-#                    if language not in self.interest:
-#                        self.person.removeLanguage(language)
-#                for language in self.interest:
-#                    if language not in self.oldInterest:
-#                        self.person.addLanguage(language)
-#            else:
-#               raise RuntimeError("must post this form!")
-            print "save"
-#        elif "add2" in self.request.form:
-#            if self.request.method == "POST":
-#                # XXX: We should fix this, instead of get englishName list, we
-#                # should get language's code
-#                if isinstance(self.request.form['availablelanguages'], list):
-#                    newLanguages = self.request.form['availablelanguages']
-#                else:
-#                    newLanguages = [ self.request.form['availablelanguages'] ]
-#                for englishName in newLanguages:
-#                    for language in self.languages():
-#                        if language.englishName == englishName:
-#                            if language.code not in self.interest:
-#                                self.interest.append(language)
-#            else:
-#                 raise RuntimeError("must post this form!")
-
+            if self.request.method == "POST":
+                person = IPerson(self.request.principal, None)
+                if person is None:
+                    # XXX: Temporal hack, to be removed as soon as we have the login
+                    # template working. The code duplication is just to be easier to
+                    # remove this hack when is not needed anymore.
+                    person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+                
+                oldInterest = list(person.languages())
+                
+                if 'selectedlanguages' in self.request.form:
+                    if isinstance(self.request.form['selectedlanguages'], list):
+                        newInterest = self.request.form['selectedlanguages']
+                    else:
+                        newInterest = [ self.request.form['selectedlanguages'] ]
+                else:
+                    newInterest = []
+                
+                # XXX: We should fix this, instead of get englishName list, we
+                # should get language's code
+                for englishName in newInterest:
+                    for language in self.languages():
+                        if language.englishName == englishName:
+                            if language not in oldInterest:
+                                person.addLanguage(language)
+                for language in oldInterest:
+                    if language.englishName not in newInterest:
+                        person.removeLanguage(language)
+            else:
+               raise RuntimeError("must post this form!")
 
 class ViewSearchResults:
     def __init__(self, context, request):
