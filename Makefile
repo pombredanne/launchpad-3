@@ -10,6 +10,8 @@ SETUPFLAGS=
 Z3LIBPATH=
 
 check: 
+	# here we should run the soyuz regressions tests.
+	$(MAKE) -C sourcecode check
 
 
 .PHONY: check
