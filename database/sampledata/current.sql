@@ -221,8 +221,8 @@ INSERT INTO product (id, project, "owner", name, displayname, title, shortdesc, 
 
 
 
-INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner") VALUES (1, 4, '2004-06-28 00:00:00', 'mozilla-firefox-0.9.1', NULL, NULL, NULL, 12);
-INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner") VALUES (2, 8, '2004-06-28 00:00:00', 'mozilla-thunderbird-0.8.0', NULL, NULL, NULL, 12);
+INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries) VALUES (1, 4, '2004-06-28 00:00:00', 'mozilla-firefox-0.9.1', NULL, NULL, NULL, 12, NULL, NULL);
+INSERT INTO productrelease (id, product, datereleased, "version", title, description, changelog, "owner", shortdesc, productseries) VALUES (2, 8, '2004-06-28 00:00:00', 'mozilla-thunderbird-0.8.0', NULL, NULL, NULL, 12, NULL, NULL);
 
 
 
@@ -1168,5 +1168,13 @@ SELECT pg_catalog.setval('distroreleasequeuesource_id_seq', 1, false);
 
 
 SELECT pg_catalog.setval('distroreleasequeuebuild_id_seq', 1, false);
+
+
+
+SELECT pg_catalog.setval('sourcepackagereleasefile_id_seq', 1, false);
+
+
+
+SELECT pg_catalog.setval('binarypackagefile_id_seq', 1, false);
 
 

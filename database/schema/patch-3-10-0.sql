@@ -1,3 +1,5 @@
+SET client_min_messages TO error;
+
 /*
  * The linkage tables between sourcepackagerelease and the librarian
  * and also binarypackage and the librarian needs ids for sqlobject
