@@ -234,6 +234,23 @@ class Doap(SQLThing):
             homepage = None
 
 
+        ## Original HOST
+        ## XXX: bad usage of try ...
+        try:
+            sf = data['sf']
+        except:
+            sf = None
+
+        try:
+            fm = data['fm']
+        except:
+            fm = None
+
+        try:
+            sv = data['sv']
+        except:
+            sv = None
+
         ## XXX: (missed+fields) cprov 20041015
         ## Request this field in sourceforge.py
         wiki = None
@@ -250,8 +267,8 @@ class Doap(SQLThing):
                   "datecreated":         datecreated,
                   "homepageurl":         homepage,
                   "wikiurl":             wiki,
-                  "sourceforgeproject":  data['sf'],
-                  "freshmeatproject":    data['fm'],
+                  "sourceforgeproject":  sf,
+                  "freshmeatproject":    fm,
                   }
                                           
         self._insert("project", dbdata)
@@ -372,9 +389,27 @@ class Doap(SQLThing):
         except:
             listurl = None
         
+        ## Original HOST
+        ## XXX: bad usage of try ...
+        try:
+            sf = data['sf']
+        except:
+            sf = None
+
+        try:
+            fm = data['fm']
+        except:
+            fm = None
+
+        try:
+            sv = data['sv']
+        except:
+            sv = None
+
+
         ## XXX: (missed+fields) cprov 20041015
         ## Request this field in sourceforge.py
-        wiki = None
+        ##wiki = None
         download = None
 
 
@@ -393,8 +428,8 @@ class Doap(SQLThing):
                   "listurl":           listurl,
                   "programminglang":   plang,
                   "downloadurl":       download,
-                  "sourceforgeproject":  data['sf'],
-                  "freshmeatproject":    data['fm'],                  
+                  "sourceforgeproject":  sf,
+                  "freshmeatproject":    fm,                  
                 }
                                           
         self._insert("product", dbdata)

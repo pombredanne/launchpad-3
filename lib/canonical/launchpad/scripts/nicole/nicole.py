@@ -8,7 +8,7 @@ from datetime import datetime
 from apt_pkg import ParseTagFile
 
 ## DOAP is inside our current Launchpad production DB
-DOAPDB = "launchpad_test"
+DOAPDB = "launchpad_dev"
 
 ## Update mode
 ## Query about new info even if there is already a project
@@ -38,14 +38,15 @@ def append_list(data):
     f.close()
 
 
-def get_current_packages(doap):
+def get_current_packages(source):
     packagenames = []
+
     print '@ Retrieve SourcePackage Information From Soyuz'
-    ## get all project names from doap
-    ##packages = doap.getSourcePackageNames()
 
     index = 0
-
+    
+    ## get all project names from doap
+    ##packages = source.getSourcePackageNames()
     ##    for package in packages:
     ##        ## Anyway, I can't discard any name, since multiple names
     ##        ##  means multiple products
@@ -55,7 +56,7 @@ def get_current_packages(doap):
     ##        index += 1
 
     ## Get SourceNames from Sources file (MAIN)
-    sources = ParseTagFile(open(PACKAGES))
+    sources = ParseTagFile(open(source))
     while sources.Step():        
         packagenames.append(sources.Section['Package'])
         index += 1
@@ -132,7 +133,8 @@ if __name__ == "__main__":
     
     clean_list()
     
-    tries, packages = get_current_packages(doap)
+    ##tries, packages = get_current_packages(doap)
+    tries, packages = get_current_packages(PACKAGES)
     
     for package in packages:
         index += 1
