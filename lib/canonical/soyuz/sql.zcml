@@ -249,8 +249,8 @@
       />
 
 <!--DUMMY CONTENT -->
-  <content class="canonical.soyuz.sql.currentVersion">
-    <allow interface="canonical.soyuz.interfaces.IcurrentVersion"/>
+  <content class="canonical.soyuz.sql.CurrentVersion">
+    <allow interface="canonical.soyuz.interfaces.ICurrentVersion"/>
   </content>
 
 

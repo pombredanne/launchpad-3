@@ -155,6 +155,10 @@ class SoyuzSourcePackage(SQLBase):
                                     dbschema.SourceUploadStatus.PROPOSED)
 
     def current(self, distroRelease):
+        """Currently published releases of this package for a given distro.
+        
+        :returns: iterable of SourcePackageReleases
+        """
         sourcepackagereleases = list(SoyuzSourcePackageRelease.select(
             'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackageUpload.distrorelease = %d'
@@ -163,10 +167,7 @@ class SoyuzSourcePackage(SQLBase):
             % (distroRelease.id, self.id, dbschema.SourceUploadStatus.PUBLISHED)
         ))
 
-        if sourcepackagereleases:
-            return sourcepackagereleases
-        else:
-            return None
+        return sourcepackagereleases
 
     def lastversions(self, distroRelease):
         last = list(SoyuzSourcePackageRelease.select(
@@ -182,6 +183,7 @@ class SoyuzSourcePackage(SQLBase):
             return last
         else:
             return None
+
 
 class SoyuzSourcePackageRelease(SQLBase):
     """A source package release, e.g. apache 2.0.48-3"""
@@ -201,6 +203,16 @@ class SoyuzSourcePackageRelease(SQLBase):
     ]
 
     builds = MultipleJoin('SoyuzBuild', joinColumn='sourcepackagerelease')
+
+    def architecturesReleased(self, distroRelease):
+        archReleases = SoyuzDistroArchRelease.select(
+            'PackagePublishing.distroarchrelease = DistroArchRelease.id '
+            'AND DistroArchRelease.distrorelease = %d '
+            'AND PackagePublishing.binarypackage = BinaryPackage.id '
+            'AND BinaryPackage.sourcepackagerelease = %d'
+            % (distroRelease.id, self.id)
+        )
+        return archReleases
 
 
 def getSourcePackage(name):

@@ -496,7 +496,7 @@ class IChangeset(Interface):
     message = Attribute("The log message for this changeset")
 
 ##Dummy Interfaces
-class IcurrentVersion(Interface):
+class ICurrentVersion(Interface):
     currentversion = Attribute("DUMMY")
     currentbuilds = Attribute("DUMMY")
 

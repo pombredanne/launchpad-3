@@ -128,7 +128,7 @@ class DistroReleaseSourceReleaseApp(object):
         return DistroReleaseSourceReleaseBuildApp(self.sourcepackagerelease,
                                                   arch)
 
-class currentVersion(object):
+class CurrentVersion(object):
     def __init__(self, version, builds):
         self.currentversion = version
         self.currentbuilds = builds
@@ -136,7 +136,6 @@ class currentVersion(object):
 class DistroReleaseSourceApp(object):
     def __init__(self, release, sourcepackage):
         self.release = release
-        # FIXME: sourcepackage is currently a sourcepackagerelease!
         self.sourcepackage = sourcepackage
         # FIXME: stub
         #         self.lastversions = ['1.2.3-4',
@@ -145,36 +144,53 @@ class DistroReleaseSourceApp(object):
         #                              '1.2.4-0',
         #                              '1.2.4-1']
 
-        #self.currentversions = [currentVersion('1.2.4-0',['i386', 'AMD64']),
-        #                        currentVersion('1.2.3-6',['PPC'])
+        #self.currentversions = [CurrentVersion('1.2.4-0',['i386', 'AMD64']),
+        #                        CurrentVersion('1.2.3-6',['PPC'])
         #                        ]
                                 
 
     def __getitem__(self, version):
-        return DistroReleaseSourceReleaseApp(self.sourcepackage.sourcepackage, version)
+        return DistroReleaseSourceReleaseApp(self.sourcepackage, version)
 
     def proposed(self):
-        return self.sourcepackage.sourcepackage.proposed(self.release,
-                                                         self.sourcepackage)
+        return self.sourcepackage.proposed(self.release, self.sourcepackage)
     proposed = property(proposed)
 
+    def currentReleases(self):
+        """The current releases of this source package by architecture.
+        
+        :returns: a dict of version -> list-of-architectures
+        """
+        sourceReleases = self.sourcepackage.current(self.release)
+        current = {}
+        from canonical.soyuz.database import SoyuzDistroArchRelease
+        for release in sourceReleases:
+            # Find distroarchs for that release
+            archReleases = release.architecturesReleased(self.release)
+            current[release.version] = [a.archtecturetag for a in archReleases]
+        return current
+
     def currentversions(self):
+        print [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
+        return [CurrentVersion(k, v) for k,v in self.currentReleases().iteritems()]
+
+        
         # FIXME: Probably should be more than just PUBLISHED uploads (e.g.
         # NEW + ACCEPTED + PUBLISHED?)
         #If true, it is defined inside database.py
-        currents = self.sourcepackage.sourcepackage.current(self.release)
+        currents = self.sourcepackage.current(self.release)
         if currents:
             currents_list = []
             for crts in currents:
-                currents_list.append(currentVersion(crts.version,['i386', 'AMD64']))
+                currents_list.append(CurrentVersion(crts.version,['i386', 'AMD64']))
             return currents_list
         else:
             return None
 
-    currentversions = property(currentversions)
+    #currentversions = property(currentversions)
 
     def lastversions(self):
-        return self.sourcepackage.sourcepackage.lastversions(self.release)
+        return self.sourcepackage.lastversions(self.release)
 
     lastversions = property(lastversions)
     
@@ -223,13 +239,15 @@ class DistroReleaseSourcesApp(object):
         query = self._query()
         query += ' AND name = %s ORDER BY dateuploaded DESC' % quote(name)
         try:
-            return DistroReleaseSourceApp(self.release,
-                    self.table.select(query, clauseTables=self.clauseTables)[0])
+            release = self.table.select(query,
+                                        clauseTables=self.clauseTables)[0]
         except IndexError:
             # Convert IndexErrors into KeyErrors so that Zope will give a
             # NotFound page.
             raise KeyError, name
-
+        else:
+            sourcePackage = release.sourcepackage
+            return DistroReleaseSourceApp(self.release, sourcePackage)
 
     def __iter__(self):
         #FIXME: Dummy solution to avoid a sourcepackage to be shown more then once
@@ -428,8 +446,8 @@ class DistroReleaseBinaryApp(object):
                              '1.2.4-1']
 
 
-        self.currentversions = [currentVersion('1.2.4-0',['i386', 'AMD64']),
-                                currentVersion('1.2.3-6',['PPC'])
+        self.currentversions = [CurrentVersion('1.2.4-0',['i386', 'AMD64']),
+                                CurrentVersion('1.2.3-6',['PPC'])
                                 ]
 
     def __getitem__(self, version):
