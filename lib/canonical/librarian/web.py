@@ -82,3 +82,22 @@ class DigestSearchResource(resource.Resource):
         text = '\n'.join(map(str, [len(matches)] + matches))
         return static.Data(text, 'text/plain').render(request)
     
+class AliasSearchResource(resource.Resource):
+    def __init__(self,storage):
+        self.storage = storage
+
+    def render_GET(self, request):
+        try:
+            alias = request.args['alias'][0]
+        except LookupError:
+            return static.Data('Bad search', 'text/plain').render(request)
+
+        library = self.storage.library
+        
+        row = library.getByAlias(alias)
+
+        # Desired format is fileid/aliasid/filename
+        ret = "/%s/%s/%s\n" % (row.content.id, alias, row.filename)
+        # Dunno why I need the __str__() here but it breaks without it
+        return static.Data(ret.__str__(), 'text/plain').render(request)
+

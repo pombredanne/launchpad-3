@@ -23,6 +23,7 @@ internet.TCPServer(9090, f).setServiceParent(librarianService)
 
 root = fatweb.LibraryFileResource(storage)
 root.putChild('search', fatweb.DigestSearchResource(storage))
+root.putChild('byalias', fatweb.AliasSearchResource(storage))
 site = server.Site(root)
 site.displayTracebacks = False
 internet.TCPServer(8000, site).setServiceParent(librarianService)

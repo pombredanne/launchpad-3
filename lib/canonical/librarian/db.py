@@ -43,3 +43,5 @@ class Library(object):
                                             connection=connection)
         return [(a.id, a.filename, a.mimetype) for a in results]
 
+    def getByAlias(self, aliasid):
+        return LibraryFileAlias.get(aliasid)
