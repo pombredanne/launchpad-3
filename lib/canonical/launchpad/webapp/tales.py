@@ -107,7 +107,7 @@ class DBSchemaAPI:
 
     def traverse(self, name, furtherPath):
         if name in self._all:
-            return self._all[name]._items[self._number].title
+            return self._all[name].items[self._number].title
         else:
             raise TraversalError, name
 

@@ -165,11 +165,11 @@ class TeamView(object):
         if tm is None:
             return True
 
-        adminOrApproved = [int(TeamMembershipStatus.APPROVED),
-                           int(TeamMembershipStatus.ADMIN)]
+        adminOrApproved = [TeamMembershipStatus.APPROVED,
+                           TeamMembershipStatus.ADMIN]
         open = TeamSubscriptionPolicy.OPEN
-        if tm.status == TeamMembershipStatus.DECLINED or \
-           (tm.status not in adminOrApproved and \
+        if tm.status == TeamMembershipStatus.DECLINED or (
+            tm.status not in adminOrApproved and
             tm.team.subscriptionpolicy == open):
             return True
         else:

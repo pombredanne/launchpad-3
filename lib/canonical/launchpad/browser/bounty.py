@@ -18,12 +18,29 @@ sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
 
 __all__ = ['BountyView', 'BountySetAddView']
 
-class BountyView:
-
-    __used_for__ = IBounty
+class BountySubscriberPortletMixin:
 
     subscribersPortlet = ViewPageTemplateFile(
         '../templates/portlet-bounty-subscribers.pt')
+
+    def getWatches(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription == BountySubscription.WATCH]
+
+    def getCCs(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription == BountySubscription.CC]
+
+    def getIgnores(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription == BountySubscription.IGNORE]
+
+
+
+
+class BountyView(BountySubscriberPortletMixin):
+
+    __used_for__ = IBounty
 
     relatedsPortlet = ViewPageTemplateFile(
         '../templates/portlet-bounty-relateds.pt')
@@ -58,7 +75,7 @@ class BountyView:
                 if subscription.person.id == self.user.id:
                     self.subscription = subscription.subscription
                     break
-    
+
     def subselector(self):
         html = '<select name="subscription">\n'
         html += '<option value="watch"'

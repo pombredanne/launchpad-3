@@ -38,7 +38,10 @@ class LoginTokenView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        url = urllib.basejoin(str(request.URL), self.PAGES[context.tokentype])
+        # XXX: Need to allow DBSchema Items to be keys in a dict!
+        # -- Steve Alexander 2005-03-09
+        url = urllib.basejoin(str(request.URL),
+                              self.PAGES[context.tokentype.value])
         request.response.redirect(url)
 
 

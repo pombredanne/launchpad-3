@@ -65,7 +65,7 @@ class Bounty(SQLBase):
         return BountySubscription(
             bounty=self,
             person=person,
-            subscription=int(subscription))
+            subscription=subscription)
 
     def unsubscribe(self, person):
         # see if a relevant subscription exists, and if so, delete it

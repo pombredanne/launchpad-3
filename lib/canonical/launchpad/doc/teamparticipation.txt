@@ -11,8 +11,8 @@ First of all, create some teams:
 >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
 >>> from canonical.lp.dbschema import TeamMembershipStatus
 >>> teampart = TeamParticipationSet()
->>> OPEN = int(TeamSubscriptionPolicy.OPEN)
->>> MODERATED = int(TeamSubscriptionPolicy.MODERATED)
+>>> OPEN = TeamSubscriptionPolicy.OPEN
+>>> MODERATED = TeamSubscriptionPolicy.MODERATED
 >>> expires = datetime(2005, 12, 01)
 >>> p = Person.byName('name16')
 >>> t1 = Person(subscriptionpolicy=OPEN, name='t1', teamowner=p)
@@ -36,7 +36,7 @@ True
 
 But t3 is a MODERATED team, somebody have to approve the membership:
 
->>> t3.setMembershipStatus(p, int(TeamMembershipStatus.APPROVED), expires, p)
+>>> t3.setMembershipStatus(p, TeamMembershipStatus.APPROVED, expires, p)
 >>> [m.name for m in teampart.getAllMembers(t3)]
 [u'name16']
 

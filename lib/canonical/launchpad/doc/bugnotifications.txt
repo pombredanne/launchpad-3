@@ -212,7 +212,7 @@ they each have on notification recipients.
     >>> bugtask_before_modification.product = None
     >>> bugtask_before_modification.distribution = firefox_crashes_in_debian.distribution
     >>> bugtask_before_modification.distrorelease = None
-    >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXED.value
+    >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXED
     >>> debian_task_modified = SQLObjectModifiedEvent(
     ...     firefox_crashes_in_debian, bugtask_before_modification,
     ...     ["status"], bug_submitter)

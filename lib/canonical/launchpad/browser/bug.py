@@ -52,6 +52,19 @@ class ViewWithBugContext:
         self.request = view.request
         self.context = getUtility(ILaunchBag).bug
 
+    def getCCs(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.CC]
+
+    def getWatches(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.WATCH]
+
+    def getIgnores(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.IGNORE]
+
+
 class BugPortlet:
     def __init__(self, template_filename):
         self.template = ViewPageTemplateFile(template_filename)
@@ -89,6 +102,19 @@ class BugView:
         '../templates/portlet-bug-tasks-headline.pt')
     actionsPortlet = BugPortlet(
         '../templates/portlet-bug-actions.pt')
+
+    def getCCs(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.CC]
+
+    def getWatches(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.WATCH]
+
+    def getIgnores(self):
+        return [s for s in self.context.subscriptions
+                if s.subscription==dbschema.BugSubscription.IGNORE]
+
 
 class BugEditView(BugView, SQLObjectEditView):
     def __init__(self, context, request):

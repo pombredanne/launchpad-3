@@ -58,15 +58,15 @@
         </td>
         <td valign="top">
           <div tal:repeat="task bug/bugtasks"
-               tal:content="task/status/lp:BugTaskStatus"></div>
+               tal:content="task/status/title"></div>
         </td>
         <td valign="top" nowrap>
           <div tal:repeat="task bug/bugtasks"
-               tal:content="task/priority/lp:BugPriority"></div>
+               tal:content="task/priority/title"></div>
         </td>
         <td valign="top" nowrap>
           <div tal:repeat="task bug/bugtasks"
-               tal:content="task/severity/lp:BugSeverity"></div>
+               tal:content="task/severity/title"></div>
         </td>
         <td valign="top" tal:content="python:bug.datecreated.strftime('%d %b %y')" nowrap>date</td>
         <td valign="top" tal:condition="not:owner" tal:content="bug/owner/name"></td>

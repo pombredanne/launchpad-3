@@ -261,7 +261,9 @@ class DatabaseUserDetailsStorage(object):
             % (email.replace("'", "''"),)
         )
         authorisedKeys.extend(transaction.fetchall())
-        
+        # Replace keytype with correct DBSchema items.
+        authorisedKeys = [(dbschema.SSHKeyType.items[keytype], keytext)
+                          for keytype, keytext in authorisedKeys]
         return authorisedKeys
 
 

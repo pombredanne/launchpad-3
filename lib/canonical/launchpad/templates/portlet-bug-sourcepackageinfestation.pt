@@ -10,7 +10,7 @@
             string:window.location='$bug_url/packageinfestations/${pkginfest/id}/+edit';">
             <td nowrap tal:content="python: pkginfest.sourcepackagerelease.sourcepackage.sourcepackagename.name + ' ' +
                              pkginfest.sourcepackagerelease.version">$Product.title</td>
-            <td tal:content="pkginfest/infestationstatus/lp:BugInfestationStatus">
+            <td tal:content="pkginfest/infestationstatus/title">
                 $BugInfestationStatus
             </td>
         </tr>

@@ -68,31 +68,50 @@ __all__ = (
 from zope.interface.advice import addClassAdvisor
 import sys
 
-from sqlobject.col import IntCol
+from sqlobject.col import SOCol, Col
+from sqlobject.include import validators
+import sqlobject.constraints as consts
 
-
-class EnumCol(IntCol):
+class SODBSchemaEnumCol(SOCol):
 
     def __init__(self, **kw):
         self.schema = kw.pop('schema')
         if not issubclass(self.schema, DBSchema):
             raise TypeError('schema must be a DBSchema: %r' % self.schema)
-        IntCol.__init__(self, **kw)
+        SOCol.__init__(self, **kw)
+        self.validator = validators.All.join(
+            DBSchemaValidator(schema=self.schema), self.validator)
+
+    def autoConstraints(self):
+        return [consts.isInt]
+
+    def _sqlType(self):
+        return 'INT'
+
+class DBSchemaEnumCol(Col):
+    baseClass = SODBSchemaEnumCol
+
+class DBSchemaValidator(validators.Validator):
+
+    def __init__(self, **kw):
+        self.schema = kw.pop('schema')
+        validators.Validator.__init__(self, **kw)
 
     def fromPython(self, value, state):
         """Convert from DBSchema Item to int.
 
-        >>> col = EnumCol(dbName='status', notNull=True,
-        ...     schema=BugTaskStatus, default=BugTaskStatus.NEW)
-        >>> col.fromPython(BugTaskStatus.PENDINGUPLOAD, None)
+        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
+        >>> validator.fromPython(BugTaskStatus.PENDINGUPLOAD, None)
         25
-        >>> col.fromPython(ImportTestStatus.NEW, None)
+        >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
         ...
         TypeError: DBSchema Item from wrong class
         >>>
 
         """
+        if isinstance(value, int):
+            return value
         if not isinstance(value, Item):
             raise TypeError('Not a DBSchema Item: %r' % value)
         if value.schema is not self.schema:
@@ -102,18 +121,18 @@ class EnumCol(IntCol):
     def toPython(self, value, state):
         """Convert from int to DBSchema Item.
 
-        >>> col = EnumCol(dbName='status', notNull=True,
-        ...     schema=BugTaskStatus, default=BugTaskStatus.NEW)
-        >>> col.toPython(25, None) is BugTaskStatus.PENDINGUPLOAD
+        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
+        >>> validator.toPython(25, None) is BugTaskStatus.PENDINGUPLOAD
         True
 
         """
         return self.schema.items[value]
 
+EnumCol = DBSchemaEnumCol
 
 def docstring_to_title_descr(string):
     """When given a classically formatted docstring, returns a tuple
-    (title, description).
+    (title,x description).
 
     >>> class Foo:
     ...     '''
@@ -238,7 +257,7 @@ class Item:
         if isinstance(other, int):
             return self.value == other
         elif isinstance(other, Item):
-            return self.value == other.value
+            return self.value == other.value and self.schema == other.schema
         else:
             return False
 

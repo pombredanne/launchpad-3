@@ -109,7 +109,7 @@ EVENT: source package assignment edited
   >>> edit_fields = ["sourcepackagename", "status", "priority", "severity"]
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
-  >>> source_package_assignment.status = BugTaskStatus.ACCEPTED.value
+  >>> source_package_assignment.status = BugTaskStatus.ACCEPTED
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
   ...     source_package_assignment, old_source_package_assignment,
   ...     edit_fields, user)
@@ -137,7 +137,7 @@ EVENT: upstream product assignment edited
 
   >>> edit_fields = ["product", "status", "priority", "severity"]
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
-  >>> product_assignment.status = BugTaskStatus.REJECTED.value
+  >>> product_assignment.status = BugTaskStatus.REJECTED
   >>> product_assignment_edited = SQLObjectModifiedEvent(
   ...     product_assignment, old_product_assignment, edit_fields, user)
   >>> notify(product_assignment_edited)
@@ -158,7 +158,7 @@ EVENT: source package infestation gets documented
   ...     creatorID=user.id, dateverified=right_now,
   ...     verifiedbyID=user.id, lastmodified=right_now,
   ...     lastmodifiedbyID=user.id, sourcepackagerelease=14,
-  ...     infestationstatus=BugInfestationStatus.AFFECTED.value)
+  ...     infestationstatus=BugInfestationStatus.AFFECTED)
   >>> package_infesation_added = ObjectCreatedEvent(package_infestation)
   >>> notify(package_infesation_added)
   >>> latest_activity = bug.activity[-1]
@@ -171,7 +171,7 @@ EVENT: source package infestation edited
 
   >>> edit_fields = ["sourcepackagerelease", "infestationstatus"]
   >>> old_package_infestation = capture_state(package_infestation, *edit_fields)
-  >>> package_infestation.infestationstatus = BugInfestationStatus.VICTIMIZED.value
+  >>> package_infestation.infestationstatus = BugInfestationStatus.VICTIMIZED
   >>> package_infestation_edited = SQLObjectModifiedEvent(
   ...     package_infestation, old_package_infestation, edit_fields, user)
   >>> notify(package_infestation_edited)
@@ -204,7 +204,7 @@ EVENT: product infestation edited
 
   >>> edit_fields = ["productrelease", "infestationstatus"]
   >>> old_product_infestation = capture_state(product_infestation, *edit_fields)
-  >>> product_infestation.infestationstatus = BugInfestationStatus.UNKNOWN.value
+  >>> product_infestation.infestationstatus = BugInfestationStatus.UNKNOWN
   >>> product_infestation_edited = SQLObjectModifiedEvent(
   ...     product_infestation, old_product_infestation, edit_fields, user)
   >>> notify(product_infestation_edited)

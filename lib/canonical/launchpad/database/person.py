@@ -65,7 +65,7 @@ class Person(SQLBase):
     karmatimestamp = DateTimeCol(dbName='karmatimestamp', default=UTC_NOW)
 
     subscriptionpolicy = IntCol(dbName='subscriptionpolicy', 
-                                default=int(TeamSubscriptionPolicy.MODERATED))
+                                default=TeamSubscriptionPolicy.MODERATED)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
                                      default=None)
@@ -205,8 +205,8 @@ class Person(SQLBase):
                   comment=None):
         assert self.teamowner is not None
         assert not person.hasMembershipEntryFor(self)
-        assert status in [int(TeamMembershipStatus.APPROVED),
-                          int(TeamMembershipStatus.PROPOSED)]
+        assert status in [TeamMembershipStatus.APPROVED,
+                          TeamMembershipStatus.PROPOSED]
 
         if expires is None and self.defaultmembershipperiod:
             expires = datetime.utcnow() + \
@@ -216,7 +216,7 @@ class Person(SQLBase):
                        dateexpires=expires, reviewer=reviewer, 
                        reviewercomment=comment)
 
-        if status == int(TeamMembershipStatus.APPROVED):
+        if status == TeamMembershipStatus.APPROVED:
             _fillTeamParticipation(person, self)
 
     def setMembershipStatus(self, person, status, expires=None, reviewer=None,
@@ -230,12 +230,12 @@ class Person(SQLBase):
             # administrators.
             pass
 
-        approved = int(TeamMembershipStatus.APPROVED)
-        admin = int(TeamMembershipStatus.ADMIN)
-        expired = int(TeamMembershipStatus.EXPIRED)
-        declined = int(TeamMembershipStatus.DECLINED)
-        deactivated = int(TeamMembershipStatus.DEACTIVATED)
-        proposed = int(TeamMembershipStatus.PROPOSED)
+        approved = TeamMembershipStatus.APPROVED
+        admin = TeamMembershipStatus.ADMIN
+        expired = TeamMembershipStatus.EXPIRED
+        declined = TeamMembershipStatus.DECLINED
+        deactivated = TeamMembershipStatus.DEACTIVATED
+        proposed = TeamMembershipStatus.PROPOSED
 
         # Make sure the transition from the current status to the given status
         # is allowed. All allowed transitions are in the TeamMembership spec.
@@ -272,20 +272,20 @@ class Person(SQLBase):
             return False
 
         tm = results[0]
-        if tm.status not in (int(TeamMembershipStatus.ADMIN),
-                             int(TeamMembershipStatus.APPROVED)):
+        if tm.status not in (TeamMembershipStatus.ADMIN,
+                             TeamMembershipStatus.APPROVED):
             return False
 
-        team.setMembershipStatus(self, int(TeamMembershipStatus.DEACTIVATED))
+        team.setMembershipStatus(self, TeamMembershipStatus.DEACTIVATED)
         return True
 
     def joinTeam(self, team):
-        if team.subscriptionpolicy == int(TeamSubscriptionPolicy.RESTRICTED):
+        if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             return False
-        elif team.subscriptionpolicy == int(TeamSubscriptionPolicy.MODERATED):
-            status = int(TeamMembershipStatus.PROPOSED)
-        elif team.subscriptionpolicy == int(TeamSubscriptionPolicy.OPEN):
-            status = int(TeamMembershipStatus.APPROVED)
+        elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+            status = TeamMembershipStatus.PROPOSED
+        elif team.subscriptionpolicy == TeamSubscriptionPolicy.OPEN:
+            status = TeamMembershipStatus.APPROVED
 
         results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
         if results.count() == 1:
@@ -310,7 +310,7 @@ class Person(SQLBase):
 
     def _getEmailsByStatus(self, status):
         query = AND(EmailAddress.q.personID==self.id,
-                    EmailAddress.q.status==int(status))
+                    EmailAddress.q.status==status)
         return list(EmailAddress.select(query))
 
     def getMembersByStatus(self, status):
@@ -327,27 +327,27 @@ class Person(SQLBase):
     title = property(_title)
 
     def _deactivatedmembers(self): 
-        return self.getMembersByStatus(int(TeamMembershipStatus.DEACTIVATED))
+        return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
     deactivatedmembers = property(_deactivatedmembers)
 
     def _expiredmembers(self): 
-        return self.getMembersByStatus(int(TeamMembershipStatus.EXPIRED))
+        return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
     expiredmembers = property(_expiredmembers)
 
     def _declinedmembers(self): 
-        return self.getMembersByStatus(int(TeamMembershipStatus.DECLINED))
+        return self.getMembersByStatus(TeamMembershipStatus.DECLINED)
     declinedmembers = property(_declinedmembers)
 
     def _proposedmembers(self):
-        return self.getMembersByStatus(int(TeamMembershipStatus.PROPOSED))
+        return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
     proposedmembers = property(_proposedmembers)
 
     def _administrators(self):
-        return self.getMembersByStatus(int(TeamMembershipStatus.ADMIN))
+        return self.getMembersByStatus(TeamMembershipStatus.ADMIN)
     administrators = property(_administrators)
 
     def _approvedmembers(self):
-        return self.getMembersByStatus(int(TeamMembershipStatus.APPROVED))
+        return self.getMembersByStatus(TeamMembershipStatus.APPROVED)
     approvedmembers = property(_approvedmembers)
 
     def _memberships(self):
@@ -388,8 +388,8 @@ class Person(SQLBase):
         assert email.person == self
         preferredemail = self.preferredemail
         if preferredemail is not None:
-            preferredemail.status = int(EmailAddressStatus.VALIDATED)
-        email.status = int(EmailAddressStatus.PREFERRED)
+            preferredemail.status = EmailAddressStatus.VALIDATED
+        email.status = EmailAddressStatus.PREFERRED
 
     def _getPreferredemail(self):
         status = EmailAddressStatus.PREFERRED
@@ -636,7 +636,7 @@ def createPerson(email, displayname=None, givenname=None, familyname=None,
     kw['password'] = password
     person = PersonSet().newPerson(**kw)
 
-    new = int(EmailAddressStatus.NEW)
+    new = EmailAddressStatus.NEW
     EmailAddress(person=person.id, email=email.lower(), status=new)
 
     return person
@@ -787,7 +787,8 @@ class TeamMembership(SQLBase):
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
-    status = IntCol(dbName='status', notNull=True)
+    status = EnumCol(
+        dbName='status', notNull=True, schema=TeamMembershipStatus)
     datejoined = DateTimeCol(dbName='datejoined', default=datetime.utcnow(),
                              notNull=True)
     dateexpires = DateTimeCol(dbName='dateexpires', default=None)

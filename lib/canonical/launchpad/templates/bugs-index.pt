@@ -86,10 +86,10 @@
                         ass_link string:/malone/$collection_name/$assid/+edit;
                         ass_owner task/owner/name|nothing;
                         potential_assignee request/lp:person/displayname|nothing;
-                        status task/status/lp:BugTaskStatus;
+                        status task/status/title;
                         assignee task/assignee/name|python:'';
-                        priority task/priority/lp:BugPriority;
-                        severity task/severity/lp:BugSeverity;
+                        priority task/priority/title;
+                        severity task/severity/title;
                         statusid string:status${repeat/task/number};
                         assigneeid string:assignee${repeat/task/number};">
           <td tal:content="bugid"

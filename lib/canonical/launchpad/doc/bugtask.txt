@@ -42,11 +42,11 @@ to access those other objects:
 Next, we need to grab some values to provide for priority, severity and status.
 
     >>> from canonical.lp.dbschema import BugTaskStatus, BugSeverity, BugPriority
-    >>> STATUS_NEW = BugTaskStatus.NEW.value
-    >>> STATUS_ACCEPTED = BugTaskStatus.ACCEPTED.value
-    >>> STATUS_FIXED = BugTaskStatus.FIXED.value
-    >>> SEVERITY_NORMAL = BugSeverity.NORMAL.value
-    >>> PRIORITY_MEDIUM = BugPriority.MEDIUM.value
+    >>> STATUS_NEW = BugTaskStatus.NEW
+    >>> STATUS_ACCEPTED = BugTaskStatus.ACCEPTED
+    >>> STATUS_FIXED = BugTaskStatus.FIXED
+    >>> SEVERITY_NORMAL = BugSeverity.NORMAL
+    >>> PRIORITY_MEDIUM = BugPriority.MEDIUM
 
   i. Upstream -- a bug that has to be fixed in an upstream product
 
@@ -116,7 +116,7 @@ BugTaskSet.search. Here's how you'd grab all the NEW and ACCEPTED tasks:
     >>> from canonical.launchpad.database import Product
     >>> upstream_mozilla = Product.get(4)
     >>> bugtasks = bugtaskset.search(
-    ...     status = any(BugTaskStatus.NEW.value, BugTaskStatus.ACCEPTED.value),
+    ...     status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
     ...     product = upstream_mozilla,
     ...     orderby = "id")
     >>> print bugtasks.count()
@@ -299,7 +299,7 @@ this test this way until bug #104/production gets fixed so that one doesn't
 require so much boilerplate to simulate logins in tests.)
 
     >>> bugtasks = bugtaskset.search(
-    ...     status = any(BugTaskStatus.NEW.value, BugTaskStatus.ACCEPTED.value),
+    ...     status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
     ...     product = upstream_mozilla,
     ...     orderby = "id")
     >>> print bugtasks.count()
@@ -327,7 +327,7 @@ We'll find all four IBugTasks that match the search criteria, as the maintainer
 is also an explicit subscriber in this case.
 
     >>> bugtasks = bugtaskset.search(
-    ...     status = any(BugTaskStatus.NEW.value, BugTaskStatus.ACCEPTED.value),
+    ...     status = any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
     ...     product = upstream_mozilla,
     ...     orderby = "id")
     >>> print bugtasks.count()

@@ -70,17 +70,17 @@
                 </a>
              </td>
             
-            <td tal:content="bugtask/status/lp:BugTaskStatus">
+            <td tal:content="bugtask/status/title">
                 $BugTask.status
             </td>
 
-            <td tal:content="bugtask/severity/lp:BugSeverity"
-                tal:attributes="class string:severity${bugtask/severity/lp:BugSeverity}">
+            <td tal:content="bugtask/severity/title"
+                tal:attributes="class string:severity${bugtask/severity/title}">
                 Critical
             </td>
 
-            <td tal:content="bugtask/priority/lp:BugPriority"
-                tal:attributes="class string:priority${bugtask/priority/lp:BugPriority}">
+            <td tal:content="bugtask/priority/title"
+                tal:attributes="class string:priority${bugtask/priority/title}">
                 Medium
             </td>
             

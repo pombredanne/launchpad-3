@@ -448,7 +448,7 @@ class DocResponseWrapper(ResponseWrapper):
     def getBody(self):
         return self.getOutput()
 
-def http(request_string, port=9000, handle_errors=True):
+def http(request_string, port=9000, handle_errors=True, debug=False):
     """Execute an HTTP request string via the publisher
 
     This is used for HTTP doc tests.
@@ -503,7 +503,8 @@ def http(request_string, port=9000, handle_errors=True):
     request.response.setHeaderOutput(header_output)
     response = DocResponseWrapper(request.response, outstream, path,
                                   header_output)
-
+    if debug:
+        import pdb;pdb.set_trace()
     publish(request, handle_errors=handle_errors)
     setSite(old_site)
 

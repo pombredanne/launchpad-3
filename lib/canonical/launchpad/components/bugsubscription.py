@@ -24,8 +24,7 @@ class BugSubscriptionSetAdapter:
     def getCcEmailAddresses(self):
         emails = Set()
         for subscription in self.bug.subscriptions:
-            if (dbschema.BugSubscription.items[subscription.subscription].value ==
-                dbschema.BugSubscription.CC.value):
+            if subscription.subscription == dbschema.BugSubscription.CC:
                 best_email = _get_best_email_address(subscription.person)
                 if best_email:
                     emails.add(best_email)
@@ -77,12 +76,14 @@ class BugSubscriptionSetAdapter:
         
         if person.id not in subscriber_ids:
             return BugSubscription(
-                bug = self.bug.id, person = person.id,
-                subscription = dbschema.BugSubscription.CC.value)
+                bug=self.bug.id,
+                person=person.id,
+                subscription=dbschema.BugSubscription.CC)
 
     def unsubscribePerson(self, person):
         """See canonical.launchpad.interfaces.bugsubscription.IBugSubscriptionSet."""
-        for subscription in BugSubscription.selectBy(bugID = self.bug.id, personID = person.id):
+        for subscription in BugSubscription.selectBy(
+            bugID=self.bug.id, personID=person.id):
             BugSubscription.delete(subscription)
 
 # XXX, Brad Bollenbach, 2004-12-07: move this into an adapter for IPerson
@@ -91,7 +92,7 @@ def _get_best_email_address(person):
         # Should never be more than 1, but just in case
         preferred_email_addresses = list(EmailAddress.selectBy(
             personID=person.id,
-            status=dbschema.EmailAddressStatus.PREFERRED.value
+            status=dbschema.EmailAddressStatus.PREFERRED
             ))
         if len(preferred_email_addresses) > 0:
             return preferred_email_addresses[0].email
@@ -99,7 +100,7 @@ def _get_best_email_address(person):
 
         # valid_email_addresses = list(EmailAddress.selectBy(
         #     personID=person.id,
-        #     status=dbschema.EmailAddressStatus.VALIDATED.value
+        #     status=dbschema.EmailAddressStatus.VALIDATED
         #     ))
 
         # best_email = None

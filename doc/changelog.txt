@@ -2,6 +2,63 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-09 22:34:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1400
+
+    Summary:
+      Much more extensive improvements to dbchema and enum cols.  Modified code to not use .value or int(DBSchemaItem) or item/lp:DBSchema any more.  Use just the plain item, or in tales, item/title.  Still a few cases to correct.
+    Revision:
+      launchpad--devel--0--patch-1400
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-5
+       removal of lots of .value and int(...) from use of DBSchema items.  assigning ints to dbschema enum columns is still supported for a couple of cases i haven't tracked down yet.
+    
+     * steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-6
+       removed a few more lp:DBSchema uses.
+    
+     * steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-7
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/authserver/database.py
+     lib/canonical/functional.py
+     lib/canonical/launchpad/browser/bounty.py
+     lib/canonical/launchpad/browser/bug.py
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/components/bugsubscription.py
+     lib/canonical/launchpad/database/bounty.py
+     lib/canonical/launchpad/database/bountysubscription.py
+     lib/canonical/launchpad/database/bugsubscription.py
+     lib/canonical/launchpad/database/infestation.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/bugactivity.txt
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/doc/teamparticipation.txt
+     lib/canonical/launchpad/pagetests/bounty/25-bounty-subscriptions.txt
+     lib/canonical/launchpad/templates/bugs-assigned.pt
+     lib/canonical/launchpad/templates/bugs-createdby-index.pt
+     lib/canonical/launchpad/templates/bugs-index.pt
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+     lib/canonical/launchpad/templates/portlet-bounty-subscribers.pt
+     lib/canonical/launchpad/templates/portlet-bug-people.pt
+     lib/canonical/launchpad/templates/portlet-bug-productinfestation.pt
+     lib/canonical/launchpad/templates/portlet-bug-sourcepackageinfestation.pt
+     lib/canonical/launchpad/templates/portlet-bug-tasks-headline.pt
+     lib/canonical/launchpad/webapp/tales.py
+     lib/canonical/lp/configure.zcml lib/canonical/lp/dbschema.py
+     lib/canonical/lp/tests/test_dbschema.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-5
+     steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-6
+     steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-7
+
+
 2005-03-09 19:21:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1399
 
     Summary:

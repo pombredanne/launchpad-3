@@ -47,7 +47,7 @@ def test_constructor():
     >>> print "SELECT * from Foo where Foo.id = '%s';" % SomeClass.attribute
     SELECT * from Foo where Foo.id = '2';
 
-    An Item is comparable to ints.
+    An Item is not comparable to ints.
 
     >>> 1 == SomeClass.attribute
     False
@@ -77,6 +77,19 @@ def test_constructor():
 
     >>> SomeClass.attribute.__sqlrepr__(None)
     '2'
+
+    An Item will not compare equal to an Item from a different schema.
+
+    To test this, we'll create another schema, then compare items.
+
+    >>> class SomeOtherClass:
+    ...    description = "Description of some other class"
+    ...    attr3 = Item(3, 'an other foo', 'description of an other foo')
+    ...
+    >>> SomeClass.attr3.value == SomeOtherClass.attr3.value
+    True
+    >>> SomeOtherClass.attr3 == SomeClass.attr3
+    False
 
     """
 
