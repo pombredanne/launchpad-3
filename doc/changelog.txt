@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-04 03:09:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1550
+
+    Summary:
+      .count() does work with modern SQLObject, so revert
+    Revision:
+      launchpad--devel--0--patch-1550
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-14
+       .count() does work with modern SQLObject, so revert
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/product.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--requireproductseries--0--patch-14
+
+
 2005-04-03 21:22:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1549
 
     Summary:

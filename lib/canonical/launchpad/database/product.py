@@ -434,18 +434,13 @@ class ProductSet:
         return Product.selectBy(reviewed=True, active=True).count()
 
     def count_bounties(self):
-        # XXX: This should be using .count(), but it doesn't work with
-        # distinct=True at the moment -- StuartBishop 20050401
-        return len(list(Product.select("ProductBounty.product=Product.id",
+        return Product.select("ProductBounty.product=Product.id",
                               distinct=True,
-                              clauseTables=['ProductBounty'])))
+                              clauseTables=['ProductBounty']).count()
 
     def count_buggy(self):
-        # XXX: This should be using .count(), but it doesn't work with
-        # distinct=True at the moment -- StuartBishop 20050401
-        return len(list(Product.select(
+        return Product.select(
                 "BugTask.product=Product.id", distinct=True,
-                clauseTables=['BugTask'],
-                )))
+                clauseTables=['BugTask']).count()
 
 
