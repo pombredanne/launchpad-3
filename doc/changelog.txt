@@ -2,6 +2,57 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-24 20:32:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1497
+
+    Summary:
+      DistroReleaseTranslationList implementation
+    Revision:
+      launchpad--devel--0--patch-1497
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-3
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1466
+    
+     * daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-4
+       merge Carlos' PoTemplateLinkages branch
+    
+     * daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-5
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-6
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-7
+       distro release translation list
+    
+     * daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-8
+       changes in response to Steve's review
+    
+     * daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-9
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-10
+       add extra data for testing the distro release translation list
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/potemplate.py
+     lib/canonical/launchpad/pagetests/standalone/xx-rosetta-distrorelease-list.txt
+     lib/canonical/launchpad/templates/potemplatesubset-index.pt
+
+    new patches:
+     daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-3
+     daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-4
+     daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-5
+     daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-6
+     daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-7
+     daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-8
+     daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-9
+     daf@canonical.com--2004/launchpad--DistroReleaseTranslationList--0--patch-10
+
+
 2005-03-24 19:09:38 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1496
 
     Summary:
