@@ -45,7 +45,8 @@ interacting with the system as an anonymous (i.e. unauthenticated) user:
     ...     def __init__(self, login=None, user=None):
     ...         self.login = login
     ...         self.user = user
-    >>> ztapi.provideUtility(ILaunchBag, MockLaunchBag())
+    >>> launchbag = MockLaunchBag()
+    >>> ztapi.provideUtility(ILaunchBag, launchbag)
 
 let's fetch the BugTask with ID 1:
 
@@ -125,9 +126,8 @@ But, logged in as the Firefox maintainer:
     >>> interaction = getInteraction()
     >>> interaction.remove(anon_participation)
     >>> interaction.add(firefox_maintainer_participation)
-
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag, MockLaunchBag("test@canonical.com", firefox_maintainer))
+    >>> launchbag.login = "test@canonical.com"
+    >>> launchbag.user = firefox_maintainer
 
 We'll find all four IBugTasks that match the search criteria, as the maintainer
 is also an explicit subscriber in this case.
@@ -145,4 +145,8 @@ And, as you would expect, we'll also be able to access it directly:
     >>> bug_firefox_no_svg_support = bugtaskset.get(2)
     >>> bug_firefox_no_svg_support.bug.title
     u'Firefox does not support SVG'
+
+Cleanup the dummy LaunchBag we registered
+
+    >>> ztapi.unprovideUtility(ILaunchBag)
 

@@ -161,6 +161,33 @@ database. Shut down postgres as before, restart it without external
 connections as before, and run all the patches as before (using
 launchpad_prod instead of launchpad_tst).
 
+Create a new development baseline
+---------------------------------
+
+After a production update, you should copy the live schema back into
+the development tree. This ensures that any differences that have
+crept in between the development database and reality are fixed.
+The new baseline dump (launchpad-XX-0-0.sql in this directory) can
+be generated on production using the following::
+
+        pg_dump -Fc --schema-only --no-owner --no-acl --schema=public \
+            launchpad_prod > launchpad.dump
+        pg_restore -l launchpad.dump | \
+            grep -v PROCEDURAL | grep -v COMMENT | \
+            grep -v FUNCTION | grep -v VIEW > launchpad.list
+        pg_restore -l launchpad.dump | grep VIEW >> launchpad.list
+        echo "-- Generated `date`" > launchpad.sql
+        echo 'SET client_min_messages=ERROR;' >> launchpad.sql
+        pg_restore --no-owner --no-acl -L launchpad.list launchpad.dump | \
+            grep -v '^--' >> launchpad.sql
+
+Move all the existing patches and the old baseline to the archive directory.
+Add the new baseline using the next revision number (should be in sync
+with the production release version). Create a patch-XX-0-0.sql patch
+to populate the LaunchpadDatabaseRevision table with the correct value
+so the tests pass.
+
+
 Notes
 =====
 

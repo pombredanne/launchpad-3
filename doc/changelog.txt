@@ -2,6 +2,189 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-03 10:52:42 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1272
+
+    Summary:
+      New database baseline and stop bugtask.txt victimizing other tests
+    Revision:
+      launchpad--devel--0--patch-1272
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-112
+       Pending patch already merged
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-113
+       Update database baseline and document procedure in README
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-114
+       Update db revision tests to allow LaunchpadDatabaseRevision to contain an extry for every patch applied, rather than just a single entry for the last patch applied
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-115
+       Deregister utility to stop bugtask.txt victimizing other tests
+    
+
+    new files:
+     database/schema/.arch-ids/launchpad-10-00-0.sql.id
+     database/schema/.arch-ids/patch-10-00-0.sql.id
+     database/schema/launchpad-10-00-0.sql
+     database/schema/patch-10-00-0.sql
+
+    removed files:
+     database/schema/pending/.arch-ids/dsilvers-fiera-buildd.sql.id
+     database/schema/pending/dsilvers-fiera-buildd.sql
+
+    modified files:
+     database/schema/Makefile database/schema/README
+     database/schema/launchpad.html doc/changelog.txt
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/ftests/test_dbrevision.py
+
+    renamed files:
+     database/schema/.arch-ids/launchpad-6-00-0.sql.id
+       ==> database/schema/archive/.arch-ids/launchpad-6-00-0.sql.id
+     database/schema/.arch-ids/patch-6-00-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-00-0.sql.id
+     database/schema/.arch-ids/patch-6-01-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-01-0.sql.id
+     database/schema/.arch-ids/patch-6-02-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-02-0.sql.id
+     database/schema/.arch-ids/patch-6-03-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-03-0.sql.id
+     database/schema/.arch-ids/patch-6-04-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-04-0.sql.id
+     database/schema/.arch-ids/patch-6-05-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-05-0.sql.id
+     database/schema/.arch-ids/patch-6-06-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-06-0.sql.id
+     database/schema/.arch-ids/patch-6-07-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-07-0.sql.id
+     database/schema/.arch-ids/patch-6-08-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-08-0.sql.id
+     database/schema/.arch-ids/patch-6-09-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-09-0.sql.id
+     database/schema/.arch-ids/patch-6-10-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-10-0.sql.id
+     database/schema/.arch-ids/patch-6-11-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-11-0.sql.id
+     database/schema/.arch-ids/patch-6-12-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-12-0.sql.id
+     database/schema/.arch-ids/patch-6-13-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-13-0.sql.id
+     database/schema/.arch-ids/patch-6-14-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-14-0.sql.id
+     database/schema/.arch-ids/patch-6-15-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-15-0.sql.id
+     database/schema/.arch-ids/patch-6-16-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-16-0.sql.id
+     database/schema/.arch-ids/patch-6-17-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-17-0.sql.id
+     database/schema/.arch-ids/patch-6-18-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-18-0.sql.id
+     database/schema/.arch-ids/patch-6-19-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-19-0.sql.id
+     database/schema/.arch-ids/patch-6-20-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-20-0.sql.id
+     database/schema/.arch-ids/patch-6-21-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-21-0.sql.id
+     database/schema/.arch-ids/patch-6-22-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-22-0.sql.id
+     database/schema/.arch-ids/patch-6-23-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-23-0.sql.id
+     database/schema/.arch-ids/patch-6-24-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-24-0.sql.id
+     database/schema/.arch-ids/patch-6-25-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-25-0.sql.id
+     database/schema/.arch-ids/patch-6-26-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-26-0.sql.id
+     database/schema/.arch-ids/patch-6-27-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-27-0.sql.id
+     database/schema/.arch-ids/patch-6-28-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-28-0.sql.id
+     database/schema/.arch-ids/patch-6-29-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-29-0.sql.id
+     database/schema/.arch-ids/patch-6-30-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-30-0.sql.id
+     database/schema/.arch-ids/patch-6-31-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-31-0.sql.id
+     database/schema/.arch-ids/patch-6-32-0.sql.id
+       ==> database/schema/archive/.arch-ids/patch-6-32-0.sql.id
+     database/schema/launchpad-6-00-0.sql
+       ==> database/schema/archive/launchpad-6-00-0.sql
+     database/schema/patch-6-00-0.sql
+       ==> database/schema/archive/patch-6-00-0.sql
+     database/schema/patch-6-01-0.sql
+       ==> database/schema/archive/patch-6-01-0.sql
+     database/schema/patch-6-02-0.sql
+       ==> database/schema/archive/patch-6-02-0.sql
+     database/schema/patch-6-03-0.sql
+       ==> database/schema/archive/patch-6-03-0.sql
+     database/schema/patch-6-04-0.sql
+       ==> database/schema/archive/patch-6-04-0.sql
+     database/schema/patch-6-05-0.sql
+       ==> database/schema/archive/patch-6-05-0.sql
+     database/schema/patch-6-06-0.sql
+       ==> database/schema/archive/patch-6-06-0.sql
+     database/schema/patch-6-07-0.sql
+       ==> database/schema/archive/patch-6-07-0.sql
+     database/schema/patch-6-08-0.sql
+       ==> database/schema/archive/patch-6-08-0.sql
+     database/schema/patch-6-09-0.sql
+       ==> database/schema/archive/patch-6-09-0.sql
+     database/schema/patch-6-10-0.sql
+       ==> database/schema/archive/patch-6-10-0.sql
+     database/schema/patch-6-11-0.sql
+       ==> database/schema/archive/patch-6-11-0.sql
+     database/schema/patch-6-12-0.sql
+       ==> database/schema/archive/patch-6-12-0.sql
+     database/schema/patch-6-13-0.sql
+       ==> database/schema/archive/patch-6-13-0.sql
+     database/schema/patch-6-14-0.sql
+       ==> database/schema/archive/patch-6-14-0.sql
+     database/schema/patch-6-15-0.sql
+       ==> database/schema/archive/patch-6-15-0.sql
+     database/schema/patch-6-16-0.sql
+       ==> database/schema/archive/patch-6-16-0.sql
+     database/schema/patch-6-17-0.sql
+       ==> database/schema/archive/patch-6-17-0.sql
+     database/schema/patch-6-18-0.sql
+       ==> database/schema/archive/patch-6-18-0.sql
+     database/schema/patch-6-19-0.sql
+       ==> database/schema/archive/patch-6-19-0.sql
+     database/schema/patch-6-20-0.sql
+       ==> database/schema/archive/patch-6-20-0.sql
+     database/schema/patch-6-21-0.sql
+       ==> database/schema/archive/patch-6-21-0.sql
+     database/schema/patch-6-22-0.sql
+       ==> database/schema/archive/patch-6-22-0.sql
+     database/schema/patch-6-23-0.sql
+       ==> database/schema/archive/patch-6-23-0.sql
+     database/schema/patch-6-24-0.sql
+       ==> database/schema/archive/patch-6-24-0.sql
+     database/schema/patch-6-25-0.sql
+       ==> database/schema/archive/patch-6-25-0.sql
+     database/schema/patch-6-26-0.sql
+       ==> database/schema/archive/patch-6-26-0.sql
+     database/schema/patch-6-27-0.sql
+       ==> database/schema/archive/patch-6-27-0.sql
+     database/schema/patch-6-28-0.sql
+       ==> database/schema/archive/patch-6-28-0.sql
+     database/schema/patch-6-29-0.sql
+       ==> database/schema/archive/patch-6-29-0.sql
+     database/schema/patch-6-30-0.sql
+       ==> database/schema/archive/patch-6-30-0.sql
+     database/schema/patch-6-31-0.sql
+       ==> database/schema/archive/patch-6-31-0.sql
+     database/schema/patch-6-32-0.sql
+       ==> database/schema/archive/patch-6-32-0.sql
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-112
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-113
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-114
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-115
+
+
 2005-02-02 13:24:34 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1271
 
     Summary:
