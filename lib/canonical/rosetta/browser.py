@@ -29,7 +29,8 @@ from canonical.launchpad.interfaces import ILanguageSet,  \
 from canonical.launchpad.database import Person, POTemplate, POFile
 
 from canonical.rosetta.poexport import POExport
-from canonical.rosetta.pofile import POHeader
+from canonical.rosetta.pofile import POHeader, POSyntaxError, \
+    POInvalidInputError
 from canonical.rosetta.tar import string_to_tarfile, examine_tarfile
 
 from canonical.lp.dbschema import RosettaImportStatus
@@ -37,6 +38,7 @@ from canonical.lp.dbschema import RosettaImportStatus
 charactersPerLine = 50
 SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
 NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
+_default_importer_name = 'Unknown'
 
 def count_lines(text):
     '''Count the number of physical lines in a string. This is always at least
@@ -262,12 +264,6 @@ def check_po_syntax(s):
 
     return True
 
-def import_pot_or_po(potemplate_or_pofile, importer, contents):
-    potemplate_or_pofile.rawfile = base64.encodestring(contents)
-    potemplate_or_pofile.daterawimport = UTC_NOW
-    potemplate_or_pofile.rawimporter = importer
-    potemplate_or_pofile.rawimportstatus = RosettaImportStatus.PENDING.value
-
 def is_tar_filename(filename):
     '''
     Check whether a filename looks like a filename that belongs to a tar file,
@@ -309,27 +305,36 @@ def check_tar(tf, pot_paths, po_paths):
 
     return None
 
-def import_tar(potemplate, importer, tf, pot_paths, po_paths):
-    '''
-    Import a tar file into Rosetta, by extracting PO templates and PO files
-    from the paths specified. A status message is returned.
+def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
+    """Import a tar file into Rosetta.
+
+    Extract PO templates and PO files from the paths specified.
+    A status message is returned.
 
     Currently, it is assumed that since check_tar will have been called before
-    import_tar, checking the syntax of the PO template will not be necessary.
+    import_tar, checking the syntax of the PO template will not be necessary
+    and also, we are 100% sure there are at least one .pot file and only one.
     The syntax of PO files is checked, but errors are not fatal.
-    '''
+    """
 
-    for path in pot_paths:
-        import_pot_or_po(potemplate, importer, tf.extractfile(path).read())
+    # At this point we are only getting one .pot file so this should be safe.
+    # We don't support other kinds of tarballs and before calling this
+    # function we did already the needed tests to be sure that pot_paths
+    # follows our requirements.
+    potemplate.attachFile(tarfile.extractfile(pot_paths[0]).read(), importer)
+    pot_base_dir = os.path.dirname(pot_paths[0])
 
-    bad = []
+    # List of .pot and .po files that were not able to be imported.
+    errors = []
 
     for path in po_paths:
-        contents = tf.extractfile(path).read()
-
-        if not check_po_syntax(contents):
-            bad.append(path)
+        if pot_base_dir != os.path.dirname(path):
+            # The po file is not inside the same directory than the pot file,
+            # we ignore it.
+            errors.append(path)
             continue
+
+        contents = tarfile.extractfile(path).read()
 
         basename = os.path.basename(path)
         root, extension = os.path.splitext(basename)
@@ -346,15 +351,19 @@ def import_tar(potemplate, importer, tf, pot_paths, po_paths):
 
         pofile = potemplate.getOrCreatePOFile(code, variant, importer)
 
-        import_pot_or_po(pofile, importer, contents)
+        try:
+            pofile.attachFile(contents, importer)
+        except (POSyntaxError, POInvalidInputError):
+            errors.append(path)
+            continue
 
     message = ("%d files were queued for import from the tar file you "
-        "uploaded." % (len(pot_paths + po_paths) - len(bad)))
+        "uploaded." % (len(pot_paths + po_paths) - len(errors)))
 
-    if bad != []:
+    if errors != []:
         message += (
             "The following files were skipped due to syntax errors or other "
-            "problems: " + ', '.join(bad) + ".")
+            "problems: " + ', '.join(errors) + ".")
 
     return message
 
@@ -459,8 +468,8 @@ class ProductView:
                 self.status_message = 'Please, review the pot file seems to have a problem'
                 return
         else:
-            tf = string_to_tarfile(contents)
-            pot_paths, po_paths = examine_tarfile(tf)
+            tarfile = string_to_tarfile(contents)
+            pot_paths, po_paths = examine_tarfile(tarfile)
 
             if len(pot_paths) == 0:
                 self.status_message = (
@@ -472,39 +481,11 @@ class ProductView:
             # Perform general check on the tar file, and stop before creating
             # the template if there was a problem.
 
-            error = check_tar(tf, pot_paths, po_paths)
+            error = check_tar(tarfile, pot_paths, po_paths)
 
             if error is not None:
                 self.status_message = error
                 return
-
-        # This part is only used for our internal script to upload .po and
-        # .pot files from the web interface. If we don't have all fields,
-        # someone is playing with us so just ignore it.
-        if ('_distribution' in self.form and
-            '_release' in self.form and
-            '_sourcepackage' in self.form):
-            distribution = self.form['_distribution']
-            release = self.form['_release']
-            sourcepackage = self.form['_sourcepackage']
-
-            try:
-                distro = getUtility(IDistributionSet)[distribution]
-                distrorelease = distro[release]
-            except KeyError:
-                # The distribution or release does not exists in the
-                # database, we ignore the error and continue.
-                distrorelease = None
-
-            try:
-                sourcepackagename = getUtility(
-                    ISourcePackageNameSet)[sourcepackage]
-            except KeyError:
-                # The SourcePackage does not exists.
-                sourcepackagename = None
-        else:
-            distrorelease = None
-            sourcepackagename = None
 
         # Now create a new potemplate in the db
         try:
@@ -518,21 +499,15 @@ class ProductView:
                 'There is already a potemplate named %s' % name)
             return
 
-        if distrorelease:
-            potemplate.distrorelease = distrorelease.id
-
-        if sourcepackagename:
-            potemplate.sourcepackagename = sourcepackagename.id
-
         self._templates.append(potemplate)
 
         if filename.endswith('.pot'):
-            import_pot_or_po(potemplate, owner, contents)
+            potemplate.attachFile(contents, owner)
             self.status_message = (
                 "Your PO template has been queued for import.")
         else:
             self.status_message = (
-                import_tar(potemplate, owner, tf, pot_paths, po_paths))
+                import_tar(potemplate, owner, tarfile, pot_paths, po_paths))
 
     def templates(self):
         if self._templangs is None:
@@ -720,13 +695,15 @@ class ViewPOTemplate:
         if filename.endswith('.pot'):
             potfile = file.read()
 
-            if not check_po_syntax(potfile):
+            try:
+                self.context.attachFile(potfile, owner)
+            except (POSyntaxError, POInvalidInputError):
                 # The file is not correct.
                 self.status_message = (
                     'There was a problem parsing the file you uploaded.'
                     ' Please check that it is correct.')
 
-            import_pot_or_po(self.context, owner, potfile)
+            self.context.attachFile(potfile, owner)
         elif is_tar_filename(filename):
             tf = string_to_tarfile(file.read())
             pot_paths, po_paths = examine_tarfile(tf)
@@ -804,12 +781,14 @@ class ViewPOFile:
 
             pofile = file.read()
 
-            if not check_po_syntax(pofile):
+            user = getUtility(ILaunchBag).user
+
+            try:
+                self.context.attachFile(pofile, user, None)
+            except (POSyntaxError, POInvalidInputError):
                 # The file is not correct.
                 self.status_message = 'Please, review the po file seems to have a problem'
                 return
-
-            import_pot_or_po(self.context, getUtility(ILaunchBag).user, pofile)
 
             self.request.response.redirect('./')
             self.submitted = True
@@ -1329,27 +1308,41 @@ class ViewImportQueue:
             else:
                 project_name = '-'
             for template in product.potemplates:
-                if template.rawimportstatus == RosettaImportStatus.PENDING:
+                template_raw = IRawFileData(template)
+                if (template_raw.rawimportstatus == \
+                    int(RosettaImportStatus.PENDING)):
+                    if template_raw.rawimporter is not None:
+                        importer_name = template_raw.rawimporter.displayname
+                    else:
+                        importer_name = _default_importer_name
+
                     retdict = {
                         'id': 'pot_%d' % template.id,
                         'project': project_name,
                         'product': product.displayname,
                         'template': template.name,
                         'language': '-',
-                        'importer': template.rawimporter.displayname,
-                        'importdate' : template.daterawimport,
+                        'importer': importer_name,
+                        'importdate' : template_raw.daterawimport,
                     }
                     queue.append(retdict)
                     id += 1
                 for pofile in template.poFilesToImport():
+                    pofile_raw = IRawFileData(pofile)
+                    if pofile_raw.rawimporter is not None:
+                        importer_name = pofile_raw.rawimporter.displayname
+                    else:
+                        importer_name = _default_importer_name
+
+
                     retdict = {
                         'id': 'po_%d' % pofile.id,
                         'project': project_name,
                         'product': product.displayname,
                         'template': template.name,
                         'language': pofile.language.englishname,
-                        'importer': pofile.rawimporter.displayname,
-                        'importdate' : pofile.daterawimport,
+                        'importer': importer_name,
+                        'importdate' : pofile_raw.daterawimport,
                     }
                     queue.append(retdict)
                     id += 1

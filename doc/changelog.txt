@@ -2,6 +2,292 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-11 11:43:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1302
+
+    Summary:
+      Merged all my work from last two weeks about po tarballs attach from buildd into Rosetta. Reviewed by Steve
+    Revision:
+      launchpad--devel--0--patch-1302
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-506
+       Removed the hidden arguments I added to the potemplate creation from the web, we have another approach for it
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-507
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-508
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-509
+       added the sourcepackage field needed by Rosetta's script
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-510
+       Distribution.__getitem__ shoud raise a KeyError instead of an IndexError. DistributionSet.__getitem__ works as expected from a __getitem__ method.
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-511
+       Added the method Product.attachTranslations. We need to implement it now
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-512
+       Added a cron script to attach Ubuntu's translations to Rosetta
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-513
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-514
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-515
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-516
+       Improved its format
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-517
+       Updated PO-Revision-Date, Last-Translator and X-Generator when exporting a .po file and updated the test case
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-518
+       If the parser is not able to parse a .po file we mark that import as FAILED
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-519
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-520
+       Implemented a check that prevents a .po import if it's older or equal to previous import
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-521
+       We give preference always to Rosetta translations when importing .po files
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-522
+       Instead of hide old translations when an empty one is added, we mark it as fuzzy so translators could review it instead of translate it from zero
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-523
+       Implemented a way to give preference to reviews done outside Rosetta
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-524
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-525
+       Moved the po/pot attach codefrom browser.py into the class objects
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-526
+       Fixed a typo
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-527
+       The importer could be None
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-528
+       Fixed the new arguments order to attachFile
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-529
+       The imports could have a None importer
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-530
+       Improved the feedback of the import
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-531
+       Fixed a cache problem as Andrew did on Mataro and added the link to the bug report
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-532
+       The prefix of the templates is the distrorelease name. Improved also the log output
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-533
+       Added a log entry when we think we didn't anything with a tarball
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-534
+       first, attachTranslation implementation. changed product.newPOTemplate so the owner could be None
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-535
+       merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-536
+       Made possible to have more than one .pot file file with returned lists
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-537
+       Done the needed changes so the code still works after my recent changes to tar.py
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-538
+       Fixed a typo
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-539
+       Improved the log output so we know that there is one option that need to be implemented
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-540
+       Fixed the rosetta's browser test so it works with all my changes
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-541
+       Added notNull arguments
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-542
+       Improved the sourcepackage declaration and added to the interface
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-543
+       Removed a duplicated attribute definition that made the tests fail. Thanks Andrew\!
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-544
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-545
+       Added trace print when we get an error with a file so it's easier to debug
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-546
+       Made our po parser less strict so we are able to import many .po files that are not 100% perfect.
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-547
+       Removed a forgotten pdb
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-548
+       Added extra info to the potemplate like the sourcepackage, version and distrorelease so we know exactly which potemplates are from a concrete distribution
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-549
+       Fixed a typo
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-550
+       Added a way to handle stalled locks. By default they will be removed after a day
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-551
+       Moved the default locks into /var/lock
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-552
+       By default, if we don't find an owner for a .pot or .po file, we use the product's owner.
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-553
+       The import of a tarball with multiple domains should end until we implement it
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-554
+       Fetch always all available tarballs
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-555
+       Removed an obsolete attribute from the interface
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-556
+       Applied and fixed most of Steve's comments after the review
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-557
+       Forgot to commit this fix from the review
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-558
+       Done all pending changes after Steve's review
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-559
+       Removed empty directories
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-560
+       Forgot the imports
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-561
+       Improved the interface classes creating specific ones with raw .pot and .po files
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-562
+       Fixed permissions
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-563
+       Fixed the .zcml a.k.a. I need to learn more about them
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-564
+       Merge with rocketfuel
+    
+
+    new files:
+     lib/canonical/launchpad/scripts/.arch-ids/rosetta-poupload_tar.py.id
+     lib/canonical/launchpad/scripts/rosetta-poupload_tar.py
+
+    removed files:
+     lib/canonical/launchpad/scripts/poimport/.arch-ids/=id
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/ftests/test_poexport.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/scripts/lockfile.py
+     lib/canonical/launchpad/scripts/rosetta-poimport.py
+     lib/canonical/launchpad/zcml/pofile.zcml
+     lib/canonical/launchpad/zcml/potemplate.zcml
+     lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/poexport.py
+     lib/canonical/rosetta/pofile.py
+     lib/canonical/rosetta/pofile_adapters.py
+     lib/canonical/rosetta/tar.py
+     lib/canonical/rosetta/tests/test_browser.py
+
+    renamed files:
+     lib/canonical/launchpad/scripts/poimport/.arch-ids/poimport.py.id
+       ==> lib/canonical/launchpad/scripts/.arch-ids/rosetta-poimport.py.id
+     lib/canonical/launchpad/scripts/poimport/poimport.py
+       ==> lib/canonical/launchpad/scripts/rosetta-poimport.py
+
+    removed directories:
+     lib/canonical/launchpad/scripts/poimport
+     lib/canonical/launchpad/scripts/poimport/.arch-ids
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-506
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-507
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-508
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-509
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-510
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-511
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-512
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-513
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-514
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-515
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-516
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-517
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-518
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-519
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-520
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-521
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-522
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-523
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-524
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-525
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-526
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-527
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-528
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-529
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-530
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-531
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-532
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-533
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-534
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-535
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-536
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-537
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-538
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-539
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-540
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-541
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-542
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-543
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-544
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-545
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-546
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-547
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-548
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-549
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-550
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-551
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-552
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-553
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-554
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-555
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-556
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-557
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-558
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-559
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-560
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-561
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-562
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-563
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-564
+
+
 2005-02-10 10:42:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1301
 
     Summary:

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 import logging, sys
@@ -8,6 +8,8 @@ from optparse import OptionParser
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.database import ProductSet
+
+_default_lock_file = '/var/lock/launchpad-poimport.lock'
 
 class ImportProcess:
     def __init__(self):
@@ -62,7 +64,7 @@ def parse_options():
         default=0, action="count",
         help="Display less information.")
     parser.add_option("-l", "--lockfile", dest="lockfilename",
-        default="/var/tmp/launchpad-poimport.lock",
+        default=_default_lock_file,
         help="The file the script should use to lock the process.")
 
     (options, args) = parser.parse_args()
@@ -70,10 +72,16 @@ def parse_options():
     return options
 
 
-if __name__ == '__main__':
-    loglevel = logging.WARN
+def main():
+    # Do the import of all pending files from the queue.
+    process = ImportProcess()
+    logger.debug('Starting the import process')
+    process.run()
+    logger.debug('Finished the import process')
 
-    options = parse_options()
+
+def setUpLogger():
+    loglevel = logging.WARN
 
     for i in range(options.verbose):
         if loglevel == logging.INFO:
@@ -86,24 +94,35 @@ if __name__ == '__main__':
         elif loglevel == logging.ERROR:
             loglevel = logging.CRITICAL
 
-    logger = logging.getLogger("poimport")
-
     hdlr = logging.StreamHandler(strm=sys.stderr)
-    hdlr.setFormatter(logging.Formatter(fmt='%(asctime)s %(levelname)s %(message)s'))
+    hdlr.setFormatter(logging.Formatter(
+        fmt='%(asctime)s %(levelname)s %(message)s'
+        ))
     logger.addHandler(hdlr)
     logger.setLevel(loglevel)
 
-    # We create a lock file so we don't have two daemons running at the same
-    # time.
+
+if __name__ == '__main__':
+
+    options = parse_options()
+
+    # Get the global logger for this task.
+    logger = logging.getLogger("poimport")
+    # customized the logger output.
+    setUpLogger()
+
+    # Create a lock file so we don't have two daemons running at the same time.
     lockfile = LockFile(options.lockfilename, logger=logger)
-    lockfile.acquire()
+    try:
+        lockfile.acquire()
+    except OSError:
+        logger.info("lockfile %s already exists, exiting",
+                    options.lockfilename)
+        sys.exit(0)
 
-    # Do the import of all pending files from the queue.
-    process = ImportProcess()
-    logger.debug('Starting the import process')
-    process.run()
-    logger.debug('Finished the import process')
-
-    # Release the lock so next planned task can be executed.
-    lockfile.release()
+    try:
+        main()
+    finally:
+        # Release the lock so next planned task can be executed.
+        lockfile.release()
 

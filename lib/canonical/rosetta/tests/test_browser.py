@@ -60,7 +60,7 @@ class DummyProduct:
     def __init__(self):
         self.potemplates = []
 
-    def newPOTemplate(self, person, name, title):
+    def newPOTemplate(self, name, title, person):
         potemplate = DummyPOTemplate(name=name)
         self.potemplates.append(potemplate)
         return potemplate
@@ -172,6 +172,9 @@ class DummyPOTemplate:
 
     def hasPluralMessage(self):
         return True
+
+    def attachFile(self, contents, importer=None):
+        pass
 
 
 class DummyResponse:
@@ -786,42 +789,6 @@ def test_ProductView_newpotemplate():
     1
     >>> 'distrorelease' in dir(pv._templates[0])
     False
-
-    >>> tearDown()
-    '''
-
-def test_ProductView_newpotemplate_hidden_fields():
-    '''
-    Test POTemplate creation from website using hidden fields.
-
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-    >>> from zope.publisher.browser import FileUpload
-    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
-    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
-    >>> from canonical.rosetta.browser import ProductView
-
-    >>> setUp()
-    >>> ztapi.provideUtility(IDistributionSet, DummyDistributionSet())
-    >>> ztapi.provideUtility(ISourcePackageNameSet, DummySourcePackageNameSet())
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
-
-    >>> context = DummyProduct()
-    >>> fui = DummyFileUploadItem(name='foo.pot', content=potfile)
-    >>> fu = FileUpload(fui)
-    >>> request = DummyRequest(file=fu, name='template_name',
-    ...     title='template_title', Register='Register POTemplate',
-    ...     _distribution='ubuntu', _release='hoary',
-    ...     _sourcepackage='evolution')
-    >>> request.method = 'POST'
-    >>> pv = ProductView(context, request)
-
-    >>> len(pv._templates)
-    1
-    >>> 'distrorelease' in dir(pv._templates[0])
-    True
 
     >>> tearDown()
     '''

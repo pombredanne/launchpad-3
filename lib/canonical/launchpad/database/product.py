@@ -2,6 +2,8 @@
 
 __metaclass__ = type
 
+import os
+
 from sets import Set
 from datetime import datetime
 
@@ -15,6 +17,9 @@ from sqlobject import SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp.dbschema import BugSeverity, BugTaskStatus
 from canonical.lp.dbschema import RosettaImportStatus, RevisionControlSystems
+from canonical.rosetta.tar import string_to_tarfile, examine_tarfile
+from canonical.rosetta.pofile import POSyntaxError, POInvalidInputError
+
 from canonical.launchpad.database.sourcesource import SourceSource
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productrelease import ProductRelease
@@ -173,17 +178,18 @@ class Product(SQLBase):
         else:
             return results[0]
 
-    def newPOTemplate(self, person, name, title):
+    def newPOTemplate(self, name, title, person=None):
         if POTemplate.selectBy(
                 productID=self.id, name=name).count():
             raise KeyError(
                   "This product already has a template named %s" % name)
-        return POTemplate(
-                name=name,
-                title=title,
-                product=self,
-                owner=person,
-                iscurrent=False)
+        potemplate = POTemplate(name=name,
+                                title=title,
+                                product=self,
+                                iscurrent=False,
+                                owner=person)
+
+        return potemplate
 
     def messageCount(self):
         count = 0
@@ -263,6 +269,148 @@ class Product(SQLBase):
             resultset.append(statusline)
         return resultset
 
+    def attachTranslations(self, tarfile, prefix=None, sourcepackagename=None,
+                           distrorelease=None, version=None, logger=None):
+        '''See IProduct.'''
+
+        # updated is a list of .pot files that are being used to update an
+        # existen POTemplate objects.
+        updated = []
+        # added is a list of .pot files that are being used to create new
+        # POTemplate objects.
+        added = []
+        # errors is a list of .pot and .po files that gave us an error while
+        # processing them.
+        errors = []
+
+        tf = string_to_tarfile(tarfile.read())
+        pot_paths, po_paths = examine_tarfile(tf)
+
+        if len(pot_paths) == 0:
+            # It's not a valid tar file, it does not have any .pot file.
+            if logger is not None:
+                logger.warning("We didn't found any .pot file")
+
+            return updated, added, errors
+        else:
+            # Get the list of domains
+            domains = []
+            try:
+                domains_file = tf.extractfile('domains.txt')
+                # We have that file inside the tar file.
+                for line in domains_file.readlines():
+                    domains.append(line.strip())
+            except KeyError, key:
+                # The tarball does not have a domains.txt file.
+                pass
+            for pot_path in pot_paths:
+                pot_base_dir = os.path.dirname(pot_path)
+                pot_file = os.path.basename(pot_path)
+                root, extension = os.path.splitext(pot_file)
+                if pot_base_dir == 'debian/po':
+                    # The .pot inside that directory are special ones and have
+                    # a concrete name.
+                    potname = 'debconf-templates'
+                elif len(domains) == 1 and len(pot_paths) == 1:
+                    # There is only a .pot file and we know its domain name.
+                    potname = domains[0]
+                elif len(domains) > 1:
+                    # There are more than one .pot file and we have the list
+                    # of names but don't know which one we should use.
+                    # XXX: Carlos Perello Marin 2005-02-01 We should implement
+                    # this case (a tarball with more than one .pot file
+                    # without counting the debian/po directory).
+                    if logger is not None:
+                        logger.warning("We got more than one domain, this is"
+                                       " a corner case and we should"
+                                       " implement it...")
+                        for domain in domains:
+                            logger.warning(domain)
+
+                    break
+                else:
+                     potname = root
+
+                if prefix is not None:
+                    potname = '%s-%s' % (prefix, potname)
+
+                try:
+                    potemplate = self.poTemplate(potname)
+                    updated.append(pot_path)
+                except KeyError:
+                    # It's a new pot file.
+                    potemplate = self.newPOTemplate(potname, potname)
+                    added.append(pot_path)
+
+                try:
+                    potemplate.attachFile(tf.extractfile(pot_path).read())
+                except (POSyntaxError, POInvalidInputError):
+                    # The file has an error detected by our parser.
+                    errors.append(pot_path)
+                    if logger is not None:
+                        logger.error('Parser error with potfile: %s',
+                                     pot_path, exc_info=1)
+                    # Jump to the next .pot file
+                    continue
+
+                # Update always the sourcepackagename and distrorelease
+                # fields. No matter if they are None or not.
+                potemplate.sourcepackagename = sourcepackagename
+                potemplate.distrorelease = distrorelease
+
+                for po_path in po_paths:
+                    po_base_dir = os.path.dirname(po_path)
+                    po_file = os.path.basename(po_path)
+                    if pot_base_dir == po_base_dir:
+                        # 99% of the time it should be this way, all .po and
+                        # .pot files inside the same directory.
+                        root, extension = os.path.splitext(po_file)
+
+                        if '@' in root:
+                            # PO files with variants are not currently supported. If they
+                            # were, we would use some code like this:
+                            #
+                            #   code, variant = [ unicode(x) for x in root.split('@', 1) ]
+                            errors.append(po_path)
+                            continue
+                        else:
+                            code, variant = root, None
+
+                        try:
+                            pofile = potemplate.getOrCreatePOFile(code, variant)
+                        except ValueError, value:
+                            # The language code does not exists in our
+                            # database. Usually, it's a translator error.
+                            if logger is not None:
+                                logger.warning("The '%s' code does not exist"
+                                               " as a valid language code in"
+                                               " Rosetta." % code)
+                            errors.append(po_path)
+                            continue
+                        try:
+                            pofile.attachFile(tf.extractfile(po_path).read())
+                        except (POSyntaxError, POInvalidInputError):
+                            # The file has an error detected by our parser.
+                            errors.append(po_path)
+                            if logger is not None:
+                                logger.error('Parser error with pofile: %s',
+                                             po_path, exc_info=1)
+                            # Jump to the next .pot file
+                            continue
+                    else:
+                        # XXX: Carlos Perello Marin 2005-01-28, Implement
+                        # support for Python/PHP like trees.
+                        # https://dogfood.ubuntu.com/malone/bugs/235
+                        pass
+
+                if version is not None and len(errors) == 0:
+                    # The list of errors is empty, the potemplate could be
+                    # marked as being in sync with the tarball attached. If
+                    # the version field is not None, we store that information
+                    # inside the potemplate.
+                    potemplate.sourcepackageversion = version
+
+            return updated, added, errors
 
 
 class ProductSet:

@@ -6,9 +6,11 @@
     i18n_domain="launchpad">
 
     <content class="canonical.launchpad.database.POFile">
-        <require permission="zope.Public"
+        <require
+            permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOFile"
-            set_attributes="header pluralforms rawfile rawimporter daterawimport rawimportstatus"/>
+            set_attributes="header pluralforms"
+            />
     </content>
 
     <browser:defaultView

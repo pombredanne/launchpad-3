@@ -119,12 +119,13 @@ class IProduct(IHasOwner):
     def poTemplate(name):
         """Returns the PO template with the given name."""
 
-    def newPOTemplate(person, name, title):
-        """Creates a new PO template.
+    def newPOTemplate(name, title, person=None):
+        """Create a new PO template.
 
-        Returns the newly created template.
+        Return the newly created template. The person argument is optional,
+        the POTemplate can exist without an owner.
 
-        Raises an KeyError if a PO template with that name already exists.
+        Raise an KeyError if a PO template with that name already exists.
         """
 
     def fullname():
@@ -163,6 +164,23 @@ class IProduct(IHasOwner):
 
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
+
+    def attachTranslations(tarfile, prefix=None, sourcepackagename=None,
+                           distrorelease=None, version=None, logger=None):
+        """Attach all .pot and .po files inside tarfile into a product.
+
+        The .pot and .po files are attached to the POTemplate and POFile
+        objects of this product creating them first if needed.
+
+        Associates the POTemplates with the sourcepackagename and the
+        distrorelease (if not None) and its name will have the prefix
+        specified in case it's not None.
+
+        In case all files are imported correctly, set the potemplate's
+        sourcepackageversion field to version.
+
+        Log any error/warning into the logger object, if it's not None.
+        """
 
 
 class IHasProduct(Interface):
