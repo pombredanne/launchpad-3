@@ -38,8 +38,6 @@ __all__ = (
 'BuildStatus',
 'CodereleaseRelationships',
 'DistributionReleaseState',
-'DistributionRole',
-'DOAPRole',
 'EmailAddressStatus',
 'HashAlgorithms',
 'ImportTestStatus',
@@ -1827,85 +1825,6 @@ class RosettaTranslationOrigin(DBSchema):
          This translation was presented to Rosetta via
        the community web site.
          """)
-
-
-class DistributionRole(DBSchema):
-    """Distribution Role
-
-    This schema documents the roles that a person can play in
-    a distribution, other than being a package maintainer.
-    """
-
-    DM = Item (1, """
-        Distro Master
-
-        Oversees all distribution activities.
-        """
-    )
-    SO = Item (2, """
-        Security Overlord
-
-        Ensures no sharp edges are left in the distribution.
-        """
-    )
-    PD = Item (3, """
-        Prophet of Doom
-
-        Makes hand-wavy predictions.
-        """
-    )
-
-class DistroReleaseRole(DBSchema):
-    """Distribution Role
-
-    This schema documents the roles that a person can play in
-    a distribution, other than being a package maintainer.
-    """
-
-    RM = Item (1, """
-        Release Manager
-
-        Distribution Release Manager""")
-    
-    SO = Item (2, """
-        Security Officer
-
-        Distribution Release Manager""")
-
-    BW = Item (3, """
-        Bug Wrangler
-
-        Corrals and keeps the release bugs under control""")
-
-    UB = Item (4, """
-        User Bender
-        
-        Convinces users that it's a feature""")
-
-class DOAPRole(DBSchema):
-    """DOAP Role
-
-    This schema documents the roles that a person can play in
-    a DOAP project. The person might have these roles with
-    regard to the project as a whole or to a specific product
-    of that project."""
-
-    MAINTAINER = Item(1, """
-        Maintainer
-
-        A project or product maintainer is a member of the core
-        team of people who are responsible for that open source
-        work. Maintainers have commit rights to the relevant code
-        repository, and are the ones who sign off on any release.""")
-
-    ADMIN = Item(2, """
-        Administrator
-
-        The project or product administrators for a Launchpad
-        project and product have the same privileges as the
-        project or product owner, except that they cannot appoint
-        more administrators. This allows the project owner to share
-        the load of administration with other individuals.""")
 
 
 class RosettaImportStatus(DBSchema):

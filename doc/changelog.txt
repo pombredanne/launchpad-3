@@ -2,6 +2,79 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-17 17:23:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1452
+
+    Summary:
+      Nuke *Role tables and expunge all references from the code
+    Revision:
+      launchpad--devel--0--patch-1452
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--nukeroletables--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-205
+    
+     * stuart.bishop@canonical.com/launchpad--nukeroletables--0--patch-1
+       db patch and start template mods
+    
+     * stuart.bishop@canonical.com/launchpad--nukeroletables--0--patch-2
+       Nuke all references to the *Role tables
+    
+     * stuart.bishop@canonical.com/launchpad--nukeroletables--0--patch-3
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--nukeroletables--0--patch-4
+       Regenerate sample data
+    
+     * stuart.bishop@canonical.com/launchpad--nukeroletables--0--patch-5
+       Rebuild database documentation
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-07-0.sql.id
+     database/schema/patch-11-07-0.sql
+
+    removed files:
+     lib/canonical/launchpad/browser/.arch-ids/role.py.id
+     lib/canonical/launchpad/browser/role.py
+     lib/canonical/launchpad/database/.arch-ids/distributionrole.py.id
+     lib/canonical/launchpad/database/.arch-ids/distroreleaserole.py.id
+     lib/canonical/launchpad/database/distributionrole.py
+     lib/canonical/launchpad/database/distroreleaserole.py
+     lib/canonical/launchpad/interfaces/.arch-ids/distributionrole.py.id
+     lib/canonical/launchpad/interfaces/.arch-ids/distroreleaserole.py.id
+     lib/canonical/launchpad/interfaces/distributionrole.py
+     lib/canonical/launchpad/interfaces/distroreleaserole.py
+     lib/canonical/launchpad/zcml/.arch-ids/distroreleaserole.zcml.id
+     lib/canonical/launchpad/zcml/distroreleaserole.zcml
+
+    modified files:
+     database/sampledata/current.sql database/schema/comments.sql
+     database/schema/launchpad.html database/schema/security.cfg
+     doc/changelog.txt lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/distrotool.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/distribution.py
+     lib/canonical/launchpad/interfaces/distrorelease.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/team-index.pt
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/lp/dbschema.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--nukeroletables--0--base-0
+     stuart.bishop@canonical.com/launchpad--nukeroletables--0--patch-1
+     stuart.bishop@canonical.com/launchpad--nukeroletables--0--patch-2
+     stuart.bishop@canonical.com/launchpad--nukeroletables--0--patch-3
+     stuart.bishop@canonical.com/launchpad--nukeroletables--0--patch-4
+     stuart.bishop@canonical.com/launchpad--nukeroletables--0--patch-5
+
+
 2005-03-17 16:40:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1451
 
     Summary:

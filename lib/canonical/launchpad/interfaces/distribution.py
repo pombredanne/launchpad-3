@@ -37,7 +37,6 @@ class IDistribution(Interface):
         description=_("The distro's owner."), required=True)
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
-    role_users = Attribute("Roles inside this Distributions")
     bugtasks = Attribute("The bug tasks filed in this distro.")
     bugCounter = Attribute("The distro bug counter")
 

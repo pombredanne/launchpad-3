@@ -66,8 +66,6 @@ class IPerson(Interface):
     archuser = Attribute("Arch user")    
     packages = Attribute("A Selection of SourcePackageReleases")
     activities = Attribute("Karma")
-    distroroles = Attribute(("List of Distribution Roles Played by this "
-                             "Person/Team."))
     memberships = Attribute(("List of TeamMembership objects for Teams this "
                              "Person is a member of. Either as a PROPOSED "
                              "or CURRENT member."))
@@ -76,8 +74,6 @@ class IPerson(Interface):
                                 "person. The one we'll use to communicate "
                                 "with him."))
     validatedemails = Attribute("Emails with status VALIDATED")
-    distroreleaseroles = Attribute(("List of DistributionRelease Roles "
-                                    "Played by this Person/Team."))
     notvalidatedemails = Attribute("Emails waiting validation.")
 
     activemembers = Attribute("List of members with ADMIN or APPROVED status")

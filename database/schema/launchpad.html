@@ -120,7 +120,7 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2005-03-17</p>
+Dumped on 2005-03-18</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
@@ -187,8 +187,6 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.cveref">cveref</a></li>
 <li><a href="#public.table.distribution">distribution</a></li>
 <li><a href=
-"#public.table.distributionrole">distributionrole</a></li>
-<li><a href=
 "#public.table.distroarchrelease">distroarchrelease</a></li>
 <li><a href="#public.table.distrobounty">distrobounty</a></li>
 <li><a href="#public.table.distrorelease">distrorelease</a></li>
@@ -198,8 +196,6 @@ launchpad_dev</a></h1>
 "#public.table.distroreleasequeuebuild">distroreleasequeuebuild</a></li>
 <li><a href=
 "#public.table.distroreleasequeuesource">distroreleasequeuesource</a></li>
-<li><a href=
-"#public.table.distroreleaserole">distroreleaserole</a></li>
 <li><a href="#public.table.emailaddress">emailaddress</a></li>
 <li><a href="#public.table.gpgkey">gpgkey</a></li>
 <li><a href="#public.table.ircid">ircid</a></li>
@@ -263,7 +259,6 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.productrelease">productrelease</a></li>
 <li><a href=
 "#public.table.productreleasefile">productreleasefile</a></li>
-<li><a href="#public.table.productrole">productrole</a></li>
 <li><a href="#public.table.productseries">productseries</a></li>
 <li><a href=
 "#public.table.productsvnmodule">productsvnmodule</a></li>
@@ -273,7 +268,6 @@ launchpad_dev</a></h1>
 "#public.table.projectbugtracker">projectbugtracker</a></li>
 <li><a href=
 "#public.table.projectrelationship">projectrelationship</a></li>
-<li><a href="#public.table.projectrole">projectrole</a></li>
 <li><a href=
 "#public.view.publishedpackageview">publishedpackageview</a></li>
 <li><a href=
@@ -1444,6 +1438,24 @@ public</a></p>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>importd</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -8179,10 +8191,6 @@ uploads and generating archives for this distribution</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distributionrole">public.distributionrole</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.distrobounty">public.distrobounty</a></li>
 </ul>
 <ul>
@@ -8201,166 +8209,6 @@ uploads and generating archives for this distribution</td>
 <p> </p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to public.distribution</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.distributionrole" id=
-"public.table.distributionrole">distributionrole</a></h2>
-<p>DistributionRole: A soyuz distribution role. This table
-represents a role played by a specific person in a given
-distribution.</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.distributionrole Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>person</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The person undertaking the represented role.</td>
-</tr>
-<tr class="tr1">
-<td><a href=
-"#public.table.distribution">public.distribution.id</a></td>
-<td>distribution</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The distribution in which this role is undertaken</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>role</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The role that the identified person takes in the referenced
-distribution</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>id</td>
-<td>integer</td>
-<td><i>PRIMARY KEY DEFAULT
-nextval('DistributionRole_id_seq'::text)</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.distributionrole</caption>
 <tr>
 <th>User</th>
 <th>
@@ -8935,10 +8783,6 @@ uploads and generating archives for this distro release</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distroreleaserole">public.distroreleaserole</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.mirrorsourcecontent">public.mirrorsourcecontent</a></li>
 </ul>
 <ul>
@@ -9426,166 +9270,6 @@ related to this upload.</td>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
 public.distroreleasequeuesource</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.distroreleaserole" id=
-"public.table.distroreleaserole">distroreleaserole</a></h2>
-<p>DistroReleaseRole: A soyuz distribution release role. This table
-represents a role played by a specific person in a specific
-distrorelease of a distribution.</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.distroreleaserole Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>person</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The person undertaking the represented role.</td>
-</tr>
-<tr class="tr1">
-<td><a href=
-"#public.table.distrorelease">public.distrorelease.id</a></td>
-<td>distrorelease</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The distrorelease in which the role is undertaken.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>role</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The role that the identified person undertakes in the referenced
-distrorelease.</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>id</td>
-<td>integer</td>
-<td><i>PRIMARY KEY DEFAULT
-nextval('DistroreleaseRole_id_seq'::text)</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.distroreleaserole</caption>
 <tr>
 <th>User</th>
 <th>
@@ -14092,19 +13776,11 @@ displayed in this language wherever possible.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distributionrole">public.distributionrole</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.distroarchrelease">public.distroarchrelease</a></li>
 </ul>
 <ul>
 <li><a href=
 "#public.table.distrorelease">public.distrorelease</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.distroreleaserole">public.distroreleaserole</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -14177,13 +13853,7 @@ displayed in this language wherever possible.</td>
 "#public.table.productrelease">public.productrelease</a></li>
 </ul>
 <ul>
-<li><a href="#public.table.productrole">public.productrole</a></li>
-</ul>
-<ul>
 <li><a href="#public.table.project">public.project</a></li>
-</ul>
-<ul>
-<li><a href="#public.table.projectrole">public.projectrole</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -17005,9 +16675,9 @@ The Product owner would typically be the person who createed this
 product in Launchpad. But we will encourage the upstream maintainer
 of a product to become the owner in Launchpad. The Product owner
 can edit any aspect of the Product, as well as appointing people to
-specific roles with regard to the Product (see the ProductRole
-table). Also, the owner can add a new ProductRelease and also edit
-Rosetta POTemplates associated with this product.</td>
+specific roles with regard to the Product. Also, the owner can add
+a new ProductRelease and also edit Rosetta POTemplates associated
+with this product.</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -17213,9 +16883,6 @@ Whether or not this product should be considered active.</td>
 <ul>
 <li><a href=
 "#public.table.productrelease">public.productrelease</a></li>
-</ul>
-<ul>
-<li><a href="#public.table.productrole">public.productrole</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -18603,167 +18270,6 @@ public.productreleasefile</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.productrole" id=
-"public.table.productrole">productrole</a></h2>
-<p>Product Roles: this table documents the roles that people play
-with regard to a specific product. Note that if the project only
-has one product then it's best to document these roles at the
-project level, not at the product level. If a project has many
-products, then this table allows you to identify people playing a
-role that is specific to one of them.</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.productrole Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>person</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The person playing the role.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>role</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The role being played. Valid roles are documented in dbschema.py
-DOAPRole. The roles are exactly the same as those used for
-ProjectRole.</td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.product">public.product.id</a></td>
-<td>product</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The product where the person plays this role.</td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.productrole</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.productseries" id=
 "public.table.productseries">productseries</a></h2>
 <p>A ProductSeries is a set of product releases that are related to
@@ -19125,8 +18631,7 @@ potemplates, and translationefforts.</p>
 The owner of the project will initially be the person who creates
 this Project in the system. We will encourage upstream project
 leaders to take on this role. The Project owner is able to edit the
-project and appoint project administrators (administrators are
-recorded in the ProjectRole table).</td>
+project.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -19275,9 +18780,6 @@ Whether or not this project should be considered active.</td>
 <ul>
 <li><a href=
 "#public.table.projectrelationship">public.projectrelationship</a></li>
-</ul>
-<ul>
-<li><a href="#public.table.projectrole">public.projectrole</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -19690,164 +19192,6 @@ Evolution", Evolution is the object.</td>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
 public.projectrelationship</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.projectrole" id=
-"public.table.projectrole">projectrole</a></h2>
-<p>Project Roles. This table records the explicit roles that people
-play in an open source project, with the exception of the
-'ownership' role, which is encoded in Project.owner. Types of roles
-are enumerated in dbschema.py DOAPRole.</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.projectrole Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>person</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The person playing the role.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>role</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The role, an integer enumeration documented in dbschema.py
-ProjectRole.</td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.project">public.project.id</a></td>
-<td>project</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The project in which the person plays a role.</td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p> </p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.projectrole</caption>
 <tr>
 <th>User</th>
 <th>

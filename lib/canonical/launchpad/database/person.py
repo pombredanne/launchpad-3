@@ -30,8 +30,6 @@ from canonical.launchpad.interfaces import ISourcePackageSet, IEmailAddressSet
 from canonical.launchpad.interfaces import ICodeOfConductConf
 
 from canonical.launchpad.database.translation_effort import TranslationEffort
-from canonical.launchpad.database.distributionrole import DistributionRole
-from canonical.launchpad.database.distroreleaserole import DistroReleaseRole
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -398,14 +396,6 @@ class Person(SQLBase):
         teampart = TeamParticipationSet()
         return teampart.getSubTeams(self)
     subteams = property(_subteams)
-
-    def _distroroles(self):
-        return list(DistributionRole.selectBy(personID=self.id))
-    distroroles = property(_distroroles)
-
-    def _distroreleaseroles(self):
-        return list(DistroReleaseRole.selectBy(personID=self.id))
-    distroreleaseroles = property(_distroreleaseroles)
 
     def _setPreferredemail(self, email):
         assert email.person == self

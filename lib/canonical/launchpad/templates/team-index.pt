@@ -114,31 +114,6 @@
     </td></tr>
     </table>
 
-    <!-- Roles -->
-    <div tal:condition="python: context.distroroles or
-                                context.distroreleaseroles">
-      <fieldset>
-        <legend><span tal:replace="context/browsername"></span> is
-        </legend>
-        <table>
-          <tr tal:condition="context/distroroles"
-              tal:repeat="role context/distroroles">
-            <td><span tal:content="role/rolename">ROLENAME</span> on 
-              <a tal:attributes="href string:/distros/${role/distribution/name}"
-                 tal:content="role/distribution/title">DISTRO</a></td>
-          </tr>
-          <tr><td></td></tr>
-          <tr tal:condition="context/distroreleaseroles"
-              tal:repeat="role context/distroreleaseroles">
-            <td><span tal:content="role/rolename">ROLENAME</span> on 
-              <a tal:attributes="href string:/distros/${role/distrorelease/distribution/name}/${role/distrorelease/name}"
-                 tal:content="role/distrorelease/displayname">RELEASE</a>
-            </td>
-          </tr>
-        </table>
-      </fieldset>
-    </div>
-
     </div>
   </div>
 </div> 

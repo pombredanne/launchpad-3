@@ -49,8 +49,8 @@ class DistroRelease(SQLBase):
     owner = ForeignKey(
         dbName='owner', foreignKey='Person', notNull=True)
     lucilleconfig = StringCol(notNull=False)
-    architectures = MultipleJoin('DistroArchRelease', joinColumn='distrorelease' )
-    role_users = MultipleJoin('DistroReleaseRole', joinColumn='distrorelease')
+    architectures = MultipleJoin('DistroArchRelease',
+            joinColumn='distrorelease')
 
     def parent(self):
         if self.parentrelease:

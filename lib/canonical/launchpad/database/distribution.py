@@ -35,7 +35,6 @@ class Distribution(SQLBase):
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
-    role_users = MultipleJoin('DistributionRole', joinColumn='distribution')
 
     def traverse(self, name):
         if name == '+packages':

@@ -34,10 +34,6 @@ class DistroTools(object):
                               description=description,
                               domainname=domain,
                               owner=owner)
-
-        self.createDistributionRole(distro.id, owner,
-                                    dbschema.DistributionRole.DM.value)
-
         return distro
         
 
@@ -64,20 +60,8 @@ class DistroTools(object):
                                 sections=1,
                                 lucilleconfig='')
 
-        self.createDistroReleaseRole(release.id, owner,
-                                     dbschema.DistroReleaseRole.RM.value)
-
         return release
     
     def getDistroReleases(self):
         return DistroRelease.select()
     
-
-    def createDistributionRole(self, container_id, person, role):
-        return DistributionRole(distribution=container_id,
-                                personID=person, role=role)
-
-    def createDistroReleaseRole(self, container_id, person, role):
-        return DistroReleaseRole(distrorelease=container_id,
-                                 personID=person, role=role)
-

@@ -41,7 +41,6 @@ class IDistroRelease(Interface):
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
-    role_users = Attribute("Roles inside this Releases")
     bugCounter = Attribute("The distro bug counter")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")

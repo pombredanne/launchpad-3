@@ -70,9 +70,7 @@ from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.karma import *
 from canonical.launchpad.interfaces.codeofconduct import *
-from canonical.launchpad.interfaces.distributionrole import *
 from canonical.launchpad.interfaces.distrotool import *
-from canonical.launchpad.interfaces.distroreleaserole import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.section import *
 

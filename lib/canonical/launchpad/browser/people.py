@@ -140,7 +140,7 @@ class PersonView(object):
         # memberships and distro/distrorelease roles on a Person's page,
         # and then we're not going to need this method anymore.
         person = self.context
-        return person.teams or person.distroroles or person.distroreleaseroles
+        return person.teams
 
     def sshkeysCount(self):
         return len(self.context.sshkeys)
