@@ -401,7 +401,7 @@ class RosettaPOTemplate(SQLBase):
     _table = 'POTemplate'
 
     _columns = [
-        ForeignKey(name='product', foreignKey='RosettaProduct', dbName='product',
+        ForeignKey(name='product', foreignKey='Product', dbName='product',
             notNull=True),
         ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner'),
         StringCol(name='name', dbName='name', notNull=True, unique=True),
@@ -1202,75 +1202,6 @@ class RosettaPOTranslation(SQLBase):
             unique=True, alternateID=True)
     ]
 
-class RosettaProduct(SQLBase):
-    implements(interfaces.IProduct)
-
-    _table = 'Product'
-
-    _columns = [
-        ForeignKey(name='project', foreignKey='Project', dbName='project',
-            notNull=True),
-        StringCol(name='name', dbName='name', notNull=True, unique=True),
-        StringCol(name='displayName', dbName='displayname', notNull=True),
-        StringCol(name='title', dbName='title', notNull=True),
-        StringCol(name='shortDesc', dbName='shortdesc', notNull=True),
-        StringCol(name='description', dbName='description', notNull=True),
-        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
-            notNull=True),
-        StringCol(name='url', dbName='homepageurl')
-    ]
-
-    _poTemplatesJoin = MultipleJoin('RosettaPOTemplate', joinColumn='product')
-
-    def poTemplates(self):
-        return iter(self._poTemplatesJoin)
-
-    def poTemplate(self, name):
-        '''SELECT POTemplate.* FROM POTemplate WHERE
-            POTemplate.product = id AND
-            POTemplate.name = name;'''
-        results = RosettaPOTemplate.select('''
-            POTemplate.product = %d AND
-            POTemplate.name = %s''' %
-            (self.id, quote(name)))
-
-        if results.count() == 0:
-            raise KeyError, name
-        else:
-            return results[0]
-
-    def newPOTemplate(self, person, name, title):
-        # XXX: we have to fill up a lot of other attributes
-        if RosettaPOTemplate.selectBy(
-                productID=self.id, name=name).count():
-            raise KeyError(
-                  "This product already has a template named %s" % name)
-        return RosettaPOTemplate(name=name, title=title, product=self)
-
-    def messageCount(self):
-        count = 0
-        for t in self.poTemplates():
-            count += len(t)
-        return count
-
-    def currentCount(self, language):
-        count = 0
-        for t in self.poTemplates():
-            count += t.currentCount(language)
-        return count
-
-    def updatesCount(self, language):
-        count = 0
-        for t in self.poTemplates():
-            count += t.updatesCount(language)
-        return count
-
-    def rosettaCount(self, language):
-        count = 0
-        for t in self.poTemplates():
-            count += t.rosettaCount(language)
-        return count
-
 
 class SourceSource(SQLBase): 
     #, importd.Job.Job):
@@ -1425,9 +1356,8 @@ class Project(SQLBase):
     _table = "Project"
 
     _columns = [
-        IntCol('owner', notNull=True),
-        # Rosetta defines 'owner' as a Person not an int, but doesn't use it.
-        ##ForeignKey(name='owner', foreignKey='RosettaPerson', notNull=True),
+        ForeignKey(name='owner', foreignKey='Person', dbName='owner', \
+            notNull=True),
         StringCol('name', notNull=True),
         StringCol('displayname', notNull=True),
         StringCol('title', notNull=True),
@@ -1441,7 +1371,7 @@ class Project(SQLBase):
     ]
 
     products = MultipleJoin('Product', joinColumn='project')
-    _productsJoin = MultipleJoin('RosettaProduct', joinColumn='project')
+    _productsJoin = MultipleJoin('Product', joinColumn='project')
 
     def rosettaProducts(self):
         return iter(self._productsJoin)
@@ -1471,6 +1401,8 @@ class Product(SQLBase):
 
     implements(IProduct)
 
+    _table = 'Product'
+
     _columns = [
         ForeignKey(
                 name='project', foreignKey="Project", dbName="project",
@@ -1494,7 +1426,58 @@ class Product(SQLBase):
         StringCol('lastdoap', notNull=False, default=None),
         ]
 
+    _poTemplatesJoin = MultipleJoin('RosettaPOTemplate', joinColumn='product')
+
     bugs = MultipleJoin('ProductBugAssignment', joinColumn='product')
 
     syncs = MultipleJoin('SourceSource', joinColumn='product')
+
+    def poTemplates(self):
+        return iter(self._poTemplatesJoin)
+
+    def poTemplate(self, name):
+        '''SELECT POTemplate.* FROM POTemplate WHERE
+            POTemplate.product = id AND
+            POTemplate.name = name;'''
+        results = RosettaPOTemplate.select('''
+            POTemplate.product = %d AND
+            POTemplate.name = %s''' %
+            (self.id, quote(name)))
+
+        if results.count() == 0:
+            raise KeyError, name
+        else:
+            return results[0]
+
+    def newPOTemplate(self, person, name, title):
+        # XXX: we have to fill up a lot of other attributes
+        if RosettaPOTemplate.selectBy(
+                productID=self.id, name=name).count():
+            raise KeyError(
+                  "This product already has a template named %s" % name)
+        return RosettaPOTemplate(name=name, title=title, product=self)
+
+    def messageCount(self):
+        count = 0
+        for t in self.poTemplates():
+            count += len(t)
+        return count
+
+    def currentCount(self, language):
+        count = 0
+        for t in self.poTemplates():
+            count += t.currentCount(language)
+        return count
+
+    def updatesCount(self, language):
+        count = 0
+        for t in self.poTemplates():
+            count += t.updatesCount(language)
+        return count
+
+    def rosettaCount(self, language):
+        count = 0
+        for t in self.poTemplates():
+            count += t.rosettaCount(language)
+        return count
 

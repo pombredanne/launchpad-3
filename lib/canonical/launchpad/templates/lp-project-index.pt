@@ -31,10 +31,19 @@
     <div>
 	<ul tal:repeat="product context/products">
 		<li><a href="" tal:attributes="href product/name" 
-               tal:content="product/title">Product title</a><br />
-               <span tal:content="product/shortdesc">Product short
-               description goes here.</span></li>
+                tal:content="product/title">Product title</a>
+            <span tal:condition="exists:product/homepageurl"> [
+            <span tal:content="product/homepageurl">homepage</span>
+            ] </span>
+            <br />
+            <span tal:content="product/shortdesc">Product short
+            description goes here.</span></li>
+            <ul tal:repeat="potemplate product/poTemplates">
+                    <li> <span tal:content="potemplate/title" /></li>
+            </ul>
 	</ul>
+    </div>
+    <div>
 	<a href="products+new">Add a product</a>
 	</div>
 

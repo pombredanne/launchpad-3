@@ -4,10 +4,6 @@
     <allow interface="canonical.launchpad.interfaces.IRosettaProject"/>
   </content>
 
-  <content class="canonical.launchpad.database.RosettaProduct">
-    <allow interface="canonical.launchpad.interfaces.IProduct"/>
-  </content>
-
   <content class="canonical.launchpad.database.RosettaPOTemplate">
     <allow interface="canonical.launchpad.interfaces.IPOTemplate"/>
   </content>
