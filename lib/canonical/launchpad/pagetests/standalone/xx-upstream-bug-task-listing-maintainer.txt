@@ -1,0 +1,24 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/products/firefox HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <h1>Upstream Bugs for:
+          Mozilla Firefox
+      </h1>
+  ...
+    <small>displaying matching bugs 1 to 1 of 1</small> <small> :: 
+        <a ...>unassigned</a> .
+        <a ...>my todo list</a> .
+        <a ...>critical</a>
+        .
+            <a ...>submitted by me</a>
+  ...
+            <td onclick="window.location='/malone/tasks/2/+edit'">1</td>
+  ...
+    <input type="submit" name="assign_to_milestone"
+           value="Assign to Milestone" />
+  ...

@@ -1,0 +1,23 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/products/ubuntu HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <h1>Upstream Bugs for:
+          Ubuntu
+      </h1>
+  ...
+    <small>displaying matching bugs 1 to 2 of 2</small> <small> :: 
+        <a ...>unassigned</a> .
+        <a ...>my todo list</a> .
+        <a ...>critical</a>
+        .
+            <a ...>submitted by me</a>
+  ...
+            <td onclick="window.location='/malone/tasks/3/+edit'">2</td>
+  ...
+            <td onclick="window.location='/malone/tasks/1/+edit'">1</td>
+  ...

@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-11 00:35:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1169
+
+    Summary:
+      add page tests to prove that the upstream bug listing renders
+ correctly for anonymous user, authenticated users and maintainers.
+    Revision:
+      launchpad--devel--0--patch-1169
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-284
+       add page tests to prove that the upstream bug listing renders correctly for anonymous user, authenticated users and maintainers.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-anonymous.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-authenticated.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-maintainer.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-anonymous.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-authenticated.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-maintainer.txt
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-284
+
+
 2005-01-10 23:36:14 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1168
 
     Summary:

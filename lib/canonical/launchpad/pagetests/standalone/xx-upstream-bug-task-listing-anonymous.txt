@@ -1,0 +1,17 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/products/ubuntu HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+      <h1>Upstream Bugs for:
+          Ubuntu
+      </h1>
+  ...
+    <small>displaying matching bugs 1 to 2 of 2</small> <small> :: 
+  ...
+            <td onclick="window.location='/malone/tasks/3/+edit'">2</td>
+  ...
+            <td onclick="window.location='/malone/tasks/1/+edit'">1</td>
+  ...
