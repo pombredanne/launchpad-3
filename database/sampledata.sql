@@ -371,7 +371,7 @@ INSERT INTO POTemplate (product, branch, priority, name, title,
 VALUES ((SELECT id FROM Product WHERE name = 'iso-codes'),
         (SELECT id FROM Branch
 	WHERE title = 'Iso-codes 0.35'),
-	2, 'iso_639',
+	2, 'languages',
 	'POT file for the iso_639 strings',
 	'I suppose we should create a long description here....',
 	'Copyright',
@@ -725,27 +725,678 @@ VALUES ((SELECT id FROM POTemplate WHERE name = 'evolution-2.0'),
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	2, 0, 1, 2);
 
+/* List of POFiles to be able to import iso-codes' language list */
+
 INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
-		    lasttranslator, currentcount, updatescount, rosettacount,
-		    pluralforms)
-VALUES ((SELECT id FROM POTemplate WHERE name = 'iso_639'),
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'af'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'ar'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'az'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'bg'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'br'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'bs'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'ca'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'cs'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
         (SELECT id FROM Language WHERE code = 'cy'),
         '\n',
         '\n',
-	FALSE,
-	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
-	0, 0, 0, 0);
-
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
 INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
-		    lasttranslator, currentcount, updatescount, rosettacount,
-		    pluralforms)
-VALUES ((SELECT id FROM POTemplate WHERE name = 'iso_639'),
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'da'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'de'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'el'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'eo'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
         (SELECT id FROM Language WHERE code = 'es'),
         '\n',
         '\n',
-	FALSE,
-	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
-	0, 0, 0, 0);
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'et'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'eu'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'fa'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'fi'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'fr'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'ga'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'gl'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'he'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'hr'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'hu'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'id'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'is'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'it'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'ja'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'kok'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'ko'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'lt'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'lv'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'mi'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'mk'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'mn'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'mr'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'ms'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'mt'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'nb'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'nl'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'nn'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'no'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'nso'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'oc'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'om'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'pl'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'pt_BR'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'pt'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'ro'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'ru'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'sk'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'sl'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'sr'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'sv'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'sw'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'ta'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'te'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'th'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'tr'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'uk'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 've'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'vi'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'wa'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'xh'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'zh_CN'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'zh_TW'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+    lasttranslator, currentcount, updatescount, rosettacount,
+    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'languages'),
+        (SELECT id FROM Language WHERE code = 'zu'),
+        '\n',
+        '\n',
+        FALSE,
+        (SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+        0, 0, 0, 0);
 
 INSERT INTO POTranslation (translation)
 VALUES ('libreta de direcciones de Evolution');

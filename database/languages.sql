@@ -6,639 +6,639 @@
 -- If you have any problem/doubt, just ask me:
 -- Carlos Perelló Marín <carlos@interactors.coop>
 
-COPY "language" (id, code, englishname, nativename) FROM stdin;
-1	aa	Afar	\N
-2	ab	Abkhazian	\N
-3	ace	Achinese	\N
-4	ach	Acoli	\N
-5	ada	Adangme	\N
-6	ady	Adyghe; Adygei	\N
-7	afa	Afro-Asiatic (Other)	\N
-8	afh	Afrihili	\N
-9	af	Afrikaans	\N
-10	aka	Akan	\N
-11	ak	Akkadian	\N
-12	sq	Albanian	\N
-13	ale	Aleut	\N
-14	alg	Algonquian languages	\N
-15	am	Amharic	\N
-16	ang	English, Old (ca.450-1100)	\N
-17	apa	Apache languages	\N
-18	ar	Arabic	\N
-19	arc	Aramaic	\N
-20	an	Aragonese	\N
-21	hy	Armenian	\N
-22	arn	Araucanian	\N
-23	arp	Arapaho	\N
-24	art	Artificial (Other)	\N
-25	arw	Arawak	\N
-26	as	Assamese	\N
-27	ast	Asturian; Bable	\N
-28	ath	Athapascan language	\N
-29	aus	Australian languages	\N
-30	av	Avaric	\N
-31	ae	Avestan	\N
-32	awa	Awadhi	\N
-33	ay	Aymara	\N
-34	az	Azerbaijani	\N
-35	bad	Banda	\N
-36	bai	Bamileke languages	\N
-37	ba	Bashkir	\N
-38	bal	Baluchi	\N
-39	bm	Bambara	\N
-40	ban	Balinese	\N
-41	eu	Basque	\N
-42	bas	Basa	\N
-43	bat	Baltic (Other)	\N
-44	bej	Beja	\N
-45	be	Belarusian	\N
-46	bem	Bemba	\N
-47	bn	Bengali	\N
-48	ber	Berber (Other)	\N
-49	bho	Bhojpuri	\N
-50	bh	Bihari	\N
-51	bik	Bikol	\N
-52	bin	Bini	\N
-53	bi	Bislama	\N
-54	bla	Siksika	\N
-55	bnt	Bantu (Other)	\N
-56	bs	Bosnian	\N
-57	bra	Braj	\N
-58	br	Breton	\N
-59	btk	Batak (Indonesia)	\N
-60	bua	Buriat	\N
-61	bug	Buginese	\N
-62	bg	Bulgarian	\N
-63	my	Burmese	\N
-64	byn	Blin; Bilin	\N
-65	cad	Caddo	\N
-66	cai	Central American Indian (Other)	\N
-67	car	Carib	\N
-68	ca	Catalan	\N
-69	cau	Caucasian (Other)	\N
-70	ceb	Cebuano	\N
-71	cel	Celtic (Other)	\N
-72	ch	Chamorro	\N
-73	chb	Chibcha	\N
-74	ce	Chechen	\N
-75	chg	Chagatai	\N
-76	zh	Chinese	\N
-77	chk	Chukese	\N
-78	chm	Mari	\N
-79	chn	Chinook jargon	\N
-80	cho	Choctaw	\N
-81	chp	Chipewyan	\N
-82	chr	Cherokee	\N
-83	chu	Church Slavic	\N
-84	cv	Chuvash	\N
-85	chy	Cheyenne	\N
-86	cmc	Chamic languages	\N
-87	cop	Coptic	\N
-88	kw	Cornish	\N
-89	co	Corsican	\N
-90	cpe	English-based (Other)	\N
-91	cpf	French-based (Other)	\N
-92	cpp	Portuguese-based (Other)	\N
-93	cr	Cree	\N
-94	crh	Crimean Turkish; Crimean Tatar	\N
-95	crp	Creoles and pidgins (Other)	\N
-96	csb	Kashubian	\N
-97	cus	Cushitic (Other)	\N
-98	cs	Czech	\N
-99	dak	Dakota	\N
-100	da	Danish	\N
-101	dar	Dargwa	\N
-102	del	Delaware	\N
-103	den	Slave (Athapascan)	\N
-104	dgr	Dogrib	\N
-105	din	Dinka	\N
-106	dv	Divehi	\N
-107	doi	Dogri	\N
-108	dra	Dravidian (Other)	\N
-109	dsb	Lower Sorbian	\N
-110	dua	Duala	\N
-111	dum	Dutch, Middle (ca. 1050-1350)	\N
-112	nl	Dutch	\N
-113	dyu	Dyula	\N
-114	dz	Dzongkha	\N
-115	efi	Efik	\N
-116	egy	Egyptian (Ancient)	\N
-117	eka	Ekajuk	\N
-118	elx	Elamite	\N
-119	en	English	\N
-120	enm	English, Middle (1100-1500)	\N
-121	eo	Esperanto	\N
-122	et	Estonian	\N
-123	ee	Ewe	\N
-124	ewo	Ewondo	\N
-125	fan	Fang	\N
-126	fo	Faroese	\N
-127	fat	Fanti	\N
-128	fj	Fijian	\N
-129	fi	Finnish	\N
-130	fiu	Finno-Ugrian (Other)	\N
-131	fon	Fon	\N
-132	fr	French	\N
-133	frm	French, Middle (ca.1400-1600)	\N
-134	fro	French, Old (842-ca.1400)	\N
-135	fy	Frisian	\N
-136	ff	Fulah	\N
-137	fur	Friulian	\N
-138	gaa	Ga	\N
-139	gay	Gayo	\N
-140	gba	Gbaya	\N
-141	gem	Germanic (Other)	\N
-142	ka	Georgian	\N
-143	de	German	\N
-144	gez	Geez	\N
-145	gil	Gilbertese	\N
-146	gd	Gaelic; Scottish	\N
-147	ga	Irish	\N
-148	gl	Gallegan	\N
-149	gv	Manx	\N
-150	gmh	German, Middle High (ca.1050-1500)	\N
-151	goh	German, Old High (ca.750-1050)	\N
-152	gon	Gondi	\N
-153	gor	Gorontalo	\N
-154	got	Gothic	\N
-155	grb	Grebo	\N
-156	grc	Greek, Ancient (to 1453)	\N
-157	el	Greek, Modern (1453-)	\N
-158	gn	Guarani	\N
-159	gu	Gujarati	\N
-160	gwi	Gwichin	\N
-161	hai	Haida	\N
-162	ht	Haitian; Haitian Creole	\N
-163	ha	Hausa	\N
-164	haw	Hawaiian	\N
-165	he	Hebrew	\N
-166	hz	Herero	\N
-167	hil	Hiligaynon	\N
-168	him	Himachali	\N
-169	hi	Hindi	\N
-170	hit	Hittite	\N
-171	hmn	Hmong	\N
-172	ho	Hiri	\N
-173	hsb	Upper Sorbian	\N
-174	hu	Hungarian	\N
-175	hup	Hupa	\N
-176	iba	Iban	\N
-177	ig	Igbo	\N
-178	is	Icelandic	\N
-179	io	Ido	\N
-180	ii	Sichuan Yi	\N
-181	ijo	Ijo	\N
-182	iu	Inuktitut	\N
-183	ie	Interlingue	\N
-184	ilo	Iloko	\N
-185	ia	Interlingua	\N
-186	inc	Indic (Other)	\N
-187	id	Indonesian	\N
-188	ine	Indo-European (Other)	\N
-189	inh	Ingush	\N
-190	ik	Inupiaq	\N
-191	ira	Iranian (Other)	\N
-192	iro	Iroquoian languages	\N
-193	it	Italian	\N
-194	jv	Javanese	\N
-195	jbo	Lojban	\N
-196	ja	Japanese	\N
-197	jpr	Judeo-Persian	\N
-198	jrb	Judeo-Arabic	\N
-199	kaa	Kara-Kalpak	\N
-200	kab	Kabyle	\N
-201	kac	Kachin	\N
-202	kl	Greenlandic (Kalaallisut)	\N
-203	kam	Kamba	\N
-204	kn	Kannada	\N
-205	kar	Karen	\N
-206	ks	Kashmiri	\N
-207	kr	Kanuri	\N
-208	kaw	Kawi	\N
-209	kk	Kazakh	\N
-210	kbd	Kabardian	\N
-211	kha	Khazi	\N
-212	khi	Khoisan (Other)	\N
-213	km	Khmer	\N
-214	kho	Khotanese	\N
-215	ki	Kikuyu	\N
-216	rw	Kinyarwanda	\N
-217	ky	Kirghiz	\N
-218	kmb	Kimbundu	\N
-219	kok	Konkani	\N
-220	kv	Komi	\N
-221	kg	Kongo	\N
-222	ko	Korean	\N
-223	kos	Kosraean	\N
-224	kpe	Kpelle	\N
-225	krc	Karachay-Balkar	\N
-226	kro	Kru	\N
-227	kru	Kurukh	\N
-228	kj	Kuanyama	\N
-229	kum	Kumyk	\N
-230	ku	Kurdish	\N
-231	kut	Kutenai	\N
-232	lad	Ladino	\N
-233	lah	Lahnda	\N
-234	lam	Lamba	\N
-235	lo	Lao	\N
-236	la	Latin	\N
-237	lv	Latvian	\N
-238	lez	Lezghian	\N
-239	li	Limburgian	\N
-240	ln	Lingala	\N
-241	lt	Lithuanian	\N
-242	lol	Mongo	\N
-243	loz	Lozi	\N
-244	lb	Luxembourgish	\N
-245	lua	Luba-Lulua	\N
-246	lu	Luba-Katanga	\N
-247	lg	Ganda	\N
-248	lui	Luiseno	\N
-249	lun	Lunda	\N
-250	luo	Luo (Kenya and Tanzania)	\N
-251	lus	Lushai	\N
-252	mk	Macedonian	\N
-253	mad	Madurese	\N
-254	mag	Magahi	\N
-255	mh	Marshallese	\N
-256	mai	Maithili	\N
-257	mak	Makasar	\N
-258	ml	Malayalam	\N
-259	man	Mandingo	\N
-260	mi	Maori	\N
-261	map	Austronesian (Other)	\N
-262	mr	Marathi	\N
-263	mas	Masai	\N
-264	ms	Malay	\N
-265	mdf	Moksha	\N
-266	mdr	Mandar	\N
-267	men	Mende	\N
-268	mga	Irish, Middle (900-1200)	\N
-269	mic	Micmac	\N
-270	min	Minangkabau	\N
-271	mis	Miscellaneous languages	\N
-272	mkh	Mon-Khmer (Other)	\N
-273	mg	Malagasy	\N
-274	mt	Maltese	\N
-275	mnc	Manchu	\N
-276	mno	Manobo languages	\N
-277	moh	Mohawk	\N
-278	mo	Moldavian	\N
-279	mn	Mongolian	\N
-280	mos	Mossi	\N
-281	mul	Multiple languages	\N
-282	mun	Munda languages	\N
-283	mus	Creek	\N
-284	mwr	Marwari	\N
-285	myn	Mayan languages	\N
-286	myv	Erzya	\N
-287	nah	Nahuatl	\N
-288	nai	North American Indian (Other)	\N
-289	nap	Neapolitan	\N
-290	na	Nauru	\N
-291	nv	Navaho	\N
-292	nr	Ndebele, South	\N
-293	nd	Ndebele, North	\N
-294	ng	Ndonga	\N
-295	nds	German, Low	\N
-296	ne	Nepali	\N
-297	new	Newari	\N
-298	nia	Nias	\N
-299	nic	Niger-Kordofanian (Other)	\N
-300	niu	Niuean	\N
-301	nn	Norwegian Nynorsk	\N
-302	nb	Bokmål, Norwegian	\N
-303	nog	Nogai	\N
-304	non	Norse, Old	\N
-305	no	Norwegian	\N
-306	nso	Sotho, Northern	\N
-307	nub	Nubian languages	\N
-308	nwc	Classical Newari; Old Newari	\N
-309	ny	Chewa; Chichewa; Nyanja	\N
-310	nym	Nyankole	\N
-311	nyo	Nyoro	\N
-312	nzi	Nzima	\N
-313	oc	Occitan (post 1500)	\N
-314	oj	Ojibwa	\N
-315	or	Oriya	\N
-316	om	Oromo	\N
-317	osa	Osage	\N
-318	os	Ossetian	\N
-319	ota	Turkish, Ottoman (1500-1928)	\N
-320	oto	Otomian languages	\N
-321	paa	Papuan (Other)	\N
-322	pag	Pangasinan	\N
-323	pal	Pahlavi	\N
-324	pam	Pampanga	\N
-325	pa	Panjabi	\N
-326	pap	Papiamento	\N
-327	pau	Palauan	\N
-328	peo	Persian, Old (ca.600-400 B.C.)	\N
-329	fa	Persian	\N
-330	phi	Philippine (Other)	\N
-331	phn	Phoenician	\N
-332	pi	Pali	\N
-333	pl	Polish	\N
-334	pt	Portuguese	\N
-335	pon	Pohnpeian	\N
-336	pra	Prakrit languages	\N
-337	pro	Provençal, Old (to 1500)	\N
-338	ps	Pushto	\N
-339	qu	Quechua	\N
-340	raj	Rajasthani	\N
-341	rap	Rapanui	\N
-342	rar	Rarotongan	\N
-343	roa	Romance (Other)	\N
-344	rm	Raeto-Romance	\N
-345	rom	Romany	\N
-346	ro	Romanian	\N
-347	rn	Rundi	\N
-348	ru	Russian	\N
-349	sad	Sandawe	\N
-350	sg	Sango	\N
-351	sah	Yakut	\N
-352	sai	South American Indian (Other)	\N
-353	sal	Salishan languages	\N
-354	sam	Samaritan Aramaic	\N
-355	sa	Sanskrit	\N
-356	sas	Sasak	\N
-357	sat	Santali	\N
-358	sr	Serbian	\N
-359	sco	Scots	\N
-360	hr	Croatian	\N
-361	sel	Selkup	\N
-362	sem	Semitic (Other)	\N
-363	sga	Irish, Old (to 900)	\N
-364	sgn	Sign languages	\N
-365	shn	Shan	\N
-366	sid	Sidamo	\N
-367	si	Sinhalese	\N
-368	sio	Siouan languages	\N
-369	sit	Sino-Tibetan (Other)	\N
-370	sla	Slavic (Other)	\N
-371	sk	Slovak	\N
-372	sl	Slovenian	\N
-373	sma	Southern Sami	\N
-374	se	Northern Sami	\N
-375	smi	Sami languages (Other)	\N
-376	smj	Lule Sami	\N
-377	smn	Inari Sami	\N
-378	sm	Samoan	\N
-379	sms	Skolt Sami	\N
-380	sn	Shona	\N
-381	sd	Sindhi	\N
-382	snk	Soninke	\N
-383	sog	Sogdian	\N
-384	so	Somali	\N
-385	son	Songhai	\N
-386	st	Sotho, Southern	\N
-387	es	Spanish (Castilian)	\N
-388	sc	Sardinian	\N
-389	srr	Serer	\N
-390	ssa	Nilo-Saharan (Other)	\N
-391	ss	Swati	\N
-392	suk	Sukuma	\N
-393	su	Sundanese	\N
-394	sus	Susu	\N
-395	sux	Sumerian	\N
-396	sw	Swahili	\N
-397	sv	Swedish	\N
-398	syr	Syriac	\N
-399	ty	Tahitian	\N
-400	tai	Tai (Other)	\N
-401	ta	Tamil	\N
-402	ts	Tsonga	\N
-403	tt	Tatar	\N
-404	te	Telugu	\N
-405	tem	Timne	\N
-406	ter	Tereno	\N
-407	tet	Tetum	\N
-408	tg	Tajik	\N
-409	tl	Tagalog	\N
-410	th	Thai	\N
-411	bo	Tibetan	\N
-412	tig	Tigre	\N
-413	ti	Tigrinya	\N
-414	tiv	Tiv	\N
-415	tlh	Klingon; tlhIngan-Hol	\N
-416	tkl	Tokelau	\N
-417	tli	Tlinglit	\N
-418	tmh	Tamashek	\N
-419	tog	Tonga (Nyasa)	\N
-420	to	Tonga (Tonga Islands)	\N
-421	tpi	Tok Pisin	\N
-422	tsi	Tsimshian	\N
-423	tn	Tswana	\N
-424	tk	Turkmen	\N
-425	tum	Tumbuka	\N
-426	tup	Tupi languages	\N
-427	tr	Turkish	\N
-428	tut	Altaic (Other)	\N
-429	tvl	Tuvalu	\N
-430	tw	Twi	\N
-431	tyv	Tuvinian	\N
-432	udm	Udmurt	\N
-433	uga	Ugaritic	\N
-434	ug	Uighur	\N
-435	uk	Ukrainian	\N
-436	umb	Umbundu	\N
-437	und	Undetermined	\N
-438	urd	Urdu	\N
-439	uz	Uzbek	\N
-440	vai	Vai	\N
-441	ve	Venda	\N
-442	vi	Vietnamese	\N
-443	vo	Volapuk	\N
-444	vot	Votic	\N
-445	wak	Wakashan languages	\N
-446	wal	Walamo	\N
-447	war	Waray	\N
-448	was	Washo	\N
-449	cy	Welsh	\N
-450	wen	Sorbian languages	\N
-451	wa	Walloon	\N
-452	wo	Wolof	\N
-453	xal	Kalmyk	\N
-454	xh	Xhosa	\N
-455	yao	Yao	\N
-456	yap	Yapese	\N
-457	yi	Yiddish	\N
-458	yo	Yoruba	\N
-459	ypk	Yupik languages	\N
-460	zap	Zapotec	\N
-461	zen	Zenaga	\N
-462	za	Chuang; Zhuang	\N
-463	znd	Zande	\N
-464	zu	Zulu	\N
-465	zun	Zuni	\N
-466	ro_RO	Romanian from Romania	\N
-467	ar_TN	Arabic from Tunisia	\N
-468	pa_IN	Panjabi from India	\N
-469	ar_MA	Arabic from Morocco	\N
-470	ar_LY	Arabic from Libyan Arab Jamahiriya	\N
-471	es_SV	Spanish (Castilian) from El Salvador	\N
-472	ga_IE	Irish from Ireland	\N
-473	ta_IN	Tamil from India	\N
-474	en_HK	English from Hong Kong	\N
-475	cs_CZ	Czech from Czech Republic	\N
-476	ar_LB	Arabic from Lebanon	\N
-477	it_IT	Italian from Italy	\N
-478	es_CO	Spanish (Castilian) from Colombia	\N
-479	ti_ET	Tigrinya from Ethiopia	\N
-480	ar_DZ	Arabic from Algeria	\N
-481	de_BE	German from Belgium	\N
-482	mk_MK	Macedonian from Macedonia, the Former Yugoslav Republic of	\N
-483	gv_GB	Manx from United Kingdom	\N
-484	th_TH	Thai from Thailand	\N
-485	uz_UZ	Uzbek from Uzbekistan	\N
-486	bn_IN	Bengali from India	\N
-487	tl_PH	Tagalog from Philippines	\N
-488	en_PH	English from Philippines	\N
-489	mi_NZ	Maori from New Zealand	\N
-490	pl_PL	Polish from Poland	\N
-491	ar_YE	Arabic from Yemen	\N
-492	az_AZ	Azerbaijani from Azerbaijan	\N
-493	es_NI	Spanish (Castilian) from Nicaragua	\N
-494	af_ZA	Afrikaans from South Africa	\N
-495	ar_QA	Arabic from Qatar	\N
-496	kl_GL	Greenlandic (Kalaallisut) from Greenland	\N
-497	en_ZA	English from South Africa	\N
-498	ja_JP	Japanese from Japan	\N
-499	zh_HK	Chinese from Hong Kong	\N
-500	en_ZW	English from Zimbabwe	\N
-501	so_ET	Somali from Ethiopia	\N
-502	lv_LV	Latvian from Latvia	\N
-503	tt_RU	Tatar from Russian Federation	\N
-504	aa_ET	Afar from Ethiopia	\N
-505	ar_IN	Arabic from India	\N
-506	aa_ER	Afar from Eritrea	\N
-507	se_NO	Northern Sami from Norway	\N
-508	en_US	English from United States	\N
-509	ar_AE	Arabic from United Arab Emirates	\N
-510	mt_MT	Maltese from Malta	\N
-511	om_KE	Oromo from Kenya	\N
-512	ar_IQ	Arabic from Iraq	\N
-513	fr_BE	French from Belgium	\N
-514	pt_BR	Portuguese from Brazil	\N
-515	es_PR	Spanish (Castilian) from Puerto Rico	\N
-516	gu_IN	Gujarati from India	\N
-517	sid_ET	Sidamo from Ethiopia	\N
-518	wa_BE	Walloon from Belgium	\N
-519	oc_FR	Occitan (post 1500) from France	\N
-520	en_BW	English from Botswana	\N
-521	om_ET	Oromo from Ethiopia	\N
-522	hi_IN	Hindi from India	\N
-523	es_VE	Spanish (Castilian) from Venezuela	\N
-524	an_ES	Aragonese from Spain	\N
-525	it_CH	Italian from Switzerland	\N
-526	da_DK	Danish from Denmark	\N
-527	es_AR	Spanish (Castilian) from Argentina	\N
-528	ne_NP	Nepali from Nepal	\N
-529	sq_AL	Albanian from Albania	\N
-530	hu_HU	Hungarian from Hungary	\N
-531	sk_SK	Slovak from Slovakia	\N
-532	mn_MN	Mongolian from Mongolia	\N
-533	ar_KW	Arabic from Kuwait	\N
-534	ar_SA	Arabic from Saudi Arabia	\N
-535	ar_SD	Arabic from Sudan	\N
-536	pt_PT	Portuguese from Portugal	\N
-537	nn_NO	Norwegian Nynorsk from Norway	\N
-538	ar_SY	Arabic from Syrian Arab Republic	\N
-539	byn_ER	Blin; Bilin from Eritrea	\N
-540	en_GB	English from United Kingdom	\N
-541	et_EE	Estonian from Estonia	\N
-542	lt_LT	Lithuanian from Lithuania	\N
-543	zu_ZA	Zulu from South Africa	\N
-544	zh_SG	Chinese from Singapore	\N
-545	es_DO	Spanish (Castilian) from Dominican Republic	\N
-546	lg_UG	Ganda from Uganda	\N
-547	id_ID	Indonesian from Indonesia	\N
-548	hr_HR	Croatian from Croatia	\N
-549	es_CL	Spanish (Castilian) from Chile	\N
-550	sl_SI	Slovenian from Slovenia	\N
-551	is_IS	Icelandic from Iceland	\N
-552	gez_ER	Geez from Eritrea	\N
-553	fo_FO	Faroese from Faroe Islands	\N
-554	bs_BA	Bosnian from Bosnia and Herzegovina	\N
-555	ti_ER	Tigrinya from Eritrea	\N
-556	en_DK	English from Denmark	\N
-557	no_NO	Norwegian from Norway	\N
-558	eu_ES	Basque from Spain	\N
-559	kw_GB	Cornish from United Kingdom	\N
-560	ms_MY	Malay from Malaysia	\N
-561	kn_IN	Kannada from India	\N
-562	es_GT	Spanish (Castilian) from Guatemala	\N
-563	be_BY	Belarusian from Belarus	\N
-564	vi_VN	Vietnamese from Viet Nam	\N
-565	fr_CA	French from Canada	\N
-566	aa_DJ	Afar from Djibouti	\N
-567	fr_CH	French from Switzerland	\N
-568	fi_FI	Finnish from Finland	\N
-569	so_DJ	Somali from Djibouti	\N
-570	en_IN	English from India	\N
-571	en_AU	English from Australia	\N
-572	en_IE	English from Ireland	\N
-573	tr_TR	Turkish from Turkey	\N
-574	bn_BD	Bengali from Bangladesh	\N
-575	ru_UA	Russian from Ukraine	\N
-576	gd_GB	Gaelic; Scottish from United Kingdom	\N
-577	nl_BE	Dutch from Belgium	\N
-578	de_CH	German from Switzerland	\N
-579	es_BO	Spanish (Castilian) from Bolivia	\N
-580	te_IN	Telugu from India	\N
-581	zh_TW	Chinese from Taiwan, Province of China	\N
-582	xh_ZA	Xhosa from South Africa	\N
-583	es_CR	Spanish (Castilian) from Costa Rica	\N
-584	am_ET	Amharic from Ethiopia	\N
-585	gez_ET	Geez from Ethiopia	\N
-586	ar_EG	Arabic from Egypt	\N
-587	ca_ES	Catalan from Spain	\N
-588	fr_FR	French from France	\N
-589	zh_CN	Chinese from China	\N
-590	es_UY	Spanish (Castilian) from Uruguay	\N
-591	tg_TJ	Tajik from Tajikistan	\N
-592	nl_NL	Dutch from Netherlands	\N
-593	es_US	Spanish (Castilian) from United States	\N
-594	yi_US	Yiddish from United States	\N
-595	ml_IN	Malayalam from India	\N
-596	uk_UA	Ukrainian from Ukraine	\N
-597	de_LU	German from Luxembourg	\N
-598	st_ZA	Sotho, Southern from South Africa	\N
-599	es_MX	Spanish (Castilian) from Mexico	\N
-600	ar_JO	Arabic from Jordan	\N
-601	fa_IR	Persian from Iran, Islamic Republic of	\N
-602	lo_LA	Lao from Lao People's Democratic Republic	\N
-603	es_EC	Spanish (Castilian) from Ecuador	\N
-604	so_KE	Somali from Kenya	\N
-605	en_NZ	English from New Zealand	\N
-606	he_IL	Hebrew from Israel	\N
-607	sv_SE	Swedish from Sweden	\N
-608	ru_RU	Russian from Russian Federation	\N
-609	cy_GB	Welsh from United Kingdom	\N
-610	br_FR	Breton from France	\N
-611	el_GR	Greek, Modern (1453-) from Greece	\N
-612	es_ES	Spanish (Castilian) from Spain	\N
-613	ar_BH	Arabic from Bahrain	\N
-614	bg_BG	Bulgarian from Bulgaria	\N
-615	de_DE	German from Germany	\N
-616	gl_ES	Gallegan from Spain	\N
-617	mr_IN	Marathi from India	\N
-618	en_CA	English from Canada	\N
-619	es_PY	Spanish (Castilian) from Paraguay	\N
-620	so_SO	Somali from Somalia	\N
-621	fr_LU	French from Luxembourg	\N
-622	ar_OM	Arabic from Oman	\N
-623	es_PA	Spanish (Castilian) from Panama	\N
-624	sv_FI	Swedish from Finland	\N
-625	ka_GE	Georgian from Georgia	\N
-626	es_PE	Spanish (Castilian) from Peru	\N
-627	nb_NO	Bokmål, Norwegian from Norway	\N
-628	tig_ER	Tigre from Eritrea	\N
-629	es_HN	Spanish (Castilian) from Honduras	\N
-630	ko_KR	Korean from Korea, Republic of	\N
-631	de_AT	German from Austria	\N
-632	en_SG	English from Singapore	\N
+COPY "language" (id, code, englishname, nativename, pluralforms, pluralexpression) FROM stdin;
+1	aa	Afar	\N	\N	\N
+2	ab	Abkhazian	\N	\N	\N
+3	ace	Achinese	\N	\N	\N
+4	ach	Acoli	\N	\N	\N
+5	ada	Adangme	\N	\N	\N
+6	ady	Adyghe; Adygei	\N	\N	\N
+7	afa	Afro-Asiatic (Other)	\N	\N	\N
+8	afh	Afrihili	\N	\N	\N
+10	aka	Akan	\N	\N	\N
+11	ak	Akkadian	\N	\N	\N
+12	sq	Albanian	\N	\N	\N
+13	ale	Aleut	\N	\N	\N
+14	alg	Algonquian languages	\N	\N	\N
+15	am	Amharic	\N	\N	\N
+16	ang	English, Old (ca.450-1100)	\N	\N	\N
+17	apa	Apache languages	\N	\N	\N
+19	arc	Aramaic	\N	\N	\N
+20	an	Aragonese	\N	\N	\N
+21	hy	Armenian	\N	\N	\N
+22	arn	Araucanian	\N	\N	\N
+23	arp	Arapaho	\N	\N	\N
+24	art	Artificial (Other)	\N	\N	\N
+25	arw	Arawak	\N	\N	\N
+26	as	Assamese	\N	\N	\N
+27	ast	Asturian; Bable	\N	\N	\N
+28	ath	Athapascan language	\N	\N	\N
+29	aus	Australian languages	\N	\N	\N
+30	av	Avaric	\N	\N	\N
+31	ae	Avestan	\N	\N	\N
+32	awa	Awadhi	\N	\N	\N
+33	ay	Aymara	\N	\N	\N
+35	bad	Banda	\N	\N	\N
+36	bai	Bamileke languages	\N	\N	\N
+37	ba	Bashkir	\N	\N	\N
+38	bal	Baluchi	\N	\N	\N
+39	bm	Bambara	\N	\N	\N
+40	ban	Balinese	\N	\N	\N
+42	bas	Basa	\N	\N	\N
+43	bat	Baltic (Other)	\N	\N	\N
+44	bej	Beja	\N	\N	\N
+45	be	Belarusian	\N	\N	\N
+46	bem	Bemba	\N	\N	\N
+47	bn	Bengali	\N	\N	\N
+48	ber	Berber (Other)	\N	\N	\N
+49	bho	Bhojpuri	\N	\N	\N
+50	bh	Bihari	\N	\N	\N
+51	bik	Bikol	\N	\N	\N
+52	bin	Bini	\N	\N	\N
+53	bi	Bislama	\N	\N	\N
+54	bla	Siksika	\N	\N	\N
+55	bnt	Bantu (Other)	\N	\N	\N
+57	bra	Braj	\N	\N	\N
+59	btk	Batak (Indonesia)	\N	\N	\N
+60	bua	Buriat	\N	\N	\N
+61	bug	Buginese	\N	\N	\N
+63	my	Burmese	\N	\N	\N
+64	byn	Blin; Bilin	\N	\N	\N
+65	cad	Caddo	\N	\N	\N
+66	cai	Central American Indian (Other)	\N	\N	\N
+67	car	Carib	\N	\N	\N
+69	cau	Caucasian (Other)	\N	\N	\N
+70	ceb	Cebuano	\N	\N	\N
+71	cel	Celtic (Other)	\N	\N	\N
+72	ch	Chamorro	\N	\N	\N
+73	chb	Chibcha	\N	\N	\N
+74	ce	Chechen	\N	\N	\N
+75	chg	Chagatai	\N	\N	\N
+76	zh	Chinese	\N	\N	\N
+77	chk	Chukese	\N	\N	\N
+78	chm	Mari	\N	\N	\N
+79	chn	Chinook jargon	\N	\N	\N
+80	cho	Choctaw	\N	\N	\N
+81	chp	Chipewyan	\N	\N	\N
+82	chr	Cherokee	\N	\N	\N
+83	chu	Church Slavic	\N	\N	\N
+84	cv	Chuvash	\N	\N	\N
+85	chy	Cheyenne	\N	\N	\N
+86	cmc	Chamic languages	\N	\N	\N
+87	cop	Coptic	\N	\N	\N
+88	kw	Cornish	\N	\N	\N
+89	co	Corsican	\N	\N	\N
+90	cpe	English-based (Other)	\N	\N	\N
+91	cpf	French-based (Other)	\N	\N	\N
+92	cpp	Portuguese-based (Other)	\N	\N	\N
+93	cr	Cree	\N	\N	\N
+94	crh	Crimean Turkish; Crimean Tatar	\N	\N	\N
+95	crp	Creoles and pidgins (Other)	\N	\N	\N
+96	csb	Kashubian	\N	\N	\N
+97	cus	Cushitic (Other)	\N	\N	\N
+99	dak	Dakota	\N	\N	\N
+101	dar	Dargwa	\N	\N	\N
+102	del	Delaware	\N	\N	\N
+103	den	Slave (Athapascan)	\N	\N	\N
+104	dgr	Dogrib	\N	\N	\N
+105	din	Dinka	\N	\N	\N
+106	dv	Divehi	\N	\N	\N
+107	doi	Dogri	\N	\N	\N
+108	dra	Dravidian (Other)	\N	\N	\N
+109	dsb	Lower Sorbian	\N	\N	\N
+110	dua	Duala	\N	\N	\N
+111	dum	Dutch, Middle (ca. 1050-1350)	\N	\N	\N
+9	af	Afrikaans	Afrikaans	\N	\N
+113	dyu	Dyula	\N	\N	\N
+114	dz	Dzongkha	\N	\N	\N
+115	efi	Efik	\N	\N	\N
+116	egy	Egyptian (Ancient)	\N	\N	\N
+117	eka	Ekajuk	\N	\N	\N
+118	elx	Elamite	\N	\N	\N
+18	ar	Arabic	العربية	\N	\N
+120	enm	English, Middle (1100-1500)	\N	\N	\N
+123	ee	Ewe	\N	\N	\N
+124	ewo	Ewondo	\N	\N	\N
+125	fan	Fang	\N	\N	\N
+127	fat	Fanti	\N	\N	\N
+128	fj	Fijian	\N	\N	\N
+34	az	Azerbaijani	Azərbaycan türkçəsi	\N	\N
+130	fiu	Finno-Ugrian (Other)	\N	\N	\N
+131	fon	Fon	\N	\N	\N
+41	eu	Basque	Euskara	\N	\N
+133	frm	French, Middle (ca.1400-1600)	\N	\N	\N
+134	fro	French, Old (842-ca.1400)	\N	\N	\N
+135	fy	Frisian	\N	\N	\N
+136	ff	Fulah	\N	\N	\N
+137	fur	Friulian	\N	\N	\N
+138	gaa	Ga	\N	\N	\N
+139	gay	Gayo	\N	\N	\N
+140	gba	Gbaya	\N	\N	\N
+141	gem	Germanic (Other)	\N	\N	\N
+142	ka	Georgian	\N	\N	\N
+56	bs	Bosnian	Rumunjki	\N	\N
+144	gez	Geez	\N	\N	\N
+145	gil	Gilbertese	\N	\N	\N
+146	gd	Gaelic; Scottish	\N	\N	\N
+58	br	Breton	Brezhoneg	\N	\N
+149	gv	Manx	\N	\N	\N
+150	gmh	German, Middle High (ca.1050-1500)	\N	\N	\N
+151	goh	German, Old High (ca.750-1050)	\N	\N	\N
+152	gon	Gondi	\N	\N	\N
+153	gor	Gorontalo	\N	\N	\N
+154	got	Gothic	\N	\N	\N
+155	grb	Grebo	\N	\N	\N
+156	grc	Greek, Ancient (to 1453)	\N	\N	\N
+62	bg	Bulgarian	Български	\N	\N
+158	gn	Guarani	\N	\N	\N
+159	gu	Gujarati	\N	\N	\N
+160	gwi	Gwichin	\N	\N	\N
+161	hai	Haida	\N	\N	\N
+162	ht	Haitian; Haitian Creole	\N	\N	\N
+163	ha	Hausa	\N	\N	\N
+164	haw	Hawaiian	\N	\N	\N
+68	ca	Catalan	Català	\N	\N
+166	hz	Herero	\N	\N	\N
+167	hil	Hiligaynon	\N	\N	\N
+168	him	Himachali	\N	\N	\N
+169	hi	Hindi	\N	\N	\N
+170	hit	Hittite	\N	\N	\N
+171	hmn	Hmong	\N	\N	\N
+172	ho	Hiri	\N	\N	\N
+173	hsb	Upper Sorbian	\N	\N	\N
+122	et	Estonian	Eesti	\N	\N
+175	hup	Hupa	\N	\N	\N
+176	iba	Iban	\N	\N	\N
+177	ig	Igbo	\N	\N	\N
+179	io	Ido	\N	\N	\N
+180	ii	Sichuan Yi	\N	\N	\N
+181	ijo	Ijo	\N	\N	\N
+182	iu	Inuktitut	\N	\N	\N
+183	ie	Interlingue	\N	\N	\N
+184	ilo	Iloko	\N	\N	\N
+185	ia	Interlingua	\N	\N	\N
+186	inc	Indic (Other)	\N	\N	\N
+188	ine	Indo-European (Other)	\N	\N	\N
+189	inh	Ingush	\N	\N	\N
+190	ik	Inupiaq	\N	\N	\N
+191	ira	Iranian (Other)	\N	\N	\N
+192	iro	Iroquoian languages	\N	\N	\N
+148	gl	Gallegan	Galego	\N	\N
+194	jv	Javanese	\N	\N	\N
+195	jbo	Lojban	\N	\N	\N
+178	is	Icelandic	Íslenska	\N	\N
+197	jpr	Judeo-Persian	\N	\N	\N
+198	jrb	Judeo-Arabic	\N	\N	\N
+199	kaa	Kara-Kalpak	\N	\N	\N
+200	kab	Kabyle	\N	\N	\N
+201	kac	Kachin	\N	\N	\N
+202	kl	Greenlandic (Kalaallisut)	\N	\N	\N
+203	kam	Kamba	\N	\N	\N
+204	kn	Kannada	\N	\N	\N
+205	kar	Karen	\N	\N	\N
+206	ks	Kashmiri	\N	\N	\N
+208	kaw	Kawi	\N	\N	\N
+209	kk	Kazakh	\N	\N	\N
+210	kbd	Kabardian	\N	\N	\N
+211	kha	Khazi	\N	\N	\N
+212	khi	Khoisan (Other)	\N	\N	\N
+213	km	Khmer	\N	\N	\N
+214	kho	Khotanese	\N	\N	\N
+215	ki	Kikuyu	\N	\N	\N
+216	rw	Kinyarwanda	\N	\N	\N
+217	ky	Kirghiz	\N	\N	\N
+218	kmb	Kimbundu	\N	\N	\N
+220	kv	Komi	\N	\N	\N
+221	kg	Kongo	\N	\N	\N
+223	kos	Kosraean	\N	\N	\N
+224	kpe	Kpelle	\N	\N	\N
+225	krc	Karachay-Balkar	\N	\N	\N
+226	kro	Kru	\N	\N	\N
+227	kru	Kurukh	\N	\N	\N
+228	kj	Kuanyama	\N	\N	\N
+229	kum	Kumyk	\N	\N	\N
+230	ku	Kurdish	\N	\N	\N
+231	kut	Kutenai	\N	\N	\N
+232	lad	Ladino	\N	\N	\N
+233	lah	Lahnda	\N	\N	\N
+234	lam	Lamba	\N	\N	\N
+235	lo	Lao	\N	\N	\N
+236	la	Latin	\N	\N	\N
+238	lez	Lezghian	\N	\N	\N
+239	li	Limburgian	\N	\N	\N
+240	ln	Lingala	\N	\N	\N
+242	lol	Mongo	\N	\N	\N
+243	loz	Lozi	\N	\N	\N
+244	lb	Luxembourgish	\N	\N	\N
+245	lua	Luba-Lulua	\N	\N	\N
+246	lu	Luba-Katanga	\N	\N	\N
+247	lg	Ganda	\N	\N	\N
+248	lui	Luiseno	\N	\N	\N
+249	lun	Lunda	\N	\N	\N
+250	luo	Luo (Kenya and Tanzania)	\N	\N	\N
+251	lus	Lushai	\N	\N	\N
+253	mad	Madurese	\N	\N	\N
+254	mag	Magahi	\N	\N	\N
+255	mh	Marshallese	\N	\N	\N
+256	mai	Maithili	\N	\N	\N
+257	mak	Makasar	\N	\N	\N
+258	ml	Malayalam	\N	\N	\N
+259	man	Mandingo	\N	\N	\N
+261	map	Austronesian (Other)	\N	\N	\N
+263	mas	Masai	\N	\N	\N
+264	ms	Malay	\N	\N	\N
+265	mdf	Moksha	\N	\N	\N
+266	mdr	Mandar	\N	\N	\N
+267	men	Mende	\N	\N	\N
+268	mga	Irish, Middle (900-1200)	\N	\N	\N
+269	mic	Micmac	\N	\N	\N
+270	min	Minangkabau	\N	\N	\N
+271	mis	Miscellaneous languages	\N	\N	\N
+272	mkh	Mon-Khmer (Other)	\N	\N	\N
+273	mg	Malagasy	\N	\N	\N
+275	mnc	Manchu	\N	\N	\N
+276	mno	Manobo languages	\N	\N	\N
+277	moh	Mohawk	\N	\N	\N
+278	mo	Moldavian	\N	\N	\N
+280	mos	Mossi	\N	\N	\N
+281	mul	Multiple languages	\N	\N	\N
+282	mun	Munda languages	\N	\N	\N
+283	mus	Creek	\N	\N	\N
+284	mwr	Marwari	\N	\N	\N
+285	myn	Mayan languages	\N	\N	\N
+286	myv	Erzya	\N	\N	\N
+287	nah	Nahuatl	\N	\N	\N
+288	nai	North American Indian (Other)	\N	\N	\N
+289	nap	Neapolitan	\N	\N	\N
+290	na	Nauru	\N	\N	\N
+291	nv	Navaho	\N	\N	\N
+292	nr	Ndebele, South	\N	\N	\N
+293	nd	Ndebele, North	\N	\N	\N
+294	ng	Ndonga	\N	\N	\N
+295	nds	German, Low	\N	\N	\N
+296	ne	Nepali	\N	\N	\N
+297	new	Newari	\N	\N	\N
+298	nia	Nias	\N	\N	\N
+299	nic	Niger-Kordofanian (Other)	\N	\N	\N
+300	niu	Niuean	\N	\N	\N
+301	nn	Norwegian Nynorsk	\N	\N	\N
+302	nb	Bokmål, Norwegian	\N	\N	\N
+303	nog	Nogai	\N	\N	\N
+304	non	Norse, Old	\N	\N	\N
+187	id	Indonesian	Masedonian	\N	\N
+306	nso	Sotho, Northern	\N	\N	\N
+307	nub	Nubian languages	\N	\N	\N
+308	nwc	Classical Newari; Old Newari	\N	\N	\N
+309	ny	Chewa; Chichewa; Nyanja	\N	\N	\N
+310	nym	Nyankole	\N	\N	\N
+311	nyo	Nyoro	\N	\N	\N
+312	nzi	Nzima	\N	\N	\N
+313	oc	Occitan (post 1500)	\N	\N	\N
+314	oj	Ojibwa	\N	\N	\N
+315	or	Oriya	\N	\N	\N
+317	osa	Osage	\N	\N	\N
+318	os	Ossetian	\N	\N	\N
+319	ota	Turkish, Ottoman (1500-1928)	\N	\N	\N
+320	oto	Otomian languages	\N	\N	\N
+321	paa	Papuan (Other)	\N	\N	\N
+322	pag	Pangasinan	\N	\N	\N
+323	pal	Pahlavi	\N	\N	\N
+324	pam	Pampanga	\N	\N	\N
+325	pa	Panjabi	\N	\N	\N
+326	pap	Papiamento	\N	\N	\N
+327	pau	Palauan	\N	\N	\N
+328	peo	Persian, Old (ca.600-400 B.C.)	\N	\N	\N
+330	phi	Philippine (Other)	\N	\N	\N
+331	phn	Phoenician	\N	\N	\N
+332	pi	Pali	\N	\N	\N
+219	kok	Konkani	कॲंकणी	\N	\N
+222	ko	Korean	한국어	\N	\N
+335	pon	Pohnpeian	\N	\N	\N
+336	pra	Prakrit languages	\N	\N	\N
+337	pro	Provençal, Old (to 1500)	\N	\N	\N
+338	ps	Pushto	\N	\N	\N
+339	qu	Quechua	\N	\N	\N
+340	raj	Rajasthani	\N	\N	\N
+341	rap	Rapanui	\N	\N	\N
+342	rar	Rarotongan	\N	\N	\N
+343	roa	Romance (Other)	\N	\N	\N
+344	rm	Raeto-Romance	\N	\N	\N
+345	rom	Romany	\N	\N	\N
+347	rn	Rundi	\N	\N	\N
+252	mk	Macedonian	Македонски	\N	\N
+349	sad	Sandawe	\N	\N	\N
+350	sg	Sango	\N	\N	\N
+351	sah	Yakut	\N	\N	\N
+352	sai	South American Indian (Other)	\N	\N	\N
+353	sal	Salishan languages	\N	\N	\N
+354	sam	Samaritan Aramaic	\N	\N	\N
+355	sa	Sanskrit	\N	\N	\N
+356	sas	Sasak	\N	\N	\N
+357	sat	Santali	\N	\N	\N
+359	sco	Scots	\N	\N	\N
+361	sel	Selkup	\N	\N	\N
+362	sem	Semitic (Other)	\N	\N	\N
+363	sga	Irish, Old (to 900)	\N	\N	\N
+364	sgn	Sign languages	\N	\N	\N
+365	shn	Shan	\N	\N	\N
+366	sid	Sidamo	\N	\N	\N
+367	si	Sinhalese	\N	\N	\N
+368	sio	Siouan languages	\N	\N	\N
+369	sit	Sino-Tibetan (Other)	\N	\N	\N
+370	sla	Slavic (Other)	\N	\N	\N
+373	sma	Southern Sami	\N	\N	\N
+374	se	Northern Sami	\N	\N	\N
+375	smi	Sami languages (Other)	\N	\N	\N
+376	smj	Lule Sami	\N	\N	\N
+377	smn	Inari Sami	\N	\N	\N
+378	sm	Samoan	\N	\N	\N
+379	sms	Skolt Sami	\N	\N	\N
+380	sn	Shona	\N	\N	\N
+381	sd	Sindhi	\N	\N	\N
+382	snk	Soninke	\N	\N	\N
+383	sog	Sogdian	\N	\N	\N
+384	so	Somali	\N	\N	\N
+385	son	Songhai	\N	\N	\N
+386	st	Sotho, Southern	\N	\N	\N
+260	mi	Maori	Reo Mäori	\N	\N
+388	sc	Sardinian	\N	\N	\N
+389	srr	Serer	\N	\N	\N
+390	ssa	Nilo-Saharan (Other)	\N	\N	\N
+391	ss	Swati	\N	\N	\N
+392	suk	Sukuma	\N	\N	\N
+393	su	Sundanese	\N	\N	\N
+394	sus	Susu	\N	\N	\N
+395	sux	Sumerian	\N	\N	\N
+262	mr	Marathi	ॕर॥ठी	\N	\N
+398	syr	Syriac	\N	\N	\N
+399	ty	Tahitian	\N	\N	\N
+400	tai	Tai (Other)	\N	\N	\N
+402	ts	Tsonga	\N	\N	\N
+403	tt	Tatar	\N	\N	\N
+405	tem	Timne	\N	\N	\N
+406	ter	Tereno	\N	\N	\N
+407	tet	Tetum	\N	\N	\N
+408	tg	Tajik	\N	\N	\N
+409	tl	Tagalog	\N	\N	\N
+411	bo	Tibetan	\N	\N	\N
+412	tig	Tigre	\N	\N	\N
+413	ti	Tigrinya	\N	\N	\N
+414	tiv	Tiv	\N	\N	\N
+415	tlh	Klingon; tlhIngan-Hol	\N	\N	\N
+416	tkl	Tokelau	\N	\N	\N
+417	tli	Tlinglit	\N	\N	\N
+418	tmh	Tamashek	\N	\N	\N
+419	tog	Tonga (Nyasa)	\N	\N	\N
+420	to	Tonga (Tonga Islands)	\N	\N	\N
+421	tpi	Tok Pisin	\N	\N	\N
+422	tsi	Tsimshian	\N	\N	\N
+423	tn	Tswana	\N	\N	\N
+424	tk	Turkmen	\N	\N	\N
+425	tum	Tumbuka	\N	\N	\N
+426	tup	Tupi languages	\N	\N	\N
+428	tut	Altaic (Other)	\N	\N	\N
+429	tvl	Tuvalu	\N	\N	\N
+430	tw	Twi	\N	\N	\N
+431	tyv	Tuvinian	\N	\N	\N
+432	udm	Udmurt	\N	\N	\N
+433	uga	Ugaritic	\N	\N	\N
+434	ug	Uighur	\N	\N	\N
+274	mt	Maltese	Malti	\N	\N
+436	umb	Umbundu	\N	\N	\N
+437	und	Undetermined	\N	\N	\N
+438	urd	Urdu	\N	\N	\N
+439	uz	Uzbek	\N	\N	\N
+440	vai	Vai	\N	\N	\N
+443	vo	Volapuk	\N	\N	\N
+444	vot	Votic	\N	\N	\N
+445	wak	Wakashan languages	\N	\N	\N
+446	wal	Walamo	\N	\N	\N
+447	war	Waray	\N	\N	\N
+448	was	Washo	\N	\N	\N
+450	wen	Sorbian languages	\N	\N	\N
+452	wo	Wolof	\N	\N	\N
+453	xal	Kalmyk	\N	\N	\N
+455	yao	Yao	\N	\N	\N
+456	yap	Yapese	\N	\N	\N
+457	yi	Yiddish	\N	\N	\N
+458	yo	Yoruba	\N	\N	\N
+459	ypk	Yupik languages	\N	\N	\N
+460	zap	Zapotec	\N	\N	\N
+461	zen	Zenaga	\N	\N	\N
+462	za	Chuang; Zhuang	\N	\N	\N
+463	znd	Zande	\N	\N	\N
+465	zun	Zuni	\N	\N	\N
+466	ro_RO	Romanian from Romania	\N	\N	\N
+467	ar_TN	Arabic from Tunisia	\N	\N	\N
+468	pa_IN	Panjabi from India	\N	\N	\N
+469	ar_MA	Arabic from Morocco	\N	\N	\N
+470	ar_LY	Arabic from Libyan Arab Jamahiriya	\N	\N	\N
+471	es_SV	Spanish (Castilian) from El Salvador	\N	\N	\N
+472	ga_IE	Irish from Ireland	\N	\N	\N
+473	ta_IN	Tamil from India	\N	\N	\N
+474	en_HK	English from Hong Kong	\N	\N	\N
+475	cs_CZ	Czech from Czech Republic	\N	\N	\N
+476	ar_LB	Arabic from Lebanon	\N	\N	\N
+477	it_IT	Italian from Italy	\N	\N	\N
+478	es_CO	Spanish (Castilian) from Colombia	\N	\N	\N
+479	ti_ET	Tigrinya from Ethiopia	\N	\N	\N
+480	ar_DZ	Arabic from Algeria	\N	\N	\N
+481	de_BE	German from Belgium	\N	\N	\N
+482	mk_MK	Macedonian from Macedonia, the Former Yugoslav Republic of	\N	\N	\N
+483	gv_GB	Manx from United Kingdom	\N	\N	\N
+484	th_TH	Thai from Thailand	\N	\N	\N
+485	uz_UZ	Uzbek from Uzbekistan	\N	\N	\N
+486	bn_IN	Bengali from India	\N	\N	\N
+487	tl_PH	Tagalog from Philippines	\N	\N	\N
+488	en_PH	English from Philippines	\N	\N	\N
+489	mi_NZ	Maori from New Zealand	\N	\N	\N
+490	pl_PL	Polish from Poland	\N	\N	\N
+491	ar_YE	Arabic from Yemen	\N	\N	\N
+492	az_AZ	Azerbaijani from Azerbaijan	\N	\N	\N
+493	es_NI	Spanish (Castilian) from Nicaragua	\N	\N	\N
+494	af_ZA	Afrikaans from South Africa	\N	\N	\N
+495	ar_QA	Arabic from Qatar	\N	\N	\N
+496	kl_GL	Greenlandic (Kalaallisut) from Greenland	\N	\N	\N
+497	en_ZA	English from South Africa	\N	\N	\N
+498	ja_JP	Japanese from Japan	\N	\N	\N
+499	zh_HK	Chinese from Hong Kong	\N	\N	\N
+500	en_ZW	English from Zimbabwe	\N	\N	\N
+501	so_ET	Somali from Ethiopia	\N	\N	\N
+502	lv_LV	Latvian from Latvia	\N	\N	\N
+503	tt_RU	Tatar from Russian Federation	\N	\N	\N
+504	aa_ET	Afar from Ethiopia	\N	\N	\N
+505	ar_IN	Arabic from India	\N	\N	\N
+506	aa_ER	Afar from Eritrea	\N	\N	\N
+507	se_NO	Northern Sami from Norway	\N	\N	\N
+508	en_US	English from United States	\N	\N	\N
+509	ar_AE	Arabic from United Arab Emirates	\N	\N	\N
+510	mt_MT	Maltese from Malta	\N	\N	\N
+511	om_KE	Oromo from Kenya	\N	\N	\N
+512	ar_IQ	Arabic from Iraq	\N	\N	\N
+513	fr_BE	French from Belgium	\N	\N	\N
+514	pt_BR	Portuguese from Brazil	\N	\N	\N
+515	es_PR	Spanish (Castilian) from Puerto Rico	\N	\N	\N
+516	gu_IN	Gujarati from India	\N	\N	\N
+517	sid_ET	Sidamo from Ethiopia	\N	\N	\N
+518	wa_BE	Walloon from Belgium	\N	\N	\N
+519	oc_FR	Occitan (post 1500) from France	\N	\N	\N
+520	en_BW	English from Botswana	\N	\N	\N
+521	om_ET	Oromo from Ethiopia	\N	\N	\N
+522	hi_IN	Hindi from India	\N	\N	\N
+523	es_VE	Spanish (Castilian) from Venezuela	\N	\N	\N
+524	an_ES	Aragonese from Spain	\N	\N	\N
+525	it_CH	Italian from Switzerland	\N	\N	\N
+526	da_DK	Danish from Denmark	\N	\N	\N
+527	es_AR	Spanish (Castilian) from Argentina	\N	\N	\N
+528	ne_NP	Nepali from Nepal	\N	\N	\N
+529	sq_AL	Albanian from Albania	\N	\N	\N
+530	hu_HU	Hungarian from Hungary	\N	\N	\N
+531	sk_SK	Slovak from Slovakia	\N	\N	\N
+532	mn_MN	Mongolian from Mongolia	\N	\N	\N
+533	ar_KW	Arabic from Kuwait	\N	\N	\N
+534	ar_SA	Arabic from Saudi Arabia	\N	\N	\N
+535	ar_SD	Arabic from Sudan	\N	\N	\N
+536	pt_PT	Portuguese from Portugal	\N	\N	\N
+537	nn_NO	Norwegian Nynorsk from Norway	\N	\N	\N
+538	ar_SY	Arabic from Syrian Arab Republic	\N	\N	\N
+539	byn_ER	Blin; Bilin from Eritrea	\N	\N	\N
+540	en_GB	English from United Kingdom	\N	\N	\N
+541	et_EE	Estonian from Estonia	\N	\N	\N
+542	lt_LT	Lithuanian from Lithuania	\N	\N	\N
+543	zu_ZA	Zulu from South Africa	\N	\N	\N
+544	zh_SG	Chinese from Singapore	\N	\N	\N
+545	es_DO	Spanish (Castilian) from Dominican Republic	\N	\N	\N
+546	lg_UG	Ganda from Uganda	\N	\N	\N
+547	id_ID	Indonesian from Indonesia	\N	\N	\N
+548	hr_HR	Croatian from Croatia	\N	\N	\N
+549	es_CL	Spanish (Castilian) from Chile	\N	\N	\N
+550	sl_SI	Slovenian from Slovenia	\N	\N	\N
+551	is_IS	Icelandic from Iceland	\N	\N	\N
+552	gez_ER	Geez from Eritrea	\N	\N	\N
+553	fo_FO	Faroese from Faroe Islands	\N	\N	\N
+554	bs_BA	Bosnian from Bosnia and Herzegovina	\N	\N	\N
+555	ti_ER	Tigrinya from Eritrea	\N	\N	\N
+556	en_DK	English from Denmark	\N	\N	\N
+557	no_NO	Norwegian from Norway	\N	\N	\N
+558	eu_ES	Basque from Spain	\N	\N	\N
+559	kw_GB	Cornish from United Kingdom	\N	\N	\N
+560	ms_MY	Malay from Malaysia	\N	\N	\N
+561	kn_IN	Kannada from India	\N	\N	\N
+562	es_GT	Spanish (Castilian) from Guatemala	\N	\N	\N
+563	be_BY	Belarusian from Belarus	\N	\N	\N
+564	vi_VN	Vietnamese from Viet Nam	\N	\N	\N
+565	fr_CA	French from Canada	\N	\N	\N
+566	aa_DJ	Afar from Djibouti	\N	\N	\N
+567	fr_CH	French from Switzerland	\N	\N	\N
+568	fi_FI	Finnish from Finland	\N	\N	\N
+569	so_DJ	Somali from Djibouti	\N	\N	\N
+570	en_IN	English from India	\N	\N	\N
+571	en_AU	English from Australia	\N	\N	\N
+572	en_IE	English from Ireland	\N	\N	\N
+573	tr_TR	Turkish from Turkey	\N	\N	\N
+574	bn_BD	Bengali from Bangladesh	\N	\N	\N
+575	ru_UA	Russian from Ukraine	\N	\N	\N
+576	gd_GB	Gaelic; Scottish from United Kingdom	\N	\N	\N
+577	nl_BE	Dutch from Belgium	\N	\N	\N
+578	de_CH	German from Switzerland	\N	\N	\N
+579	es_BO	Spanish (Castilian) from Bolivia	\N	\N	\N
+580	te_IN	Telugu from India	\N	\N	\N
+581	zh_TW	Chinese from Taiwan, Province of China	\N	\N	\N
+582	xh_ZA	Xhosa from South Africa	\N	\N	\N
+583	es_CR	Spanish (Castilian) from Costa Rica	\N	\N	\N
+584	am_ET	Amharic from Ethiopia	\N	\N	\N
+585	gez_ET	Geez from Ethiopia	\N	\N	\N
+586	ar_EG	Arabic from Egypt	\N	\N	\N
+587	ca_ES	Catalan from Spain	\N	\N	\N
+588	fr_FR	French from France	\N	\N	\N
+589	zh_CN	Chinese from China	\N	\N	\N
+590	es_UY	Spanish (Castilian) from Uruguay	\N	\N	\N
+591	tg_TJ	Tajik from Tajikistan	\N	\N	\N
+592	nl_NL	Dutch from Netherlands	\N	\N	\N
+593	es_US	Spanish (Castilian) from United States	\N	\N	\N
+594	yi_US	Yiddish from United States	\N	\N	\N
+595	ml_IN	Malayalam from India	\N	\N	\N
+596	uk_UA	Ukrainian from Ukraine	\N	\N	\N
+597	de_LU	German from Luxembourg	\N	\N	\N
+598	st_ZA	Sotho, Southern from South Africa	\N	\N	\N
+599	es_MX	Spanish (Castilian) from Mexico	\N	\N	\N
+600	ar_JO	Arabic from Jordan	\N	\N	\N
+601	fa_IR	Persian from Iran, Islamic Republic of	\N	\N	\N
+602	lo_LA	Lao from Lao People's Democratic Republic	\N	\N	\N
+603	es_EC	Spanish (Castilian) from Ecuador	\N	\N	\N
+604	so_KE	Somali from Kenya	\N	\N	\N
+605	en_NZ	English from New Zealand	\N	\N	\N
+606	he_IL	Hebrew from Israel	\N	\N	\N
+607	sv_SE	Swedish from Sweden	\N	\N	\N
+608	ru_RU	Russian from Russian Federation	\N	\N	\N
+609	cy_GB	Welsh from United Kingdom	\N	\N	\N
+610	br_FR	Breton from France	\N	\N	\N
+611	el_GR	Greek, Modern (1453-) from Greece	\N	\N	\N
+612	es_ES	Spanish (Castilian) from Spain	\N	\N	\N
+613	ar_BH	Arabic from Bahrain	\N	\N	\N
+614	bg_BG	Bulgarian from Bulgaria	\N	\N	\N
+615	de_DE	German from Germany	\N	\N	\N
+616	gl_ES	Gallegan from Spain	\N	\N	\N
+617	mr_IN	Marathi from India	\N	\N	\N
+618	en_CA	English from Canada	\N	\N	\N
+619	es_PY	Spanish (Castilian) from Paraguay	\N	\N	\N
+620	so_SO	Somali from Somalia	\N	\N	\N
+621	fr_LU	French from Luxembourg	\N	\N	\N
+622	ar_OM	Arabic from Oman	\N	\N	\N
+623	es_PA	Spanish (Castilian) from Panama	\N	\N	\N
+624	sv_FI	Swedish from Finland	\N	\N	\N
+625	ka_GE	Georgian from Georgia	\N	\N	\N
+626	es_PE	Spanish (Castilian) from Peru	\N	\N	\N
+627	nb_NO	Bokmål, Norwegian from Norway	\N	\N	\N
+628	tig_ER	Tigre from Eritrea	\N	\N	\N
+629	es_HN	Spanish (Castilian) from Honduras	\N	\N	\N
+630	ko_KR	Korean from Korea, Republic of	\N	\N	\N
+631	de_AT	German from Austria	\N	\N	\N
+632	en_SG	English from Singapore	\N	\N	\N
+119	en	English	\N	2	n != 1
+126	fo	Faroese	\N	2	n != 1
+207	kr	Kanuri	\N	1	0
+98	cs	Czech	Čeština	3	n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+100	da	Danish	Dansk	2	n != 1
+112	nl	Dutch	Nederlands	2	n != 1
+121	eo	Esperanto	Esperanto	2	n != 1
+129	fi	Finnish	Suomi	2	n != 1
+132	fr	French	français	2	n > 1
+143	de	German	Deutsch	2	n != 1
+147	ga	Irish	Gaeilge	3	n==1 ? 0 : n==2 ? 1 : 2
+157	el	Greek, Modern (1453-)	Σύγχρονα Ελληνικά (1453-)	2	n != 1
+165	he	Hebrew	עברית	2	n != 1
+174	hu	Hungarian	magyar	1	0
+193	it	Italian	Italiano	2	n != 1
+196	ja	Japanese	日本語	1	0
+237	lv	Latvian	Latviešu	3	n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2
+241	lt	Lithuanian	Lietuvių	3	n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2
+279	mn	Mongolian	Монгол	\N	\N
+305	no	Norwegian	Norsk	2	n != 1
+316	om	Oromo	Oromoo	\N	\N
+329	fa	Persian	فارسی	\N	\N
+333	pl	Polish	Polski	3	n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+334	pt	Portuguese	Português	2	n != 1
+346	ro	Romanian	Română	\N	\N
+348	ru	Russian	Русский	3	n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+358	sr	Serbian	Srpski	\N	\N
+360	hr	Croatian	Hrvatski	3	n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+371	sk	Slovak	Slovenský	3	n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+372	sl	Slovenian	Slovenščina	\N	\N
+387	es	Spanish (Castilian)	Español, Castellano	2	n != 1
+396	sw	Swahili	Kiswahili	\N	\N
+397	sv	Swedish	Svenska	2	n != 1
+401	ta	Tamil	¾Á¢ú	\N	\N
+404	te	Telugu	㌤㍆㌲㍁㌗㍁	\N	\N
+410	th	Thai	ไทย	\N	\N
+427	tr	Turkish	Türkçe	\N	\N
+435	uk	Ukrainian	Українська	3	n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+441	ve	Venda	Venda	\N	\N
+442	vi	Vietnamese	Nam=Nho 	\N	\N
+449	cy	Welsh	Cymraeg	\N	\N
+451	wa	Walloon	Walon	\N	\N
+454	xh	Xhosa	XChat	\N	\N
+464	zu	Zulu	Isi-Zulu	\N	\N
 \.
 
 SELECT pg_catalog.setval('language_id_seq', 632, true);

@@ -10,9 +10,9 @@
 #
 # arch-tag: 657212c5-95f4-422a-ada4-544bf2827ab5
 
-from xml.sax import saxutils, make_parser, saxlib, saxexts, ContentHandler
-from xml.sax.handler import feature_namespaces
-import sys, os, getopt, urllib2, locale, time, re, sets, psycopg, string
+from xml.sax import saxutils, make_parser, ContentHandler
+from optparse import OptionParser
+import locale, re, sets, psycopg, string
 
 class XMLHandler(saxutils.DefaultHandler):
     def __init__(self, elementname, attributes, cnx, dbhook, hook=None):
@@ -348,24 +348,23 @@ def import_spoken(cnx, plural_forms):
     cnx.commit()
     cr.close()
 
-username = 'carlos'
-dbname = 'launchpad_test'
-plural_data_file = 'plural-form-data'
-
 if __name__ == '__main__':
-    (opts, trail)=getopt.getopt(sys.argv[1:], "u:d:f:",
-                                ["username=", "dbname=", "plural-data="])
-    for opt, arg in opts:
-        if opt in ('-u', '--username'):
-            username = arg
-        elif opt in ('-d', '--dbname'):
-            dbname = arg
-        elif opt in ('-p', '--plural-data'):
-            plural_data_file = arg
+    parser = OptionParser()
+    parser.add_option("-u", "--username", dest="username",
+                      help="Username to connecto to the database",
+                      default="carlos")
+    parser.add_option("-d", "--dbname",
+                      dest="dbname", default="launchpad_test",
+                      help="DB name to connect")
+    parser.add_option("-p", "--plural-data",
+                      dest="plural_data_file", default="plural-form-data",
+                      help="FILE where we have the plural forms data")
+                  
+    (options, args)=parser.parse_args()
 
     locale.setlocale(locale.LC_ALL, 'C')
-    cnx = psycopg.connect("user=%s dbname=%s" % (username, dbname))
+    cnx = psycopg.connect("user=%s dbname=%s" % (options.username, options.dbname))
     import_countries(cnx)
-    plural_forms = get_plural_form_data(plural_data_file)
+    plural_forms = get_plural_form_data(options.plural_data_file)
     import_languages(cnx, plural_forms)
     import_spoken(cnx, plural_forms)

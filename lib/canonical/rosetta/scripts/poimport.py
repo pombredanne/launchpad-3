@@ -1,19 +1,13 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 # arch-tag: 752bd71e-584e-416e-abff-a4eb6c82399c
 
-import sys
-
-from cStringIO import StringIO
-from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
 from canonical.arch.sqlbase import SQLBase
-from canonical.rosetta.interfaces import ILanguages
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
-    RosettaProject, RosettaProduct, RosettaLanguages, RosettaLanguage, \
-    RosettaPOFile
+    RosettaProject, RosettaProduct 
 from sqlobject import connectionForURI
-from canonical.rosetta.pofile_adapters import MessageProxy, \
-    TemplateImporter, POFileImporter
+from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
+from optparse import OptionParser
 
 class PODBBridge(PlacelessSetup):
 
@@ -65,22 +59,29 @@ class PODBBridge(PlacelessSetup):
         importer.doImport(file)
 
 if __name__ == '__main__':
-    if len(sys.argv) < 6:
-        print "Usage: "
-        print "\t" + sys.argv[0] + " user_id pot_file project_name product_name pot_name"
-        print "\t" + sys.argv[0] + " user_id po_file project_name product_name pot_name language_name"
-    else:
-        bridge = PODBBridge()
-        in_f = file(sys.argv[2], 'rU')
-        person = RosettaPerson.get(int(sys.argv[1]))
-        try:
-            if len(sys.argv) == 7:
-                print "Importing .po file..."
-                bridge.imports(person, in_f, sys.argv[3], sys.argv[4], sys.argv[5],
-                sys.argv[6])
-            else:
-                print "Importing .pot file..."
-                bridge.imports(person, in_f, sys.argv[3], sys.argv[4], sys.argv[5])
-        except:
-            get_transaction().abort()
-            raise
+    parser = OptionParser()
+    parser.add_option("-o", "--owner", dest="ownerID",
+                      help="DB ID for the Owner")
+    parser.add_option("-f", "--file", dest="file",
+                      help="FILE to import")
+    parser.add_option("-p", "--project", dest="project",
+                      help="Project name owner of this file")
+    parser.add_option("-d", "--product", dest="product",
+                      help="Product name owner of this file")
+    parser.add_option("-t", "--potemplate", dest="potemplate",
+                      help="POTemplate name owner of this file")
+    parser.add_option("-l", "--language", dest="language",
+                      help="Language code for this pofile")
+
+    (options, args) = parser.parse_args()
+    
+    bridge = PODBBridge()
+    in_f = file(options.file, 'rU')
+    person = RosettaPerson.get(int(options.ownerID))
+    try:
+        print "Importing %s ..." % options.file
+        bridge.imports(person, in_f, options.project, options.product,
+                       options.potemplate, options.language)
+    except:
+        get_transaction().abort()
+        raise
