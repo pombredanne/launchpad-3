@@ -226,7 +226,7 @@ def importInfoFile(infofile):
             summary = info.get('summary', '')
             kwargs = {
                 'name': jobname,
-                'title': summary,
+                'title': info.get('source',jobname),
                 'description': summary,
                 'sourcepackage': None, # FIXME!
                 'branch': branch,
