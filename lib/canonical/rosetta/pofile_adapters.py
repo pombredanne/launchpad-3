@@ -142,11 +142,11 @@ class MessageProxy(POMessage):
         self._msgset.commentText = value
     commentText = property(_get_commentText, _set_commentText)
 
-    def _get_generatedComment(self):
-        return self._msgset.generatedComment
-    def _set_generatedComment(self, value):
-        self._msgset.generatedComment = value
-    generatedComment = property(_get_generatedComment, _set_generatedComment)
+    def _get_sourceComment(self):
+        return self._msgset.sourceComment
+    def _set_sourceComment(self, value):
+        self._msgset.sourceComment = value
+    sourceComment = property(_get_sourceComment, _set_sourceComment)
 
     def _get_fileReferences(self):
         return self._msgset.fileReferences

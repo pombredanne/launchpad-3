@@ -214,16 +214,16 @@ class RosettaPOFile(SQLBase):
         WHERE
             pofile.potemplate = {self.id} AND
             poSet.pofile = pofile.id AND
-            poSet.pomsgid = pomsgid.id AND
+            poSet.primemsgid = pomsgid.id AND
             potSet.potemplate = {self.poTemplate.id} AND
-            potSet.pomsgid = pomsgid.id;
+            potSet.primemsgid = pomsgid.id;
         '''
         res = RosettaPOMessageSet.select('''
             pofile.potemplate = %d AND
             poSet.id = %d AND
-            poSet.pomsgid = pomsgid.id AND
+            poSet.primemsgid = pomsgid.id AND
             potSet.potemplate = %d AND
-            potSet.pomsgid = pomsgid.id''' % \
+            potSet.primemsgid = pomsgid.id''' % \
             (self.id, messageSet.id, self.poTemplate.id),
             clauseTables = [
                 'POMsgSet poSet',
