@@ -35,6 +35,11 @@
    factory="canonical.launchpad.mailnotification.notify_bugtask_added" />
 
 <subscriber
+   for="canonical.launchpad.interfaces.IBugTask
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bugtask_edited" />
+
+<subscriber
    for="canonical.launchpad.interfaces.IBugMessage
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_comment_added" />

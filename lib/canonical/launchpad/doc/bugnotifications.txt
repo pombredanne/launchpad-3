@@ -218,10 +218,32 @@ There are three kinds of tasks that can be added to an existing bug.
 
 4. Editing a task (e.g. marking a task "Fixed")
 
-Implifications of Bug Privacy
------------------------------
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> class MockObject(object):
+    ...     pass
+    >>> bugtask_before_modification = MockObject()
+    >>> bugtask_before_modification.status = firefox_crashes_in_ubuntu.status
+    >>> bugtask_before_modification.priority = firefox_crashes_in_ubuntu.priority
+    >>> bugtask_before_modification.severity = firefox_crashes_in_ubuntu.severity
+    >>> bugtask_before_modification.sourcepackagename = None
+    >>> bugtask_before_modification.product = None
+    >>> bugtask_before_modification.distribution = firefox_crashes_in_ubuntu.distribution
+    >>> bugtask_before_modification.distrorelease = None
+    >>> firefox_crashes_in_ubuntu.status = BugTaskStatus.FIXED.value
+    >>> ubuntu_task_modified = SQLObjectModifiedEvent(
+    ...     firefox_crashes_in_ubuntu, bugtask_before_modification, ["status"],
+    ...     bug_submitter)
+    >>> notify(ubuntu_task_modified)
 
-XXX: blah blah privacy blah (demonstrate how
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    1
+
+Implications of Bug Privacy
+---------------------------
+
+XXX: blah privacy blah
 
     >>> ztapi.unprovideUtility(ILaunchBag)
     >>> zope.security.management.endInteraction()

@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-01 22:50:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1356
+
+    Summary:
+      doctest the task edit notification. implemented code to satisfy
+ documentation.
+    Revision:
+      launchpad--devel--0--patch-1356
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-376
+       doctest the task edit notification. implemented code to satisfy documentation.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/event/interfaces.py
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/subscribers/bugactivity.py
+     lib/canonical/launchpad/zcml/bug-events.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-376
+
+
 2005-03-01 20:29:16 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1355
 
     Summary:
