@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-19 10:50:20 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1216
+
+    Summary:
+      Translations come from POTranslation, no POMsgIDs
+    Revision:
+      launchpad--devel--0--patch-1216
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-503
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-504
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-505
+       Translations come from POTranslation, no POMsgIDs
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/pofile.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-503
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-504
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-505
+
+
 2005-01-19 03:45:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1215
 
     Summary:
