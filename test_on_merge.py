@@ -48,7 +48,8 @@ def main():
     if not checkarchtag.is_tree_good():
         return 1
 
-    checktitles.summarise_directory("lib/canonical/launchpad/templates")
+    if not checktitles.summarise_directory("lib/canonical/launchpad/templates"):
+        return 1
 
     # Tabnanny
     org_stdout = sys.stdout

@@ -79,6 +79,8 @@ class IProject(IHasOwner):
     reviewed = Bool(title=_('Reviewed'), required=False, description=_("""Whether
         or not this project has been reviewed."""))
 
+    bounties = Attribute(_("The bounties that are related to this project."))
+
     def bugtrackers():
         """Return the BugTrackers for this Project."""
 

@@ -2,6 +2,358 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-08 01:26:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1380
+
+    Summary:
+      page title RAMPAGE and bounty subscriptions
+    Revision:
+      launchpad--devel--0--patch-1380
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-784
+       begin work on bounty subscriptions
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-785
+       start more bounty work
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-786
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-787
+       fixes to bounty, sourcesource and bug listing pages
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-788
+       fix bounty page test
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-789
+       start work on bounty subscriptions
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-790
+       fix thinko switching context and request in View __init__
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-791
+       further bounty subscription work, legal page tweaks, and eliminate experimental malone skin
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-792
+       finish first cut at bounty subscriptions
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-793
+       page title fixes
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-794
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-795
+       bounty subscription portlets
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-796
+       trivial spacing issue
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-797
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-798
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-799
+       merge stubs approved db changes for bounty linkages
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-800
+       remove pending db updates that have been approved and committed as db schema patches
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-801
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-802
+       fix forgotten password pagetest
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-803
+       fix old mistaken bug attachment references
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-804
+       marks surprise
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-805
+       title fixups
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-806
+       page title tweaks and fixes
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-807
+       page test tweaks and fixes
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-808
+       merge rocketfuel, resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-809
+       oopso
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-810
+       oopso
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-811
+       oopso
+    
+     * stuart.bishop@canonical.com/launchpad--sabdfl--0--base-0
+       tag of mark.shuttleworth@canonical.com/launchpad--devel--0--patch-796
+    
+     * stuart.bishop@canonical.com/launchpad--sabdfl--0--patch-1
+       Message table tweak and bounty relationship tables
+    
+
+    new files:
+     database/schema/.arch-ids/patch-10-10-0.sql.id
+     database/schema/patch-10-10-0.sql
+     lib/canonical/launchpad/database/.arch-ids/bountysubscription.py.id
+     lib/canonical/launchpad/database/bountysubscription.py
+     lib/canonical/launchpad/interfaces/.arch-ids/bountysubscription.py.id
+     lib/canonical/launchpad/interfaces/bountysubscription.py
+     lib/canonical/launchpad/pagetests/bounty/.arch-ids/25-bounty-subscriptions.txt.id
+     lib/canonical/launchpad/pagetests/bounty/25-bounty-subscriptions.txt
+     lib/canonical/launchpad/templates/.arch-ids/bounty-subscription.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-bounty-relateds.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/portlet-bounty-subscribers.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/related-bounties.pt.id
+     lib/canonical/launchpad/templates/bounty-subscription.pt
+     lib/canonical/launchpad/templates/portlet-bounty-relateds.pt
+     lib/canonical/launchpad/templates/portlet-bounty-subscribers.pt
+     lib/canonical/launchpad/templates/related-bounties.pt
+     lib/canonical/launchpad/zcml/.arch-ids/bountysubscription.zcml.id
+     lib/canonical/launchpad/zcml/bountysubscription.zcml
+
+    removed files:
+     database/schema/pending/.arch-ids/mark-bugattachment-message.sql.id
+     database/schema/pending/mark-bugattachment-message.sql
+     lib/canonical/launchpad/templates/.arch-ids/legal.pt.id
+     lib/canonical/launchpad/templates/legal.pt
+     lib/canonical/launchpad/templates/malone_skin/.arch-ids/=id
+     lib/canonical/launchpad/templates/malone_skin/.arch-ids/malone-index.pt.id
+     lib/canonical/launchpad/templates/malone_skin/.arch-ids/malone-standard-page.pt.id
+     lib/canonical/launchpad/templates/malone_skin/.arch-ids/malone-under-construction.pt.id
+     lib/canonical/launchpad/templates/malone_skin/css/.arch-ids/=id
+     lib/canonical/launchpad/templates/malone_skin/css/.arch-ids/malone.css.id
+     lib/canonical/launchpad/templates/malone_skin/css/malone.css
+     lib/canonical/launchpad/templates/malone_skin/malone-index.pt
+     lib/canonical/launchpad/templates/malone_skin/malone-standard-page.pt
+     lib/canonical/launchpad/templates/malone_skin/malone-under-construction.pt
+
+    modified files:
+     checktitles.py database/schema/comments.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/bounty.py
+     lib/canonical/launchpad/database/__init__.py
+     lib/canonical/launchpad/database/bounty.py
+     lib/canonical/launchpad/database/bugattachment.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/database/sourcesource.py
+     lib/canonical/launchpad/database/soyuz.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/bounty.py
+     lib/canonical/launchpad/interfaces/bugattachment.py
+     lib/canonical/launchpad/interfaces/distribution.py
+     lib/canonical/launchpad/interfaces/message.py
+     lib/canonical/launchpad/interfaces/product.py
+     lib/canonical/launchpad/interfaces/project.py
+     lib/canonical/launchpad/pagetests/bounty/15-bounty-new.txt
+     lib/canonical/launchpad/pagetests/malone/10-add-subscription.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-forgotten-password.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-productrelease-add.txt
+     lib/canonical/launchpad/templates/attachment-index.pt
+     lib/canonical/launchpad/templates/attachments-index.pt
+     lib/canonical/launchpad/templates/auth-index.pt
+     lib/canonical/launchpad/templates/bazaar-index.pt
+     lib/canonical/launchpad/templates/bazaar-sync-review.pt
+     lib/canonical/launchpad/templates/binary-index.pt
+     lib/canonical/launchpad/templates/binarypackage-index.pt
+     lib/canonical/launchpad/templates/binarypackage-list.pt
+     lib/canonical/launchpad/templates/binarypackage-search.pt
+     lib/canonical/launchpad/templates/binarypackagebuild-index.pt
+     lib/canonical/launchpad/templates/binarypackagerelease-index.pt
+     lib/canonical/launchpad/templates/binarypackagerelease-license.pt
+     lib/canonical/launchpad/templates/bounties.pt
+     lib/canonical/launchpad/templates/bounty.pt
+     lib/canonical/launchpad/templates/branch-index.pt
+     lib/canonical/launchpad/templates/bug-activity.pt
+     lib/canonical/launchpad/templates/bug-attachments.pt
+     lib/canonical/launchpad/templates/bug-index.pt
+     lib/canonical/launchpad/templates/bug-references.pt
+     lib/canonical/launchpad/templates/bugpackageinfestations-index.pt
+     lib/canonical/launchpad/templates/bugproductinfestations-index.pt
+     lib/canonical/launchpad/templates/bugs-createdby-index.pt
+     lib/canonical/launchpad/templates/bugs-index.pt
+     lib/canonical/launchpad/templates/bugsubscription-edit.pt
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+     lib/canonical/launchpad/templates/bugtasks-index.pt
+     lib/canonical/launchpad/templates/cvereference-index.pt
+     lib/canonical/launchpad/templates/cvereferences-index.pt
+     lib/canonical/launchpad/templates/debug-error.pt
+     lib/canonical/launchpad/templates/debug-root-changelog.pt
+     lib/canonical/launchpad/templates/debug-root-index.pt
+     lib/canonical/launchpad/templates/debug-unauthorized.pt
+     lib/canonical/launchpad/templates/default-addform.pt
+     lib/canonical/launchpad/templates/default-editform.pt
+     lib/canonical/launchpad/templates/default-error.pt
+     lib/canonical/launchpad/templates/distro-edit.pt
+     lib/canonical/launchpad/templates/distro-search.pt
+     lib/canonical/launchpad/templates/distrorelease-sources.pt
+     lib/canonical/launchpad/templates/doap-dashboard.pt
+     lib/canonical/launchpad/templates/doap-review.pt
+     lib/canonical/launchpad/templates/doap-to-do.pt
+     lib/canonical/launchpad/templates/errorservice-tbentry.pt
+     lib/canonical/launchpad/templates/foaf-about.pt
+     lib/canonical/launchpad/templates/foaf-dashboard.pt
+     lib/canonical/launchpad/templates/foaf-index.pt
+     lib/canonical/launchpad/templates/foaf-todo.pt
+     lib/canonical/launchpad/templates/launchbag-debug.pt
+     lib/canonical/launchpad/templates/launchpad-addform.pt
+     lib/canonical/launchpad/templates/launchpad-display.pt.obsolete
+     lib/canonical/launchpad/templates/launchpad-legal.pt
+     lib/canonical/launchpad/templates/launchpad-login.pt
+     lib/canonical/launchpad/templates/launchpad-logout.pt
+     lib/canonical/launchpad/templates/launchpad-widget-macros.pt
+     lib/canonical/launchpad/templates/logintoken-index.pt
+     lib/canonical/launchpad/templates/lp-person-add.pt.obsolete
+     lib/canonical/launchpad/templates/lp-project-add.pt.obsolete
+     lib/canonical/launchpad/templates/lp-search-results.pt.obsolete
+     lib/canonical/launchpad/templates/malone-dashboard.pt
+     lib/canonical/launchpad/templates/malone-people-index.pt
+     lib/canonical/launchpad/templates/malone-projects-search.pt.obsolete
+     lib/canonical/launchpad/templates/malone-to-do.pt
+     lib/canonical/launchpad/templates/messages-index.pt
+     lib/canonical/launchpad/templates/no-app-component-yet.pt
+     lib/canonical/launchpad/templates/no-page-yet.pt
+     lib/canonical/launchpad/templates/no-url-yet.pt
+     lib/canonical/launchpad/templates/notfound.pt
+     lib/canonical/launchpad/templates/package-bugs.pt
+     lib/canonical/launchpad/templates/packages-bugs.pt
+     lib/canonical/launchpad/templates/passwd-change.pt
+     lib/canonical/launchpad/templates/product-add.pt
+     lib/canonical/launchpad/templates/product-bugs.pt
+     lib/canonical/launchpad/templates/product-translations.pt
+     lib/canonical/launchpad/templates/productrelease-edit.pt
+     lib/canonical/launchpad/templates/productrelease-new.pt
+     lib/canonical/launchpad/templates/productrelease.pt
+     lib/canonical/launchpad/templates/products-search.pt
+     lib/canonical/launchpad/templates/project-branches.pt
+     lib/canonical/launchpad/templates/project-bugs.pt
+     lib/canonical/launchpad/templates/project-new.pt
+     lib/canonical/launchpad/templates/projects-search.pt
+     lib/canonical/launchpad/templates/reference-index.pt
+     lib/canonical/launchpad/templates/references-index.pt
+     lib/canonical/launchpad/templates/root-index.pt
+     lib/canonical/launchpad/templates/series-edit.pt
+     lib/canonical/launchpad/templates/series-new.pt
+     lib/canonical/launchpad/templates/series.pt
+     lib/canonical/launchpad/templates/sourcechangelog-index.pt
+     lib/canonical/launchpad/templates/sourcepackage-buildlog.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-buildlog.pt
+     lib/canonical/launchpad/templates/sourcepackagebuild-changes.pt
+     lib/canonical/launchpad/templates/sourcepackagerelease-buildlog.pt
+     lib/canonical/launchpad/templates/sources-index.pt
+     lib/canonical/launchpad/templates/sourcesource-add.pt
+     lib/canonical/launchpad/templates/sourcesource-index.pt
+     lib/canonical/launchpad/templates/template-auto-add.pt
+     lib/canonical/launchpad/templates/template-auto-edit.pt
+     lib/canonical/launchpad/templates/template-edit.pt
+     lib/canonical/launchpad/templates/template-index.pt
+     lib/canonical/launchpad/templates/template-new.pt
+     lib/canonical/launchpad/templates/unauthorized.pt
+     lib/canonical/launchpad/templates/user-error.pt
+     lib/canonical/launchpad/templates/watches-index.pt
+     lib/canonical/launchpad/zcml/bounty.zcml
+     lib/canonical/launchpad/zcml/bugsubscription.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/launchpad/zcml/skins.zcml
+     lib/canonical/lp/dbschema.py
+     lib/canonical/malone/configure.zcml
+     lib/canonical/rosetta/configure.zcml test_on_merge.py
+     utilities/refuel
+
+    renamed files:
+     lib/canonical/launchpad/templates/.arch-ids/foaf-menu.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/foaf-menu.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/launchpad-display.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/launchpad-display.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/lp-person-add.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/lp-person-add.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/lp-project-add.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/lp-project-add.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/lp-search-results.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/lp-search-results.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/malone-projects-search.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/malone-projects-search.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/soyuz-project-add.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/soyuz-project-add.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/soyuz-project-index.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/soyuz-project-index.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/soyuz-projects-index.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/soyuz-projects-index.pt.obsolete.id
+     lib/canonical/launchpad/templates/.arch-ids/soyuz-search-results.pt.id
+       ==> lib/canonical/launchpad/templates/.arch-ids/soyuz-search-results.pt.obsolete.id
+     lib/canonical/launchpad/templates/foaf-menu.pt
+       ==> lib/canonical/launchpad/templates/foaf-menu.pt.obsolete
+     lib/canonical/launchpad/templates/launchpad-display.pt
+       ==> lib/canonical/launchpad/templates/launchpad-display.pt.obsolete
+     lib/canonical/launchpad/templates/lp-person-add.pt
+       ==> lib/canonical/launchpad/templates/lp-person-add.pt.obsolete
+     lib/canonical/launchpad/templates/lp-project-add.pt
+       ==> lib/canonical/launchpad/templates/lp-project-add.pt.obsolete
+     lib/canonical/launchpad/templates/lp-search-results.pt
+       ==> lib/canonical/launchpad/templates/lp-search-results.pt.obsolete
+     lib/canonical/launchpad/templates/malone-projects-search.pt
+       ==> lib/canonical/launchpad/templates/malone-projects-search.pt.obsolete
+     lib/canonical/launchpad/templates/soyuz-project-add.pt
+       ==> lib/canonical/launchpad/templates/soyuz-project-add.pt.obsolete
+     lib/canonical/launchpad/templates/soyuz-project-index.pt
+       ==> lib/canonical/launchpad/templates/soyuz-project-index.pt.obsolete
+     lib/canonical/launchpad/templates/soyuz-projects-index.pt
+       ==> lib/canonical/launchpad/templates/soyuz-projects-index.pt.obsolete
+     lib/canonical/launchpad/templates/soyuz-search-results.pt
+       ==> lib/canonical/launchpad/templates/soyuz-search-results.pt.obsolete
+
+    removed directories:
+     lib/canonical/launchpad/templates/malone_skin
+     lib/canonical/launchpad/templates/malone_skin/.arch-ids
+     lib/canonical/launchpad/templates/malone_skin/css
+     lib/canonical/launchpad/templates/malone_skin/css/.arch-ids
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-784
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-785
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-786
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-787
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-788
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-789
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-790
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-791
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-792
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-793
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-794
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-795
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-796
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-797
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-798
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-799
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-800
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-801
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-802
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-803
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-804
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-805
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-806
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-807
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-808
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-809
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-810
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-811
+     stuart.bishop@canonical.com/launchpad--sabdfl--0--base-0
+     stuart.bishop@canonical.com/launchpad--sabdfl--0--patch-1
+
+
 2005-03-07 23:29:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1379
 
     Summary:

@@ -330,6 +330,17 @@ COMMENT ON COLUMN Bounty.duration IS 'An estimate of the length of time it shoul
 COMMENT ON COLUMN Bounty.reviewer IS 'The person who will review this bounty regularly for progress. The reviewer is the person who is responsible for establishing when the bounty is complete.';
 COMMENT ON COLUMN Bounty.owner IS 'The person who created the bounty. The owner can update the specification of the bounty, and appoints the reviewer.';
 
+COMMENT ON TABLE BountySubscription IS 'This table records whether or not someone it interested in a bounty. Subscribers will show up on the page with the bounty details.';
+COMMENT ON COLUMN BountySubscription.bounty IS 'The bounty to which the person is subscribed.';
+COMMENT ON COLUMN BountySubscription.person IS 'The person being subscribed to this bounty.';
+COMMENT ON COLUMN BountySubscription.subscription IS 'The nature of the subscription. A NULL value indicates that this subscription has been nullified, and is as if there was no subscription record at all.';
+
+COMMENT ON TABLE ProductBounty IS 'This table records a simple link between a bounty and a product. This bounty will be listed on the product web page, and the product will be mentioned on the bounty web page.';
+
+COMMENT ON TABLE DistroBounty IS 'This table records a simple link between a bounty and a distribution. This bounty will be listed on the distribution web page, and the distribution will be mentioned on the bounty web page.';
+
+COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
+
 -- SourceSource
 COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.';
 COMMENT ON COLUMN SourceSource.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';

@@ -1,0 +1,68 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<head>
+    <title metal:fill-slot="title">Bounties for
+      <span tal:replace="context/displayname">Context</span>
+    </title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+</head>
+
+<body>
+
+<!-- NB maintainer, this page is used to show bounties that are related to
+project, products *and* distributions. Make sure that your changes will work
+with all of these context objects. -->
+
+<div metal:fill-slot="main">
+
+  <h1>Bounties for
+    <span tal:replace="context/displayname">Context</span>
+  </h1>
+
+  <p class="documentDescription">These are the bounties that are related to
+  <span tal:replace="context/displayname">Context</span>. Click on a column
+  header to sort by that header.
+  </p>
+
+    <table width="100%" class="listing rowNavigation">
+      <tr>
+        <th>Date Created</th>
+        <th>Title</th>
+        <th>USD Value<sup>*</sup></th>
+        <th>Est. Difficulty</th>
+        <th>Est. Duration</th>
+      </tr>
+      <tr tal:repeat="bounty context/bounties"
+          tal:attributes="onclick
+              string:window.location='/bounties/${bounty/name}/';">
+        <td tal:content="python:bounty.datecreated.strftime('%d %b %y')">
+          date
+        </td>
+        <td><b><span tal:replace="bounty/title/fmt:shorten/45">title</span>
+            </b>
+        </td>
+        <td tal:content="bounty/usdvalue">usdvalue</td>
+        <td tal:content="bounty/difficulty">difficulty</td>
+        <td tal:content="bounty/duration">duration</td>
+      </tr>
+  </table>
+
+  <p><sup>*</sup> A bounty may include contributions in several currencies,
+  this is an estimate of the bounty value in US Dollars based on recent
+  exchange rates.</p>
+
+  <p>Click on a bounty for further information. You can subscribe to
+  a bounty to receive email updates of changes in status of the bounty, or
+  to have the bounty show up on your personalised Launchpad overview
+  page.</p>
+
+</div>
+
+</body>
+</html>

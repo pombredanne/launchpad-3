@@ -2,7 +2,7 @@
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, SQLObjectNotFound
+from sqlobject import MultipleJoin, RelatedJoin, SQLObjectNotFound
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
 
@@ -24,21 +24,30 @@ class Distribution(SQLBase):
     implements(IDistribution)
 
     _table = 'Distribution'
+    
     _defaultOrder='name'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True, alternateID=True,
-                  unique=True),
-        StringCol('displayname', dbName='displayname'),
-        StringCol('title', dbName='title'),
-        StringCol('summary', dbName='summary'),
-        StringCol('description', dbName='description'),
-        StringCol('domainname', dbName='domainname'),
-        ForeignKey(name='owner', dbName='owner', foreignKey='Person',
-                   notNull=True)
-        ]
+    
+    name = StringCol(notNull=True, alternateID=True, unique=True)
+    
+    displayname = StringCol()
+    
+    title = StringCol()
+    
+    summary = StringCol()
+    
+    description = StringCol()
+    
+    domainname = StringCol()
+    
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
     releases = MultipleJoin('DistroRelease', 
                             joinColumn='distribution') 
+
+    bounties = RelatedJoin('Bounty', joinColumn='project',
+                            otherColumn='bounty',
+                            intermediateTable='ProjectBounty')
+
     role_users = MultipleJoin('DistributionRole', 
                               joinColumn='distribution')
 

@@ -77,7 +77,7 @@
               tal:attributes="onclick string:window.location='${ass_link}';">-</td>
           <td tal:attributes="onclick string:window.location='${ass_link}';"
               tal:condition="python:'title' in listing_columns"
-              tal:content="task/bug/title">
+              tal:content="task/bug/title/fmt:shorten/60">
               title
           </td>
           <td tal:attributes="onclick string:window.location='${ass_link}';"

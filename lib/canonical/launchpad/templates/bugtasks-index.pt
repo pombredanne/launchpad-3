@@ -1,5 +1,10 @@
 <html tal:replace="python:request.response.redirect('..')">
-    <body>
-        <a href=".">Here</a>
-    </body>
+<!--
+<head>
+  <title metal:fill-slot="title">Bug Tasks Index</title>
+</head>
+-->
+  <body>
+    <a href=".">Here</a>
+  </body>
 </html>

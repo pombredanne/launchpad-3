@@ -6,10 +6,12 @@
     i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Register a new release of
+      <span tal:replace="view/product/displayname">$Product
+      displayname</span>
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Launchpad style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
 </head>
 
 <body>
@@ -18,8 +20,9 @@
 
     <tal:dummy condition="view/newProductRelease" />
 
-    <h1>Register a New Release of: "<span
-    tal:content="view/product/displayname">$Product.displayname</span>"</h1>
+    <h1>Register a New Release of
+      <span tal:replace="view/product/displayname">$Product
+      displayname</span></h1>
 
     <div class="documentDescription">
     Please fill in the details below to register a new release of

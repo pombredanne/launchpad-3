@@ -3,8 +3,9 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
-    <title metal:fill-slot="title">LAUNCHPAD ADDFORM TEMPLATE
-    </title>
+  <head>
+    <title metal:fill-slot="title">Launchpad Add-Form</title>
+  </head>
 
   <body>
 

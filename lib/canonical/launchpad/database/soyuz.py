@@ -60,6 +60,7 @@ class DistroArchRelease(SQLBase):
         except IndexError:
             raise KeyError
 
+
 class DistributionRole(SQLBase):
 
     implements(IDistributionRole)

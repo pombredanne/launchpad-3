@@ -7,10 +7,9 @@
 <!-- THIS IS AN EXAMPLE -->
 
 <head>
+    <title metal:fill-slot="title">$EXAMPLE TITLE</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
 </head>
 
 <body>
@@ -19,8 +18,8 @@
 
     <h1><span tal:replace="context/title">$EXAMPLE.title</span></h1>
 
-    <div class="documentDescription" tal:content="context/shortdesc">
-        $EXAMPLE.shortdesc goes here. This should be quite short,
+    <div class="documentDescription" tal:content="context/summary">
+        $EXAMPLE.summary goes here. This should be quite short,
         just a single paragraph of text really, giving a summary of
         this EXAMPLE.
     </div>

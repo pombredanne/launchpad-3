@@ -25,6 +25,7 @@ __all__ = (
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BinaryPackagePriority',
+'BountySubscription',
 'BranchRelationships',
 'BugTaskStatus',
 'BugExternalReferenceType',
@@ -1663,6 +1664,35 @@ class ArchArchiveType(DBSchema):
         """)
 
 
+class BountySubscription(DBSchema):
+    """A Bounty Subscription.
+
+    This is a way to register interest that someone has in a bounty.
+    """
+
+    WATCH = Item(1, """
+        Watch
+
+        The person wishes to watch this bounty through a web interface. Emails
+        are not required.
+        """)
+
+    CC = Item(2, """
+        CC
+
+        The person wishes to watch this bounty through a web interface and in
+        addition wishes to be notified by email whenever there is activity
+        relating to this bounty.
+        """)
+
+    IGNORE = Item(3, """
+        Ignore
+
+        The person has taken an active decision to ignore this bounty. They do
+        not wish to receive any communications about it.
+        """)
+
+
 class BugSubscription(DBSchema):
     """A Bug Subscription type.
 
@@ -1680,7 +1710,7 @@ class BugSubscription(DBSchema):
         CC
 
         The person wishes to watch this bug through a web interface and in
-        addition wishes to be notified by email whenever their is activity
+        addition wishes to be notified by email whenever there is activity
         relating to this bug.
         """)
 

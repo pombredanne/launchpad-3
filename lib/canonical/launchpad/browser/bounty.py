@@ -1,21 +1,81 @@
 
-from canonical.launchpad.database import Bounty
-
-from canonical.launchpad.interfaces import IBountySet, IPerson
-
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 
 from zope.app.form.browser.add import AddView
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser import SequenceWidget, ObjectWidget
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 import zope.security.interfaces
+
+from canonical.launchpad.interfaces import IBounty, IBountySet, IPerson
+from canonical.launchpad.database import Bounty
+from canonical.lp.dbschema import BountySubscription
 
 ow = CustomWidgetFactory(ObjectWidget, Bounty)
 sw = CustomWidgetFactory(SequenceWidget, subwidget=ow)
 
-__all__ = ['BountySetAddView']
+__all__ = ['BountyView', 'BountySetAddView']
+
+class BountyView:
+
+    __used_for__ = IBounty
+
+    subscribersPortlet = ViewPageTemplateFile(
+        '../templates/portlet-bounty-subscribers.pt')
+
+    relatedsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-bounty-relateds.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.subscription = None
+        self.notices = []
+
+        # figure out who the user is for this transaction
+        self.user = IPerson(self.request.principal, None)
+
+        # establish if a subscription form was posted
+        formsub = request.form.get('Subscribe', None)
+        if formsub is not None:
+            newsub = request.form.get('subscription', None)
+            if newsub == 'watch':
+                self.context.subscribe(self.user, BountySubscription.WATCH)
+            elif newsub == 'email':
+                self.context.subscribe(self.user, BountySubscription.CC)
+            elif newsub == 'ignore':
+                self.context.subscribe(self.user, BountySubscription.IGNORE)
+            elif newsub == 'none':
+                self.context.unsubscribe(self.user)
+            self.notices.append("Your subscription to this bounty has been "
+                "updated.")
+
+        # establish if this user has a subscription to the bounty
+        if self.user is not None:
+            for subscription in self.context.subscriptions:
+                if subscription.person.id == self.user.id:
+                    self.subscription = subscription.subscription
+                    break
+    
+    def subselector(self):
+        html = '<select name="subscription">\n'
+        html += '<option value="watch"'
+        if self.subscription == BountySubscription.WATCH:
+            html += ' selected'
+        html += '>Watch</option>\n'
+        html += '<option value="email"'
+        if self.subscription == BountySubscription.CC:
+            html += ' selected'
+        html += '>Email</option>\n'
+        html += '<option value="none"'
+        if self.subscription is None:
+            html += ' selected'
+        html += '>None</option>\n'
+        html += '</select>\n'
+        return html
+        
 
 class BountySetAddView(AddView):
 

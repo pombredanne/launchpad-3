@@ -105,6 +105,10 @@ class Product(SQLBase):
 
     milestones = MultipleJoin('Milestone', joinColumn = 'product')
 
+    bounties = RelatedJoin('Bounty', joinColumn='product',
+                            otherColumn='bounty',
+                            intermediateTable='ProductBounty')
+
     def newseries(self, form):
         # Extract the details from the form
         name = form['name']

@@ -1,4 +1,9 @@
 <html xmetal:use-macro="context/@@standard_macros/dialog">
+
+<head>
+  <title metal:fill-slot="title">Launchpad - Error Debug Page</title>
+</head>
+
 <body>
 <div xmetal:fill-slot="body">
 

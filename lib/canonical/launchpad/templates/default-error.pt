@@ -1,4 +1,7 @@
-<html><title>System Error</title>
+<html>
+<head>
+  <title metal:fill-slot="title">System Error</title>
+</head>
 <body>
   A system error occurred.
 </body>

@@ -1,7 +1,7 @@
 <html>
   <head>
-    <title>
-      Launchpad Home Page
+    <title metal:fill-slot="title">
+      Launchpad Debug Home Page
     </title>
     <link rel="shortcut icon" href="/++resource++defaultFavicon.gif" />
   </head>

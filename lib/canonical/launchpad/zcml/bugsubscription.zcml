@@ -72,7 +72,7 @@
         lp:url="malone/bugs/$Bug.id/people">
         <browser:page name="+index"
             template="../templates/malone-people-index.pt"
-            lp:url="malone/bugs/$Bug.id/people/index" />
+            lp:url="malone/bugs/$Bug.id/people/+index" />
     </browser:pages>
 
 </configure>

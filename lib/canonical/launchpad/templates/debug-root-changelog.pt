@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>
+        <title metal:fill-slot="title">
             Launchpad Changelog
         </title>
         <link rel="shortcut icon" href="/++resource++defaultFavicon.gif" />

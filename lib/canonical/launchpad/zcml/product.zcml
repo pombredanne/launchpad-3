@@ -26,11 +26,6 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
-        layer="malone"
-        name="+malone-index" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.RosettaLayer"
         name="+rosetta-index"
         />
@@ -48,20 +43,30 @@
         for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
         class="canonical.launchpad.browser.ProductView" >
-        <browser:page name="+index"
+        <browser:page
+            name="+index"
             template="../templates/product-index.pt"
-            lp:url="doap/projects/$Project.name/$Product.name/" />
+            lp:url="/products/$Product.name/" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
+        permission="zope.Public" >
+        <browser:page
+            name="+bounties"
+            template="../templates/related-bounties.pt"
+            lp:url="/products/$Product.name/+bounties/" />
     </browser:pages>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
         permission="zope.Public"
         class="canonical.rosetta.browser.ProductView"
-        lp:url="Rosetta/projects/$Project.name/$Product.name">
+        lp:url="/rosetta/products/$Product.name/">
         <browser:page
             name="+rosetta-index"
             template="../templates/product-translations.pt"
-            lp:url="Rosetta/projects/$Project.name/$Product.name/index" />
+            lp:url="/rosetta/products/$Product.name/" />
     </browser:pages>
 
     <browser:pages
@@ -71,7 +76,7 @@
         <browser:page
             name="+newpotemplate"
             template="../templates/potemplate-new.pt"
-            lp:url="Rosetta/projects/$Project.name/+newpotemplate" />
+            lp:url="/rosetta/products/$Product.name/+newpotemplate" />
     </browser:pages>
 
     <browser:pages
@@ -81,23 +86,7 @@
         <browser:page
             name="+malone-index"
             template="../templates/product-bugs.pt"
-            lp:url="malone/projects/$Project.name/$Product.name/" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProduct"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.ProductBugsView" 
-        layer="malone">
-        <browser:page name="+malone-index"
-            template="../templates/malone_skin/malone-index.pt"
-            lp:url="malone/products/$Product.name/" />
-        <browser:page name="+advancedsearch"
-            template="../templates/malone_skin/malone-under-construction.pt"
-            lp:url="malone/products/$Product.name/+advancedsearch" />
-        <browser:page name="+admin"
-            template="../templates/malone_skin/malone-under-construction.pt"
-            lp:url="malone/products/$Product.name/+admin" />
+            lp:url="/malone/products/$Product.name/" />
     </browser:pages>
 
     <browser:pages
@@ -107,17 +96,17 @@
         <browser:page
             name="+addsources"
             template="../templates/sourcesource-add.pt"
-            lp:url="doap/projects/$Project.name/$Product.name/+addsources"
+            lp:url="/products/$Product.name/+addsources"
             />
         <browser:page
             name="+addseries"
             template="../templates/series-new.pt"
-            lp:url="doap/projects/$Project.name/$Product.name/+addseries"
+            lp:url="/products/$Product.name/+addseries"
             />
         <browser:page
             name="+addrelease"
             template="../templates/productrelease-new.pt"
-            lp:url="doap/projects/$Project.name/$Product.name/+addrelease"
+            lp:url="/products/$Product.name/+addrelease"
             />
     </browser:pages>
 
@@ -131,7 +120,7 @@
                 sourceforgeproject freshmeatproject"
         permission="launchpad.Edit"
         template="../templates/product-edit.pt"
-        lp:url="doap/projects/$Project.name/$Product.name/+edit">
+        lp:url="/products/$Product.name/+edit">
     </browser:editform>
 
     <browser:editform
@@ -145,7 +134,7 @@
                 autoupdate reviewed "
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
-        lp:url="doap/projects/$Project.name/$Product.name/+review">
+        lp:url="/products/$Product.name/+review">
     </browser:editform>
 
     <browser:addform
@@ -159,7 +148,7 @@
         keyword_arguments="title comment private owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
-        lp:url="malone/projects/$Project.name/$Product.name/+filebug">
+        lp:url="/products/$Product.name/+filebug">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
         <browser:widget
            field="title"

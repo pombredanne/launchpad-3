@@ -45,6 +45,11 @@ class Project(SQLBase):
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
 
     # convenient joins
+
+    bounties = RelatedJoin('Bounty', joinColumn='project',
+                            otherColumn='bounty',
+                            intermediateTable='ProjectBounty')
+
     _products = MultipleJoin('Product', joinColumn='project')
 
     _bugtrackers = RelatedJoin('BugTracker', joinColumn='project',

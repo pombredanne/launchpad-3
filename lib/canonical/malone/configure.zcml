@@ -26,14 +26,6 @@
             template="../launchpad/templates/main-template.pt" />
     </browser:pages>
 
-    <!-- XXX: Brad Bollenbach, 2005-02-08: This is only here while
-    I'm integrating mpt's UI design work into Malone. Remove this
-    config once this have stabilized. -->
-    <browser:pages for="*" permission="zope.Public" layer="malone">
-        <browser:page name="malone_template"
-            template="../launchpad/templates/malone_skin/malone-standard-page.pt" />
-    </browser:pages>
-
     <browser:menu id="malone_actions" title="Menu for Malone-related actions." />
     <browser:menuItems menu="malone_actions" for="*">
         <browser:menuItem title="Bugs" action="+malone-index" />

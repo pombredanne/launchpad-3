@@ -112,6 +112,8 @@ class IProduct(IHasOwner):
         particular to the maintainer, for organizing which bugs will be fixed
         when."""))
 
+    bounties = Attribute(_("The bounties that are related to this product."))
+
     def poTemplatesToImport():
         """Returns all PO templates from this product that have a rawfile 
         pending of import into Rosetta."""

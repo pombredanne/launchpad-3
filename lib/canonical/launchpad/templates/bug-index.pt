@@ -118,16 +118,6 @@
             </div>
 
             <div class="boardCommentBody">
-                <div tal:repeat="attachment message/attachments"
-                    class="portrait">
-                    <!-- TODO: Attachment URL when Librarian is available -->
-                    <a href="#">
-                        <div tal:content="attachment/name">
-                            $BugAttachment.name
-                        </div>
-                    </a>
-                </div>
-
                 <div class="boardCommentContent"
                     tal:content="structure message/contents/fmt:nice_pre">
                     Comment text.

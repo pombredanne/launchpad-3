@@ -76,6 +76,20 @@ class IBounty(IHasOwner):
             title=_('Owner'), required=True, readonly=True
             )
     owner = Attribute("The owner's IPerson")
+    # joins
+    subscriptions = Attribute('The set of subscriptions to this bounty.')
+    projects = Attribute('The projects which this bounty is related to.')
+    products = Attribute('The products to which this bounty is related.')
+    distributions = Attribute('The distributions to which this bounty is related.')
+
+    # subscription-related methods
+    def subscribe(person, subscription):
+        """Subscribe this person to the bounty, using the given level of
+        subscription. Returns the BountySubscription that this would have
+        created or updated."""
+
+    def unsubscribe(person):
+        """Remove this person's subscription to this bounty."""
 
 
 

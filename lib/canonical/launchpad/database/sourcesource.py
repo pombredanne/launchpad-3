@@ -280,20 +280,31 @@ class SourceSourceSet(object):
         query = '1=1'
         clauseTables = Set()
         clauseTables.add('SourceSource')
-        if ready is not None:
+        # deal with the cases which require project and product
+        if ( ready is not None ) or text:
             if len(query) > 0:
                 query = query + ' AND\n'
-            query = query + """SourceSource.product = Product.id AND
-                               Product.active IS TRUE AND
-                               Product.reviewed IS TRUE AND
-                             ( Product.project IS NULL OR
-                             ( Product.project = Project.id AND
-                               Project.active IS TRUE AND
-                               Project.reviewed IS TRUE ) )
-                               """
+            query += "SourceSource.product = Product.id"
+            if text:
+                query += ' AND Product.fti @@ ftq(%s)' % text
+            if ready is not None:
+                query += ' AND '
+                query += 'Product.active IS TRUE AND '
+                query += 'Product.reviewed IS TRUE '
+            query += ' AND '
+            query += '( Product.project IS NULL OR '
+            query += '( Product.project = Project.id '
+            if text:
+                query += ' AND Project.fti @@ ftq(%s) ' % text
+            if ready is not None:
+                query += ' AND '
+                query += 'Project.active IS TRUE AND '
+                query += 'Project.reviewed IS TRUE'
+            query += ') )'
             clauseTables.add('Project')
             clauseTables.add('Product')
-        elif state == SourceSourceStatus.TESTING:
+        # now just add filters on sourcesource
+        if state == SourceSourceStatus.TESTING:
             if len(query) > 0:
                 query = query + ' AND '
             query = query + 'SourceSource.processingapproved IS NULL'
@@ -312,6 +323,10 @@ class SourceSourceSet(object):
         elif state == SourceSourceStatus.AUTOTESTED:
             if len(query) > 0:
                 query = query + ' AND '
+            query = query + 'SourceSource.processingapproved IS NULL'
+            query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NULL'
+            query = query + ' AND '
             query = query + 'SourceSource.autotested = 2'
         elif state == SourceSourceStatus.PROCESSING:
             if len(query) > 0:
@@ -325,21 +340,6 @@ class SourceSourceSet(object):
             query = query + 'SourceSource.syncingapproved IS NOT NULL'
         elif state == SourceSourceStatus.STOPPED:
             pass
-        if text:
-            if len(query) > 0:
-                query = query + ' AND '
-            text = quote(text)
-            if 'Product' not in clauseTables:
-                query += 'SourceSource.product = Product.id AND '
-                clauseTables.add('Product')
-            query += 'Product.fti @@ ftq(%s) AND ' % text
-            if 'Project' not in clauseTables:
-                query = query + """
-                             ( Product.project IS NULL OR
-                               Product.project = Project.id ) AND
-                               """
-            query += " Project.fti @@ ftq(%s) " % text
-            clauseTables.add('Project')
         return query, clauseTables
 
     def search(self, ready=None, 
@@ -352,7 +352,10 @@ class SourceSourceSet(object):
                                    clauseTables=clauseTables)[start:length]
         
 
-    def filter(self, sync=None, process=None, 
+    # XXX Mark Shuttleworth 04/03/05 renamed to Xfilter to see if anything
+    # breaks. If nothing has broken by end April feel free to remove
+    # entirely.
+    def Xfilter(self, sync=None, process=None, 
                      tested=None, text=None,
                      ready=None, assigned=None):
         query = ''

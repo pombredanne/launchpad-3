@@ -1,0 +1,40 @@
+<div class="portlet">
+    <h4>this bounty is related to...</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+            <h5 tal:condition="context/distributions">distributions:</h5>
+            <ul>
+                <li tal:repeat="distribution context/distributions">
+                  <a href="#"
+                     tal:content="distribution/displayname"
+                     tal:attributes="href
+                       string:/distros/${distribution/name}">Ubuntu</a>
+                </li>
+            </ul>
+
+            <h5 tal:condition="context/products">products:</h5>
+            <ul>
+                <li tal:repeat="product context/products">
+                  <a href="#"
+                     tal:content="product/displayname"
+                     tal:attributes="href
+                     string:/products/${product/name}">Mozilla Firefox</a>
+                </li>
+            </ul>
+
+            <h5 tal:condition="context/projects">projects:</h5>
+            <ul>
+                <li tal:repeat="project context/projects">
+                  <a href="#"
+                     tal:content="project/displayname"
+                     tal:attributes="href
+                     string:/projects/${project/name}">Gnome</a>
+                </li>
+            </ul>
+
+        </div>
+
+    </div>
+</div>

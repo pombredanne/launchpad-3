@@ -173,13 +173,16 @@
 
             <div align="right">
                 [ <a tal:attributes="href string:${template/name}"
-                   i18n:translate="">More...</a> ]
+                   i18n:translate="">More languages...</a> ]
             </div>
 
-            <div tal:replace="structure view/statusLegend" tal:omit-tag />
 
         </div>
+
+      <div tal:replace="structure view/statusLegend" tal:omit-tag />
+
     </tal:block> <!-- condition="view/templates -->
+
 </div>
 
 </body>

@@ -1,0 +1,39 @@
+
+  >>> print http(r"""
+  ... GET /bounties/testing/+subscribe HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/bounties/testing
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <title>Bounty Subscription</title>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /bounties/testing/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 45
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/bounties/testing/+subscribe
+  ... 
+  ... subscription=watch&Subscribe=Set+Subscription""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+              <h5>watch:</h5>
+              <ul class="people">
+                  <li>
+                    <a href="/people/name16">Foo Bar</a>
+                  </li>
+              </ul>
+  ...
+      <p class="portalMessage">Your subscription to this bounty has been updated.</p>
+  ...
+
+

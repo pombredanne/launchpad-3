@@ -3,6 +3,11 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="bazaar">
 
+<head>
+  <title metal:fill-slot="title">Bazaar: Upstream Revision Control
+  Imports</title>
+</head>
+
 <body>
 
 <div metal:fill-slot="main" class="visualPadding"

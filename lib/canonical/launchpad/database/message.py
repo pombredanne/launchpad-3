@@ -32,7 +32,6 @@ class Message(SQLBase):
                               dbName='distribution',
                               notNull=False, default=None)
     rfc822msgid = StringCol(unique=True, notNull=True)
-    attachments = MultipleJoin('BugAttachment', joinColumn='bugmessage')
     bugs = RelatedJoin('Bug', joinColumn='message', otherColumn='bug',
                        intermediateTable='BugMessage')
 

@@ -65,46 +65,7 @@
   HTTP/1.1 303 See Other
   ...
   <BLANKLINE>
-  ..
-  <!--
-  <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-        lang="en"
-        metal:use-macro="context/@@malone_template/master"
-        i18n:domain="rosetta">
-  <body>
-  <BLANKLINE>
-  <div metal:fill-slot="main">
-    <h1>People</h1>
-  <BLANKLINE>
-    <div class="portalMessage"
-         tal:condition="exists:request/delete">
-      <div tal:define="dummy python:context.delete(request.get('delete'))"
-           tal:replace="string:Subscription deleted" />
-    </div>
-  <BLANKLINE>
-    <table class="listing">
-      <tr>
-        <th>Relationship</th>
-        <th>Surname</th>
-        <th>Firstname</th>
-        <th>Action</th>
-      </tr>
-      <tr tal:repeat="sub context">
-        <td tal:content="sub/subscription/lp:BugSubscription">subscription</td>
-        <td tal:content="sub/person/familyname">familyname</td>
-        <td tal:content="sub/person/givenname">givenname</td>
-        <td>
-          <a tal:attributes="href string:index?delete=${sub/id}">Delete</a>
-        </td>
-      </tr>
-    </table>
-    <input type="submit" value="Add" onclick="window.open('+new','_top')" />
-  </div>
-  <BLANKLINE>
-  </body>
-  </html>
-  -->
-  <BLANKLINE>
+  ...
 
 
   >>> print http(r"""

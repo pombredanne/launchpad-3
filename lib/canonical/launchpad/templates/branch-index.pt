@@ -4,10 +4,10 @@
       i18n:domain="launchpad">
 
 <head>
-    <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(plone.css);</style>
-    <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+  <title metal:fill-slot="title">Bazaar Branch:
+     <span tal:replace="context/title">$Branch.title</span></title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
 </head>
 
 <body>

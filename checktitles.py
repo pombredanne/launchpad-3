@@ -74,10 +74,6 @@ def summarise_directory(path):
     for file in bad:
         print file
 
-    print
-    print "This will in future cause a test failure."
-    print
-
     return False
 
 if __name__ == '__main__':

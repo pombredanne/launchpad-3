@@ -2,7 +2,8 @@
       lang="en">
 
 <head>
-  <title>Bug Attachments</title>
+  <title metal:fill-slot="title">Malone Bug Attachments for Bug #<span
+    tal:replace="context/id">234</span></title>
 </head>
 
 <body>
