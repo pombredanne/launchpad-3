@@ -94,7 +94,7 @@ class Database:
 
         def __init__(self, db, filter=None):
             self.db = db
-            self.index = open(os.path.join(self.db.root, 'index.db'))
+            self.index = open(os.path.join(self.db.root, 'index/index.db'))
             self.filter = filter
 
         def next(self):

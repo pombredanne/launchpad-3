@@ -17,6 +17,12 @@ class Launchpad:
         # get the debbugs remote bug tracker id
         self.debtrackerid = list(BugTracker.select("name='debbugs'"))[0].id
 
+    def create_sourcepackagename(self, name):
+        return SourcePackageName(name=name)
+
+    def create_binarypackagename(self, name):
+        return BinaryPackageName(name=name)
+
     def get_distribution_by_name(self, name):
         return Distribution.selectBy(name=name)[0]
 
@@ -66,26 +72,26 @@ class Launchpad:
         bugmsg = BugMessage(bug=bug.id, message=msg.id)
         return bugmsg
 
-    def get_bug_task_for_package(self, bug, package):
+    def get_bug_task(self, bug, distribution, sourcepackagename,
+                     binarypackagename):
         for bugtask in bug.tasks:
-            if bugtask.sourcepackage.name == package:
+            if bugtask.sourcepackagename == sourcepackagename and \
+               bugtask.distribution == distribution and \
+               bugtask.binarypackagename == binarypackagename:
                 return bugtask
         return None
 
-    def add_bug_task(self, bug, distro, package, status, owner):
+    def add_bug_task(self, bug, distro, srcpackagename, binarypkgname, status, owner):
         newbugtask = BugTask(bug=bug.id,
-                             sourcepackage=package.id,
-                             bugstatus=status,
+                             sourcepackagename=srcpackagename.id,
+                             binarypackagename=binarypkgname.id,
+                             status=status,
                              owner=owner)
 
     def bug_message_ids(self, bug):
         """Return a list of message IDs found embedded in comments for
         the specified bug"""
         return [msg.rfc822msgid for msg in bug.messages]
-
-    def get_all_messageids(self):
-        """Return a list of all known messageids"""
-        return [msg.rfc822msgid for msg in Message.select()]
 
     def sourcepackages(self, distroname):
         """return a dictionary mapping sourcepackagename to a sourcepackage in
@@ -110,9 +116,14 @@ class Launchpad:
         try: return SourcePackage.select(query, clauseTables=clauseTables)[0]
         except: return None
 
-    def get_sourcepackagename_by_name(self, srcpkgname):
+    def get_sourcepackagename(self, srcpkgname):
         query = "name = %s" % quote(srcpkgname)
         try: return SourcePackageName.select(query)[0]
+        except: return None
+
+    def get_binarypackagename(self, srcpkgname):
+        query = "name = %s" % quote(srcpkgname)
+        try: return BinaryPackageName.select(query)[0]
         except: return None
 
     def get_distro_by_name(self, distroname):
@@ -120,12 +131,12 @@ class Launchpad:
         try: return Distribution.select(query)[0]
         except: return None
 
-    def XXXget_message_by_id(self, message_id):
+    def get_message_by_id(self, message_id):
         query = "rfc822msgid = %s" % quote(message_id)
         try: return Message.select(query)[0]
         except: return None
 
-    def add_message(self, message, owner):
+    def add_message(self, message, owner, datecreated):
         msgid = message['message-id']
         if msgid is None:
             return None
@@ -138,7 +149,8 @@ class Launchpad:
         newmsg = Message(title=title,
                          contents=contents,
                          rfc822msgid=msgid,
-                         owner=owner)
+                         owner=owner,
+                         datecreated=datecreated)
         return newmsg
         
     def add_sourcepackage(self, srcpkgname, distroname, maintainer):

@@ -257,6 +257,9 @@ class ProductView:
     projectPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-product-project.pt')
 
+    statusLegend = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-rosetta-status-legend.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -460,6 +463,9 @@ class ViewPOTemplate:
         self.form = self.request.form
         self.request_languages = request_languages(self.request)
         self.status_message = None
+
+    statusLegend = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-rosetta-status-legend.pt')
 
     def num_messages(self):
         N = self.context.messageCount()

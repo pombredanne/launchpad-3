@@ -84,10 +84,7 @@ def BugFactory(*args, **kw):
     # make sure that the factory has been passed enough information
     if not (kw.get('distribution') or kw.get('product')):
         raise ValueError, 'Must pass BugFactory a distro or a product'
-    if kw.get('distribution'):
-        if not kw.get('sourcepackagename'):
-            raise ValueError, 'Must pass BugFactory a SourcePackageName'
-    if not (kw.get('comment', None) or kw.get('distribution', None)):
+    if not (kw.get('comment', None) or kw.get('description', None)):
         raise ValueError, 'Must pass BugFactory a comment or description'
     
     description = kw.get('description', None)

@@ -398,23 +398,32 @@ class PersonSet(object):
         return createPerson(displayname, givenname, familyname, password, email)
 
 
-def createPerson(displayname, givenname, familyname, password, email):
+def registeredName(name):
+    try:
+        Person.selectBy(name=name)[0]
+        return True
+    except IndexError:
+        return False
+
+def createPerson(displayname=None, givenname=None, familyname=None,
+                 password=None, email=None):
     """Creates a new person"""
 
-    nick = nickname.generate_nick(email)
+    nick = nickname.generate_nick(email, registeredName)
     now = datetime.utcnow()
 
-    if Person.selectBy(name=nick).count() > 0:
-        return
-
-    # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility from
-    # initZopeless scripts and Rosetta's import_daemon.py calls indirectly to
-    # this function :-(
-    from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-    password = SSHADigestEncryptor().encrypt(password)
-
-    # password = getUtility(IPasswordEncryptor).encrypt(password)
-
+    existing = Person.selectBy(name=nick)
+    if existing.count() > 0:
+        raise Error, 'Cannot create another person with name %s' % nick
+    
+    if password:
+        # password = getUtility(IPasswordEncryptor).encrypt(password)
+        # XXX: Carlos Perello Marin 22/12/2004 We cannot use getUtility from
+        # initZopeless scripts and Rosetta's import_daemon.py calls indirectly to
+        # this function :-(
+        from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+        password = SSHADigestEncryptor().encrypt(password)
+ 
     person = Person(displayname=displayname,
                     givenname=givenname,
                     familyname=familyname,
@@ -425,21 +434,21 @@ def createPerson(displayname, givenname, familyname, password, email):
                     karmatimestamp=now,
                     name=nick)
 
-    EmailAddress(person=person.id,
-                 email=email,
-                 status=int(EmailAddressStatus.NEW))
+    if email:
+        EmailAddress(person=person.id,
+                     email=email,
+                     status=int(EmailAddressStatus.NEW))
 
     return person
 
-
-def createTeam(displayname, teamowner, teamdescription, email):
+def createTeam(displayname, teamowner, teamdescription, email=None):
     """Creates a new team"""
 
-    nick = nickname.generate_nick(email)
+    nick = nickname.generate_nick(email, registeredName)
     now = datetime.utcnow()
 
     if Person.selectBy(name=nick).count() > 0:
-        return
+        raise Error, 'Should not create another team with name %s' % nick
     
     role = MembershipRole.ADMIN.value
     status = MembershipStatus.CURRENT.value
@@ -453,7 +462,8 @@ def createTeam(displayname, teamowner, teamdescription, email):
                   karmatimestamp=now,
                   name=nick)
 
-    EmailAddress(person=team.id,
+    if email:
+        EmailAddress(person=team.id,
                  email=email,
                  status=int(EmailAddressStatus.NEW))
 

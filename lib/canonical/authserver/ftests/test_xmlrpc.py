@@ -21,7 +21,7 @@ class XMLRPCTestCase(LaunchpadTestCase):
     def setUp(self):
         super(XMLRPCTestCase, self).setUp()
         os.system('kill `cat twistd.pid 2> /dev/null` > /dev/null 2>&1')
-        cmd = 'twistd -oy %s' % (sibpath(__file__, 'test.tac'),)
+        cmd = 'twistd2.3 -oy %s' % (sibpath(__file__, 'test.tac'),)
         rv = os.system(cmd)
         self.failUnlessEqual(rv, 0)
 

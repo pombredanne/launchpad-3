@@ -2,6 +2,124 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-08 10:28:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1163
+
+    Summary:
+      rosetta stats legend, fixes for hoary
+    Revision:
+      launchpad--devel--0--patch-1163
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-670
+       bring the perl debbugs code into launchpad
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-671
+       clean up foaf person creation code
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-672
+       further work on malone and foaf
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-673
+       back in the saddle
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-674
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-675
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-676
+       allow launch and refuel scripts to work with configs different to marks
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-677
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-678
+       remove hardcoded reference to mark's home dir
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-679
+       tweaks and xml format polish
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-680
+       use merge rather than star-merge
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-681
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-682
+       legends for rosetta translation status graphs
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-683
+       use a portlet for rosetta translation status so the template is reused
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-684
+       and actually add the template
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-685
+       improve home page for doap system
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-686
+       merge rocketfuel resolving conflicts
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-687
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-688
+       make sure authsrvr tests run with twistd2.3
+    
+
+    new files:
+     lib/canonical/foaf/.arch-ids/utility.py.id
+     lib/canonical/foaf/utility.py
+     lib/canonical/launchpad/templates/.arch-ids/portlet-rosetta-status-legend.pt.id
+     lib/canonical/launchpad/templates/portlet-rosetta-status-legend.pt
+     lib/canonical/malone/debsync/Debbugs/.arch-ids/=id
+     lib/canonical/malone/debsync/Debbugs/.arch-ids/Log.pm.id
+     lib/canonical/malone/debsync/Debbugs/Log.pm
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/authserver/ftests/test_xmlrpc.py
+     lib/canonical/configure.zcml
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/templates/doap-index.pt
+     lib/canonical/launchpad/templates/potemplate-index.pt
+     lib/canonical/launchpad/templates/product-translations.pt
+     lib/canonical/malone/debsync/debbugs-log.pl
+     lib/canonical/malone/debsync/debbugs.py
+     lib/canonical/malone/debsync/maldeb-sync.py
+     lib/canonical/malone/debsync/malone.py
+     lib/canonical/rosetta/browser.py utilities/launch
+     utilities/refuel
+
+    new directories:
+     lib/canonical/malone/debsync/Debbugs
+     lib/canonical/malone/debsync/Debbugs/.arch-ids
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-670
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-671
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-672
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-673
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-674
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-675
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-676
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-677
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-678
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-679
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-680
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-681
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-682
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-683
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-684
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-685
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-686
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-687
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-688
+
+
 2005-01-08 00:32:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1162
 
     Summary:

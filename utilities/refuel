@@ -1,11 +1,37 @@
 #! /bin/sh
 
+# Find the location of your Launchpad
+if [ ! -f ~/.rocketfuel ]; then
+  echo "You need a file called ~/.rocketfuel containing a single line"
+  echo "like:"
+  echo "   LAUNCHPAD=~/projects/ubuntu"
+  echo "This line should give the location of the top level directory"
+  echo "containing your launchpad and config checkouts."
+  exit 1
+fi
+source ~/.rocketfuel
+
+# check that your .rocketfuel file included a line giving the launchpad
+# checkout location
+if [ ! $LAUNCHPAD ]; then
+  echo "Your ~/.rocketfuel file must include a line giving the location"
+  echo "of your launchpad directory, of the form:"
+  echo
+  echo "LAUNCHPAD=~/projects/ubuntu"
+  echo
+  echo "Of course, use the correct location for your setup. The"
+  echo "directory you specify should at least contain your configs"
+  echo "(in a directory called configs) and your launchpd checkout"
+  echo "in a directory called launchpad."
+  exit 1
+fi
+
 # update the code that is brought directly into the tree
-cd ~/projects/ubuntu
+cd $LAUNCHPAD
 baz cat-config configs/canonical.com/launchpad/development | xargs -n 2 baz update -d
 
 # then check if there are unmerged changes
-cd ~/projects/ubuntu/launchpad
+cd launchpad
 baz diff -q
 if [ $? -gt 0 ]; then
     echo "You've got changes! Please commit them before refueling"
@@ -20,13 +46,13 @@ if [ $? -gt 0 ]; then
 fi
 
 # now merge launchpad with the rocketfuel repo
-baz star-merge --two-way rocketfuel@canonical.com/launchpad--devel--0
+baz merge --two-way rocketfuel@canonical.com/launchpad--devel--0
 
 # check for conflicts, and if none exist, commit the merge
 FILELIST=$(find . -name "*.orig" -or -name "*.rej" -print)
 if [ ! -z "$FILELIST" ]; then
-  echo "WARNING: You have conflicts. Please resolve them and commit before doing"
-  echo "         any additional work."
+  echo "WARNING: You have conflicts. Please resolve them and commit before"
+  echo "         doing any additional work."
   exit 1
 else
   baz diff --quiet
