@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1><span tal:replace="context/title">$BugSystem.title</span></h1>
+    <h1><span tal:replace="context/title">$BugTracker.title</span></h1>
 
     <div style="float: right; clear: both; margin-top: 0.25em;">
     Bug system home:
@@ -28,8 +28,8 @@
     </div>
 
     <div class="documentDescription" tal:content="context/shortdesc">
-        $BugSystem.shortdesc goes here. This should be quite short,
-        just a single paragraph of text really, giving the BugSystem
+        $BugTracker.shortdesc goes here. This should be quite short,
+        just a single paragraph of text really, giving the BugTracker
         highlights.
     </div>
     

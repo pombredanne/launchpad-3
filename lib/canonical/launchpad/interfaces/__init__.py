@@ -14,6 +14,9 @@ from persistent import IPersistent
 #
 
 from canonical.launchpad.interfaces.project import *
+from canonical.launchpad.interfaces.sourcesource import *
+from canonical.launchpad.interfaces.bug import *
+
 
 class IAuthApplication(Interface):
     """ Interface for AuthApplication """

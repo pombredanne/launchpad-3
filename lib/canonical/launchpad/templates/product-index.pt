@@ -40,18 +40,37 @@
     </div>
 
 
+    <div>
         <h2>Revision Control System</h2>
 
         <dl tal:repeat="source context/sourcesources">
-            <dt><a tal:attributes="href source/name"
+            <dt><a tal:attributes="href python: string('+sources/') + source.name"
                     tal:content="source/title">Sync Title</a>&nbsp;<a
                     tal:condition="source/canChangeProduct"
                     tal:attributes="href source/name">Assign to product</a></dt>
             <dd tal:content="source/description"></dd>
         </dl>
 
-        [ <a href="+add-sourcesource">Add SourceSource</a> ]
-        
+        [ <a href="+addsources">Add SourceSource</a> ]
+    </div>
+
+    <div>
+
+        <h2>Distro Packages</h2>
+
+        <p>This shows you which distributions have packaged this product,
+        and allows you to navigate straight to the information about that
+        source package.</p>
+
+        <ul tal:repeat="package context/sourcepackages">
+
+            <li><span
+            tal:content="package/name">$Sourcepackage.name</span></li>
+            
+        </ul>
+
+    </div>
+
 </div>
 
 </body>

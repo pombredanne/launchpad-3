@@ -159,14 +159,14 @@ def verify_signed_file(filename, keyrings, detached_sigfile = None):
     
     # Ensure the filename contains no shell meta-characters or other badness
     if not re_taint_free.match(os.path.basename(filename)):
-        raise TaintedFileNameError("!!WARNING!! tainted filename: '%s'." % (filename))
+        raise TaintedFileNameError("%s: potentially dangerous metacharacters in filename" % (filename))
 
     if detached_sigfile is not None and \
            not re_taint_free.match(os.path.basename(detached_sigfile)):
-        raise TaintedFileNameError("!!WARNING!! tainted filename: '%s'." % (detached_sigfile))
+        raise TaintedFileNameError("%s: potentially dangerous metacharacters in filename" % (detached_sigfile))
 
     if type(keyrings) != list:
-        raise GPGInternalError("Someone passed us something other than a list in the keyrings argument")
+        raise GPGInternalError("<keyrings>: list expected, got %s", type(keyrings))
     
 
     keyrings = [ "'" + k + "'" for k in keyrings ]
@@ -213,23 +213,23 @@ def verify_signed_file(filename, keyrings, detached_sigfile = None):
 
     # Now check for obviously bad things in the processed output
     if keywords.has_key("SIGEXPIRED"):
-        raise SignatureExpiredError("The key used to sign %s has expired." % (filename))
+        raise SignatureExpiredError("%s: signature has expired." % (filename))
     if keywords.has_key("KEYREVOKED") or keywords.has_key("REVKEYSIG"):
-        raise KeyRevokedError("The key used to sign %s has been revoked." % (filename))
+        raise KeyRevokedError("%s: key has been revoked." % (filename))
     if keywords.has_key("BADSIG"):
-        raise BadSignatureError("bad signature on %s." % (filename))
+        raise BadSignatureError("%s: bad signature" % (filename))
     if keywords.has_key("ERRSIG") and not keywords.has_key("NO_PUBKEY"):
-        raise SignatureCheckError("failed to check signature on %s." % (filename))
+        raise SignatureCheckError("%s: failed to check signature" % (filename))
     if keywords.has_key("NO_PUBKEY"):
         args = keywords["NO_PUBKEY"]
         key = "UNKNOWN"
         if len(args) >= 1:
             key = args[0]
-        raise NoPublicKeyError("The key (0x%s) used to sign %s wasn't found in the keyring(s)." % (key, filename))
+        raise NoPublicKeyError("%s: key (0x%s) wasn't found in the keyring(s)" % (filename, key))
     if keywords.has_key("BADARMOR"):
-        raise BadArmorError("ASCII armour of signature was corrupt in %s." % (filename))
+        raise BadArmorError("%s: ASCII armour of signature was corrupt" % (filename))
     if keywords.has_key("NODATA"):
-        raise NoSignatureFoundError("no signature found in %s." % (filename))
+        raise NoSignatureFoundError("%s: no signature found" % (filename))
 
     if bad:
         raise VerificationError( "\n".join(rejr) )
@@ -246,22 +246,22 @@ def verify_signed_file(filename, keyrings, detached_sigfile = None):
 
     # Sanity check the good stuff we expect
     if not keywords.has_key("VALIDSIG"):
-        raise NoValidSignatureError("signature on %s does not appear to be valid [No VALIDSIG]." % (filename))
+        raise NoValidSignatureError("%s signature does not appear to be valid [No VALIDSIG]" % (filename))
     else:
         args = keywords["VALIDSIG"]
         if len(args) < 1:
-            raise VerificationError("internal error while checking signature on %s." % (filename))
+            raise VerificationError("%s: internal error while checking signature" % (filename))
         else:
             fingerprint = args[0]
             
     if not keywords.has_key("GOODSIG"):
-        raise NoGoodSignatureError("signature on %s does not appear to be valid [No GOODSIG]." % (filename))
+        raise NoGoodSignatureError("%s: signature does not appear to be valid [No GOODSIG]" % (filename))
     if not keywords.has_key("SIG_ID"):
-        raise NoSignatureIDError("signature on %s does not appear to be valid [No SIG_ID]." % (filename))
+        raise NoSignatureIDError("%s: signature does not appear to be valid [No SIG_ID]" % (filename))
 
     for keyword in keywords.keys():
         if not known_keywords.has_key(keyword):
-            raise UnknownTokenError("found unknown status token '%s' from gpgv with args '%r' in %s." % (keyword, keywords[keyword], filename))
+            raise UnknownTokenError("%s: found unknown status token '%s' from gpgv with args '%r'" % (filename, keyword, keywords[keyword]))
 
     if bad:
         raise VerificationError( "\n".join(rejr) )

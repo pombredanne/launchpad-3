@@ -1,21 +1,33 @@
 #!/usr/bin/env python 
 
-import urllib
+import urllib2
 from xml.dom import minidom
-from canonical.launchpad.database import BugSystem, BugSystemType
+from canonical.launchpad.database.bug import BugTracker, BugTrackerType
 
-class UnknownBugSystemTypeError(Exception):
+class UnknownBugTrackerTypeError(Exception):
     """
     Exception class to catch systems we don't have a class for yet
     """
 
-    def __init__(self, bugsystemtypename, bugsystemname):
-        self.bugsystemtypename = bugsystemtypename
-        self.bugsystemname = bugsystemname
+    def __init__(self, bugtrackertypename, bugtrackername):
+        self.bugtrackertypename = bugtrackertypename
+        self.bugtrackername = bugtrackername
 
     def __str__(self):
-        return self.bugsystemtypename
+        return self.bugtrackertypename
 
+class BugTrackerConnectError(Exception):
+    """
+    Exception class to catch misc errors contacting a bugtracker
+    """
+
+    def __init__(self, url, error):
+        self.url = url
+        self.error = str(error)
+
+    def __str__(self):
+        return "%s: %s" % (self.url, self.error)
+        
 class ExternalSystem(object):
     """
     Generic class for a remote system.  This is a pass-through class
@@ -23,14 +35,16 @@ class ExternalSystem(object):
     we know about,
     """
 
-    def __init__(self, bugsystem):
-        self.bugsystem = bugsystem
-        self.bugsystemtype = bugsystem.bugsystemtype
+    def __init__(self, bugtracker, version=None):
+        self.bugtracker = bugtracker
+        self.bugtrackertype = bugtracker.bugtrackertype
         self.remotesystem = None
-        if self.bugsystemtype.name == 'Bugzilla':
-            self.remotesystem = Bugzilla(self.bugsystem.baseurl)
+        if self.bugtrackertype.name == 'bugzilla':
+            self.remotesystem = Bugzilla(self.bugtracker.baseurl,version)
         if not self.remotesystem:
-            raise NotImplementedError()
+            raise UnknownBugTrackerTypeError(self.bugtrackertype.name,
+                self.bugtracker.name)
+        self.version = self.remotesystem.version
 
     def get_bug_status(self, bug_id):
         return self.remotesystem.get_bug_status(bug_id)
@@ -42,24 +56,42 @@ class Bugzilla(ExternalSystem):
     """
     A class that deals with communications with a remote Bugzilla system
 
-    >>> watch = Bugzilla("http://bugzilla.mozilla.org")
+    >>> watch = Bugzilla("https://bugzilla.mozilla.org")
     >>> watch.baseurl
-    'http://bugzilla.mozilla.org'
-    >>> watch = Bugzilla("http://bugzilla.mozilla.org/")
+    'https://bugzilla.mozilla.org'
+    >>> watch = Bugzilla("https://bugzilla.mozilla.org/")
     >>> watch.baseurl
-    'http://bugzilla.mozilla.org'
+    'https://bugzilla.mozilla.org'
     """
 
-    def __init__(self, baseurl):
+    def __init__(self, baseurl, version=None):
         if baseurl[-1] == "/":
             baseurl = baseurl[:-1]
         self.baseurl = baseurl
+        if version != None:
+            self.version = version
+        else:
+            self.version = self._probe_version()
+        if self.version < '2.16':
+            raise NotImplementedError()
+
+    def _probe_version(self):
+        print "probing version of %s" % self.baseurl
+        try:
+            url = urllib2.urlopen("%s/xml.cgi?id=1" % self.baseurl)
+        except urllib2.HTTPError, val:
+            raise BugTrackerConnectError(self.baseurl, val)
+        ret = url.read()
+        document = minidom.parseString(ret)
+        bugzilla = document.getElementsByTagName("bugzilla")
+        version = bugzilla[0].getAttribute("version")
+        return version
     
     def get_bug_status(self, bug_id):
         """
         Retrieve the bug status from a bug in a remote Bugzilla system
 
-        >>> watch = Bugzilla("http://bugzilla.mozilla.org")
+        >>> watch = Bugzilla("https://bugzilla.mozilla.org")
         >>> watch.get_bug_status(11901)
         u'ASSIGNED'
         >>> watch.get_bug_status(251003)
@@ -68,17 +100,20 @@ class Bugzilla(ExternalSystem):
         u'VERIFIED FIXED'
         """
 
-        data = {'ctype'       : 'rdf',
-                'form_name'   : 'buglist.cgi',
+        data = {'form_name'   : 'buglist.cgi',
                 'bug_id_type' : 'include',
                 'bug_id'      : bug_id,
                 }
+        if self.version < '2.17.1':
+            data.update({'format' : 'rdf'})
+        else:
+            data.update({'ctype'  : 'rdf'})
         # Eventually attach authentication information here if we need it
         #data.update({'Bugzilla_login'    : login,
         #             'Bugzilla_password' : password,
         #             'GoAheadAndLogIn'   : 1})
-        getdata = urllib.urlencode(data)
-        url = urllib.urlopen("%s/buglist.cgi" % self.baseurl, getdata)
+        getdata = urllib2.urlencode(data)
+        url = urllib2.urlopen("%s/buglist.cgi?%s" % (self.baseurl, getdata))
         ret = url.read()
         document = minidom.parseString(ret)
         result = None
@@ -94,7 +129,7 @@ class Bugzilla(ExternalSystem):
         """
         translate statuses from this system to the equivalent Malone status
 
-        >>> watch = Bugzilla("http://bugzilla.mozilla.org/")
+        >>> watch = Bugzilla("https://bugzilla.mozilla.org/")
         >>> watch.malonify_status('RESOLVED FIXED')
         'closed'
         >>> watch.malonify_status('ASSIGNED')

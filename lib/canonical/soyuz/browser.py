@@ -434,6 +434,9 @@ class ReleasesAddView(object):
             enable_added = True
         return enable_added
 
+##XXX: (batch+duplicated) cprov 20041006
+## The two following classes are almost like a duplicated piece
+## of code. We should look for a better way for use Batching Pages
 class DistroReleaseSourcesView(object):
 
     BATCH_SIZE = 20
@@ -447,8 +450,27 @@ class DistroReleaseSourcesView(object):
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', self.BATCH_SIZE))
         batch_size = self.BATCH_SIZE
-        batch = Batch(
-            list = source_packages, start = start, size = batch_size)
+        batch = Batch(list = source_packages, start = start,
+                      size = batch_size)
+
+        return BatchNavigator(batch = batch, request = self.request)
+
+class DistroReleaseBinariesView(object):
+
+    BATCH_SIZE = 20
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def binaryPackagesBatchNavigator(self):
+        binary_packages = list(self.context)
+        start = int(self.request.get('batch_start', 0))
+        end = int(self.request.get('batch_end', self.BATCH_SIZE))
+        batch_size = self.BATCH_SIZE
+        batch = Batch(list = binary_packages, start = start,
+                      size = batch_size)
+
         return BatchNavigator(batch = batch, request = self.request)
 
 class ReleaseEditView(object):
@@ -498,42 +520,57 @@ class ReleaseSearchView(object):
 
         return enable_result
 
+##XXX: (batch+duplicated) cprov 20041003
+## AGAIN !!!
+
 class DistrosReleaseSourcesSearchView(object):
+
+    BATCH_SIZE = 20
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        
+    def searchBinariesBatchNavigator(self):        
 
-    def search_action(self):
-        enable_result = False
         name = self.request.get("name", "")
 
         if name:
-            self.results = list(self.context.findPackagesByName(name))
-            enable_result = True
+            binary_packages = list(self.context.findPackagesByName(name))
+            start = int(self.request.get('batch_start', 0))
+            end = int(self.request.get('batch_end', self.BATCH_SIZE))
+            batch_size = self.BATCH_SIZE
+            batch = Batch(list = binary_packages, start = start,
+                          size = batch_size)
+            return BatchNavigator(batch = batch,
+                                  request = self.request)
         else:
-            self.results = []
+            return None
 
-        return enable_result
 
 class DistrosReleaseBinariesSearchView(object):
 
+    BATCH_SIZE = 20
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-    def search_action(self):
-        enable_result = False
         
+    def searchBinariesBatchNavigator(self):        
+
         name = self.request.get("name", "")
 
         if name:
-            self.results = list(self.context.findPackagesByName(name))
-            enable_result = True
+            binary_packages = list(self.context.findPackagesByName(name))
+            start = int(self.request.get('batch_start', 0))
+            end = int(self.request.get('batch_end', self.BATCH_SIZE))
+            batch_size = self.BATCH_SIZE
+            batch = Batch(list = binary_packages, start = start,
+                          size = batch_size)
+            return BatchNavigator(batch = batch,
+                                  request = self.request)
         else:
-            self.results = []
-
-        return enable_result
+            return None
 
 
 ##XXX: (old+stuff) cprov 20041003
@@ -548,115 +585,70 @@ class DistrosReleaseBinariesSearchView(object):
 def urlTraverseProjects(projects, request, name):
     return projects[str(name)]
 
-def urlTraverseProducts(project, request, name):
-    return project.getProduct(str(name))
 
-def urlTraverseSyncs(product, request, name):
-    return product.getSync(str(name))
+class SourceSourceView(object):
+    """Present a SourceSource table for a browser."""
 
-# DONE!
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = request.form
 
-#
-# XXX Mark Shuttleworth 02/10/04 Steve and I far prefer using Views that
-#     inherit from (object), then using an __init__ that has a line like
-#     self.form = request.form 
-#     to make form data more accessible. This would allow us to get rid
-#     of the View class below altogether.
-#
-class View(object):
-    def setArg(self, name, kwargs):
-        kwargs[name]=self.getField(name)
-    def getField(self, name):
-        return self.request.form[name]
-
-class ViewProjects(View):
-    def projects(self):
-        return iter(self.context)
-    def handle_submit(self):
-        if not self.request.form.get("Register", None)=="Register":
+    def edit(self):
+        if not self.request.form.get("Update", None)=="Update Upstream Source":
             return
         if not self.request.method == "POST":
             return
-        name=self.getField('name')
-        url=self.getField('url')
-        description=self.getField('description')
-        title=self.getField('title')
-        shortDescription=self.getField('shortDescription')
-        displayname=self.getField('displayname')
-
-        project=self.context.new(name,title,description,url)
-        project.shortDescription(shortDescription)
-        project.displayname(displayname)
-        project=None
-        self.submittedok= True
-        self.request.response.redirect(name)
-
-
-class ViewProject(View):
-    def products(self):
-        return self.context.products()
-    def handle_submit(self):
-        if not self.request.form.get("Register", None)=="Register":
-            return
-        if not self.request.method == "POST":
-            return
-        name=self.getField('name')
-        url=self.getField('url')
-        description=self.getField('description')
-        title=self.getField('title')
-
-        self.request.response.redirect(name)
-        self.context.newProduct(name,title,description,url)
-        self.submittedok= True
-
-
-
-class ViewProduct(View):
-
-    def syncs(self):
-        return iter(self.context.syncs())
-
-    def handle_submit(self):
-        if not self.request.form.get("Register", None)=="Register":
-            return
-        if not self.request.method == "POST":
-            return
-        kwargs={}
-        for param in ["name", "title","description","cvsroot","module","cvstarfile","branchfrom","svnrepository","category","branchto","archversion","archsourcegpgkeyid","archsourcename","archsourceurl"]:
-            self.setArg(param, kwargs)
-        self.context.newSync(**kwargs)
-        self.submittedok=True
-        self.request.response.redirect(kwargs['name'])
-
-class ViewSync(View):
-    """har har"""
-    def handle_submit(self):
-        if not self.request.form.get("Update", None)=="Update":
-            return
-        if not self.request.method == "POST":
-            return
-        kwargs={}
-        for param in ["name", "title", "description", "cvsroot", "cvsmodule","cvstarfile",
-            "branchfrom","svnrepository","archarchive","category","branchto","archversion","archsourcegpgkeyid","archsourcename","archsourceurl"]:
-            self.setArg(param, kwargs)
-        newurl=None
-        if kwargs.get('name', self.context.name) != self.context.name:
-            newurl='../' + kwargs['name']
-        self.context.update(**kwargs)
-        if self.request.form.get('enabled', None):
-            if not self.context.enabled():
-                self.context.enable()
-        if self.request.form.get('autosyncenabled', None):
-            if not self.context.autosyncing():
-                self.context.autosync()
-        if self.context.canChangeProduct() and self.request.form.has_key('product'):
-            self.context.changeProduct(self.request.form.get('product'))
-            newurl='../../../' + self.context.product.project.name + "/" + self.context.product.name #+ '/' + self.context.name
-        self.submittedok=True
+        formdata = {}
+        #
+        # Extract the form data
+        #
+        title = self.form.get('title', None)
+        description = self.form.get('description', None)
+        cvsroot = self.form.get('cvsroot', None)
+        cvsmodule = self.form.get('cvsmodule', None)
+        cvstarfileurl = self.form.get('cvstarfileurl', None)
+        cvsbranch = self.form.get('cvsbranch', None)
+        svnrepository = self.form.get('svnrepository', None)
+        releaseroot = self.form.get('releaseroot', None)
+        releaseverstyle = self.form.get('releaseverstyle', None)
+        releasefileglob = self.form.get('releasefileglob', None)
+        archarchive = self.form.get('newarchive', None)
+        archversion = self.form.get('newbranchcategory', None)
+        newbranchbranch = self.form.get('newbranchbranch', None)
+        newbranchversion = self.form.get('newbranchversion', None)
+        product = self.form.get('product', None)
+        if title: self.context.title = title
+        if description: self.context.description = description
+        if cvsroot: self.context.cvsroot = cvsroot
+        if cvsmodule: self.context.cvsmodule = cvsmodule
+        if cvstarfileurl: self.context.cvstarfileurl = cvstarfileurl
+        if cvsbranch: self.context.cvsbranch = cvsbranch
+        if svnrepository: self.context.svnrepository = svnrepository
+        if releaseroot: self.context.releaseroot = releaseroot
+        if releaseverstyle: self.context.releaseverstyle = releaseverstyle
+        if releasefileglob: self.context.releasefileglob = releasefileglob
+        if archarchive: self.context.archarchive = archarchive
+        if archversion: self.context.archversion = archversion
+        if newbranchbranch: self.context.newbranchbranch = newbranchbranch
+        if newbranchversion: self.context.newbranchversion = newbranchversion
+        if self.form.get('syncCertified', None):
+            if not self.context.syncCertified():
+                self.context.certifyForSync()
+        if self.form.get('autoSyncEnabled', None):
+            if not self.context.autoSyncEnabled():
+                self.context.enableAutoSync()
+        newurl = None
+        if product and self.context.canChangeProduct():
+            self.context.changeProduct(product)
+            newurl='../../../' + self.context.product.project.name + "/" + self.context.product.name
         if newurl:
             self.request.response.redirect(newurl)
+
+
     def selectedProduct(self):
         return self.context.product.name + "/" + self.context.product.project.name
+
     def products(self):
         """all the products that context can switch between"""
         """ugly"""

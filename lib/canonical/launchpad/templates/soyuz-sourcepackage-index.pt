@@ -41,9 +41,19 @@
 	      <a tal:content="context/sourcepackage/distro/title" 
 	      tal:attributes="href string:../../../../${context/sourcepackage/distro/name}"/>
 
+	      <p><b>Project:   </b> 
+	      <tal:dummy tal:condition="context/sourcepackage/product/project">
+	         <a tal:attributes="href string:/doap/projects/${context/sourcepackage/product/project/name}" 
+	      tal:content="context/sourcepackage/product/project/title" />
+	      </tal:dummy>
+	      <tal:dummy tal:condition="not:context/sourcepackage/product/project">
+	         No Project for this Package Available
+	      </tal:dummy>
+
 	      <p><b>Product:   </b> 
 	      <tal:dummy tal:condition="context/sourcepackage/product">
-	         <a href="no-url-yet" tal:content="context/sourcepackage/product/title" />
+	         <a tal:attributes="href string:/doap/projects/${context/sourcepackage/product/project/name}/${context/sourcepackage/product/name}" 
+	      tal:content="context/sourcepackage/product/title" />
 	      </tal:dummy>
 	      <tal:dummy tal:condition="not:context/sourcepackage/product">
 	         No Product for this Package Available

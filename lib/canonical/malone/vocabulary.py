@@ -9,32 +9,49 @@ from zope.schema.vocabulary import SimpleTerm
 from canonical.launchpad.database import Person
 from canonical.launchpad.database import Sourcepackage, Binarypackage
 from canonical.launchpad.database import Product
-from canonical.launchpad.database import BugSystem
+from canonical.launchpad.database import BugTracker
 
 __metaclass__ = type
 
 # TODO: These vocabularies should limit their choices based on context (?)
 
-class TitledTableVocabulary(object):
+class SQLObjectVocabularyBase(object):
+    """A base class for widgets that are rendered to collect values
+    for attributes that are SQLObjects, e.g. ForeignKey.
+
+    So if a content class behind some form looks like:
+
+    class Foo(SQLObject):
+        id = IntCol(...)
+        bar = ForeignKey(...)
+        ...
+
+    Then the vocabulary for the widget that captures a value for bar
+    should derive from SQLObjectVocabularyBase.
+    """
     implements(IVocabulary, IVocabularyTokenized)
-    _orderBy = 'name'
+    _orderBy = None
+
     def __init__(self, context):
         self.context = context
 
-    def _toTerm(self, pkg):
-        return SimpleTerm(pkg.id, pkg.name, pkg.title)
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.title)
 
     def __iter__(self):
-        for pkg in self._table.select(orderBy=self._orderBy):
-            yield self._toTerm(pkg)
+        params = {}
+        if self._orderBy:
+            params['orderBy'] = self._orderBy
+        for obj in self._table.select(**params):
+            yield self._toTerm(obj)
 
     def __len__(self):
         return len(iter(self))
 
     def __contains__(self, key):
         try:
-            pkgs = list(self._table.select(self._table.q.id == int(key)))
-            if len(pkgs) > 0:
+            objs = list(self._table.select(self._table.q.id == int(key.id)))
+            if len(objs) > 0:
                 return True
         except ValueError:
             pass
@@ -45,60 +62,66 @@ class TitledTableVocabulary(object):
 
     def getTerm(self, value):
         try:
-            pkgs = list(self._table.select(self._table.q.id==int(value)))
+            objs = list(self._table.select(self._table.q.id==int(value)))
         except ValueError:
             raise LookupError, value
-        if len(pkgs) == 0:
+        if len(objs) == 0:
             raise LookupError, value
-        return self._toTerm(pkgs[0])
+        return self._toTerm(objs[0])
 
-    def getTermByToken(self, token):
-        try:
-            pkgs = list(self._table.select(self._table.q.name==token))
-        except ValueError:
-            raise LookupError, value
-        if len(pkgs) == 0:
-            raise LookupError, value
-        return self._toTerm(pkgs[0])
-
-class SourcepackageVocabulary(TitledTableVocabulary):
-    _table = Sourcepackage
-    _orderBy = 'id'
-    def _toTerm(self, pkg):
-        name = pkg.sourcepackagename.name
-        return SimpleTerm(pkg.id, str(pkg.id), name)
     def getTermByToken(self, token):
         return self.getTerm(token)
 
 
-class ProductVocabulary(TitledTableVocabulary):
+class SourcepackageVocabulary(SQLObjectVocabularyBase):
+    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
+    # no test data for me to check yet. This'll be fixed by the end
+    # of the week (2004/10/08) as we get Malone into usable shape.
+    _table = Sourcepackage
+    _orderBy = 'id'
+
+    def _toTerm(self, obj):
+        name = obj.sourcepackagename.name
+        return SimpleTerm(obj.id, str(obj.id), name)
+    def getTermByToken(self, token):
+        return self.getTerm(token)
+
+
+class ProductVocabulary(SQLObjectVocabularyBase):
     _table = Product
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.displayname or obj.title)
 
 # We cannot refer to a Binarypackage unambiguously by a name, as
 # we have no assurace that a generated name using $BinarypackageName.name
 # and $Binarypackage.version will be unique
 # TODO: The edit sourcepackagebugassignment for does not default its
 # binary package field
-class BinarypackageVocabulary(TitledTableVocabulary):
+class BinarypackageVocabulary(SQLObjectVocabularyBase):
+    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
+    # no test data for me to check yet. This'll be fixed by the end
+    # of the week (2004/10/08) as we get Malone into usable shape.
     _table = Binarypackage
     _orderBy = 'id'
-    def _toTerm(self, pkg):
-        return SimpleTerm(pkg.id, str(pkg.id), pkg.title)
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj.id, str(obj.id), obj.title)
 
     def getTermByToken(self, token):
         return self.getTerm(token)
 
-class BugSystemVocabulary(TitledTableVocabulary):
-    _table = BugSystem
+class BugTrackerVocabulary(SQLObjectVocabularyBase):
+    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
+    # no test data for me to check yet. This'll be fixed by the end
+    # of the week (2004/10/08) as we get Malone into usable shape.
+    _table = BugTracker
 
-class PersonVocabulary(TitledTableVocabulary):
+class PersonVocabulary(SQLObjectVocabularyBase):
     _table = Person
     _orderBy = 'familyname'
-    def _toTerm(self, pkg):
+
+    def _toTerm(self, obj):
         return SimpleTerm(
-                pkg.id, str(pkg.id), pkg.displayname or '%s %s' % (
-                    pkg.givenname, pkg.familyname
-                    )
-                )
-    def getTermByToken(self, token):
-        return self.getTerm(token)
+                obj, obj.id, obj.displayname or '%s %s' % (
+                    obj.givenname, obj.familyname))

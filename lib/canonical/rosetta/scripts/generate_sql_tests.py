@@ -4,25 +4,25 @@
 import sys
 
 tests = [
-    ('IProduct', 'RosettaProduct'),
-    ('IEditPOTemplate', 'RosettaPOTemplate'),
-    ('IEditPOFile', 'RosettaPOFile'),
-    ('IEditPOTemplateOrPOFileMessageSet', 'RosettaPOMessageSet'),
-    ('IPOMessageID', 'RosettaPOMessageID'),
-    ('IPOTranslationSighting', 'RosettaPOTranslationSighting'),
-    ('IPOTranslation', 'RosettaPOTranslation'),
-    ('IBranch', 'RosettaBranch'),
-    ('IPerson', 'RosettaPerson'),
-    ('ILanguage', 'RosettaLanguage'),
-    ('ILanguages', 'RosettaLanguages'),
-    ('ISchemas', 'RosettaSchemas'),
-    ('ISchema', 'RosettaSchema'),
-    ('ILabel', 'RosettaLabel'),
+    ('IProduct', 'Product'),
+    ('IEditPOTemplate', 'POTemplate'),
+    ('IEditPOFile', 'POFile'),
+    ('IEditPOTemplateOrPOFileMessageSet', 'POMessageSet'),
+    ('IPOMessageID', 'POMessageID'),
+    ('IPOTranslationSighting', 'POTranslationSighting'),
+    ('IPOTranslation', 'POTranslation'),
+    ('IBranch', 'Branch'),
+    ('IPerson', 'Person'),
+    ('ILanguage', 'Language'),
+    ('ILanguages', 'Languages'),
+    ('ISchemas', 'Schemas'),
+    ('ISchema', 'Schema'),
+    ('ILabel', 'Label'),
 # XXX: Commented until we restart their use
 #    ('ICategory', 'RosettaCategory'),
 #    ('ITranslationEffort', 'RosettaTranslationEffort'),
 #    ('ITranslationEffortPOTemplate', 'RosettaTranslationEffortPOTemplate'),
-    ('IEmailAddress', 'RosettaEmailAddress'),
+    ('IEmailAddress', 'EmailAddress'),
     ]
 
 if '-c' in sys.argv:
@@ -52,7 +52,6 @@ def verifySQLObject(interface, implementation):
 """
 
 if mode == 'object':
-    print "from canonical.launchpad.database import RosettaPOMessageSet, RosettaLanguage"
     print "import canonical.lp"
     print
     print "canonical.lp.initZopeless()"

@@ -124,7 +124,7 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IProductBugAssignment"
         schema="canonical.launchpad.interfaces.IProductBugAssignment"
-        fields="bugstatus priority severity assignee"
+        fields="product bugstatus priority severity assignee"
         label="Edit Product Bug Assignment"
         permission="launchpad.AnyPerson"
         template="../launchpad/templates/default-editform.pt"
@@ -135,7 +135,7 @@
         schema="canonical.launchpad.interfaces.ISourcepackageBugAssignment"
         for="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer"
         label="Add Sourcepackage Bug Assignment"
-        fields="sourcepackage bugstatus priority severity binarypackage assignee"
+        fields="sourcepackage bugstatus priority severity binarypackagename assignee"
         content_factory=".browser.SourcepackageBugAssignmentFactory"
         arguments=""
         keyword_arguments="sourcepackage bugstatus priority severity"
@@ -147,7 +147,7 @@
         name="+edit"
         for="canonical.launchpad.interfaces.ISourcepackageBugAssignment"
         schema="canonical.launchpad.interfaces.ISourcepackageBugAssignment"
-        fields="bugstatus priority severity binarypackage assignee"
+        fields="bugstatus priority severity binarypackagename assignee"
         label="Edit Sourcepackage Bug Assignment"
         permission="launchpad.AnyPerson"
         template="../launchpad/templates/default-editform.pt"
@@ -180,10 +180,10 @@
         schema="canonical.launchpad.interfaces.IBugWatch"
         for=".browser.IBugWatchContainer"
         label="Add Watch"
-        fields="bugsystem remotebug"
+        fields="bugtracker remotebug"
         content_factory=".browser.BugWatchFactory"
         arguments=""
-        keyword_arguments="bugsystem remotebug"
+        keyword_arguments="bugtracker remotebug"
         permission="launchpad.AnyPerson"
         template="../launchpad/templates/default-addform.pt"
         lp:url="malone/bugs/$Bugs.id/watches/+new" />
@@ -194,7 +194,7 @@
         label="Change Bug Watch"
         permission="launchpad.AnyPerson"
         template="../launchpad/templates/default-editform.pt"
-        fields="bugsystem remotebug"
+        fields="bugtracker remotebug"
         lp:url="malone/bugs/$Bug.id/watches/$Watch.id/+edit" />
 
     <addform

@@ -34,7 +34,7 @@
     <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
   <content class="canonical.soyuz.stub.Sync">
-    <allow interface="canonical.launchpad.interfaces.ISync"/>
+    <allow interface="canonical.launchpad.interfaces.ISourceSource"/>
   </content>
 
   <!-- This is the collection of packages.  For now, stubbed out.

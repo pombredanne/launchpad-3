@@ -1,0 +1,21 @@
+#!/bin/sh
+tla tree-root -s
+if test $? -ne 0; then
+  echo "Not in an arch tree. Please cd into your arch tree before submitting a merge"
+  exit 1
+fi
+cd $(tla tree-root)
+if test ! -r "{arch}/+upstream"; then
+  echo "Please identify where you want submitted merges to occur in {arch}/+upstream"
+  exit 1
+fi
+if test -z "$1" -o -z "$2"; then
+  echo "you must supply a commit log message and a pqm email address. "
+  echo "i.e. tla-submit-merge \"Merge in bugfix #456\" pqm@example.com"
+  exit 1
+fi
+echo star-merge "$(tla tree-version)" "$(cat {arch}/+upstream)" | gnome-gpg --clearsign | mail -s "$1" "$2"
+
+# don't touch the next lines
+# arch-tag: be760a18-f617-409a-9d4a-b7827e727d5c
+#

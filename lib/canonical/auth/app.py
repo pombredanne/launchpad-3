@@ -3,6 +3,7 @@
 """This module contains the Password Reset Application"""
 __metaclass__ = type
 
+from datetime import datetime
 
 from canonical.zodb import zodbconnection
 
@@ -20,17 +21,22 @@ class PasswordChangeApp(object):
 
 class SendPasswordChangeEmail(object):
     """ Send an Password change special link for a user """
-    def __init__(self, code, email):
+    def __init__(self, code, toaddress):
 
-        ##XXX: What about this mail template idea?
-        template = open('lib/canonical/auth/mailTemplate')
+        template = open('lib/canonical/auth/mailTemplate').read()
+        fromaddress = "Ubuntu Webmaster <webmaster@ubuntulinux.org>"
 
-        msg = template.read() % code
-        template.close()
+        data = {'longstring': code,
+                'toaddress': toaddress,
+                'fromaddress': fromaddress,
+                'date': datetime.utcnow().strftime("%a, %d %b %Y %H:%M:%S +0000")
+                }
+        
+        msg = template % data
 
         sender = SMTP("localhost")
-        sender.sendmail("Ubuntu Webmaster <webmaster@ubuntulinux.org>",
-                        email,
+        sender.sendmail(fromaddress,
+                        toaddress,
                         msg)
 
 class UbuntuLinuxSite(object):

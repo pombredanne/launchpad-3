@@ -194,18 +194,21 @@ class ProductBugAssignment(SQLBase):
 
     _table = 'ProductBugAssignment'
 
-    bug = ForeignKey(dbName='bug', foreignKey='Bug')
-    product = ForeignKey(dbName='product', foreignKey='Product')
-    bugstatus = IntCol(
+    _columns = [
+        ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
+        ForeignKey(name='product', dbName='product', foreignKey='Product'),
+        IntCol(name='bugstatus',
             notNull=True, default=int(dbschema.BugAssignmentStatus.NEW)
-            )
-    priority = IntCol(
+            ),
+        IntCol(name='priority',
             notNull=True, default=int(dbschema.BugPriority.MEDIUM),
-            )
-    severity = IntCol(
+            ),
+        IntCol(name='severity',
             notNull=True, default=int(dbschema.BugSeverity.NORMAL),
-            )
-    assignee = ForeignKey(dbName='assignee', foreignKey='Person', default=None)
+            ),
+        ForeignKey(name='assignee', dbName='assignee', foreignKey='Person', default=None)
+        ]
+
 
 class SourcepackageBugAssignment(SQLBase):
     """A relationship between a Sourcepackage and a Bug."""
@@ -214,24 +217,26 @@ class SourcepackageBugAssignment(SQLBase):
 
     _table = 'SourcepackageBugAssignment'
 
-    bug = ForeignKey(dbName='bug', foreignKey='Bug')
-    sourcepackage = ForeignKey(
-            dbName='sourcepackage', foreignKey='Sourcepackage'
-            )
-    bugstatus = IntCol(default=int(dbschema.BugAssignmentStatus.NEW))
-    priority = IntCol(default=int(dbschema.BugPriority.MEDIUM))
-    severity = IntCol(default=int(dbschema.BugSeverity.NORMAL))
-    binarypackage = ForeignKey(
-            dbName='binarypackage', foreignKey='Binarypackage', default=None
-            )
-    assignee = ForeignKey(dbName='assignee', foreignKey='Person', default=None)
+    _columns = [
+        ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
+        ForeignKey(name='sourcepackage', 
+            dbName='sourcepackage', foreignKey='Sourcepackage'),
+        IntCol('bugstatus', default=int(dbschema.BugAssignmentStatus.NEW)),
+        IntCol('priority', default=int(dbschema.BugPriority.MEDIUM)),
+        IntCol('severity', default=int(dbschema.BugSeverity.NORMAL)),
+        ForeignKey(name='binarypackagename', dbName='binarypackagename',
+                   foreignKey='BinarypackageName', default=None),
+        ForeignKey(name='assignee', dbName='assignee',
+                   foreignKey='Person', notNull=True, default=None),
+        ]
 
-class BugSystemType(SQLBase):
+
+class BugTrackerType(SQLBase):
     """A type of supported remote  bug system. eg Bugzilla."""
 
-    implements(IBugSystemType)
+    implements(IBugTrackerType)
 
-    _table = 'BugSystemType'
+    _table = 'BugTrackerType'
     _columns = [
         StringCol('name', notNull=True),
         StringCol('title', notNull=True),
@@ -244,17 +249,17 @@ class BugSystemType(SQLBase):
     ]
 
 
-class BugSystem(SQLBase):
-    """A class to access the BugSystem table of the db. Each BugSystem is a
+class BugTracker(SQLBase):
+    """A class to access the BugTracker table of the db. Each BugTracker is a
     distinct instance of that bug tracking tool. For example, each Bugzilla
-    deployment is a separate BugSystem. bugzilla.mozilla.org and
-    bugzilla.gnome.org are each distinct BugSystem's.
+    deployment is a separate BugTracker. bugzilla.mozilla.org and
+    bugzilla.gnome.org are each distinct BugTracker's.
     """
-    implements(IBugSystem)
-    _table = 'BugSystem'
+    implements(IBugTracker)
+    _table = 'BugTracker'
     _columns = [
-        ForeignKey(name='bugsystemtype', dbName='bugsystemtype',
-                foreignKey='BugSystemType', notNull=True),
+        ForeignKey(name='bugtrackertype', dbName='bugtrackertype',
+                foreignKey='BugTrackerType', notNull=True),
         StringCol('name', notNull=True, unique=True),
         StringCol('title', notNull=True),
         StringCol('shortdesc', notNull=True),
@@ -264,14 +269,17 @@ class BugSystem(SQLBase):
         StringCol('contactdetails', notNull=True),
         ]
 
+# XXX Mark Shuttleworth 05/10/04 We are renaming BugTracker to BugTracker
+BugTracker = BugTracker
 
-class BugSystemSet(object):
-    """Implements IBugSystemSet for a container or set of BugSystem's,
+
+class BugTrackerSet(object):
+    """Implements IBugTrackerSet for a container or set of BugTracker's,
     either the full set in the db, or a subset."""
 
-    implements(IBugSystemSet)
+    implements(IBugTrackerSet)
 
-    table = BugSystem
+    table = BugTracker
     
     def __getitem__(self, name):
         try: return self.table.select(self.table.q.name == name)[0]
@@ -289,8 +297,8 @@ class BugWatch(SQLBase):
     _table = 'BugWatch'
     _columns = [
         ForeignKey(name='bug', dbName='bug', foreignKey='Bug', notNull=True),
-        ForeignKey(name='bugsystem', dbName='bugsystem',
-                foreignKey='BugSystem', notNull=True),
+        ForeignKey(name='bugtracker', dbName='bugtracker',
+                foreignKey='BugTracker', notNull=True),
         StringCol('remotebug', notNull=True),
         # TODO: Default should be NULL, but column is NOT NULL
         StringCol('remotestatus', notNull=True, default=''),
@@ -301,5 +309,26 @@ class BugWatch(SQLBase):
                 notNull=True),
         ]
 
+#
+# REPORTS
+#
 
+class BugsAssignedReport(object):
+
+    implements(IBugsAssignedReport)
+
+    def __init__(self):
+        # XXX Mark Shuttleworth 06/10/04  Temp Testing Hack hardcode person
+        self.user = 1
+        self._table = SourcepackageBugAssignment
+
+    def directAssignments(self):
+        """An iterator over the bugs directly assigned to the person."""
+        assignments = self._table.selectBy(assigneeID=self.user)
+        for assignment in assignments:
+            yield assignment
+
+    def sourcepackageAssignments(self):
+        """An iterator over bugs assigned to the person's source
+        packages."""
 

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Written by Daniel Silverstone
+# arch-tag: 4474c490-87bb-44a4-8a01-0055242889b0
+
+if [ "x$*" = "x" ]; then
+  echo Please supply a reason on the command line
+  exit 1
+fi
+
+tla-mirror-here || exit 1
+
+exec arch-submit-merge "$*" pqm@chinstrap.warthogs.hbd.com

@@ -18,7 +18,7 @@ from canonical.lp import dbschema
 from canonical.database.sqlbase import quote
 
 # Interfaces
-from canonical.launchpad.interfaces import ISync
+from canonical.launchpad.interfaces import ISourceSource
 from canonical.launchpad.interfaces import IProjectSet, IProduct, IProject
 from canonical.launchpad.database import Project as dbProject, Product \
      as dbProduct
@@ -154,6 +154,7 @@ class SoyuzProduct(object):
         """iterate over this product's sourcesource entries"""
         for source in SourceSource.select("sourcesource.product=%s" % quote(self._product.id)):
             yield Sync(self, sync)
+
     def newSync(self,**kwargs):
         """create a new sync job"""
         print kwargs
@@ -162,7 +163,7 @@ class SoyuzProduct(object):
             rcstype=RCSTypeEnum.svn
         #handle arch
         
-        return Sync(self, infoSourceSource(name=kwargs['name'],
+        return Sync(self, SourceSource(name=kwargs['name'],
             title=kwargs['title'],
             ownerID=getOwner(),
             description=kwargs['description'],
@@ -195,92 +196,7 @@ class SoyuzProduct(object):
         
     def getSync(self,name):
         """get a sync"""
-        return Sync(self, infoSourceSource.select("name=%s and sourcesource.product=%s" % (quote(name), self._product.id)  )[0])
- 
-class Sync(object):
-    implements (ISync)
-    def __init__(self, product, dbSource):
-        self.product=product
-        self._sync=dbSource
-        self.name=self._sync.name
-        self.title=self._sync.title
-        self.description=self._sync.description
-        self.cvsroot=self._sync.cvsroot
-        self.cvsmodule=self._sync.cvsmodule
-        self.cvstarfile=self._sync.cvstarfileurl
-        self.branchfrom=self._sync.cvsbranch
-        self.svnrepository = self._sync.svnrepository
-        self.archarchive = self._sync.newarchive
-        self.category = self._sync.newbranchcategory
-        self.branchto = self._sync.newbranchbranch
-        self.archversion = self._sync.newbranchversion
-#    category = Attribute("duh")
-#    branchto = Attribute("duh")
-#    archversion = Attribute("duh")
-#    archsourcegpgkeyid = Attribute("duh")
-#    archsourcename = Attribute("duh")
-#    archsourceurl = Attribute("duh")
-#        DateTimeCol('lastsynced', dbName='lastsynced', default=None),
-#        IntCol('frequency', dbName='syncinterval', default=None),
-#        # WARNING: syncinterval column type is "interval", not "integer"
-#        # WARNING: make sure the data is what buildbot expects
-#
-#        IntCol('rcstype', dbName='rcstype', default=RCSTypeEnum.cvs,
-#               notNull=True),
-#
-#        StringCol('hosted', dbName='hosted', default=None),
-#        StringCol('upstreamname', dbName='upstreamname', default=None),
-#        DateTimeCol('processingapproved', dbName='processingapproved',
-#                    notNull=False, default=None),
-#        DateTimeCol('syncingapproved', dbName='syncingapproved', notNull=False,
-#                    default=None),
-    def enable(self):
-        """enable the sync for processing"""
-        self._sync.processingapproved='NOW'
-        self._sync.frequency=datetime.timedelta(1)
-    def enabled(self):
-        """is the sync enabled"""
-        return self._sync.processingapproved is not None
-    def autosyncing(self):
-        """is the sync automatically scheduling"""
-        return self._sync.syncingapproved is not None
-    def autosync(self):
-        """enable autosyncing"""
-        self._sync.syncingapproved='NOW'
-        print "enabled"
-    def update(self, **kwargs):
-        """update a Sync, possibly reparenting"""
-        self._update('name', 'name', kwargs)
-        self._update('title', 'title', kwargs)
-        self._update('description', 'description', kwargs)
-        self._update('cvsroot', 'cvsroot', kwargs)
-        self._update('cvsmodule', 'cvsmodule', kwargs)
-        self._update('cvstarfile', 'cvstarfileurl', kwargs)
-        self._update('branchfrom', 'cvsbranch', kwargs)
-        self._update('svnrepository','svnrepository', kwargs)
-        self._update('category', 'newbranchcategory', kwargs)
-        self._update('branchto', 'newbranchbranch', kwargs)
-        self._update('archversion', 'newbranchversion', kwargs)
-        self._update('archarchive', 'newarchive', kwargs)
-        #    "archsourcegpgkeyid","archsourcename","archsourceurl"]:
-    def _update(self, myattr, dbattr, source):
-        """update myattr & dbattr from source's myattr"""
-        if not source.has_key(myattr):
-            return
-        print "updating ", myattr, source[myattr]
-        setattr(self._sync, dbattr, source[myattr])
-        setattr(self, myattr, getattr(self._sync, dbattr))
-    def canChangeProduct(self):
-        """is this sync allowed to have its product changed?"""
-        return self.product.project.name == "do-not-use-info-imports" and self.product.name=="unassigned"
-    def changeProduct(self,targetname):
-        """change the product this sync belongs to to be 'product'"""
-        assert (self.canChangeProduct())
-        projectname,productname=targetname.split("/")
-        project=ProjectMapper().getByName(projectname)
-        product=ProductMapper().getByName(productname, project)
-        self.product=product
-        SyncMapper().update(self)
+        return Sync(self, SourceSource.select("name=%s and sourcesource.product=%s" % (quote(name), self._product.id)  )[0])
  
 class Mapper(object):
     """I am a layer supertype for Mappers"""

@@ -99,7 +99,7 @@ class DatabaseUserDetailsStorage(object):
         name = displayname.replace(" ", "")[:8].lower()
         displayname = displayname.replace("'", "''").encode('utf-8')
         pw = sshaDigestedPassword.replace("'", "''")
-        sql = (u"""\
+        sql = ("""\
             INSERT INTO Person (name, displayname, password)  VALUES ('%s', '%s', '%s')"""
             % (name, displayname, pw))
 

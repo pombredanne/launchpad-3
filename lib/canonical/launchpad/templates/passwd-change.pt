@@ -15,36 +15,51 @@
 
 <div metal:fill-slot="main">
 
-<h2> Reset password</h2>
+<tal:block tal:define="result view/getResult">
 
-<fieldset>
+<div class="portalMessage" tal:condition="view/error"> 
+   Sorry, there has been a problem in resetting your password. 
+   Please try again, using the Forgotten password 
+   <a href=".."> form </a>
+</div>
+<tal:block tal:condition="not:view/success">
+<div class="portalMessage" tal:condition="result" tal:content="result"> MESSAGE </div>
+</tal:block>
+<br>
+<h2> Reset password</h2>
+<br>
+<div tal:condition="view/success" tal:content="result"> MESSAGE </div>
+
+<fieldset tal:condition="not:view/success">
   <legend>
-    Reset password
+    Account details
   </legend>
   <form name="chpasswd" method="POST">
+    <label for="__ac_email">Email address</label>
+    <br>
     <div class="formHelp">Enter the email address you used to request a new password.</div>
     <input type="text" size="50" name="email" tal:attributes="value request/email|nothing" />
+    <br>
 
+    <label for="__ac_email">Password</label>
+    <br>
     <div class="formHelp"> Type your new password </div>
     <input type="password" size="30" name="password" tal:attributes="value request/password|nothing" />
+    <br>
 
-    <div class="formHelp"> Confirm your new password </div>
+    <label for="__ac_email">Confirm password</label>
+    <br>
+    <div class="formHelp"> Re-type your new password </div>
     <input type="password" size="30" name="repassword" tal:attributes="value request/repassword|nothing" />
     <input type="hidden" name="code" tal:attributes="value context/code" />
-
-    <input type="submit" value="Submit"/>
-    <input type="reset" value="Cancel"/>
+    <div class="formControls">
+      <input class="context" tabindex="4" type="submit" value="Submit"/>
+      <input class="context" tabindex="4" type="reset" value="Cancel"/>
+    </div>
   </form>
 
 </fieldset>
 
-<tal:block tal:define="result view/getResult">
-<h4 tal:content="result"> MESSAGE </h4>
-<h4 tal:condition="not:view/success"> 
-   Sorry, there has been a problem in resetting your password. 
-   Please try again, using the Forgotten password 
-   <a href=".."> form </a>
-</h4>
 </tal:block>
 </div>
 
@@ -52,4 +67,3 @@
 
 </body>
 </html>
- 

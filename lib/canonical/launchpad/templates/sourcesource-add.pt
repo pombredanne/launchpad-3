@@ -14,7 +14,8 @@
 
 <div metal:fill-slot="main">
 
-   <tal:dummy condition="view/handle_submit" />
+   <tal:dummy condition="view/newSourceSource" />
+
     <h1>Add Source Import</h1>
 
     <div class="documentDescription">
@@ -22,7 +23,7 @@
     imported into the Product.
     </div>
 
-    <form action="sources+new" method="post">
+    <form method="post">
     
     <fieldset>
 
@@ -213,10 +214,13 @@
 
     <div class="formControls">
 
+        <!--NB! DO NOT CHANGE THE VALUE OF THIS
+                it is used to verify that the correct form was posted.
+                -->
         <input class="context" type="submit"
                tabindex="5"
                name="Register"
-               value="Register" />
+               value="Register Revision Control System" />
 
     </div>
 

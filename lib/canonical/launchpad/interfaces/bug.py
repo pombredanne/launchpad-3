@@ -85,6 +85,22 @@ class IBug(Interface):
 
     url = Attribute('Generated URL based on data and reference type')
 
+
+class IBugTrackerSet(Interface):
+    """An interface for the BugTrackerSet. This models a set of BugTracker's
+    (either the full set in the db or a subset). Each BugTracker is a
+    distinct instance of a bug tracking tool. For example,
+    bugzilla.mozilla.org is distinct from bugzilla.gnome.org.
+    """
+    def __getitem__(name):
+        """Get a BugTracker by its name in the database. NB! We do not want to
+        expose the BugTracker.id to the world so we use its name.
+        """
+
+    def __iter__():
+        """Iterate through BugTrackers."""
+
+
 class IBugAttachment(Interface):
     """A file attachment to an IBugMessage."""
 
@@ -343,9 +359,9 @@ class ISourcepackageBugAssignment(Interface):
             title=_('Severity'), vocabulary=BugSeverityVocabulary,
             required=True, default=int(dbschema.BugSeverity.NORMAL),
             )
-    binarypackage = Choice(
-            title=_('Binary Package'), required=False,
-            vocabulary='Binarypackage'
+    binarypackagename = Choice(
+            title=_('Binary Package Name'), required=False,
+            vocabulary='BinarypackageName'
             )
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
 
@@ -364,7 +380,7 @@ class IBugInfestation(Interface):
     lastmodified = Datetime(title=_('Last Modified'))
     lastmodifiedby = Int(title=_('Last Modified By'))
 
-class IBugSystemType(Interface):
+class IBugTrackerType(Interface):
     """A type of supported remote bug system, eg Bugzilla."""
 
     id = Int(title=_('ID'))
@@ -374,11 +390,11 @@ class IBugSystemType(Interface):
     homepage = TextLine(title=_('Homepage'))
     owner = Int(title=_('Owner'))
 
-class IBugSystem(Interface):
+class IBugTracker(Interface):
     """A remote a bug system."""
 
     id = Int(title=_('ID'))
-    bugsystemtype = Int(title=_('Bug System Type'))
+    bugtrackertype = Int(title=_('Bug System Type'))
     name = TextLine(title=_('Name'))
     title = TextLine(title=_('Title'))
     shortdesc = Text(title=_('Short Description'))
@@ -391,8 +407,8 @@ class IBugWatch(Interface):
 
     id = Int(title=_('ID'), required=True, readonly=True)
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    bugsystem = Choice(title=_('Bug System'), required=True,
-            vocabulary='BugSystem')
+    bugtracker = Choice(title=_('Bug System'), required=True,
+            vocabulary='BugTracker')
     remotebug = TextLine(title=_('Remote Bug'), required=True, readonly=False)
     # TODO: default should be NULL, but column is NOT NULL
     remotestatus = TextLine(
@@ -419,3 +435,23 @@ class IBugProductRelationship(Interface):
     bugstatus = Int(title=_('Bug Status'))
     priority = Int(title=_('Priority'))
     severity = Int(title=_('Severity'))
+
+
+#
+# Bug Report Objects
+#
+
+
+class IBugsAssignedReport(Interface):
+
+    user = Attribute("The user for whom this report will be generated")
+
+    def directAssignments():
+        """An iterator over the bugs directly assigned to the person."""
+
+    def sourcepackageAssignments():
+        """An iterator over bugs assigned to the person's source
+        packages."""
+
+
+    

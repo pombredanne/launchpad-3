@@ -123,6 +123,7 @@ class TranslationsList(object):
                 return
             # there is one in the DB; mark it as historic
             sighting.inLastRevision = False
+            sighting.active = False
             # we're done
             return
 

@@ -113,6 +113,7 @@ class TestUtilities(unittest.TestCase):
         from canonical.lucille.utils import fix_maintainer, ParseMaintError
         cases = (
             "James Troup",
+            "James Troup <james>",
             "James Troup <james@nocrew.org" )
         for case in cases:
             try:

@@ -15,7 +15,7 @@ from zope.schema import TextLine, Int, Choice
 #
 from canonical.launchpad.database import \
         Sourcepackage, SourcepackageName, Binarypackage, \
-        BugSystem, BugWatch, Product, Person, EmailAddress, \
+        BugTracker, BugWatch, Product, Person, EmailAddress, \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
         ProductBugAssignment, SourcepackageBugAssignment
 from canonical.database import sqlbase
@@ -74,7 +74,7 @@ def traverseBugAttachment(bugattachment, request, name):
 
 
 def newBugTracker(form, owner):
-    """Process a form to create a new BugSystem Bug Tracking instance
+    """Process a form to create a new BugTracker Bug Tracking instance
     object."""
     #
     # Verify that the form was in fact submitted, and that it looks like
@@ -84,7 +84,7 @@ def newBugTracker(form, owner):
     if not form.has_key('Register'): return
     if not form['Register'] == 'Register Bug Tracker': return
     #
-    # Extract the BugSystem details, which are in self.form
+    # Extract the BugTracker details, which are in self.form
     #
     name = form['name']
     title = form['title']
@@ -94,21 +94,21 @@ def newBugTracker(form, owner):
     #
     # XXX Mark Shuttleworth 05/10/04 Hardcoded Bugzilla for the moment
     #
-    bugsystemtype = 1
+    bugtrackertype = 1
     #
-    # Create the new BugSystem
+    # Create the new BugTracker
     #
-    bugsystem = BugSystem(name=name,
-                          bugsystemtype=bugsystemtype,
+    bugtracker = BugTracker(name=name,
+                          bugtrackertype=bugtrackertype,
                           title=title,
                           shortdesc=shortdesc,
                           baseurl=baseurl,
                           contactdetails=contactdetails,
                           owner=owner)
     #
-    # return the bugsystem
+    # return the bugtracker
     #
-    return bugsystem
+    return bugtracker
 
 
 class MaloneApplicationView(object):
@@ -210,7 +210,9 @@ class MaloneBugAddForm(object):
 # the MaloneBugView class with its ViewPageTemplateFile attributes
 class MaloneBugView(object):
     # XXX fix these horrific relative paths
-    watchPortlet = ViewPageTemplateFile('../launchpad/templates/portlet-bug-watch.pt')
+    watchPortlet = ViewPageTemplateFile(
+            '../launchpad/templates/portlet-bug-watch.pt'
+            )
     productAssignmentPortlet = ViewPageTemplateFile(
             '../launchpad/templates/portlet-bug-productassignment.pt'
             )
@@ -579,7 +581,7 @@ class SourcepackageView(object):
         return rv
 
 
-class BugSystemSetView(object):
+class BugTrackerSetView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -599,21 +601,21 @@ class BugSystemSetView(object):
         #
         # Try to process the form
         #
-        bugsystem = newBugTracker(self.form, owner)
-        if not bugsystem: return
+        bugtracker = newBugTracker(self.form, owner)
+        if not bugtracker: return
         # Now redirect to view it again
         self.request.response.redirect(self.request.URL[-1])
 
 
 
-class BugSystemView(object):
+class BugTrackerView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.form = request.form
 
     def edit(self):
-        """Process a form to update or edit the details of a BugSystem
+        """Process a form to update or edit the details of a BugTracker
         object. This method is triggered by a tal:dummy element in the page
         template, so it is run even when the page is first displayed. It
         determines whether or not a form has been submitted, and if so it
@@ -627,7 +629,7 @@ class BugSystemView(object):
         if not self.form.has_key('Update'): return
         if not self.form['Update'] == 'Update Bug Tracker': return
         #
-        # Update the BugSystem, which is in self.context
+        # Update the BugTracker, which is in self.context
         #
         self.context.title = self.form['title']
         self.context.shortdesc = self.form['shortdesc']
@@ -637,3 +639,22 @@ class BugSystemView(object):
         # Now redirect to view it again
         #
         self.request.response.redirect(self.request.URL[-1])
+
+
+#
+# Bug Reports
+#
+class BugsAssignedReportView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = self.request.form
+
+    def update(self):
+        #
+        # Default to showing bugs assigned to the logged in user.
+        #
+        user = IPerson(self.request.principal).id
+        self.context.user = user
+

@@ -159,22 +159,7 @@ class BrowserPublication(BrowserPub):
     # If this becomes untrue at some point, the code will need to be
     # revisited.
 
-    # XXX move me
-
-    def beforeTraversal(self, request):
-        newInteraction(request)
-        transaction.begin()
-
-        # Open the ZODB.
-        conn = self.db.open('')
-        cleanup = Cleanup(conn.close)
-        request.hold(cleanup)  # Close the connection on request.close()
-
-        self.openedConnection(conn)
-
-        root = conn.root()
-        canonical.zodb.handle_before_traversal(root)
-
+    def clearSQLOSCache(self):
         # Big boot for fixing SQLOS transaction issues - nuke the
         # connection cache at the start of a transaction. This shouldn't
         # affect performance much, as psycopg does connection pooling.
@@ -194,6 +179,22 @@ class BrowserPublication(BrowserPub):
         #con = sqlos.connection.getConnection(None, name)
         #t = transaction.get_transaction()
         #t.join(con._dm)
+
+    def beforeTraversal(self, request):
+        newInteraction(request)
+        transaction.begin()
+
+        # Open the ZODB.
+        conn = self.db.open('')
+        cleanup = Cleanup(conn.close)
+        request.hold(cleanup)  # Close the connection on request.close()
+
+        self.openedConnection(conn)
+
+        root = conn.root()
+        canonical.zodb.handle_before_traversal(root)
+
+        self.clearSQLOSCache()
 
         # Set the default skin.
         adapters = zapi.getService(zapi.servicenames.Adapters)

@@ -23,11 +23,12 @@
             </td>
             <td>
                 <span
-                    tal:omit-tag="" tal:condition="bugass/binarypackage"
-                    tal:content="bugass/binarypackage/title">
-                    $BinarypackageName.name-$Binarypackage.version
+                    tal:omit-tag="" tal:condition="bugass/binarypackagename"
+                    tal:content="bugass/binarypackagename">
+                    $BinarypackageName.name
                 </span>
-                <span tal:omit-tag="" tal:condition="not:bugass/binarypackage">
+                <span tal:omit-tag=""
+                tal:condition="not:bugass/binarypackagename">
                     (none)
                 </span>
             </td>

@@ -16,17 +16,27 @@
         <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IMaloneBug" />
     </content>
 
+    <content class="canonical.launchpad.database.BugsAssignedReport">
+        <allow interface="canonical.launchpad.interfaces.IBugsAssignedReport" />
+        <require permission="zope.View"
+        set_attributes="user" />
+    </content>
+
+    <utility
+        factory="canonical.launchpad.database.BugsAssignedReport"
+        provides="canonical.launchpad.interfaces.IBugsAssignedReport" />
+        
     <content class=".browser.BugContainer">
         <allow interface="canonical.launchpad.interfaces.IBugContainer" />
     </content>
 
-    <content class="canonical.launchpad.database.BugSystemSet">
-        <allow interface="canonical.launchpad.interfaces.IBugSystemSet" />
+    <content class="canonical.launchpad.database.BugTrackerSet">
+        <allow interface="canonical.launchpad.interfaces.IBugTrackerSet" />
     </content>
 
     <utility
-        factory="canonical.launchpad.database.BugSystemSet"
-        provides="canonical.launchpad.interfaces.IBugSystemSet" />
+        factory="canonical.launchpad.database.BugTrackerSet"
+        provides="canonical.launchpad.interfaces.IBugTrackerSet" />
     
     <utility
         factory=".browser.BugContainer"

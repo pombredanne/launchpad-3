@@ -18,10 +18,10 @@
                 set_schema="canonical.launchpad.interfaces.IBugExternalRef" />
     </content>
 
-    <content class="canonical.launchpad.database.BugSystem">
-        <allow interface="canonical.launchpad.interfaces.IBugSystem" />
+    <content class="canonical.launchpad.database.BugTracker">
+        <allow interface="canonical.launchpad.interfaces.IBugTracker" />
         <require permission="zope.View"
-            set_schema="canonical.launchpad.interfaces.IBugSystem" />
+            set_schema="canonical.launchpad.interfaces.IBugTracker" />
     </content>
 
     <content class="canonical.launchpad.database.BugWatch">

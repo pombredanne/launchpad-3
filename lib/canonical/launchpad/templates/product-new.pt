@@ -120,7 +120,7 @@
                     be the same as the overall project home page.
                   </div>
 
-                <input type="text" name="url" size="30"
+                <input type="text" name="homepageurl" size="30"
                        value="http://" />
         </div>
 

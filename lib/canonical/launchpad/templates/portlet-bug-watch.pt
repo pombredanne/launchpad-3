@@ -8,7 +8,7 @@
         <tr tal:repeat="watch context/watches"
             tal:attributes="onclick 
                 string:window.location='watches/${watch/id}/+edit';">
-            <td tal:content="watch/bugsystem/title">$BugSystem.title</td>
+            <td tal:content="watch/bugtracker/title">$BugTracker.title</td>
             <td tal:content="watch/remotebug">$BugWatch.remotebug</td>
             <td tal:content="watch/remotestatus">
                $BugWatch.remotestatus 

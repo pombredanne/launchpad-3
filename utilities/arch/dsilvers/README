@@ -1,0 +1,15 @@
+Don't touch this:
+arch-tag: e44a1be4-db60-4cae-a0fc-4f8f66ac72b9
+Don't touch the above
+
+pqm-chinstrap-merge: does a tla-mirror-here and then an
+                     arch-submit-merge combining all its commandline
+                     args into the reason argument before sending on
+                     to chinstrap's PQM
+
+tla-mirror-here: finds the tree-version of the tree you're in and does a
+                 tla archive-mirror of that archive.
+
+tla-star-merge-here: checks the tree is tree-lint clean. Then hives off any
+                     uncommitted changes to an undo tree; does the star-merge
+                     commits the star-merge and then redoes any undo it made.

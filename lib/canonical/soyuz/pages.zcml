@@ -148,7 +148,7 @@
                                           getter="__getitem__" />
    <pages for="canonical.soyuz.sql.DistroReleaseSourcesApp"
 	  allowed_attributes="results"
-      class="canonical.soyuz.browser.DistroReleaseSourcesView"
+          class="canonical.soyuz.browser.DistroReleaseSourcesView"
 	  permission="zope.Public">
 	<page  name="index.html"
           template="../launchpad/templates/sourcepackage-list.pt"
@@ -318,7 +318,8 @@
 	 name="+join"
        />
 
-<traverse for="canonical.soyuz.sql.DistroBinariesApp" getter="__getitem__" />
+<traverse for="canonical.soyuz.sql.DistroBinariesApp" 
+	  getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroBinariesApp"
 	  allowed_attributes="results"
@@ -331,17 +332,17 @@
    </pages>
 
 
-<traverse for="canonical.soyuz.sql.DistroReleaseBinariesApp" getter="__getitem__" />
+<traverse for="canonical.soyuz.sql.DistroReleaseBinariesApp" 
+          getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sql.DistroReleaseBinariesApp"
+   <page for="canonical.soyuz.sql.DistroReleaseBinariesApp"
 	  allowed_attributes="results"
-	  permission="zope.Public">
-
-	<page  name="index.html"
+	  permission="zope.Public"
+	  name="index.html"
+     	  class="canonical.soyuz.browser.DistroReleaseBinariesView"
           template="../launchpad/templates/binarypackage-list.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/index.html"
 	/>
-   </pages>
 
   <page for="canonical.soyuz.sql.DistroReleaseBinariesApp"
          permission="zope.Public"
@@ -433,7 +434,6 @@
         />
 
   <pages for="canonical.launchpad.interfaces.IProjectSet"
-         class="canonical.soyuz.browser.ViewProjects"
          permission="zope.Public">
     <page name="index.html"
           template="../launchpad/templates/soyuz-projects-index.pt"
@@ -448,52 +448,6 @@
           lp:url="Soyuz/projects/+new"
           />
   </pages>
-
- <traverse for="canonical.launchpad.interfaces.IProjectSet" function="canonical.soyuz.browser.urlTraverseProjects" />
-
-
-    <pages for="canonical.launchpad.interfaces.IProject"
-         class="canonical.soyuz.browser.ViewProject"
-         permission="zope.Public">
-        <page name="index.html"
-            template="../launchpad/templates/soyuz-project-index.pt"
-            lp:url="Soyuz/projects/$Project.name/index.html" />
-        <page name="products+new"
-            template="../launchpad/templates/product-add.pt"
-            lp:url="Soyuz/projects/$Project.name/products+new" />
-    </pages>
-
-    <traverse for="canonical.launchpad.interfaces.IProject" 
-        function="canonical.soyuz.browser.urlTraverseProducts" />
-
-    <pages for="canonical.launchpad.interfaces.IProduct"
-        class="canonical.soyuz.browser.ViewProduct"
-        permission="zope.Public">
-        <page name="index.html"
-            template="../launchpad/templates/soyuz-product-index.pt"
-            lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/index.html"
-            />
-        <page name="syncs+new"
-            template="../launchpad/templates/sourcesource-add.pt"
-            lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/syncs+new"
-            />
-    </pages>
-
-<!--
-    XXX MARK-ENABLED BUSTAGE
-  <traverse for="canonical.launchpad.interfaces.IProduct" function="canonical.soyuz.browser.urlTraverseSyncs" />
-
-  <pages for="canonical.launchpad.interfaces.ISync"
-         class="canonical.soyuz.browser.ViewSync"
-         permission="zope.Public">
-    <page name="index.html"
-          template="../launchpad/templates/sourcesource-index.pt"
-          lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/?syncs?/$Sync.name/index.html"
-          />
-  </pages>
--->
-
-
 
 </configure>
 <!-- arch-tag: d60390fd-285e-4aa1-844e-24e11159e74c -->

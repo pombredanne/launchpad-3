@@ -39,6 +39,14 @@
       for="canonical.launchpad.interfaces.IProduct"
       name="+index" />
 
+  <browser:traverse
+      for="canonical.launchpad.interfaces.IProduct"
+      function="canonical.doap.browser.traverseProduct" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.ISourceSource"
+      name="+index" />
+
   <include file="pages.zcml" />
   <include file="forms.zcml" />
   <include file="resources.zcml" />

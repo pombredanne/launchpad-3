@@ -289,8 +289,15 @@
     <allow interface="canonical.launchpad.interfaces.IProduct"/>
   </content>
   
-  <content class="canonical.soyuz.importd.Sync">
-    <allow interface="canonical.launchpad.interfaces.ISync"/>
+  <content class="canonical.launchpad.database.SourceSource">
+    <allow interface="canonical.launchpad.interfaces.ISourceSource"/>
+    <require
+     permission="launchpad.AnyPerson"
+     set_attributes="title description cvsroot cvsbranch cvsmodule
+                     cvstarfileurl svnrepository releaseroot releaseverstyle
+                     releasefileglobe newarchive newbranchcategory
+                     newbranchbranch newbranchversion product"
+     />
   </content>
 
 

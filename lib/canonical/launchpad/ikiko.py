@@ -350,46 +350,6 @@ class IRelease(Interface):
 
 ################################################################
  
-#
-# XXX Mark Shuttleworth comments 03/10/04
-#     Please let's get rid of this ISync interface in favour of the
-#     ISourceSource interface to be consistent with the rest of Launchpad
-#     naming conventions.
-#
-class ISync(Interface):
-    """A sync job"""
-
-    name = Attribute("the sourcesource name, not title, no matter how much you think it should be")
-    title = Attribute("duh")
-    description = Attribute("duh")
-    cvsroot = Attribute("duh")
-    cvsmodule = Attribute("duh")
-    cvstarfile = Attribute("duh")
-    branchfrom = Attribute("duh")
-    svnrepository = Attribute("duh")
-    archarchive = Attribute("the target archive")
-    category = Attribute("duh")
-    branchto = Attribute("duh")
-    archversion = Attribute("duh")
-    archsourcegpgkeyid = Attribute("duh")
-    archsourcename = Attribute("duh")
-    archsourceurl = Attribute("duh")
-    def autosync():
-        """enable this sourcesource for automatic syncronisation"""
-    def autosyncing():
-        """is the sourcesource enabled for automatic syncronisation?"""
-    def canChangeProduct():
-        """is this sync allowed to have its product changed?"""
-    def changeProduct(product):
-        """change the product this sync belongs to to be 'product'"""
-    product=Attribute ("a product backlink for this sync")
-    def enable():
-        """enable this sync"""
-    def enabled():
-        """is the sync enabled?"""
-    def update(**kwargs):
-        """update a Sync, possibly reparenting"""
-
 class IPackageSet(Interface):
     """A set of packages"""
     def __getitem__(name):

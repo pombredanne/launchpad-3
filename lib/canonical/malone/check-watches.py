@@ -3,34 +3,55 @@
 Cron job to run daily to check all of the BugWatches
 """
 
-from canonical.launchpad.database import BugWatch, BugSystem
-from externalsystem import ExternalSystem
+from canonical.launchpad.database import BugWatch, BugTracker
+from canonical.database.sqlbase import SQLBase
+import sqlobject, externalsystem
 
 # This script probably doesn't work yet, it'll get cleaned up
 # after I get it tagged over to my desktop machine again. --dave
 
+versioncache = {}
+
 def check_one_watch(watch):
-    bugsystem = watch.bugsystem
-    try:
-        remotesystem = ExternalSystem(bugsystem)
-    # XXX this name doesn't exist anywhere
-    except UnknownBugSystemTypeError, val:
-        print "*** WARNING: Bugsystem Type '%s' is not known" % (
-            val.bugsystemtypename, )
-        print "    Skipping %s bug %s watch on bug %s" % (
-            val.bugsystemname, watch.remotebug, watch.bug)
+    bugtracker = watch.bugtracker
+    if versioncache.has_key(bugtracker.baseurl):
+        version = versioncache[bugtracker.baseurl]
     else:
+        version = None
+    print "Checking: %s %s for bug %d" % (bugtracker.name,
+        watch.remotebug, watch.bug.id)
+    try:
+        remotesystem = externalsystem.ExternalSystem(bugtracker,version)
+    # XXX this name doesn't exist anywhere
+    except externalsystem.UnknownBugTrackerTypeError, val:
+        print "*** WARNING: BugTrackerType '%s' is not known" % (
+            val.bugtrackertypename, )
+        print "    Skipping %s bug %s watch on bug %s" % (
+            val.bugtrackername, watch.remotebug, watch.bug)
+        return
+    except externalsystem.BugTrackerConnectError, val:
+        print "*** WARNING: Got error trying to contact %s" % bugtracker.name
+        print "    %s" % val
+        return
+    else:
+        versioncache.update({ bugtracker.baseurl : remotesystem.version })
         remotestatus = remotesystem.get_bug_status(watch.remotebug)
         if remotestatus != watch.remotestatus:
+            print "it's changed - updating"
+            if remotestatus == None:
+                remotestatus = 'UNKNOWN'
             watch.remotestatus = remotestatus
-            watch.lastchanged = now #### XXX - FIX THIS ####
-        watch.lastchecked = now #### XXX - FIX THIS ####
-    
+            watch.lastchanged = 'NOW'
+        watch.lastchecked = 'NOW'
 
 def main():
-    ### TODO - need to look up SQL for postgres; this is probably
-    #          mysql dialect
-    watches = BugWatch.select("(lastchecked > interval 1 days)")
+    uri = 'postgres:///launchpad_test'
+    SQLBase.initZopeless(sqlobject.connectionForURI(uri))
+
+    # We want 1 day, but we'll use 23 hours because we can't count on the cron
+    # job hitting exactly the same time every day
+    watches = BugWatch.select(
+        "(lastchecked < (now() - interval '23 hours'))")
     for watch in watches:
         check_one_watch(watch)
 
