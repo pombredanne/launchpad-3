@@ -11,6 +11,7 @@ launchpad_test: .FORCE
 	psql -d ${DBNAME} -f ../default.sql
 	psql -d ${DBNAME} -f ../languages.sql
 	psql -d ${DBNAME} -f ../sampledata.sql
+	psql -d ${DBNAME} -f ../sampledata-rosetta.sql
 
 .FORCE:
 
