@@ -2,6 +2,43 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-19 11:10:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1218
+
+    Summary:
+      allow uploading tar files when creating a PO template
+    Revision:
+      launchpad--devel--0--patch-1218
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-416
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-417
+       remove redirect when creating a template so that status messages are always shown
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-418
+       allow uploading tar files when creating a PO template
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-419
+       fix Rosetta browser unit test
+    
+     * daf@canonical.com--2004/launchpad--devel--0--patch-420
+       fix Rosetta browser unit test some more
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/tests/test_browser.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--devel--0--patch-416
+     daf@canonical.com--2004/launchpad--devel--0--patch-417
+     daf@canonical.com--2004/launchpad--devel--0--patch-418
+     daf@canonical.com--2004/launchpad--devel--0--patch-419
+     daf@canonical.com--2004/launchpad--devel--0--patch-420
+
+
 2005-01-19 11:00:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1217
 
     Summary:

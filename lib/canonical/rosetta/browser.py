@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-import base64, popen2, os, re, sys
+import base64, popen2, os, os.path, re, sys
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
 from StringIO import StringIO
@@ -24,6 +24,8 @@ from canonical.launchpad.database import Language, Person, POTemplate, POFile
 
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
+from canonical.rosetta.tar import string_to_tarfile, examine_tarfile
+
 from canonical.lp.dbschema import RosettaImportStatus
 
 charactersPerLine = 50
@@ -260,6 +262,99 @@ def import_pot_or_po(potemplate_or_pofile, importer, contents):
     potemplate_or_pofile.rawimporter = importer
     potemplate_or_pofile.rawimportstatus = RosettaImportStatus.PENDING.value
 
+def is_tar_filename(filename):
+    '''
+    Check whether a filename looks like a filename that belongs to a tar file,
+    possibly one compressed somehow.
+    '''
+
+    return (filename.endswith('.tar') or
+            filename.endswith('.tar.gz') or
+            filename.endswith('.tar.bz2'))
+
+def check_tar(tf, pot_paths, po_paths):
+    '''
+    Check an uploaded tar file for problems. Returns an error message if a
+    problem was detected, or None otherwise.
+    '''
+
+    # Check that at most one .pot file was found.
+
+    if len(pot_paths) > 1:
+        return (
+            "More than one PO template was found in the tar file you "
+            "uploaded. This is not currently supported.")
+
+    # Check the syntax of the .pot file, if present.
+
+    if len(pot_paths) > 0:
+        pot_contents = tf.extractfile(pot_paths[0]).read()
+
+        if not check_po_syntax(pot_contents):
+            return (
+                "There was a problem parsing the PO template file in the tar "
+                "file you uploaded.")
+
+    # Complain if no files at all were found.
+
+    if pot_paths is () and po_paths is ():
+        return (
+            "The tar file you uploaded could not be imported. This may be "
+            "because there was more than one 'po' directory, or because the "
+            "PO templates and PO files found did not share a common "
+            "location.")
+
+    return None
+
+def import_tar(potemplate, importer, tf, pot_paths, po_paths):
+    '''
+    Import a tar file into Rosetta, by extracting PO templates and PO files
+    from the paths specified. A status message is returned.
+
+    Currently, it is assumed that since check_tar will have been called before
+    import_tar, checking the syntax of the PO template will not be necessary.
+    The syntax of PO files is checked, but errors are not fatal.
+    '''
+
+    for path in pot_paths:
+        import_pot_or_po(potemplate, importer, tf.extractfile(path).read())
+
+    languages = getUtility(ILanguageSet)
+    bad = []
+
+    for path in po_paths:
+        contents = tf.extractfile(path).read()
+
+        if not check_po_syntax(contents):
+            bad.append(path)
+            continue
+
+        basename = os.path.basename(path)
+        root, extension = os.path.splitext(basename)
+
+        if '@' in root:
+            # PO files with variants are not currently supported. If they
+            # were, we would use some code like this:
+            #
+            #   code, variant = [ unicode(x) for x in root.split('@', 1) ]
+
+            continue
+        else:
+            code, variant = root, None
+
+        pofile = potemplate.getOrCreatePOFile(code, variant, importer)
+
+        import_pot_or_po(pofile, importer, contents)
+
+    message = ("%d files were queued for import from the tar file you "
+        "uploaded." % (len(pot_paths + po_paths) - len(bad)))
+
+    if bad != []:
+        message += (
+            "The following files were skipped due to syntax errors or other "
+            "problems: " + ', '.join(bad) + ".")
+
+    return message
 
 class TabIndexGenerator:
     def __init__(self):
@@ -349,16 +444,37 @@ class ProductView:
 
         filename = file.filename
 
-        if not filename.endswith('.pot'):
-            self.status_message = 'You must upload a .pot file.'
+        if not (filename.endswith('.pot') or is_tar_filename(filename)):
+            self.status_message = (
+                'You must upload a PO template or a tar file.')
             return
 
         contents = file.read()
 
-        if not check_po_syntax(contents):
-            # The file is not correct.
-            self.status_message = 'Please, review the pot file seems to have a problem'
-            return
+        if filename.endswith('.pot'):
+            if not check_po_syntax(contents):
+                # The file is not correct.
+                self.status_message = 'Please, review the pot file seems to have a problem'
+                return
+        else:
+            tf = string_to_tarfile(contents)
+            pot_paths, po_paths = examine_tarfile(tf)
+
+            if pot_paths is ():
+                self.status_message = (
+                    "No PO templates were found in the tar file you "
+                    "uploaded. A PO template file must be present when "
+                    "creating a PO template in Rosetta.")
+                return
+
+            # Perform general check on the tar file, and stop before creating
+            # the template if there was a problem.
+
+            error = check_tar(tf, pot_paths, po_paths)
+
+            if error is not None:
+                self.status_message = error
+                return
 
         # This part is only used for our internal script to upload .po and
         # .pot files from the web interface. If we don't have all fields,
@@ -408,10 +524,13 @@ class ProductView:
 
         self._templates.append(potemplate)
 
-        import_pot_or_po(potemplate, owner, contents)
-
-        # now redirect to view the potemplate.
-        self.request.response.redirect(potemplate.name)
+        if filename.endswith('.pot'):
+            import_pot_or_po(potemplate, owner, contents)
+            self.status_message = (
+                "Your PO template has been queued for import.")
+        else:
+            self.status_message = (
+                import_tar(potemplate, owner, tf, pot_paths, po_paths))
 
     def templates(self):
         if self._templangs is not None:
@@ -590,6 +709,13 @@ class ViewPOTemplate:
             return
 
         filename = file.filename
+
+        # XXX: Dafydd Harries, 2005/01/19
+        # Add support for tar files here. The problem with this is that this
+        # form always redirects if there is no error, which obliterates
+        # confirmatory status messages. I think the solution is not to allow
+        # renames to be done as the same time as uploads -- i.e. split the two
+        # operations into separate forms.
 
         if filename.endswith('.pot'):
             potfile = file.read()
