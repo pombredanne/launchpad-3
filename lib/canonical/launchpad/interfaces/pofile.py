@@ -181,6 +181,9 @@ class IEditPOTemplate(IPOTemplate):
         Returns the newly created message set.
         """
 
+    def doRawImport():
+        """Executes the import of the rawfile field if it's needed."""
+
 
 class IPOTMsgSet(Interface):
     """A collection of message IDs."""
@@ -393,6 +396,9 @@ class IEditPOFile(IPOFile):
 
         Returns the newly created message set.
         """
+
+    def doRawImport():
+        """Executes the import of the rawfile field if it's needed."""
 
 
 class IPOMsgSet(Interface):

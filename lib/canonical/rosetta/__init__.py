@@ -10,7 +10,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import IRosettaApplication
 from canonical.publication import rootObject
-from canonical.launchpad.database import POTemplate, Product
+from canonical.launchpad.database import Product
 
 class RosettaApplication:
     implements(IRosettaApplication)

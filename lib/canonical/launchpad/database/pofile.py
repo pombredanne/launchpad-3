@@ -21,6 +21,12 @@ from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.lp.dbschema import RosettaImportStatus
 from canonical.database.constants import DEFAULT, UTC_NOW
 
+# XXX: Carlos Perello Marin 01/12/2004 Disabled because it breaks Launchpad.
+# The problem seems to be that canonical/rosetta/__init__.py is not able to
+# include the Product class.
+# This is needed for POTemplate.doRawImport and POFile.doRawImport
+#from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
+
 standardPOTemplateCopyright = 'Canonical Ltd'
 
 # XXX: in the four strings below, we should fill in owner information
@@ -424,6 +430,26 @@ class POTemplate(SQLBase):
             messageID = POMsgID(msgid=text)
 
         return self.createMessageSetFromMessageID(messageID)
+
+    def doRawImport(self):
+        # XXX: Carlos Perello Marin 01/12/2004 Disabled. Look at the
+        # TemplateImporter import up.
+        return
+        
+        importer = TemplateImporter(self, self.rawimporter)
+    
+        file = StringIO(base64.decodestring(self.rawfile))
+    
+        try:
+            importer.doImport(file)
+        except:
+            # The import failed, we mark it as failed so we could review it
+            # later in case it's a bug in our code.
+            self.rawimportstatus = RosettaImportStatus.FAILED.value
+        else:
+            # The import has been done, we mark it that way.
+            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+
 
 
 class POTMsgSet(SQLBase):
@@ -876,6 +902,22 @@ class POFile(SQLBase):
             return sightings[0]
         except IndexError:
             return None
+
+    def doRawImport(self):
+        # XXX: Carlos Perello Marin 01/12/2004 Disabled. Look at the
+        # POTemplateImporter import up.
+        return
+
+        importer = POFileImporter(self, self.rawimporter)
+    
+        file = StringIO(base64.decodestring(self.rawfile))
+    
+        try:
+            importer.doImport(file)
+        except:
+            self.rawimportstatus = RosettaImportStatus.FAILED.value
+        else:
+            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
 
 
 class POMsgSet(SQLBase):
