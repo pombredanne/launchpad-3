@@ -5,8 +5,36 @@
 <body>
 
 <div metal:fill-slot="main">
-  <h1>Bug Activity</h1>
-  <table class="listing">
+ 
+<div id="content" class="documentEditable">
+
+    <ul class="contentViews">
+
+            
+              <li id="contentview-view" class="plain">
+                <a href=".">View</a>
+              </li>
+            
+            
+              <li id="contentview-edit" class="plain">
+                <a href="+edit">Edit</a>
+              </li>
+            
+              <li id="contentview-edit" class="selected">
+                <a href="activity">History</a>
+              </li>
+
+    </ul>
+
+    <div class="contentActions">
+    &nbsp;
+    </div>
+
+    <div class="documentContent" id="region-content">
+
+    <h1>Bug Activity</h1>
+    
+    <table class="listing">
     <tr>
       <th>Date</th>
       <th>What changed</th>
@@ -24,6 +52,9 @@
       <td tal:content="log/message">message</td>
     </tr>
   </table>
+</div>
+
+</div>
 </div>
 
 </body>

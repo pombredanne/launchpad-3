@@ -14,26 +14,8 @@
 
 <div metal:fill-slot="main">
 
-    <h1><span tal:content="context/title">TITLE</span> Overview</h1>
+    <h1>New Package....</h1>
 
-    <table class="listing">
-      <tr>
-        <th>
-	  <a href="+edit"> EDIT </a>
-	</th>
-        <th>
-	  <a href="releases/+new"> NEW </a>
-	</th>
-        <th>
-	  <a href="releases"> RELEASES </a>
-	</th>
-      </tr>
-    </table>
-
-
-<p> <a href="src">SRC</a>
-<p> <a href="bin">BIN</a>
-<p> <a href="people">PEOPLE</a>
 </div>
 
 </body>

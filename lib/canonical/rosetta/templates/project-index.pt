@@ -94,7 +94,7 @@
 
         </div>
     </div> <!-- tal:condition="view/thereAreTemplates -->
-
+  
     <div tal:condition="not: view/thereAreTemplates">
         <p>
         Rosetta doesn't currently know of any translatable resources for

@@ -33,8 +33,8 @@ expected = '''# traducci\xc3\xb3n de es.po al Spanish
 msgid ""
 msgstr ""
 "Project-Id-Version: es\\n"
-"POT-Creation-Date: 2004-07-02 14:48-0400\\n"
-"PO-Revision-Date: 2004-07-07 20:52+0200\\n"
+"POT-Creation-Date: 2004-08-17 11:10+0200\\n"
+"PO-Revision-Date: 2004-08-15 19:32+0200\\n"
 "Last-Translator: Francisco Javier F. Serrador <serrador@cvs.gnome.org>\\n"
 "Language-Team: Spanish <traductores@es.gnome.org>\\n"
 "MIME-Version: 1.0\\n"
@@ -47,23 +47,86 @@ msgstr ""
 #: a11y/addressbook/ea-addressbook-view.c:94
 #: a11y/addressbook/ea-addressbook-view.c:103
 #: a11y/addressbook/ea-minicard-view.c:119
-#, c-source
-msgid "evolution addressbook %s"
+msgid "evolution addressbook"
+msgstr "libreta de direcciones de Evolution"
+
+#: a11y/addressbook/ea-minicard-view.c:101
+msgid "current addressbook folder"
+msgstr "carpeta de libretas de direcciones actual"
+
+#: a11y/addressbook/ea-minicard-view.c:102
+#, fuzzy
+msgid "have "
+msgstr "tiene"
+
+#: a11y/addressbook/ea-minicard-view.c:102
+msgid "has "
 msgstr ""
 
-#: a11y/addressbook/ea-addressbook-view.c:94
-#: a11y/addressbook/ea-addressbook-view.c:103
-#: a11y/addressbook/ea-minicard-view.c:119
-#, c-source
-msgid "evolution addressbook %s"
+#: a11y/addressbook/ea-minicard-view.c:104
+msgid " cards"
 msgstr ""
 
-#: a11y/addressbook/ea-addressbook-view.c:94
-#: a11y/addressbook/ea-addressbook-view.c:103
-#: a11y/addressbook/ea-minicard-view.c:119
-#, c-source
-msgid "evolution addressbook %s"
+#: a11y/addressbook/ea-minicard-view.c:104
+msgid " card"
 msgstr ""
+
+#: a11y/addressbook/ea-minicard-view.c:105
+msgid "contact's header: "
+msgstr ""
+
+#: a11y/addressbook/ea-minicard.c:166
+msgid "evolution minicard"
+msgstr ""
+
+#. addressbook:ldap-init primary
+#: addressbook/addressbook-errors.xml.h:2
+msgid "This addressbook could not be opened."
+msgstr ""
+
+#. addressbook:ldap-init secondary
+#: addressbook/addressbook-errors.xml.h:4
+msgid ""
+"This addressbook server might unreachable or the server name may be misspelled "
+"or your network connection could be down."
+msgstr ""
+
+#. addressbook:ldap-auth primary
+#: addressbook/addressbook-errors.xml.h:6
+msgid "Failed to authenticate with LDAP server."
+msgstr ""
+
+#. addressbook:ldap-auth secondary
+#: addressbook/addressbook-errors.xml.h:8
+msgid ""
+"Check to make sure your password is spelled correctly and that you are using a "
+"supported login method. Remember that many passwords are case sensitive; your "
+"caps lock might be on."
+msgstr ""
+
+#: addressbook/gui/component/addressbook-migrate.c:124
+#: calendar/gui/migration.c:188 mail/em-migrate.c:1201
+#, c-format
+msgid "Migrating `%s':"
+msgstr ""
+
+#: addressbook/gui/component/addressbook-migrate.c:1123
+msgid ""
+"The location and hierarchy of the Evolution contact folders has changed since "
+"Evolution 1.x.\\n"
+"\\n"
+"Please be patient while Evolution migrates your folders..."
+msgstr ""
+
+#: addressbook/gui/widgets/e-addressbook-model.c:151
+#, c-format
+msgid "%d contact"
+msgid_plural "%d contacts"
+msgstr[0] "%d contacto"
+msgstr[1] "%d contactos"
+
+#~ msgid "_Add Group"
+#~ msgstr "_Añadir grupo"
 '''
 
 class POExportTestCase(PlacelessSetup, unittest.TestCase):
@@ -83,6 +146,7 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
             raise IndexError, "Couldn't find record in database, please import populate.sql to do the tests."
         export = POExport(poTemplate)
         dump = export.export('cy')
+        print dump
         import difflib, sys
         if dump != expected:
             for l in difflib.unified_diff(

@@ -7,15 +7,37 @@
   <!-- Content directives.  We need to make sure SubURLs and other kinds of
        traversal work properly.  We also need to make security declarations.-->
 
-  <content class="canonical.soyuz.sql.ReleaseContainer">
-    <allow interface="canonical.soyuz.interfaces.IReleaseContainer"/>
+  <content class="canonical.soyuz.sql.DistroReleaseSourcesApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleaseSourcesApp"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
-    <require
-     permission="zope.Public"
-     set_attributes="name title description"
-     />
+  </content>
+
+  <content class="canonical.soyuz.sql.DistroReleaseSourceApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleaseSourceApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.DistroReleasesApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleasesApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.DistroSourcesApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroSourcesApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.DistroPeopleApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroPeopleApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.DistroReleaseApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroReleaseApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
   
+
   <content class="canonical.soyuz.sql.Release">
     <allow interface="canonical.soyuz.interfaces.IRelease"/>
     <require
@@ -24,7 +46,7 @@
      />
   </content>
 
-  <content class="canonical.soyuz.browser.DistrosApplication">
+  <content class="canonical.soyuz.sql.DistrosApp">
     <allow interface="canonical.soyuz.interfaces.IDistributions"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
 
@@ -37,7 +59,6 @@
      set_attributes="name title description"
      />
   </content>
-
 	
   <content class="canonical.soyuz.sql.BinaryPackages">
     <allow interface="canonical.soyuz.interfaces.IPackageSet"/>

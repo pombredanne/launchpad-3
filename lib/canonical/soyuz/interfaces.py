@@ -39,7 +39,7 @@ class IDistribution(Interface):
         """Returns an associated IReleaseContainer"""
 
 
-class IReleaseContainer(Interface):
+class IDistroReleasesApp(Interface):
     """Root object for collection of Releases"""
     distribution = Attribute("distribution")
 
@@ -58,6 +58,54 @@ class IReleaseContainer(Interface):
         Returns that project.
         """
 
+class IDistroReleaseSourcesApp(Interface):
+    """Root object for collection of sources"""
+    release = Attribute("release")
+
+    def __getitem__(name):
+        """retrieve distribution by name"""
+
+    def sources():
+        """retrieve all projects"""
+
+    def __iter__():
+        """retrieve an iterator"""
+
+# proxy for sourcepackages
+class IDistroReleaseSourceApp(Interface):
+    """A Release Proxy """
+    release = Attribute("Release")
+    def getPackageContainer(name):
+        """ Returns the associated IPackageSet """
+
+class IDistroReleaseApp(Interface):
+    """A Release Proxy """
+    release = Attribute("Release")
+    def getPackageContainer(name):
+        """ Returns the associated IPackageSet """
+######
+
+
+class IDistroSourcesApp(Interface):
+    """A Distribution Source Tag """
+    distribution = Attribute("Distribution")
+
+    def __getitem__(name):
+        """retrieve sourcepackges by release"""
+
+    def __iter__():
+        """retrieve an iterator"""
+
+class IDistroPeopleApp(Interface):
+    """A Distribution People Tag """
+    distribution = Attribute("Distribution")
+    people = Attribute("People")
+    def __getitem__(release):
+        """retrieve people by release"""
+
+    def __iter__():
+        """retrieve an iterator"""
+
 class IRelease(Interface):
     """A Release Object"""
     distribution = Attribute("The release's reference.")
@@ -70,8 +118,6 @@ class IRelease(Interface):
     releasestate = Attribute("The release's state.")
     datereleased = Attribute("The datereleased.")
 
-    def getPackageContainer(name):
-        """ Returns the associated IPackageSet """
 
 ################################################################
    
@@ -205,8 +251,9 @@ class IBinaryPackage(Interface):
 class IBinaryPackageBuild(Interface):
     """A binary package build, e.g apache-utils 2.0.48-4_i386"""
     # See the BinaryPackageBuild table
-
+    
     version = Attribute("A version string")
+    maintainer = Attribute("Maintainer")
     sourcePackageRelease = Attribute("An ISourcePackageRelease")
     sourcepackage = Attribute("An ISourcePackage")
     binaryPackage = Attribute("An ISourcePackageRelease")

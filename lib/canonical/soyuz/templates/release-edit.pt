@@ -14,23 +14,23 @@
 
 <div metal:fill-slot="main">
 
-   <h1>Editing <span tal:content="context/title">Release</span> Release 
+   <h1>Editing <span tal:content="context/release/title">Release</span> Release 
 	Information </h1>
 
     <form name="add" action="" method="POST">
 	<table>
 
 	<tr><th>Name</th> <th><input type="text" name="name" 
-	tal:attributes="value context/name|nothing" /></th></tr>
+	tal:attributes="value context/release/name|nothing" /></th></tr>
 
 	<tr><th>Title</th> <th><input type="text" name="title" 
-	tal:attributes="value context/title|nothing" /></th></tr>
+	tal:attributes="value context/release/title|nothing" /></th></tr>
 
     	<tr><th> Description</th> <th><input type="text" name="description" 
-	tal:attributes="value context/description|nothing" /></th></tr>
+	tal:attributes="value context/release/description|nothing" /></th></tr>
 
 	<tr><th>Version</th> <th><input type="text" name="version" 
-        tal:attributes="value context/version|nothing" /> </th> </tr>
+        tal:attributes="value context/release/version|nothing" /> </th> </tr>
 
 	<tr><th></th><th><input type="submit" value="shoot"/></th></tr>
 

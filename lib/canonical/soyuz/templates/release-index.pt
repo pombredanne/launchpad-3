@@ -14,9 +14,8 @@
 
 <div metal:fill-slot="main">
 
-    <h1><span tal:content="context/name">name</span> Release overview</h1>
-    <h3><span tal:content="context/title">TITLE</span> </h3>
-
+    <h1><span tal:content="context/release/title">TITLE</span> Release overview</h1>
+    <h3><span tal:content="context/release/name">name</span></h3>
 
     <table class="listing">
 
@@ -42,7 +41,11 @@
          <a href="binary/"> Binaries Packages of this Release</a>
        </th> 
     </tr>
+
 </div>
+
+
+
 
 </body>
 </html>

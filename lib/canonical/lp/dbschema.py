@@ -29,7 +29,7 @@ __all__ = ('ManifestEntryType', 'Packaging', 'BranchRelationships',
 'CodereleaseRelationships', 'BugInfestationStatus', 'BugAssignmentStatus',
 'BugPriority', 'BugSeverity', 'BugExternalReferenceType', 'BugRelationship',
 'UpstreamReleaseVersionStyle', 'RevisionControlSystems', 'ArchArchiveType',
-'BugSubscription', 'RosettaTranslationOrigin')
+'BugSubscription', 'RosettaTranslationOrigin', 'DistributionRole')
 
 from zope.interface.advice import addClassAdvisor
 from zope.schema.vocabulary import SimpleVocabulary
@@ -1363,4 +1363,19 @@ class RosettaTranslationOrigin(DBSchema):
          This translation was presented to Rosetta via
        the community web site.
          ''')
+
+
+class DistributionRole(DBSchema):
+    """Distribution Role
+
+    This schema documents the roles that a person can play in
+    a distribution, other than being a package maintainer.
+    """
+
+    RM = Item (1, '''
+        Release Manager
+
+        Release Manager'''
+    )
+
 

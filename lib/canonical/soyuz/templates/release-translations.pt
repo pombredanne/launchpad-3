@@ -14,7 +14,8 @@
 
 <div metal:fill-slot="main">
 
-   <h1>Translations pending for <span tal:content="context/name">Distro</span> Release.....</h1>
+   <h1>Translations pending for <span tal:content="context/release/name">Distro</span> 
+	Release</h1>
 
 </div>
 

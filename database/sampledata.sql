@@ -8,12 +8,20 @@
 /* 
  Sample data for Soyuz
 */
+ 
 
 -- Schema
 INSERT INTO schema (name, title, description, owner, extensible) VALUES('Mark schema', 'TITLE', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
 INSERT INTO Schema (name, title, description, owner, extensible) values('schema', 'SCHEMA', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
 INSERT INTO Schema (name, title, description, owner, extensible) values('trema', 'XCHEMA', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
 INSERT INTO Schema (name, title, description, owner, extensible) values('enema', 'ENHEMA', 'description', (Select id from Person where presentationname = 'Mark Shuttleworth'), true);
+
+
+ -- Label
+INSERT INTO Label (schema, name, title, description)
+VALUES ((SELECT id FROM Schema WHERE name = 'Mark schema'),
+         'blah', 'blah', 'blah');
+
 
 -- Distribution
 INSERT INTO Distribution (name, title, description, domainname, owner) values ('ubuntu', 'Ubuntu Distribution', 'text ...', 'domain', 1);
@@ -30,12 +38,13 @@ INSERT INTO Distrorelease (name, title, description, distribution, version, comp
 
 
 -- Binarypackage
-INSERT INTO Binarypackage (name, title, description) values ('mozilla-firefox', 'Mozilla Firefox', 'some text');
-INSERT INTO Binarypackage (name, title, description) values ('mozilla-thunderbird', 'Mozilla Thunderbird', 'text');
-INSERT INTO Binarypackage (name, title, description) values ('mozilla-browser', 'Mozilla Browser', 'text and so');
-INSERT INTO Binarypackage (name, title, description) values ('emacs21', 'Emacs21 Programming Editor', 'fofofof');
-INSERT INTO Binarypackage (name, title, description) values ('bash-1.8', 'Bash', 'another data');
-
+INSERT INTO Binarypackage (name, title, description) values ('mozilla-firefox-0.8', 'Mozilla Firefox 0.8', 'some text');
+INSERT INTO Binarypackage (name, title, description) values ('mozilla-thunderbird-1.5', 'Mozilla Thunderbird 1.5', 'text');
+INSERT INTO Binarypackage (name, title, description) values ('python-twisted-1.3', 'Python-Twisted 1.3', 'text and so');
+INSERT INTO Binarypackage (name, title, description) values ('bugzilla-2.18', 'Bugzilla 2.18r','bugs ??? where ??');
+INSERT INTO Binarypackage (name, title, description) values ('arch-1.0', 'Arch 1.0', 'another data');
+INSERT INTO Binarypackage (name, title, description) values ('kiwi-2.0', 'Kiwi 2.0', 'pygtk2 ...');
+INSERT INTO Binarypackage (name, title, description) values ('plone-1.0', 'Plone 1.0', 'plone ??? zope ??');
  
  -- ProcessorFamily
 INSERT INTO ProcessorFamily (name, title, description, owner) 
@@ -56,29 +65,130 @@ VALUES ((SELECT id FROM SourcepackageRelease WHERE version = '0.9.1-1'),
  	(SELECT id FROM Processor WHERE name = '386'),
  	1, -- DEB
  	'0.9.1-1',
+        timestamp '2004-06-28 00:00');
+
+INSERT INTO BinarypackageBuild (sourcepackagerelease, binarypackage, processor,
+                                 binpackageformat, version, datebuilt)
+VALUES ((SELECT id FROM SourcepackageRelease WHERE version = '0.9.1-2'),
+         (SELECT id FROM Binarypackage WHERE name = 'mozilla-thunderbird-1.5'),
+ 	(SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- DEB
+ 	'0.9.1-2',
+        timestamp '2004-07-29 00:00');
+
+INSERT INTO BinarypackageBuild (sourcepackagerelease, binarypackage, processor,
+                                 binpackageformat, version, datebuilt)
+VALUES ((SELECT id FROM SourcepackageRelease WHERE version = '0.9.1-3'),
+         (SELECT id FROM Binarypackage WHERE name = 'python-twisted-1.3'),
+ 	(SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- DEB
+ 	'0.9.1-3',
+        timestamp '2004-05-29 00:00');
+
+INSERT INTO BinarypackageBuild (sourcepackagerelease, binarypackage, processor,
+                                 binpackageformat, version, datebuilt)
+VALUES ((SELECT id FROM SourcepackageRelease WHERE version = '0.9.1-4'),
+         (SELECT id FROM Binarypackage WHERE name = 'bugzilla-2.18'),
+ 	(SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- DEB
+ 	'0.9.1-4',
+        timestamp '2004-05-29 00:00');
+
+INSERT INTO BinarypackageBuild (sourcepackagerelease, binarypackage, processor,
+                                 binpackageformat, version, datebuilt)
+VALUES ((SELECT id FROM SourcepackageRelease WHERE version = '0.9.1-5'),
+         (SELECT id FROM Binarypackage WHERE name = 'arch-1.0'),
+ 	(SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- DEB
+ 	'0.9.1-5',
         timestamp '2004-06-29 00:00');
- 
+
+INSERT INTO BinarypackageBuild (sourcepackagerelease, binarypackage, processor,
+                                 binpackageformat, version, datebuilt)
+VALUES ((SELECT id FROM SourcepackageRelease WHERE version = '0.9.1-6'),
+         (SELECT id FROM Binarypackage WHERE name = 'kiwi-2.0'),
+ 	(SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- DEB
+ 	'0.9.1-6',
+        timestamp '2004-03-29 00:00');
+
+INSERT INTO BinarypackageBuild (sourcepackagerelease, binarypackage, processor,
+                                 binpackageformat, version, datebuilt)
+VALUES ((SELECT id FROM SourcepackageRelease WHERE version = '0.9.1-7'),
+         (SELECT id FROM Binarypackage WHERE name = 'plone-1.0'),
+ 	(SELECT id FROM Processor WHERE name = '386'),
+ 	1, -- DEB
+ 	'0.9.1-7',
+        timestamp '2004-06-23 00:00');
+
+
  -- DistroArchRelease
 INSERT INTO DistroArchRelease (distrorelease, processorfamily, architecturetag, owner)
 VALUES ((SELECT id FROM DistroRelease WHERE name = 'warty'),
          (SELECT id FROM ProcessorFamily WHERE name = 'x86'),
-	'Foo',
+	'warty--x86--devel--0',
  	(SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'));
- 
- -- Schema
-INSERT INTO Schema (name, title, description, owner)
-VALUES ('blah', 'blah', 'blah',
-         (SELECT id FROM Person WHERE presentationname = 'Mark Shuttleworth'));
- 
- -- Label
-INSERT INTO Label (schema, name, title, description)
-VALUES ((SELECT id FROM Schema WHERE name = 'blah'),
-         'blah', 'blah', 'blah');
- 
+  
+
 -- BinarypackageUpload
+
 INSERT INTO BinarypackageUpload (binarypackagebuild, distroarchrelease, uploadstatus, component, section, priority) 
 VALUES ((SELECT id FROM BinarypackageBuild WHERE version = '0.9.1-1'),
- 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'Foo'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	4, -- Published
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
+
+INSERT INTO BinarypackageUpload (binarypackagebuild, distroarchrelease, uploadstatus, component, section, priority) 
+VALUES ((SELECT id FROM BinarypackageBuild WHERE version = '0.9.1-2'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	4, -- Published
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
+
+INSERT INTO BinarypackageUpload (binarypackagebuild, distroarchrelease, uploadstatus, component, section, priority) 
+VALUES ((SELECT id FROM BinarypackageBuild WHERE version = '0.9.1-3'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	4, -- Published
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
+
+INSERT INTO BinarypackageUpload (binarypackagebuild, distroarchrelease, uploadstatus, component, section, priority) 
+VALUES ((SELECT id FROM BinarypackageBuild WHERE version = '0.9.1-4'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	4, -- Published
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
+
+INSERT INTO BinarypackageUpload (binarypackagebuild, distroarchrelease, uploadstatus, component, section, priority) 
+VALUES ((SELECT id FROM BinarypackageBuild WHERE version = '0.9.1-5'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	4, -- Published
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
+
+INSERT INTO BinarypackageUpload (binarypackagebuild, distroarchrelease, uploadstatus, component, section, priority) 
+VALUES ((SELECT id FROM BinarypackageBuild WHERE version = '0.9.1-6'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
+ 	4, -- Published
+ 	1, -- FIXME
+ 	1, -- FIXME
+ 	3 -- Standard
+ 	);
+
+INSERT INTO BinarypackageUpload (binarypackagebuild, distroarchrelease, uploadstatus, component, section, priority) 
+VALUES ((SELECT id FROM BinarypackageBuild WHERE version = '0.9.1-7'),
+ 	(SELECT id FROM DistroArchRelease WHERE architecturetag = 'warty--x86--devel--0'),
  	4, -- Published
  	1, -- FIXME
  	1, -- FIXME

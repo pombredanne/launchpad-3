@@ -76,6 +76,7 @@ class LanguageTemplates:
 
 
 class ViewPOTemplate:
+    # XXX: Hardcoded values
     def num_messages(self):
         N = len(self.context)
         if N == 0:
@@ -85,6 +86,7 @@ class ViewPOTemplate:
         else:
             return "%s messages" % N
 
+    # XXX: hardcoded value
     def isPlural(self):
         if len(self.context.sighting('23').pluralText) > 0:
             return True
@@ -107,22 +109,34 @@ class ViewPOFile:
     def untranslated(self):
         return len(self.context.poTemplate) - len(self.context)
 
-
 class TranslatorDashboard:
     def projects(self):
         return getUtility(IProjects)
 
 
 class ViewSearchResults:
-    def projects(self):
-        return getUtility(IProjects)
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        
+        self.projects = getUtility(IProjects)
+        self.queryProvided = 'q' in request.form and \
+            request.form.get('q')
+        self.query = request.form.get('q')
 
+        if self.queryProvided:
+            self.results = self.projects.search(self.query)
+            self.resultCount = self.results.count()
+        else:
+            self.results = []
+            self.resultCount = 0
 
 class ViewPOExport:
+
     def __call__(self):
         self.export = POExport(self.context)
 
-        # XXX: hardcoded values
+        # XXX: hardcoded value
         self.pofile = self.export.export('cy')
 
         self.request.response.setHeader('Content-Type', 'application/x-po')

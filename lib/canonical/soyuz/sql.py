@@ -38,22 +38,96 @@ from canonical.soyuz.database import SoyuzProject as dbProject, SoyuzProduct \
 from canonical.arch.database import Branch, Changeset
 
 
+class DistroReleasesSourcesReleasesApp(object):
+    pass
 
 
 
+class DistrosApp(object):
+    def __getitem__(self, name):
+        return SoyuzDistribution.selectBy(name=name.encode("ascii"))[0]
 
-class ReleaseContainer(object):
+    def __iter__(self):
+    	return iter(SoyuzDistribution.select())
 
+class DistroReleaseApp(object):
+    def __init__(self, release):
+        self.release = release
+        
+    def getPackageContainer(self, name):
+        if name == 'source':
+            return SourcePackages(self.release)
+        if name == 'binary':
+            return BinaryPackages(self.release)
+        else:
+            raise KeyError, name
+
+
+class DistroReleasesApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
 
     def __getitem__(self, name):
-        return Release.selectBy(distributionID=self.distribution.id,
-                                # XXX ascii bogus needs to be revisited
-                                name=name.encode("ascii"))[0]
+        return DistroReleaseApp(Release.selectBy(distributionID=\
+                                                 self.distribution.id,
+                                                 # XXX ascii bogus needs
+                                                 # to be revisited
+                                                 name=name.encode("ascii"))[0])
+    def __iter__(self):
+    	return iter(Release.selectBy(distributionID=self.distribution.id))
+
+
+class DistroSourcesApp(object):
+    def __init__(self, distribution):
+        self.distribution = distribution
+
+    def __getitem__(self, name):
+        return SourcePackages(Release.selectBy(distributionID=\
+                                                        self.distribution.id,
+                                                        # XXX ascii bogus needs
+                                                        # to be revisited
+                                                        name=name.encode\
+                                                        ("ascii"))[0])
 
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
+
+class DistroPeopleApp(object):
+    def __init__(self, distribution):
+        self.distribution = distribution
+        self.people = SoyuzPerson.select()
+
+    def __getitem__(self, name):
+        return SourcePackages(Release.selectBy(distributionID=\
+                                               self.distribution.id,
+                                               # XXX ascii bogus needs
+                                               # to be revisited
+                                               name=name.encode\
+                                               ("ascii"))[0])
+
+    def __iter__(self):
+    	return iter(Release.selectBy(distributionID=self.distribution.id))
+
+
+
+class DistroReleaseSourceApp(object):
+    def __init__(self, release):
+        self.release = release
+        self.sourcepackages = SourcePackages(self)
+        
+    def getPackageContainer(self, name):
+        return SourcePackages(self)
+        
+
+class DistroReleaseSourcesApp(object):
+    def __init__(self, release):
+        self.release = release
+
+    def __getitem__(self, name):
+        return DistroReleaseSourceApp(self, name)
+    
+    def __iter__(self):
+        return [DistroReleaseSourceApp(self, sp.name) for sp in SourcePackage.select()]
 
 
 class BinaryPackage(SQLBase):
@@ -65,7 +139,8 @@ class BinaryPackage(SQLBase):
         StringCol('title', dbName='Title'),
         StringCol('description', dbName='Description'),        
     ]
-    releases = MultipleJoin('SoyuzBinaryPackageBuild', joinColumn='binarypackage')
+    releases = MultipleJoin('SoyuzBinaryPackageBuild', joinColumn=\
+                            'binarypackage')
 
 
 class SoyuzBinaryPackageBuild(SQLBase):
@@ -99,7 +174,7 @@ class SoyuzPerson(SQLBase):
     _columns = [
         StringCol('givenName', dbName='givenname'),
         StringCol('familyName', dbName='familyname'),
-        StringCol('presentationName', dbName='presentationname'),
+        StringCol('displayname', dbName='displayname'),
     ]
 
 class SoyuzDistribution(SQLBase):
@@ -117,7 +192,11 @@ class SoyuzDistribution(SQLBase):
 
     def getReleaseContainer(self, name):
         if name == 'releases':
-            return ReleaseContainer(self)
+            return DistroReleasesApp(self)
+        if name == 'src':
+            return DistroSourcesApp(self)
+        if name == 'people':
+            return DistroPeopleApp(self)
         else:
             raise KeyError, name
 
@@ -144,13 +223,6 @@ class Release(SQLBase):
                    notNull=True),
     ]
 
-    def getPackageContainer(self, name):
-        if name == 'source':
-            return SourcePackages(self)
-        if name == 'binary':
-            return BinaryPackages(self)
-        else:
-            raise KeyError, name
 
 
 class SourcePackages(object):
@@ -165,10 +237,10 @@ class SourcePackages(object):
 
     def __init__(self, release):
         self.release = release
-
+        
     def _query(self):
         return (
-            'SourcePackageUpload.sourcepackagerelease = SourcePackageRelease.id '
+            'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
             'AND SourcePackageUpload.distrorelease = %d '
             % (self.release.id))
@@ -187,6 +259,7 @@ class SourcePackages(object):
             # NotFound page.
             raise KeyError, name
 
+
     def __iter__(self):
         for bp in self.table.select(self._query(),
                                     clauseTables=self.clauseTables):
@@ -203,15 +276,15 @@ class BinaryPackages(object):
     table = SoyuzBinaryPackageBuild
     clauseTables = ('BinaryPackageUpload', 'DistroArchRelease')
 
-    def __init__(self, release):
-        self.release = release
+    def __init__(self, release_container):
+        self.release_container = release_container
 
     def _query(self):
         return (
             'BinaryPackageUpload.binarypackagebuild = BinaryPackageBuild.id '
             'AND BinaryPackageUpload.distroarchrelease = DistroArchRelease.id '
             'AND DistroArchRelease.distrorelease = %d '
-            % (self.release.id))
+            % (self.release_container.release.id))
         
     def __getitem__(self, name):
         # XXX: What about multiple results?

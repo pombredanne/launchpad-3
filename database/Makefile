@@ -10,7 +10,7 @@ default:
 	@ echo "  launchpad_test  create and populate the test database"
 
 dbtest:
-	psql --file=launchpad.sql launchpad 2>&1 |grep ERR
+	psql --file=launchpad.sql launchpad 2>&1 |grep -A 2 -B 5 ERR
 
 +postgres:
 	@ if ! which postgresql ; then \

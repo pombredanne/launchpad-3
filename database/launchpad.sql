@@ -59,6 +59,9 @@
 	   -> .iscurrent is now represented by .sequence>0
 	- make POTemplate.branch NOT NULL
 	- add POFile.fuzzyheader
+	- remove Language.pluralform
+	- add Language.pluralformexpresion
+	- add Language.pluralforms
   v0.98:
         - merge SourceSource table from Andrew Bennetts
 	- change SourceSource.homepageurl to SourceSource.product
@@ -175,8 +178,8 @@
         - rename Release to Coderelease (and all dependent tables)
         - refactor Processor and ProcessorFamily:
 	  - the distroarchrelease now has a processorfamily field
-	  - the binarypackagebuild (deb) now records its processor
-	- refactor the allocation of binarypackagebuild's (debs) to
+	  - the binarypackage (deb) now records its processor
+	- refactor the allocation of binarypackage's (debs) to
 	  distroarchrelease's
 	  - create a new table BinarypackageUpload that stores the
 	    packagearchivestatus
@@ -199,6 +202,10 @@
 /*
   DESTROY ALL TABLES
 */
+-- remove 25/8/04
+DROP TABLE BugAttachmentContent;
+DROP TABLE ProductBranchRelationship;
+DROP TABLE PackageSelection;
 DROP TABLE SourcepackageBugAssignment;
 DROP TABLE ArchArchiveLocationSigner;
 DROP TABLE BugSubscription;
@@ -210,8 +217,6 @@ DROP TABLE BranchRelationship;
 DROP TABLE ProjectBugsystem;
 DROP TABLE BugWatch;
 DROP TABLE BugSystem;
-DROP TABLE BugAttachmentContent;
-DROP TABLE BugAttachment;
 DROP TABLE POTranslationSighting;
 DROP TABLE POMsgIDSighting;
 DROP TABLE POMsgSet;
@@ -220,6 +225,7 @@ DROP TABLE POSubscription;
 DROP TABLE POTemplate;
 DROP TABLE License;
 DROP TABLE BugRelationship;
+DROP TABLE BugAttachment;
 DROP TABLE BugMessage;
 DROP TABLE BugExternalref;
 DROP TABLE BugLabel;
@@ -234,16 +240,20 @@ DROP TABLE Coderelease;
 DROP TABLE OSFileInPackage;
 DROP TABLE OSFile;
 DROP TABLE SourceSource;
-DROP TABLE BinarypackageBuildFile;
-DROP TABLE BinarypackageUpload;
-DROP TABLE BinarypackageBuild;
+DROP TABLE BinarypackageFile;
+DROP TABLE PackagePublishing;
 DROP TABLE Binarypackage;
+DROP TABLE BinarypackageName;
+DROP TABLE Build;
 DROP TABLE SourcepackageReleaseFile;
 DROP TABLE SourcepackageRelationship;
 DROP TABLE SourcepackageUpload;
 DROP TABLE SourcepackageRelease;
 DROP TABLE SourcepackageLabel;
 DROP TABLE Sourcepackage;
+DROP TABLE SourcepackageName;
+DROP TABLE Section;
+DROP TABLE Component;
 DROP TABLE ArchConfigEntry;
 DROP TABLE ArchConfig;
 DROP TABLE ProductReleaseFile;
@@ -290,8 +300,8 @@ DROP TABLE DistributionRole;
 DROP TABLE DistroReleaseRole;
 DROP TABLE DistroRelease;
 DROP TABLE Distribution;
-DROP TABLE LaunchpadFileHash;
-DROP TABLE LaunchpadFile;
+DROP TABLE LibraryFileAlias;
+DROP TABLE LibraryFileContent;
 DROP TABLE Label;
 DROP TABLE Schema;
 DROP TABLE Person;
@@ -322,7 +332,7 @@ DROP TABLE Person;
 */
 CREATE TABLE Person (
   id                    serial PRIMARY KEY,
-  presentationname      text,
+  displayname           text,
   givenname             text,
   familyname            text,
   password              text,
@@ -421,13 +431,16 @@ CREATE TABLE IRCID (
   in a team, not a non-team person.
 */
 CREATE TABLE Membership (
+  id          serial PRIMARY KEY,
   person      integer NOT NULL REFERENCES Person,
   team        integer NOT NULL REFERENCES Person,
   /* see Membership Role schema */
   role        integer NOT NULL, 
   /* see Membership Status schema */
   status      integer NOT NULL,
-  PRIMARY KEY ( person, team )
+  -- a person can only have one membership in
+  -- a given team
+  UNIQUE ( person, team )
 );
 
 
@@ -442,9 +455,12 @@ CREATE TABLE Membership (
   and quickly find the things a person is an owner of.
 */
 CREATE TABLE TeamParticipation (
+  id           serial PRIMARY KEY,
   team         integer NOT NULL REFERENCES Person,
   person       integer NOT NULL REFERENCES Person,
-  PRIMARY KEY ( team, person )
+  -- a person can only have one participation in a
+  -- team.
+  UNIQUE ( team, person )
 );
 
 
@@ -513,7 +529,9 @@ CREATE TABLE Project (
     id           serial PRIMARY KEY,
     owner        integer NOT NULL REFERENCES Person,
     name         text NOT NULL UNIQUE,
+    displayname  text NOT NULL,
     title        text NOT NULL,
+    shortdesc    text NOT NULL,
     description  text NOT NULL,
     datecreated  timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
     homepageurl  text,
@@ -529,6 +547,7 @@ CREATE TABLE Project (
  the Gnome project aggregates the GnomeMeeting project.
 */
 CREATE TABLE ProjectRelationship (
+  id            serial PRIMARY KEY,
   subject       integer NOT NULL REFERENCES Project,
   -- see Project Relationships schema
   label         integer NOT NULL,
@@ -542,6 +561,7 @@ CREATE TABLE ProjectRelationship (
   The roles that a person can take on in a project.
 */
 CREATE TABLE ProjectRole (
+  id            serial PRIMARY KEY,
   person        integer NOT NULL REFERENCES Person,
   -- see Project Role schema
   role          integer NOT NULL,
@@ -563,7 +583,9 @@ CREATE TABLE Product (
   project          integer NOT NULL REFERENCES Project,
   owner            integer NOT NULL REFERENCES Person,
   name             text NOT NULL,
+  displayname      text NOT NULL,
   title            text NOT NULL,
+  shortdesc        text NOT NULL,
   description      text NOT NULL,
   datecreated      timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   homepageurl      text,
@@ -586,9 +608,10 @@ CREATE TABLE Product (
   A label or metadata on a Product.
 */
 CREATE TABLE ProductLabel (
-  product  integer NOT NULL REFERENCES Product,
+  id         serial PRIMARY KEY,
+  product    integer NOT NULL REFERENCES Product,
   label      integer NOT NULL REFERENCES Label,
-  PRIMARY KEY ( product, label )
+  UNIQUE ( product, label )
 );
 
 
@@ -599,6 +622,7 @@ CREATE TABLE ProductLabel (
   product.
 */
 CREATE TABLE ProductRole (
+  id        serial PRIMARY KEY,
   person    integer NOT NULL REFERENCES Person,
   -- see the Product Role schema
   role      integer NOT NULL,
@@ -865,6 +889,20 @@ CREATE TABLE BranchLabel (
 
 
 /*
+  ProductBranchRelationship
+  This is where we can store a mapping between
+  a product and a branch.
+*/
+CREATE TABLE ProductBranchRelationship (
+  id         serial PRIMARY KEY,
+  product    integer NOT NULL REFERENCES Product,
+  branch     integer NOT NULL REFERENCES Branch,
+  -- XXX need to create the Product Branch Relationship schema
+  label      integer NOT NULL
+);
+
+
+/*
   Manifest
   A release manifest. This is sort of an Arch config
   on steroids. A Manifest is a set of ManifestEntry's
@@ -947,9 +985,7 @@ CREATE TABLE ArchConfigEntry (
 
 
 /*
-  LOGISTIX. THE PACKAGES AND DISTRIBUTION MANAGER.
-  Nicknamed after UPS (United Parcel Service) this is the
-  Launchpad subsystem that deals with distribution and packages.
+  SOYUZ. THE PACKAGES AND DISTRIBUTION MANAGER.
 */
 
 
@@ -999,6 +1035,31 @@ CREATE TABLE Builder (
   description        text NOT NULL,
   owner              integer NOT NULL REFERENCES Person,
   UNIQUE ( fqdn, name )
+);
+
+
+
+/*
+  Component
+  Distributions divide their packages into a set
+  of "components" which have potentially different
+  policies and practices.
+*/
+CREATE TABLE Component (
+  id                 serial PRIMARY KEY,
+  name               text NOT NULL UNIQUE
+);
+
+
+
+/*
+  Section
+  For historical reasons, each package can be assigned
+  to a particular section within the distribution.
+*/
+CREATE TABLE Section (
+  id                serial PRIMARY KEY,
+  name              text NOT NULL UNIQUE
 );
 
 
@@ -1054,6 +1115,10 @@ CREATE TABLE DistroRelease (
   -- see Distribution Release State schema
   releasestate    integer NOT NULL,
   datereleased    timestamp,
+  -- the Ubuntu distrorelease from which this distrorelease
+  -- is derived. This needs to point at warty, hoary, grumpy
+  -- etc.
+  parentrelease   integer REFERENCES DistroRelease,
   owner           integer NOT NULL REFERENCES Person
 );
 
@@ -1089,40 +1154,44 @@ CREATE TABLE DistroArchRelease (
 );
 
 
+/*
+  LibraryFileContent
+  A pointer to file content in the librarian. We store the sha1 hash
+  to allow us to do duplicate detection, size so web applications can
+  warn users of the download size, and some timestamps. The mirrored
+  timestamp, if set, tells us that the file has been mirrored onto
+  the aukland server.
+ 
+  Other tables do not reference this content directly - they should
+  reference LibraryFile which cointains the filename and mimetype
+
+  Note that the sha1 column is not unique - we are dealing with enough
+  files that we may get collisions, so this is used mearly as method
+  of identifying which files need to be compared.
+*/
+CREATE TABLE LibraryFileContent (
+    id            serial PRIMARY KEY,
+    datecreated   timestamp NOT NULL 
+                    DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    datemirrored  timestamp,
+    filesize      int NOT NULL,
+    sha1          character(40) NOT NULL
+);
+CREATE INDEX idx_LibraryFileContent_sha1 ON LibraryFileContent(sha1);
+
 
 /*
-  LaunchpadFile
-  The Launchpad system keeps copies of all the files that are used to make
-  up a distribution, such as deb's and tarballs and .dsc files and .spec
-  files and Coderelease files... these are represented by this table.
+  LibraryFileAlias
+  A filename and mimetype that we can serve some given binary content with.
+  We seperate LibraryFileContent and LibraryFileAlias so the same file
+  can be reused multiple times with different names and/or mimetypes
 */
-CREATE TABLE LaunchpadFile (
-  id               serial PRIMARY KEY,
-  filename         text NOT NULL,
-  filesize         integer NOT NULL
+CREATE TABLE LibraryFileAlias (
+    id            serial PRIMARY KEY,
+    content       int NOT NULL REFERENCES LibraryFileContent,
+    filename      text NOT NULL,
+    mimetype      text NOT NULL
 );
-
-
-
-/*
-  LaunchpadFileHash
-  A hash (cryptographic digest) on the file. We can support multiple
-  different hashes with different algorithms. Initially we'll just 
-  use SHA1, but if that gets broken we can trivially switch to another
-  algorithm.
-
-  The hash is not required to be UNIQUE but Oscar should flag duplicates
-  for inspection by hand. Note that the combination of filesize and hash
-  should be unique or there is something very weird going on. Or we just hit
-  the crypto lottery and found a collision.
-*/
-CREATE TABLE LaunchpadFileHash (
-  launchpadfile   integer NOT NULL REFERENCES LaunchpadFile,
-  -- see Hash Algorithms schema
-  hashalg         integer NOT NULL,
-  hash            bytea NOT NULL
-);
-
 
 
 /*
@@ -1131,10 +1200,21 @@ CREATE TABLE LaunchpadFileHash (
 */
 CREATE TABLE ProductReleaseFile (
   productrelease integer NOT NULL REFERENCES ProductRelease,
-  launchpadfile   integer NOT NULL REFERENCES LaunchpadFile,
+  libraryfile    integer NOT NULL REFERENCES LibraryFileAlias,
   -- see Product File Type schema
-  filetype        integer NOT NULL,
-  filename        text NOT NULL
+  filetype        integer NOT NULL
+);
+
+
+
+/*
+  SourcepackageName
+  Source packages can share names, so these are stored
+  in a separate table.
+*/
+CREATE TABLE SourcepackageName (
+  id               serial PRIMARY KEY,
+  name             text NOT NULL UNIQUE
 );
 
 
@@ -1150,7 +1230,13 @@ CREATE TABLE Sourcepackage (
   name             text NOT NULL,
   title            text NOT NULL,
   description      text NOT NULL,
-  manifest         integer REFERENCES Manifest
+  -- the "head manifest" if this package is being
+  -- maintained in HCT
+  manifest         integer REFERENCES Manifest,
+  -- the distribution to which this package was
+  -- origininally uploaded, or ubuntu if it is
+  -- not a derivative distro package.
+  distro           integer REFERENCES Distribution
 );
 
 
@@ -1221,7 +1307,6 @@ CREATE TABLE SourcepackageRelease (
   dscsigningkey          integer REFERENCES GPGKey,
   component              integer REFERENCES Label,
   changelog              text,
-  changes                text,
   builddepends           text,
   builddependsindep      text,
   architecturehintlist   text,
@@ -1237,10 +1322,9 @@ CREATE TABLE SourcepackageRelease (
 */
 CREATE TABLE SourcepackageReleaseFile (
   sourcepackagerelease  integer NOT NULL REFERENCES SourcepackageRelease,
-  launchpadfile         integer NOT NULL REFERENCES LaunchpadFile,
+  libraryfile           integer NOT NULL REFERENCES LibraryFileAlias,
   -- see Source Package File Types schema
-  filetype              integer NOT NULL,
-  filename              text NOT NULL
+  filetype              integer NOT NULL
 );
 
 
@@ -1261,45 +1345,58 @@ CREATE TABLE SourcepackageUpload (
 );
 
 
+/*
+  Build
+  This table describes a build (or upload if the binary packages
+  were built elsewhere and then uploaded to us. If we need to build
+  then we create an entry in this table and the Build Scheduler will
+  figure out who gets to do the work.
+*/
+CREATE TABLE Build (
+  id                serial PRIMARY KEY,
+  datecreated       timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+  processor         integer NOT NULL REFERENCES Processor,
+  distroarchrelease integer NOT NULL REFERENCES DistroArchRelease,
+  buildstate        integer NOT NULL,
+  datebuilt         timestamp,
+  buildduration     interval,
+  buildlog          integer REFERENCES LibraryFileAlias,
+  builder           integer REFERENCES Builder,
+  gpgsigningkey     integer REFERENCES GPGKey,
+  changes           text
+);
+
+
 
 /*
-  Binarypackage
-  This is a binary package... not an actual built package (that
-  is a BinarypackageBuild) but the concept of that binary package.
-  It stores the name of the binary package, together with other
-  details. Note that different distributions might well have
-  different binary packages with the same name. In fact, a single
-  distribution might have binary packages with the same name at
-  different times, that have entirely different source packages
-  and hence maintainers.
+  BinarypackageName
+  This is a binary package name... not an actual built package
 */
-CREATE TABLE Binarypackage (
+CREATE TABLE BinarypackageName (
   id               serial PRIMARY KEY,
-  name             text NOT NULL,
-  title            text NOT NULL,
-  description      text NOT NULL
+  name             text NOT NULL UNIQUE
 );
 
 
 
 
 /*
-  BinarypackageBuild
+  Binarypackage
   This is an actual package, built on a specific architecture,
   ready for installation.
 */
-CREATE TABLE BinarypackageBuild (
+CREATE TABLE Binarypackage (
   id                     serial PRIMARY KEY,
   sourcepackagerelease   integer NOT NULL REFERENCES SourcepackageRelease,
-  binarypackage          integer NOT NULL REFERENCES Binarypackage,
-  processor              integer NOT NULL REFERENCES Processor,
+  binarypackagename      integer NOT NULL REFERENCES BinarypackageName,
+  version                text NOT NULL,
+  shortdesc              text NOT NULL,
+  description            text NOT NULL,
+  build                  integer NOT NULL REFERENCES Build,
   -- see Binary Package Formats schema
   binpackageformat       integer NOT NULL,
-  version                text NOT NULL,
-  datebuilt              timestamp NOT NULL,
-  gpgsigningkey          integer REFERENCES GPGKey,
-  component              integer REFERENCES Label,
-  section                integer REFERENCES Label,
+  component              integer NOT NULL REFERENCES Component,
+  section                integer NOT NULL REFERENCES Section,
   -- see Binary Package Priority schema
   priority               integer,
   shlibdeps              text,
@@ -1310,7 +1407,10 @@ CREATE TABLE BinarypackageBuild (
   replaces               text,
   provides               text,
   essential              boolean,
-  installedsize          integer
+  installedsize          integer,
+  copyright              text,
+  licence                text,
+  UNIQUE ( binarypackagename, version )
 );
 
 
@@ -1320,32 +1420,49 @@ CREATE TABLE BinarypackageBuild (
   This is a file associated with a built binary package. Could
   be a .deb or an rpm, or something similar from a gentoo box.
 */
-CREATE TABLE BinarypackageBuildFile (
-  binarypackagebuild     integer NOT NULL REFERENCES BinarypackageBuild,
-  launchpadfile          integer NOT NULL REFERENCES LaunchpadFile,
+CREATE TABLE BinarypackageFile (
+  binarypackage     integer NOT NULL REFERENCES Binarypackage,
+  libraryfile       integer NOT NULL REFERENCES LibraryFileAlias,
   -- see Binary Package File Type schema
-  filetype               integer NOT NULL,
-  filename               text NOT NULL
+  filetype          integer NOT NULL
 );
 
 
 
 /*
-  BinarypackageUpload
-  This table records the status of a binarypackagebuild (deb) in a
-  distrorelease (woody)
+  PackagePublishing
+  This table records the status of a binarypackage (deb) in a
+  distroarchrelease (woody i386)
 */
-CREATE TABLE BinarypackageUpload (
-  binarypackagebuild     integer NOT NULL REFERENCES BinarypackageBuild,
+CREATE TABLE PackagePublishing (
+  id                     serial PRIMARY KEY,
+  binarypackage          integer NOT NULL REFERENCES Binarypackage,
   distroarchrelease      integer NOT NULL REFERENCES DistroArchRelease,
   -- see Package Upload Status schema
-  uploadstatus           integer NOT NULL,
-  component              integer NOT NULL REFERENCES Label,
-  section                integer NOT NULL REFERENCES Label,
+  component              integer NOT NULL REFERENCES Component,
+  section                integer NOT NULL REFERENCES Section,
   -- see Binary Package Priority schema
   priority               integer NOT NULL
 );
 
+
+
+/*
+  PackageSelection
+  This table records the policy of a distribution in terms
+  of packages they will accept and reject.
+*/
+CREATE TABLE PackageSelection (
+  id                     serial PRIMARY KEY,
+  distrorelease          integer NOT NULL REFERENCES DistroRelease,
+  sourcepackagename      integer REFERENCES SourcepackageName,
+  binarypackagename      integer REFERENCES BinarypackageName,
+  action                 integer NOT NULL,
+  component              integer REFERENCES Component,
+  section                integer REFERENCES Section,
+  -- see the Binary Package Priority schema
+  priority               integer
+);
 
 
 
@@ -1416,7 +1533,7 @@ CREATE TABLE OSFile (
 */
 CREATE TABLE OSFileInPackage (
   osfile               integer NOT NULL REFERENCES OSFile,
-  binarypackagebuild   integer NOT NULL REFERENCES BinarypackageBuild,
+  binarypackage        integer NOT NULL REFERENCES Binarypackage,
   unixperms            integer NOT NULL,
   conffile             boolean NOT NULL,
   createdoninstall     boolean NOT NULL
@@ -1486,7 +1603,10 @@ CREATE TABLE Language (
   code                  text NOT NULL UNIQUE,
   englishname           text,
   nativename            text,
-  pluralform		text
+  pluralforms           integer,
+  pluralexpresion	text,
+  CHECK ( ( pluralforms IS NOT NULL AND pluralexpresion IS NOT NULL) OR
+          ( pluralforms IS NULL AND pluralexpresion IS NULL ) )
 );
 
 
@@ -1567,6 +1687,9 @@ CREATE TABLE POTemplate (
   -- when we last parsed the Template.
   messagecount          integer NOT NULL,
   owner                 integer REFERENCES Person,
+  -- make sure that a potemplate name is unique in
+  -- a given product
+  UNIQUE ( product, name ),
   -- if we refer to a changeset make sure that it's
   -- one where the branch is consistent for that changeset.
   FOREIGN KEY ( changeset, branch ) REFERENCES Changeset ( id, branch )
@@ -2025,39 +2148,6 @@ CREATE TABLE ProjectBugSystem (
 
 
 /*
-  BugAttachment
-  A table of attachments to bugs. These are typically patches, screenshots,
-  mockups, or other documents.
-*/
-CREATE TABLE BugAttachment (
-  id              serial PRIMARY KEY,
-  bug             integer NOT NULL REFERENCES Bug,
-  -- name (filename) is in BugAttachmentContent
-  title           text NOT NULL,
-  description     text NOT NULL
-);
-
-
-
-/*
-  BugAttachmentContent
-  The actual content of a bug attachment. There can be multiple
-  uploads over time, each revision gets a changecomment.
-*/
-CREATE TABLE BugAttachmentContent (
-  id             serial PRIMARY KEY,
-  bugattachment  integer NOT NULL REFERENCES BugAttachment,
-  daterevised    timestamp NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
-  changecomment  text NOT NULL,
-  content        bytea NOT NULL,
-  filename       text NOT NULL,
-  mimetype       text,
-  owner          integer REFERENCES Person
-);
-
-
-
-/*
   BugLabel
   Allows us to attach arbitrary metadata to a bug.
 */
@@ -2083,7 +2173,6 @@ CREATE TABLE BugRelationship (
 
 
 
-
 /*
   BugMessage
   A table of messages about bugs. Could be from the web
@@ -2105,6 +2194,23 @@ CREATE TABLE BugMessage (
 );
 
 
+/*
+  BugAttachment
+  A table of attachments to BugMessages. These are typically patches,
+  screenshots, mockups, or other documents. We need to ensure that only
+  valid attachments get automatically added into the database, stripping
+  
+*/
+CREATE TABLE BugAttachment (
+  id              serial PRIMARY KEY,
+  bugmessage      integer NOT NULL REFERENCES BugMessage,
+  name            text,
+  description     text,
+  libraryfile     int NOT NULL REFERENCES LibraryFileAlias,
+  datedeactivated timestamp
+);
+
+
 
 
 /* SourceSource
@@ -2121,8 +2227,7 @@ CREATE TABLE SourceSource (
   product                   integer NOT NULL REFERENCES Product,
   cvsroot                   text,
   cvsmodule                 text,
-  cvstarfile                integer REFERENCES LaunchpadFile,
-  cvstarfilename            text,
+  cvstarfile                integer REFERENCES LibraryFileAlias,
   cvstarfileurl             text,
   cvsbranch                 text,
   svnrepository             text,

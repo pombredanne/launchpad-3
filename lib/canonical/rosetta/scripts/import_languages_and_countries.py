@@ -40,39 +40,7 @@ class XMLHandler(saxutils.DefaultHandler):
         if not data:
             return
 
-#        print 'got: %r' % data
-
-
         self.dbhook(self.cnx, data)
-
-#        print 'got: %r' % data
-
-locale.setlocale(locale.LC_ALL, 'C')
-
-## try:
-##     (opts,trail)=getopt.getopt(sys.argv[1:],"f:c:v:",
-##                                ["fields=", "comments=", "is-version="])
-##     assert trail, "No argument provided"
-## except Exception,e:
-##     print "ERROR: %s" % e
-##     print
-##     print "Usage: iso2pot filename [outfilename]"
-##     print " filename: xml data file from iso-codes package"
-##     print " outfilename: Write to this file"
-##     sys.exit(1)
-
-## for opt, arg in opts:
-##     if opt in ('-v', '--is-version'):
-##         version = arg
-##     elif opt in ('-f', '--fields'):
-##      fields = arg.split(',')
-##     elif opt in ('-c','--comments'):
-##         comment = arg
-
-## if len(trail)==2:
-##     ofile = open(trail[1], 'w')
-## else:
-##     ofile = sys.stdout
 
 files = {
     'country': '/usr/share/xml/iso-codes/iso_3166.xml',
@@ -143,12 +111,44 @@ def two_or_three_letters(data):
 
 def insert_language(cnx, data):
     cr = cnx.cursor()
+    rosetta_trans = cnx.cursor()
 
     # We check first if the entry already exists.
     # We assume that all countries have an iso3166code2 code
     cr.execute(
         """SELECT englishname FROM Language WHERE code='%s'""" % (
         data['code'].encode('utf-8')))
+    
+    # We look for the native name for this language into Rosetta. We don't
+    # care about the orig of the translation, we just get latest one and
+    # assume that we never will have this msgid as a plural form (I don't
+    # think it makes sense to have a language name with a plural form...)
+    rosetta_trans.execute(
+        """SELECT POTranslation.translation
+            FROM POMsgID, POMsgSet, POTranslationSighting, POTranslation,
+                 POFile, Language, POTemplate, Product
+            WHERE
+                Product.name = 'iso-codes' AND
+                Product.id = POTemplate.product AND
+                POTemplate.name = 'languages' AND
+                POTemplate.id = POFile.potemplate AND
+                Language.code = %(languagecode)s AND
+                Language.id = POFile.language AND
+                POFile.id = POMsgSet.pofile AND
+                POMsgID.msgid = %(englishname)s AND
+                POMsgID.id = POMsgSet.primemsgid AND
+                POMsgSet.iscomplete = TRUE AND
+                POMsgSet.obsolete = FALSE AND
+                POMsgSet.fuzzy = FALSE AND
+                POMsgSet.id = POTranslationSighting.pomsgset AND
+                POTranslationSighting.deprecated = FALSE AND
+                POTranslationSighting.potranslation = POTranslation.id""",
+        { 'languagecode': data['code'].encode('utf-8'),
+          'englishname': data['englishname'].encode('utf-8') })
+    if rosetta_trans.rowcount > 0:
+        data['nativename'] = rosetta_trans.fetchone()[0]
+    
+    rosetta_trans.close()
         
     # If it does not exists, it's inserted
     if cr.rowcount < 1:
@@ -159,13 +159,45 @@ def insert_language(cnx, data):
     else:
         # It already exists, we should check if it needs any update
         # That's if the englishname != from data['englishname']
-        country_row = cr.fetchone()
-        if country_row[0] != data['englishname'].encode('utf-8'):
-            # We need to update the name
-            cr.execute(
-                """UPDATE Language SET englishname='%s' WHERE code='%s'""" %(
-                data['englishname'].encode('utf-8'),
-                data['code'].encode('utf-8')))
+        language_row = cr.fetchone()
+        if language_row[0] != data['englishname'].encode('utf-8'):
+            rosetta_trans.execute(
+                """SELECT POTranslation.translation
+                    FROM POMsgID, POMsgSet, POTranslationSighting,
+                         POTranslation, POFile, Language, POTemplate, Product
+                    WHERE
+                        Product.name = 'iso-codes' AND
+                        Product.id = POTemplate.product AND
+                        POTemplate.name = 'languages' AND
+                        POTemplate.id = POFile.potemplate AND
+                        Language.code = %(languagecode)s AND
+                        Language.id = POFile.language AND
+                        POFile.id = POMsgSet.pofile AND
+                        POMsgID.msgid = %(englishname)s AND
+                        POMsgID.id = POMsgSet.primemsgid AND
+                        POMsgSet.iscomplete = TRUE AND
+                        POMsgSet.obsolete = FALSE AND
+                        POMsgSet.fuzzy = FALSE AND
+                        POMsgSet.id = POTranslationSighting.pomsgset AND
+                        POTranslationSighting.deprecated = FALSE AND
+                        POTranslationSighting.potranslation = POTranslation.id""",
+                { 'languagecode': data['code'].encode('utf-8'),
+                  'englishname': language_row[0] })
+            if rosetta_trans.rowcount > 0:
+                # We need to update the englishname and the nativename
+                cr.execute(
+                    """UPDATE Language SET englishname='%s', nativename='%s'
+                        WHERE code='%s'""" %(
+                    data['englishname'].encode('utf-8'),
+                    rosetta_trans.fetchone()[0],
+                    data['code'].encode('utf-8')))
+            else:
+                # We need to update the name and remove the old nativename
+                cr.execute(
+                    """UPDATE Language SET englishname='%s', nativename=NULL
+                        WHERE code='%s'""" %(
+                    data['englishname'].encode('utf-8'),
+                    data['code'].encode('utf-8')))
             print ("%r has been updated" % data)
 
     cnx.commit()
@@ -251,9 +283,19 @@ def import_spoken(cnx):
     cnx.commit()
     cr.close()
 
+username = 'carlos'
+dbname = 'launchpad_test'
 
 if __name__ == '__main__':
-    cnx = psycopg.connect("user=carlos dbname=launchpad_test")
+    (opts, trail)=getopt.getopt(sys.argv[1:], "u:d:",
+                                ["username=", "dbname"])
+    for opt, arg in opts:
+        if opt in ('-u', '--username'):
+            username = arg
+        elif opt in ('-d', '--dbname'):
+            dbname = arg
+    locale.setlocale(locale.LC_ALL, 'C')
+    cnx = psycopg.connect("user=%s dbname=%s" % (username, dbname))
     import_countries(cnx)
     import_languages(cnx)
     import_spoken(cnx)

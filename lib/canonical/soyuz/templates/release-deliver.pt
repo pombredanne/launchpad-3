@@ -15,7 +15,8 @@
 
 <div metal:fill-slot="main">
 
-   <h1>Generate ISO for <span tal:content="context/name">Distro</span> Release.....</h1>
+   <h1>Generate ISO for <span tal:content="context/release/title">Title</span> 
+	Release</h1>
 
 </div>
 

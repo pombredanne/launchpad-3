@@ -159,7 +159,7 @@
                 <label>Code reference</label>
                 <img src="++resource++arrowRight.gif" />
             </div>
-            -->
+	    -->
         </fieldset>
 
         <div class="visualClear"></div>
@@ -168,6 +168,7 @@
         <input type="submit" name="SUBMIT" value="Submit" />
     </form>
 
+<!-- From here to the end are only hardcoded samples, we should move them to the dynamic part -->
 <!-- Multiline example start -->
 
     <!--

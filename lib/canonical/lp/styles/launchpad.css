@@ -83,3 +83,82 @@ label {
     padding: 2px;
     margin: 2px;
 }
+
+/* highlight on hover in table */
+
+table.listing tr:hover {
+    background-color: #dee7ec;
+    cursor:pointer;
+}
+
+fieldset.collapsible legend {
+    cursor: pointer; 
+}
+
+/* Bug status markers */
+
+.bug-confirmed {
+    color: white;
+    background-color: red;
+    border: 1px solid #990000;
+    padding: 0 0.25em;
+}
+
+.bug-pending {
+    color: black;
+    background-color: yellow;
+    border: 1px dashed #999900;
+    padding: 0 0.25em;
+}
+
+/* Board-like comment CSS */
+
+.boardComment {
+    border: 1px solid #8cacbb;
+    margin-bottom: 1.5em;
+    position: relative;
+}
+
+/* Fix for IE float bug */
+* html .boardComment {
+    float: left;
+    clear: both;
+    width: 99%;
+}
+
+.boardCommentDetails {
+    border: 1px solid #8cacbb;
+    border-style: none none solid none;
+    background-color: #dee7ec;
+    padding: 0.5em 1em;
+}
+
+.boardCommentBody {
+    padding: 0.5em 1em;
+}
+
+.boardCommentContent {
+    line-height: 1.5em;
+}
+
+.boardCommentActions {
+    border: 1px solid #8cacbb;
+    border-style: solid none none none;
+    background-color: #dee7ec;
+    padding: 0.5em 1em 0 1em;
+    text-align: right;
+}
+
+.boardCommentActions {
+    right: 1em:
+}
+
+.boardCommentPortrait {
+    float: right; 
+    margin-bottom: 1em;
+}
+
+.portrait {
+    float: right;
+    clear: both;
+}
