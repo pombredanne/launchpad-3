@@ -117,8 +117,12 @@ class DistroReleaseApp(object):
         
     def findSourcesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
-        query = self._sourcequery() + \
-                ' AND SourcePackageName.name LIKE %s' % quote('%%' + pattern + '%%')
+        query = (self._sourcequery() +
+                 ' AND UPPER(SourcePackageName.name) LIKE UPPER(%s)'
+                 % quote('%%' + pattern + '%%') +
+                 ' OR UPPER(SourcePackage.shortdesc) LIKE UPPER(%s)'
+                 % quote('%%' + pattern + '%%'))
+        
         from sets import Set
         return Set(SoyuzSourcePackage.select(query))
 
@@ -130,9 +134,14 @@ class DistroReleaseApp(object):
 
     def findBinariesByName(self, pattern):
         pattern = pattern.replace('%', '%%')
-        query = self.where % self.release.id + \
-                 ('AND  BinaryPackage.binarypackagename = BinarypackageName.id '
-                  'AND  BinarypackageName.name LIKE %s' % quote('%%' + pattern + '%%'))
+        query = (self.where % self.release.id +
+                 'AND  BinaryPackage.binarypackagename=BinarypackageName.id '+
+                 'AND  UPPER(BinarypackageName.name) LIKE UPPER(%s) '
+                 % quote('%%' + pattern + '%%') +
+                 'OR UPPER(Binarypackage.shortdesc) LIKE UPPER(%s)'
+                 % quote('%%' + pattern + '%%'))
+        
+
         from sets import Set
         return Set(SoyuzBinaryPackage.select(query))
 

@@ -32,8 +32,7 @@
           <td><a tal:attributes="href string:../../../people/${team/person/id}"
 	         tal:content="team/person/displayname">
                Displayname</a></td>
-          <td><span tal:content="team/rolename">ROLENAME</span>
-          (<span tal:content="team/role">ROLE</span>)</td>
+          <td><span tal:content="team/rolename">ROLENAME</span></td>
        </tr>
      </table>
      </div>

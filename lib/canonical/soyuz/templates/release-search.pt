@@ -69,7 +69,7 @@
 <ul>
   <li tal:repeat="source view/sources">
     <a tal:attributes="href string: ../../src/${context/release/name}/${source/name}">
-    <span tal:content="source/title"/></a>
+    <span tal:content="source/shortdesc"/></a>
   </li> 
 </ul>
 </div>
