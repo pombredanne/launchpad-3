@@ -14,7 +14,7 @@ def main():
     Otherwise, print output and exit(1).
     """
     here = os.path.dirname(os.path.realpath(__file__))
-    stdin, out, err = os.popen3('cd %s; python test.py %s' %
+    stdin, out, err = os.popen3('cd %s; python test.py %s < /dev/null' %
         (here, ' '.join(sys.argv[1:])))
     errlines = err.readlines()
     dataout = out.read()
