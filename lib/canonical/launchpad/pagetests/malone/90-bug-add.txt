@@ -66,10 +66,10 @@
   ...
     <h1>Bugs</h1>
   ...
-      <tr onclick="window.location='4'">
-        <td>4</td>
-        <td><a href="4">testing something</a></td>
-        <td>...</td>
-        <td>Foo Bar</td>
-      </tr>
+        <tr onclick="window.location='4'">
+          <td>4</td>
+  ...
+          <td><a href="4">testing something</a></td>
+  ...
+        </tr>
   ...

@@ -5,27 +5,54 @@
 
 <body>
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="column_one">
+</div>
 
+<div metal:fill-slot="main" class="visualPadding">
   <h1>Bugs</h1>
   <table class="listing rowNavigation">
     <tr>
       <th>Bug #</th>
+      <th>Product</th>
+      <th>Package</th>
       <th>Title</th>
-      <th>Date Submitted</th>
+      <th>Status</th>
+      <th>Priority</th>
+      <th>Severity</th>
+      <th>Submitted On</th>
       <th>Submitted By</th>
+      <th>Assigned To</th>
     </tr>
-    <tr tal:repeat="bug context" tal:attributes="onclick
-        string:window.location='${bug/id}';">
-      <td tal:content="bug/id">$Bug.title</td>
-      <td><a tal:content="bug/title"
-             tal:attributes="href bug/id">title</a></td>
-      <td tal:content="python:bug.datecreated.strftime('%d %b %y')">date</td>
-      <td tal:content="bug/owner/displayname">name</td>
-    </tr>
+    <tal:bugassignments tal:repeat="bug context">
+      <tr tal:repeat="packageassignment bug/packageassignment"
+          tal:attributes="onclick string:window.location='${bug/id}';">
+        <td tal:content="bug/id">$Bug.title</td>
+        <td></td>
+        <td tal:content="packageassignment/sourcepackage/sourcepackagename/name">package</td>
+        <td><a tal:content="bug/title" tal:attributes="href bug/id">title</a></td>
+        <td tal:content="packageassignment/bugstatus/lp:BugAssignmentStatus">New</td>
+        <td tal:content="packageassignment/priority/lp:BugPriority">High</td>
+        <td tal:content="packageassignment/severity/lp:BugSeverity">Medium</td>
+        <td tal:content="python:packageassignment.datecreated.strftime('%d %b %y')">date</td>
+        <td tal:content="packageassignment/owner/displayname|string:-">name</td>
+        <td tal:content="packageassignment/assignee/displayname|string:-">somebody</td>
+      </tr>
+      <tr tal:repeat="productassignment bug/productassignment"
+          tal:attributes="onclick string:window.location='${bug/id}';">
+        <td tal:content="bug/id">$Bug.title</td>
+        <td tal:content="productassignment/product/displayname">product</td>
+        <td></td>
+        <td><a tal:content="bug/title" tal:attributes="href bug/id">title</a></td>
+        <td tal:content="productassignment/bugstatus/lp:BugAssignmentStatus">New</td>
+        <td tal:content="productassignment/priority/lp:BugPriority">High</td>
+        <td tal:content="productassignment/severity/lp:BugSeverity">Medium</td>
+        <td tal:content="python:productassignment.datecreated.strftime('%d %b %y')">date</td>
+        <td tal:content="productassignment/owner/displayname|string:-">name</td>
+        <td tal:content="productassignment/assignee/displayname|string:-">somebody</td>
+      </tr>
+    </tal:bugassignments>
   </table>
   <input type="submit" value="Add" onclick="window.open('+new','_top')" />
-
 </div>
 
 </body>
