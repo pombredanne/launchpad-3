@@ -12,17 +12,27 @@ from canonical.launchpad.database import Product
 from canonical.launchpad.database import ArchArchive
 from canonical.launchpad.database import Person
 from canonical.launchpad.database import SourceSource
+from canonical.database import sqlbase
 
 
 def repositoryIsTar(cvsroot):
-    for suffix in ["tar.gz", "tgz", "tar.bz2"]:
+    for suffix in ("tar.gz", "tgz", "tar.bz2"):
         if cvsroot.endswith(suffix):
             return True
     else:
         return False
 
 
+def isDownloadableUrl(url):
+    for prefix in ('file://', 'http://', 'https://', 'ftp://'):
+        if url.startswith(prefix):
+            return True
+    else:
+        return False
+
+
 def updateCvsrootFromInfoFile(infofile):
+    unassigned = infoImporter.make_unassigned_product()
     print "** processing info file %r" % infofile
     import info2job
     info = info2job.read_info(infofile, logging)
@@ -32,17 +42,18 @@ def updateCvsrootFromInfoFile(infofile):
         print "* processing job %r" % jobname
         cvsroot = info.get("cvsroot")
         if cvsroot is None: continue
-        query = (SourceSource.q.name == jobname)
+        query = "name=%s AND product=%s" % (
+            sqlbase.quote(jobname), unassigned.id)
         for source in  SourceSource.select(query):
             print 'updateCvsroot: cvsroot == ', source.cvsroot
-            if source.cvsroot != cvsroot:
-                print 'updateCvsroot: cvsroot <= ', cvsroot
-                source.cvsroot = cvsroot
+            if not isDownloadableUrl(source.cvsroot): continue
+            if source.cvsroot == cvsroot: continue
+            print 'updateCvsroot: cvsroot <= ', cvsroot
+            source.cvsroot = cvsroot
 
 
 def main(filelist):
-    ok, bad = infoImporter.filterRunner(updateCvsrootFromInfoFile, filelist)
-    print '%d ok, %d failed' % (ok, bad)
+    infoImporter.filterRunner(updateCvsrootFromInfoFile, filelist)
 
     
 if __name__ == '__main__':
