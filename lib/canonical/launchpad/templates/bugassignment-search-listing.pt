@@ -24,8 +24,8 @@
                         product_name assignment/product/name|nothing;
                         project_name assignment/product/project/name|nothing;
                         package_name assignment/sourcepackage/sourcepackagename/name|nothing;
-                        collection_name python:(product_name and 'productassignments') or 'packageassignments';
-                        ass_link string:$bugid/$collection_name/$assid/+edit;
+                        collection_name string:tasks;
+                        ass_link string:/malone/$collection_name/$assid/+edit;
                         ass_owner assignment/owner/name|nothing;
                         potential_assignee logged_in/displayname|nothing;
                         status assignment/status/lp:BugAssignmentStatus;
