@@ -27,7 +27,7 @@ from canonical.soyuz.interfaces import IDistribution, IRelease
 
 from canonical.soyuz.interfaces import IDistroBinariesApp
 
-from canonical.soyuz.database import SoyuzBinaryPackage
+from canonical.soyuz.database import SoyuzBinaryPackage, SoyuzBuild
 
 from canonical.lp import dbschema
 
@@ -503,33 +503,6 @@ class PersonApp(object):
                  )
 
         return Set(SoyuzSourcePackageRelease.select(query))
-
-################################################################
-
-
-class SoyuzBuild(SQLBase):
-    _table = 'Build'
-    _columns = [
-        DateTimeCol('datecreated', dbName='datecreated', notNull=True),
-        ForeignKey(name='processor', dbName='Processor',
-                   foreignKey='SoyuzProcessor', notNull=True),
-        ForeignKey(name='distroarchrelease', dbName='distroarchrelease', 
-                   foreignKey='SoyuzDistroArchRelease', notNull=True),
-        IntCol('buildstate', dbName='buildstate', notNull=True),
-        DateTimeCol('datebuilt', dbName='datebuilt'),
-        DateTimeCol('buildduration', dbName='buildduration'),
-        ForeignKey(name='buildlog', dbName='buildlog',
-                   foreignKey='LibraryFileAlias'),
-        ForeignKey(name='builder', dbName='builder',
-                   foreignKey='Builder'),
-        ForeignKey(name='gpgsigningkey', dbName='gpgsigningkey',
-                   foreignKey='GPGKey'),
-        ForeignKey(name='sourcepackagerelease', dbName='sourcepackagerelease',
-                   foreignKey='SoyuzSourcePackageRelease', notNull=True),
-
-    ]
-        
-##########################################################
 
 
 # Binary app component (bin) still using stubs ...

@@ -203,6 +203,30 @@ class SoyuzBinaryPackageName(SQLBase):
     ]
         
 
+class SoyuzBuild(SQLBase):
+    _table = 'Build'
+    _columns = [
+        DateTimeCol('datecreated', dbName='datecreated', notNull=True),
+        ForeignKey(name='processor', dbName='Processor',
+                   foreignKey='SoyuzProcessor', notNull=True),
+        ForeignKey(name='distroarchrelease', dbName='distroarchrelease', 
+                   foreignKey='SoyuzDistroArchRelease', notNull=True),
+        IntCol('buildstate', dbName='buildstate', notNull=True),
+        DateTimeCol('datebuilt', dbName='datebuilt'),
+        DateTimeCol('buildduration', dbName='buildduration'),
+        ForeignKey(name='buildlog', dbName='buildlog',
+                   foreignKey='LibraryFileAlias'),
+        ForeignKey(name='builder', dbName='builder',
+                   foreignKey='Builder'),
+        ForeignKey(name='gpgsigningkey', dbName='gpgsigningkey',
+                   foreignKey='GPGKey'),
+        ForeignKey(name='sourcepackagerelease', dbName='sourcepackagerelease',
+                   foreignKey='SoyuzSourcePackageRelease', notNull=True),
+
+    ]
+ 
+
+
 class SoyuzSourcePackage(SQLBase):
     """A source package, e.g. apache2."""
 

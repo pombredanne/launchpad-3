@@ -159,7 +159,7 @@ class IDistroReleaseBinaryReleaseApp(Interface):
     version = Attribute("BinaryPackageRelease Version ?!?!")
     sourcedistrorelease = Attribute("The DistroRelease from where the binary's SourcePackageRelease came from")
     archs = Attribute("Builded archs")
-
+    
     def __getitem__(name):
         """retrieve binarypackagesbuild by version"""
 
@@ -386,7 +386,8 @@ class IBuild(Interface):
     distroarchrelease = Attribute("The Ditro Arch Release")
     component = Attribute("The BinaryPackage Component")
     section = Attribute("The BinaryPackage Section")
-
+    sourcepackagerelease = Attribute("Sourcepackagerelease reference")
+    
 class IBinaryPackage(Interface):
     """A binary package, e.g apache-utils"""
     # See the BinaryPackage table
