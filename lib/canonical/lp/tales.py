@@ -36,10 +36,28 @@ class HTMLFormAPI:
         self.form = request.form
 
     def traverse(self, name, furtherPath):
-        operation = furtherPath.pop()
-        value = furtherPath.pop()
-        if self.form.get(name) == value:
-            return operation
+        if len(furtherPath) == 1:
+            operation = furtherPath.pop()
+            return HTMLFormOperation(self.form.get(name), operation)
+        else:
+            operation = furtherPath.pop()
+            value = furtherPath.pop()
+            if self.form.get(name) == value:
+                return operation
+            else:
+                return None
+
+class HTMLFormOperation:
+
+    implements(ITraversable)
+
+    def __init__(self, value, operation):
+        self.value = value
+        self.operation = operation
+
+    def traverse(self, name, furtherPath):
+        if self.value == name:
+            return self.operation
         else:
             return None
 

@@ -91,7 +91,7 @@ def main():
         print '---- end test stdout ----'
 
         print '---- test stderr ----'
-        print ''.join(errlines)
+        print '\n'.join(errlines)
         print '---- end test stderr ----'
         return 1
 
