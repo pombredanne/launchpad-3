@@ -87,7 +87,7 @@
     File Against Upstream...
 </a>
 
-<a href="#" tal:attributes="href string:$bug_url/tasks/+packagetask"
+<a href="#" tal:attributes="href string:$bug_url/tasks/+distrotask"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring in another package">
     <img src="/++resource++add.gif" alt="+" />

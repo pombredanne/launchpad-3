@@ -8,7 +8,7 @@ from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-from zope.component import getUtility
+from zope.component import getUtility, getAdapter
 import zope.security.interfaces
 
 from sqlobject.sqlbuilder import AND, IN, ISNULL
@@ -23,7 +23,7 @@ from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
 from canonical.launchpad.database import Product, ProductSeriesSet, Bug, \
      BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
-     IPersonSet, IBugTaskSet
+     IPersonSet, IBugTaskSet, IAging
 from canonical.launchpad.browser.productrelease import newProductRelease
 
 #
@@ -226,6 +226,13 @@ class ProductBugsView:
                             for task in tasks:
                                 task.milestone = milestone
        
+    # XXX: Brad Bollenbach, 2005-02-11: Replace this view method hack with a
+    # TALES adapter, perhaps.
+    def currentApproximateAge(self, bugtask):
+        """Return a human readable string of the age of a bug task."""
+        aging_bugtask = getAdapter(bugtask, IAging, '')
+        return aging_bugtask.currentApproximateAge()
+
     def people(self):
         """Return the list of people in Launchpad."""
         # the vocabulary doesn't need context since the

@@ -2,6 +2,96 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-23 21:24:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1339
+
+    Summary:
+      resurrect the file a distro task form,
+ the distro bug filing form and the bug assignment report.
+    Revision:
+      launchpad--devel--0--patch-1339
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-351
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-352
+       implement aging, so that you can ask things with a datecreated attribute how old they are, and they'll say things like '1 year', '2 weeks', '15 minutes', and so forth. this is starbuck's code, so though the functionality is tested and works well, i need to discuss the implementation with SteveA.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-353
+       plugin the IAging foo behind the newlook search screen, so that the user can see how old a bug is. this currently uses a method hacked onto the view class. i didn't want to go to the effort of thinking about TALES adaptation until I've checked this implementation with SteveA.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-354
+       escape from another endInteraction() boobytrap in a doctest. argh.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-355
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-356
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-357
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-358
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-359
+       simple fix to file bug on distro/spname
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-360
+       add PendingUpload task status
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-361
+       clean up the +distrotask distro bug filing page
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-362
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-363
+       resurrect the assigned bugs report. fixed where appropriate to work with current db schema.
+    
+
+    new files:
+     lib/canonical/launchpad/components/.arch-ids/cdatetime.py.id
+     lib/canonical/launchpad/components/cdatetime.py
+     lib/canonical/launchpad/doc/.arch-ids/datehandling.txt.id
+     lib/canonical/launchpad/doc/datehandling.txt
+     lib/canonical/launchpad/interfaces/.arch-ids/idatetime.py.id
+     lib/canonical/launchpad/interfaces/idatetime.py
+     lib/canonical/launchpad/zcml/.arch-ids/datetime.zcml.id
+     lib/canonical/launchpad/zcml/datetime.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/interfaces/__init__.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/templates/bugs-assigned.pt
+     lib/canonical/launchpad/templates/malone-index.pt
+     lib/canonical/launchpad/templates/malone_skin/malone-index.pt
+     lib/canonical/launchpad/templates/portlet-bug-tasks-headline.pt
+     lib/canonical/launchpad/zcml/bugtask.zcml
+     lib/canonical/launchpad/zcml/configure.zcml
+     lib/canonical/lp/dbschema.py
+     lib/canonical/malone/configure.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-351
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-352
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-353
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-354
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-355
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-356
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-357
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-358
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-359
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-360
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-361
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-362
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-363
+
+
 2005-02-22 12:59:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1338
 
     Summary:
