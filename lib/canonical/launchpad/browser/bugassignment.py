@@ -10,6 +10,7 @@ from canonical.launchpad.database import Bug, Person, \
 from canonical.lp import dbschema
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      ProductVocabulary, SourcePackageVocabulary
+from canonical.database.sqlbase import quote
 
 # Bug Reports
 class BugsAssignedReportView(object):
@@ -83,6 +84,8 @@ class BugsAssignedReportView(object):
 # non-add, non-edit forms in Zope 3. I had a chat with SteveA on this subject
 # and it looks like a browser:form directive will be introduced early next week
 # in which case most of this hackishness can go away.
+# XXX: 2004-12-02, Stuart Bishop: I'm not sure what this class is doing in here
+# since it is actually a view on IBugSet.
 class BugAssignmentsView(object):
 
     DEFAULT_STATUS = (
@@ -106,6 +109,12 @@ class BugAssignmentsView(object):
                 int(param_searchtext)
                 self.request.response.redirect("/malone/bugs/" + param_searchtext)
             except ValueError:
+                """
+                Use full text indexing. We can't use like to search text
+                or descriptions since it won't use indexes.
+                XXX: Stuart Bishop, 2004-12-02 Pull this commented code
+                after confirming if we stick with tsearch2
+
                 # XXX: Brad Bollenbach, 2004-11-26: I always found it particularly
                 # unhelpful that sqlobject doesn't have this by default, for DB
                 # backends that support it.
@@ -119,6 +128,8 @@ class BugAssignmentsView(object):
                     OR(ILIKE(Bug.q.title, searchtext),
                        ILIKE(Bug.q.shortdesc, searchtext),
                        ILIKE(Bug.q.description, searchtext)))
+                """
+                bugs = Bug.select('fti @@ ftq(%s)' % quote(param_searchtext))
                 bugids = [bug.id for bug in bugs]
                 if bugids:
                     pba_params.append(
@@ -127,7 +138,6 @@ class BugAssignmentsView(object):
                         IN(SourcePackageBugAssignment.q.bugID, bugids))
                 else:
                     return []
-                
 
         param_status = self.request.get('status', self.DEFAULT_STATUS)
         if param_status and param_status != 'all':
