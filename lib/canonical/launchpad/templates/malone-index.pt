@@ -16,7 +16,15 @@
 
     <ul>
         <!--<li><a href="+about">About Malone</a></li>-->
-        <li><a href="bugs/+new">File a Bug</a> - report a bug in some software you're using</li>
+        <li>
+            <a href="bugs/+package">File a Bug on a Package</a> - report a bug
+            on something that you installed with apt, rpm, emerge or something
+            similar. <b>If you're not sure, start here.</b>
+        </li>
+        <li>
+            <a href="bugs/+product">File a Bug on a Product</a> - report a bug
+            on something that you installed manually.
+        </li>
         <li><a href="bugs">Search/View Bugs</a> - view or search bugs that have already been reported</li>
         <li><a href="/foaf/people/+new">Join</a> - create a new user account</li>
     </ul>

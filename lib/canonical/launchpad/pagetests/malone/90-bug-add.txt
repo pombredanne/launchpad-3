@@ -1,21 +1,21 @@
 
   >>> print http(r"""
-  ... GET /malone/bugs/+new HTTP/1.1
+  ... GET /malone/bugs/+package HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: __ac_name="admin"
   ... """)
   HTTP/1.1 200 Ok
   ...
-          <h3>File a Bug</h3>
+          <h3>File a Bug on a Package</h3>
   ...
 
   >>> print http(r"""
-  ... POST /malone/bugs/+new HTTP/1.1
+  ... POST /malone/bugs/+package HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 802
   ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
   ... Cookie: __ac_name="admin"
-  ... Referer: http://localhost:9000/malone/bugs/+new
+  ... Referer: http://localhost:9000/malone/bugs/+package
   ... 
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.title"
@@ -53,14 +53,14 @@
   ... """)
   HTTP/1.1 303 See Other
   ...
-          <h3>File a Bug</h3>
+          <h3>File a Bug on a Package</h3>
   ...
 
   >>> print http(r"""
   ... GET /malone/bugs/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: __ac_name="admin"
-  ... Referer: http://localhost:9000/malone/bugs/+new
+  ... Referer: http://localhost:9000/malone/bugs/+package
   ... """)
   HTTP/1.1 200 Ok
   ...

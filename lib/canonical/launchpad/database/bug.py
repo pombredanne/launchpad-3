@@ -6,7 +6,6 @@ Part of the Launchpad system.
 """
 
 from datetime import datetime
-from warnings import warn
 
 from zope.interface import implements
 
@@ -83,11 +82,10 @@ def BugFactory(*args, **kw):
             bug = bug, product = kw['product'].id, owner = kw['owner'].id)
 
     if kw.get('sourcepackagename', None):
-        warn("Distribution name is hardcoded to 1")
         BugTask(
             bug = bug, sourcepackagename = kw['sourcepackagename'],
             binarypackagename = None, owner = kw['owner'].id,
-            distribution = 1)
+            distribution = kw.get('distribution', 1))
 
     # auto-Cc the person who submitted the bug
     BugSubscription(

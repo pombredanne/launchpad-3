@@ -129,7 +129,7 @@
 
     <!-- bug filing on products hidden at this new URL till its ready -->
     <browser:addform
-        name="+XXXfilebug"
+        name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report Bug on Upstream Product"

@@ -78,18 +78,42 @@
         name="+index" />
 
     <browser:addform
-        name="+new"
+        name="+product"
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bug.BugAddView"
-        label="File a Bug"
-        fields="title description sourcepackagename product owner"
+        label="File a Bug on a Product"
+        fields="product title description owner"
         content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
-        keyword_arguments="title description sourcepackagename product owner"
+        keyword_arguments="product title description owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
-        lp:url="malone/bugs/+new">
+        lp:url="malone/bugs/+product">
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="55" />
+        <browser:widget
+           field="description"
+           class="zope.app.form.browser.TextAreaWidget"
+           height="10" />
+    </browser:addform>
+
+    <browser:addform
+        name="+package"
+        for="canonical.launchpad.interfaces.IBugSet"
+        schema="canonical.launchpad.interfaces.IBugAddForm"
+        class="canonical.launchpad.browser.bug.BugAddView"
+        label="File a Bug on a Package"
+        fields="distribution sourcepackagename title description owner"
+        content_factory="canonical.launchpad.database.BugFactory"
+        arguments=""
+        keyword_arguments="distribution sourcepackagename title description owner"
+        permission="launchpad.AnyPerson"
+        template="../templates/bug-add.pt"
+        lp:url="malone/bugs/+product">
         <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
         <browser:widget
            field="title"

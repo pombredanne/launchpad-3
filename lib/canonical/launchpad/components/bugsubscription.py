@@ -36,8 +36,11 @@ class IBugSubscriptionSetAdapter:
             if task.product:
                 best_email = _get_best_email_address(task.product.owner)
             else:
+                # XXX: Brad Bollenbach, 2004-12-15: Get the proper maintainer
+                # here, after first smoothing out the bug reporting screens
+                # over the next day or two.
+                best_email = None
                 pass
-                #best_email = _get_best_email_address(task.)
             if best_email:
                 emails.add(best_email)
 
@@ -51,14 +54,9 @@ def _get_best_email_address(person):
         valid_email_addresses = EmailAddress.select(AND(
             EmailAddress.q.personID == person.id,
             EmailAddress.q.status == EmailAddressStatus.VALIDATED.value))
-        new_email_addresses = EmailAddress.select(AND(
-            EmailAddress.q.personID == person.id,
-            EmailAddress.q.status == EmailAddressStatus.NEW.value))
-        best_email = None
 
+        best_email = None
         if valid_email_addresses:
             best_email = valid_email_addresses[0].email
-        elif new_email_addresses:
-            best_email = new_email_addresses[0].email
 
         return best_email

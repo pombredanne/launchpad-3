@@ -100,18 +100,19 @@ class IBugAddForm(IBug):
             description=_("""The thing you found this bug in,
             which was installed by something other than apt-get, rpm,
             emerge or similar"""),
-            vocabulary="Product",
-            )
+            vocabulary="Product")
     sourcepackagename = Choice(
             title=_("Source Package"), required=False,
             description=_("""The thing you found this bug in,
             which was installed via apt-get, rpm, emerge or similar"""),
-            vocabulary="SourcePackageName",
-            )
+            vocabulary="SourcePackageName")
+    distribution = Choice(
+            title=_("Linux Distribution"), required=False,
+            description=_("""Debian, Redhat, Gentoo, etc."""),
+            vocabulary="Distribution")
     binarypackage = Choice(
             title=_("Binary Package"), required=False,
-            vocabulary="BinaryPackage"
-            )
+            vocabulary="BinaryPackage")
     owner = Int(title=_("Owner"), required=True)
 
 # Interfaces for set

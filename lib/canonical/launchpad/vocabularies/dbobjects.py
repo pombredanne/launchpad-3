@@ -374,14 +374,11 @@ class SourcePackageNameVocabulary(SQLObjectVocabularyBase):
 
         return []
 
-class DistributionVocabulary(SQLObjectVocabularyBase):
+class DistributionVocabulary(NamedSQLObjectVocabulary):
     implements(IHugeVocabulary)
 
     _table = Distribution
     _orderBy = 'name'
-
-    def _toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.name)
 
     def search(self, query):
         """Return terms where query is a substring of the name"""
