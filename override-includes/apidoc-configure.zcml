@@ -1,0 +1,30 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+    <!-- Override the standard apidoc view to only be available 
+         through the debug layer.
+         Hmm... launchpad.WEGSND doesn't seem to be protecting this the
+         way I need, so setting the factory to something that will cause
+         an exception -->
+    <view
+        name="apidoc" type="*"
+        provides="zope.app.traversing.interfaces.ITraversable" for="*"
+        factory="RuntimeError"
+        permission="launchpad.WEGSND"
+        />
+    <view
+        layer="canonical.launchpad.layers.DebugLayer"
+        name="apidoc" type="*"
+        provides="zope.app.traversing.interfaces.ITraversable" for="*"
+        factory="zope.app.apidoc.apidocNamespace"
+        permission="zope.Public"
+        />
+
+    <!-- Override a strange permission in apidoc. This is probably working
+         around a bug already fixed upstream -->
+    <class class="zope.app.apidoc.APIDocumentation">
+        <require
+            interface="zope.app.container.interfaces.IReadContainer"
+            permission="zope.Public"
+            />
+    </class>
+</configure>

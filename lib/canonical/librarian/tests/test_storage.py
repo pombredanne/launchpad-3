@@ -12,15 +12,19 @@ import tempfile
 from canonical.librarian.storage import FatSamStorage, DigestMismatchError
 from canonical.librarian.storage import _sameFile, _relFileLocation
 from canonical.librarian import db
+from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import FakeZopelessConnectionDescriptor
 
 class FatSamStorageTests(unittest.TestCase):
     """Librarian test cases that don't involve the database"""
     def setUp(self):
         self.directory = tempfile.mkdtemp()
         self.storage = FatSamStorage(self.directory, db.Library())
+        FakeZopelessConnectionDescriptor.install(None)
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
+        FakeZopelessConnectionDescriptor.uninstall()
 
     def test_hasFile_missing(self):
         # Make sure hasFile returns False when a file is missing
@@ -87,13 +91,13 @@ class FatSamStorageTests(unittest.TestCase):
         newfile.append(data)
 
         # The transaction shouldn't be committed yet...
-        self.failIf(self.storage.library.committed)
+        self.failIf(SQLBase._connection.committed)
 
         # Now try to store the file
         fileid, aliasid = newfile.store()
 
         # ...but it should be committed now.
-        self.failUnless(self.storage.library.committed)
+        self.failUnless(SQLBase._connection.committed)
 
         # And the file should now be in its final location on disk, too..
         self.failUnless(self.storage.hasFile(fileid))
@@ -113,13 +117,13 @@ class FatSamStorageTests(unittest.TestCase):
         newfile._move = lambda x: 1/0
 
         # The transaction shouldn't have aborted yet...
-        self.failIf(self.storage.library.rolledback)
+        self.failIf(SQLBase._connection.rolledback)
 
         # Now try to store the file, and catch the exception
         self.assertRaises(ZeroDivisionError, newfile.store)
 
         # ...and the transaction should have aborted.
-        self.failUnless(self.storage.library.rolledback)
+        self.failUnless(SQLBase._connection.rolledback)
 
         # And the file should have been removed from its temporary location
         self.failIf(os.path.exists(newfile.tmpfilepath))
@@ -159,23 +163,10 @@ class StubLibrary:
     def lookupBySHA1(self, digest):
         return []
 
-    def makeAddTransaction(self):
-        return self
-
-    def add(self, digest, size, txn):
+    def add(self, digest, size):
         return 99
 
-    def addAlias(self, fileid, filename, mimetype, txn=None):
-        pass
-
-    def commit(self):
-        self.committed = True
-
-    def rollback(self):
-        self.rolledback = True
-
-    def _makeObsolete(self):
-        # See the XXX comment in canonical.librarian.storage.FatSameFile.store
+    def addAlias(self, fileid, filename, mimetype):
         pass
 
 
@@ -184,7 +175,7 @@ class StubLibrary2(StubLibrary):
     
     id = 0x11111110
 
-    def add(self, digest, size, txn):
+    def add(self, digest, size):
         self.id += 1
         return self.id
 

@@ -31,6 +31,7 @@ class IDistroRelease(Interface):
         description=_("The version string for this release."))
     distribution = Int(title=_("Distribution"), required=True,
         description=_("The distribution for which this is a release."))
+    bugtasks = Attribute("The bug tasks filed specifically on this release.")
     componentes = Attribute("The release componentes.")
     sections = Attribute("The release section.")
     releasestate = Attribute("The release's state.")
@@ -71,3 +72,9 @@ class IDistroRelease(Interface):
     def findBinariesByName(name):
         """Return an iterator over binary packages with a name that matches
         this one."""
+
+class IDistroReleaseSet(Interface):
+    """The set of distro releases."""
+
+    def get(distroreleaseid):
+        """Retrieve the distro release with the given distroreleaseid."""

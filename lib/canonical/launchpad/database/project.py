@@ -81,6 +81,9 @@ class Project(SQLBase):
 class ProjectSet:
     implements(IProjectSet)
 
+    def __init__(self):
+        self.title = 'Open Source Projects in the Launchpad'
+
     def __iter__(self):
         return iter(Project.select())
 

@@ -61,9 +61,9 @@
                     tal:replace="bugtask/bug/name">name</span>)</span></td>
                 <td tal:attributes="title bugtask/bug/shortdesc">
                     <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                <td tal:content="bugtask/product/project/displayname">project</td>
-                <td tal:content="bugtask/product/displayname">product</td>
-                <td tal:content="bugtask/bugstatus/lp:BugTaskStatus">status</td>
+                <td tal:content="bugtask/product/project/displayname|nothing">project</td>
+                <td tal:content="bugtask/product/displayname|nothing">product</td>
+                <td tal:content="bugtask/status/lp:BugTaskStatus">status</td>
                 <td tal:content="bugtask/severity/lp:BugSeverity">severity</td>
                 <td tal:content="bugtask/priority/lp:BugPriority">priority</td>
                 <td tal:content="bugtask/assignee/browsername|default">-</td>
@@ -99,16 +99,16 @@
                     tal:replace="bugtask/bug/name">name</span>)</span></td>
                 <td tal:attributes="title bugtask/bug/shortdesc">
                     <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                <td tal:content="bugtask/sourcepackage/distro/name">
+                <td tal:content="bugtask/distribution/name|string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                     distro
                 </td>
-                <td tal:content="bugtask/sourcepackage/name">
+                <td tal:content="bugtask/sourcepackagename/name">
                     package
                 </td>
-                <td tal:content="bugtask/bugstatus/lp:BugTaskStatus">status</td>
+                <td tal:content="bugtask/status/lp:BugTaskStatus">status</td>
                 <td tal:content="bugtask/severity/lp:BugSeverity">severity</td>
                 <td tal:content="bugtask/priority/lp:BugPriority">priority</td>
-                <td tal:content="bugtask/assignee/browsername|default">-</td>
+                <td tal:content="bugtask/assignee/displayname|default">-</td>
             </tr>
  
         </table>
@@ -140,13 +140,13 @@
                     tal:replace="bugtask/bug/name">name</span>)</span></td>
                 <td tal:attributes="title bugtask/bug/shortdesc">
                     <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                <td tal:content="bugtask/sourcepackage/distro/name">
+                <td tal:content="bugtask/distribution/name|string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
                     distro
                 </td>
-                <td tal:content="bugtask/sourcepackage/name">
+                <td tal:content="bugtask/sourcepackagename/name">
                     package
                 </td>
-                <td tal:content="bugtask/bugstatus/lp:BugTaskStatus">status</td>
+                <td tal:content="bugtask/status/lp:BugTaskStatus">status</td>
                 <td tal:content="bugtask/severity/lp:BugSeverity">severity</td>
                 <td tal:content="bugtask/priority/lp:BugPriority">priority</td>
                 <td tal:content="bugtask/assignee/browsername|default">-</td>
@@ -181,9 +181,9 @@
                     tal:replace="bugtask/bug/name">name</span>)</span></td>
                 <td tal:attributes="title bugtask/bug/shortdesc">
                     <b><span tal:replace="bugtask/bug/title">$Bug.title</span></b></td>
-                <td tal:content="bugtask/product/project/displayname">project</td>
-                <td tal:content="bugtask/product/displayname">product</td>
-                <td tal:content="bugtask/bugstatus/lp:BugTaskStatus">status</td>
+                <td tal:content="bugtask/product/project/displayname|nothing">project</td>
+                <td tal:content="bugtask/product/displayname|nothing">product</td>
+                <td tal:content="bugtask/status/lp:BugTaskStatus">status</td>
                 <td tal:content="bugtask/severity/lp:BugSeverity">severity</td>
                 <td tal:content="bugtask/priority/lp:BugPriority">priority</td>
                 <td tal:content="bugtask/assignee/browsername|default">-</td>

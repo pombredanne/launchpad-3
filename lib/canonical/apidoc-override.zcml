@@ -1,9 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/zope">
-
-  <class class="zope.app.apidoc.APIDocumentation">
-    <require
-        interface="zope.app.container.interfaces.IReadContainer"
-        permission="zope.Public"
-        />
-  </class>
-</configure>

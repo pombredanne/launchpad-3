@@ -11,8 +11,12 @@
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IEditPOTemplate"
             set_attributes="name title description copyright path
-                            priority rawfile daterawimport rawimporter
-                            rawimportstatus distrorelease sourcepackagename"
+                            priority distrorelease sourcepackagename"
+            />
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IRawFileData"
+            set_attributes="rawimportstatus"
             />
     </content>
 

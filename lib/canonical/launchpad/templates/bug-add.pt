@@ -22,6 +22,8 @@
             Bug reports provide valuable information to developers who maintain
             and improve software. Before you report a bug, please ensure that it
             hasn't <a href="/malone/bugs">already been reported</a>.
+        <br />
+        <br />
         </div>
 
         <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">

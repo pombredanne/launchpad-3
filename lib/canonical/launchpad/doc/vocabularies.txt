@@ -40,7 +40,20 @@ vocabulary registry.
 Enumerable Vocabularies
 =======================
 
-XXX: document your vocabularies here please!
+Creating a new Enumeratable Vocabulary based on an existent dbschema
+constant:
+
+    >>> from canonical.lp import dbschema
+    >>> from canonical.launchpad.vocabularies import vocab_factory
+    >>> PackagingVocabulary = vocab_factory(dbschema.Packaging)
+    
+The right place to do it is in the file vocabularies/dbschema.py.
+Note: don't forget to registry your brand new instance for zope lookup
+in configure.zcml.
+
+o PackagingVocabulary - reflects the available constants for
+  Packaging.packaging field.
+
 
 Non-Enumerable Vocabularies
 ===========================
@@ -91,5 +104,23 @@ o ValidOwner - all 'valid' person or team in Launchpad context, able to
    XXX cprov 20050128
    Now, ValidOwner simply extends Person, i.e., returns all valid person
    or team, so we have the same usage as PersonVocabulary
+
+    >>> vocab = vocabulary_registry.get(None, "ValidOwner")
+    >>> stuff = vocab.search('team')
+    >>> [t.token for t in stuff]
+    ['name21', 'name18', 'name17', 'name19', 'name20']
+
+o ValidGPGKey - all LP valid GPG key for a given person, it user FTI
+  to query on Person table and return the respective rows from GPGKey
+  table.
+
+   XXX cprov 20050227
+   The concept of 'Valid GPGKey' is not well defined yet.
+
+    >>> vocab = vocabulary_registry.get(None, "ValidGPGKey")
+    >>> stuff = vocab.search('mark')
+    >>> [t.token for t in stuff]
+    ['1']
+
 
 XXX: document more vocabularies here, particularly when they break!

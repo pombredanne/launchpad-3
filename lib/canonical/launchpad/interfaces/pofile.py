@@ -54,7 +54,38 @@ class IRosettaStats(Interface):
         translated and don't have an update from Rosetta."""
 
 
-class IPOTemplate(IRosettaStats):
+class ICanAttachRawFileData(Interface):
+    """Accept .po or .pot attachments."""
+
+    def attachRawFileData(contents, importer=None):
+        """Attach a .pot/.po file to be imported later with doRawImport call.
+
+        The content is parsed first with the POParser, if it has any problem
+        the POSyntaxError or POInvalidInputError exeption will be raised.
+        """
+
+class IRawFileData(Interface):
+    """Represent a raw file data from a .po or .pot file."""
+
+    rawfile = Attribute("The pot/po file itself in raw mode.")
+
+    rawimporter = Attribute("The person that attached the rawfile.")
+
+    daterawimport = Attribute("The date when the rawfile was attached.")
+
+    rawimportstatus = Attribute(
+        "The status of the import: 1 ignore import, 2 pending to be imported,"
+        " 3 imported already and 4 failed.")
+
+    def doRawImport(logger=None):
+        """Execute the import of the rawfile field, if it's needed.
+
+        If a logger argument is given, log there any problem found with the
+        import.
+        """
+
+
+class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     """A PO template. For example 'nautilus/po/nautilus.pot'."""
 
     id = Attribute("The id of this POTemplate.")
@@ -85,20 +116,16 @@ class IPOTemplate(IRosettaStats):
 
     owner = Attribute("The owner of the template.")
 
-    rawfile = Attribute("The pot file itself in raw mode.")
+    sourcepackagename = Attribute(
+        "The name of the sourcepackage from where this PO template is.")
 
-    rawimporter = Attribute("The person that attached the rawfile.")
+    sourcepackageversion = Attribute(
+        "The version of the sourcepackage from where this PO template comes.")
 
-    daterawimport = Attribute("The date when the rawfile was attached.")
+    distrorelease = Attribute(
+        "The distribution where this PO template belongs.")
 
-    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
-        imported, 2 failed.""")
-
-    sourcepackagename = Attribute("""The name of the sourcepackage from where
-        this PO template is.""")
-
-    distrorelease = Attribute("""The distribution where this PO template
-        belongs""")
+    header = Attribute("The header of this .pot file.")
 
 
     # A "current" messageset is one that was in the latest version of
@@ -181,15 +208,6 @@ class IPOTemplate(IRosettaStats):
 class IEditPOTemplate(IPOTemplate):
     """Edit interface for an IPOTemplate."""
 
-    rawfile = Attribute("The pot file itself in raw mode.")
-
-    rawimporter = Attribute("The person that attached the rawfile.")
-
-    daterawimport = Attribute("The date when the rawfile was attached.")
-
-    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
-        imported, 2 failed.""")
-
     sourcepackagename = Attribute("""The name of the sourcepackage from where
         this PO template is.""")
 
@@ -228,11 +246,6 @@ class IEditPOTemplate(IPOTemplate):
 
         Returns the newly created message set.
         """
-
-    def doRawImport(logger=None):
-        """Executes the import of the rawfile field if it's needed.
-        If a logger argument is given, logs there any problem we have with the
-        import."""
 
 
 class IPOTMsgSet(Interface):
@@ -314,7 +327,7 @@ class IPOMsgID(Interface):
     msgid = Attribute("A msgid string.")
 
 
-class IPOFile(IRosettaStats):
+class IPOFile(IRosettaStats, ICanAttachRawFileData):
     """A PO File."""
 
     id = Attribute("This PO file's id.")
@@ -347,14 +360,6 @@ class IPOFile(IRosettaStats):
 
     filename = Attribute("The name of the file that was imported")
 
-    rawfile = Attribute("The pot file itself in raw mode.")
-   
-    rawimporter = Attribute("The person that attached the rawfile.")
-    
-    daterawimport = Attribute("The date when the rawfile was attached.")
-
-    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
-        imported, 2 failed.""")
 
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
@@ -433,9 +438,6 @@ class IPOFile(IRosettaStats):
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
 
-    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
-        imported, 2 failed.""")
-
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
 
@@ -458,11 +460,6 @@ class IEditPOFile(IPOFile):
 
         Returns the newly created message set.
         """
-
-    def doRawImport(logger=None):
-        """Executes the import of the rawfile field if it's needed.
-        If a logger argument is given, logs there any problem we have with the
-        import."""
 
 
 class IPOMsgSet(Interface):

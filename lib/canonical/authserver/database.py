@@ -63,6 +63,10 @@ class DatabaseUserDetailsStorage(object):
             # No-one found
             return {}
 
+        if passwordDigest is None:
+            # The user has no password, which means they can't login.
+            return {}
+        
         if passwordDigest.rstrip() != sshaDigestedPassword.rstrip():
             # Wrong password
             return {}
@@ -174,10 +178,10 @@ class DatabaseUserDetailsStorage(object):
         query = (
             "SELECT Person.id, Person.displayname, Person.password "
             "FROM Person "
-            "INNER JOIN EmailAddress ON EmailAddress.person = Person.id "
         )
         transaction.execute(
             query + 
+            "INNER JOIN EmailAddress ON EmailAddress.person = Person.id "
             "WHERE lower(EmailAddress.email) = '%s' "
             % (str(loginID).lower().replace("'", "''"),)
         )
@@ -208,7 +212,6 @@ class DatabaseUserDetailsStorage(object):
             return None
 
         row = list(row)
-        row[1] = row[1].decode('utf-8')
         passwordDigest = row[2]
         if passwordDigest:
             salt = saltFromDigest(passwordDigest)
@@ -231,6 +234,8 @@ class DatabaseUserDetailsStorage(object):
         return ri(self._getSSHKeysInteraction, archiveName)
 
     def _getSSHKeysInteraction(self, transaction, archiveName):
+        # The PushMirrorAccess table explicitly says that a person may access a
+        # particular push mirror.
         transaction.execute(
             "SELECT keytype, keytext "
             "FROM SSHKey "
@@ -238,7 +243,26 @@ class DatabaseUserDetailsStorage(object):
             "WHERE PushMirrorAccess.name = '%s'"
             % (archiveName.replace("'", "''"),)
         )
-        return list(transaction.fetchall())
+        authorisedKeys = transaction.fetchall()
+        
+        # A person can also access any archive named after a validated email
+        # address.
+        if '--' in archiveName:
+            email, suffix = archiveName.split('--', 1)
+        else:
+            email = archiveName
+
+        transaction.execute(
+            "SELECT keytype, keytext "
+            "FROM SSHKey "
+            "JOIN EmailAddress ON SSHKey.person = EmailAddress.person "
+            "WHERE EmailAddress.email = '%s' "
+            "AND EmailAddress.status in (2, 4)"
+            % (email.replace("'", "''"),)
+        )
+        authorisedKeys.extend(transaction.fetchall())
+        
+        return authorisedKeys
 
 
 def saltFromDigest(digest):
@@ -246,5 +270,5 @@ def saltFromDigest(digest):
 
     :param digest: base64-encoded digest
     """
-    return digest.decode('base64')[20:].encode('base64')
+    return digest.encode('us-ascii').decode('base64')[20:].encode('base64')
 

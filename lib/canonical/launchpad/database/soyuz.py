@@ -36,6 +36,10 @@ class DistroArchRelease(SQLBase):
                        foreignKey='Person',
                        notNull=True)
 
+    chroot = ForeignKey(dbName='chroot',
+                        foreignKey='LibraryFileAlias',
+                        notNull=False)
+
 class DistributionRole(SQLBase):
 
     implements(IDistributionRole)

@@ -1,17 +1,22 @@
+# Python imports
+from datetime import datetime
+
 # Zope imports
 from zope.interface import implements
 
 # SQLObject/SQLBase
-from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
+from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol, BoolCol
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.launchpad.interfaces import IBuild, IBuilder, IBuildSet
+from canonical.launchpad.interfaces import IBuild, IBuilder, IBuildSet, \
+                                           IBuildQueue
 
 class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
 
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
+                              default=datetime.utcnow())
     processor = ForeignKey(dbName='processor', foreignKey='Processor', 
                            notNull=True)
     distroarchrelease = ForeignKey(dbName='distroarchrelease', 
@@ -53,4 +58,17 @@ class Builder(SQLBase):
     title = StringCol(dbName='title')
     description = StringCol(dbName='description')
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    builderok = BoolCol(dbName='builderok', notNull=True)
+    failnotes = StringCol(dbName='failnotes')
     
+class BuildQueue(SQLBase):
+    implements(IBuildQueue)
+    _table = "BuildQueue"
+
+    build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
+    builder = ForeignKey(dbName='builder', foreignKey='Builder',
+                         notNull=False)
+    created = DateTimeCol(dbName='created', notNull=True)
+    buildstart = DateTimeCol(dbName='buildstart', notNull=False)
+    logtail = StringCol(dbName='logtail', notNull=False)
+

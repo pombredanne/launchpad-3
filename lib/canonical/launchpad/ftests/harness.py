@@ -16,6 +16,7 @@ from sqlos.interfaces import IConnectionName
 from canonical.database.sqlbase import SQLBase
 from canonical.lp import initZopeless
 
+import sqlos
 from sqlos.connection import connCache
 
 def _disconnect_sqlos():
@@ -33,6 +34,7 @@ def _disconnect_sqlos():
     for key, connection in items:
         connection.rollback()
         del connCache[key]
+    sqlos.connection.connCache = {}
 
 def _reconnect_sqlos():
     _disconnect_sqlos()

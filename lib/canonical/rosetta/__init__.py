@@ -20,6 +20,9 @@ class RosettaApplication:
 
     __parent__ = rootObject
 
+    def __init__(self):
+        self.title = 'Rosetta: Translations in the Launchpad'
+
     def translatables(self, translationProject=None):
         """This will give a list of the translatables in the given
         Translation Project. For the moment it just returns every

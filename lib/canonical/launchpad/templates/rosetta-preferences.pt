@@ -22,7 +22,7 @@
     <h2>My personal information</h2>
 
     <p class="formHelp">
-    Here you are able to change your personal information like name and password.
+    Here you are able to change your name and your password.
     </p>
 
     <form action="prefs" method="post" tal:define="translator view/person">
@@ -65,7 +65,9 @@
     <h2>My Languages</h2>
 
     <p class="formHelp">
-    Add or remove languages in your language list by double clicking the entries or using the labeled buttons. Use <code>Ctrl</code> to select multiple elements.
+    Add or remove languages in your language list by double clicking the
+    entries or using the labeled buttons. Use <code>Ctrl</code> to select
+    multiple elements.
     </p>
 
     <form action="prefs" method="post"
@@ -77,7 +79,7 @@
             <br />
             <!-- These are the available languages. -->
             <select id="prefs-available-languages"
-                    naoe="availablelanguages"
+                    name="availablelanguages"
                     size="10"
                     style="width: 20em;"
                     multiple="multiple"
@@ -88,9 +90,7 @@
                             tal:attributes="name language/code" />
 
             </select>
-        </div>
-
-        <div style="float: left; padding-top: 5em;">
+            <br />
             <input type="submit"
                    name="add"
                    value="Add to my languages &raquo;"
@@ -121,7 +121,7 @@
                      onclick="javascript:removeWords('prefs-selected-languages');return false;">
         </div>
 
-        <div class="formControls">
+        <div class="formControls" style="clear: left">
             <input type="submit" name="SAVE-LANGS" value="Save" />
         </div>
     </form>

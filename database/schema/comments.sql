@@ -96,8 +96,7 @@ COMMENT ON COLUMN POTemplate.daterawimport IS 'The date when the rawfile was att
 COMMENT ON COLUMN POTemplate.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
 COMMENT ON COLUMN POTemplate.sourcepackagename IS 'A reference to a sourcepackage name from where this POTemplate comes.';
 COMMENT ON COLUMN POTemplate.distrorelease IS 'A reference to the distribution from where this POTemplate comes.';
-COMMENT ON COLUMN POTemplate.sourcepackagerelease IS 'The sourcepackagerelease from where this POTemplate was imported last time.';
-COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time. This field is temporal, if you use it add a note at https://dogfood.ubuntu.com/malone/bugs/220/';
+COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version string from where this potemplate was imported last time with our buildd <-> Rosetta gateway.';
 COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
 
 -- POFile
@@ -464,6 +463,7 @@ COMMENT ON COLUMN DistroRelease.owner IS 'The ultimate owner of this distrorelea
 
 COMMENT ON TABLE DistroArchRelease IS 'DistroArchRelease: A soyuz distribution release for a given architecture. A distrorelease runs on various architectures. The distroarchrelease groups that architecture-specific stuff.';
 COMMENT ON COLUMN DistroArchRelease.distrorelease IS 'The distribution which this distroarchrelease is part of.';
+COMMENT ON COLUMN DistroArchRelease.chroot IS 'The chroot tarball used to build packages for this distroarchrelease. Without this, the buildd master is unable to schedule builds for this distroarchrelease.';
 
 -- DistributionRole
 

@@ -9,6 +9,7 @@ import unittest
 from canonical.librarian.storage import FatSamStorage, DigestMismatchError
 from canonical.librarian import db
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.database.sqlbase import begin
 
 
 class FatSamStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
@@ -29,6 +30,8 @@ class FatSamStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
+        from canonical.database.sqlbase import begin
+        begin()
         super(FatSamStorageDBTests, self).tearDown()
 
     def test_addFile(self):

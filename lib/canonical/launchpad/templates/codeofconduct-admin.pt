@@ -1,0 +1,82 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <title metal:fill-slot="title">Code of Conduct Admin Console</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Code of Conduct Admin Console</h1>
+
+    <div class="documentDescription">
+       Here the CoC Admin can search for specific Signed CoC and
+    perform actions as Approve, Reject, etc.
+    </div>
+
+  <fieldset>
+    <legend>Search</legend>
+    <table>
+      <form name="search" action="" method="POST">
+      <tr>
+      <td>
+        <select name="searchfor">
+          <tal:block tal:define="searchfor request/searchfor|nothing">
+          <option tal:condition="python: searchfor == 'all'"
+                  value="all" selected>ALL</option>
+          <option tal:condition="python: searchfor != 'all'"
+                  value="all">ALL</option>
+          <option tal:condition="python: searchfor == 'activeonly'"
+                  value="activeonly" selected>ACTIVE</option>
+          <option tal:condition="python: searchfor != 'activeonly'"
+                  value="activeonly">ACTIVE</option>
+          <option tal:condition="python: searchfor == 'inactiveonly'"
+                  value="inactiveonly" selected>INACTIVE</option>
+          <option tal:condition="python: searchfor != 'inactiveonly'"
+                  value="inactiveonly">INACTIVE</option>
+          </tal:block>
+        </select>
+      </td>
+      <td><b>Signed CoCs</b> from</td>
+      <td>
+        <input type="text" name="name" 
+               tal:attributes="value request/name|nothing"/>
+      </td>
+      <td>
+        <div class="formControls">
+          <input type="submit" value="Search"/>
+        </div>
+      </td></tr>
+      </form>
+    </table>
+   </fieldset>
+
+   <div tal:condition="view/search">
+     <h3>Results</h3>
+
+     <ul tal:condition="view/results">
+       <li tal:repeat="code view/results">
+           <a tal:attributes="href code/id"
+	      tal:content="code/displayname">CoC</a>
+       </li>
+     </ul>
+
+     <pre tal:condition="not:view/results">No Signed CoC Found</pre>
+
+   </div>
+
+
+   <p><a href="+acknowledge">Acknowledge</a> Paper Submited Code of Conduct.</p>
+
+</div>
+
+</body>
+</html>

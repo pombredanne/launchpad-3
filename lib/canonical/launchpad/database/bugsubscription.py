@@ -41,5 +41,3 @@ class BugSubscriptionSet(BugSetBase):
         conn = BugSubscription._connection
         # I want an exception raised if id can't be converted to an int
         conn.query('DELETE FROM BugSubscription WHERE id=%d' % int(id))
-
-

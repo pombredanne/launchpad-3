@@ -15,14 +15,9 @@
 
 <body>
 
-<div metal:fill-slot="main">
+<tal:thing replace="view/submitForm"/>
 
-    <!--
-    This tal:dummy block never turns into HTML, but it triggers the edit
-    method on the Rosetta ProductView class. This checks to see if a form
-    has been submitted to it, and if so updates the product.
-    -->
-    <tal:dummy condition="view/edit" />
+<div metal:fill-slot="main">
 
     <h1>Edit "<span
     tal:content="context/name">$POTemplate.name</span>" POTemplate
@@ -79,6 +74,22 @@
                        value="" tal:attributes="value context/title" />
         </div>
 
+        <div class="formControls">
+            <input class="context" type="submit"
+                   name="EDIT"
+                   value="Edit" />
+        </div>
+
+        </form>
+
+    </fieldset>
+
+    <fieldset>
+        <legend>Upload PO Template Data</legend>
+
+        <form method="POST" enctype="multipart/form-data"
+            tal:attributes="action string: ${request/URL}">
+
         <div class="field">
 
             <label>File</label>
@@ -90,17 +101,14 @@
             <input name="file" type="file" />
         </div>
 
-
         <div class="formControls">
-
             <input class="context" type="submit"
-                   name="Update"
-                   value="Update POTemplate" />
-
+                   name="UPLOAD"
+                   value="Upload" />
         </div>
+
+
         </form>
-
-
     </fieldset>
 
 </div>

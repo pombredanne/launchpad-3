@@ -11,7 +11,7 @@
         <img src="/++resource++edit.gif">
         <a href="+addsources">Add RCS</a><br />
         <img src="/++resource++edit.gif">
-        Add Package<br />
+        <a href="+addpackage">Add Package</a><br />
         <img src="/++resource++edit.gif">
         <a href="+addseries">Add Series</a><br />
         <img src="/++resource++edit.gif">

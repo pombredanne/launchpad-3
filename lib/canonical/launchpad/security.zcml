@@ -13,16 +13,23 @@
 
   <adapter
       provides="canonical.launchpad.interfaces.IAuthorization"
+      for="canonical.launchpad.interfaces.IBug"
+      name="launchpad.View"
+      factory="canonical.launchpad.security.BugPublicToAllOrPrivateToExplicitSubscribers"
+      />
+
+  <adapter
+      provides="canonical.launchpad.interfaces.IAuthorization"
       for="canonical.launchpad.interfaces.IBugTask"
       name="launchpad.View"
-      factory="canonical.launchpad.security.PublicToAllOrPrivateToExplicitSubscribers"
+      factory="canonical.launchpad.security.TaskPublicToAllOrPrivateToExplicitSubscribers"
       />
 
   <adapter
       provides="canonical.launchpad.interfaces.IAuthorization"
       for="canonical.launchpad.interfaces.IReadOnlyUpstreamBugTask"
       name="launchpad.View"
-      factory="canonical.launchpad.security.PublicToAllOrPrivateToExplicitSubscribers"
+      factory="canonical.launchpad.security.TaskPublicToAllOrPrivateToExplicitSubscribers"
       />
 
   <adapter
@@ -72,6 +79,20 @@
       for="canonical.launchpad.interfaces.IEditableUpstreamBugTask"
       name="launchpad.Edit"
       factory="canonical.launchpad.security.EditByProductOwnerOrAssignee"
+      />
+
+  <adapter
+      provides="canonical.launchpad.interfaces.IAuthorization"
+      for="zope.interface.Interface"
+      name="zope.app.apidoc.UseAPIDoc"
+      factory="canonical.launchpad.security.UseApiDoc"
+      />
+
+  <adapter
+      provides="canonical.launchpad.interfaces.IAuthorization"
+      for="canonical.launchpad.interfaces.ISignedCodeOfConduct"
+      name="launchpad.Edit"
+      factory="canonical.launchpad.security.EditByOwner"
       />
 
 </configure>

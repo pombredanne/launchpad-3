@@ -6,6 +6,7 @@ from urllib2 import URLError
 # Zope imports
 from zope.interface import implements
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin
@@ -17,17 +18,12 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageRelease, \
-                                           ISourcePackageReleasePublishing, \
-                                           ISourcePackage, \
-                                           ISourcePackageName, \
-                                           ISourcePackageNameSet, \
-                                           ISourcePackageSet, \
-                                           ISourcePackageInDistroSet, \
-                                           ISourcePackageUtility
-
+    ISourcePackageReleasePublishing, ISourcePackage, ISourcePackageName, \
+    ISourcePackageNameSet, ISourcePackageSet, ISourcePackageInDistroSet, \
+    ISourcePackageUtility
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.binarypackage import BinaryPackage, \
-                                                       DownloadURL
+    DownloadURL
 
 class SourcePackage(SQLBase):
     """A source package, e.g. apache2."""
@@ -138,7 +134,7 @@ class SourcePackage(SQLBase):
 
     def lastversions(self, distroRelease):
         return self.uploadsByStatus(distroRelease, 
-                                    dbschema.PackagePublishingStatus.SUPERCEDED,
+                                    dbschema.PackagePublishingStatus.SUPERSEDED,
                                     do_sort=True)
 
 
@@ -206,6 +202,7 @@ class SourcePackageInDistroSet(object):
     def __init__(self, distrorelease):
         """Take the distrorelease when it makes part of the context"""
         self.distrorelease = distrorelease
+        self.title = 'Source Packages in: ' + distrorelease.title
 
     def findPackagesByName(self, pattern, fti=False):
         srcutil = getUtility(ISourcePackageUtility)
@@ -297,14 +294,23 @@ class SourcePackageNameSet(object):
     implements(ISourcePackageNameSet)
 
     def __getitem__(self, name):
+        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
         try:
             return SourcePackageName.byName(name)
         except SQLObjectNotFound:
             raise KeyError, name
 
     def __iter__(self):
+        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
         for sourcepackagename in SourcePackageName.select():
             yield sourcepackagename
+
+    def get(self, sourcepackagenameid):
+        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        try:
+            return SourcePackageName.get(sourcepackagenameid)
+        except SQLObjectNotFound:
+            raise NotFoundError(sourcepackagenameid)
 
 
 class SourcePackageRelease(SQLBase):
@@ -312,11 +318,16 @@ class SourcePackageRelease(SQLBase):
     _table = 'SourcePackageRelease'
 
     section = ForeignKey(foreignKey='Section', dbName='section')
-    creator = ForeignKey(foreignKey='Person', dbName='creator')
+    creator = ForeignKey(foreignKey='Person', dbName='creator', notNull=True)
     component = ForeignKey(foreignKey='Component', dbName='component')
     sourcepackage = ForeignKey(foreignKey='SourcePackage',
-                               dbName='sourcepackage')
+                               dbName='sourcepackage', notNull=True)
+    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+                                   dbName='sourcepackagename', notNull=True)
+    maintainer = ForeignKey(foreignKey='Person', dbName='maintainer',
+                            notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
+    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
 
     urgency = IntCol(dbName='urgency', notNull=True)
     dateuploaded = DateTimeCol(dbName='dateuploaded', notNull=True,
@@ -336,6 +347,10 @@ class SourcePackageRelease(SQLBase):
     #
     # Properties
     #
+    def _name(self):
+        return self.sourcepackage.sourcepackagename.name
+    name = property(_name)
+
     def _urgency(self):
         for urgency in dbschema.SourcePackageUrgency.items:
             if urgency.value == self.urgency:
@@ -404,20 +419,29 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     _table = 'VSourcePackageReleasePublishing'
 
     # XXXkiko: IDs in this table are *NOT* unique!
-    # XXXkiko: clean up notNulls
-    datepublished = DateTimeCol(dbName='datepublished')
-    publishingstatus = IntCol(dbName='publishingstatus', notNull=True)
-
-    name = StringCol(dbName='name', notNull=True)
-    shortdesc = StringCol(dbName='shortdesc', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
-    componentname = StringCol(dbName='componentname', notNull=True)
-
+    name = StringCol(dbName='name')
+    shortdesc = StringCol(dbName='shortdesc')
     maintainer = ForeignKey(foreignKey='Person', dbName='maintainer')
+    description = StringCol(dbName='description')
+    publishingstatus = IntCol(dbName='publishingstatus')
+    datepublished = DateTimeCol(dbName='datepublished')
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease')
-    #XXX: salgado: wtf is this?
-    #MultipleJoin('Build', joinColumn='sourcepackagerelease'),
+    componentname = StringCol(dbName='componentname')
+
+
+    # XXX: Daniel Debonzi. Hack to do not query the sourcepackagename
+    # inherited from SourcePackageRelease but that is not available in
+    # VSourcePackageReleasePublishing
+    sourcepackagename = None
+
+    def _title(self):
+        title = 'Source package '
+        title += self.name
+        title += ' in ' + self.distrorelease.distribution.name
+        title += ' ' + self.distrorelease.name
+        return title
+    title = property(_title)
 
     def __getitem__(self, version):
         """Get a  SourcePackageRelease"""

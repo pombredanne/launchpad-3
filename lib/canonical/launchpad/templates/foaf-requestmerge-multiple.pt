@@ -1,0 +1,70 @@
+<tal:do-this-first tal:content="view/processForm" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">Merge User Accounts</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div id="content" class="documentEditable">
+  <div class="documentContent" id="region-content">
+
+    <tal:block tal:condition="not: view/formProcessed">
+      <h1>Merge User Accounts</h1>
+
+      <p>The account <em><span tal:replace="view/dupe/name" /></em>,
+        which you're trying to merge have more than one registered email
+        address. In order to complete the merge you have to prove that you
+        have access to all email addresses registered for this account. To do
+        so, just select all of them and click on <em>Submit</em>. If by any
+        case you don't have access to any of these email addresses, we'll not
+        be able to complete the merge of that account into your existing one,
+        but all email addresses that you prove you have access will be
+        available in your account.</p>
+
+      <form name="mergerequest" action="" method="POST">
+      <input type="hidden" name="dupe" tal:attributes="value request/dupe" />
+      <table>
+        <tr tal:repeat="email view/dupeemails">
+          <td>
+            <input type="checkbox" name="selected" checked
+                   tal:attributes="value email/id" />
+          </td>
+          <td tal:content="email/email">
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" align="right">
+            <input type="submit" value="Submit" />
+          </td>
+        </tr>
+      </table>
+      </form>
+    </tal:block>
+
+    <tal:block tal:condition="view/formProcessed">
+      <h1>Merge User Accounts</h1>
+
+      <p>An email message was sent to each email address you selected. Please
+      follow the instructions on each of those messages to complete the
+      merge.</p>
+    </tal:block>
+
+  </div>
+  </div>
+
+</div> 
+
+</body>
+</html>
+

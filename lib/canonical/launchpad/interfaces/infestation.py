@@ -32,6 +32,8 @@ class IBugProductInfestation(Interface):
     lastmodified = Datetime(title=_('Last Modified'))
     lastmodifiedby = Int(title=_('Last Modified By'))
 
+    # used for launchpad page layout
+    title = Attribute('Title')
 
 class IBugPackageInfestation(Interface):
     """Represents a report that a bug does or does not affect the source
@@ -53,9 +55,13 @@ class IBugPackageInfestation(Interface):
     lastmodified = Datetime(title=_('Last Modified'))
     lastmodifiedby = Int(title=_('Last Modified By'))
 
+    # used for launchpad page layout
+    title = Attribute('Title')
 
 class IBugProductInfestationSet(Interface):
     """A set for IBugProductInfestations."""
+
+    title = Attribute('Title')
 
     bug = Int(title=_("Bug id"), readonly=True)
 
@@ -67,6 +73,8 @@ class IBugProductInfestationSet(Interface):
 
 class IBugPackageInfestationSet(Interface):
     """A set for IBugPackageInfestations."""
+
+    title = Attribute('Title')
 
     bug = Int(title=_("Bug id"), readonly=True)
 

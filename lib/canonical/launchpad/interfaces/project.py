@@ -103,6 +103,8 @@ class IProject(Interface):
 class IProjectSet(Interface):
     """The collection of projects."""
 
+    title = Attribute('Title')
+
     def __iter__():
         """Return an iterator over all the projects."""
 

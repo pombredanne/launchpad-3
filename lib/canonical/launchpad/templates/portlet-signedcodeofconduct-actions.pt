@@ -1,0 +1,21 @@
+<div class="portlet">
+    <h4>Actions:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <img src="/++resource++edit.gif">
+        <a href="+edit">Edit Signature</a><br />
+
+        <img src="/++resource++edit.gif">
+        <a href="+active">Active Signature</a><br />
+
+        <img src="/++resource++edit.gif">
+        <a href="+deactive">Deactive Signature</a>
+
+        <img src="/++resource++edit.gif">
+        <a href="../">Back to Admin Console</a>
+	
+        </div>
+    </div>
+</div>

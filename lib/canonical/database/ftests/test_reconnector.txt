@@ -39,7 +39,8 @@ Connect to postgres via the proxy.  This will use the reconnector.
 
     >>> import psycopg
     >>> import canonical.lp
-    >>> conn = psycopg.connect('dbname=%s host=localhost port=5555' % canonical.lp.dbname)
+    >>> conn = psycopg.connect('dbname=%s user=%s host=localhost port=5555' % (
+    ...     canonical.lp.dbname, canonical.lp.dbuser))
 
 Check that the connection is working normally.
 
@@ -117,6 +118,10 @@ Clean up the proxy.
     >>> wait_until_proxy_is_stopped()
     >>> os.remove('twistd.log')
     >>> os.remove('portforward.tap')
+
+Close our connection
+
+    >>> conn.close()
 
 Uninstall the reconnector.
 

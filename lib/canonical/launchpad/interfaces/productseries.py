@@ -17,6 +17,7 @@ class IProductSeries(Interface):
     product = Choice( title=_('Product'), required=True,
                       vocabulary='Product')
     name = Text(title=_('Name'), required=True)
+    title = Attribute('Title')
     displayname = Text( title=_('Display Name'), required=True)
     shortdesc = Text(title=_("Short Description"), required=True)
     # convenient joins
@@ -24,6 +25,7 @@ class IProductSeries(Interface):
                                   Series."))
     def getRelease(version):
         """Get the release in this series that has the specified version."""
+
     
 class IProductSeriesSet(Interface):
     """A set of ProductSeries objects. Note that it can be restricted by

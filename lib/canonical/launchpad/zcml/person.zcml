@@ -46,12 +46,55 @@
   <browser:pages
       for="canonical.launchpad.interfaces.IPersonSet"
       permission="zope.Public"
+      class="canonical.launchpad.browser.UbuntiteListView">
+      <browser:page
+          name="+ubuntitelist"
+          template="../templates/people-list.pt"
+          lp:url="foaf/people/+ubuntitelist" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPersonSet"
+      permission="zope.Public"
       class="canonical.launchpad.browser.FOAFSearchView">
       <browser:page
           name="+index"
           template="../templates/people-index.pt"
           lp:url="foaf/people/+index" />
   </browser:pages>
+
+  <browser:addform
+      name="+requestmerge"
+      for="canonical.launchpad.interfaces.IPersonSet"
+      schema="canonical.launchpad.interfaces.IRequestPeopleMerge"
+      label="Request Merge of User Accounts"
+      fields="dupeaccount"
+      class="canonical.launchpad.browser.RequestPeopleMergeView"
+      permission="launchpad.AnyPerson"
+      template="../templates/foaf-requestmerge.pt"
+      lp:url="foaf/people/+requestmerge">
+  </browser:addform>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPersonSet"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.RequestPeopleMergeMultipleEmailsView">
+      <browser:page
+          name="+requestmerge-multiple"
+          template="../templates/foaf-requestmerge-multiple.pt"
+          lp:url="foaf/people/+requestmerge-multiple" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPersonSet"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.FinishedPeopleMergeRequestView">
+      <browser:page
+          name="+mergerequest-sent"
+          template="../templates/foaf-mergerequest-sent.pt"
+          lp:url="foaf/people/+mergerequest-sent" />
+  </browser:pages>
+
 
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
@@ -70,7 +113,8 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.ITeam"
       label="Create a new Team"
-      fields="displayname teamdescription email"
+      fields="displayname teamdescription defaultmembershipperiod 
+              defaultrenewalperiod subscriptionpolicy email"
       content_factory="canonical.launchpad.database.Person"
       class="canonical.launchpad.browser.TeamAddView"
       permission="launchpad.AnyPerson"
@@ -124,7 +168,7 @@
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"
       permission="zope.Public"
-      class="canonical.launchpad.browser.PersonView">
+      class="canonical.launchpad.browser.TeamView">
       <browser:page
           name="+index"
           template="../templates/team-index.pt"
@@ -148,26 +192,37 @@
           lp:url="foaf/person/$person.id/+editmembers" />
   </browser:pages>
 
-  <!-- 
   <browser:editform
       name="+edit"
+      for="canonical.launchpad.interfaces.ITeam"
+      class="canonical.launchpad.browser.TeamEditView"
+      schema="canonical.launchpad.interfaces.ITeam"
+      fields="displayname teamdescription defaultmembershipperiod 
+              defaultrenewalperiod subscriptionpolicy"
+      label="Edit Team Information"
+      permission="launchpad.Edit"
       template="../templates/team-edit.pt"
       lp:url="foaf/person/$person.id/+edit">
-  </browser:editform
+  </browser:editform>
 
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.TeamView">
+      class="canonical.launchpad.browser.TeamJoinView">
       <browser:page
           name="+join"
           template="../templates/team-join.pt"
           lp:url="foaf/person/$person.id/+join" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="launchpad.AnyPerson"
+      class="canonical.launchpad.browser.TeamUnjoinView">
       <browser:page
           name="+unjoin"
           template="../templates/team-unjoin.pt"
           lp:url="foaf/person/$person.id/+unjoin" />
   </browser:pages>
-  -->
 
 </configure>

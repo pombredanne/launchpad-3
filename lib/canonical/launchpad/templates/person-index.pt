@@ -50,8 +50,11 @@
     <div class="documentContent" id="region-content">
 
     <div>
-      <h1><span tal:content="context/displayname"></span></h1>
-        <br />
+      <h1><span tal:content="context/displayname">DISPAYNAME</span>
+      <span tal:condition="context/ubuntite"><i>(Ubuntite)</i></span></h1>
+
+      <br/>
+
         <table width="80%">
           <tr>
             <td>Name:</td>
@@ -132,6 +135,11 @@
             </td>
           </tr>
 
+	  <tr>
+	    <td>Signed Codes of Conduct:</td>
+	    <td><a href="+codesofconduct">Handle CoCs</a></td>
+	  </tr>
+
           <tr>
             <td></td>
             <td class="listingNext"><a href="+edit">Edit Profile</a></td>
@@ -148,7 +156,7 @@
         <table>
           <tr tal:repeat="membership context/memberships">
             <td>
-              <span tal:replace="membership/rolename"></span> of 
+              <span tal:replace="membership/statusname"></span> of 
               <a tal:attributes="href string:../${membership/team/name}"
                  tal:content="membership/team/displayname">foo</a>
             </td>

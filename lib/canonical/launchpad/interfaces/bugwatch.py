@@ -1,7 +1,7 @@
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 
@@ -21,11 +21,16 @@ class IBugWatch(Interface):
             )
     owner = Int(title=_('Owner'), required=True, readonly=True)
 
+    # required for launchpad pages
+    title = Attribute('Bug watch title')
+
 
 class IBugWatchSet(Interface):
     """A set for IBugWatch objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
+
+    title = Attribute('Title')
 
     def __getitem__(key):
         """Get a BugWatch"""

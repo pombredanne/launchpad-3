@@ -2,16 +2,18 @@
 
 # sqlobject/sqlos
 from sqlobject import LIKE, AND, SQLObjectNotFound
-from canonical.database.sqlbase import quote
+from canonical.database.sqlbase import quote, flushUpdates
 
 # lp imports
 from canonical.lp.dbschema import EmailAddressStatus, SSHKeyType
-from canonical.lp.dbschema import LoginTokenType, TeamMembershipRole
+from canonical.lp.dbschema import LoginTokenType
 from canonical.lp.dbschema import TeamMembershipStatus
+from canonical.lp.dbschema import TeamSubscriptionPolicy
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 from canonical.auth.browser import well_formed_email
+from canonical.foaf.nickname import generate_nick
 
 # database imports
 from canonical.launchpad.database import WikiName
@@ -19,16 +21,16 @@ from canonical.launchpad.database import JabberID
 from canonical.launchpad.database import TeamParticipation, TeamMembership
 from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID
-from canonical.launchpad.database import createTeam
 from canonical.launchpad.database import Person
 from canonical.launchpad.database import SSHKey
 
 # interface import
-from canonical.launchpad.interfaces import IPerson, IPersonSet
+from canonical.launchpad.interfaces import IPerson, IPersonSet, IEmailAddressSet
 from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
 
 from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.browser.editview import SQLObjectEditView
 
 # browser import
 from canonical.launchpad.browser.cal import CalendarInfoPortlet
@@ -67,6 +69,10 @@ class BaseListView(object):
                                 orderBy='displayname')
         return self._getBatchNavigator(list(results))
 
+    def getUbuntitesList(self):
+        putil = getUtility(IPersonSet)
+        results = putil.getUbuntites()
+        return self._getBatchNavigator(list(results))
 
 class PeopleListView(BaseListView):
 
@@ -82,6 +88,13 @@ class TeamListView(BaseListView):
 
     def getList(self):
         return self.getTeamsList()
+
+class UbuntiteListView(BaseListView):
+
+    header = "Ubuntite List"
+
+    def getList(self):
+        return self.getUbuntitesList()
 
 
 class FOAFSearchView(object):
@@ -137,12 +150,22 @@ class TeamAddView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
 
-        person = IPerson(self.request.principal, None)
-        team = createTeam(kw['displayname'], person.id,
-                          kw['teamdescription'], kw['email'])
+        # XXX: salgado, 2005-02-04: For now, we're using the email only for 
+        # generating the nickname. We must decide if we need or not to 
+        # require an email address for each team.
+        email = kw.pop('email')
+        kw['name'] = generate_nick(email)
+        kw['teamownerID'] = getUtility(ILaunchBag).user.id
+        team = getUtility(IPersonSet).newTeam(**kw)
         notify(ObjectCreatedEvent(team))
         self._nextURL = '/foaf/people/%s' % team.name
         return team
+
+
+class TeamEditView(SQLObjectEditView):
+
+    def __init__(self, context, request):
+        SQLObjectEditView.__init__(self, context, request)
 
 
 class PersonView(object):
@@ -166,13 +189,271 @@ class PersonView(object):
         return len(self.context.sshkeys)
 
 
-class TeamView(object):
-    """A simple View class to be used in Team's pages where we don't have
-    actions and all we need is the context/request."""
+class RequestPeopleMergeView(AddView):
+    """The view for the page where the user asks a merge of two accounts.
+
+    If the dupe account have only one email address we send a message to that
+    address and then redirect the user to other page saying that everything
+    went fine. Otherwise we redirect the user to another page where we list
+    all email addresses owned by the dupe account and the user selects which
+    of those (s)he wants to claim.
+    """
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        AddView.__init__(self, context, request)
+        self._nextURL = '.'
+
+    def nextURL(self):
+        return self._nextURL
+
+    def createAndAdd(self, data):
+        kw = {}
+        for key, value in data.items():
+            kw[str(key)] = value
+
+        user = getUtility(ILaunchBag).user
+        dupeaccount = kw['dupeaccount']
+        if dupeaccount == user:
+            # Please, don't try to merge you into yourself.
+            return
+
+        emails = EmailAddress.selectBy(personID=dupeaccount.id)
+        if emails.count() > 1:
+            # The dupe account have more than one email address. Must redirect
+            # the user to another page to ask which of those emails (s)he
+            # wants to claim.
+            self._nextURL = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
+            return
+
+        assert emails.count() == 1
+        email = emails[0]
+        login = getUtility(ILaunchBag).login
+        logintokenset = getUtility(ILoginTokenSet)
+        token = logintokenset.new(user, login, email.email, 
+                                  LoginTokenType.ACCOUNTMERGE)
+        dupename = dupeaccount.name
+        sendMergeRequestEmail(token, dupename, self.request.getApplicationURL())
+        self._nextURL = './+mergerequest-sent'
+
+
+class FinishedPeopleMergeRequestView(object):
+    """A simple view for a page where we only tell the user that we sent the
+    email with further instructions to complete the merge."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+
+class RequestPeopleMergeMultipleEmailsView(object):
+    """A view for the page where the user asks a merge and the dupe account
+    have more than one email address."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.formProcessed = False
+
+        dupe = self.request.form.get('dupe')
+        if dupe is None:
+            # We just got redirected to this page and we don't have the dupe
+            # hidden field in request.form.
+            dupe = self.request.get('dupe')
+        self.dupe = getUtility(IPersonSet).get(int(dupe))
+        emailaddrset = getUtility(IEmailAddressSet)
+        self.dupeemails = emailaddrset.getByPerson(self.dupe.id)
+
+    def processForm(self):
+        if self.request.method != "POST":
+            return
+
+        self.formProcessed = True
+        user = getUtility(ILaunchBag).user
+        login = getUtility(ILaunchBag).login
+        logintokenset = getUtility(ILoginTokenSet)
+
+        ids = self.request.form.get("selected")
+        if ids is not None:
+            # We can have multiple email adressess selected, and in this case 
+            # ids will be a list. Otherwise ids will be str or int and we need
+            # to make a list with that value to use in the for loop.
+            if not isinstance(ids, list):
+                ids = [ids]
+
+            for id in ids:
+                email = EmailAddress.get(id)
+                assert email in self.dupeemails
+                token = logintokenset.new(user, login, email.email, 
+                                          LoginTokenType.ACCOUNTMERGE)
+                dupename = self.dupe.name
+                url = self.request.getApplicationURL()
+                sendMergeRequestEmail(token, dupename, url)
+
+
+def sendMergeRequestEmail(token, dupename, appurl):
+    template = open('lib/canonical/launchpad/templates/request-merge.txt').read()
+    fromaddress = "Launchpad Account Merge <noreply@ubuntu.com>"
+
+    replacements = {'longstring': token.token,
+                    'dupename': dupename,
+                    'requester': token.requester.name,
+                    'requesteremail': token.requesteremail,
+                    'toaddress': token.email,
+                    'appurl': appurl}
+    message = template % replacements
+
+    subject = "Launchpad: Merge of Accounts Requested"
+    simple_sendmail(fromaddress, token.email, subject, message)
+
+
+class TeamView(object):
+    """A simple View class to be used in Team's pages where we don't have
+    actions to process.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def activeMembersCount(self):
+        return len(self.context.approvedmembers + self.context.administrators)
+
+    def activeMemberships(self):
+        status = int(TeamMembershipStatus.ADMIN)
+        admins = self.context.getMembershipsByStatus(status)
+
+        status = int(TeamMembershipStatus.APPROVED)
+        members = self.context.getMembershipsByStatus(status)
+        return admins + members
+
+    def userInTeam(self):
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return False
+
+        return user.inTeam(self.context)
+
+    def subscriptionPolicyDesc(self):
+        policy = self.context.subscriptionpolicy
+        if policy == int(TeamSubscriptionPolicy.RESTRICTED):
+            return "Restricted team. Only administrators can add new members"
+        elif policy == int(TeamSubscriptionPolicy.MODERATED):
+            return ("Moderated team. New subscriptions are subjected to "
+                    "approval by one of the team's administrators.")
+        elif policy == int(TeamSubscriptionPolicy.OPEN):
+            return "Open team. Any user can join and no approval is required"
+
+    def membershipStatusDesc(self):
+        tm = self._getMembership()
+        if tm is None:
+            return "You are not a member of this team."
+
+        if tm.status == int(TeamMembershipStatus.PROPOSED):
+            desc = ("You are currently a proposed member of this team."
+                    "Your subscription depends on approval by one of the "
+                    "team's administrators.")
+        elif tm.status == int(TeamMembershipStatus.APPROVED):
+            desc = ("You are currently an approved member of this team.")
+        elif tm.status == int(TeamMembershipStatus.ADMIN):
+            desc = ("You are currently an administrator of this team.")
+        elif tm.status == int(TeamMembershipStatus.DEACTIVATED):
+            desc = "Your subscription for this team is currently deactivated."
+            if tm.reviewercomment is not None:
+                desc += "The reason provided for the deactivation is: '%s'" % \
+                        tm.reviewercomment
+        elif tm.status == int(TeamMembershipStatus.EXPIRED):
+            desc = ("Your subscription for this team is currently expired, "
+                    "waiting for renewal by one of the team's administrators.")
+        elif tm.status == int(TeamMembershipStatus.DECLINED):
+            desc = ("Your subscription for this team is currently declined. "
+                    "Clicking on the 'Join' button will put you on the "
+                    "proposed members queue, waiting for approval by one of "
+                    "the team's administrators")
+
+        return desc
+
+    def userCanRequestToUnjoin(self):
+        """Return true if the user can request to unjoin this team.
+
+        The user can request only if its subscription status is APPROVED or
+        ADMIN.
+        """
+        tm = self._getMembership()
+        if tm is None:
+            return False
+
+        allowed = [TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
+        if tm.status in allowed:
+            return True
+        else:
+            return False
+
+    def userCanRequestToJoin(self):
+        """Return true if the user can request to join this team.
+
+        The user can request if it never asked to join this team, if it
+        already asked and the subscription status is DECLINED or if the team's
+        subscriptionpolicy is OPEN and the user is not an APPROVED or ADMIN
+        member.
+        """
+        tm = self._getMembership()
+        if tm is None:
+            return True
+
+        adminOrApproved = [int(TeamMembershipStatus.APPROVED),
+                           int(TeamMembershipStatus.ADMIN)]
+        open = TeamSubscriptionPolicy.OPEN
+        if tm.status == TeamMembershipStatus.DECLINED or \
+           (tm.status not in adminOrApproved and \
+            tm.team.subscriptionpolicy == open):
+            return True
+        else:
+            return False
+
+    def _getMembership(self):
+        user = getUtility(ILaunchBag).user
+        if user is None:
+            return None
+        tm = TeamMembership.selectBy(personID=user.id, teamID=self.context.id)
+        if tm.count() == 1:
+            return tm[0]
+        else:
+            return None
+
+    def joinAllowed(self):
+        """Return True if this is not a restricted team."""
+        restricted = int(TeamSubscriptionPolicy.RESTRICTED)
+        return self.context.subscriptionpolicy != restricted
+
+
+class TeamJoinView(TeamView):
+
+    def processForm(self):
+        if self.request.method != "POST" or not self.userCanRequestToJoin():
+            # Nothing to do
+            return
+
+        user = getUtility(ILaunchBag).user
+        if self.request.form.get('join'):
+            user.joinTeam(self.context)
+
+        self.request.response.redirect('./')
+
+
+class TeamUnjoinView(TeamView):
+
+    def processForm(self):
+        if self.request.method != "POST" or not self.userCanRequestToUnjoin():
+            # Nothing to do
+            return
+
+        user = getUtility(ILaunchBag).user
+        if self.request.form.get('unjoin'):
+            user.unjoinTeam(self.context)
+
+        self.request.response.redirect('./')
 
 
 class PersonEditView(object):
@@ -289,9 +570,11 @@ class EmailAddressEditView(object):
             if results.count() > 0:
                 email = results[0]
                 self.message = ("The email address '%s' was already "
-                                "registered by user '%s'. If you think this "
-                                "is your email address, you can hijack it by "
-                                "clicking here.") % \
+                                "registered by user '%s'. If you think that "
+                                "is a duplicated account, you can go to the "
+                                "<a href=\"../+requestmerge\">Merge Accounts"
+                                "</a> page to claim this email address and "
+                                "everything that is owned by that account.") % \
                                (email.email, email.person.browsername())
                 return
 
@@ -304,10 +587,6 @@ class EmailAddressEditView(object):
                             "the instructions on that message to validate "
                             "your email address.") % newemail
 
-        # XXX: salgado 2005-01-12: If we change the preferred email address,
-        # the view is displaying the old preferred one, even that the change
-        # is stored in the DB, as one can see by Reloading/Opening the page
-        # again.
         id = self.request.form.get("PREFERRED_EMAIL")
         if id is not None:
             # XXX: salgado 2005-01-06: Ideally, any person that is able to
@@ -333,7 +612,21 @@ class EmailAddressEditView(object):
                 email = EmailAddress.get(id)
                 assert email.person == user
                 if user.preferredemail != email:
-                    email.destroySelf()
+                    # The following lines are a *real* hack to make sure we
+                    # don't let the user with no validated email address.
+                    # Ideally, we wouldn't need this because all users would
+                    # have a preferred email address.
+                    if user.preferredemail is None and \
+                       len(user.validatedemails) > 1:
+                        # No preferred email set. We can only delete this
+                        # email if it's not the last validated one.
+                        email.destroySelf()
+                    elif user.preferredemail is not None:
+                        # This user have a preferred email and it's not this
+                        # one, so we can delete it.
+                        email.destroySelf()
+
+        flushUpdates()
 
     def processValidationRequest(self):
         id = self.request.form.get("NOT_VALIDATED_EMAIL")
@@ -488,8 +781,7 @@ class TeamMembersEditView:
 
     def authorizeProposed(self, personID, team):
         membership = self._getMembership(personID, team.id)
-        membership.status = int(TeamMembershipStatus.CURRENT)
-        membership.role = int(TeamMembershipRole.MEMBER)
+        membership.status = int(TeamMembershipStatus.APPROVED)
 
     def removeMember(self, personID, team):
         if personID == team.teamowner.id:
@@ -504,7 +796,7 @@ class TeamMembersEditView:
 
     def giveAdminRole(self, personID, team):
         membership = self._getMembership(personID, team.id)
-        membership.role = int(TeamMembershipRole.ADMIN)
+        membership.status = int(TeamMembershipStatus.ADMIN)
 
     def revokeAdminiRole(self, personID, team):
         membership = self._getMembership(personID, team.id)

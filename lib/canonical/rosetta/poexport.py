@@ -9,9 +9,12 @@ import codecs
 
 from cStringIO import StringIO
 from zope.interface import implements
+
 from canonical.launchpad.interfaces import IPOExport
 from canonical.rosetta.pofile import POHeader
 from canonical.rosetta.pofile_adapters import MessageProxy
+
+_created_with_rosetta = 'Rosetta (http://launchpad.ubuntu.com/rosetta/)'
 
 
 class POExport:
@@ -81,6 +84,58 @@ class POExport:
         if poFile.fuzzyheader:
             header.flags.add('fuzzy')
         header.finish()
+
+        # XXX Carlos Perello Marin 2005/01/24 disabled until we fix:
+        # https://dogfood.ubuntu.com/malone/bugs/221
+        #
+        ## We update now the header with the new information from Rosetta
+        ## First, we should get the POTemplate's POT-Creation-Date:
+        #pot_header = POHeader(msgstr = self.potfile.header)
+        #pot_header.finish()
+        ## ...and update the POFile one with it:
+        #header['POT-Creation-Date'] = pot_header['POT-Creation-Date']
+
+        # First we get last translator that touched a string and the date when
+        # it was done.
+        last_changed = poFile.lastChangedSighting()
+
+        if last_changed is not None:
+            # We have at least one pomsgset with a translation so we are able
+            # to update .po's headers.
+
+            # It's safe to assume that all times in Rosetta are UTC dates.
+            header['PO-Revision-Date'] = last_changed.datelastactive.strftime(
+                '%F %R+0000')
+
+            # Look for the email address of the last translator
+            if last_changed.person.preferredemail is not None:
+                # We have a preferred email address set.
+                email = last_changed.person.preferredemail.email
+            elif len(last_changed.person.validatedemails) > 0:
+                # As our second choice, get one of the validated email
+                # addresses of this translator.
+                email = last_changed.person.validatedemails[0].email
+            elif len(last_changed.person.notvalidatedemails) > 0:
+                # We don't have preferred or validated address so we choose
+                # any other email address we could have.
+                email = last_changed.person.notvalidatedemails[0].email
+            else:
+                # We should never reach this line because we are supposed to
+                # have always an email address for all our users.
+                raise RuntimeError(
+                    'All Person rows should have at least one email address!')
+
+            # Now, it's time to get a name for our translator
+            if last_changed.person.displayname is not None:
+                name = last_changed.person.displayname
+            else:
+                name = last_changed.person.name
+
+            # Finally the pofile header is updated.
+            header['Last-Translator'] = '%s <%s>' % (name, email)
+
+        # All .po exported from Rosetta get the X-Generator header:
+        header['X-Generator'] = _created_with_rosetta
 
         # Write out the messages followed by the obsolete messages into a
         # StringIO buffer.  Then, return the contents of the buffer.

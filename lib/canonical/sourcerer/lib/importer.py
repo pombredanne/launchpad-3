@@ -14,7 +14,7 @@ __author__    = "Scott James Remnant <scott@canonical.com>"
 import os
 import shutil
 
-import arch
+import pybaz as arch
 import inventory
 import manifest
 import canonical.sourcerer.util as util

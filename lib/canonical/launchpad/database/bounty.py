@@ -49,6 +49,9 @@ class BountySet(object):
 
     implements(IBountySet, IAddFormCustomization)
 
+    def __init__(self):
+        self.title = 'A Set of Bounties'
+
     def __getitem__(self, name):
         try:
             return Bounty.selectBy(name=name)[0]

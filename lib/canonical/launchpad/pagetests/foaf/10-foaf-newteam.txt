@@ -1,0 +1,73 @@
+
+
+  >>> print http(r"""
+  ... GET /foaf/people/name16/+newteam HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...Create a new Team...
+  ...
+
+
+  >>> print http(r"""
+  ... POST /foaf/people/name16/+newteam HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: multipart/form-data; boundary=---------------------------1760323702686760077201237089
+  ... 
+  ... -----------------------------1760323702686760077201237089
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... my own team
+  ... -----------------------------1760323702686760077201237089
+  ... Content-Disposition: form-data; name="field.teamdescription"
+  ... 
+  ... my own team
+  ... -----------------------------1760323702686760077201237089
+  ... Content-Disposition: form-data; name="field.defaultmembershipperiod"
+  ... 
+  ... 365
+  ... -----------------------------1760323702686760077201237089
+  ... Content-Disposition: form-data; name="field.defaultrenewalperiod"
+  ... 
+  ... 365
+  ... -----------------------------1760323702686760077201237089
+  ... Content-Disposition: form-data; name="field.subscriptionpolicy"
+  ... 
+  ... Moderated Team
+  ... -----------------------------1760323702686760077201237089
+  ... Content-Disposition: form-data; name="field.subscriptionpolicy-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------1760323702686760077201237089
+  ... Content-Disposition: form-data; name="field.email"
+  ... 
+  ... myemail@foobar.com
+  ... -----------------------------1760323702686760077201237089
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------1760323702686760077201237089--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: /foaf/people/myemail
+  ...
+  ...Create a new Team...
+  ...
+
+
+  >>> print http(r"""
+  ... GET /foaf/people/myemail HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...my own team...
+  ...

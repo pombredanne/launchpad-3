@@ -15,6 +15,9 @@ class IBazaarApplication(ILaunchpadApplication):
 class BazaarApplication:
     implements(IBazaarApplication)
 
+    def __init__(self):
+        self.title = 'The Open Source Bazaar'
+
 class BazaarApplicationView(object):
     def __init__(self, context, request):
         self.context = context

@@ -1,9 +1,12 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Datetime, Int, Text, TextLine, Password
+from zope.schema import Choice, Datetime, Int, Text, TextLine, Password
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
+
+from canonical.lp import dbschema
+
 
 class IPerson(Interface):
     """A Person."""
@@ -35,12 +38,6 @@ class IPerson(Interface):
             description=_("The password you will use to access "
                 "Launchpad services. ")
             )
-    teamowner = Int(
-            title=_('Team Owner'), required=False, readonly=False,
-            )
-    teamdescription = Text(
-            title=_('Team Description'), required=False, readonly=False,
-            )
     # TODO: This should be required in the DB, defaulting to something
     karma = Int(
             title=_('Karma'), required=False, readonly=True,
@@ -64,11 +61,14 @@ class IPerson(Interface):
                 "password. You will need to receive email at this "
                 "address to complete your registration. We will never "
                 "disclose, share or sell your personal information."))
+
+    # XXX: This field is used only to generate the form to create a new person.
     password2 = Password(title=_('Confirm Password'), required=True,
             description=_("Enter your password again to make certain "
                 "it is correct."))
 
     # Properties of the Person object.
+    ubuntite = Attribute("Ubuntite Flag")
     gpg = Attribute("GPG")
     irc = Attribute("IRC")    
     bugs = Attribute("Bug")
@@ -96,29 +96,119 @@ class IPerson(Interface):
     # XXX: salgado: 2005-11-01: Is it possible to move this properties to
     # ITeam to ensure that they are acessible only via Persons marked
     # with the ITeam interface?
-    currentmembers = Attribute("List of approved Members of this Team.")
+    administrators = Attribute(("List of ADMIN members of this Team.")) 
+    expiredmembers = Attribute("List of EXPIRED members of this Team.")
+    approvedmembers = Attribute("List of APPROVED Members of this Team.")
+    proposedmembers = Attribute("List of PROPOSED members of this Team.")
+    declinedmembers = Attribute("List of DECLINED members of this Team.")
+    deactivatedmembers = Attribute("List of DEACTIVATED members of this Team.")
+
     subteams = Attribute(("List of subteams of this Team. That is, teams "
                           "which are members of this Team."))
-    members = Attribute(("List of approved members with MEMBER role on this "
-                         "Team."))
-    administrators = Attribute(("List of approved members with ADMIN role on "
-                                "this Team.")) 
-    proposedmembers = Attribute("List of members awaiting for approval.")
+    superteams = Attribute(("List of superteams of this Team. That is, teams "
+                            "which this Team is a member of."))
+
+    teamowner = Int(title=_('Team Owner'), required=False, readonly=False)
+    teamdescription = Text(title=_('Team Description'), required=False, 
+                           readonly=False)
+
+    email = TextLine(
+            title=_('Email Address'), required=True,
+            description=_("Please give the email address for this Team. "))
+
+    defaultmembershipperiod = TextLine(
+            title=_('Period a Subscription Lasts'), required=False, 
+            description=_("This is the number of days all "
+                "subscriptions will last unless a different value "
+                "is provided when the subscription is approved. A value of "
+                "0 (zero) means that subscription will never expire."))
+
+    defaultrenewalperiod = TextLine(
+            title=_('Period a Subscription Lasts After a Renew'),
+            required=False, 
+            description=_("This is the number of days all "
+                "subscriptions will last after being renewed. After this "
+                "period the subscription is expired and must be renewed "
+                "again. A value of 0 (zero) means that subscription renewal "
+                "periods will be the same as the membership period."))
+
+    subscriptionpolicy = Choice(
+            title=_('Subscription Policy'),
+            required=True, vocabulary='TeamSubscriptionPolicy',
+            default=int(dbschema.TeamSubscriptionPolicy.MODERATED),
+            description=_('How new subscriptions should be handled for this '
+                          'team. "Moderated" means that all subscriptions must '
+                          'be approved, "Open" means that any user can join '
+                          'whitout approval and "Restricted" means that new '
+                          'members can only be added by one of the '
+                          'administrators of the team.'))
+
+    # title is required for the Launchpad Page Layout main template
+    title = Attribute('Person Page Title')
 
     def browsername():
         """Return a textual name suitable for display in a browser."""
 
+    def assignKarma(karmafield, points=None):
+        """Assign <points> worth of karma to this Person."""
+
     def addLanguage(language):
-        """Adds a new language to the list of know languages."""
+        """Add a new language to the list of know languages."""
 
     def removeLanguage(language):
         """Removed the language from the list of know languages."""
 
-    def inTeam(team_name):
-        """Return true if this person is in the named team."""
+    def inTeam(team):
+        """Return true if this person is in the given team."""
 
-    def getMembershipByMember(member):
-        """Return a TeamMembership object of the given member in this team."""
+    def getMembershipsByStatus(status):
+        """Return all TeamMembership rows with the given status for this team"""
+
+    def hasMembershipEntryFor(team):
+        """Tell if this person is a direct member of the given team."""
+
+    def joinTeam(team):
+        """Join the given team if its subscriptionpolicy is not RESTRICTED.
+
+        Join the given team according to the policies and defaults of that
+        team:
+        - If the team subscriptionpolicy is OPEN, the user is added as
+          an APPROVED member with a NULL TeamMembership.reviewer.
+        - If the team subscriptionpolicy is MODERATED, the user is added as
+          a PROPOSED member and one of the team's administrators have to
+          approve the membership.
+        """
+
+    def unjoinTeam(team):
+        """Unjoin the given team.
+
+        If there's a membership entry for this person on the given team and
+        its status is either APPROVED or ADMIN, we change the status to
+        DEACTIVATED and remove the relevant entries in teamparticipation.
+        """
+
+    def hasMembershipEntryFor(team):
+        """Tell if this person is a direct member of the given team."""
+
+    def joinTeam(team):
+        """Join the given team if its subscriptionpolicy is not RESTRICTED.
+
+        Join the given team according to the policies and defaults of that
+        team:
+        - If the team subscriptionpolicy is OPEN, the user is added as
+          an APPROVED member with a NULL TeamMembership.reviewer.
+        - If the team subscriptionpolicy is MODERATED, the user is added as
+          a PROPOSED member and one of the team's administrators have to
+          approve the membership.
+        """
+
+    def unjoinTeam(team):
+        """Unjoin the given team.
+
+        If there's a membership entry for this person on the given team and
+        its status is either APPROVED or ADMIN, we change the status to
+        DEACTIVATED and remove the relevant entries in teamparticipation.
+        """
 
 
 class ITeam(IPerson):
@@ -130,60 +220,92 @@ class ITeam(IPerson):
 class IPersonSet(Interface):
     """The set of Persons."""
 
-    def __getitem__(personid):
-        """Returns the person with the given id.
+    title = Attribute('Title')
 
-        Raises KeyError if there is no such person.
+    def __getitem__(personid):
+        """Return the person with the given id.
+
+        Raise KeyError if there is no such person.
         """
 
-    def new(*args, **kwargs):
+    def newPerson(*args, **kwargs):
         """Create a new Person with given keyword arguments.
         These keyword arguments will be passed to Person, which is an
         SQLBase class and will do all the checks needed before inserting
         anything in the database. Please refer to the Person implementation
         to see what keyword arguments are allowed."""
 
-    def get(personid, default=None):
-        """Returns the person with the given id.
+    def newTeam(*args, **kwargs):
+        """Create a new Team with given keyword arguments.
+        These keyword arguments will be passed to Person, which is an
+        SQLBase class and will do all the checks needed before inserting
+        anything in the database. Please refer to the Person implementation
+        to see what keyword arguments are allowed."""
 
-        Returns the default value if there is no such person.
+    def get(personid, default=None):
+        """Return the person with the given id.
+
+        Return the default value if there is no such person.
         """
 
     def getByEmail(email, default=None):
-        """Returns the person with the given email address.
+        """Return the person with the given email address.
 
-        Returns the default value if there is no such person.
+        Return the default value if there is no such person.
+        """
+
+    def getByName(name, default=None):
+        """Return the person with the given name.
+
+        Return the default value if there is no such person.
         """
     
-    def getByName(name):
-        """Returns the person with the given name."""
-    
     def getAll():
-        """Returns all People in a database"""
+        """Return all People in a database"""
 
     def getContributorsForPOFile(pofile):
-        """Returns the list of persons that have an active contribution for a
+        """Return the list of persons that have an active contribution for a
         concrete POFile."""
 
-    def createPerson(displayname, givenname, familyname, password, email):
-        """Creates a new person."""
+    def isUbuntite(user):
+        """Return True if User has a valid Signed current version CoC."""
 
+    def getUbuntites():
+        """Return a set of person with valid Ubuntite flag."""
 
 class IEmailAddress(Interface):
     """The object that stores the IPerson's emails."""
-    id = Int(
-        title=_('ID'), required=True, readonly=True,
-        )
-    email = Text(
-        title=_('Email Address'), required=True,
-        )
-    status = Int(
-        title=_('Email Address Status'), required=True,
-        )
-    person = Int(
-        title=_('Person'), required=True,
-        )
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+    email = Text(title=_('Email Address'), required=True, readonly=False)
+    status = Int(title=_('Email Address Status'), required=True, readonly=False)
+    person = Int(title=_('Person'), required=True, readonly=False)
     statusname = Attribute("StatusName")
+
+
+class IEmailAddressSet(Interface):
+    """The set of EmailAddresses."""
+
+    def __getitem__(emailid):
+        """Return the email address with the given id.
+
+        Raise KeyError if there is no such email address.
+        """
+
+    def get(emailid, default=None):
+        """Return the email address with the given id.
+
+        Return the default value if there is no such email address.
+        """
+
+    def getByPerson(personid):
+        """Return all email addresses for the given person."""
+
+    def getByEmail(email, default=None):
+        """Return the EmailAddress object for the given email.
+
+        Return the default value if there is no such email address.
+        """
 
 
 class ITeamMembership(Interface):
@@ -191,15 +313,16 @@ class ITeamMembership(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     team = Int(title=_("Team"), required=True, readonly=False)
     person = Int(title=_("Owner"), required=True, readonly=False)
+    reviewer = Int(title=_("Reviewer"), required=False, readonly=False)
 
-    role= Int(title=_("Role of the Person on the Team"), required=True,
-              readonly=False)
-
+    datejoined = Text(title=_("Date Joined"), required=True, readonly=True)
+    dateexpires = Text(title=_("Date Expires"), required=False, readonly=False)
+    reviewercomment = Text(title=_("Reviewer Comment"), required=False, 
+                           readonly=False)
     status= Int(title=_("If Membership was approved or not"), required=True,
                 readonly=False)
 
     # Properties
-    rolename = Attribute("Role Name")
     statusname = Attribute("Status Name")
 
 
@@ -215,4 +338,19 @@ class ITeamParticipationSet(Interface):
 
     def getSubTeams(teamID):
         """Return all subteams for the specified team."""
+
+    def getSuperTeams(teamID):
+        """Return all superteams for the specified team."""
+
+    def getAllMembers(team):
+        """Return a list of (direct / indirect) members for the given team."""
+
+
+class IRequestPeopleMerge(Interface):
+    """This schema is used only because we want the PersonVocabulary."""
+
+    dupeaccount = Choice(title=_('Duplicated Account'), required=True, 
+                         vocabulary='Person',
+                         description=_("The duplicated account you found in "
+                                       "Launchpad"))
 

@@ -50,7 +50,7 @@ class IBinaryPackage(Interface):
         """Get the current BinaryPackage in a distrorelease"""
 
     def lastversions():
-        """Return the SUPERCEDED BinaryPackages in a DistroRelease
+        """Return the SUPERSEDED BinaryPackages in a DistroRelease
            that comes from the same SourcePackage"""
 
     def __getitem__(version):
@@ -100,8 +100,12 @@ class IPackagePublishing(Interface):
 
 class IBinaryPackageSet(Interface):
     """A set of binary packages"""    
+    
     distrorelease = Attribute("DistroRelease")
+
     arch = Attribute("Arch")
+
+    title = Attribute('Title')
 
     def findPackagesByName(pattern):
         """Search BinaryPackages matching pattern"""

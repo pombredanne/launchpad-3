@@ -15,7 +15,7 @@
     -->
     <include files="package-includes/*-configure.zcml" />
     <include files="package-includes/*-configure-normal.zcml" />
-    <includeOverrides file="override-configure.zcml" />
+    <includeOverrides file="override-configure-normal.zcml" />
 
     <!-- Provide local overrides of standard configurations-->
     <includeOverrides file="overrides.zcml" />

@@ -14,7 +14,7 @@ import shutil
 from zope.interface.verify import verifyClass, verifyObject
 import psycopg
 import tempfile
-import arch
+import pybaz as arch
 
 txnManager = None
 

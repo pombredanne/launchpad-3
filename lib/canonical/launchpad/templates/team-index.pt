@@ -5,7 +5,7 @@
 
 <head>
   <title metal:fill-slot="title">Team 
-    <span tal:replace="context/displayname">Name</span>
+    <span tal:replace="context/browsername">Name</span>
     Information</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -24,51 +24,53 @@
       </li>
 
       <li id="contentview-members" class="plain">
-        <a href="+members">Team Members</a>
+        <a href="+members">Active Members</a>
       </li>
     </ul>
 
     <div class="documentContent" id="region-content">
 
     <div>
-      <h1 tal:content="context/displayname">Name</h1>
+      <h1 tal:content="context/browsername">Name</h1>
         <br />
-        <table width="100%">
+        <table width="80%">
           <tr tal:condition="context/teamdescription">
             <td>Description:</td>
             <td tal:content="context/teamdescription">DESCRIPTION</td>
           </tr>
 
-          <tr tal:condition="context/teamowner">
+          <tr>
             <td>Owner:</td>
             <td><a tal:attributes="href string:../${context/teamowner/name}"
                    tal:content="context/teamowner/browsername"></a></td>
           </tr>
 
           <tr>
-            <td>Members:</td>
-            <td tal:content="python: len(context.members)">123</td>
+            <td>Active Members:</td>
+            <td><span tal:content="view/activeMembersCount" />
+                <tal:block tal:condition="view/userInTeam">
+                  <a href="+unjoin">(Unjoin)</a>
+                </tal:block>
+
+                <tal:block tal:condition="not: view/userInTeam">
+                  <a href="+join">(Join)</a>
+                </tal:block>
+            </td>
           </tr>
 
-          <tal:dummy tal:condition="context/preferredemail"
-                     tal:define="email context/preferredemail">
           <tr>
-            <td>Email:</td>
-            <td><span tal:replace="email/email"></span>
-              <a href="+emails">(Edit team emails)</a></td>
+            <td>Subscription Policy:</td>
+            <td tal:content="view/subscriptionPolicyDesc">123</td>
           </tr>
-          </tal:dummy>
 
-          <tal:dummy tal:condition="not: context/preferredemail">
-          <tr>
+          <tr tal:condition="context/preferredemail">
             <td>Email:</td>
-            <td>Please <a href="+emails">set the preferred email for this team.</a></td>
+            <td><span tal:replace="context/preferredemail/email"></span></td>
           </tr>
-          </tal:dummy>
 
           <tr>
             <td></td>
-            <td class="listingNext"><a href="+edit">Edit Profile</a></td>
+            <td class="listingNext"><a href="+edit">Edit Team Information</a></td>
           </tr>
         </table>
     </div> 
@@ -112,7 +114,7 @@
     <div tal:condition="python: context.distroroles or
                                 context.distroreleaseroles">
       <fieldset>
-        <legend><span tal:replace="context/displayname"></span> is
+        <legend><span tal:replace="context/browsername"></span> is
         </legend>
         <table>
           <tr tal:condition="context/distroroles"

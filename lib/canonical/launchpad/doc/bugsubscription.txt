@@ -22,7 +22,34 @@ Accessing Bug Subscriber Lists
 
 Sometimes you'll want to know which people are subscribed to a bug. For
 example, you might want to send out a notification email to everyone that is
-Cc'd on a bug when something changes.
+Cc'd on a bug when something changes. For the purposes of this document, let's
+pretend we're logged in as Foo Bar:
+
+XXX: Brad Bollenbach, 2005-02-03: This needs to be replaced with a more concise
+     way to simulate a login. See https://launchpad.ubuntu.com/malone/bugs/104
+     for more.
+
+    >>> import zope.security.management
+    >>> from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from zope.app.tests import ztapi
+    >>> from zope.interface import implements
+    >>> class MockLaunchBag(object):
+    ...     implements(ILaunchBag)
+    ...     def __init__(self, login=None, user=None):
+    ...         self.login = login
+    ...         self.user = user
+    >>> class Participation:
+    ...     interaction = None
+    >>> foobar = LaunchpadPrincipal(
+    ...     16, "Foo Bar",
+    ...     "i can't think of a description to write here")
+    >>> foobar_participation = Participation()
+    >>> foobar_participation.principal = foobar
+    >>> zope.security.management.newInteraction(foobar_participation)
+    >>> ztapi.provideUtility(
+    ...     ILaunchBag,
+    ...     MockLaunchBag("test@canonical.com", foobar))
 
 To get the set of subscriptions to a bug, Launchpad provides an adapter from an
 IBug to an IBugSubscriptionSet. The only email addresses that will ever be used
@@ -35,3 +62,23 @@ for a Person are those that have been validated.
     >>> subscriptions = getAdapter(bug, IBugSubscriptionSet, '')
     >>> subscriptions.getCcEmailAddresses()
     [u'mark@hbd.com', u'test@canonical.com']
+
+Subscribing and Unsubscribing
+=============================
+
+IBugSubscriptionSet also provides add() and remove() methods to subscribe to
+and unsubscribe from a bug. The default subscription type is Cc.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> foobar = personset.get(16)
+    >>> subscription = subscriptions.subscribePerson(foobar)
+    >>> subscriptions.getCcEmailAddresses()
+    [u'foo.bar@canonical.com', u'mark@hbd.com', u'test@canonical.com']
+    >>> subscription = subscriptions.unsubscribePerson(foobar)
+    >>> subscriptions.getCcEmailAddresses()
+    [u'mark@hbd.com', u'test@canonical.com']
+
+    >>> ztapi.unprovideUtility(ILaunchBag)
+    >>> zope.security.management.endInteraction()

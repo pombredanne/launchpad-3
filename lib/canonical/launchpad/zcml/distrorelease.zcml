@@ -13,9 +13,21 @@
             />
     </content>
 
+    <securedutility
+        class="canonical.launchpad.database.DistroReleaseSet"
+        provides="canonical.launchpad.interfaces.IDistroReleaseSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
+    </securedutility>
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroRelease"
+        layer="canonical.launchpad.layers.SoyuzLayer"
         name="+index" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistroRelease"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        name="+bugs" />
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IDistroRelease"
@@ -25,7 +37,7 @@
             for="canonical.launchpad.interfaces.IDistroRelease"
 	    permission="zope.Public"
 	    name="+index"
-            template="../templates/release-index.pt"
+            template="../templates/distrorelease-index.pt"
 	    class="canonical.launchpad.browser.DistroReleaseView"
 	    lp:url="Soyuz/distros/$Distribution.name/$Release.name/+index"
 	    />
@@ -47,12 +59,12 @@
 
 	    <browser:page
 	        name="+bugs"
-            template="../templates/release-bugs.pt"
+            template="../templates/distrorelease-bugs.pt"
 	        lp:url="Soyuz/distros/$Distribution.name/$Release.name/+bugs"
 	        />
 	    <browser:page
             name="+translations"
-            template="../templates/release-translations.pt"
+            template="../templates/distrorelease-translations.pt"
 	        lp:url="Soyuz/distros/$Distribution.name/$Release.name/+translations"
 	        />
     </browser:pages>
@@ -62,7 +74,7 @@
 	    permission="zope.Public"
 	    class="canonical.launchpad.browser.ReleaseSearchView"
 	    name="+search"
-	    template="../templates/release-search.pt"
+	    template="../templates/distrorelease-search.pt"
 	    lp:url="Soyuz/distros/$Distribution.name/$Release.name/+search"
 	    />
 

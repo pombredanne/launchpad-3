@@ -1,0 +1,35 @@
+Nickname
+========
+
+For each Person we create a unique nickname that must be generated using
+foaf.nickname.generate_nick.
+
+A valid nick can contain lower case letters, dashes, and numbers,
+must start with a letter or a number, and must be a minimum of
+four characters.
+
+>>> from canonical.foaf.nickname import generate_nick
+
+>>> generate_nick("foop@example@com")
+Traceback (most recent call last):
+    ...
+NicknameGenerationError: foop@example@com is not a valid email address
+>>> generate_nick("foop@example.com")
+'foop'
+>>> generate_nick("bar@example.com")
+'bar'
+>>> generate_nick("spam@example.com")
+'spam-example-com'
+>>> generate_nick("foop.bar@example.com")
+'foop-bar'
+>>> generate_nick("bar.spam@long.example.com")
+'bar-spam-long-example-com'
+>>> generate_nick("taken@example.com")
+'taken-example-com-2'
+>>> generate_nick("taken@example")
+'taken-example-1'
+>>> generate_nick("i@tv")
+'i-tv'
+>>> generate_nick("foo+bar@example.com")
+'foo+bar'
+

@@ -1,0 +1,62 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Strict//EN"
+    "http://www.w3.org/TR/html4/strict.dtd">
+<html metal:define-macro="master">
+	<head>
+		<title metal:define-slot="title"
+               tal:content="string:The Malone Bug Tracker - ${context/displayname}">
+            The Malone Bug Tracker - $context.displayname
+        </title>
+		<link rel="stylesheet" type="text/css"
+              tal:attributes="href context/++resource++malone.css" />
+        <style type="text/css" media="screen">@import url(/++resource++launchpad.css);</style>
+        <script type="text/javascript" src="/++resource++launchpad.js"></script>
+	</head>
+	<body>
+		<div class="user" tal:condition="request/lp:person">
+			Welcome,
+            <a href="prefs" tal:content="request/lp:person/displayname">$user.displayname</a> &bull;
+			<a href="/+logout">Log out</a>
+		</div>
+		<div class="user" tal:condition="not:request/lp:person">
+			<a href="/+login">Log in</a>
+		</div>
+		<div class="id">
+			<address class="ubuntu launchpad"
+                     tal:content="string:${context/displayname} Launchpad">
+                $context.displayname Launchpad
+            </address>
+			<address class="app">Malone</address>			
+		</div>
+		<form class="search"
+              tal:condition="not:view/hideGlobalSearchBox|nothing"
+              tal:attributes="action string:${request/getApplicationURL}/malone/products/${context/name}">
+			<input type="text" name="searchtext"
+                   tal:attributes="value request/searchtext|nothing"/>
+			<input type="submit" value="Search"/>
+		</form>
+		<ul class="navigation tabs">
+            <tal:block tal:repeat="menuitem context/@@view_get_menu/malone_actions">
+                <li tal:condition="menuitem/selected"
+                    class="current" tal:content="menuitem/title">
+                    Bugs
+                </li>
+                <li tal:condition="not: menuitem/selected">
+                    <a tal:attributes="href menuitem/action" tal:content="menuitem/title">
+                        Report a Bug
+                    </a>
+                </li>
+            </tal:block>
+            <!--
+			<li class="current" tal:content="string:${context/displayname} Bugs">
+                $context.displayname Bugs
+            </li>
+			<li><a href="+filebug" tal:content="view/name">Report a Bug</a></li>
+			<li><a href="#">Show Bugs</a></li>
+			<li><a href="#">Admin</a></li>
+            -->
+		</ul>
+        <metal:block define-slot="main">
+            Main body text goes here.
+        </metal:block>
+	</body>
+</html>

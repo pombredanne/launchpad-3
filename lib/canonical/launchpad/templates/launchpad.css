@@ -52,7 +52,7 @@
 }
 
 .interpolation {
-    background-color: #7090c0;
+    background-color: #7090a0;
 }
 
 label.language-code {
@@ -107,6 +107,92 @@ label {
 #portal-breadcrumbs a,
 #portal-footer a {
     text-decoration: none;
+    text-transform: lowercase;
+}
+
+h3 {
+    list-style-image: url(/++resource++bullet.gif);
+}
+
+#portal-logo {
+    background: url(/++resource++rosetta.png) no-repeat;
+}
+
+#portal-personaltools .portalUser {
+    background: transparent url(/++resource++user.gif) center left no-repeat;
+}
+
+#portal-personaltools li {
+    background: transparent url(/++resource++linkOpaque.gif) center left no-repeat;
+}
+
+.contentActions {
+    background-image: url(/++resource++arrowDownAlternative.gif);
+}
+
+.portalMessage,
+.system-message,  /* These two last ones are reST error indicators */
+#error-handling {
+    background-image: url(/++resource++info_icon.gif);
+}
+
+.standalone,
+.documentEditable * .standalone {
+    background: #8fb3d9 url(/++resource++linkOpaque.gif) 9px 1px no-repeat;
+}
+
+.context,
+.documentEditable * .context {
+    background: transparent url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
+}
+
+.destructive,
+.documentEditable * .context {
+    background: #ffce7b url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
+}
+
+input.searchButton {
+    background: White url(/++resource++search_icon.gif) 2px 1px no-repeat;
+}
+
+.fieldRequired {
+    background: url(/++resource++required.gif) center left no-repeat;
+}
+
+.link-parent {
+    background: transparent url(/++resource++arrowUp.gif) 4px 5px no-repeat;
+}
+
+.link-user {
+    background: transparent url(/++resource++user.gif) 0px 1px no-repeat;
+}
+
+.link-https {
+    background: transparent url(/++resource++lock_icon.gif) 0px 1px no-repeat;
+}
+
+.link-mailto {
+    background: transparent url(/++resource++mail_icon.gif) 0px 1px no-repeat;
+}
+
+.link-news {
+    background: transparent url(/++resource++topic_icon.gif) 0px 1px no-repeat;
+}
+
+.link-ftp {
+    background: transparent url(/++resource++file_icon.gif) 0px 1px no-repeat;
+}
+
+.link-irc {
+    background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
+}
+
+.link-callto {
+    background: transparent url(/++resource++phone_icon.gif) 0px 1px no-repeat;
+}
+
+.link-comment {
+    background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
 }
 
 
@@ -158,7 +244,7 @@ table.rowNavigation th:hover {
 .batchnav td {
     text-align: center;
     border-top: 1px solid #364970;
-    vertical-align: bottom;">
+    vertical-align: bottom;>
 }
 
 /* Bug status markers */

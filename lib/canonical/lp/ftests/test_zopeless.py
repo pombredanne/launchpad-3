@@ -5,6 +5,7 @@ import unittest, warnings, sys, psycopg
 from canonical.lp import initZopeless
 from canonical.database.sqlbase import SQLBase, alreadyInstalledMsg
 from canonical.ftests.pgsql import PgTestCase
+from canonical.functional import FunctionalTestSetup
 from threading import Thread
 
 from sqlobject import StringCol, IntCol
@@ -15,7 +16,7 @@ class MoreBeer(SQLBase):
     # test_sqlos defines a Beer SQLObject already, so we call this one MoreBeer
     # to avoid confusing SQLObject.
     _columns = [
-        StringCol('name', unique=True, notNull=True),
+        StringCol('name', alternateID=True, notNull=True),
         IntCol('rating', default=None),
         ]
 
@@ -26,8 +27,8 @@ class TestInitZopeless(PgTestCase):
     def test_initZopelessTwice(self):
         # Hook the warnings module, so we can verify that we get the expected
         # warning.
-        showwarning = warnings.showwarning
-        warnings.showwarning = self.expectedWarning
+        warn_explicit = warnings.warn_explicit
+        warnings.warn_explicit = self.expectedWarning
         self.warned = False
         try:
             # Calling initZopeless with the same arguments twice should return
@@ -36,12 +37,12 @@ class TestInitZopeless(PgTestCase):
             tm2 = initZopeless(dbname=self.dbname, dbhost='')
         finally:
             # Put the warnings module back the way we found it.
-            warnings.showwarning = showwarning
+            warnings.warn_explicit = warn_explicit
         self.failUnless(tm1 is tm2)
         self.failUnless(self.warned)
             
     def expectedWarning(self, message, category, filename, lineno,
-                        file=sys.stderr):
+                        module=None, registry=None):
         self.failUnlessEqual(alreadyInstalledMsg, str(message))
         self.warned = True
         
@@ -50,14 +51,14 @@ class TestZopeless(PgTestCase):
     dbname = 'ftest_tmp'
 
     def setUp(self):
-        super(TestZopeless, self).setUp()
+        PgTestCase.setUp(self)
         self.tm = initZopeless(dbname=self.dbname, dbhost='')
         MoreBeer.createTable()
         self.tm.commit()
 
     def tearDown(self):
         self.tm.uninstall()
-        super(TestZopeless, self).tearDown()
+        PgTestCase.tearDown(self)
 
     def test_simple(self):
         # Create a few MoreBeers and make sure we can access them
@@ -147,6 +148,26 @@ class TestZopeless(PgTestCase):
         # Now start a new transaction and see if we can do anything
         self.tm.begin()
         MoreBeer(name='Singa')
+
+    def test_externalChange(self):
+        # Make a change
+        MoreBeer(name='Victoria Bitter')
+
+        # Commit our local change
+        self.tm.commit()
+
+        # Make another change from a non-SQLObject connection, and commit that
+        conn = psycopg.connect('dbname=' + self.dbname)
+        cur = conn.cursor()
+        cur.execute("BEGIN TRANSACTION;")
+        cur.execute("UPDATE MoreBeer SET rating=4 "
+                    "WHERE name='Victoria Bitter';")
+        cur.execute("COMMIT TRANSACTION;")
+        cur.close()
+        conn.close()
+
+        # We should now be able to see the external change in our connection
+        self.failUnlessEqual(4, MoreBeer.byName('Victoria Bitter').rating)
 
 
 def test_suite():

@@ -8,6 +8,8 @@
     <include file="soyuz.zcml" />
 
     <!-- Content class configuration -->
+    <include file="datetime.zcml" />
+    <include file="skins.zcml" />
     <include file="logintoken.zcml" />
     <include file="archuserid.zcml" />
     <include file="emailaddress.zcml" />
@@ -23,6 +25,7 @@
     <include file="country.zcml" />
     <include file="project.zcml" />
     <include file="product.zcml" />
+    <include file="packaging.zcml" />
     <include file="milestone.zcml" />
     <include file="productseries.zcml" />
     <include file="productrelease.zcml" />
@@ -32,6 +35,7 @@
     <include file="productrelease.zcml" />
     <include file="bugpackageinfestation.zcml" />
     <include file="bugactivity.zcml" />
+    <include file="bugmessage.zcml" />
     <include file="bugtask.zcml" />
     <include file="bugsubscription.zcml" />
     <include file="sourcepackage.zcml" />
@@ -60,6 +64,7 @@
     <include file="calendar.zcml" />
     <include file="files.zcml" />
     <include file="package.zcml" />
+    <include file="codeofconduct.zcml" />
 
 
     <include file="widgets.zcml" />

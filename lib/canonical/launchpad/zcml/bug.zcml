@@ -7,7 +7,7 @@
 
     <content class="canonical.launchpad.database.Bug">
         <allow interface="canonical.launchpad.interfaces.IBug" />
-        <require permission="zope.Public" set_schema="canonical.launchpad.interfaces.IBug" />
+        <require permission="launchpad.AnyPerson" set_schema="canonical.launchpad.interfaces.IBug" />
     </content>
 
     <browser:defaultView
@@ -40,7 +40,7 @@
         label="Change Bug Information"
         permission="launchpad.AnyPerson"
         template="../templates/bug-edit.pt"
-        fields="title shortdesc description name"
+        fields="title shortdesc description private name"
         lp:url="malone/bugs/$Bug.id/+edit">
         <browser:widget
            field="title"

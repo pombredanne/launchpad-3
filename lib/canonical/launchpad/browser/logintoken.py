@@ -7,6 +7,8 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.interfaces import WidgetsError
 from zope.app.event.objectevent import ObjectCreatedEvent
 
+from canonical.database.sqlbase import flushUpdates
+
 from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
 
 from canonical.foaf.nickname import generate_nick
@@ -16,7 +18,7 @@ from canonical.launchpad.database import EmailAddress
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 
-from canonical.launchpad.interfaces import IPersonSet
+from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
 
 
@@ -46,7 +48,7 @@ class ResetPasswordView(object):
         self.context = context
         self.request = request
         self.errormessage = None
-        self.submitted = False
+        self.formProcessed = False
         self.email = None
 
     def processForm(self):
@@ -58,7 +60,7 @@ class ResetPasswordView(object):
             return
 
         self.email = self.request.form.get("email").strip()
-        if email != self.context.email:
+        if self.email != self.context.email:
             self.errormessage = ("The email address you provided didn't "
                                  "match with the one you provided when you "
                                  "requested the password reset.")
@@ -72,7 +74,7 @@ class ResetPasswordView(object):
 
         if password != password2:
             self.errormessage = "Password didn't match."
-            return False
+            return
 
         # Make sure this person has a preferred email address.
         emailaddress = EmailAddress.byEmail(self.context.email)
@@ -83,11 +85,11 @@ class ResetPasswordView(object):
         encryptor = getUtility(IPasswordEncryptor)
         password = encryptor.encrypt(password)
         person.password = password
-        self.submitted = True
+        self.formProcessed = True
         self.context.destroySelf()
 
-    def success(self):
-        return self.submitted and not self.errormessage
+    def successfullyProcessed(self):
+        return self.formProcessed and not self.errormessage
 
 
 class ValidateEmailView(object):
@@ -96,12 +98,17 @@ class ValidateEmailView(object):
         self.request = request
         self.context = context
         self.errormessage = ""
+        self.formProcessed = False
 
-    def formSubmitted(self):
-        if self.request.method == "POST":
-            self.validate()
-            return True
-        return False
+    def successfullyProcessed(self):
+        return self.formProcessed and not self.errormessage
+
+    def processForm(self):
+        if self.request.method != "POST":
+            return
+
+        self.formProcessed = True
+        self.validate()
 
     def validate(self):
         """Check the requester and requesteremail, verify if the user provided
@@ -184,9 +191,8 @@ class NewAccountView(AddView):
         if errors:
             raise WidgetsError(errors)
 
-        nick = generate_nick(self.context.email)
-        kw['name'] = nick
-        person = getUtility(IPersonSet).new(**kw)
+        kw['name'] = generate_nick(self.context.email)
+        person = getUtility(IPersonSet).newPerson(**kw)
         notify(ObjectCreatedEvent(person))
 
         email = EmailAddress(person=person.id, email=self.context.email,
@@ -202,3 +208,58 @@ class NewAccountView(AddView):
             logInPerson(self.request, principal, email.email)
         return True
 
+
+class MergePeopleView(object):
+
+    def __init__(self, context, request):
+        self.request = request
+        self.context = context
+        self.errormessage = ""
+        self.formProcessed = False
+        self.mergeCompleted = False
+        self.dupe = getUtility(IPersonSet).getByEmail(context.email)
+
+    def processForm(self):
+        if self.request.method != "POST":
+            return
+
+        self.formProcessed = True
+        if self.validate():
+            self.doMerge()
+            self.context.destroySelf()
+            return
+
+    def successfullyProcessed(self):
+        return self.formProcessed and not self.errormessage
+
+    def validate(self):
+        """Verify if the user provided the correct password."""
+        # Merge requests must have a registered requester.
+        assert self.context.requester is not None
+        assert self.context.requesteremail is not None
+        requester = self.context.requester
+        password = self.request.form.get("password")
+        encryptor = getUtility(IPasswordEncryptor)
+        if not encryptor.validate(password, requester.password):
+            self.errormessage = "Wrong password. Please try again."
+            return False
+
+        return True
+
+    def doMerge(self):
+        # The user proved that he has access to this email address of the
+        # dupe account, so we can assign it to him.
+        email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
+        email.person = self.context.requester.id
+        email.status = int(EmailAddressStatus.VALIDATED)
+        flushUpdates()
+        
+        # Now we must check if the dupe account still have registered email
+        # addresses. If it haven't we can actually do the merge.
+        if getUtility(IEmailAddressSet).getByPerson(self.dupe.id):
+            self.mergeCompleted = False
+            return
+
+        # Call Stuart's magic function which will reassign all of the dupe
+        # account's stuff to the user account.
+        self.mergeCompleted = True

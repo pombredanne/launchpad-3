@@ -5,12 +5,18 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+    <!-- Message -->
     <content class="canonical.launchpad.database.Message">
         <allow interface="canonical.launchpad.interfaces.IMessage" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IMessage" />
     </content>
+
+    <adapter
+        for="canonical.launchpad.interfaces.IBugMessage"
+        provides="canonical.launchpad.interfaces.IMessage"
+        factory="canonical.launchpad.components.bugmessage.BugMessageToMessageAdapter" />
 
     <!-- Message -->
     <browser:page

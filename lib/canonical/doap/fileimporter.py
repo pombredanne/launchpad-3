@@ -1,13 +1,15 @@
+import os
+import urlparse
+import urllib2
+
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import quote
+from canonical.database.sqlbase import quote, SQLBase
 from canonical.launchpad.database import ProductReleaseFile, ProductRelease
 from canonical.librarian.client import FileUploadClient
 from canonical.lp import dbschema
 
-import urlparse, urllib2
 
-# FIXME: Hard-coded config!
-librarianHost = 'macaroni.ubuntu.com'
+librarianHost = os.environ.get('LIBRARIAN_HOST', 'macaroni.ubuntu.com')
 librarianPort = 9090
 
 
@@ -36,7 +38,7 @@ class ProductReleaseImporter:
         pr = self._ensureProductRelease(filename)
 
         # Now create the release file
-        ProductReleaseFile(productreleaseID=pr.id, libraryfileID=aliasID, 
+        ProductReleaseFile(productreleaseID=pr.id, libraryfileID=aliasID,
                            filetype=int(dbschema.UpstreamFileType.CODETARBALL))
 
         # ...and we're done!
@@ -59,7 +61,7 @@ class ProductReleaseImporter:
 
     def _downloadIntoLibrarian(self, url, filename):
         """Download a URL, and upload it directly into the librarian.
-        
+
         Returns the library alias ID of the file.
         """
         # FIXME: cope with web/ftp servers that don't give the size of files by
@@ -73,6 +75,12 @@ class ProductReleaseImporter:
         librarian.connect(librarianHost, librarianPort)
         ids = librarian.addFile(filename, size, file, info.get('content-type'))
         aliasID = ids[1]
+        
+        # XXX: Awful hack -- the librarian's updated the database, so we need to
+        #      reset our connection so that we can see it.
+        #        - Andrew Bennetts, 2005-01-27
+        SQLBase._connection.rollback()
+        SQLBase._connection.begin()
         return aliasID
 
     def _alreadyImported(self, filename):

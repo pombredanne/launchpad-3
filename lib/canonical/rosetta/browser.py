@@ -21,14 +21,16 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import ILanguageSet, IPerson, \
+from canonical.launchpad.interfaces import ILanguageSet,  \
     IProjectSet, IProductSet, IPasswordEncryptor, IRequestLocalLanguages, \
-    IRequestPreferredLanguages, IDistributionSet, ISourcePackageNameSet
+    IRequestPreferredLanguages, IDistributionSet, ISourcePackageNameSet, \
+    ILaunchBag, IRawFileData
 
 from canonical.launchpad.database import Person, POTemplate, POFile
 
 from canonical.rosetta.poexport import POExport
-from canonical.rosetta.pofile import POHeader
+from canonical.rosetta.pofile import POHeader, POSyntaxError, \
+    POInvalidInputError
 from canonical.rosetta.tar import string_to_tarfile, examine_tarfile
 
 from canonical.lp.dbschema import RosettaImportStatus
@@ -36,6 +38,7 @@ from canonical.lp.dbschema import RosettaImportStatus
 charactersPerLine = 50
 SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
 NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
+_default_importer_name = 'Unknown'
 
 def count_lines(text):
     '''Count the number of physical lines in a string. This is always at least
@@ -79,7 +82,7 @@ def codes_to_languages(codes):
 def request_languages(request):
     '''Turn a request into a list of languages to show.'''
 
-    person = IPerson(request.principal, None)
+    person = getUtility(ILaunchBag).user
 
     # If the user is authenticated, try seeing if they have any languages set.
     if person is not None:
@@ -261,12 +264,6 @@ def check_po_syntax(s):
 
     return True
 
-def import_pot_or_po(potemplate_or_pofile, importer, contents):
-    potemplate_or_pofile.rawfile = base64.encodestring(contents)
-    potemplate_or_pofile.daterawimport = UTC_NOW
-    potemplate_or_pofile.rawimporter = importer
-    potemplate_or_pofile.rawimportstatus = RosettaImportStatus.PENDING.value
-
 def is_tar_filename(filename):
     '''
     Check whether a filename looks like a filename that belongs to a tar file,
@@ -308,27 +305,36 @@ def check_tar(tf, pot_paths, po_paths):
 
     return None
 
-def import_tar(potemplate, importer, tf, pot_paths, po_paths):
-    '''
-    Import a tar file into Rosetta, by extracting PO templates and PO files
-    from the paths specified. A status message is returned.
+def import_tar(potemplate, importer, tarfile, pot_paths, po_paths):
+    """Import a tar file into Rosetta.
+
+    Extract PO templates and PO files from the paths specified.
+    A status message is returned.
 
     Currently, it is assumed that since check_tar will have been called before
-    import_tar, checking the syntax of the PO template will not be necessary.
+    import_tar, checking the syntax of the PO template will not be necessary
+    and also, we are 100% sure there are at least one .pot file and only one.
     The syntax of PO files is checked, but errors are not fatal.
-    '''
+    """
 
-    for path in pot_paths:
-        import_pot_or_po(potemplate, importer, tf.extractfile(path).read())
+    # At this point we are only getting one .pot file so this should be safe.
+    # We don't support other kinds of tarballs and before calling this
+    # function we did already the needed tests to be sure that pot_paths
+    # follows our requirements.
+    potemplate.attachFile(tarfile.extractfile(pot_paths[0]).read(), importer)
+    pot_base_dir = os.path.dirname(pot_paths[0])
 
-    bad = []
+    # List of .pot and .po files that were not able to be imported.
+    errors = []
 
     for path in po_paths:
-        contents = tf.extractfile(path).read()
-
-        if not check_po_syntax(contents):
-            bad.append(path)
+        if pot_base_dir != os.path.dirname(path):
+            # The po file is not inside the same directory than the pot file,
+            # we ignore it.
+            errors.append(path)
             continue
+
+        contents = tarfile.extractfile(path).read()
 
         basename = os.path.basename(path)
         root, extension = os.path.splitext(basename)
@@ -345,15 +351,19 @@ def import_tar(potemplate, importer, tf, pot_paths, po_paths):
 
         pofile = potemplate.getOrCreatePOFile(code, variant, importer)
 
-        import_pot_or_po(pofile, importer, contents)
+        try:
+            pofile.attachFile(contents, importer)
+        except (POSyntaxError, POInvalidInputError):
+            errors.append(path)
+            continue
 
     message = ("%d files were queued for import from the tar file you "
-        "uploaded." % (len(pot_paths + po_paths) - len(bad)))
+        "uploaded." % (len(pot_paths + po_paths) - len(errors)))
 
-    if bad != []:
+    if errors != []:
         message += (
             "The following files were skipped due to syntax errors or other "
-            "problems: " + ', '.join(bad) + ".")
+            "problems: " + ', '.join(errors) + ".")
 
     return message
 
@@ -426,7 +436,7 @@ class ProductView:
 
 
         # get the launchpad person who is creating this product
-        owner = IPerson(self.request.principal)
+        owner = getUtility(ILaunchBag).user
 
         file = self.form['file']
 
@@ -458,8 +468,8 @@ class ProductView:
                 self.status_message = 'Please, review the pot file seems to have a problem'
                 return
         else:
-            tf = string_to_tarfile(contents)
-            pot_paths, po_paths = examine_tarfile(tf)
+            tarfile = string_to_tarfile(contents)
+            pot_paths, po_paths = examine_tarfile(tarfile)
 
             if len(pot_paths) == 0:
                 self.status_message = (
@@ -471,39 +481,11 @@ class ProductView:
             # Perform general check on the tar file, and stop before creating
             # the template if there was a problem.
 
-            error = check_tar(tf, pot_paths, po_paths)
+            error = check_tar(tarfile, pot_paths, po_paths)
 
             if error is not None:
                 self.status_message = error
                 return
-
-        # This part is only used for our internal script to upload .po and
-        # .pot files from the web interface. If we don't have all fields,
-        # someone is playing with us so just ignore it.
-        if ('_distribution' in self.form and
-            '_release' in self.form and
-            '_sourcepackage' in self.form):
-            distribution = self.form['_distribution']
-            release = self.form['_release']
-            sourcepackage = self.form['_sourcepackage']
-
-            try:
-                distro = getUtility(IDistributionSet)[distribution]
-                distrorelease = distro[release]
-            except KeyError:
-                # The distribution or release does not exists in the
-                # database, we ignore the error and continue.
-                distrorelease = None
-
-            try:
-                sourcepackagename = getUtility(
-                    ISourcePackageNameSet)[sourcepackage]
-            except KeyError:
-                # The SourcePackage does not exists.
-                sourcepackagename = None
-        else:
-            distrorelease = None
-            sourcepackagename = None
 
         # Now create a new potemplate in the db
         try:
@@ -517,21 +499,15 @@ class ProductView:
                 'There is already a potemplate named %s' % name)
             return
 
-        if distrorelease:
-            potemplate.distrorelease = distrorelease.id
-
-        if sourcepackagename:
-            potemplate.sourcepackagename = sourcepackagename.id
-
         self._templates.append(potemplate)
 
         if filename.endswith('.pot'):
-            import_pot_or_po(potemplate, owner, contents)
+            potemplate.attachFile(contents, owner)
             self.status_message = (
                 "Your PO template has been queued for import.")
         else:
             self.status_message = (
-                import_tar(potemplate, owner, tf, pot_paths, po_paths))
+                import_tar(potemplate, owner, tarfile, pot_paths, po_paths))
 
     def templates(self):
         if self._templangs is None:
@@ -610,15 +586,14 @@ class TemplateLanguage:
 
 
 class ViewPOTemplate:
+    statusLegend = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-rosetta-status-legend.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.form = self.request.form
         self.request_languages = request_languages(self.request)
         self.status_message = None
-
-    statusLegend = ViewPageTemplateFile(
-        '../launchpad/templates/portlet-rosetta-status-legend.pt')
 
     def num_messages(self):
         N = self.context.messageCount()
@@ -649,81 +624,102 @@ class ViewPOTemplate:
         for language in languages:
             yield TemplateLanguage(self.context, language)
 
-    def edit(self):
-        """
-        Update the contents of a POTemplate. This method is called by a
-        tal:dummy element in a page template. It checks to see if a
-        form has been submitted that has a specific element, and if
-        so it continues to process the form, updating the fields of
-        the database as it goes.
-        """
-        # check that we are processing the correct form, and that
-        # it has been POST'ed
-        if not self.form.get("Update", None)=="Update POTemplate":
-            return
-        if not self.request.method == "POST":
-            self.status_message='You should post the form'
-            return
+    def submitForm(self):
+        """Called from the page template to do any processing needed if a form
+        was submitted with the request."""
 
-        # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
-        # check to see if there is an existing product with
-        # this name.
-        if 'name' in self.form:
-            name = self.form['name']
+        if request.method == 'POST':
+            if 'EDIT' in request.form:
+                self.edit()
+            elif 'UPLOAD' in request.form:
+                self.upload()
+
+        return ''
+
+    def editAttributes(self):
+        """Use form data to change a PO template's name or title."""
+
+        # Early returns are used to avoid the redirect at the end of the
+        # method, which prevents the status message from being shown.
+
+        # XXX Dafydd Harries 2005/01/28
+        # We should check that there isn't a template with the new name before
+        # doing the rename.
+
+        if 'name' in self.request.form:
+            name = self.request.form['name']
+
             if name == '':
-                self.status_message='The name field cannot be empty'
+                self.status_message = 'The name field cannot be empty.'
                 return
+
             self.context.name = name
-        if 'title' in self.form:
-            title = self.form['title']
+
+        if 'title' in self.request.form:
+            title = self.request.form['title']
+
             if title == '':
-                self.status_message='The title field cannot be empty'
+                self.status_message = 'The title field cannot be empty.'
                 return
+
             self.context.title = title
 
-        # get the launchpad person who is creating this product
-        owner = IPerson(self.request.principal)
+        # Now redirect to view the template. This lets us follow the template
+        # in case the user changed the name.
+        self.request.response.redirect('../' + self.context.name)
 
-        file = self.form['file']
+    def upload(self):
+        """Handle a form submission to change the contents of the template."""
+
+        # Get the launchpad Person who is doing the upload.
+        owner = getUtility(ILaunchBag).user
+
+        file = self.request.form['file']
 
         if type(file) is not FileUpload:
             if file == '':
                 self.request.response.redirect('../' + self.context.name)
             else:
-                # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
-                # aleatory bug with upload forms (or perhaps it's launchpad because
-                # I never had problems with bugzilla). The fact is that some uploads
-                # don't work and we get a unicode object instead of a file-like object
-                # in "file". We show an error if we see that behaviour.
-                # For more info, look at bug #116
-                self.status_message = 'There was an unknow error getting the file.'
-            return
+                # XXX: Carlos Perello Marin 2004/12/30
+                # Epiphany seems to have an aleatory bug with upload forms (or
+                # perhaps it's launchpad because I never had problems with
+                # bugzilla). The fact is that some uploads don't work and we
+                # get a unicode object instead of a file-like object in
+                # "file". We show an error if we see that behaviour. For more
+                # info, look at bug #116.
+                self.status_message = (
+                    'There was an unknown error in uploading your file.')
 
         filename = file.filename
-
-        # XXX: Dafydd Harries, 2005/01/19
-        # Add support for tar files here. The problem with this is that this
-        # form always redirects if there is no error, which obliterates
-        # confirmatory status messages. I think the solution is not to allow
-        # renames to be done as the same time as uploads -- i.e. split the two
-        # operations into separate forms.
 
         if filename.endswith('.pot'):
             potfile = file.read()
 
-            if not check_po_syntax(potfile):
+            try:
+                self.context.attachFile(potfile, owner)
+            except (POSyntaxError, POInvalidInputError):
                 # The file is not correct.
-                self.status_message = 'Please, review the pot file seems to have a problem'
+                self.status_message = (
+                    'There was a problem parsing the file you uploaded.'
+                    ' Please check that it is correct.')
+
+            self.context.attachFile(potfile, owner)
+        elif is_tar_filename(filename):
+            tf = string_to_tarfile(file.read())
+            pot_paths, po_paths = examine_tarfile(tf)
+
+            error = check_tar(tf, pot_paths, po_paths)
+
+            if error is not None:
+                self.status_message = error
                 return
 
-            import_pot_or_po(self.context, owner, potfile)
+            self.status_message = (
+                import_tar(self.context, owner, tf, pot_paths, po_paths))
         else:
-            self.status_message = 'Unknown file type'
-            return
-
-        # now redirect to view the potemplate. This lets us follow the
-        # template in case the user changed the name
-        self.request.response.redirect('../' + self.context.name)
+            self.status_message = (
+                'The file you uploaded was not recognised as a file that '
+                'can be imported.')
 
 
 class ViewPOFile:
@@ -785,13 +781,14 @@ class ViewPOFile:
 
             pofile = file.read()
 
-            if not check_po_syntax(pofile):
+            user = getUtility(ILaunchBag).user
+
+            try:
+                self.context.attachFile(pofile, user, None)
+            except (POSyntaxError, POInvalidInputError):
                 # The file is not correct.
                 self.status_message = 'Please, review the po file seems to have a problem'
                 return
-
-            import_pot_or_po(self.context,
-                IPerson(self.request.principal, None), pofile)
 
             self.request.response.redirect('./')
             self.submitted = True
@@ -802,7 +799,7 @@ class TranslatorDashboard:
         self.context = context
         self.request = request
 
-        self.person = IPerson(self.request.principal, None)
+        self.person = getUtility(ILaunchBag).user
 
     def projects(self):
         return getUtility(IProjectSet)
@@ -813,7 +810,9 @@ class ViewPreferences:
         self.context = context
         self.request = request
 
-        self.person = IPerson(self.request.principal, None)
+        self.error_msg = None
+        self.submitted_personal = False
+        self.person = getUtility(ILaunchBag).user
 
     def languages(self):
         return getUtility(ILanguageSet)
@@ -822,71 +821,90 @@ class ViewPreferences:
         return self.person.languages
 
     def submit(self):
-        self.submitted_personal = False
-        self.error_msg = None
+        '''Process a POST request to one of the Rosetta preferences forms.'''
 
-        if "SAVE-LANGS" in self.request.form:
-            if self.request.method != "POST":
-                raise RuntimeError("This form must be posted!")
+        if self.request.method == "POST":
+            if "SAVE-LANGS" in self.request.form:
+                self.submitLanguages()
+            elif "SAVE-PERSONAL" in self.request.form:
+                self.submitPersonal()
+                self.submitted_personal = True
 
-            oldInterest = self.person.languages
+    def submitLanguages(self):
+        '''Process a POST request to the language preference form.
 
-            if 'selectedlanguages' in self.request.form:
-                if isinstance(self.request.form['selectedlanguages'], list):
-                    newInterest = self.request.form['selectedlanguages']
-                else:
-                    newInterest = [ self.request.form['selectedlanguages'] ]
+        This list of languages submitted is compared to the the list of
+        languages the user has, and the latter is matched to the former.
+        '''
+
+        old_languages = self.person.languages
+
+        if 'selectedlanguages' in self.request.form:
+            if isinstance(self.request.form['selectedlanguages'], list):
+                new_languages = self.request.form['selectedlanguages']
             else:
-                newInterest = []
+                new_languages = [self.request.form['selectedlanguages']]
+        else:
+            new_languages = []
 
-            # XXX: We should fix this, instead of get englishname list, we
-            # should get language's code
-            for englishname in newInterest:
-                for language in self.languages():
-                    if language.englishname == englishname:
-                        if language not in oldInterest:
-                            self.person.addLanguage(language)
-            for language in oldInterest:
-                if language.englishname not in newInterest:
-                    self.person.removeLanguage(language)
-        elif "SAVE-PERSONAL" in self.request.form:
-            if self.request.method != "POST":
-                raise RuntimeError("This form must be posted!")
+        # XXX
+        # Making the values submitted in the form be the language codes rather
+        # than the English names would make this simpler. However, given that
+        # the language preferences form is currently based on JavaScript, it
+        # would take JavaScript hacking to make that work.
+        #
+        # https://launchpad.ubuntu.com/malone/bugs/127
+        # -- Dafydd, 2005/02/03
 
-            # First thing to do, check the password if it's wrong we stop.
-            currentPassword = self.request.form['currentPassword']
-            encryptor = getUtility(IPasswordEncryptor)
-            isvalid = encryptor.validate(
-                currentPassword, self.person.password)
-            if currentPassword and isvalid:
-                # The password is valid
-                password1 = self.request.form['newPassword1']
-                password2 = self.request.form['newPassword2']
-                if password1 and password1 == password2:
-                    try:
-                        self.person.password = encryptor.encrypt(
-                            password1)
-                    except UnicodeEncodeError:
-                        self.error_msg = \
-                            "The password can only have ascii characters."
-                elif password1:
-                    #The passwords are differents.
-                    self.error_msg = \
-                        "The two passwords you entered did not match."
+        # Add languages.
+        for englishname in new_languages:
+            for language in self.languages():
+                if language.englishname == englishname:
+                    if language not in old_languages:
+                        self.person.addLanguage(language)
 
-                given = self.request.form['given']
-                if given and self.person.givenname != given:
-                    self.person.givenname = given
-                family = self.request.form['family']
-                if family and self.person.familyname != family:
-                    self.person.familyname = family
-                display = self.request.form['display']
-                if display and self.person.displayname != display:
-                    self.person.displayname = display
+        # Remove languages.
+        for language in old_languages:
+            if language.englishname not in new_languages:
+                self.person.removeLanguage(language)
+
+    def submitPersonal(self):
+        '''Process a POST request to the personal information form.'''
+
+        # First thing to do, check the password. If it's wrong, we stop.
+        currentPassword = self.request.form['currentPassword']
+        encryptor = getUtility(IPasswordEncryptor)
+        isvalid = encryptor.validate(currentPassword, self.person.password)
+
+        if not (currentPassword and isvalid):
+            self.error_msg = "The password you entered is not valid."
+
+        password1 = self.request.form['newPassword1']
+        password2 = self.request.form['newPassword2']
+
+        if password1:
+            if password1 == password2:
+                try:
+                    self.person.password = encryptor.encrypt(password1)
+                except UnicodeEncodeError:
+                    self.error_msg = (
+                        "Your password must contatin ASCII characters only.")
             else:
-                self.error_msg = "The username or password you entered is not valid."
+                self.error_msg = (
+                    "The two passwords you entered did not match.")
 
-            self.submitted_personal = True
+        given = self.request.form['given']
+        family = self.request.form['family']
+        display = self.request.form['display']
+
+        if given and self.person.givenname != given:
+            self.person.givenname = given
+
+        if family and self.person.familyname != family:
+            self.person.familyname = family
+
+        if display and self.person.displayname != display:
+            self.person.displayname = display
 
 
 class ViewPOExport:
@@ -973,7 +991,7 @@ class TranslatePOTemplate:
         self.context = context
         self.request = request
 
-        self.person = IPerson(request.principal, None)
+        self.person = getUtility(ILaunchBag).user
 
         if self.person is None:
             return
@@ -1290,27 +1308,41 @@ class ViewImportQueue:
             else:
                 project_name = '-'
             for template in product.potemplates:
-                if template.rawimportstatus == RosettaImportStatus.PENDING:
+                template_raw = IRawFileData(template)
+                if (template_raw.rawimportstatus == \
+                    int(RosettaImportStatus.PENDING)):
+                    if template_raw.rawimporter is not None:
+                        importer_name = template_raw.rawimporter.displayname
+                    else:
+                        importer_name = _default_importer_name
+
                     retdict = {
                         'id': 'pot_%d' % template.id,
                         'project': project_name,
                         'product': product.displayname,
                         'template': template.name,
                         'language': '-',
-                        'importer': template.rawimporter.displayname,
-                        'importdate' : template.daterawimport,
+                        'importer': importer_name,
+                        'importdate' : template_raw.daterawimport,
                     }
                     queue.append(retdict)
                     id += 1
                 for pofile in template.poFilesToImport():
+                    pofile_raw = IRawFileData(pofile)
+                    if pofile_raw.rawimporter is not None:
+                        importer_name = pofile_raw.rawimporter.displayname
+                    else:
+                        importer_name = _default_importer_name
+
+
                     retdict = {
                         'id': 'po_%d' % pofile.id,
                         'project': project_name,
                         'product': product.displayname,
                         'template': template.name,
                         'language': pofile.language.englishname,
-                        'importer': pofile.rawimporter.displayname,
-                        'importdate' : pofile.daterawimport,
+                        'importer': importer_name,
+                        'importdate' : pofile_raw.daterawimport,
                     }
                     queue.append(retdict)
                     id += 1
@@ -1409,8 +1441,9 @@ class POTemplateTarExport:
 
         self.request.response.setStatus(200)
         self.request.response.setHeader('Content-Type', 'application/x-tar')
-        self.request.response.setHeader('Content-Encoding', 'gzip')
         self.request.response.setHeader('Content-Length', len(body))
+        self.request.response.setHeader('Content-Disposition',
+            'attachment; filename="%s.tar.gz"' % self.context.name)
 
         return body
 

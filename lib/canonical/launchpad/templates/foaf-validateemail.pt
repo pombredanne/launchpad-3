@@ -1,3 +1,5 @@
+<tal:do-this-first tal:content="view/processForm" />
+
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -17,9 +19,8 @@
 
 <div id="content" class="documentEditable">
 
-  <tal:block define="submitted view/formSubmitted">
   <div class="documentContent" id="region-content">
-    <div tal:condition="python: not submitted or view.errormessage">
+    <div tal:condition="not: view/successfullyProcessed">
       <h1>Validate email: <span tal:replace="context/email"></span></h1>
 
       <div tal:condition="view/errormessage">
@@ -44,14 +45,13 @@
       </form>
     </div>
 
-    <div tal:condition="python: submitted and not view.errormessage">
+    <div tal:condition="view/successfullyProcessed">
       <h1>Email validated successfully.</h1>
 
     </div>
-  </div> <!-- <div class="documentContent" id="region-content"> -->
-  </tal:block>
-</div>   <!-- <div id="content" class="documentEditable"> -->
-</div>   <!-- <div metal:fill-slot="main"> -->
+  </div>
+</div>
+</div>
 
 
 </body>

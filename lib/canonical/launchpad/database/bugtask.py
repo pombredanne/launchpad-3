@@ -21,8 +21,7 @@ from canonical.launchpad.interfaces import IBugTask
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import nowUTC, DEFAULT
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.searchbuilder import any
-
+from canonical.launchpad.searchbuilder import any, NULL
 
 from canonical.launchpad.interfaces import IBugTasksReport, \
     IBugTaskSet, IEditableUpstreamBugTask, IReadOnlyUpstreamBugTask, \
@@ -42,6 +41,9 @@ class BugTask(SQLBase):
         notNull=False, default=None)
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
+        notNull=False, default=None)
+    distrorelease = ForeignKey(
+        dbName='distrorelease', foreignKey='DistroRelease',
         notNull=False, default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
@@ -89,6 +91,23 @@ class BugTask(SQLBase):
     bugtitle = property(bugtitle)
     bugdescription = property(bugdescription)
 
+    def _title(self):
+        title = 'Malone Bug #' + str(self.bug.id)
+        title += ' (' + self.bug.title + ')' + ' on '
+        if self.distribution:
+            title += self.distribution.name + ' '
+            if self.distrorelease:
+                title += self.distrorelease.name + ' '
+            if self.sourcepackagename:
+                title += self.sourcepackagename.name + ' '
+            if self.binarypackagename:
+                title += self.binarypackagename.name
+        if self.product:
+            title += self.product.displayname
+        return title
+    title = property(_title)
+
+
 
 class BugTaskSet:
 
@@ -98,8 +117,10 @@ class BugTaskSet:
 
     def __init__(self, bug=None):
         self.bug = bug
+        self.title = 'A Set of Bug Tasks'
 
     def __getitem__(self, id):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         principal = _get_authenticated_principal()
         try:
             task = self.table.select(self.table.q.id == id)[0]
@@ -124,6 +145,7 @@ class BugTaskSet:
             raise KeyError, id
 
     def __iter__(self):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         principal = _get_authenticated_principal()
 
         for row in self.table.select(self.table.q.bugID == self.bug):
@@ -143,6 +165,7 @@ class BugTaskSet:
             yield row
 
     def get(self, id):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         try:
             bugtask = self.table.get(id)
         except SQLObjectNotFound, err:
@@ -150,10 +173,14 @@ class BugTaskSet:
 
         return bugtask
 
-    def search(self, bug=None, status=None, priority=None, severity=None,
-               product=None, milestone=None, assignee=None, submitter=None,
-               orderby=None):
+    def search(self, bug=None, searchtext=None, status=None, priority=None,
+               severity=None, product=None, milestone=None, assignee=None,
+               submitter=None, orderby=None):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         query = ""
+
+        if searchtext:
+            query += "Bug.fti @@ ftq(%s)" % quote(searchtext)
 
         # build the part of the query for FK columns
         for arg in ('bug', 'product', 'milestone', 'assignee', 'submitter'):
@@ -168,7 +195,10 @@ class BugTaskSet:
                     query_values = ", ".join(quoted_ids)
                     fragment = "(BugTask.%s IN (%s))" % (arg, query_values)
                 else:
-                    fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg.id)))
+                    if query_arg == NULL:
+                        fragment = "(BugTask.%s IS NULL)" % (arg)
+                    else:
+                        fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg.id)))
 
                 query += fragment
 
@@ -185,7 +215,7 @@ class BugTaskSet:
                     query_values = ", ".join(quoted_ids)
                     fragment = "(BugTask.%s IN (%s))" % (arg, query_values)
                 else:
-                    fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg.id)))
+                    fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg)))
 
                 query += fragment
 
@@ -197,23 +227,49 @@ class BugTaskSet:
         if user:
             query += "("
         query += "(BugTask.bug = Bug.id AND Bug.private = FALSE)"
+        
+        # XXX: Brad Bollenbach, 2005-02-03: The subselect here is due to what
+        # appears to be a bug in sqlobject not taking distinct into
+        # consideration when doing counts.
         if user:
             query += ((
                 " OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND "
-                "     (Bug.id = BugSubscription.bug) AND "
-                "     (BugSubscription.person = %(personid)d ) AND "
-                "     (BugSubscription.subscription IN (%(cc)d, %(watch)d))))") %
+                "     (Bug.id in (SELECT Bug.id FROM Bug, BugSubscription WHERE "
+                "                (Bug.id = BugSubscription.bug) AND "
+                "                (BugSubscription.person = %(personid)d) AND "
+                "                (BugSubscription.subscription IN (%(cc)d, %(watch)d))))))") %
                 {'personid' : user.id,
                  'cc' : dbschema.BugSubscription.CC.value,
                  'watch' : dbschema.BugSubscription.WATCH.value})
 
         bugtasks = BugTask.select(
-            query, clauseTables = ["Bug", "BugTask", "BugSubscription"],
-            distinct = True)
+            query, clauseTables = ["Bug", "BugTask"])
         if orderby:
             bugtasks = bugtasks.orderBy(orderby)
 
         return bugtasks
+
+    def createTask(self, bug, product=None, distribution=None, distrorelease=None,
+                   sourcepackagename=None, binarypackagename=None, status=None,
+                   priority=None, severity=None, assignee=None, owner=None,
+                   milestone=None):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        bugtask_args = {
+            'bug' : getattr(bug, 'id', None),
+            'product' : getattr(product, 'id', None),
+            'distribution' : getattr(distribution, 'id', None),
+            'distrorelease' : getattr(distrorelease, 'id', None),
+            'sourcepackagename' : getattr(sourcepackagename, 'id', None),
+            'binarypackagename' : getattr(binarypackagename, 'id', None),
+            'status' : status,
+            'priority' : priority,
+            'severity' : severity,
+            'assignee' : getattr(assignee, 'id', None),
+            'owner' : getattr(owner, 'id', None),
+            'milestone' : getattr(milestone, 'id', None)
+        }
+
+        return BugTask(**bugtask_args)
 
     def add(self, ob):
         return ob
@@ -262,89 +318,63 @@ class BugTasksReport(object):
         self.Bug = Bug
         self.BT = BugTask
         self.showclosed = False
-        self._maintainedPackageBugs = None
-        self._maintainedProductBugs = None
-        self._productAssigneeBugs = None
-        self._packageAssigneeBugs = None
-        self._assignedBugs = None
 
     # bugs assigned (i.e. tasks) to packages maintained by the user
     def maintainedPackageBugs(self):
-        if self._maintainedPackageBugs is not None:
-            return self._maintainedPackageBugs
-        querystr = """
-            BugTask.sourcepackagename = SourcePackage.sourcepackagename AND 
-            BugTask.distribution = SourcePackage.distribution AND 
-            SourcePackage.maintainer=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-            """ % (self.user.id,
-                   self.minseverity,
-                   self.minpriority)
+        querystr = (
+            "BugTask.sourcepackagename = SourcePackage.sourcepackagename AND "
+            "BugTask.distribution = SourcePackage.distro AND "
+            "SourcePackage.maintainer = %s AND "
+            "BugTask.severity >= %s AND "
+            "BugTask.priority >= %s") % (
+            self.user.id, self.minseverity, self.minpriority)
         clauseTables = ('SourcePackage',)
 
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._maintainedPackageBugs = list(self.BT.select(querystr,
-        clauseTables=clauseTables))
-        return self._maintainedPackageBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(self.BT.select(querystr, clauseTables=clauseTables))
 
     # bugs assigned (i.e. tasks) to products owned by the user
     def maintainedProductBugs(self):
-        if self._maintainedProductBugs is not None:
-            return self._maintainedProductBugs
-        querystr = """
-            BugTask.product=Product.id AND
-            Product.owner=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-            """ % (self.user.id,
-                   self.minseverity,
-                   self.minpriority)
+        querystr = (
+            "BugTask.product = Product.id AND "
+            "Product.owner = %s AND "
+            "BugTask.severity >= %s AND "
+            "BugTask.priority >= %s") % (
+            self.user.id, self.minseverity, self.minpriority)
         
         clauseTables = ('Product',)
 
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._maintainedProductBugs = list(self.BT.select(querystr,
-        clauseTables=clauseTables))
-        return self._maintainedProductBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(self.BT.select(querystr, clauseTables=clauseTables))
 
     # package bugs assigned specifically to the user
     def packageAssigneeBugs(self):
-        if self._packageAssigneeBugs is not None:
-            return self._packageAssigneeBugs
-        querystr = """
-            BugTask.assignee=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-            """ % (self.user.id, self.minseverity,
-                   self.minpriority)
+        querystr = (
+            "BugTask.sourcepackagename IS NOT NULL AND "
+            "BugTask.assignee = %s AND "
+            "BugTask.severity >= %s AND "
+            "BugTask.priority >= %s") % (
+            self.user.id, self.minseverity, self.minpriority)
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._packageAssigneeBugs = list(self.BT.select(querystr))
-        return self._packageAssigneeBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(self.BT.select(querystr))
 
     # product bugs assigned specifically to the user
     def productAssigneeBugs(self):
-        if self._productAssigneeBugs is not None:
-            return self._productAssigneeBugs
-        querystr = """
-            BugTask.assignee=%s AND
-            BugTask.severity>=%s AND
-            BugTask.priority>=%s
-                   """ % (self.user.id,
-                          self.minseverity,
-                          self.minpriority)
+        querystr = (
+            "BugTask.product IS NOT NULL AND "
+            "BugTask.assignee =%s AND "
+            "BugTask.severity >=%s AND "
+            "BugTask.priority >=%s") % (
+            self.user.id, self.minseverity, self.minpriority)
         if not self.showclosed:
-            querystr = querystr + ' AND BugTask.bugstatus<3'
-        self._productAssigneeBugs = list(self.BT.select(querystr))
-        return self._productAssigneeBugs
+            querystr = querystr + ' AND BugTask.status < 30'
+        return list(self.BT.select(querystr))
 
     # all bugs assigned to a user
     def assignedBugs(self):
-        if self._assignedBugs is not None:
-            return self._assignedBugs
         bugs = Set()
         for bugtask in self.maintainedPackageBugs():
             bugs.add(bugtask.bug)
@@ -357,6 +387,5 @@ class BugTasksReport(object):
         buglistwithdates = [ (bug.datecreated, bug) for bug in bugs ]
         buglistwithdates.sort()
         buglistwithdates.reverse()
-        bugs = [ bug[1] for bug in buglistwithdates ]
-        self._assignedBugs = bugs
-        return self._assignedBugs
+        bugs = [bug[1] for bug in buglistwithdates]
+        return bugs

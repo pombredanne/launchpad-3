@@ -107,6 +107,7 @@ def record_bug_task_added(bug_task, object_created_event):
         message=activity_message)
 
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
+    """Make an activity note that a bug task was edited."""
     changes = what_changed(sqlobject_modified_event)
     if changes:
         task_title = ""

@@ -2,7 +2,7 @@
 # Author: Rob Weir <rob.weir@canonical.com>
 # Copyright (C) 2004 Canonical Software
 
-from arch import NameParser
+from pybaz import NameParser
 
 from zope.interface import implements, classProvides
 from canonical.launchpad.interfaces import INamespaceObject, ISourceTreeAPI, \
@@ -27,9 +27,7 @@ from canonical.launchpad.interfaces import INamespaceObject, ISourceTreeAPI, \
 
 
 from canonical.launchpad import database
-import arch
-
-default_location = "/tmp/"
+import pybaz as arch
 
 ###############################################################################
 ### NamespaceObject
@@ -258,11 +256,8 @@ class ArchiveLocationRegistry(object):
         """Create a ArchiveLocation for a read-only archive"""
         return self._createLocation(url, ArchiveLocationRegistry.readonly)
 
-    def createMirrorTargetLocation(self, url, create=False):
+    def createMirrorTargetLocation(self, url):
         """Create a ArchiveLocation for a mirror target"""
-        if create:
-            archive = arch.Archive(self._archive.name)
-            archive.make_mirror(archive.name + "-MIRROR", location = default_location + archive.name, signed=False, listing=True)
         return self._createLocation(url, ArchiveLocationRegistry.mirrorTarget)
 
     def existsLocation(self, location):
@@ -409,8 +404,9 @@ class Archive(NamespaceObject, CategoryIterable):
     def mirror_revision(self, revision):
         """Mirror revision to my mirror"""
         source_archive = arch.Archive(self.name)
-        source_archive.mirror(limit=[revision.nonarch], fromto=(self.name, self.name + "-MIRROR"))
-        
+        source_archive.mirror(limit=[revision.nonarch],
+                              fromto=(self.name, self.name + "-MIRROR"))
+
 
 class MissingArchive(Archive):
     """I am a Special Case for missing archives"""

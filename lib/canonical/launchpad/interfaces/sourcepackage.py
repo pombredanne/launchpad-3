@@ -87,6 +87,7 @@ class ISourcePackageinDistro(Interface):
 #
 class ISourcePackageName(Interface):
     """Name of a SourcePackage"""
+
     id = Int(title=_("ID"), required=True)
     name = TextLine(title=_("Name"), required=True)
 
@@ -95,15 +96,26 @@ class ISourcePackageName(Interface):
 
 
 class ISourcePackageNameSet(Interface):
-    """A set of SourcePackageName"""
+    """A set of SourcePackageName."""
+
     def __getitem__(name):
         """Retrieve a sourcepackage by name."""
+
     def __iter__():
         """Iterate over names"""
+
+    def get(sourcepackagenameid):
+        """Return a sourcepackagename by its id.
+
+        If the sourcepackagename can't be found a zope.exceptions.NotFoundError
+        will be raised.
+        """
 
 
 class ISourcePackageSet(Interface):
     """A set for ISourcePackage objects."""
+
+    title = Attribute('Title')
 
     def __getitem__(key):
         """Get an ISourcePackage by name"""
@@ -126,6 +138,8 @@ class ISourcePackageSet(Interface):
 
 class ISourcePackageInDistroSet(Interface):
     """A Set of SourcePackages in a given DistroRelease"""
+
+    title = Attribute('Title')
 
     def findPackagesByName(pattern):
         """Find SourcePackages in a given DistroRelease matching pattern"""
@@ -175,6 +189,10 @@ class ISourcePackageRelease(Interface):
     files = Attribute("Files for this sourcepackagerelease")
     files_url = Attribute(
         "Downloadable URL for this sourcepackagerelease files")
+    sourcepackagename = Attribute("SourcePackageName table reference")
+
+    # read-only properties
+    name = Attribute('The sourcepackagename for this release, as text')
 
     def branches():
         """Return the list of branches in a source package release"""
@@ -200,6 +218,8 @@ class ISourcePackageReleasePublishing(ISourcePackageRelease):
     componentname = Attribute("The Component name")
     distrorelease = Attribute("The distro in which this package was released")
     maintainer = Attribute("The maintainer of this package")
+
+    title = Attribute("Title")
 
     def __getitem__(version):
         """Get a SourcePackageRelease"""

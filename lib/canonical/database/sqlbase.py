@@ -6,7 +6,8 @@ from datetime import datetime, date, time
 from sqlobject import connectionForURI
 import thread, warnings
 
-__all__ = ['SQLBase', 'quote', 'quote_like', 'ZopelessTransactionManager']
+__all__ = ['SQLBase', 'quote', 'quote_like', 'ZopelessTransactionManager',
+           'ConflictingTransactionManagerError']
 
 class LaunchpadStyle(Style):
     """A SQLObject style for launchpad. 
@@ -108,7 +109,7 @@ class _ZopelessConnectionDescriptor(object):
         # Explicitly close all connections we opened.
         descriptor = cls.sqlClass.__dict__.get('_connection')
         for trans in descriptor.transactions.itervalues():
-            trans.releaseConnection(trans._connection, explicit=True)
+            trans.rollback() 
             trans._dbConnection._connection.close()
 
         # Remove the _connection descriptor.  This assumes there was no
@@ -120,6 +121,10 @@ class _ZopelessConnectionDescriptor(object):
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")
+
+
+class ConflictingTransactionManagerError(Exception):
+    pass
 
 
 class ZopelessTransactionManager(object):
@@ -260,6 +265,7 @@ class ZopelessTransactionManager(object):
         return self.sqlClass._connection._dm
 
     def begin(self):
+        _clearCache()
         txn = self.manager.begin()
         txn.join(self._dm())
 
@@ -274,6 +280,20 @@ class ZopelessTransactionManager(object):
             obj.reset()
             obj.expire()
         self.begin()
+
+
+def _clearCache():
+    """Clear SQLObject's object cache for the current connection."""
+    # XXX: There is a different hack for (I think?) similar reasons in
+    #      canonical.publication.  This should probably share code with
+    #      that one.
+    #        - Andrew Bennetts, 2005-02-01
+
+    # Don't break if _connection is a FakeZopelessConnectionDescriptor
+    if getattr(SQLBase._connection, 'cache', None) is not None:
+        for c in SQLBase._connection.cache.allSubCaches():
+            c.clear()
+
 
 def quote(x):
     r"""Quote a variable ready for inclusion into an SQL statement.
@@ -347,4 +367,80 @@ def quote_like(x):
     if not isinstance(x, basestring):
         raise TypeError, 'Not a string (%s)' % type(x)
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
+
+
+def flushUpdates():
+    """Flushes all pending database updates for the current connection.
+    
+    When SQLObject's _lazyUpdate flag is set, then it's possible to have
+    changes written to objects that aren't flushed to the database, leading to
+    inconsistencies when doing e.g.::
+        
+        # Assuming the Beer table already has a 'Victoria Bitter' row...
+        assert Beer.select("name LIKE 'Vic%'").count() == 1  # This will pass
+        beer = Beer.byName('Victoria Bitter')
+        beer.name = 'VB'
+        assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will fail
+
+    To avoid this problem, use this function::
+
+        # Assuming the Beer table already has a 'Victoria Bitter' row...
+        assert Beer.select("name LIKE 'Vic%'").count() == 1  # This will pass
+        beer = Beer.byName('Victoria Bitter')
+        beer.name = 'VB'
+        flushUpdates()
+        assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
+
+    """
+    # XXX: turn that comment into a doctest
+    #        - Andrew Bennetts, 2005-02-16
+    for object in list(SQLBase._connection._dm.objects):
+        object.syncUpdate()
+
+
+# Some helpers intended for use with initZopeless.  These allow you to avoid
+# passing the transaction manager all through your code.  Also, this begin()
+# does an implicit rollback() for convenience. 
+# XXX: Make these use and work with Zope 3's transaction machinery instead!
+#        - Andrew Bennetts, 2005-02-11
+
+def begin():
+    """Begins a transaction, aborting the current one if necessary."""
+    transaction = SQLBase._connection
+    if not transaction._obsolete:
+        # XXX: This perhaps should raise a warning?
+        #        - Andrew Bennetts, 2005-02-11
+        transaction.rollback()
+    _clearCache()
+    transaction.begin()
+
+def rollback():
+    SQLBase._connection.rollback()
+
+def commit():
+    SQLBase._connection.commit()
+    
+
+class FakeZopelessConnectionDescriptor(_ZopelessConnectionDescriptor):
+    """A helper class for testing.
+    
+    Use this if you want to know if commit or rollback was called.
+    """
+    _obsolete = True
+    begun = False
+    rolledback = False
+    committed = False
+
+    def __get__(self, inst, cls=None):
+        return self
+
+    def begin(self):
+        self.begun = True
+
+    def rollback(self):
+        self.rolledback = True
+
+    def commit(self):
+        self.committed = True
+
 

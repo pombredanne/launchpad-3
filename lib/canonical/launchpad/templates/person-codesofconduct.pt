@@ -1,0 +1,73 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title">
+    <span tal:replace="context/displayname">Name</span>
+    Signed Codes of Conduct</title>
+  <!-- Plone style sheet -->
+  <style type="text/css" media="screen">@import url(plone.css);</style>
+  <!-- Soyuz style sheet -->
+  <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+<div id="content" class="documentEditable">
+<div class="documentContent" id="region-content">
+
+<div>
+  <h1>Your signed codes of conduct</h1>
+
+
+  <div tal:condition="view/performChanges">
+    <p class="portalMessage" tal:content="view/message"></p>
+  </div>
+
+  <form name="coc" action="" method="POST">
+
+  <p>Here you can View your Signed Codes of Conduct and Deactivate any
+  Active one.</p>
+
+  <table class="listing rowNavigation">
+    <tr>
+      <th>Signingkey</th>
+      <th>Status</th>
+    </tr>
+    <tr tal:repeat="sign view/signatures">
+      <td tal:content="sign/signingkey/keyid">GPGKEY</td>
+      <td tal:condition="sign/active">
+        <input tal:attributes="value sign/id" name="DEACTIVE_SIGN" 
+               type="checkbox" enable/>
+      </td>
+      <td tal:condition="not:sign/active">DEACTIVE</td>
+    </tr>
+  </table>
+
+  <br />
+
+  <table>
+    <tr>
+      <td></td>
+      <td align="right">
+        <input type="submit" value="Submit"/>
+      </td>
+    </tr>
+  </table>
+
+  </form>
+  </div>
+
+  <p>See or Sign new Code of Conducts Releases in <a
+  href="/codeofconduct">Code of Conduct</a>.</p>
+
+</div>
+</div>
+</div>
+
+</body>
+</html>

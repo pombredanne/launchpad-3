@@ -27,6 +27,11 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProduct"
+        layer="malone"
+        name="+malone-index" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProduct"
         layer="canonical.launchpad.layers.RosettaLayer"
         name="+rosetta-index"
         />
@@ -82,6 +87,22 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProduct"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProductBugsView" 
+        layer="malone">
+        <browser:page name="+malone-index"
+            template="../templates/malone_skin/malone-index.pt"
+            lp:url="malone/products/$Product.name/" />
+        <browser:page name="+advancedsearch"
+            template="../templates/malone_skin/malone-under-construction.pt"
+            lp:url="malone/products/$Product.name/+advancedsearch" />
+        <browser:page name="+admin"
+            template="../templates/malone_skin/malone-under-construction.pt"
+            lp:url="malone/products/$Product.name/+admin" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductView"
         permission="launchpad.AnyPerson" >
         <browser:page
@@ -133,10 +154,10 @@
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report Bug on Upstream Product"
-        fields="title comment owner"
+        fields="title comment private owner"
         class="canonical.launchpad.browser.ProductFileBugView"
         arguments=""
-        keyword_arguments="title comment owner"
+        keyword_arguments="title comment private owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/projects/$Project.name/$Product.name/+filebug">
@@ -145,6 +166,22 @@
            field="title"
            class="zope.app.form.browser.TextWidget"
            displayWidth="55" />
+        <browser:widget
+           field="comment"
+           class="zope.app.form.browser.TextAreaWidget"
+           width="62" />
+    </browser:addform>
+
+    <browser:addform
+        name="+addpackage"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IPackaging"
+        label="Add New SourcePackage"
+        fields="sourcepackage packaging"
+        class="canonical.launchpad.browser.PackagingAddView"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-addform.pt"
+        lp:url="doap/product/$Project.name/+package">
     </browser:addform>
 
     <!-- ProductSet-->

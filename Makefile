@@ -14,32 +14,28 @@ HERE:=$(shell pwd)
 # DO NOT ALTER : this should just build by default
 default: inplace
 
-check:
-	$(MAKE) -C sourcecode build
+check_merge: build
+	# Work around the current idiom of 'make check' getting too long
+	# because of hct and related tests. note that this is a short
+	# term solution, the long term solution will need to be 
+	# finer grained testing anyway.
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	${PYTHON} -t ./test_on_merge.py canonical
+	env PYTHONPATH=$(PYTHONPATH) \
+	${PYTHON} -t ./test_on_merge.py --dir hct --dir sourcerer --dir banzai
+
+check: build
+	# Run all tests. test_on_merge.py takes care of setting up the
+	# database.
+	env PYTHONPATH=$(PYTHONPATH) \
+	${PYTHON} -t ./test_on_merge.py 
 
 pagetests:
 	$(MAKE) -C sourcecode build
+	env PYTHONPATH=$(PYTHONPATH) \
 	python test.py test_pages
 	
-
-XXXcheck: build
-	$(MAKE) -C sourcecode check
-	PYTHONPATH=$(HERE)/lib ${PYTHON} -t ./test.py
-
-debugging-on:
-	ln -s ../lib/canonical/canonical.apidoc-configure.zcml ./package-includes/+canonical.apidoc-configure.zcml
-
-debugging-off:
-	rm -f ./package-includes/+canonical.apidoc-configure.zcml
-	# backwards compatibility for old style
-	rm -f ./package-includes/+canonical.debugskin-configure.zcml
-	rm -f ./package-includes/canonical.debugskin-configure.zcml
-	rm -f ./package-includes/canonical.apidoc-configure.zcml
-
-.PHONY: check debugging-on debugging-off
+.PHONY: check
 
 # XXX What should the default be?
 all: inplace runners

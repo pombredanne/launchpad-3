@@ -40,6 +40,11 @@ class CVERefSet(BugSetBase):
     implements(ICVERefSet)
     table = CVERef
 
+    def __init__(self, bug=None):
+        super(CVERefSet, self).__init__(bug)
+        self.title = 'CVE References'
+        if bug:
+            self.title += ' for Malone Bug #' + str(bug)
 
 def CVERefFactory(context, **kw):
     bug = context.context.bug

@@ -1,0 +1,87 @@
+Upstream Projects in Launchpad
+==============================
+
+In the general Launchpad perspective, there are two kinds of software projects,
+distro packages and upstream products. A distro package is usually some kind of
+binary thing that you can install using your distributions package management
+tools (e.g. APT.) There are some package management tools that can handle
+installs from source packages as well.
+
+An /upstream/ on the other hand is the original source from which a distro
+package is often derived. We usually use this term to mean the distro-neutral
+project, e.g. the Mozilla Firefox web browser from the Mozilla Project, but an
+upstream can also be a package in another distro. For example, a large number
+of Ubuntu packages are derived from Debian packages, so "upstream" in that case
+is the Debian source package from which the Ubuntu source package was derived.
+
+This document is about "upstreams" as in "the distro-neutral original source
+from which a distro package is derived."
+
+Working with Upstreams in Launchpad
+===================================
+
+In Launchpad, there are two terms you'll often hear used when discussing
+upstream: project and product. A "project" would be something like The Mozilla
+Project; a "product" would be something like The Mozilla Firefox web browser.
+
+XXX: This document currently focusses on products, but a discussion of projects
+should be included at some point too.
+
+Creation and retrieval of products in Launchpad is done via the IProductSet
+utility.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> productset = getUtility(IProductSet)
+
+For the purposes of this document, we'll interact with the system as an
+anonymous user:
+
+XXX: Brad Bollenbach, 2005-02-03: This takes way too much code to do in a
+doctest! Talk to SteveA about simplifying this.
+
+    >>> import zope.security.management
+    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from canonical.launchpad.database import Person
+    >>> class Principal:
+    ...     def __init__(self, id):
+    ...         self.id = id
+    ...         self.groups = []
+    >>> principal = Principal('launchpad.anonymous')
+
+    >>> class Participation:
+    ...     interaction = None
+    >>> anon_participation = Participation()
+    >>> anon_participation.principal = principal
+
+    >>> zope.security.management.newInteraction(anon_participation)
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from zope.app.tests import ztapi
+    >>> from zope.interface import implements
+    >>> class MockLaunchBag(object):
+    ...     implements(ILaunchBag)
+    ...     def __init__(self, login=None, user=None):
+    ...         self.login = login
+    ...         self.user = user
+    >>> ztapi.provideUtility(ILaunchBag, MockLaunchBag())
+
+Use the get() method of an IProductSet to get a specific product by its ID.
+
+    >>> firefox = productset.get(4)
+    >>> print firefox.name
+    firefox
+
+Trying to get() an ID that doesn't exit will raise a
+zope.exceptions.NotFoundError:
+
+    >>> firefox = productset.get(-1)
+    Traceback (most recent call last):
+      ...
+    NotFoundError: 'Product with ID -1 does not exist'
+
+XXX: Brad Bollenbach, 2005-02-03: this shouldn't be in a doctest, but I don't
+have time to think about a better place to put this at the moment.
+
+    >>> ztapi.unprovideUtility(ILaunchBag)
+    >>> zope.security.management.endInteraction()

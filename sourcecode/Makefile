@@ -3,9 +3,9 @@ test_dirs:=$(shell find . -maxdepth 1 -mindepth 1 -name ".arch-ids" -prune -o -t
 all:
 
 check: build
-	#@ for subdir in ${test_dirs}; do \
-	#	$(MAKE) -C $$subdir check || exit $$?;\
-	#done
+	@ for subdir in ${test_dirs}; do \
+		$(MAKE) -C $$subdir check || exit $$?;\
+	done
 
 build:
 	@ for subdir in ${test_dirs}; do\

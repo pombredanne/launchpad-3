@@ -8,7 +8,7 @@ from zope.app.form.browser import SequenceWidget, ObjectWidget
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-from zope.component import getUtility
+from zope.component import getUtility, getAdapter
 import zope.security.interfaces
 
 from sqlobject.sqlbuilder import AND, IN, ISNULL
@@ -17,14 +17,13 @@ from canonical.lp import dbschema
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.database.sqlbase import quote
+from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      MilestoneVocabulary
-
 from canonical.launchpad.database import Product, ProductSeriesSet, Bug, \
-     BugFactory, ProductMilestoneSet, Milestone, BugTask, SourceSourceSet,\
-     Person
-
-from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet
+     BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
+from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
+     IPersonSet, IBugTaskSet, IAging
 from canonical.launchpad.browser.productrelease import newProductRelease
 from canonical.launchpad.browser.cal import CalendarInfoPortlet
 
@@ -153,11 +152,6 @@ class ProductView:
         last_few_tasks = bugsdated[-quantity:]
         return [task for sortkey, task in last_few_tasks]
 
-# XXX cprov 20050107
-# This class needs revision for:
-#  * not using BugTask directly
-#  * code improves
-#  * use Authorization component
 class ProductBugsView:
     DEFAULT_STATUS = (
         int(dbschema.BugTaskStatus.NEW),
@@ -167,112 +161,60 @@ class ProductBugsView:
         self.context = context
         self.request = request
         self.batch = Batch(
-            self.bugtask_search(), int(request.get('batch_start', 0)))
+            list(self.bugtask_search()), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
 
+    def hideGlobalSearchBox(self):
+        """Should the global search box be hidden on the page?"""
+        if not self.request.form.get("searchtext"):
+            return True
+
     def bugtask_search(self):
-        ba_params = []
+        """Search for bug tasks, pulling the params out of the request."""
+        params = {}
+        searchtext = self.request.form.get("searchtext")
+        if searchtext:
+            params["searchtext"] = searchtext
 
-        param_searchtext = self.request.get('searchtext')
-        if param_searchtext:
-            try:
-                int_param_searchtext = int(param_searchtext)
-            except ValueError:
-                # Use full text indexing. We can't use like to search text
-                # or descriptions since it won't use indexes.
-                # XXX: Stuart Bishop, 2004-12-02 Pull this commented code
-                # after confirming if we stick with tsearch2
-
-                # XXX: Brad Bollenbach, 2004-11-26:
-                # I always found it particularly
-                # unhelpful that sqlobject doesn't have this by default, for DB
-                # backends that support it.
-                #
-                # def ILIKE(expr, string):
-                #    return SQLOp("ILIKE", expr, string)
-
-                # looks like user wants to do a text search of
-                # title/shortdesc/description
-                #
-                # searchtext = '%' + param_searchtext + '%'
-                # bugs = Bug.select(
-                #     OR(ILIKE(Bug.q.title, searchtext),
-                #        ILIKE(Bug.q.shortdesc, searchtext),
-                #        ILIKE(Bug.q.description, searchtext)))
-                
-                bugs = Bug.select('fti @@ ftq(%s)' % quote(param_searchtext))
-                bugids = [bug.id for bug in bugs]
-                if bugids:
-                    ba_params.append(IN(BugTask.q.bugID, bugids))
+        for param_name in ("status", "severity"):
+            param_value = self.request.form.get(param_name)
+            if param_value and param_value != 'all':
+                if isinstance(param_value, (list, tuple)):
+                    params[param_name] = any(*param_value)
                 else:
-                    return []
+                    params[param_name] = param_value
 
+        assignee = self.request.form.get("assignee")
+        milestone = self.request.form.get("target")
+        if assignee and assignee != 'all':
+            if assignee == "unassigned":
+                params["assignee"] = NULL
             else:
-                self.request.response.redirect("/malone/bugs/" +
-                                               int_param_searchtext)
+                personset = getUtility(IPersonSet)
+                params["assignee"] = personset.getByName(assignee)
 
-        param_status = self.request.form.get('status', self.DEFAULT_STATUS)
-        if param_status and param_status != 'all':
-            status = []
-            if isinstance(param_status, (list, tuple)):
-                status = param_status
-            else:
-                status = [param_status]
-            ba_params.append(IN(BugTask.q.status, status))
+        if milestone:
+            pass
 
-        param_severity = self.request.get('severity', None)
-        if param_severity and param_severity != 'all':
-            severity = []
-            if isinstance(param_severity, (list, tuple)):
-                severity = param_severity
-            else:
-                severity = [param_severity]
-            ba_params.append(IN(BugTask.q.severity, severity))
+        # Brad Bollenbach, 2005-02-02: Clean this up while integrating
+        # new skin from mpt.
+        if params.has_key("target"):
+            params["milestone"] = params["target"]
+            del params["target"]
 
-        param_assignee = self.request.get('assignee')
-        if param_assignee and param_assignee not in ('all', 'unassigned'):
-            assignees = []
-            if isinstance(param_assignee, (list, tuple)):
-                people = Person.select(IN(Person.q.name, param_assignee))
-            else:
-                people = Person.select(Person.q.name == param_assignee)
+        # make this search context-sensitive
+        params["product"] = self.context
 
-            if people:
-                assignees = [p.id for p in people]
-
-            ba_params.append(
-                IN(BugTask.q.assigneeID, assignees))
-        elif param_assignee == 'unassigned':
-            ba_params.append(ISNULL(BugTask.q.assigneeID))
-
-        param_target = self.request.get('target')
-        if param_target and param_target not in ('all', 'unassigned'):
-            targets = []
-            if isinstance(param_target, (list, tuple)):
-                targets = Milestone.select(IN(Milestone.q.name, param_target))
-            else:
-                targets = Milestone.select(Milestone.q.name == param_target)
-
-            if targets:
-                targets = [t.id for t in targets]
-
-            ba_params.append(
-                IN(BugTask.q.milestoneID, targets))
-        elif param_target == 'unassigned':
-            ba_params.append(ISNULL(BugTask.q.milestoneID))
-
-        ba_params.append(BugTask.q.productID == self.context.id)
-
-        if ba_params:
-            ba_params = [AND(*ba_params)]
-
-        return BugTask.select(*ba_params)
+        bugtaskset = getUtility(IBugTaskSet)
+        return bugtaskset.search(**params)
 
     def task_columns(self):
+        """The columns to show in the bug task listing."""
         return [
             "id", "title", "milestone", "status", "submittedby", "assignedto"]
 
     def assign_to_milestones(self):
+        """Assign bug tasks to the given milestone."""
         if self.request.principal:
             if self.context.owner.id == self.request.principal.id:
                 milestone_name = self.request.get('milestone')
@@ -288,6 +230,13 @@ class ProductBugsView:
                             for task in tasks:
                                 task.milestone = milestone
        
+    # XXX: Brad Bollenbach, 2005-02-11: Replace this view method hack with a
+    # TALES adapter, perhaps.
+    def currentApproximateAge(self, bugtask):
+        """Return a human readable string of the age of a bug task."""
+        aging_bugtask = getAdapter(bugtask, IAging, '')
+        return aging_bugtask.currentApproximateAge()
+
     def people(self):
         """Return the list of people in Launchpad."""
         # the vocabulary doesn't need context since the
@@ -409,7 +358,7 @@ class ProductSetAddView(AddView):
         owner = IPerson(self.request.principal, None)
         if not owner:
             raise zope.security.interfaces.Unauthorized(
-                "Need an authenticated bug owner")
+                "Need an authenticated Launchpad owner")
         kw = {}
         for key, value in data.items():
             kw[str(key)] = value

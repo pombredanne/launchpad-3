@@ -1,0 +1,49 @@
+digraph g {
+graph [
+    page="8.27,11.69",
+    /*size="10.69,7.27",*/
+    size="42.76,29.08",
+    overlap=false,
+    fontsize=16,
+    ratio=fill,
+    dpi=144,
+    pack=true,
+    rankdir="LR",
+    concentrate=false,
+    splines=true,
+    sep=.1,
+    dim=2,
+    maxiter=60000,
+    k=1,
+    damping=0.9,
+    /*packmode="graph",*/
+    /*model=subset,*/
+];
+node [
+    shape = plaintext, fontsize=6
+];
+edge [
+    fontsize=6, len=.1, w=1000
+];
+<TMPL_LOOP name="schemas">
+    <TMPL_LOOP name="tables">
+        <TMPL_UNLESS name="view_definition">
+"<TMPL_IF name="number_of_schemas"><TMPL_VAR name="schema_dot">.</TMPL_IF name="number_of_schemas"><TMPL_VAR name="table_dot">" [shape = plaintext, label = <
+<TABLE BGCOLOR="azure3" BORDER="1" ALIGN="LEFT" PORT="col1">
+<TR BORDER="1"><TD BGCOLOR="white" COLSPAN="3" ALIGN="CENTER">\N</TD></TR>
+<TMPL_LOOP name="columns">
+    <TR BORDER="0" PORT="<TMPL_VAR name="column_dot">">
+        <TD ALIGN="LEFT" BORDER="0"><TMPL_VAR name="column_dot"></TD>
+        <TD ALIGN="LEFT" BORDER="0"><TMPL_VAR name="column_type"></TD>
+        <TD ALIGN="LEFT" BORDER="0"><TMPL_LOOP name="column_constraints">
+<TMPL_IF name="column_unique"> UNIQUE</TMPL_IF><TMPL_IF name="column_notnull"> NOT NULL</TMPL_IF><TMPL_IF name="column_primary_key"> PRIMARY KEY</TMPL_IF><TMPL_IF name="column_fk"> REFERENCES <TMPL_VAR name="column_fk_table"></TMPL_IF>
+</TMPL_LOOP></TD>
+    </TR>
+</TMPL_LOOP name="columns"></TABLE>> ];
+        </TMPL_UNLESS name="view_definition">
+    </TMPL_LOOP name="tables">
+</TMPL_LOOP name="schemas">
+
+<TMPL_LOOP name="fk_links">
+"<TMPL_IF name="number_of_schemas"><TMPL_VAR name="handle0_schema">.</TMPL_IF name="number_of_schemas"><TMPL_VAR name="handle0_name">" -> "<TMPL_IF name="number_of_schemas"><TMPL_VAR name="handle1_schema">.</TMPL_IF name="number_of_schemas"><TMPL_VAR name="handle1_name">" [label=""];</TMPL_LOOP name="fk_links">
+}

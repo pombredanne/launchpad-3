@@ -36,6 +36,8 @@ class NotInstalledError(Exception):
 
 
 class ConnectionWrapper:
+    orig = None
+    closed = False
     def __init__(self, connectFn, *args, **kwargs):
         self.connectFn = connectFn
         self.args = args
@@ -48,7 +50,15 @@ class ConnectionWrapper:
     def cursor(self, *args, **kwargs):
         return CursorWrapper(self, *args, **kwargs)
 
+    def close(self):
+        self.closed = True
+        return self.orig.close()
+
     def _reconnect(self):
+        if self.closed:
+            return # Don't reconnect if we have been explicitly closed
+        if self.orig is not None:
+            self.orig.close()
         self.orig = self.connectFn(*self.args, **self.kwargs)
 
 
@@ -68,7 +78,16 @@ class CursorWrapper:
                 return self.orig.execute(*args, **kwargs)
             except (psycopg.ProgrammingError, psycopg.OperationalError), e:
                 msg = e.args[0]
-                if not msg.startswith('server closed the connection unexpectedly'):
+                if not msg.startswith(
+                        'server closed the connection unexpectedly'):
+                    raise
+            except psycopg.InterfaceError, e2:
+                # Our cursor might still be pointing to a connection closed
+                # during connection._reconnect. Catch this and retry - if
+                # the cursor *really* is closed, the exeption will still
+                # get raised.
+                msg = e2.args[0]
+                if not msg == 'already closed':
                     raise
 
             # Avoid looping insanely fast.
