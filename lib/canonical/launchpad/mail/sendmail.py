@@ -20,6 +20,7 @@ from email.MIMEText import MIMEText
 from email import Charset
 from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
+from zope.security.proxy import isinstance as pisinstance
 
 # email package by default ends up encoding UTF8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
@@ -34,8 +35,15 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
    
     Returns the Message-Id.
     """
-    if not isinstance(to_addrs, (list, tuple)):
+    if pisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
+    assert pisinstance(to_addrs, (list, tuple)), \
+            'Invalid To: %r' % (to_addrs,)
+    assert pisinstance(from_addr, basestring), \
+            'Invalid From: %r' % (from_addr,)
+    assert pisinstance(subject, basestring), \
+            'Invalid Subject: %r' % (from_addr,)
+    assert pisinstance(body, basestring), 'Invalid body: %r' % (from_addr,)
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
     for k,v in headers.items():

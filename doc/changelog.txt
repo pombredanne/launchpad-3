@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-18 08:59:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1458
+
+    Summary:
+      sendmail insurance and db security update
+    Revision:
+      launchpad--devel--0--patch-1458
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-208
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-209
+       Tighten up acceptance of email parameters, although not as tight as I would like since we seem to be receiving security proxied lists as well
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-210
+       Improve sendmail parameter checks
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-211
+       Grant DB permissions to ProductBounty table
+    
+
+    modified files:
+     database/schema/security.cfg database/schema/security.py
+     doc/changelog.txt lib/canonical/launchpad/mail/sendmail.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-208
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-209
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-210
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-211
+
+
 2005-03-18 06:40:55 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1457
 
     Summary:
