@@ -128,13 +128,11 @@
             Logged in as
             <span tal:replace="request/lp:person/displayname">Foo Bar</span>
             &mdash;
-            <a href="/+logout">log out</a>
+            <a href="/+logout">Log Out</a>
         </span>
 
         <span tal:condition="not: request/lp:person">
-            Not logged in
-            &mdash;
-            <a href="/+login">log in</a>
+            <a href="/+login">Log In</a>
         </span>
 
         &mdash;

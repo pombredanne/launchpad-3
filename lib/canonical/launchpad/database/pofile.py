@@ -501,6 +501,30 @@ class POTMsgSet(SQLBase):
 
             return results[0]
 
+    def poMsgSet(self, language_code, variant=None):
+        if variant is None:
+            variantspec = 'IS NULL'
+        elif isinstance(variant, unicode):
+            variantspec = (u'= "%s"' % quote(variant))
+        else:
+            raise TypeError('Variant must be None or unicode.')
+
+        sets = POMsgSet.select('''
+            POMsgSet.potmsgset = %d AND
+            POMsgSet.pofile = POFile.id AND
+            POFile.language = Language.id AND
+            POFile.variant %s AND
+            Language.code = %s
+            ''' % (self.id,
+                   variantspec,
+                   quote(language_code)),
+            clauseTables=('POFile', 'Language'))
+
+        if sets.count() == 0:
+            raise KeyError, (language_code, variant)
+        else:
+            return sets[0]
+
     def translationsForLanguage(self, language):
         # Find the number of plural forms.
 

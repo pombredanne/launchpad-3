@@ -73,12 +73,6 @@ fieldset.message-strings input {
 
 fieldset.message-strings input[type=checkbox] { width: auto !important; }
 
-.messageSourceString {
-    padding: 0.5em 1em;
-    background-color: #93bee2;
-    border: 1px solid #364970;
-}
-
 fieldset.two-column {
     width: 45%;
     float: left;
@@ -283,11 +277,35 @@ ul.people li {
     padding-left: 18px
 }
 
+/*
+Translation template stuff.
+*/
+
+.messageSourceString {
+    padding: 0.5em 1em;
+    background-color: #93bee2;
+    border: 1px solid #364970;
+}
+
 label.fuzzy-checkbox {
     float: right;
 }
 
 .language-label {
     float: left;
+}
+
+/* Used for source and translator comments on the translation page. */
+
+.po-comment {
+    background-color: #efe;
+    border: thin solid #8a8;
+    margin: 0.5em 0;
+    padding: 0.5em;
+}
+
+.po-message-special {
+    color: white;
+    background-color: #93bee2;
 }
 

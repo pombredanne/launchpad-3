@@ -559,8 +559,8 @@ class ViewMOExport:
 
 class TranslatePOTemplate:
     DEFAULT_COUNT = 10
-    SPACE_CHAR = u'<span style="color:white">\u2022</span>'
-    NEWLINE_CHAR = u'<span style="color:white">\u21b5</span><br/>\n'
+    SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
+    NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
 
     def __init__(self, context, request):
         # This sets up the following instance variables:
@@ -583,8 +583,6 @@ class TranslatePOTemplate:
         #    translated.
         #  count:
         #    The number of messages being translated.
-        #  error:
-        #    A flag indicating whether an error ocurred during initialisation.
         # show:
         #    Which messages to show: 'translated', 'untranslated' or 'all'.
         #
@@ -599,8 +597,6 @@ class TranslatePOTemplate:
         if self.person is None:
             return
 
-        self.error = False
-
         self.codes = request.form.get('languages')
 
         # Turn language codes into language objects.
@@ -611,6 +607,24 @@ class TranslatePOTemplate:
             self.languages = request_languages(request)
 
         # Get plural form and completeness information.
+        #
+        # For each language:
+        #
+        # - If there exists a PO file for that language, and it has plural
+        #   form information, use the plural form information from that PO
+        #   file.
+        #
+        # - Otherwise, if there is general plural form information for that
+        #   language in the database, use that.
+        #
+        # - Otherwise, we don't have any plural form information for that
+        #   language.
+        #
+        # - If there exists a PO file, work out the completeness of the PO
+        #   file as a percentage.
+        #
+        # - Otherwise, the completeness for that language is 0 (since the PO
+        #   file doesn't exist.
 
         self.completeness = {}
         self.pluralforms = {}
@@ -619,28 +633,40 @@ class TranslatePOTemplate:
         all_languages = getUtility(ILanguageSet)
 
         for language in self.languages:
+            code = language.code
+
             try:
                 pofile = context.poFile(language.code)
             except KeyError:
-                if all_languages[language.code].pluralforms is not None:
-                    self.pluralforms[language.code] = \
-                        all_languages[language.code].pluralforms
-                else:
-                    # We don't have a default plural form for this Language
-                    self.pluralforms[language.code] = None
-                    self.error = True
-                # As we don't have teh pofile, the completeness is 0
-                self.completeness[language.code] = 0
-            else:
-                self.pluralforms[language.code] = pofile.pluralforms
-                try:
-                    self.completeness[language.code] = \
-                        float(pofile.translatedCount()) / len(pofile.potemplate) * 100
-                except ZeroDivisionError:
-                    self.completeness[language.code] = 0
+                pofile = None
 
-        self.badLanguages = [ all_languages[x] for x in self.pluralforms
-            if self.pluralforms[x] is None ]
+            # Get plural form information.
+
+            if pofile is not None and pofile.pluralforms is not None:
+                self.pluralforms[code] = pofile.pluralforms
+            elif all_languages[code].pluralforms is not None:
+                self.pluralforms[code] = all_languages[code].pluralforms
+            else:
+                self.pluralforms[code] = None
+
+            # Get completeness information.
+
+            if pofile is not None:
+                template_size = len(pofile.potemplate)
+
+                if template_size > 0:
+                    self.completeness[code] = (float(
+                        pofile.translatedCount()) / template_size * 100)
+                else:
+                    self.completeness[code] = 0
+            else:
+                self.completeness[code] = 0
+
+        if context.hasPluralMessage:
+            self.badLanguages = [ all_languages[x] for x in self.pluralforms
+                if self.pluralforms[x] is None ]
+        else:
+            self.badLanguages = []
 
         # Get pagination information.
 
@@ -792,18 +818,26 @@ class TranslatePOTemplate:
         isPlural = len(list(messageIDs)) > 1
         messageID = self._messageID(messageIDs[0], set.flags())
         translations = {}
+        comments = {}
         fuzzy = {}
 
         for language in self.languages:
-            # XXX: missing exception handling
-            translations[language] = \
-                set.translationsForLanguage(language.code)
+            code = language.code
+
             try:
-                fuzzy[language] = set.potemplate.poFile(language.code)[messageIDs[0].msgid].fuzzy
+                poset = set.poMsgSet(code)
             except KeyError:
-                # We don't have a translation for this language, so it cannot
-                # be fuzzy.
+                # The PO file doesn't exist, or it exists but doesn't have
+                # this message ID. The translations are blank, aren't fuzzy,
+                # and have no comment.
+
                 fuzzy[language] = False
+                translations[language] = [None] * self.pluralforms[code]
+                comments[language] = None
+            else:
+                fuzzy[language] = poset.fuzzy
+                translations[language] = poset.translations()
+                comments[language] = poset.commenttext
 
         if isPlural:
             messageIDPlural = self._messageID(messageIDs[1], set.flags())
@@ -817,9 +851,9 @@ class TranslatePOTemplate:
             'messageIDPlural' : messageIDPlural,
             'sequence' : set.sequence,
             'fileReferences': set.filereferences,
-            'commentText' : set.commenttext,
             'sourceComment' : set.sourcecomment,
             'translations' : translations,
+            'comments' : comments,
             'fuzzy' : fuzzy,
         }
 

@@ -224,6 +224,12 @@ class IPOTMsgSet(Interface):
         XXX: This is quite UI-oriented. Refactor?
         """
 
+    def poMsgSet(language, variant=None):
+        """
+        Retrieve the PO message set corresposponding to this template message
+        set for the given language and variant, if it exists.
+        """
+
 
 class IEditPOTMsgSet(IPOTMsgSet):
     """Interface for editing a MessageSet."""

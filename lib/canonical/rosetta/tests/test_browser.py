@@ -85,6 +85,14 @@ class DummyMsgID:
     msgid = "foo"
 
 
+class DummyPOMsgSet:
+    fuzzy = False
+    commenttext = 'foo'
+
+    def translations(self):
+        return ['bar']
+
+
 class DummyPOTMsgSet:
     id = 1
     sequence = 1
@@ -101,8 +109,8 @@ class DummyPOTMsgSet:
     def messageIDs(self):
         return [DummyMsgID()]
 
-    def translationsForLanguage(self, language):
-        return ['bar']
+    def poMsgSet(self, language):
+        return DummyPOMsgSet()
 
 
 class DummyPOTemplate:
@@ -119,6 +127,9 @@ class DummyPOTemplate:
 
     def __len__(self):
         return 31
+
+    def hasPluralMessage(self):
+        return True
 
 
 class DummyRequest:
@@ -294,8 +305,6 @@ def test_TranslatePOTemplate_init():
     0
     >>> t.count
     10
-    >>> t.error
-    False
     >>> t.show
     'all'
 
@@ -320,8 +329,6 @@ def test_TranslatePOTemplate_init():
     0
     >>> t.count
     10
-    >>> t.error
-    False
     >>> t.show
     'all'
 
@@ -346,8 +353,6 @@ def test_TranslatePOTemplate_init():
     0
     >>> t.count
     10
-    >>> t.error
-    False
     >>> t.show
     'all'
 
@@ -370,8 +375,6 @@ def test_TranslatePOTemplate_init():
     >>> len(t.badLanguages)
     1
     >>> t.badLanguages[0] is DummyLanguageSet()['cy']
-    True
-    >>> t.error
     True
 
     This is for testing the case when an explicit offset and count are
