@@ -4,6 +4,27 @@
      tal:define="listing_columns view/assignment_columns;
                  logged_in request/lp:person;
                  is_maintainer python:logged_in and logged_in.id == context.owner.id">
+  <!--
+  <small tal:content="python:'displaying matching bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42 </small> <small> :: 
+      <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=unassigned&product=all&sourcepackagename=all&search=Search&advanced=0">unassigned</a> .
+      <span tal:omit-tag="" tal:condition="logged_in"><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=${request/lp:person/name}&product=all&sourcepackagename=all&search=Search&advanced=0">my todo list</a> .
+      </span><a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&product=all&sourcepackagename=all&severity=50&search=Search">critical</a>
+      <span tal:omit-tag="" tal:condition="logged_in">.
+          <a href="" tal:attributes="href string:${request/URL}?status=10&status=20&assignee=all&submitter=${request/lp:person/name}&product=all&sourcepackagename=all&search=Search&advanced=0">submitted by me</a></span>
+      :: --><small>bug id or text
+      <input style="border-style: solid; border-width: 1px; border-color: grey;" type="text" name="searchtext" tal:attributes="value request/searchtext|nothing;"/>
+      <input type="submit" style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; " name="search" value="Search" />
+    <input
+        tal:condition="not:request/advanced|nothing"
+        style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; "
+        type="submit" name="advanced" value="Advanced" />
+    <input
+        tal:condition="request/advanced|nothing"
+        style="border-style: solid; border-width: 1px; border-color: grey; background-color: #DCDCDC; "
+        type="submit" name="simple_submit" value="Simple" />
+    <input type="hidden"
+        name="advanced" tal:attributes="value request/advanced|nothing" />
+  </small>
   <table id="ass_listing"
          class="listing rowNavigation">
     <tr>
@@ -123,5 +144,85 @@
             tal:content="milestone/name">milestone1</option>
   </select>
   
+  <tal:x condition="not:request/advanced|nothing">
+      <input type="hidden" name="status" value="10" />
+      <input type="hidden" name="status" value="20" />
+      <input type="hidden" name="assignee" value="all" />
+  </tal:x>
+
+  <fieldset tal:condition="request/advanced|nothing">
+    <legend>Filter Criteria</legend>
+
+        <div class="field">
+          <table>
+            <tr>
+              <th>Status</th>
+              <th>Assigned To</th>
+              <th>Target</th>
+            </tr>
+            <tr>
+              <td>
+                <select name="status" size="5" multiple>
+                  <option value="all"
+                          tal:attributes="selected request/htmlform:status/selected/all">All</option>
+                  <span tal:omit-tag="" tal:repeat="status view/statuses">
+                    <option tal:condition="python:request.has_key('search')"
+                            tal:define="strvalue python:str(status.value)"
+                            tal:content="status/title"
+                            tal:attributes="value status/value;
+                                            selected request/htmlform:status/selected/?strvalue">New</option>
+                    <option tal:condition="python:not request.has_key('search')"
+                            tal:define="strvalue python:str(status.value)"
+                            tal:content="status/title"
+                            tal:attributes="value status/value;
+                                            selected python:status.title in ('New', 'Accepted')">New</option>
+                  </span>
+                </select>
+              </td>
+              <td>
+                <select name="assignee" size="5" multiple>
+                  <option value="all"
+                          tal:condition="python:request.has_key('search')"
+                          tal:attributes="selected request/htmlform:assignee/selected/all">Anyone</option>
+                  <option value="all"
+                          tal:condition="python:not request.has_key('search')"
+                          selected>Anyone</option>
+                  <option value="unassigned"
+                          tal:attributes="selected request/htmlform:assignee/selected/unassigned">Unassigned</option>
+                  <span tal:omit-tag="" tal:repeat="term view/people">
+                    <option tal:define="value term/token"
+                            tal:content="term/title"
+                            tal:attributes="value value;
+                                            selected request/htmlform:assignee/selected/?value">New</option>
+                  </span>
+                </select>
+              </td>
+              <td>
+                <select name="target" size="5" multiple>
+                  <option value="all"
+                          tal:condition="python:request.has_key('search')"
+                          tal:attributes="selected request/htmlform:target/selected/all">All</option>
+                  <option value="all"
+                          tal:condition="python:not request.has_key('search')"
+                          selected>All</option>
+                  <option value="unassigned"
+                          tal:attributes="selected request/htmlform:target/selected/unassigned">Unassigned</option>
+                  <span tal:omit-tag="" tal:repeat="term view/milestones">
+                    <option tal:define="value term/token"
+                            tal:content="term/title"
+                            tal:attributes="value value;
+                                            selected request/htmlform:target/selected/?value">Soon</option>
+                  </span>
+                </select>
+              </td>
+              </tr>
+            </table>
+        </div>
+
+        <div class="formControls">
+            <input type="submit" name="search" value="Search" />
+        </div>
+
+    </fieldset>
   </form>
 </metal:page>

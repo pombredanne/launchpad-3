@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-07 02:06:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1158
+
+    Summary:
+      last minute UI fixes based on feedback from lifeless
+    Revision:
+      launchpad--devel--0--patch-1158
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-270
+       last minute UI fixes based on feedback from lifeless
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-271
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/templates/bugassignment-search-listing.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-270
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-271
+
+
 2005-01-06 22:51:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1157
 
     Summary:
