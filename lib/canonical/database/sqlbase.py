@@ -85,9 +85,14 @@ class _ZopelessConnectionDescriptor(object):
         return self.transactions[tid]
 
     def __set__(self, inst, value):
-        # FIXME: Write a better warning
-        import warnings
-        warnings.warn("Something tried to set a _connection.  Ignored.")
+        '''Do nothing
+        
+        This used to issue a warning but it seems to be spurious.
+
+        '''
+        pass
+        #import warnings
+        #warnings.warn("Something tried to set a _connection.  Ignored.")
 
     def install(cls, connectionURI, sqlClass=SQLBase, debug=False):
         if isinstance(sqlClass.__dict__.get('_connection'),

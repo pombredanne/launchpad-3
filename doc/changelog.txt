@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-10 09:49:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1164
+
+    Summary:
+      bugwatch love
+    Revision:
+      launchpad--devel--0--patch-1164
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-62
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-63
+       More robust exception checking
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-64
+       Update bugwatches
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-65
+       Nuke warning nobody loves
+    
+
+    modified files:
+     database/schema/trusted.sql doc/changelog.txt
+     lib/canonical/database/sqlbase.py
+     lib/canonical/malone/checkwatches.py
+     lib/canonical/malone/externalsystem.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-62
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-63
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-64
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-65
+
+
 2005-01-08 10:28:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1163
 
     Summary:
