@@ -43,7 +43,7 @@ class ProductReleaseImporter:
 
     def _ensureProductRelease(self, filename):
         from hct.util.path import split_version, name
-        version = split_version(name(filename))
+        version = split_version(name(filename))[1]
         existingReleases = ProductRelease.selectBy(productID=self.product.id,
                                                    version=version)
         if existingReleases.count() == 0:
@@ -58,7 +58,10 @@ class ProductReleaseImporter:
         return pr
 
     def _downloadIntoLibrarian(self, url, filename):
-        """Download a URL, and upload it directly into the librarian."""
+        """Download a URL, and upload it directly into the librarian.
+        
+        Returns the library alias ID of the file.
+        """
         # FIXME: cope with web/ftp servers that don't give the size of files by
         #        first saving to a temporary file.
         # XXX: this isn't at all specific to this importer, and probably belongs
