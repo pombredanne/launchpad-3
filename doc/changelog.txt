@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-02 09:05:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1357
+
+    Summary:
+      Fixed the comment about POTemplate.sourcepackageversion
+    Revision:
+      launchpad--devel--0--patch-1357
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-569
+       Fixed the comment about POTemplate.sourcepackageversion
+    
+
+    modified files:
+     database/schema/comments.sql doc/changelog.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-569
+
+
 2005-03-01 22:50:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1356
 
     Summary:
