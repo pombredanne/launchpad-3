@@ -68,7 +68,11 @@ class DistroReleaseBinariesApp(object):
     def __getitem__(self, name):
         try:
             bins = self.binariesutil.getByName(self.release.id, name)
-            return DistroReleaseBinaryApp(bins, self.release)
+            # XXX kiko: I really believe this [0] is bogus, and that we want
+            # a specific binary package, but we need to investigate into
+            # this.
+            #assert len(bins) == 1
+            return DistroReleaseBinaryApp(bins[0], self.release)
         except IndexError:
             raise KeyError, name
 
@@ -80,11 +84,8 @@ class DistroReleaseBinaryApp(object):
     implements(IDistroReleaseBinaryApp)
 
     def __init__(self, binarypackage, release):
-        try:
-            self.binarypackage = binarypackage[0]
-            self.binselect = binarypackage
-        except IndexError:
-            self.binarypackage = binarypackage
+        self.binarypackage = binarypackage
+        self.binselect = binarypackage
 
         self.release = release
         self.bugsCounter = self._countBugs()
@@ -122,12 +123,15 @@ class DistroReleaseBinaryApp(object):
     lastversions = property(lastversions)
 
     def __getitem__(self, version):
-        binariesutil = getUtility(IBinaryPackageSet)
-        binarypackage = binariesutil.getByNameVersion(self.release.id,
-                                                      self.binarypackage.name,
-                                                      version)
-        
-        return DistroReleaseBinaryReleaseApp(binarypackage,
+        binset = getUtility(IBinaryPackageSet)
+        binarypackages = binset.getByNameVersion(self.release.id,
+                                                 self.binarypackage.name,
+                                                 version)
+       
+        # XXX kiko: I really believe this [0] is bogus, and that we want a
+        # specific binary package, but we need to investigate into this.
+        # assert len(binarypackages) == 1
+        return DistroReleaseBinaryReleaseApp(binarypackages[0],
                                              version, self.release)
 
 class DistroReleaseBinaryReleaseApp(object):
@@ -135,11 +139,8 @@ class DistroReleaseBinaryReleaseApp(object):
 
     def __init__(self, binarypackagerelease, version, distrorelease):
         self.version = version
-        try:
-            self.binselect = binarypackagerelease
-            self.binarypackagerelease = binarypackagerelease[0]
-        except:
-            self.binarypackagerelease = binarypackagerelease[0]
+        self.binselect = binarypackagerelease
+        self.binarypackagerelease = binarypackagerelease
 
         self.distrorelease = distrorelease
 
@@ -157,11 +158,11 @@ class DistroReleaseBinaryReleaseApp(object):
         self.archs = [a.architecturetag for a in archReleases]
 
     def __getitem__(self, arch):
-        binariesutil = getUtility(IBinaryPackageSet)
-        binarypackage = binariesutil.getByArchtag(self.distrorelease.id,
-                                                  self.binarypackagerelease.name,
-                                                  self.binarypackagerelease.version,
-                                                  arch)
+        binset = getUtility(IBinaryPackageSet)
+        binarypackage = binset.getByArchtag(self.distrorelease.id,
+                                            self.binarypackagerelease.name,
+                                            self.binarypackagerelease.version,
+                                            arch)
 
         return DistroReleaseBinaryReleaseBuildApp(binarypackage,
                                                   self.version, arch)
