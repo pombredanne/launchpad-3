@@ -2,8 +2,8 @@
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
 PYTHON=python2.3
-CONFFILE=soyuz.conf
-STARTSCRIPT=runsoyuz.py
+CONFFILE=launchpad.conf
+STARTSCRIPT=runlaunchpad.py
 TESTFLAGS=-p -v
 TESTOPTS=
 SETUPFLAGS=
