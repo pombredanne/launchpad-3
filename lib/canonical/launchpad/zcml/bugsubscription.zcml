@@ -1,0 +1,58 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+
+    <!-- BugSubscription -->
+    <browser:addform
+        name="+new"
+        schema="canonical.launchpad.interfaces.IBugSubscription"
+        for="canonical.malone.browser.IBugSubscriptionContainer"
+        label="Add Person"
+        fields="subscription person"
+        content_factory="canonical.malone.browser.BugSubscriptionFactory"
+        arguments=""
+        keyword_arguments="subscription person"
+        permission="launchpad.AnyPerson"
+        template="../templates/default-addform.pt"
+        lp:url="malone/bugs/$Bug.id/people/+new" />
+
+    <browser:editform
+        name="+edit"
+        schema="canonical.launchpad.interfaces.IBugSubscription"
+        label="Change Bug Subscription"
+        permission="launchpad.AnyPerson"
+        template="../templates/default-editform.pt"
+        fields="subscription"
+        lp:url="malone/bugs/$Bug.id/people/$BugSubscription.id/+edit" />
+
+    <!-- BugSubscriptionContainer -->
+    <content class="canonical.malone.browser.BugSubscriptionContainer">
+        <allow interface="canonical.launchpad.interfaces.IBugSubscriptionContainer" />
+        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+    </content>
+
+    <utility
+        factory="canonical.malone.browser.BugSubscriptionContainer"
+        provides="canonical.launchpad.interfaces.IBugSubscriptionContainer" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
+        getter="__getitem__" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
+        permission="zope.Public"
+        lp:url="malone/bugs/$Bug.id/people">
+        <browser:page name="+index"
+            template="../templates/malone-people-index.pt"
+            lp:url="malone/bugs/$Bug.id/people/index" />
+    </browser:pages>
+
+</configure>

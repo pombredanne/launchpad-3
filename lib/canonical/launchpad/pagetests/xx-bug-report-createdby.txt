@@ -1,0 +1,35 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/created HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <h1>All Bugs</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/created?owner= HTTP/1.1
+  ... Referer: http://localhost:9000/malone/bugs/created
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <h1>All Bugs</h1>
+  ...
+
+  >>> print http(r"""
+  ... GET /malone/bugs/created?owner=name12 HTTP/1.1
+  ... Referer: http://localhost:9000/malone/bugs/created?owner=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+    <h1>Bugs created by <span>name12</span></h1>
+  ...
+

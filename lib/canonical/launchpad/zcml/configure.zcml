@@ -14,6 +14,12 @@
     <include file="bugpackageinfestation.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="bug.zcml" />
+    <include file="bugwatch.zcml" />
+    <include file="bugassignment.zcml" />
+    <include file="buginfestation.zcml" />
+    <include file="bugextref.zcml" />
+    <include file="bugtracker.zcml" />
     <include file="bugattachment.zcml" />
+    <include file="bugmessage.zcml" />
 
 </configure>

@@ -1,0 +1,23 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+
+    <!-- BugMessage -->
+    <browser:addform
+        name="+new"
+        schema="canonical.launchpad.interfaces.IBugMessage"
+        for="canonical.launchpad.interfaces.IBugMessagesView"
+        label="Add a Comment"
+        fields="title contents"
+        content_factory="canonical.malone.browser.BugMessageFactory"
+        arguments=""
+        keyword_arguments="title contents"
+        permission="launchpad.AnyPerson"
+        template="../templates/default-addform.pt"
+        lp:url="malone/bugs/$Bug.id/messages/+new"
+        />
+
+</configure>

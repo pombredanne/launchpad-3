@@ -35,6 +35,7 @@ def main():
     test_ok = errlines[-1] == 'OK\n'
 
     if test_ok:
+        print errlines[1]
         return 0
     else:
         print '---- test stdout ----'

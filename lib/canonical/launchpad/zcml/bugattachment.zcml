@@ -5,7 +5,28 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
     
-    <!-- BugAttachment forms -->
+    <!-- BugAttachment -->
+    <content class="canonical.malone.browser.MaloneBugAttachment">
+        <allow interface="canonical.launchpad.interfaces.IMaloneBugAttachment" />
+        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IMaloneBug" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IMaloneBugAttachment"
+        name="index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IMaloneBugAttachment"
+        function="canonical.malone.browser.traverseBugAttachment" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugAttachment"
+        permission="zope.Public"
+        lp:url="malone/bugs/$Bugs.id/attachments/$Attachment.id">
+        <browser:page name="+index"
+            template="../templates/attachment-index.pt" />
+    </browser:pages>
+
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IMaloneBugAttachment"
@@ -29,5 +50,22 @@
         template="../templates/default-editform.pt"
         lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+edit"
         />
+
+    <!-- BugAttachmentContainer -->
+    <content class="canonical.malone.browser.BugAttachmentContainer">
+        <allow interface="canonical.launchpad.interfaces.IBugAttachmentContainer" />
+    </content>
+
+    <utility
+        factory="canonical.malone.browser.BugAttachmentContainer"
+        provides="canonical.launchpad.interfaces.IBugAttachmentContainer" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugAttachmentContainer"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IBugAttachmentContainer"
+        getter="__getitem__" />
 
 </configure>

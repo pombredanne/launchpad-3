@@ -5,7 +5,36 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- This is class Bug -->
+    <!-- MaloneBug (this must disappear!) -->
+    <content class="canonical.malone.browser.MaloneBug">
+        <allow interface="canonical.launchpad.interfaces.IMaloneBug" />
+        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IMaloneBug" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IMaloneBug"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IMaloneBug"
+        function="canonical.malone.browser.traverseBug" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IMaloneBug"
+        permission="zope.Public"
+        class="canonical.malone.browser.MaloneBugView"
+        lp:url="malone/bugs/$Bugs.id">
+        <browser:page
+            name="+index"
+            template="../templates/bug-index.pt"
+            lp:url="malone/bugs/$Bugs.id/index" />
+        <browser:page
+            name="activity"
+            template="../templates/bug-activity.pt"
+            lp:url="malone/bugs/$Bugs.id/activity" />
+    </browser:pages>
+
+    <!-- Bug -->
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBug"
@@ -16,7 +45,33 @@
         lp:url="malone/bugs/$Bug.id/+edit">
     </browser:editform>
 
+    <browser:view
+        for="canonical.launchpad.interfaces.IBug"
+        name="+messages"
+        class="canonical.malone.browser.BugMessagesView"
+        permission="zope.Public"
+        provides="canonical.launchpad.interfaces.IBugMessagesView"
+        lp:url="malone/projects/$Bug.id/+messages">
+        <defaultPage name="+index" />
+    </browser:view>
+
     <!-- this is class BugContainer -->
+    <content class="canonical.malone.browser.BugContainer">
+        <allow interface="canonical.launchpad.interfaces.IBugContainer" />
+    </content>
+
+    <utility
+        factory="canonical.malone.browser.BugContainer"
+        provides="canonical.launchpad.interfaces.IBugContainer" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IBugContainer"
+        function="canonical.malone.browser.traverseBugs" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBugContainer"
+        name="+index" />
+
     <browser:addform
         name="+new"
         for="canonical.launchpad.interfaces.IBugContainer"
@@ -31,5 +86,26 @@
         lp:url="malone/bugs/+new">
         <widget field="owner" class="canonical.widgets.OwnerWidget" />
     </browser:addform>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugContainer"
+        permission="zope.Public"
+        lp:url="malone/bugs/$Bug.id">
+        <browser:page
+            name="+index"
+            template="../templates/bugs-index.pt"
+            lp:url="malone/bugs/$Bug.id/index" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBugContainer"
+        class="canonical.malone.browser.BugsCreatedByView"
+        permission="zope.Public"
+        lp:url="malone/bugs/created/$Bug.owner">
+        <browser:page
+            name="created"
+            template="../templates/bugs-createdby-index.pt"
+            lp:url="malone/bugs/created/$Bug.owner/index" />
+    </browser:pages>
 
 </configure>
