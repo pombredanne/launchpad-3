@@ -118,7 +118,7 @@
 
                             <img src="/++resource++green-bar.png"
                                 height="10"
-                                vspace="5"
+                                style="margin-top: 2px;"
                                 alt="Translated Messages"
                                 tal:condition="language/poNonUpdatesCount"
                                 tal:attributes="width language/poNonUpdatesPercent;

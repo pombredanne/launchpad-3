@@ -333,7 +333,7 @@ class ViewPOTemplate:
         self.context = context
         self.request = request
         self.form = self.request.form
-        self.languages = request_languages(self.request)
+        self.request_languages = request_languages(self.request)
 
     def num_messages(self):
         N = len(self.context)
@@ -345,9 +345,16 @@ class ViewPOTemplate:
             return "%s messages" % N
 
     def languages(self):
-        languages = list(self.context.languages())
+        from sets import Set
+        translated_languages = list(self.context.languages())
+        prefered_languages = self.request_languages
+        languages = translated_languages + prefered_languages
+        languages = list(Set(languages))
         languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
-        return languages
+        
+        languages_info = TemplateLanguages(self.context, languages)
+
+        return languages_info.languages()
 
     def edit(self):
         """
