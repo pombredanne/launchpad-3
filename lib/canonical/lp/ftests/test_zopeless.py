@@ -27,8 +27,8 @@ class TestInitZopeless(PgTestCase):
     def test_initZopelessTwice(self):
         # Hook the warnings module, so we can verify that we get the expected
         # warning.
-        showwarning = warnings.showwarning
-        warnings.showwarning = self.expectedWarning
+        warn_explicit = warnings.warn_explicit
+        warnings.warn_explicit = self.expectedWarning
         self.warned = False
         try:
             # Calling initZopeless with the same arguments twice should return
@@ -37,12 +37,12 @@ class TestInitZopeless(PgTestCase):
             tm2 = initZopeless(dbname=self.dbname, dbhost='')
         finally:
             # Put the warnings module back the way we found it.
-            warnings.showwarning = showwarning
+            warnings.showwarning = warn_explicit
         self.failUnless(tm1 is tm2)
         self.failUnless(self.warned)
             
     def expectedWarning(self, message, category, filename, lineno,
-                        file=sys.stderr):
+                        module=None, registry=None):
         self.failUnlessEqual(alreadyInstalledMsg, str(message))
         self.warned = True
         

@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-17 13:25:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1326
+
+    Summary:
+      Make test_initZopelessTwice pass when run more than once
+    Revision:
+      launchpad--devel--0--patch-1326
+
+    Patches applied:
+    
+     * andrew.bennetts@canonical.com/launchpad--zopeless-test-repeat-fix--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1325
+    
+     * andrew.bennetts@canonical.com/launchpad--zopeless-test-repeat-fix--0--patch-1
+       Make test_initZopelessTwice pass when run more than once
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/database/sqlbase.py
+     lib/canonical/lp/ftests/test_zopeless.py
+
+    new patches:
+     andrew.bennetts@canonical.com/launchpad--zopeless-test-repeat-fix--0--base-0
+     andrew.bennetts@canonical.com/launchpad--zopeless-test-repeat-fix--0--patch-1
+
+
 2005-02-17 11:25:24 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1325
 
     Summary:
