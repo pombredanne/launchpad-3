@@ -1,4 +1,4 @@
-<html>
+<html metal:use-macro="context/@@main_template/master">
     <head>
         <title metal:fill-slot="title">
             Launchpad Changelog
@@ -6,7 +6,10 @@
         <link rel="shortcut icon" href="/++resource++defaultFavicon.gif" />
     </head>
     <body>
-        <h1>Changelog</h1>
-        <pre tal:content="structure view/changelog/fmt:nice_pre" />
+        <div metal:fill-slot="main">
+            <h1>Changelog</h1>
+            <pre tal:define="log view/changelog/fmt:shorten/40000"
+                tal:content="structure log/fmt:nice_pre" />
+        </div>
     </body>
 </html>

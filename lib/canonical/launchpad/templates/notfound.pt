@@ -1,13 +1,11 @@
-<!-- macro commented out for now, until we get our own skin and macros
-     declarations in place -->
-<html xmetal:use-macro="context/@@standard_macros/dialog">
+<html metal:use-macro="context/@@standard_macros/dialog">
 
 <head>
   <title metal:fill-slot="title">Launchpad Page Not Found</title>
 </head>
 <body>
 
-<div xmetal:fill-slot="body">
+<div metal:fill-slot="body">
 
 <h3  i18n:translate="">
   The page that you are trying to access is not available

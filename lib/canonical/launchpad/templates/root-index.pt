@@ -27,7 +27,7 @@
 </head>
 
 <body>
-
+ 
   <div metal:fill-slot="main">
 
     <h1>Welcome to The Launchpad!</h1>

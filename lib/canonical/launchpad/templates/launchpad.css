@@ -395,3 +395,10 @@ label.fuzzy-checkbox {
     background-color: #93bee2;
 }
 
+/* Used in default-error.pt so people actually notice exceptions */
+
+.exception {
+    color: red;
+    font-size: 200%;
+    margin: 1em;
+}

@@ -7,6 +7,7 @@
       name="index.html"
       template="launchpad/templates/default-error.pt"
       permission="zope.Public"
+      class="canonical.launchpad.webapp.error.SystemError"
       />
 
   <page
@@ -30,6 +31,7 @@
       name="index.html"
       permission="zope.Public"
       template="launchpad/templates/notfound.pt"
+      class="zope.app.exception.browser.notfound.NotFound"
       />
 <!--
    Commenting out the the debug view on Unauthorized, as we want it to prompt

@@ -2,6 +2,84 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-10 07:06:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1404
+
+    Summary:
+      Repair fallout from enforcing all-templates-must-fill-title-slot rule
+    Revision:
+      launchpad--devel--0--patch-1404
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-174
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-175
+       Some database cleanups
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-176
+       Fix broken root and exception screens
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-177
+       Fix changelog, and move to webapp
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-178
+       Trim changelog to sane size
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-179
+       Fix not found exception
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-180
+       Fix 404 and 500 errors
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-181
+       Tweak tests
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-182
+       Merge from Rocketfuel
+    
+
+    new files:
+     database/schema/.arch-ids/patch-11-03-0.sql.id
+     database/schema/patch-11-03-0.sql
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-changelog-notfound.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-systemerror.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-changelog-notfound.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-systemerror.txt
+     lib/canonical/launchpad/webapp/.arch-ids/error.py.id
+     lib/canonical/launchpad/webapp/error.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/browser-exception.zcml
+     lib/canonical/configure.zcml
+     lib/canonical/launchpad/pagetests/standalone/xx-notfound-head.txt
+     lib/canonical/launchpad/templates/debug-error.pt
+     lib/canonical/launchpad/templates/debug-root-changelog.pt
+     lib/canonical/launchpad/templates/debug-root-index.pt
+     lib/canonical/launchpad/templates/default-error.pt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/notfound.pt
+     lib/canonical/launchpad/templates/root-index.pt
+     lib/canonical/launchpad/webapp/configure.zcml
+
+    renamed files:
+     lib/canonical/launchpad/browser/.arch-ids/changelog.py.id
+       ==> lib/canonical/launchpad/webapp/.arch-ids/changelog.py.id
+     lib/canonical/launchpad/browser/changelog.py
+       ==> lib/canonical/launchpad/webapp/changelog.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-174
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-175
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-176
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-177
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-178
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-179
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-180
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-181
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-182
+
+
 2005-03-10 05:18:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1403
 
     Summary:
