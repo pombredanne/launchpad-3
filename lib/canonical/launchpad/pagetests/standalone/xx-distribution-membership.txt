@@ -1,4 +1,4 @@
-
+Check if the Distribution Members page is not broken.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+members HTTP/1.1
@@ -10,6 +10,10 @@
      <h1>...
   ...
 
+
+Try to change the Distribution Members team page with no authorization.
+Check if it gets an Unauthorized status.
+
   >>> print http(r"""
   ... GET /distros/ubuntu/+selectmemberteam HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
@@ -18,6 +22,10 @@
   ... """)
   HTTP/1.1 401 Unauthorized
   ...
+
+
+Try to change the Distribution Members team page with basic authorization.
+Check if the page is not broken.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+selectmemberteam HTTP/1.1
@@ -28,6 +36,10 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
+
+
+Change the Distribuion Members team and check if the result page is
+not broken.
 
   >>> print http(r"""
   ... POST /distros/ubuntu/+selectmemberteam HTTP/1.1

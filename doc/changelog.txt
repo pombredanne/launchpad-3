@@ -2,6 +2,64 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-01 14:12:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1541
+
+    Summary:
+      Comments on some page tests; Gina spnames-only option available
+    Revision:
+      launchpad--devel--0--patch-1541
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-498
+       Some comments added to page tests
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-499
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-500
+       Merge from gina--0
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-501
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-16
+       merge from devel--0
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-17
+       Option --spnames-only available
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-binarypackagenames.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-distribution-bounties.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-distribution-membership.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-distribution-packages.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-distroarchrelease-pkgsearch.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-distrorelease-sources.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-sourcepackagenames.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-add-distribution.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distribution-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distro-distros-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distrorelease-bugs.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distrorelease-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distrorelease-i386.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-distrorelease-sources.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-i386-binpackage.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-soyuz-release-index.txt
+     lib/canonical/launchpad/scripts/gina/database.py
+     lib/canonical/launchpad/scripts/gina/grabber.py
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-498
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-499
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-500
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-501
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-16
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-17
+
+
 2005-04-01 13:53:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1540
 
     Summary:

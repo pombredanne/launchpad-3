@@ -749,6 +749,28 @@ class Launchpad(SQLThingBase):
             print "No good, need to add it"
             Section(name=section)
 
+class SPNamesImporter:
+    def __init__(self, srcmap, dryrun):
+        self.ztm = initZopeless()
+        self.srcmap = srcmap
+        self.dryrun = dryrun
+
+    def run(self):
+        counter = 0
+        for k, src in self.srcmap.items():
+            print '\t --- Ensuring %s'%src.package
+            SourcePackageName.ensure(src.package)
+            
+            if counter > 10:
+                self.commit()
+                counter = 0
+            counter += 1
+        self.commit()
+
+    def commit(self):
+        print ' * Commiting SourcePackageNames'
+        if not self.dryrun:
+            self.ztm.commit()
 
 class LaunchpadTester:
     """Class to test the launchpad db consistance"""

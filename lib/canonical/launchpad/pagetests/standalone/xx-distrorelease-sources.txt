@@ -1,4 +1,5 @@
-
+Check if the DistroRelease sourcepackage search page is not broken.
+This test already makes a search to check if it is not broken too.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/warty/+sources?name=firefox HTTP/1.1

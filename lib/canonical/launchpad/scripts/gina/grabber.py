@@ -3,7 +3,7 @@
 import apt_pkg, tempfile, os, tempfile, shutil, sys
 
 from classes import SourcePackageRelease, BinaryPackageRelease
-from database import Launchpad, Katie, LaunchpadTester
+from database import Launchpad, Katie, SPNamesImporter, LaunchpadTester
 from library import attachLibrarian
 
 from traceback import print_exc as printexception
@@ -72,6 +72,10 @@ parser.add_option("-b", "--back-propagate", dest="back_propagate",
 
 parser.add_option("-s", "--source-only", dest="source_only",
                   help="Import only Source Packages",
+                  default=False, action='store_true')
+
+parser.add_option("-S", "--spnames-only", dest="spnames_only",
+                  help="Import only Source Package Names",
                   default=False, action='store_true')
 
 (options,args) = parser.parse_args()
@@ -309,11 +313,6 @@ if __name__ == "__main__":
         lp[arch] = Launchpad(LPDB, distro, distrorelease, arch, options.dry_run)
     kdb = Katie(KTDB, distrorelease, options.dry_run)
 
-    # Comment this out if you need to disable the librarian integration
-    # for a given run of gina. Note that without the librarian; lucille
-    # will be unable to publish any files imported into the database
-    attachLibrarian( LIBRHOST, LIBRPORT )
-
     keyrings = ""
     for keyring in os.listdir(keyrings_root):
         path = os.path.join(keyrings_root, keyring)
@@ -336,6 +335,18 @@ if __name__ == "__main__":
             print "@ Loading components for %s/%s" % (arch,component)
             do_packages(source_map, bin_map[arch], lp[arch], kdb,
                         keyrings, component, arch)
+
+    if options.spnames_only:
+        """Import only the sourcepackagenames"""
+        spname = SPNamesImporter(source_map, options.dry_run)
+        spname.run()
+        sys.exit(0)
+        
+    # Comment this out if you need to disable the librarian integration
+    # for a given run of gina. Note that without the librarian; lucille
+    # will be unable to publish any files imported into the database
+    attachLibrarian( LIBRHOST, LIBRPORT )
+
 
     print "@ Loading sections"
     for arch in archs:

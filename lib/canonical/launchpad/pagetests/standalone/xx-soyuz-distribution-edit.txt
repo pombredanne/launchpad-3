@@ -1,3 +1,6 @@
+Distribution information edit.
+This tests makes a modification in ubuntu distribution and check 
+if the page is not broken.
 
 
   >>> print http(r"""

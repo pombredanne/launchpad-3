@@ -1,3 +1,5 @@
+Check if BinaryPackageName page is not broken.
+This is a batched page that displays all binarypackagenames in Launchpad.
 
 
   >>> print http(r"""
@@ -8,6 +10,10 @@
   HTTP/1.1 200 Ok
   ...
 
+
+Check if the binarypackagename search result page is not broken.
+
+
   >>> print http(r"""
   ... GET /binarypackagenames?name=firefox HTTP/1.1
   ... Accept-Language: en-us,en;q=0.5
@@ -16,6 +22,9 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
+
+
+Check if the add BinaryPackageName is not broken.
 
   >>> print http(r"""
   ... GET /binarypackagenames/+new HTTP/1.1
@@ -26,6 +35,11 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
+
+
+
+
+Add a new BinaryPackageName and check the redirect request.
 
   >>> print http(r"""
   ... POST /binarypackagenames/+new HTTP/1.1
@@ -48,6 +62,9 @@
   ... """)
   HTTP/1.1 303 See Other
   ...
+
+
+Get the redirected page and check if it has not broken.
 
   >>> print http(r"""
   ... GET /binarypackagenames/?name=ubuntu-libs2-dev HTTP/1.1
