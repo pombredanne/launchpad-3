@@ -8,6 +8,7 @@ from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.schema import TextLine, Int
 from canonical.database.doap import Product, Sourcepackage, Binarypackage
+from canonical.database import sqlbase
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('malone')
@@ -53,6 +54,29 @@ def traverseBugAttachment(bugattachment, request, name):
     except ValueError:
         raise KeyError, name
 
+
+class MaloneApplicationView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def update(self):
+        '''Handle request and setup this view the way the templates expect it
+        '''
+        if self.request.form.has_key('query'):
+            query = sqlbase.quote(self.request.form['query'].lower())
+            query = "'%%%%' || %s || '%%%%'" % query
+            q = (
+                r"lower(name) LIKE %(query)s "
+                r"OR lower(title) LIKE %(query)s "
+                r"OR lower(description) LIKE %(query)s"
+                ) % vars()
+            print repr(q)
+            self.results = Sourcepackage.select(q)
+            self.noresults = bool(self.results)
+        else:
+            self.noresults = False
+            self.results = []
 
 class BugContainerBase(object):
     implements(IBugContainer, IAddFormCustomization)

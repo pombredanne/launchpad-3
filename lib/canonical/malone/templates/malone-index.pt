@@ -1,20 +1,83 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@malone_template/master"
-      i18n:domain="rosetta">
-
+    lang="en"
+    metal:use-macro="context/@@malone_template/master"
+    i18n:domain="malone">
 <body>
-
 <div metal:fill-slot="main">
+    <tal:block condition="view/update" />
 
-  <h1>Welcome to Malone!</h1>
+    <h1>Welcome to Malone!</h1>
+
+    <h1>Search packages</h1>
+
+    <form method="post">
+        <fieldset tal:condition="not:exists:request/query">
+            <legend>Search details</legend>
+
+            <div class="field">
+                <input name="query" />
+            </div>
+
+            <div class="formControls">
+                <input type="submit" value="Search" />
+            </div>
+        </fieldset>
+    </form>
+
+    <div tal:condition="view/noresults">
+        No results were returned from your query
+    </div>
+
+    <table tal:condition="view/results" class="listing">
+        <tr>
+            <th>Name</th>
+            <th>Title</th>
+            <th>Description</th>
+            <th>Distribution</th>
+        </tr>
+        <tr tal:repeat="result view/results">
+            <td tal:content="result/name">$Sourcepackage.name</td>
+            <td tal:content="result/title">$Sourcepackage.title</td>
+            <td tal:content="result/description">
+                $Sourcepackage.description</td>
+            <td tal:content="result/distro">$Sourcepackage.distro</td>
+        </tr>
+    </table>
   
-  <ul>
-    <li><a href="bugs">See the bug list</a></li>
-    <li><a href="projects">Search projects</a></li>
-  </ul>
+    <ul>
+        <li><a href="bugs">See the bug list</a></li>
+        <li><a href="projects">Search projects</a></li>
+    </ul>
+</div>
+</body>
+</html>
 
+<!--
+<div metal:fill-slot="main">
+  <table tal:condition="exists:request/name"
+         class="listing">
+    <tr>
+      <th>Project</th>
+      <th>Title</th>
+      <th>Description</th>
+      <th>Homepage</th>
+    </tr>
+    <tr tal:repeat="project python:context.search(name=request.get('name'),
+                                                  title=request.get('title'))">
+      <td>
+        <a tal:attributes="href project/id"
+           tal:content="project/name">Name</a>
+      </td>
+      <td tal:content="project/title">Title</td>
+      <td tal:content="project/description">Description</td>
+      <td>
+        <a tal:attributes="href project/homepageurl"
+           tal:content="project/homepageurl">http://www.gnu.org/</a>
+      </td>
+    </tr>
+  </table>
 </div>
 
 </body>
 </html>
+-->
