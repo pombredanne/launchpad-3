@@ -13647,7 +13647,7 @@
 				NOT NULL
 				
 				</i>
-				
+				<br><br>Every Product belongs to one and only one Project, which is referenced in this column.
 				</td>
 			 </tr>
             
@@ -13839,7 +13839,7 @@
 				
 				
 				</i>
-				
+				<br><br>This is the URL where information about a mailing list for this Product can be found. The URL might point at a web archive or at the page where one can subscribe to the mailing list.
 				</td>
 			 </tr>
             
@@ -13855,7 +13855,7 @@
 				
 				
 				</i>
-				
+				<br><br>This field records, in plain text, the name of any significant programming languages used in this product. There are no rules, conventions or restrictions on this field at present, other than basic sanity. Examples might be &quot;Python&quot;, &quot;Python, C&quot; and &quot;Java&quot;.
 				</td>
 			 </tr>
             
@@ -13871,7 +13871,7 @@
 				
 				
 				</i>
-				
+				<br><br>The download URL for a Product should be the best place to download that product, typically off the relevant Project web site. This should not point at the actual file, but at a web page with download information.
 				</td>
 			 </tr>
             
@@ -13887,7 +13887,7 @@
 				
 				
 				</i>
-				
+				<br><br>This column stores a cached copy of the last DOAP description we saw for this product. See the Project.lastdoap field for more info.
 				</td>
 			 </tr>
             
@@ -15231,6 +15231,8 @@
 			<a name="public.table.productseries">productseries</a>
 		</h2>
         
+         <p>A ProductSeries is a set of product releases that are related to a specific version of the product. Typically, each major release of the product starts a new ProductSeries. These often map to a branch in the revision control system of the project, such as &quot;2_0_STABLE&quot;. A few conventional Series names are &quot;head&quot; for releases of the HEAD branch, &quot;1.0&quot; for releases with version numbers like &quot;1.0.0&quot; and &quot;1.0.1&quot;.</p>
+        
 
 
         <table width="100%" cellspacing="0" cellpadding="3">
@@ -15317,7 +15319,7 @@
 				NOT NULL
 				
 				</i>
-				
+				<br><br>The name of the ProductSeries is like a unix name, it should not contain any spaces and should start with a letter or number. Good examples are &quot;2.0&quot;, &quot;3.0-stable&quot;, &quot;head&quot; and &quot;development&quot;.
 				</td>
 			 </tr>
             
