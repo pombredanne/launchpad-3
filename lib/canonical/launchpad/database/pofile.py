@@ -76,20 +76,21 @@ class POTemplate(SQLBase):
     _table = 'POTemplate'
 
     product = ForeignKey(foreignKey='Product', dbName='product', notNull=True)
-    priority = IntCol(dbName='priority', notNull=True)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=True)
+    priority = IntCol(dbName='priority', notNull=False, default=None)
+    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=False,
+        default=None)
     changeset = ForeignKey(foreignKey='Changeset', dbName='changeset',
         notNull=False, default=None)
     name = StringCol(dbName='name', notNull=True)
     title = StringCol(dbName='title', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
-    copyright = StringCol(dbName='copyright', notNull=True)
+    description = StringCol(dbName='description', notNull=False, default=None)
+    copyright = StringCol(dbName='copyright', notNull=False, default=None)
 #   license = ForeignKey(foreignKey='License', dbName='license', notNull=True)
-    license = IntCol(dbName='license', notNull=True)
+    license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = DateTimeCol(dbName='datecreated', default=DEFAULT)
-    path = StringCol(dbName='path', notNull=True)
+    path = StringCol(dbName='path', notNull=False, default=None)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True)
-    messagecount = IntCol(dbName='messagecount', notNull=True)
+    messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False,
         default=None)
     rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
@@ -256,7 +257,7 @@ class POTemplate(SQLBase):
             ''' % self.id, clauseTables=('POFile', 'Language')))
 
     def poFilesToImport(self):
-        for pofile in iter(self._poFilesJoin):
+        for pofile in iter(self.poFiles):
             if pofile.rawimportstatus == RosettaImportStatus.PENDING:
                 yield pofile
 
@@ -452,7 +453,7 @@ class POTemplate(SQLBase):
         # file has because a number of msgsets could have change.
         # XXX: Carlos Perello Marin 09/12/2004 We should handle this case
         # better. The pofile don't get updated the currentcount updated...
-        for pofile in self.poFiles():
+        for pofile in self.poFiles:
             pofile.updateStatistics()
 
 

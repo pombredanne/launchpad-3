@@ -239,32 +239,19 @@ class ProductView:
         # Extract the details from the form
         name = self.form['name']
         title = self.form['title']
-        description = self.form['description']
-        copyright = self.form['copyright']
-        path = self.form['path']
 
         # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
         # check to see if there is an existing product with
         # this name.
         # get the launchpad person who is creating this product
-        # XXX: Carlos Perello Marin 27/11/04 We should force this page to be
-        # used under authenticated users.
         owner = IPerson(self.request.principal)
 
         # Now create a new product in the db
         potemplate = POTemplate(
             product=self.context.id,
-            priority=1,
-            branch=1,
             name=name,
             title=title,
-            description=description,
-            copyright=copyright,
-            license=1,
-            datecreated=UTC_NOW,
-            path=path,
             iscurrent=False,
-            messagecount=0,
             owner=owner)
 
         self._templates.append(potemplate)
@@ -449,10 +436,6 @@ class ViewPOTemplate:
         # Extract details from the form and update the POTemplate
         self.context.name = self.form['name']
         self.context.title = self.form['title']
-        self.context.description = self.form['description']
-        self.context.copyright = self.form['copyright']
-        self.context.path = self.form['path']
-        self.context.priority = self.form['priority']
         
         # now redirect to view the potemplate. This lets us follow the
         # template in case the user changed the name
