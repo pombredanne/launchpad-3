@@ -252,7 +252,7 @@ class CalendarDayView(CalendarViewBase):
             t = daystart
             dtend = daystart + timedelta(1)
             for title, start, duration in self.calendarRows():
-                if start < event.dtstart < start + duration:
+                if start <= event.dtstart < start + duration:
                     t = start
                 if start < event.dtstart + event.duration <= start + duration:
                     dtend = start + duration

@@ -53,7 +53,7 @@ class Calendar(SQLBase, CalendarMixin, EditableCalendarMixin):
         except:
             e = CalendarEvent(calendar=self, dtstart=event.dtstart,
                               duration=event.duration, title=event.title,
-                              location=event.location,
+                              location=event.location, description=event.description,
                               unique_id=event.unique_id)
             return e
         else:

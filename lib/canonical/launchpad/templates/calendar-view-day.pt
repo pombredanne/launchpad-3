@@ -92,7 +92,7 @@
                                      evdate python:evinfo.dtstart.strftime('%Y-%m-%d');
                                      colours python:view.eventColors(evinfo.event);
                                      mine python:True"
-                         tal:attributes="style python:'background %s;; height: %sem !important;; margin-left: %s%s;; top: %sem' % (colours[0], view.eventHeight(evinfo.event), str(num * indent), unit, view.eventTop(evinfo.event));
+                         tal:attributes="style python:'background: %s;; height: %sem !important;; margin-left: %s%s;; top: %sem' % (colours[0], view.eventHeight(evinfo.event), str(num * indent), unit, view.eventTop(evinfo.event));
                                          class python:mine and 'event' or 'event other';
                                          something compress">
                       <a tal:attributes="href string:../events/${evinfo/event/id}/">
