@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-29 15:33:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1515
+
+    Summary:
+      Adding css to highlight table rows on hover and make the whole row clickable without javascript. Example of how to use it on team's members page. Also fixed some sampledata for teammembership/teamparticipation.
+    Revision:
+      launchpad--devel--0--patch-1515
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-222
+       Adding css to highlight table rows on hover and make the whole row clickable without javascript. Example of how to use it on team's members page. Also fixed some sampledata for teammembership/teamparticipation.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-223
+       merge from rf
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/templates/launchpad.css
+     lib/canonical/launchpad/templates/team-members.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-222
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-223
+
+
 2005-03-29 14:30:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1514
 
     Summary:

@@ -236,6 +236,27 @@ table.rowNavigation th:hover {
     cursor: default;
 }
 
+/* Display links as blocks, so we can make the whole row clickable */
+
+tr.rowLinkified a {
+    text-decoration: none;
+    display: block;
+}
+
+/* Overwride values from 'listing' class */
+.lpListing td {
+    padding: 0em 0em;
+}
+
+.lpListing td a {
+    padding: 0em 1em;
+}
+
+.lpListing a:hover {
+    text-decoration: none;
+}
+
+
 /* batch navigation links */
 
 .batchnav tr:hover {
