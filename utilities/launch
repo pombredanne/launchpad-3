@@ -56,5 +56,12 @@ if [ $? -gt 0 ]; then
   exit 1
 fi
 
+# mirror archive
+baz archive-mirror
+if [ $? -gt 0 ]; then
+  echo "Archive mirroring failed, cannot launch."
+  exit 1
+fi
+
 $LAUNCHPAD/arch-pqm/bin/arch-submit-merge "$1" pqm@pqm.ubuntu.com
 

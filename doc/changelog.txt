@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-21 10:17:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1465
+
+    Summary:
+      add archive-mirror before launch
+    Revision:
+      launchpad--devel--0--patch-1465
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-840
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-841
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-842
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-843
+       add archive-mirror before pqm message in launch
+    
+
+    modified files:
+     doc/changelog.txt utilities/launch
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-840
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-841
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-842
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-843
+
+
 2005-03-19 06:35:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1464
 
     Summary:
