@@ -10,9 +10,9 @@
     <thead>
         <tr>
             <th title="Assignment to...">
-                <img src="++resource++download.png" 
+                <img src="/++resource++download.png" 
                      title="Product Assignment" />Upstream /
-                <img src="++resource++product_icon.gif" 
+                 <img src="/++resource++product_icon.gif" 
                      title="Package Assignment" />
                      Package</th>
             <th title="State">State</th>
@@ -36,7 +36,7 @@
                 <span tal:omit-tag="" tal:content="bugass/product/name">
                     $Product.name
                 </span>
-                <img src="++resource++download.png" 
+                <img src="/++resource++download.png" 
                      title="Product Assignment" />
             </td>
             
@@ -69,7 +69,7 @@ This bug is essential to fix as soon as possible. It affects system stability, d
             <td title="Assigned To">
                 <a tal:condition="bugass/assignee"
                    tal:attributes="href string:/malone/bugs/assigned?name=${bugass/assignee/name}">
-                    <img src="++resource++user.gif" alt="" 
+                   <img src="/++resource++user.gif" alt="" 
                     /><span tal:replace="bugass/assignee/browsername">
                     assignee.browsername
                     </span>
@@ -94,7 +94,7 @@ This bug is essential to fix as soon as possible. It affects system stability, d
                     tal:content="bugass/sourcepackage/name">
                     $SourcePackageName.name
                 </span>
-                <img src="++resource++product_icon.gif" 
+                <img src="/++resource++product_icon.gif" 
                      title="Package Assignment" />
             </td>
             
@@ -121,7 +121,7 @@ This bug is essential to fix as soon as possible. It affects system stability, d
             <td title="Mr. FixMe">
                 <a tal:condition="bugass/assignee"
                    tal:attributes="href string:/malone/bugs/assigned?name=${bugass/assignee/name}">
-                    <img src="++resource++user.gif" alt="" 
+                   <img src="/++resource++user.gif" alt="" 
                     /><span tal:replace="bugass/assignee/browsername">
                     loginname
                     </span>
@@ -136,14 +136,14 @@ This bug is essential to fix as soon as possible. It affects system stability, d
 <a href="productassignments/+new"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring upstream">
-    <img src="++resource++add.gif" alt="+" />
+    <img src="/++resource++add.gif" alt="+" />
     File Against Upstream...
 </a>
 
 <a href="packageassignments/+new"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring in another package">
-    <img src="++resource++add.gif" alt="+" />
+    <img src="/++resource++add.gif" alt="+" />
     File Against Package...
 </a>
                 

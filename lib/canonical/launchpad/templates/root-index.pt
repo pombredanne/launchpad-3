@@ -3,6 +3,7 @@
     <title>
       Launchpad root
     </title>
+    <link rel="shortcut icon" href="/++resource++defaultFavicon.gif" />
   </head>
   <body>
     <h1>Launchpad!</h1>

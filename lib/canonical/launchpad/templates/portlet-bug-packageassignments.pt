@@ -31,7 +31,7 @@
         <tr tal:repeat="bugass context/productassignments">
            
             <td tal:attributes="class string:packageName severity${bugass/severity/lp:BugSeverity}Row">
-                <img src="++resource++product_icon.gif" 
+                <img src="/++resource++product_icon.gif" 
                      title="Product Assignment" />
                 <a href=""
                    tal:attributes="href
@@ -52,7 +52,7 @@ This bug is essential to fix as soon as possible. It affects system stability, d
             <td title="Mr. FixMe">
                 <a tal:condition="bugass/assignee"
                    tal:attributes="href string:/malone/bugs/assigned?name=${bugass/assignee/name}">
-                    <img src="++resource++user.gif" alt="" 
+                   <img src="/++resource++user.gif" alt="" 
                     /><span tal:replace="bugass/assignee/browsername">
                     assignee.browsername
                     </span>
@@ -74,7 +74,7 @@ This bug is essential to fix as soon as possible. It affects system stability, d
         <tr tal:repeat="bugass context/packageassignments">
            
             <td tal:attributes="class string:packageName severity${bugass/severity/lp:BugSeverity}Row">
-                <img src="++resource++product_icon.gif" 
+                <img src="/++resource++product_icon.gif" 
                      title="Package Assignment" />
                 <a href=""
                    tal:attributes="href string:/malone/package/${bugass/sourcepackage/name}"
@@ -94,7 +94,7 @@ This bug is essential to fix as soon as possible. It affects system stability, d
             <td title="Mr. FixMe">
                 <a tal:condition="bugass/assignee"
                    tal:attributes="href string:/malone/bugs/assigned?name=${bugass/assignee/name}">
-                    <img src="++resource++user.gif" alt="" 
+                   <img src="/++resource++user.gif" alt="" 
                     /><span tal:replace="bugass/assignee/browsername">
                     loginname
                     </span>
@@ -117,13 +117,13 @@ This bug is essential to fix as soon as possible. It affects system stability, d
                 <a href="packageassignments/+new"
                    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
                    title="Add new reference to an existing Source Package that is affected.">
-                <img src="++resource++add.gif" alt="+" />
+                   <img src="/++resource++add.gif" alt="+" />
                 Add Package
                 </a>
                 
                 <a href="productassignments/+new"
                    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
                    title="Add new reference to a Product that is affected.">
-                <img src="++resource++add.gif" alt="+" />
+                   <img src="/++resource++add.gif" alt="+" />
                 Add Product
                 </a>

@@ -52,6 +52,7 @@ def main():
         print 'Failed to create database'
         return 1
 
+    # Tabnanny
     org_stdout = sys.stdout
     sys.stdout = StringIO()
     tabnanny.check(os.path.join(here, 'lib', 'canonical'))
@@ -61,6 +62,17 @@ def main():
         print '---- tabnanny bitching ----'
         print tabnanny_results
         print '---- end tabnanny bitching ----'
+        return 1
+
+    # Ensure ++resource++ URL's are all absolute - this ensures they
+    # are cache friendly
+    results = os.popen(
+        "find lib/canonical -type f | xargs grep '[^/]++resource++'"
+        ).readlines()
+    if results:
+        print '---- non-absolute ++resource++ URLs found ----'
+        print ''.join(results)
+        print '---- end non-absolute ++resource++ URLs found ----'
         return 1
 
     print 'Running tests.'

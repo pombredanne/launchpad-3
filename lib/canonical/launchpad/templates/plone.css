@@ -120,7 +120,7 @@ ul {
     list-style-type: square;
     margin: 0.5em 0 0 1.5em;
     padding: 0;
-    list-style-image: url(++resource++bullet.gif);
+    list-style-image: url(/++resource++bullet.gif);
 }
 
 ol {
@@ -379,7 +379,7 @@ del {
     list-style: none;
 }
 #portal-personaltools .portalUser {
-    background: transparent url(++resource++user.gif) center left no-repeat;
+    background: transparent url(/++resource++user.gif) center left no-repeat;
     padding-left: 15px;
 }
 
@@ -391,7 +391,7 @@ del {
 } /* Used on all descriptions relevant to those not logged in */
  
 #portal-personaltools li {
-    background: transparent url(++resource++linkOpaque.gif) center left no-repeat;
+    background: transparent url(/++resource++linkOpaque.gif) center left no-repeat;
     padding-left: 8px;
     color: #000066;
     margin-left: 1em;
@@ -491,7 +491,7 @@ del {
 }
 .contentActions li {
     float: right;
-    background-image: url(++resource++arrowDownAlternative.gif);
+    background-image: url(/++resource++arrowDownAlternative.gif);
     background-repeat: no-repeat;
     background-position: center right;
     z-index: 4;
@@ -744,7 +744,7 @@ del {
 
 .standalone,
 .documentEditable * .standalone {
-    background: #8fb3d9 url(++resource++linkOpaque.gif) 9px 1px no-repeat;
+    background: #8fb3d9 url(/++resource++linkOpaque.gif) 9px 1px no-repeat;
     cursor: pointer;
     font-size: 85%;
     margin-bottom: 1em;
@@ -753,7 +753,7 @@ del {
 }
 .context,
 .documentEditable * .context {
-    background: transparent url(++resource++linkTransparent.gif) 9px 1px no-repeat;
+    background: transparent url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
     cursor: pointer;
     font-size: 85%;
     margin-bottom: 1em;
@@ -762,7 +762,7 @@ del {
 }
 .destructive,
 .documentEditable * .destructive {
-    background: #ffce7b url(++resource++linkTransparent.gif) 9px 1px no-repeat;
+    background: #ffce7b url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
     border: 1px solid #ffa500;  
     cursor: pointer;
     font-size: 85%;
@@ -773,7 +773,7 @@ del {
 input.searchButton {
     font-size: 100%;
     margin-bottom: 1px ! important;
-    background: White url(++resource++search_icon.gif) 2px 1px no-repeat;
+    background: White url(/++resource++search_icon.gif) 2px 1px no-repeat;
     cursor: pointer;
     padding: 1px 1px 1px 15px;
     text-transform: none;
@@ -813,7 +813,7 @@ input.searchButton {
 }
 
 .fieldRequired {
-    background: url(++resource++required.gif) center left no-repeat;
+    background: url(/++resource++required.gif) center left no-repeat;
     padding: 0 0 0 8px;
     color: White;
 } 
@@ -1177,53 +1177,53 @@ ol.visualNoMarker {
 
 .link-parent {
     display: block;
-    background: transparent url(++resource++arrowUp.gif) 4px 5px no-repeat;
+    background: transparent url(/++resource++arrowUp.gif) 4px 5px no-repeat;
     padding: 1px 0px 1px 16px;
     font-size: 85%;
 }
 
 .link-user {
-    background: transparent url(++resource++user.gif) 0 1px no-repeat;
+    background: transparent url(/++resource++user.gif) 0 1px no-repeat;
     padding: 1px 0px 1px 16px;
 }
 
 .link-external {
-    background: transparent url(++resource++link_icon.gif) 0px 1px no-repeat;
+    background: transparent url(/++resource++link_icon.gif) 0px 1px no-repeat;
     padding: 1px 0px 1px 16px;
 }
 
 .link-https {
-    background: transparent url(++resource++lock_icon.gif) 0px 1px no-repeat;
+    background: transparent url(/++resource++lock_icon.gif) 0px 1px no-repeat;
     padding: 1px 0px 1px 16px;
 }
 
 .link-mailto {
-    background: transparent url(++resource++mail_icon.gif) 0px 1px no-repeat;
+    background: transparent url(/++resource++mail_icon.gif) 0px 1px no-repeat;
     padding: 1px 0px 1px 16px;
 }
 
 .link-news {
-    background: transparent url(++resource++topic_icon.gif) 0px 1px no-repeat;
+    background: transparent url(/++resource++topic_icon.gif) 0px 1px no-repeat;
     padding: 1px 0px 1px 16px;
 }
 
 .link-ftp {
-    background: transparent url(++resource++file_icon.gif) 0px 1px no-repeat;
+    background: transparent url(/++resource++file_icon.gif) 0px 1px no-repeat;
     padding: 1px 0px 1px 16px;
 }
 
 .link-irc {
-    background: transparent url(++resource++discussionitem_icon.gif) 0px 1px no-repeat;
+    background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
     padding: 1px 0px 1px 16px;
 }
 
 .link-callto {
-    background: transparent url(++resource++phone_icon.gif) 0px 1px no-repeat;
+    background: transparent url(/++resource++phone_icon.gif) 0px 1px no-repeat;
     padding: 1px 0px 1px 16px;
 }
 
 .link-comment {
-    background: transparent url(++resource++discussionitem_icon.gif) center left no-repeat;
+    background: transparent url(/++resource++discussionitem_icon.gif) center left no-repeat;
     padding: 1px 0px 1px 16px !important;
 }
 

@@ -271,7 +271,7 @@ ul.people {
 ul.people li {
     line-height: 1.5em;
     padding: 0;
-    background-image: url(++resource++user.gif);
+    background-image: url(/++resource++user.gif);
     background-color: transparent;
     background-repeat: no-repeat;
     padding-left: 18px

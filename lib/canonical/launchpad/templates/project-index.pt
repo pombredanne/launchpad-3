@@ -51,7 +51,7 @@
 	</ul>
     </div>
     <div>
-	<img src="++resource++add.gif"><a href="+newproduct">Add a product</a>
+        <img src="/++resource++add.gif"><a href="+newproduct">Add a product</a>
 	</div>
 
     <h2>Bug Trackers</h2>

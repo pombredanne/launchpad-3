@@ -83,25 +83,25 @@
                         <td><span tal:replace="template/poTranslated">0</span></td>
                         <td><span tal:replace="template/poUntranslated">0</span></td>
                         <td>
-                            <img src="++resource++green-bar.png"
+                            <img src="/++resource++green-bar.png"
                                 height="15"
                                 alt="Translated &amp; non updated graph"
                                 tal:condition="template/poNonUpdatesCount"
                                 tal:attributes="width template/poNonUpdatesPercent;
                                                 title string: Translated: ${template/poNonUpdatesPercent}%"
-                            /><img src="++resource++blue-bar.png"
+                            /><img src="/++resource++blue-bar.png"
                                 height="15"
                                 alt="Updated graph"
                                 tal:condition="template/poUpdatesCount"
                                 tal:attributes="width template/poUpdatesPercent;
                                                 title string: Updates: ${template/poUpdatesPercent}%"
-                            /><img src="++resource++dwelled-bar.png"
+                            /><img src="/++resource++dwelled-bar.png"
                                 height="15"
                                 alt="Rosetta additions graph"
                                 tal:condition="template/poRosettaCount"
                                 tal:attributes="width template/poRosettaPercent;
                                                 title string: Rosetta additions: ${template/poRosettaPercent}%"
-                            /><img src="++resource++red-bar.png"
+                            /><img src="/++resource++red-bar.png"
                                 height="15"
                                 alt="Fuzzy graph"
                                 tal:condition="template/poUntranslated"
@@ -110,7 +110,7 @@
                         </td>
                         <td><a tal:attributes="href
                             string:${template/name}/${LT/language/code}/po">
-                            <img src="++resource++download.png" alt="Download PO file" />Download .po</a></td>
+                            <img src="/++resource++download.png" alt="Download PO file" />Download .po</a></td>
                     </tr>
                 </tbody>
             </table>

@@ -9,7 +9,7 @@
              tal:repeat="watch context/watches">
             
             <a tal:attributes="href string:watches/${watch/id}/+edit">
-                <img src="++resource++search_icon.gif" alt="" />
+                <img src="/++resource++search_icon.gif" alt="" />
                 #<span tal:replace="watch/remotebug" />,
                  <span tal:replace="watch/bugtracker/title" />
                 <div class="portletDetails"
@@ -19,7 +19,7 @@
         </div>
         
         <div class="portletContent even">
-            <img src="++resource++add.gif" alt="Add">
+            <img src="/++resource++add.gif" alt="Add">
             <a href="watches/+new">Link to other bug tracker...</a>
         </div> 
     </div>

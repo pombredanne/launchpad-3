@@ -228,7 +228,7 @@
                             tal:content="python:set['translations'][language][i]"
                             ></textarea>
                         <!--
-                        <img src="++resource++info.gif" title="Example: 1 dead horse." />
+                        <img src="/++resource++info.gif" title="Example: 1 dead horse." />
                         -->
                     </div>
 
@@ -237,7 +237,7 @@
 
             <div class="field" tal:condition="set/commentText">
                 <label>Comment</label>
-                <img src="++resource++arrowDown.gif" />
+                <img src="/++resource++arrowDown.gif" />
                 <div class="discreet" tal:content="set/commentText">This refers to the content type.</div>
             </div>
 
@@ -250,7 +250,7 @@
             <!--
             <div class="field">
                 <label>Code reference</label>
-                <img src="++resource++arrowRight.gif" />
+                <img src="/++resource++arrowRight.gif" />
             </div>
             -->
         </fieldset>

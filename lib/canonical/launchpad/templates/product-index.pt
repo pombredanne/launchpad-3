@@ -21,7 +21,7 @@
         <a tal:content="context/homepageurl|default"
            tal:attributes="href context/homepageurl|nothing">(none
         supplied)</a><br />
-        <img src="++resource++edit.gif">
+        <img src="/++resource++edit.gif">
         <a href="+edit">Edit Product Details</a><br />
         [ <a href="+addsources">Add Revision Control System</a> ]<br />
         [ TODO: allow creation of link to packages ]<br />

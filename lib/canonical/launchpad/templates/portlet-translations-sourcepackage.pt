@@ -31,25 +31,25 @@
 		    <tal:block  tal:repeat="template LT/templates">
 		    <tr>
                         <td>
-                            <img src="++resource++green-bar.png"
+                            <img src="/++resource++green-bar.png"
                                 height="15"
                                 alt="Translated &amp; non updated graph"
                                 tal:condition="template/poNonUpdatesCount"
                                 tal:attributes="width template/poNonUpdatesPercent;
                                                 title string: Translated: ${template/poNonUpdatesPercent}%"
-			    /><img src="++resource++blue-bar.png"
+                            /><img src="/++resource++blue-bar.png"
                                 height="15"
                                 alt="Updated graph"
                                 tal:condition="template/poUpdatesCount"
                                 tal:attributes="width template/poUpdatesPercent;
                                                 title string: Updates: ${template/poUpdatesPercent}%"
-			    /><img src="++resource++dwelled-bar.png"
+                            /><img src="/++resource++dwelled-bar.png"
                                 height="15"
                                 alt="Rosetta additions graph"
                                 tal:condition="template/poRosettaCount"
                                 tal:attributes="width template/poRosettaPercent;
                                                 title string: Rosetta additions: ${template/poRosettaPercent}%"
-			    /><img src="++resource++red-bar.png"
+                            /><img src="/++resource++red-bar.png"
                                 height="15"
                                 alt="Fuzzy graph"
                                 tal:condition="template/poUntranslated"

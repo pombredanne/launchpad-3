@@ -32,7 +32,7 @@
 
         <p tal:content="prod/shortdesc">Product Summary</p>
 
-        <p><img src="++resource++add.gif">
+        <p><img src="/++resource++add.gif">
            <a href="#" tal:attributes="href prod/name">See all
            bugs in <span tal:replace="prod/displayname">product</span>...</a></p>
     

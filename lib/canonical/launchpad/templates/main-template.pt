@@ -11,11 +11,12 @@
   <head>
     <metal:block define-slot="title"></metal:block>
     <!-- Plone style sheet -->
-    <style type="text/css" media="screen">@import url(++resource++plone.css);</style>
+    <style type="text/css" media="screen">@import url(/++resource++plone.css);</style>
     <!-- Rosetta style sheet -->
-    <style type="text/css" media="screen">@import url(++resource++launchpad.css);</style>
+    <style type="text/css" media="screen">@import url(/++resource++launchpad.css);</style>
     <!-- Launchpad JS code -->
-    <script type="text/javascript" src="++resource++launchpad.js"></script>
+    <script type="text/javascript" src="/++resource++launchpad.js"></script>
+    <link rel="shortcut icon" href="/++resource++defaultFavicon.gif" />
   </head>
 
   <body>
@@ -23,15 +24,15 @@
            tal:define="path_info request/PATH_INFO">
                <a href="/rosetta"
                   tal:condition="python:'/rosetta' in path_info">
-                   <img src="++resource++rosetta.png" alt="Rosetta" />
+                  <img src="/++resource++rosetta.png" alt="Rosetta" />
                </a>
                <a href="/malone"
                   tal:condition="python:'/malone' in path_info">
-                   <img src="++resource++malone.png" alt="Malone" />
+                  <img src="/++resource++malone.png" alt="Malone" />
                </a>
                <a href="/soyuz"
                   tal:condition="python:'/soyuz' in path_info">
-                   <img src="++resource++soyuz.png" alt="Soyuz" />
+                  <img src="/++resource++soyuz.png" alt="Soyuz" />
                </a>
       </div>
       

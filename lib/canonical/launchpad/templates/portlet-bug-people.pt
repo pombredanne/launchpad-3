@@ -78,7 +78,7 @@
         <a href="people/+new"
             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
             title="Add a subscriber to this bug.">
-            <img src="++resource++add.gif" alt="+" />
+            <img src="/++resource++add.gif" alt="+" />
             Subscribe
         </a><br />
         </div>
