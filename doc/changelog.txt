@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-09 13:59:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1396
+
+    Summary:
+      Add celso's NukeSourcePackage DB patch to pending and refactor with data migration code
+    Revision:
+      launchpad--devel--0--patch-1396
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-173
+       Add celso's NukeSourcePackage DB patch to pending and refactor with data migration code
+    
+
+    new files:
+     database/schema/pending/.arch-ids/celso-nukesourcepackage.sql.id
+     database/schema/pending/celso-nukesourcepackage.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-173
+
+
 2005-03-09 12:33:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1395
 
     Summary:
