@@ -98,6 +98,11 @@ class BugView:
     actionsPortlet = BugPortlet(
         '../templates/portlet-bug-actions.pt')
 
+class BugEditView(BugView, SQLObjectEditView):
+    def __init__(self, context, request):
+        BugView.__init__(self, context, request)
+        SQLObjectEditView.__init__(self, context, request)
+
 class BugAssignmentEditView(BugView, SQLObjectEditView):
     def __init__(self, context, request):
         BugView.__init__(self, context, request)

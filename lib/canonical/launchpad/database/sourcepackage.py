@@ -216,7 +216,6 @@ class SourcePackageSet(object):
         return table.select("sourcepackage = %d AND version = %s"
                             % (sourcepackageID, quote(version)))
 
-    
     def getByPersonID(self, personID):
         # XXXkiko: we should allow supplying a distrorelease here and
         # get packages by distro

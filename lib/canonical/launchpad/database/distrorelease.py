@@ -14,18 +14,21 @@ from canonical.lp import dbschema
 # interfaces and database 
 from canonical.launchpad.interfaces import IDistroRelease
 from canonical.launchpad.database import SourcePackageName, \
-        BinaryPackageName
+                                         BinaryPackageName,\
+                                         SourcePackageInDistro
+               
 
 
 class DistroRelease(SQLBase):
     """Distrorelease SQLObject"""
     implements(IDistroRelease)
 
-    _table = 'Distrorelease'
+    _table = 'DistroRelease'
     _columns = [
         ForeignKey(name='distribution', dbName='distribution',
                    foreignKey='Distribution', notNull=True),
         StringCol('name', dbName='name', notNull=True),
+        StringCol('displayname', dbName='displayname', notNull=True),
         StringCol('title', dbName='title', notNull=True),
         StringCol('shortdesc', dbName='shortdesc', notNull=True),
         StringCol('description', dbName='description', notNull=True),

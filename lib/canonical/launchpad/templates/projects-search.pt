@@ -38,9 +38,9 @@
                     <input type="checkbox" name="soyuz" id="soyuz"
                            tal:attributes="checked view/soyuz">
                     <label for="soyuz">Packages</label>
-                    <input type="checkbox" name="buttress" id="buttress"
-                           tal:attributes="checked view/buttress">
-                    <label for="buttress">Branches</label>
+                    <input type="checkbox" name="bazaar" id="bazaar"
+                           tal:attributes="checked view/bazaar">
+                    <label for="bazaar">Branches</label>
                     <div class="formHelp">Enter any part of the project name,
                     title or description. Select a particular Launchpad aspect
                     of the project.</div>

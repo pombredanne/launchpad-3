@@ -162,10 +162,10 @@ class IProductSet(Interface):
 
     def search(text=None, soyuz=None,
                rosetta=None, malone=None,
-               buttress=None):
+               bazaar=None):
         """Search through the DOAP database for products that match the
         query terms. text is a piece of text in the title / summary /
-        description fields of product. soyuz, buttress, malone etc are
+        description fields of product. soyuz, bazaar, malone etc are
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
 

@@ -6,12 +6,18 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+    <content class="canonical.launchpad.database.Country">
+        <allow interface="canonical.launchpad.interfaces.ICountry" />
+    </content>
+
     <content class="canonical.launchpad.database.CountrySet">
         <allow interface="canonical.launchpad.interfaces.ICountrySet" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.CountrySet"
-        provides="canonical.launchpad.interfaces.ICountrySet" />
+    <securedutility
+        class="canonical.launchpad.database.CountrySet"
+        provides="canonical.launchpad.interfaces.ICountrySet">
+        <allow interface="canonical.launchpad.interfaces.ICountrySet" />
+    </securedutility>
 
 </configure>

@@ -52,12 +52,15 @@
 
     <content class="canonical.launchpad.database.BugExternalRefSet">
         <allow interface="canonical.launchpad.interfaces.IBugExternalRefSet" />
-        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+        <allow
+          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.BugExternalRefSet"
-        provides="canonical.launchpad.interfaces.IBugExternalRefSet" />
+    <securedutility
+        class="canonical.launchpad.database.BugExternalRefSet"
+        provides="canonical.launchpad.interfaces.IBugExternalRefSet">
+        <allow interface="canonical.launchpad.interfaces.IBugExternalRefSet" />
+    </securedutility>
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IBugExternalRefSet"

@@ -6,12 +6,12 @@
 
         <table class="rowNavigation" border="0">
             <tr tal:repeat="branch context/branches"
-                tal:attributes="onclick string:window.location='/buttress/branches/${branch/id}';">
+                tal:attributes="onclick string:window.location='/bazaar/branches/${branch/id}';">
                 <td tal:content="branch/title">branch title</td>
             </tr>
         </table>
 
-        <a tal:attributes="href string:/buttress/products/${context/name}"
+        <a tal:attributes="href string:/bazaar/products/${context/name}"
             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
             title="See all branches for this product">
             <img src="/++resource++add.gif" alt="+" />

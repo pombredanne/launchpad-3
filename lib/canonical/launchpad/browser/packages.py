@@ -1,23 +1,19 @@
+__metaclass__ = type
+
 from urllib import quote as urlquote
 
-# lp imports
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
-
-# interface import
-from canonical.launchpad.database import IPerson
-
-# zope imports
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
-# LP imports
 from canonical.lp.dbschema import BugSeverity
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
+from canonical.launchpad.database import IPerson, SourcePackageBugAssignment
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages 
 BATCH_SIZE = 40
 
-class SourcePackageView(object):
+class SourcePackageView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -43,7 +39,7 @@ class SourcePackageView(object):
 # SourcePackage in a DistroRelease related classes
 #
 
-class DistroSourcesView(object):
+class DistroSourcesView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -58,7 +54,7 @@ class DistroSourcesView(object):
 ##XXX: (batch+duplicated) cprov 20041006
 ## The two following classes are almost like a duplicated piece
 ## of code. We should look for a better way for use Batching Pages
-class DistroReleaseSourcesView(object):
+class DistroReleaseSourcesView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -89,7 +85,7 @@ class DistroReleaseSourcesView(object):
 # Source Package
 #
 
-class DistroReleaseSourceView(object):
+class DistroReleaseSourceView:
     translationPortlet = ViewPageTemplateFile(
         '../templates/portlet-translations-sourcepackage.pt')
     watchPortlet = ViewPageTemplateFile(
@@ -124,7 +120,7 @@ class DistroReleaseSourceView(object):
 # BinaryPackage in a DistroRelease related classes
 #
 
-class DistroReleaseBinariesView(object):
+class DistroReleaseBinariesView:
     
     def __init__(self, context, request):
         self.context = context
@@ -140,7 +136,7 @@ class DistroReleaseBinariesView(object):
 
         return BatchNavigator(batch = batch, request = self.request)
 
-class DistrosReleaseBinariesSearchView(object):
+class DistrosReleaseBinariesSearchView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -161,7 +157,14 @@ class DistrosReleaseBinariesSearchView(object):
         else:
             return None
 
+class SourcePackageBugsView:
+    def bugassignment_search(self):
+        return self.context.bugs
 
+    def assignment_columns(self):
+        return [
+            "id", "title", "status", "priority", "severity",
+            "submittedon", "submittedby", "assignedto", "actions"]
 
 ################################################################
 

@@ -5,6 +5,7 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <!-- Distribution -->
     <content class="canonical.launchpad.database.Distribution">
         <allow interface="canonical.launchpad.interfaces.IDistribution"/>
         <require
@@ -14,8 +15,59 @@
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.DistributionSet"
-        provides="canonical.launchpad.interfaces.IDistributionSet" />
+    <!-- DistributionSet -->
+    <content class="canonical.launchpad.database.DistributionSet">
+        <allow interface="canonical.launchpad.interfaces.IDistributionSet"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.DistributionSet"
+        provides="canonical.launchpad.interfaces.IDistributionSet">
+        <allow interface="canonical.launchpad.interfaces.IDistributionSet" />
+    </securedutility>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistributionSet"
+        name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IDistributionSet"
+        getter="__getitem__" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistributionSet"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.DistributionSetView">
+
+        <browser:page
+            name="+index"
+            template="../templates/distros-index.pt"
+            lp:url="Soyuz/distros/" />
+
+    </browser:pages>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IDistributionSet"
+        permission="launchpad.AnyPerson"
+	    class="canonical.launchpad.browser.DistributionSetAddView"
+	    template="../templates/distro-add.pt"
+        lp:url="Soyuz/distros/+add"
+	    name="+add"
+        />
+
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.IDistributionSet"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        label="Create a New Launchpad Distribution"
+        fields="name displayname title summary description domainname owner"
+        content_factory="canonical.launchpad.database.Distribution"
+        class="canonical.launchpad.browser.DistributionSetAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="soyuz/distros/+new">
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+    </browser:addform>
+
 
 </configure>

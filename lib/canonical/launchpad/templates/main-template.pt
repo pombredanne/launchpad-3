@@ -112,12 +112,12 @@
             </li>
 
             <li class="selected"
-                tal:condition="python:'/buttress' in path_info">
-              <a href="/buttress">Buttress</a>
+                tal:condition="python:'/bazaar' in path_info">
+              <a href="/bazaar">Bazaar</a>
             </li>
             <li class="plain"
-                tal:condition="python:'/buttress' not in path_info">
-              <a href="/buttress">Buttress</a>
+                tal:condition="python:'/bazaar' not in path_info">
+              <a href="/bazaar">Bazaar</a>
             </li>
 
           </ul>

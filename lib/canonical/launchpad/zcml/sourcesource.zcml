@@ -10,10 +10,11 @@
         <allow interface="canonical.launchpad.interfaces.ISourceSource"/>
         <require
             permission="launchpad.AnyPerson"
-            set_attributes="title description cvsroot cvsbranch cvsmodule
-                            cvstarfileurl svnrepository releaseroot releaseverstyle
-                            releasefileglobe newarchive newbranchcategory
-                            newbranchbranch newbranchversion product"
+            set_attributes="
+              title description cvsroot cvsbranch cvsmodule cvstarfileurl
+              svnrepository releaseroot releaseverstyle releasefileglobe
+              newarchive newbranchcategory newbranchbranch newbranchversion
+              product"
             />
     </content>
 
@@ -44,10 +45,12 @@
             set_attributes="syncingapproved processingapproved autotested" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.SourceSourceSet"
+    <securedutility
+        class="canonical.launchpad.database.SourceSourceSet"
         provides="canonical.launchpad.interfaces.ISourceSourceSet"
-        />
+        >
+        <allow interface="canonical.launchpad.interfaces.ISourceSourceSet" />
+    </securedutility>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISourceSourceSet"
@@ -64,7 +67,7 @@
         <browser:page
             name="+index"
             template="../templates/sources-index.pt"
-            lp:url="buttress/sources/+index" />
+            lp:url="bazaar/sources/+index" />
     </browser:pages>
 
 </configure>

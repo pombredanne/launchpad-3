@@ -15,9 +15,11 @@
     </content>
 
     <!-- UTILITY DECLARATION-->
-    <utility
-        factory="canonical.launchpad.database.Example"
-        provides="canonical.launchpad.interfaces.IExample" />
+    <securedutility
+        class="canonical.launchpad.database.Example"
+        provides="canonical.launchpad.interfaces.IExample">
+        <allow interface="canonical.launchpad.interfaces.IExample" />
+    </securedutility>
 
     <!-- VOCABULARIES -->
 

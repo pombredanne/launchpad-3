@@ -36,7 +36,7 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBug"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        class="canonical.launchpad.browser.bug.BugEditView"
         label="Change Bug Information"
         permission="launchpad.AnyPerson"
         template="../templates/bug-edit.pt"
@@ -63,9 +63,11 @@
         <allow interface="canonical.launchpad.interfaces.IBugSet" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.BugSet"
-        provides="canonical.launchpad.interfaces.IBugSet" />
+    <securedutility
+        class="canonical.launchpad.database.BugSet"
+        provides="canonical.launchpad.interfaces.IBugSet">
+        <allow interface="canonical.launchpad.interfaces.IBugSet" />
+    </securedutility>
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IBugSet"

@@ -30,7 +30,9 @@ class Distribution(SQLBase):
     _defaultOrder='name'
     _columns = [
         StringCol('name', dbName='name'),
+        StringCol('displayname', dbName='displayname'),
         StringCol('title', dbName='title'),
+        StringCol('summary', dbName='summary'),
         StringCol('description', dbName='description'),
         StringCol('domainname', dbName='domainname'),
         ForeignKey(name='owner', dbName='owner', foreignKey='Person',
@@ -79,13 +81,18 @@ class DistributionSet(object):
 
     implements(IDistributionSet)
 
-    def getDistros(self):
-        """Returns all Distributions available on the datasbase"""
-        return Distribution.select()
+    def __iter__(self):
+        return iter(Distribution.select())
 
-    def getDistrosCounter(self):
-        """Returns the number of Distributions available"""
+    def __getitem__(self, name):
+        return Distribution.selectBy(name=name)[0]
+
+    def count(self):
         return Distribution.select().count()
+
+    def getDistros(self):
+        """Returns all Distributions available on the database"""
+        return Distribution.select()
 
     def getDistribution(self, name):
         """Returns a Distribution with name = name"""

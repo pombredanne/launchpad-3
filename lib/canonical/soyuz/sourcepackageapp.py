@@ -25,9 +25,6 @@ from canonical.launchpad.interfaces import IBuildSet, \
                                            IDistroReleaseSourceApp, \
                                            IDistroReleaseSourceReleaseApp
 
-#
-# 
-#
 
 # Source app component Section (src) 
 class DistroSourcesApp(object):
@@ -76,7 +73,7 @@ class DistroReleaseSourceApp(object):
     def __init__(self, release, sourcepackage):
         self.release = release
         self.sourcepackage = sourcepackage
-        
+
         self.bugsCounter = self._countBugs()
 
         self.releases = self.sourcepackage.releases
@@ -87,7 +84,6 @@ class DistroReleaseSourceApp(object):
             # Find distroarchs for that release
             archReleases = release.architecturesReleased(self.release)
             self.archs = [a.architecturetag for a in archReleases]
-        
 
     def _countBugs(self):
         (all, critical, important, normal, 
@@ -98,8 +94,8 @@ class DistroReleaseSourceApp(object):
                 minor + wishlist, fixed + pending)
 
     def __getitem__(self, version):
-        return DistroReleaseSourceReleaseApp(self.sourcepackage, version,
-                                             self.release)
+        return DistroReleaseSourceReleaseApp(
+            self.sourcepackage, version, self.release)
 
     def proposed(self):
         return self.sourcepackage.proposed(self.release)
@@ -119,8 +115,8 @@ class DistroReleaseSourceApp(object):
         return current
 
     def currentversions(self):
-        return [CurrentVersion(k, v) for k,v in self.currentReleases().\
-                iteritems()]
+        return [CurrentVersion(k, v)
+                for k,v in self.currentReleases().iteritems()]
         # FIXME: (current_versions) Daniel Debonzi - 2004-10-13
         # Probably should be more than just PUBLISHED uploads (e.g.
         # NEW + ACCEPTED + PUBLISHED?)
@@ -155,38 +151,9 @@ class DistroReleaseSourceReleaseApp(object):
         # XXX: Daniel Debonzi 2004-12-03
         # Review this code for archRelease. Its is probably not
         # doing the right thing.
-        archReleases = self.sourcepackagerelease.architecturesReleased(distrorelease)
+        archReleases = self.sourcepackagerelease.architecturesReleased(
+            distrorelease)
         self.archs = [a.architecturetag for a in archReleases]
-
-
-    def builddepends(self):
-        if not self.sourcepackagerelease.builddepends:
-            return None
-        
-        builddepends = ([], [], [])
-
-        depends = ParseSrcDepends(self.sourcepackagerelease.builddepends)
-
-        for i in range(len(depends)):
-            dep = depends[i]
-            builddepends[i % 3].append(builddepsSet(*dep[0]))
-        return builddepends
-
-    builddepends = property(builddepends)
-
-    def builddependsindep(self):
-        if not self.sourcepackagerelease.builddependsindep:
-            return None
-        builddependsindep = ([], [], [])
-        
-        depends = ParseSrcDepends(self.sourcepackagerelease.builddependsindep)
-        
-        for i in range(len(depends)):
-            dep = depends[i]
-            builddependsindep[i % 3].append(builddepsSet(*dep[0]))
-        return builddependsindep
-                
-    builddependsindep = property(builddependsindep)
 
     def __getitem__(self, arch):
         bset = getUtility(IBuildSet)

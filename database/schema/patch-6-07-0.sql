@@ -4,9 +4,9 @@
   is what I should have called shortdesc a long time ago, so I'll start
   using it here, and will big-bang the change after all the first-round
   demos are done.
-
-  STUB: this one is good to go. There will be more tweaks I'm sure.
 */
+
+SET client_min_messages=ERROR;
 
 ALTER TABLE Distribution ADD COLUMN displayname text;
 UPDATE Distribution SET displayname=name;
@@ -34,4 +34,6 @@ for Gentoo users.';
 ALTER TABLE DistroRelease ADD COLUMN displayname text;
 UPDATE DistroRelease SET displayname=name;
 ALTER TABLE DistroRelease ALTER COLUMN displayname SET NOT NULL;
+
+UPDATE LaunchpadDatabaseRevision SET major=6, minor=7, patch=0;
 

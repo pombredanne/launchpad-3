@@ -28,8 +28,8 @@ class RosettaLayer(LaunchpadLayer):
 class MaloneLayer(LaunchpadLayer):
     """The `MaloneLayer` layer."""
 
-class ButtressLayer(LaunchpadLayer):
-    """The `ButtressLayer` layer."""
+class BazaarLayer(LaunchpadLayer):
+    """The `BazaarLayer` layer."""
 
 class UbuntuLinuxLayer(IDefaultBrowserLayer):
     """The `UbuntuLinuxLayer` layer."""

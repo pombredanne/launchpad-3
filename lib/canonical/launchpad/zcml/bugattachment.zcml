@@ -55,9 +55,11 @@
         <allow interface="canonical.launchpad.interfaces.IBugAttachmentSet" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.BugAttachmentSet"
-        provides="canonical.launchpad.interfaces.IBugAttachmentSet" />
+    <securedutility
+        class="canonical.launchpad.database.BugAttachmentSet"
+        provides="canonical.launchpad.interfaces.IBugAttachmentSet">
+        <allow interface="canonical.launchpad.interfaces.IBugAttachmentSet" />
+    </securedutility>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugAttachmentSet"

@@ -24,7 +24,7 @@
         <browser:page
             name="+index"
             template="../templates/branch-index.pt"
-            lp:url="buttress/branches/$Branch.id/" />
+            lp:url="bazaar/branches/$Branch.id/" />
     </browser:pages>
 
 

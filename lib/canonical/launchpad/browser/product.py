@@ -1,9 +1,6 @@
+# Copyright 2004 Canonical Ltd.  All rights reserved.
 
-
-#
-# Copyright 2004 Canonical Ltd
-#
-#
+__metaclass__ = type
 
 from zope.interface import implements
 from zope.schema import TextLine, Int, Choice
@@ -30,7 +27,6 @@ from zope.app.form import CustomWidgetFactory
 
 import zope.security.interfaces
 
-
 #
 # Traversal functions that help us look up something
 # about a project or product
@@ -46,7 +42,7 @@ def traverseProduct(product, request, name):
 #
 # A View Class for Product
 #
-class ProductView(object):
+class ProductView:
 
     translationsPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-translations.pt')
@@ -139,6 +135,15 @@ class ProductView(object):
         buglist.reverse()
         return buglist
 
+class ProductBugsView:
+    def bugassignment_search(self):
+        return self.context.bugs
+
+    def assignment_columns(self):
+        return [
+            "id", "title", "status", "priority", "severity",
+            "submittedon", "submittedby", "assignedto", "actions"]
+   
 
 class ProductFileBugView(AddView):
 
@@ -183,11 +188,11 @@ class ProductSetView:
         self.soyuz = self.form.get('soyuz', None)
         self.rosetta = self.form.get('rosetta', None)
         self.malone = self.form.get('malone', None)
-        self.buttress = self.form.get('buttress', None)
+        self.bazaar = self.form.get('bazaar', None)
         self.text = self.form.get('text', None)
         self.searchrequested = False
         if (self.text is not None or \
-            self.buttress is not None or \
+            self.bazaar is not None or \
             self.malone is not None or \
             self.rosetta is not None or \
             self.soyuz is not None):
@@ -203,7 +208,7 @@ class ProductSetView:
         """
         if self.results is None:
             self.results = self.context.search(text=self.text,
-                                               buttress=self.buttress,
+                                               bazaar=self.bazaar,
                                                malone=self.malone,
                                                rosetta=self.rosetta,
                                                soyuz=self.soyuz)

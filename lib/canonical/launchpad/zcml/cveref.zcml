@@ -64,12 +64,15 @@
 
     <content class="canonical.launchpad.database.CVERefSet">
         <allow interface="canonical.launchpad.interfaces.ICVERefSet" />
-        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+        <allow
+          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.CVERefSet"
-        provides="canonical.launchpad.interfaces.ICVERefSet" />
+    <securedutility
+        class="canonical.launchpad.database.CVERefSet"
+        provides="canonical.launchpad.interfaces.ICVERefSet">
+        <allow interface="canonical.launchpad.interfaces.ICVERefSet" />
+    </securedutility>
 
     <browser:traverse
         for="canonical.launchpad.interfaces.ICVERefSet"

@@ -36,17 +36,25 @@
         label="Edit Infested Product Release"
         permission="launchpad.AnyPerson"
         template="../templates/default-editform.pt"
-        lp:url="malone/bugs/$Bug.id/productinfestations/$BugProductInfestation.id/+edit" />
+        lp:url="malone/bugs/$Bug.id/productinfestations/$BugProductInfestation.id/+edit"
+        />
 
     <!-- BugProductInfestationSet -->
     <content class="canonical.launchpad.database.BugProductInfestationSet">
-        <allow interface="canonical.launchpad.interfaces.IBugProductInfestationSet" />
-        <allow interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
+        <allow
+          interface="canonical.launchpad.interfaces.IBugProductInfestationSet"
+          />
+        <allow
+          interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.BugProductInfestationSet"
-        provides="canonical.launchpad.interfaces.IBugProductInfestationSet" />
+    <securedutility
+        class="canonical.launchpad.database.BugProductInfestationSet"
+        provides="canonical.launchpad.interfaces.IBugProductInfestationSet" >
+        <allow
+          interface="canonical.launchpad.interfaces.IBugProductInfestationSet"
+          />
+    </securedutility>
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IBugProductInfestationSet"

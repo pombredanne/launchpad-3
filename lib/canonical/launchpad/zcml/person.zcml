@@ -87,9 +87,12 @@
     <allow interface="canonical.launchpad.interfaces.ITeamParticipationSet"/>
   </content>
 
-  <utility
-    factory="canonical.launchpad.database.TeamParticipationSet"
-    provides="canonical.launchpad.interfaces.ITeamParticipationSet" />
+  <securedutility
+      class="canonical.launchpad.database.TeamParticipationSet"
+      provides="canonical.launchpad.interfaces.ITeamParticipationSet">
+      <allow
+        interface="canonical.launchpad.interfaces.ITeamParticipationSet" />
+  </securedutility>
 
 
 </configure>

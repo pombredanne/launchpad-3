@@ -26,6 +26,7 @@ from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.interfaces import IDistroTools
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
+from canonical.launchpad.database import Distribution
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackage import SourcePackageInDistro
 from canonical.launchpad.database.binarypackage import BinaryPackage
@@ -116,15 +117,16 @@ class DistroTools(object):
 
     implements(IDistroTools)
 
-    def createDistro(self, owner, title, description, domain):
+    def createDistro(self, owner, name, displayname,
+                     title, summary, description, domain):
         """Create a Distribution """
         ##XXX: cprov 20041207
         ## Verify the name constraint as the postgresql does.
-        ## What about domain ???        
-        name = title.lower()
-        
+        ## What about domain ??? 
         distro = Distribution(name=name,
+                              displayname=displayname,
                               title=title,
+                              summary=summary,
                               description=description,
                               domainname=domain,
                               owner=owner)

@@ -10,6 +10,7 @@ class IDistroRelease(Interface):
     id = Attribute("The distrorelease's unique number.")
     distribution = Attribute("The release's reference.")
     name= Attribute("The release's name.")
+    displayname= Attribute("The release's displayname.")
     title = Attribute("The release's title.")
     description = Attribute("The release's description.")
     version = Attribute("The release's version")
@@ -29,3 +30,5 @@ class IDistroRelease(Interface):
     bugCounter = Attribute("The distro bug counter")
     role_users = Attribute("Roles inside this Releases")
 
+    def getBugSourceRelease():
+        """ xxx """

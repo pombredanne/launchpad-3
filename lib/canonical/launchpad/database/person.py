@@ -34,7 +34,7 @@ class Person(SQLBase):
     implements(IPerson)
 
     _columns = [
-        StringCol('name'),
+        StringCol('name', alternateID=True),
         StringCol('displayname', default=None),
         StringCol('givenname', default=None),
         StringCol('familyname', default=None),
@@ -60,13 +60,13 @@ class Person(SQLBase):
     def browsername(self):
         """Returns a name suitable for display on a web page."""
         if self.displayname: return self.displayname
-        browsername = ''
         if self.familyname:
-            browsername.append(string.upper(self.familyname))
-            if self.givenname: browsername.append(' '+self.givenname)
+            browsername.append(self.familyname.upper())
+        if self.givenname:
+            browsername.append(self.givenname)
         if not browsername:
             browsername = 'UNKNOWN USER #'+str(self.id)
-        return browsername
+        return ' '.join(browsername)
 
     # XXX: not implemented
     def maintainedProjects(self):
@@ -121,6 +121,16 @@ class Person(SQLBase):
         # XXX: I think we should recalculate the karma here.
         self.karma += points
 
+    def inTeam(self, team_name):
+        team = Person.byName(team_name)
+        if not team.teamowner:
+            raise ValueError, '%s not a team!' % team_name
+
+        tp = TeamParticipation.selectBy(teamID=team.id, personID=self.id)
+        if len(tp) > 0:
+            return True
+        else:
+            return False
 
 class PersonSet(object):
     """The set of persons."""
@@ -207,6 +217,7 @@ def createTeam(displayname, teamowner, teamdescription,
     if Person.selectBy(name=nick).count() > 0:
         return
     
+    # XXX: I think Teams don't need or want passwords
     password = getUtility(IPasswordEncryptor).encrypt(password)
 
     role = dbschema.MembershipRole.ADMIN.value

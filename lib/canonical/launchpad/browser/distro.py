@@ -78,12 +78,14 @@ class DistrosAddView(object):
         self.request = request
 
     def add_action(self):
+        name = self.request.get("name", "")
+        displayname = self.request.get("displayname", "")
         title = self.request.get("title", "")
+        summary = self.request.get("summary", "")
         description = self.request.get("description", "")
         domain = self.request.get("domain", "")
         person = IPerson(self.request.principal, None)
 
-        dt = getUtility(IDistroTools)
         
         if not person:
             return False
@@ -91,7 +93,9 @@ class DistrosAddView(object):
         if not title:
             return False
 
-        res = dt.createDistro(person.id, title, description, domain)
+        dt = getUtility(IDistroTools)
+        res = dt.createDistro(person.id, name, displayname,
+            title, summary, description, domain)
         self.results = res
         return res
 

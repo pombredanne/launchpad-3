@@ -17,8 +17,6 @@
 
 <div metal:fill-slot="main">
 
-    <tal:dummy condition="view/newpotemplate" />
-
     <h1>Register a New POTemplate for: <span
     tal:content="context/displayname">$Product.displayname</span></h1>
 

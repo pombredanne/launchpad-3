@@ -115,7 +115,8 @@ class IDistroArchRelease(Interface):
 class IDistroTools(Interface):
     """Interfaces to Tools for Distribution and DistroRelase Manipulation"""
 
-    def createDistro(owner, title, description, domain):
+    def createDistro(owner, name, displayname, title,
+        summary, description, domain):
         """ Create a Distribution """
 
     def createDistroRelease(owner, title, distribution, shortdesc, description,

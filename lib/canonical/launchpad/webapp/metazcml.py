@@ -12,22 +12,23 @@ from zope.component import queryView, queryMultiView, getDefaultViewName, \
 from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine
 from zope.configuration.fields import GlobalObject, PythonIdentifier, Path
-from zope.security.checker import CheckerPublic
+from zope.security.checker import CheckerPublic, Checker
+from zope.security.proxy import ProxyFactory
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
 from zope.app import zapi
-from zope.app.component.metaconfigure import handler, adapter
+from zope.app.component.metaconfigure import handler, adapter, utility, view
+from zope.app.component.metaconfigure import PublicPermission
+from zope.app.component.contentdirective import ContentDirective
 from zope.app.component.interface import provideInterface
 from zope.app.security.fields import Permission
 from zope.app.component.fields import LayerField
-from zope.app.component.metaconfigure import view, PublicPermission
-from zope.app.publisher.browser.viewmeta import page
 from zope.app.file.image import Image
+from zope.app.publisher.browser.viewmeta import page
 import zope.app.publisher.browser.metadirectives
 
 from canonical.launchpad.layers import setAdditionalLayer
 from canonical.launchpad.interfaces import IAuthorization, IOpenLaunchBag
-from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 
 try:
     from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -35,6 +36,65 @@ except ImportError:
     # This code can go once we've upgraded Zope.
     from zope.publisher.interfaces.browser import IBrowserRequest
     IDefaultBrowserLayer = IBrowserRequest
+
+
+class ISecuredUtilityDirective(Interface):
+    """Configure a utility with security directives."""
+
+    class_ = GlobalObject(title=u'class', required=True)
+
+    provides = GlobalObject(
+        title=u'interface this utility provides',
+        required=True)
+
+
+class PermissionCollectingContext:
+
+    def __init__(self):
+        self.get_permissions = {}
+        self.set_permissions = {}
+
+    def action(self, discriminator=None, callable=None, args=None):
+        if isinstance(discriminator, tuple):
+            if discriminator:
+                discriminator_name = discriminator[0]
+                cls, name, permission = args
+                if discriminator_name == 'protectName':
+                    self.get_permissions[name] = permission
+                elif discriminator_name == 'protectSetAttribute':
+                    self.set_permissions[name] = permission
+                else:
+                    raise RuntimeError("unrecognised discriminator name", name)
+
+class SecuredUtilityDirective:
+
+    def __init__(self, _context, class_, provides):
+        self.component = class_()
+        self._context = _context
+        self.provides = provides
+        self.permission_collector = PermissionCollectingContext()
+        self.contentdirective = ContentDirective(
+            self.permission_collector, class_)
+
+    def require(self, _context, **kw):
+        self.contentdirective.require(_context, **kw)
+
+    def allow(self, _context, **kw):
+        self.contentdirective.allow(_context, **kw)
+
+    def __call__(self):
+        # Set up the utility with an appropriate proxy.
+        # Note that this does not take into account other security
+        # directives on this content made later on during the execution
+        # of the zcml.
+        checker = Checker(
+            self.permission_collector.get_permissions,
+            self.permission_collector.set_permissions
+            )
+        component = ProxyFactory(self.component, checker=checker)
+        utility(self._context, self.provides, component=component)
+        return ()
+
 
 class ISubURLDispatch(Interface):
 

@@ -134,13 +134,13 @@ class ProjectSet:
 
     def search(self, text=None, soyuz=None,
                      rosetta=None, malone=None,
-                     buttress=None,
+                     bazaar=None,
                      search_products=True,
                      show_inactive=False):
         """Search through the DOAP database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,
-        bounties, buttress, malone etc are hints as to whether the search
+        bounties, bazaar, malone etc are hints as to whether the search
         should be limited to projects that are active in those Launchpad
         applications."""
         clauseTables = Set()
@@ -155,7 +155,7 @@ class ProjectSet:
         if malone:
             clauseTables.add('Product')
             clauseTables.add('ProductBugAssignment')
-        if buttress:
+        if bazaar:
             clauseTables.add('Product')
             clauseTables.add('SourceSource')
         if search_products and text:

@@ -768,7 +768,7 @@ class RevisionImport(DatabaseAndArchiveTestCase):
         self.arch_set_user_id()
         # arch_name = db_rev.archive.name
         # arch_vsn = arch.Version(db_rev.version.fullname)
-        # FIXME: the former _should_ work but buttress is too borken
+        # FIXME: the former _should_ work but bazaar is too borken
         arch_name = arch.Revision(db_rev.fullname).archive.name
         arch_vsn = arch.Revision(db_rev.fullname).version
         # end of hack
@@ -812,7 +812,7 @@ class RevisionImport(DatabaseAndArchiveTestCase):
 def test_suite():
     import sys
     result = unittest.TestLoader().loadTestsFromModule(sys.modules[__name__])
-    print 'TODO: lifeless & steveA to talk about enabling the arch ftests'
+    # TODO: lifeless & steveA to talk about enabling the arch ftests'
     return unittest.TestSuite()
 
 def main(argv):

@@ -51,6 +51,8 @@ class IPerson(Interface):
     def removeLanguage(language):
         """Removed the language from the list of know languages."""
 
+    def inTeam(team_name):
+        """Return true if this person is in the named team."""
 
 class IPersonSet(Interface):
     """The set of Persons."""

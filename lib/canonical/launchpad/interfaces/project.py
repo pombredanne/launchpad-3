@@ -110,12 +110,12 @@ class IProjectSet(Interface):
 
     def search(text=None, soyuz=None,
                      rosetta=None, malone=None,
-                     buttress=None,
+                     bazaar=None,
                      search_products=True):
         """Search through the DOAP database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,
-        buttress, malone etc are hints as to whether the search should
+        bazaar, malone etc are hints as to whether the search should
         be limited to projects that are active in those Launchpad
         applications."""
 

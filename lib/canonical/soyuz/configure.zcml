@@ -23,6 +23,13 @@
         name="distros"
         />
 
+    <browser:suburl
+        for="canonical.soyuz.SoyuzApplication"
+        class="canonical.launchpad.database.DistributionSet"
+        permission="zope.Public"
+        name="realdistros"
+        />
+
     <browser:defaultView
         for="canonical.soyuz.SoyuzApplication"
         name="+index" />
@@ -32,6 +39,10 @@
         <browser:page name="+index"
             template="../launchpad/templates/soyuz-index.pt"
             lp:url="Soyuz/index.html"
+            />
+        <browser:page name="+about"
+            template="../launchpad/templates/soyuz-about.pt"
+            lp:url="Soyuz/+about"
             />
     </browser:pages>
 

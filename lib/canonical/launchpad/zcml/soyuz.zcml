@@ -9,7 +9,9 @@
         <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
         <require
             permission="zope.Public"
-            set_attributes="distribution name title shortdesc description version components sections releasestate datereleased owner"
+            set_attributes="
+              distribution name title shortdesc description version components
+              sections releasestate datereleased owner"
             />
     </content>
 
@@ -37,8 +39,10 @@
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.DistroTools"
-        provides="canonical.launchpad.interfaces.IDistroTools" />
+    <securedutility
+        class="canonical.launchpad.database.DistroTools"
+        provides="canonical.launchpad.interfaces.IDistroTools">
+        <allow interface="canonical.launchpad.interfaces.IDistroTools" />
+    </securedutility>
 
 </configure>

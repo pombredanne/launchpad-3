@@ -18,5 +18,9 @@ from canonical.launchpad.browser.packages import *
 from canonical.launchpad.browser.bounty import *
 from canonical.launchpad.browser.sourcesource import *
 from canonical.launchpad.browser.distro import *
+from canonical.launchpad.browser.sourcepackage import *
+from canonical.launchpad.browser.distribution import *
+
 
 from canonical.launchpad.browser.widgets import *
+

@@ -100,6 +100,8 @@ class POTemplate(SQLBase):
     rawimportstatus = IntCol(dbName='rawimportstatus', notNull=True,
         default=RosettaImportStatus.IGNORE.value)
 
+    poFiles = MultipleJoin('POFile', joinColumn='potemplate')
+
 
     def currentMessageSets(self):
         return POTMsgSet.select(
@@ -167,9 +169,12 @@ class POTemplate(SQLBase):
         slice:
             The range of results to be selected, or None, for all results.
         '''
-
-        for l in languages:
-            assert(isinstance(l, Language))
+        # XXX: Carlos Perello Marin 11/12/2004 Commented the code because it's
+        # not working and it's not needed.
+        #if __DEBUG__:
+        #    for l in languages:
+        #        assert l.__class__ == Language
+        #        assert ILanguage.providedBy(l)
 
         if current is not None:
             if current:
@@ -250,17 +255,12 @@ class POTemplate(SQLBase):
             POFile.potemplate = %d
             ''' % self.id, clauseTables=('POFile', 'Language')))
 
-    _poFilesJoin = MultipleJoin('POFile', joinColumn='potemplate')
-
-    def poFiles(self):
-        return iter(self._poFilesJoin)
-
     def poFilesToImport(self):
         for pofile in iter(self._poFilesJoin):
             if pofile.rawimportstatus == RosettaImportStatus.PENDING:
                 yield pofile
 
-    def poFile(self, language_code, variant=None):
+    def getPOFileByLang(self, language_code, variant=None):
         if variant is None:
             variantspec = 'IS NULL'
         elif isinstance(variant, unicode):
@@ -279,9 +279,16 @@ class POTemplate(SQLBase):
             clauseTables=('Language',))
 
         if ret.count() == 0:
-            raise KeyError, language_code
+            raise KeyError, 'PO File for %s does not exist' % language_code
         else:
             return ret[0]
+
+    def queryPOFileByLang(self, language_code, variant=None):
+        try:
+            pofile = self.getPOFileByLang(language_code, variant)
+            return pofile
+        except KeyError:
+            return None
 
     # XXX: Carlos Perello Marin: currentCount, updatesCount and rosettaCount
     # should be updated with a way that let's us query the database instead
@@ -292,19 +299,19 @@ class POTemplate(SQLBase):
 
     def currentCount(self, language):
         try:
-            return self.poFile(language).currentCount()
+            return self.getPOFileByLang(language).currentCount()
         except KeyError:
             return 0
 
     def updatesCount(self, language):
         try:
-            return self.poFile(language).updatesCount()
+            return self.getPOFileByLang(language).updatesCount()
         except KeyError:
             return 0
 
     def rosettaCount(self, language):
         try:
-            return self.poFile(language).rosettaCount()
+            return self.getPOFileByLang(language).rosettaCount()
         except KeyError:
             return 0
 
@@ -330,16 +337,13 @@ class POTemplate(SQLBase):
                                ' WHERE potemplate = %d'
                                % self.id)
 
-    def newPOFile(self, person, language_code, variant=None):
-        try:
-            self.poFile(language_code, variant)
-        except KeyError:
-            pass
-        else:
-            raise KeyError(
-                "This template already has a POFile for %s variant %s" %
-                (language.englishname, variant))
+    def getOrCreatePOFile(self, language_code, variant=None, owner=None):
+        # see if one exists already
+        existingpo = self.queryPOFileByLang(language_code, variant)
+        if existingpo is not None:
+            return existingpo
 
+        # since we don't have one, create one
         try:
             language = Language.byCode(language_code)
         except SQLObjectNotFound:
@@ -355,23 +359,18 @@ class POTemplate(SQLBase):
             # XXX: This is not working and I'm not able to fix it easily
             #'templatedate': self.datecreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
             'templatedate': self.datecreated,
-            'copyright': self.copyright,
+            'copyright': '(c) %d Canonical Ltd, and Rosetta Contributors' % now.year,
             'nplurals': language.pluralforms or 1,
             'pluralexpr': language.pluralexpression or '0',
             }
 
         return POFile(potemplate=self,
                       language=language,
-                      title='%(languagename)s translation for %(productname)s' % data,
+                      title='Rosetta %(languagename)s translation of %(productname)s' % data,
                       topcomment=standardPOFileTopComment % data,
                       header=standardPOFileHeader % data,
                       fuzzyheader=True,
-                      lasttranslator=person,
-                      currentcount=0,
-                      updatescount=0,
-                      rosettacount=0,
-                      lastparsed=UTC_NOW,
-                      owner=person,
+                      owner=owner,
                       pluralforms=data['nplurals'],
                       variant=variant)
 
@@ -543,7 +542,7 @@ class POTMsgSet(SQLBase):
         languages = getUtility(ILanguageSet)
 
         try:
-            pofile = self.potemplate.poFile(language)
+            pofile = self.potemplate.getPOFileByLang(language)
             pluralforms = pofile.pluralforms
         except KeyError:
             pofile = None
@@ -663,36 +662,70 @@ class POFile(SQLBase):
 
     _table = 'POFile'
 
-    potemplate = ForeignKey(foreignKey='POTemplate', dbName='potemplate',
-        notNull=True)
-    language = ForeignKey(foreignKey='Language', dbName='language',
-        notNull=True)
-    title = StringCol(dbName='title', notNull=False, default=None)
-    description = StringCol(dbName='description', notNull=False, default=None)
-    topcomment = StringCol(dbName='topcomment', notNull=False, default=None)
-    header = StringCol(dbName='header', notNull=False, default=None)
-    fuzzyheader = BoolCol(dbName='fuzzyheader', notNull=True)
-    lasttranslator = ForeignKey(foreignKey='Person', dbName='lasttranslator',
-        notNull=False, default=None)
-#   license = ForeignKey(foreignKey='License', dbName='license',
-#       notNull=False, default=None)
-    license = IntCol(dbName='license', notNull=False, default=None)
-    currentcount = IntCol(dbName='currentcount', notNull=True)
-    updatescount = IntCol(dbName='updatescount', notNull=True)
-    rosettacount = IntCol(dbName='rosettacount', notNull=True)
-    lastparsed = DateTimeCol(dbName='lastparsed', notNull=False, default=None)
-    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False,
-        default=None)
-    pluralforms = IntCol(dbName='pluralforms', notNull=True)
-    variant = StringCol(dbName='variant', notNull=False, default=None)
-    filename = StringCol(dbName='filename', notNull=False, default=None)
-    rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
-    rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
-        notNull=False, default=None)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
-        default=None)
-    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False,
-        default=RosettaImportStatus.IGNORE.value)
+    potemplate = ForeignKey(foreignKey='POTemplate',
+                            dbName='potemplate',
+                            notNull=True)
+    language = ForeignKey(foreignKey='Language',
+                          dbName='language',
+                          notNull=True)
+    title = StringCol(dbName='title',
+                      notNull=False,
+                      default=None)
+    description = StringCol(dbName='description',
+                            notNull=False,
+                            default=None)
+    topcomment = StringCol(dbName='topcomment',
+                           notNull=False,
+                           default=None)
+    header = StringCol(dbName='header',
+                       notNull=False,
+                       default=None)
+    fuzzyheader = BoolCol(dbName='fuzzyheader',
+                          notNull=True)
+    lasttranslator = ForeignKey(foreignKey='Person',
+                                dbName='lasttranslator',
+                                notNull=False,
+                                default=None)
+    license = IntCol(dbName='license',
+                     notNull=False,
+                     default=None)
+    currentcount = IntCol(dbName='currentcount',
+                          notNull=True,
+                          default=0)
+    updatescount = IntCol(dbName='updatescount',
+                          notNull=True,
+                          default=0)
+    rosettacount = IntCol(dbName='rosettacount',
+                          notNull=True,
+                          default=0)
+    lastparsed = DateTimeCol(dbName='lastparsed',
+                             notNull=False,
+                             default=None)
+    owner = ForeignKey(foreignKey='Person',
+                       dbName='owner',
+                       notNull=False,
+                       default=None)
+    pluralforms = IntCol(dbName='pluralforms',
+                         notNull=True)
+    variant = StringCol(dbName='variant',
+                        notNull=False,
+                        default=None)
+    filename = StringCol(dbName='filename',
+                         notNull=False,
+                         default=None)
+    rawfile = StringCol(dbName='rawfile',
+                        notNull=False,
+                        default=None)
+    rawimporter = ForeignKey(foreignKey='Person',
+                             dbName='rawimporter',
+                             notNull=False,
+                             default=None)
+    daterawimport = DateTimeCol(dbName='daterawimport',
+                                notNull=False,
+                                default=None)
+    rawimportstatus = IntCol(dbName='rawimportstatus',
+                             notNull=False,
+                             default=RosettaImportStatus.IGNORE.value)
 
 
     def currentMessageSets(self):
@@ -708,7 +741,8 @@ class POFile(SQLBase):
     # as pot's len + the obsolete msgsets from this .po file.
     def __len__(self):
         '''Count of __iter__.'''
-        return self.currentMessageSets().count()
+#        return self.currentMessageSets().count()
+        return self.currentcount + self.rosettacount
 
     # XXX: Carlos Perello Marin XX/XX/04: This is implemented using the cache,
     # we should add an option to get the real count.
@@ -1065,8 +1099,10 @@ class POMsgSet(SQLBase):
         # We set the fuzzy flag as needed:
         if fuzzy and self.fuzzy == False:
             self.fuzzy = True
+            has_changes = True
         elif not fuzzy and self.fuzzy == True:
             self.fuzzy = False
+            has_changes = True
         
         if not has_changes:
             # We don't change the statistics if we didn't had any change.
@@ -1097,6 +1133,14 @@ class POMsgSet(SQLBase):
                 else:
                     # It was lost inside Rosetta
                     self.pofile.rosettacount -= 1
+
+        # XXX: Carlos Perello Marin 10/12/2004 Sanity test, the statistics
+        # code is not as good as it should, we can get negative numbers, in
+        # case we reach that status, we just change that field to 0.
+        if self.pofile.currentcount < 0:
+            self.pofile.currentcount = 0
+        if self.pofile.rosettacount < 0:
+            self.pofile.rosettacount = 0
                 
                 
     def makeTranslationSighting(self, person, text, pluralForm,

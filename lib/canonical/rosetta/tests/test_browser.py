@@ -114,7 +114,7 @@ class DummyPOTMsgSet:
 
 
 class DummyPOTemplate:
-    def poFile(self, language_code):
+    def getPOFileByLang(self, language_code):
         self.language_code = language_code
 
         if language_code in ('ja', 'es'):
@@ -161,7 +161,7 @@ class DummyRequestLanguages:
 
 
 def test_count_lines():
-    '''
+    r'''
     >>> from canonical.rosetta.browser import count_lines
     >>> count_lines("foo")
     1
@@ -169,18 +169,20 @@ def test_count_lines():
     2
     >>> count_lines("123456789a123456789a123456789a1234566789a123456789")
     1
-    >>> count_lines("a\\nb")
+    >>> count_lines("a\nb")
     2
-    >>> count_lines("a\\nb\\n")
+    >>> count_lines("a\nb\n")
+    3
+    >>> count_lines("a\nb\nc")
+    3
+    >>> count_lines("123456789a123456789a123456789a\n1234566789a123456789a")
     2
-    >>> count_lines("a\\nb\\nc")
+    >>> count_lines("123456789a123456789a123456789a123456789a123456789a1\n1234566789a123456789a123456789a")
     3
-    >>> count_lines("123456789a123456789a123456789a\\n1234566789a123456789a")
+    >>> count_lines("123456789a123456789a123456789a123456789a123456789a123456789a\n1234566789a123456789a123456789a")
+    3
+    >>> count_lines("foo bar\n")
     2
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a1\\n1234566789a123456789a123456789a")
-    3
-    >>> count_lines("123456789a123456789a123456789a123456789a123456789a123456789a\\n1234566789a123456789a123456789a")
-    3
     '''
 
 def test_canonicalise_code():
@@ -271,6 +273,23 @@ def test_parse_cformat_string():
     Traceback (most recent call last):
     ...
     ValueError: %
+    '''
+
+def test_escape_unescape_msgid():
+    r'''
+    >>> from canonical.rosetta.browser import escape_msgid, unescape_msgid
+    >>> escape_msgid('foo')
+    'foo'
+    >>> escape_msgid('foo\\bar')
+    'foo\\\\bar'
+    >>> escape_msgid('foo\nbar')
+    'foo\\nbar'
+    >>> unescape_msgid('foo')
+    'foo'
+    >>> unescape_msgid('foo\\\\bar')
+    'foo\\bar'
+    >>> unescape_msgid('foo\\nbar')
+    'foo\nbar'
     '''
 
 def test_RosettaProjectView():

@@ -30,9 +30,11 @@
         <allow interface="canonical.launchpad.interfaces.IBugTrackerSet" />
     </content>
 
-    <utility
-        factory="canonical.launchpad.database.BugTrackerSet"
-        provides="canonical.launchpad.interfaces.IBugTrackerSet" />
+    <securedutility
+        class="canonical.launchpad.database.BugTrackerSet"
+        provides="canonical.launchpad.interfaces.IBugTrackerSet">
+        <allow interface="canonical.launchpad.interfaces.IBugTrackerSet"/>
+    </securedutility>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTrackerSet"
