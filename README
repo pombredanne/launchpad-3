@@ -1,0 +1,5 @@
+SFTP server for the supermirror.
+
+It only allows SFTP (no shells), and authenticates users against keys stored in
+the launchpad database (these are retrieved via the authserver).
+
