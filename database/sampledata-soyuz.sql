@@ -30,14 +30,30 @@ INSERT INTO Person ( displayname, givenname, familyname ) VALUES
 
 -- Insert some Teams in Person following FOAF approach
 
-INSERT INTO Person (teamowner, teamdescription) VALUES
+INSERT INTO Person (teamowner, displayname, teamdescription) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	'Ubuntu Security Team');
+	'Ubuntu Security Team',
+	'This Team Is responsible for the Security Issues on whole Ubuntu Distribution');
 
-INSERT INTO Person (teamowner, teamdescription) VALUES
+INSERT INTO Person (teamowner, displayname, teamdescription) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	'Ubuntu Gnome Team');
+	'Ubuntu Gnome Team',
+ 	'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution');
 
+INSERT INTO Person (teamowner, displayname, teamdescription) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'Warty Gnome Team',
+  	'This Team is responsible for GNOME release Issues on Warty Distribution Release');
+
+INSERT INTO Person (teamowner, displayname, teamdescription) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'Warty Security Team',
+ 	'This Team is responsible for Security Issues on Warty Distribution Release');
+
+INSERT INTO Person (teamowner, displayname, teamdescription) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
+	'Hoary Gnome Team',
+	'This team is responsible for Security Issues on Hoary Distribution Release');
 
 -- EmailAdress
 
@@ -295,86 +311,101 @@ INSERT INTO IrcID (person, network, nickname) VALUES
 -- Membership
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	1, -- ADMIN (2 = MEMBER)
 	2); -- CURRENT (1 = PROPOSED)	
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	2, -- MEMBER
 	2); -- CURRENT
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	2, -- MEMBER
 	1); -- PROPOSED
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	2, -- MEMBER
 	1); -- PROPOSED
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	2, -- MEMBER
 	1); -- PROPOSED
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
 	2, -- MEMBER
 	1); -- PROPOSED
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
 	1, -- ADMIN
 	2); -- CURRENT	
 
 INSERT INTO Membership(person, team, role, status) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
 	2, -- MEMBER
 	2); -- CURRENT	
 	
 
 -- TeamParticipation	
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Steve Alexander')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Alexander Limi')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Colin Watson')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Andrew Bennetts')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Security Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Dave Miller')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')
 	);
 INSERT INTO TeamParticipation (team, person) VALUES
-	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
-	(SELECT id FROM Person WHERE teamdescription = 'Ubuntu Gnome Team')
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Jeff Waugh')
 	);
+
+-- Nested Teams
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id FROM Person WHERE displayname = 'Warty Security Team')
+	);
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Warty Gnome Team')
+	);
+INSERT INTO TeamParticipation (team, person) VALUES
+	((SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
+	(SELECT id FROM Person WHERE displayname = 'Hoary Gnome Team')
+	);
+
 
 -- Component
 INSERT INTO Component (name) VALUES ('default_component');
@@ -427,52 +458,78 @@ INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc,
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'),
-	'Ubuntu Mozilla Firefox', 
-         'text');
+	'Mozilla Firefox Web Browser', 
+        'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+	K-Meleon and Camino, but written using the XUL user interface language and 
+	designed to lightweight and cross-platform.');
 
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
         (SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'),
-	'Ubuntu Mozilla Thunderbird', 
-         'text');
+	'Mozilla Thunderbird Mail Reader', 
+         'Mozilla Thunderbird is a redesign of the Mozilla mail component. 
+	The goal is to produce a cross platform stand alone mail application 
+	using the XUL user interface language. Mozilla Thunderbird leaves a 
+	somewhat smaller memory footprint than the Mozilla suite.');
 
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
         (SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'),
 	'Python Twisted', 
-         'text');
+         'It includes a web server, a telnet server, a multiplayer RPG engine, 
+	a generic client and server for remote object access, and APIs for 
+	creating new protocols.');
+
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
         (SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'),
 	'Bugzilla', 
-         'text');
+        'Bugzilla is a "Defect Tracking System" or "Bug-Tracking System". 
+	Defect Tracking Systems allow individual or groups of developers 
+	to keep track of outstanding bugs in their product effectively.');
+
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
         (SELECT id FROM Sourcepackagename WHERE name = 'arch'),
 	'Arch(TLA)', 
-         'text');
+        'arch is a revision control system with features that are ideal for 
+	projects characterised by widely distributed development, concurrent 
+	support of multiple releases, and substantial amounts of development
+	on branches. It can be a replacement for CVS and corrects many 
+	mis-features of that system.');
+
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
         (SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'),
 	'Kiwi2', 
-         'text');
+         ' Kiwi2 consists of a set of classes and wrappers for PyGTK-2 that were 
+	developed to provide a sort of framework for applications. Fully object-oriented, 
+	and roughly modeled after Smalltalk\'s MVC, Kiwi provides a simple, practical 
+	way to build forms, windows and widgets that transparently access and display
+	your object data. Kiwi was primarily designed to make implementing the UI for
+	 Stoq easier, and it is released under the LGPL');
+
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
         (SELECT id FROM Sourcepackagename WHERE name = 'plone'),
 	'Plone', 
-         'text');
+        'Plone is powerful and flexible. It is ideal as an intranet and extranet 
+	server, as a document publishing system, a portal server and as a groupware
+	 tool for collaboration between separately located entities.');
+
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
         (SELECT id FROM Sourcepackagename WHERE name = 'evolution'),
 	'Evolution', 
-        'text');
+        'Evolution is the integrated mail, calendar, task and address book 
+	distributed suite from Ximian, Inc.');
 
 
 --SourcepackageRelease
@@ -587,6 +644,242 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         '0.9.1-7',
         timestamp '2004-07-05 00:00',
         1);
+
+UPDATE sourcepackagerelease set builddepends = 
+	'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))
+	;
+
+UPDATE sourcepackagerelease set builddepends = 
+	'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'))
+	;
+
+UPDATE sourcepackagerelease set builddepends = 
+	'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'))
+	;
+
+UPDATE sourcepackagerelease set builddepends = 
+	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))
+	;
+
+UPDATE sourcepackagerelease set builddepends = 
+	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))
+	;
+
+UPDATE sourcepackagerelease set builddepends = 
+	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))
+	;
+
+UPDATE sourcepackagerelease set builddepends = 
+	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'plone'))
+	;
+
+UPDATE sourcepackagerelease set builddepends = 
+	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'evolution'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'plone'))
+	;
+
+UPDATE sourcepackagerelease set builddependsindep = 
+	'kiwi (>= 2.0),python-twisted , bugzilla, plone'
+	where sourcepackage = 
+	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
+	(SELECT id FROM Sourcepackagename WHERE name = 'evolution'))
+	;
+
+UPDATE sourcepackagerelease set changelog = 
+'
+mozilla-thunderbird (0.5-4) unstable; urgency=low
+
+  * reenabled hppa patch, which apparently led to FTBFS on hppa
+
+ -- Alexander Sack <asac@jwsdot.com>  Thu, 04 Mar 2004 21:30:20 +0100
+
+mozilla-thunderbird (0.5-3) unstable; urgency=medium
+
+  * preinst added to allow clean upgrade path to this
+      (Closes: 234118, Closes: 234267)
+  * added prerm script to allow a clean remove of package
+
+ -- Alexander Sack <asac@jwsdot.com>  Sun, 29 Feb 2004 10:30:20 +0100
+
+mozilla-thunderbird (0.5-2) unstable; urgency=low
+
+  * new source package layout!! Now using orig.tar.gz with diff.gz
+    (Closes: 232055)
+  * moved arch-indep chrome stuff to /usr/share/mozilla-thunderbird/chrome
+  * moved images to /usr/share/mozilla-thunderbird/res
+      /usr/share/mozilla-thunderbird/icons
+      /usr/share/mozilla-thunderbird/chrome/icons
+
+ -- Alexander Sack <asac@jwsdot.com>  Thu, 19 Feb 2004 19:30:20 +0100
+
+mozilla-thunderbird (0.5-1.1) unstable; urgency=low
+
+  * new source package layout!! Now using orig.tar.gz with diff.gz
+
+ -- Alexander Sack <asac@jwsdot.com>  Mon, 11 Feb 2003 19:30:20 +0100
+
+mozilla-thunderbird (0.5-1) unstable; urgency=low
+
+ Aggregated changes since 0.4-1:
+  * new upstream release 0.5 included
+  * added xprt-xprintorg to Recommends (Closes: 226626)
+  * upgraded enigmail to 0.83.2 (Closes: 228678)
+      + includes a workaround for mozilla bug
+          leading to a crash in rare situations
+          (fixed in 0.82.6)
+  * improved package structure. Sources now are included as original archives
+        & are extracted to build-dir. (Closes: 225033)
+  * Minor wording changes in package description, pointed out by
+      Mark Stevenson.
+  * New debianization of appearance (branding)
+  * added switches for pref.js config entries for
+        individual doubleclick timeout & drag threshold
+        settings in gtk2 (Closes: 229146)
+
+ -- Alexander Sack <asac@jwsdot.com>  Mon, 09 Feb 2003 19:30:20 +0100
+' 
+WHERE  sourcepackage = (SELECT id from sourcepackage where sourcepackagename = 
+	(select id from sourcepackagename where name = 'mozilla-thunderbird')
+	);
+
+
+UPDATE sourcepackagerelease set changelog = 
+'
+mozilla-firefox (0.8-12) unstable; urgency=low
+
+  * The "Last Chance Before 0.9" release.
+  * debian/mozilla-firefox-runner: Fix unescaped \n, thanks Olly
+    Betts. (Closes: #252436)
+  * debian/update-mozilla-firefox-chrome: Watch out for empty
+    LD_LIBRARY_PATH. Thanks George Cristian Birzan. (Closes: #254142)
+  * debian/README.Debian: Restructure and update a bit.
+  * debian/presubj: Add bug information from README.Debian for reportbug.
+  * debian/mozilla-firefox.install: Install the presubj.
+
+ -- Eric Dorland <eric@debian.org>  Mon, 14 Jun 2004 19:39:27 -0400
+
+mozilla-firefox (0.8-11) unstable; urgency=low
+
+  * Apply amd64 fix from #249211.
+  * debian/README.Debian: Shamelessly stole the java plugin installation
+    instructions from the mozilla package. (Closes: #243513)
+  * nsCommonWidget.cpp, nsCommonWidget.h, nsWindow.cpp: Apply patch (with
+    some hand massaging) from upstream bugzilla bug #209342 to fix initial
+    window placement. (Closes: #235209, 241519)
+  * nsprpub/pr/src/misc/prnetdb.c: Apply patch from Miquel van Smoorenburg
+    to prevent unless reverse DNS lookups. (Closes: #251978)
+  * debian/mozilla-firefox-runner: Apply patch from Jasper Spaans to fix
+    remote xprint printing. (Closes: #252072)
+
+ -- Eric Dorland <eric@debian.org>  Tue,  1 Jun 2004 23:12:36 -0400
+
+mozilla-firefox (0.8-10) unstable; urgency=low
+
+  * debian/mozilla-firefox.install: Don\'t install uuencoded file. (Closes:
+    #251441)
+  * debian/mozilla-firefox-runner: unset AUDIODEV which can cause
+    crashes. Thanks Christopher Armstrong. (Closes: #236231)
+  * update-mozilla-firefox-chrome: Port security fix from #249613 to
+    handle insecure tempfile creation.
+  * debian/rules: Following the advice of #247585 I\'m disabling postscript
+    printing. Perhaps this will alleviate some of the other printing
+    problems.
+
+ -- Eric Dorland <eric@debian.org>  Sun, 30 May 2004 01:47:52 -0400
+
+mozilla-firefox (0.8-9) unstable; urgency=low
+
+  * debian/control:
+    - Suggest latex-xft-fonts for MathML fonts. Thanks Michael
+      JasonSmith. (Closes: #216925)
+    - Build depend on libx11-dev & libxp-dev instead of xlibs-dev to
+      reflect new X packages.
+  * widget/src/gtk2/nsWindow.cpp: Apply patch from Peter Colberg to ignore
+    unused mouse buttons. (Closes: #244305)
+  * debian/README.Debian: Document the fact that the loopback interface
+    has to be up and unfiltered for things to work right.
+
+ -- Eric Dorland <eric@debian.org>  Wed,  5 May 2004 23:30:42 -0400
+
+'
+WHERE  sourcepackage = (SELECT id from sourcepackage where sourcepackagename = 
+	(select id from sourcepackagename where name = 'mozilla-firefox')
+	);
+
+
+
 
 --Manifest
 INSERT INTO Manifest (datecreated, owner)
@@ -877,7 +1170,7 @@ INSERT INTO Distrorelease (name, title, description, distribution, version,
 	(SELECT id FROM Distrorelease WHERE name = 'woody'),
 	6);
 
---Distroreleaserole
+--Distroreleaserole Persons ?!
 
 INSERT INTO Distroreleaserole (person, distrorelease, role) 
 	VALUES(
@@ -911,8 +1204,28 @@ INSERT INTO Distroreleaserole (person, distrorelease, role)
 	(SELECT id from Distrorelease WHERE name = 'grumpy'),
 	3);
 
+-- Distroreleaserole Teams ?!
 
---Distributionrole
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Warty Security Team'),
+	(SELECT id from Distrorelease WHERE name = 'warty'),
+	4);
+
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Warty Gnome Team'),
+	(SELECT id from Distrorelease WHERE name = 'warty'),
+	4);
+
+INSERT INTO Distroreleaserole (person, distrorelease, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Hoary Gnome Team'),
+	(SELECT id from Distrorelease WHERE name = 'hoary'),
+	4);
+
+
+--Distributionrole Persons ?!
 
 INSERT INTO Distributionrole (person, distribution, role) 
 	VALUES(
@@ -943,6 +1256,21 @@ INSERT INTO Distributionrole (person, distribution, role)
 	(SELECT id from Person WHERE displayname = 'Scott James Remnant'),
 	(SELECT id from Distribution WHERE name = 'ubuntu'),
 	1);
+
+-- DistributionRole Teams ?!
+
+INSERT INTO Distributionrole (person, distribution, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Ubuntu Security Team'),
+	(SELECT id from Distribution WHERE name = 'ubuntu'),
+	3);
+
+INSERT INTO Distributionrole (person, distribution, role) 
+	VALUES(
+	(SELECT id from Person WHERE displayname = 'Ubuntu Gnome Team'),
+	(SELECT id from Distribution WHERE name = 'ubuntu'),
+	3);
+
 
 --DistroArchrelease
 INSERT INTO Distroarchrelease(distrorelease, processorfamily, architecturetag, 
@@ -982,7 +1310,11 @@ section, priority)
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))  
 	and version='0.9.1-1'),
 	(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
-	'0.8', 'Mozilla Firefox 0.8', 'some text', 
+	'0.8', 
+	'Mozilla Firefox Web Browser', 
+        'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+	K-Meleon and Camino, but written using the XUL user interface language and 
+	designed to lightweight and cross-platform.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -998,7 +1330,12 @@ section, priority)
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'))
 	),
 	(SELECT id from Binarypackagename WHERE name = 'mozilla-thunderbird'), 
-	'1.5', 'Mozilla Thunderbird 1.5', 'some text', 
+	'1.5', 
+	'Mozilla Thunderbird Mail Reader', 
+        'Mozilla Thunderbird is a redesign of the Mozilla mail component. 
+	The goal is to produce a cross platform stand alone mail application 
+	using the XUL user interface language. Mozilla Thunderbird leaves a 
+	somewhat smaller memory footprint than the Mozilla suite.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1013,7 +1350,11 @@ section, priority)
 	(SELECT id from Sourcepackage where sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'))),
 	(SELECT id from Binarypackagename WHERE name = 'python-twisted'), 
-	'1.3', 'Python Twisted 1.3', 'some text', 
+	'1.3', 
+	'Python Twisted', 
+        'It includes a web server, a telnet server, a multiplayer RPG engine, 
+	a generic client and server for remote object access, and APIs for 
+	creating new protocols.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1028,7 +1369,11 @@ section, priority)
 	(SELECT id from Sourcepackage where sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))),
 	(SELECT id from Binarypackagename WHERE name = 'bugzilla'), 
-	'2.18', 'Bugzilla 2.18', 'some text', 
+	'2.18', 
+	'Bugzilla',
+        'Bugzilla is a "Defect Tracking System" or "Bug-Tracking System". 
+	Defect Tracking Systems allow individual or groups of developers 
+	to keep track of outstanding bugs in their product effectively.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1043,7 +1388,13 @@ section, priority)
 	(SELECT id from Sourcepackage where sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))),
 	(SELECT id from Binarypackagename WHERE name = 'arch'), 
-	'1.0', 'ARCH 1.0', 'some text', 
+	'1.0', 
+	'ARCH',
+        'arch is a revision control system with features that are ideal for 
+	projects characterised by widely distributed development, concurrent 
+	support of multiple releases, and substantial amounts of development
+	on branches. It can be a replacement for CVS and corrects many 
+	mis-features of that system.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1058,7 +1409,13 @@ section, priority)
 	(SELECT id from Sourcepackage where sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))),
 	(SELECT id from Binarypackagename WHERE name = 'kiwi'), 
-	'2.0', 'Python Kiwi 2.0', 'some text', 
+	'2.0', 'Python Kiwi',
+        ' Kiwi2 consists of a set of classes and wrappers for PyGTK-2 that were 
+	developed to provide a sort of framework for applications. Fully object-oriented, 
+	and roughly modeled after Smalltalk\'s MVC, Kiwi provides a simple, practical 
+	way to build forms, windows and widgets that transparently access and display
+	your object data. Kiwi was primarily designed to make implementing the UI for
+	 Stoq easier, and it is released under the LGPL',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1073,7 +1430,10 @@ section, priority)
 	(SELECT id from Sourcepackage where sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'plone'))),
 	(SELECT id from Binarypackagename WHERE name = 'plone'), 
-	'1.0', 'Plone 1.0', 'some text', 
+	'1.0', 'Plone', 
+        'Plone is powerful and flexible. It is ideal as an intranet and extranet 
+	server, as a document publishing system, a portal server and as a groupware
+	 tool for collaboration between separately located entities.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1236,8 +1596,6 @@ VALUES ((SELECT id FROM Distrorelease WHERE name = 'grumpy'),
 	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))),
 	1);
 
+UPDATE SourcePackage SET distro = 3 WHERE id < 4;
 
-
-
-
-
+UPDATE SourcePackage SET distro = 1 WHERE id >= 4;

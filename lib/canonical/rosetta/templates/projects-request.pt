@@ -1,0 +1,71 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <title metal:fill-slot="title">Rosetta: Request a project</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main" tal:define="submitted view/requestProjectSubmit">
+
+    <div tal:condition="submitted">
+        <div tal:condition="view/error">
+            <h1>Error</h1>
+
+            <p>
+            There was an error sending the request message.
+            <p>
+
+            <p>
+            Details: <code tal:content="view/error">blah blah blah</code>
+            </p>
+        </div>
+
+        <div tal:condition="not: view/error">
+            <h1>Request Sent</h1>
+
+            <p>
+            Your project request has been sent for review.
+            </p>
+
+            <p>
+            <a tal:attributes="href request/URL">Request Another Project</a>
+            </p>
+        </div>
+    </div>
+
+    <div tal:condition="not: submitted">
+
+        <h1>Request project for translation</h1>
+
+        <p class="documentDescription">
+        Please give us some information about the project you would like to
+        have available for translation in Rosetta. Information such as a
+        homepage URL and revision control systems details is useful.
+        </p>
+
+        <form method="POST" tal:attributes="action request/URL">
+        <fieldset>
+            Name: <input type="text" name="name" />
+            <br/>
+            Description:
+            <br/>
+            <textarea name="description"></textarea>
+            <br/>
+            <input type="submit" name="SUBMIT" value="Submit" />
+        </fieldset>
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+</html>

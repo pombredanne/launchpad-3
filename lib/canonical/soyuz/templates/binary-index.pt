@@ -14,39 +14,35 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:content="context/distribution/title" /> Binary
-  Packages </h1>
+  <h1><span tal:content="context/distribution/title" /> Binary Packages </h1>
 
   <h3>Current Releases</h3>
 
-  <ul>
   <span:block tal:repeat="release context">
-  <p> 
-   <li>
-    <a tal:content="release/title" tal:attributes="href release/name"> RELEASENAME </a>
-    (Status: <spam tal:content="release/state"> STATUS </spam>)
-  </li>
-  <p> <span tal:content="release/description"> DESCRIPTION </span>
+  <fieldset>
 
-  <table cellspacing="2">
-   <tr>
-    <td align="right">
-    <span tal:content="release/binarycount"> COUNTER </span> Packages
-    </td>
-   </tr>
-   <tr>
-    <td>
+  <legend>
+    <a tal:content="release/title" tal:attributes="href release/name"> RELEASENAME </a>
+    (Status: <span tal:content="release/state"> STATUS </span>)
+  </legend>
+
+  <div class="field"> 
+    <span tal:content="release/description"> DESCRIPTION </span>
+  </div>
+
+  <div class="field"> 
+    <span tal:content="release/binarycount"> COUNTER </span> Binary Packages Available
+  </div>
+
     <form name="search" method="POST" tal:attributes="action string:${release/name}/+search">
-     Find Binary Package: 
+     <div class="formHelp">Find Binary Package: </div>
      <input type="text" name="name" tal:attributes="value request/name|nothing" />
     <input type="submit" value="Search"/>
     </form>
-    </td>
-   </tr>
-  </table>
-  <hr />
+
+  </fieldset>
+
   </span:block>
-  </ul>
 
 </div>
 

@@ -26,6 +26,11 @@
     Rosetta">about</a> page to find out more about Rosetta.
     </div>
 
+    <p>
+    You might like to
+    <a href="+login">log in</a>.
+    </p>
+
     <form action="search-results"
           method="get">
     <fieldset>
@@ -53,22 +58,22 @@
             <th>Title</th>
             <th>Description</th>
         </thead>
-        
+
         <tbody>
-            <tr tal:attributes="onclick string:window.location='XXXpackage-url';">
-                <td><a href="XXXpackage-url">mozilla-firefox</a></td>
-                <td>Firefox</td>
-                <td>Firefox is a secure and standards-compliant browser. We think.</td>
+            <tr tal:attributes="onclick string:window.location='projects/gnome/gnome-panel';">
+                <td><a href="projects/gnome/gnome-panel">gnome-panel</a></td>
+                <td>GNOME Panel</td>
+                <td>Launch and/or dock GNOME applications</td>
             </tr>
 
             <tr class="even"
-                tal:attributes="onclick string:window.location='XXXpackage-url';">
-                <td><a href="XXXpackage-url">openoffice</a></td>
-                <td>OpenOffice.org</td>
-                <td>Is it an application or a web site? Who knows!</td>
+                tal:attributes="onclick string:window.location='projects/gnome/gnome-applets';">
+                <td><a href="projects/gnome/gnome-applets">gnome-applets</a></td>
+                <td>GNOME Applets</td>
+                <td>Various applets for GNOME panel</td>
             </tr>
         </tbody>
-    
+
     </table>
 
 

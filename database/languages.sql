@@ -157,7 +157,7 @@ COPY "language" (id, code, englishname, nativename, pluralforms, pluralexpressio
 162	ht	Haitian; Haitian Creole	\N	\N	\N
 163	ha	Hausa	\N	\N	\N
 164	haw	Hawaiian	\N	\N	\N
-68	ca	Catalan	Català	\N	\N
+68	ca	Catalan	Català	2	n != 1
 166	hz	Herero	\N	\N	\N
 167	hil	Hiligaynon	\N	\N	\N
 168	him	Himachali	\N	\N	\N
@@ -635,7 +635,7 @@ COPY "language" (id, code, englishname, nativename, pluralforms, pluralexpressio
 435	uk	Ukrainian	Українська	3	n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
 441	ve	Venda	Venda	\N	\N
 442	vi	Vietnamese	Nam=Nho 	\N	\N
-449	cy	Welsh	Cymraeg	\N	\N
+449	cy	Welsh	Cymraeg	4	n==1 ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3
 451	wa	Walloon	Walon	\N	\N
 454	xh	Xhosa	XChat	\N	\N
 464	zu	Zulu	Isi-Zulu	\N	\N

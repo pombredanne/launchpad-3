@@ -6,10 +6,9 @@
 import os, popen2
 
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.database.sqlbase import SQLBase
+import canonical.lp
 from canonical.rosetta.sql import RosettaPerson, RosettaEmailAddress
 from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
-from sqlobject import connectionForURI
 from optparse import OptionParser
 
 if __name__ == '__main__':
@@ -34,7 +33,7 @@ if __name__ == '__main__':
             # If we don't get a password from command line, we generate one
             # automaticaly.
             pwgen = popen2.Popen3('/usr/bin/pwgen -s -1', True)
-            
+
             # Now we wait until the command ends
             status = pwgen.wait()
 
@@ -43,7 +42,7 @@ if __name__ == '__main__':
                     # The command worked
                     options.password = pwgen.fromchild.read()
                     options.password = options.password.strip('\n')
-                
+
                 else:
                     print "There was an error executing pwgen: " + \
                         pwgen.childerr.read()
@@ -52,12 +51,12 @@ if __name__ == '__main__':
                 print "There was an unknown error executing pwgen."
                 os.exit(1)
 
-        sshad = SSHADigestEncryptor()
+        ssha = SSHADigestEncryptor()
 
-        passEncrypted = sshad.encrypt(options.password)
+        passEncrypted = ssha.encrypt(options.password)
 
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
-       
+        canonical.lp.initZopeless()
+
         # XXX: We don't check if the person already exists
         person = RosettaPerson(givenName=options.given,
                                familyName=options.family,
@@ -69,7 +68,7 @@ if __name__ == '__main__':
         # XXX: Implement an email submit with all information filled so the
         # user knows his/her password.
         print "The password: " + options.password + " The encrypted: " + passEncrypted
-        
+
     else:
         # XXX: We should do this message more descriptive.
         print "Please, review the command line, we need more options..."

@@ -13,6 +13,54 @@ from canonical.soyuz.interfaces import ISourcePackageRelease, IManifestEntry
 from canonical.soyuz.interfaces import IBranch, IChangeset
 from canonical.soyuz.interfaces import ISourcePackage, ISoyuzPerson
 from canonical.soyuz.interfaces import IBinaryPackage
+from canonical.soyuz.interfaces import IDistributionRole, IDistroReleaseRole
+from canonical.soyuz.interfaces import IDistribution
+
+
+class DistributionRole(SQLBase):
+
+    implements(IDistributionRole)
+
+    _table = 'Distributionrole'
+    _columns = [
+        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
+                   notNull=True),
+        ForeignKey(name='distribution', dbName='distribution',
+                   foreignKey='Distribution', notNull=True),
+        IntCol('role', dbName='role')
+        ]
+
+    def _rolename(self):
+        for role in dbschema.DistributionRole.items:
+            if role.value == self.role:
+                return role.title
+        return 'Unknown (%d)' %self.role
+    
+    rolename = property(_rolename)
+        
+
+class DistroReleaseRole(SQLBase):
+
+    implements(IDistroReleaseRole)
+
+    _table = 'Distroreleaserole'
+    _columns = [
+        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
+                   notNull=True),
+        ForeignKey(name='distrorelease', dbName='distrorelease',
+                   foreignKey='Release',
+                   notNull=True),
+        IntCol('role', dbName='role')
+        ]
+
+    def _rolename(self):
+        # FIXME: using DistributionRole dbschema instead of DistroRelease
+        for role in dbschema.DistributionRole.items:
+            if role.value == self.role:
+                return role.title
+        return 'Unknown (%d)' %self.role
+
+    rolename = property(_rolename)
 
 
 class Distribution(SQLBase):
@@ -147,6 +195,7 @@ class SoyuzSourcePackage(SQLBase):
         StringCol('description', dbName='description', notNull=True),
         ForeignKey(name='manifest', foreignKey='Manifest', dbName='manifest', 
                    default=None),
+        ForeignKey(name='distro', foreignKey='Distribution', dbName='distro'),
     ]
     releases = MultipleJoin('SoyuzSourcePackageRelease',
                             joinColumn='sourcepackage')
@@ -155,12 +204,17 @@ class SoyuzSourcePackage(SQLBase):
         return self.sourcepackagename.name
     name = property(name)
 
-    def title(self):
-        import warnings
-        warnings.warn("Use SoyuzSourcePackage.shortdesc instead of .title",
-                      DeprecationWarning)
-        return self.shortdesc
-    title = property(title)
+    def product(self):
+        try:
+            return SoyuzProduct.select(
+                "Product.id = Packaging.product AND "
+                "Packaging.sourcepackage = %d"
+                % self.id
+            )[0]
+        except IndexError:
+            # No corresponding product
+            return None
+    product = property(product)
 
     def getManifest(self):
         return self.manifest
@@ -239,6 +293,9 @@ class SoyuzSourcePackageRelease(SQLBase):
         DateTimeCol('dateuploaded', dbName='dateuploaded', notNull=True,
                     default='NOW'),
         IntCol('urgency', dbName='urgency', notNull=True),
+        StringCol('changelog', dbName='changelog'),
+        StringCol('builddepends', dbName='builddepends'),
+        StringCol('builddependsindep', dbName='builddependsindep'),
     ]
 
     builds = MultipleJoin('SoyuzBuild', joinColumn='sourcepackagerelease')
@@ -486,6 +543,22 @@ class Membership(SQLBase):
         IntCol('role', dbName='role', notNull=True),
         IntCol('status', dbName='status', notNull=True)
         ]
+
+    def _rolename(self):
+        for role in dbschema.MembershipRole.items:
+            if role.value == self.role:
+                return role.title
+        return 'Unknown (%d)' %self.role
+    
+    rolename = property(_rolename)
+
+    def _statusname(self):
+        for status in dbschema.MembershipStatus.items:
+            if status.value == self.status:
+                return status.title
+        return 'Unknown (%d)' %self.status
+    
+    statusname = property(_statusname)
 
 class TeamParticipation(SQLBase):
     _table = 'TeamParticipation'

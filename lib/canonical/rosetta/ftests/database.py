@@ -27,7 +27,7 @@ class PODBBridge:
 #       print self.parser.headers['Last-Translator'];
         # FIXME: Implement a Last-Translator parser.
         # FIXME: Implement comments
-        
+
         #Insert the .po header
         header = {
             'pot_name': pot_name,
@@ -62,7 +62,7 @@ class PODBBridge:
         cr.execute(
             """UPDATE POTranslationSighting SET iscurrent = false
                 WHERE pofile = %d""" % pofile)
-                
+
         for message in self.parser.messages:
             if 'fuzzy' in message.flags:
                 fuzzy = 'TRUE'
@@ -79,7 +79,7 @@ class PODBBridge:
                     "SELECT pomsgid FROM POMsgID WHERE msgid = %(msgid)s",
                     { 'msgid': message.msgid.encode("utf-8") })
             pomsgid = cr.fetchone()
-            
+
             cr.execute(
                 "SELECT potranslation FROM POTranslation WHERE text = %(text)s",
                 { 'text': message.msgstr.encode("utf-8") })
@@ -117,7 +117,7 @@ class PODBBridge:
                         fuzzy = %(fuzzy)s, lastseen = now(), iscurrent = true
                         WHERE
                             potranslationsighting=%(potranslationsighting)d""",
-                    { 'fuzzy': fuzzy, 
+                    { 'fuzzy': fuzzy,
                       'potranslationsighting': potranslationsighting[0] })
         self.cnx.commit()
         cr.close()
@@ -172,7 +172,7 @@ class PODBBridge:
             # FIXME: Missing POT file
             print "Please, create the POT file into the database"
         cr.close()
-    
+
 if __name__ == '__main__':
     if len(sys.argv) < 3:
         print "Usage: "
@@ -188,7 +188,7 @@ if __name__ == '__main__':
         else:
             print "Importing .pot file..."
             bridge.import_pot(sys.argv[2])
-    
+
 #    print "Comment (" + str(len(parser.header.comment)) + "):"
 #    print parser.header.comment
 #    print "Generated comment (" + str(len(parser.header.generated_comment)) + "):"

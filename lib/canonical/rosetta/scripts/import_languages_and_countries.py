@@ -16,7 +16,7 @@ import locale, re, sets, psycopg, string
 
 class XMLHandler(saxutils.DefaultHandler):
     def __init__(self, elementname, attributes, cnx, dbhook, hook=None):
-         """ 
+         """
          nameslist is the elements to be printed in msgid strings,
          comment is the atrribute to be used in the comment line
          """
@@ -269,7 +269,7 @@ def insert_language(cnx, data, plural_forms):
                     pluralexpression=%(pluralexpression)s WHERE code=%(code)s""", data)
 
     cr.execute("""SELECT * FROM Label WHERE name='%s'""" % data['code'])
-    
+
     # If it does not exists, it's inserted
     if cr.rowcount < 1:
         # XXX: We assume that the schema is already present.
@@ -382,7 +382,7 @@ if __name__ == '__main__':
     parser.add_option("-p", "--plural-data",
                       dest="plural_data_file", default="plural-form-data",
                       help="FILE where we have the plural forms data")
-                  
+
     (options, args)=parser.parse_args()
 
     locale.setlocale(locale.LC_ALL, 'C')

@@ -14,9 +14,9 @@
     <page name="index"
           template="templates/projects-index.pt"
           lp:url="Rosetta/projects" />
-    <page name="+submit"
-          template="templates/projects-submit.pt"
-          lp:url="Rosetta/projects/+submit" />
+    <page name="+request"
+          template="templates/projects-request.pt"
+          lp:url="Rosetta/projects/+request" />
   </pages>
 
   <traverse for="canonical.rosetta.domain.RosettaProjects"
@@ -63,7 +63,7 @@
   </pages>
 
   <pages for="canonical.rosetta.interfaces.IPOTemplate"
-         permission="zope.Public"
+         permission="launchpad.AnyPerson"
          class="canonical.rosetta.browser.TranslatePOTemplate"
          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
     <page name="translate"
@@ -82,10 +82,14 @@
     <page name="index"
           template="templates/pofile-index.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language"/>
-    <page name="+edit"
-          template="templates/pofile-edit.pt"
-          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
   </pages>
+
+  <page name="+edit"
+        permission="launchpad.AnyPerson"
+        class="canonical.rosetta.browser.ViewPOFile"
+        for="canonical.rosetta.interfaces.IPOFile"
+        template="templates/pofile-edit.pt"
+        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
 
   <page name="po"
         for="canonical.rosetta.interfaces.IPOFile"
@@ -93,9 +97,9 @@
         class="canonical.rosetta.browser.ViewPOExport"
         attribute="__call__"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code/po" />
-	
+
   <page name="mo"
-  	for="canonical.rosetta.interfaces.IPOFile"
+        for="canonical.rosetta.interfaces.IPOFile"
         permission="zope.Public"
         class="canonical.rosetta.browser.ViewMOExport"
         attribute="__call__"
@@ -118,9 +122,6 @@
     <page name="about"
           template="templates/about.pt"
           lp:url="Rosetta/about" />
-    <page name="maintainer"
-          template="templates/dashboard-maintainer.pt"
-          lp:url="Rosetta/maintainer" />
     <page name="search"
           template="templates/search.pt"
           lp:url="Rosetta/search" />
@@ -138,13 +139,25 @@
           lp:url="Rosetta/sendto" />
   </pages>
 
+  <page for="canonical.rosetta.interfaces.IRosettaApplication"
+        permission="launchpad.AnyPerson"
+        name="maintainer"
+        template="templates/dashboard-maintainer.pt"
+        lp:url="Rosetta/maintainer" />
+
   <pages for="canonical.rosetta.interfaces.IRosettaApplication"
-         permission="zope.Public"
+         permission="launchpad.AnyPerson"
          class="canonical.rosetta.browser.TranslatorDashboard"
          >
     <page name="translator"
           template="templates/dashboard-translator.pt"
           lp:url="Rosetta/translator" />
+  </pages>
+
+  <pages for="canonical.rosetta.interfaces.IRosettaApplication"
+         permission="launchpad.AnyPerson"
+         class="canonical.rosetta.browser.ViewPreferences"
+         >
     <page name="prefs"
           template="templates/rosetta-preferences.pt"
           lp:url="Rosetta/prefs" />
@@ -158,6 +171,13 @@
           template="templates/search-results.pt"
           lp:url="Rosetta/search-results" />
   </pages>
+
+  <page for="canonical.rosetta.interfaces.IRosettaApplication"
+        class="canonical.rosetta.browser.LogIn"
+        permission="launchpad.AnyPerson"
+        name="+login"
+        attribute="login"
+        lp:url="Rosetta/+login" />
 
 </configure>
 <!-- arch-tag: bd9952cf-5198-4ab5-a97f-8d2d9893b313 -->

@@ -9,6 +9,7 @@ from zope.testing.doctestunit import DocTestSuite
 
 from canonical.rosetta.interfaces import ILanguages, IPerson
 from zope.interface import implements
+from zope.app.security.interfaces import IPrincipal
 
 class DummyLanguage:
     def __init__(self, code, pluralForms):
@@ -30,11 +31,19 @@ class DummyLanguages:
         return self._languages[key]
 
 
+class DummyPrincipal:
+    implements(IPrincipal)
+
+
 class DummyPerson:
     implements(IPerson)
 
     def languages(self):
         return [DummyLanguages()['es']]
+
+
+def dummyPersonFromPrincipal(principal):
+    return DummyPerson()
 
 
 class DummyPOFile:
@@ -76,8 +85,8 @@ class DummyPOTemplate:
 
 
 class DummyRequest:
-    def __init__(self, principal, **form_data):
-        self.principal = principal
+    def __init__(self, **form_data):
+        self.principal = DummyPrincipal()
         self.form = form_data
         self.URL = "http://this.is.a/fake/url"
 
@@ -115,6 +124,7 @@ def test_TranslatePOTemplate_init():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, dummyPersonFromPrincipal)
 
     First, test the initialisation.
 
@@ -122,7 +132,7 @@ def test_TranslatePOTemplate_init():
     doesn't look at the principal's languages.
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(None, languages='ja')
+    >>> request = DummyRequest(languages='ja')
     >>> t = TranslatePOTemplate(context, request)
 
     >>> context.language_code
@@ -146,7 +156,7 @@ def test_TranslatePOTemplate_init():
     falls back to using the principal's languages instead.
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson())
+    >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
 
     >>> context.language_code
@@ -170,7 +180,7 @@ def test_TranslatePOTemplate_init():
     file for.
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson(), languages='fr')
+    >>> request = DummyRequest(languages='fr')
     >>> t = TranslatePOTemplate(context, request)
 
     >>> context.language_code
@@ -195,7 +205,7 @@ def test_TranslatePOTemplate_init():
     object.
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson(), languages='cy')
+    >>> request = DummyRequest(languages='cy')
     >>> t = TranslatePOTemplate(context, request)
 
     >>> context.language_code
@@ -217,7 +227,7 @@ def test_TranslatePOTemplate_init():
     provided.
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson(), offset=7, count=8)
+    >>> request = DummyRequest(offset=7, count=8)
     >>> t = TranslatePOTemplate(context, request)
 
     >>> t.offset
@@ -239,9 +249,10 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, dummyPersonFromPrincipal)
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson())
+    >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
 
     >>> t.atBeginning()
@@ -250,7 +261,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
     False
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson(), offset=10)
+    >>> request = DummyRequest(offset=10)
     >>> t = TranslatePOTemplate(context, request)
 
     >>> t.atBeginning()
@@ -259,7 +270,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
     False
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson(), offset=15)
+    >>> request = DummyRequest(offset=15)
     >>> t = TranslatePOTemplate(context, request)
 
     >>> t.atBeginning()
@@ -280,11 +291,12 @@ def test_TranslatePOTemplate_URLs():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, dummyPersonFromPrincipal)
 
     Test with no parameters.
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson())
+    >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
 
     >>> t._makeURL()
@@ -299,7 +311,7 @@ def test_TranslatePOTemplate_URLs():
     Test with offset > 0.
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson(), offset=5)
+    >>> request = DummyRequest(offset=5)
     >>> t = TranslatePOTemplate(context, request)
 
     >>> t.beginningURL()
@@ -317,7 +329,7 @@ def test_TranslatePOTemplate_URLs():
     Test with interesting parameters.
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson(), languages='ca', offset=42,
+    >>> request = DummyRequest(languages='ca', offset=42,
     ...     count=43)
     >>> t = TranslatePOTemplate(context, request)
 
@@ -340,9 +352,10 @@ def test_TranslatePOTemplate_messageSets():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, dummyPersonFromPrincipal)
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson())
+    >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
 
     >>> x = list(t.messageSets())[0]
@@ -378,9 +391,10 @@ def test_TranslatePOemplate_mungeMessageID():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguages, DummyLanguages())
+    >>> ztapi.provideAdapter(IPrincipal, IPerson, dummyPersonFromPrincipal)
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(DummyPerson())
+    >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
 
     First, do no harm.

@@ -5,14 +5,15 @@ import unittest
 from cStringIO import StringIO
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.interfaces import ILanguages
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
-     xxxRosettaProject, RosettaProduct, RosettaLanguages, RosettaPOMessageSet
-from sqlobject import connectionForURI
+     RosettaProduct, RosettaLanguages, RosettaPOMessageSet, \
+     RosettaPOMessageIDSighting
 from canonical.rosetta.pofile_adapters import MessageProxy, \
      TemplateImporter, POFileImporter
+from canonical.database.doap import DBProject
 import os
+import canonical.lp
 
 # XXX: not using Person at all, probably should
 class FakePerson(object):
@@ -27,13 +28,13 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         super(POImportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
         utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+        canonical.lp.initZopeless()
         self.pot = file(os.path.join(here, 'gnome-terminal.pot'))
         self.po = file(os.path.join(here, 'gnome-terminal-cy.po'))
 
     def testTemplateImporter(self):
         try:
-            project = xxxRosettaProject.selectBy(name = 'gnome')[0]
+            project = DBProject.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()
@@ -70,21 +71,20 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         importer.doImport(self.pot)
         get_transaction().commit()
         # try a second time to see if it breaks
-        importer = TemplateImporter(poTemplate, XXXperson)
         self.pot.seek(0)
         importer.doImport(self.pot)
-        # check that there aren't duplicates in the db
         get_transaction().commit()
         RosettaPOMessageSet._connection.cache.clear()
-        for message in importer.parser.messages:
-            msgid = message._msgset.primeMessageID_
-            results = RosettaPOMessageSet.select('''
-                poTemplate = %d AND
-                poFile IS NULL AND
-                primeMsgID = %d
-                ''' % (poTemplate.id, msgid.id))
-            assert results.count() == 1, '%d message sets' % results.count()
-            assert results[0].sequence > 0
+        sets = RosettaPOMessageSet.select('potemplate=%d AND pofile IS NULL' % poTemplate.id)
+        assert sets.count() == 513, '%d message sets instead of 513' % sets.count()
+        for msgset in list(sets):
+            # All messages should have the sequence > 0
+            # XXX: We are assuming you are cleaning up the DB between tests.
+            assert msgset.sequence > 0
+            sighting = RosettaPOMessageIDSighting.selectBy(
+                        poMessageSetID=msgset.id,
+                        poMessageID_ID=msgset.primeMessageID_.id)[0]
+            assert sighting.inLastRevision
         return
         # TODO: add some code that actually tests the database
         # here is an attempt
@@ -101,7 +101,7 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
 
     def testFileImporter(self):
         try:
-            project = xxxRosettaProject.selectBy(name = 'gnome')[0]
+            project = DBProject.selectBy(name = 'gnome')[0]
         except (IndexError, KeyError):
             import sys
             t, e, tb = sys.exc_info()
@@ -142,7 +142,6 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         importer.doImport(self.po)
         get_transaction().commit()
         # try a second time to see if it breaks
-        importer = POFileImporter(poFile, XXXperson)
         self.po.seek(0)
         importer.doImport(self.po)
         # check that there aren't duplicates in the db

@@ -5,6 +5,8 @@ __metaclass__ = type
 
 import re, os, popen2
 from math import ceil
+import smtplib
+import sys
 
 from zope.component import getUtility
 from canonical.rosetta.interfaces import ILanguages, IPerson
@@ -12,6 +14,7 @@ from canonical.database.doap import IProjects
 from canonical.rosetta.sql import RosettaLanguage, RosettaPerson
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
+from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 
 charactersPerLine = 50
 
@@ -26,7 +29,7 @@ def count_lines(text):
 def fake_person():
     # XXX: Temporary hack, to be removed as soon as we have the login template
     # working.
-    return RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+    return RosettaPerson.selectBy(displayName='Foo Bar')[0]
 
 
 class ViewProjects:
@@ -50,6 +53,39 @@ class ViewProjects:
         else:
             self.submitted = False
             return ""
+
+    def requestProjectSubmit(self):
+        self.error = None
+
+        if not "SUBMIT" in self.request.form:
+            return False
+
+        if not self.request.method == "POST":
+            return False
+
+        request_email = 'daf@muse.19inch.net'
+
+        try:
+            smtp = smtplib.SMTP('localhost')
+            smtp.sendmail('launchpad@canonical.com', request_email,
+                "From: rosetta\n"
+                "To: %s\n"
+                "Subject: Rosetta project request: %s\n"
+                "\n"
+                "Name: %s\n"
+                "Description:\n"
+                "%s" % (
+                    request_email,
+                    self.request.form['name'],
+                    self.request.form['name'],
+                    self.request.form['description']))
+        except smtplib.SMTPException, e:
+            self.error = e
+        else:
+            smtp.quit()
+
+        return True
+
 
 class ViewProject:
     def thereAreProducts(self):
@@ -93,7 +129,7 @@ class ViewProject:
 
             # NOTE: To get a 100% value:
             # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent 
+            # 2.- translatedPercent + untranslatedPercent
             # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
             # untranslatedPercent
             retdict = {
@@ -103,7 +139,7 @@ class ViewProject:
                 'poCurrentCount': currentCount,
                 'poRosettaCount': rosettaCount,
                 'poUpdatesCount' : updatesCount,
-                'poNonUpdatesCount' : nonUpdatesCount, 
+                'poNonUpdatesCount' : nonUpdatesCount,
                 'poTranslated': translated,
                 'poUntranslated': untranslated,
                 'poCurrentPercent': currentPercent,
@@ -118,19 +154,22 @@ class ViewProject:
 
 
 class ViewProduct:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.person = IPerson(self.request.principal, None)
+
     def thereAreTemplates(self):
         return len(list(self.context.poTemplates())) > 0
 
     def languageTemplates(self):
-        person = IPerson(self.request.principal, None)
-        if person is not None:
-            for language in person.languages():
+        if self.person is not None:
+            for language in self.person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
         else:
-            # XXX
-            person = fake_person()
-            for language in person.languages():
-                yield LanguageTemplates(language, self.context.poTemplates())
+            raise RuntimeError(
+                "Can't generate LanguageTemplates unless authenticated.")
 
 
 class LanguageTemplates:
@@ -147,7 +186,7 @@ class LanguageTemplates:
                 'poCurrentCount': 0,
                 'poRosettaCount': 0,
                 'poUpdatesCount' : 0,
-                'poNonUpdatesCount' : 0, 
+                'poNonUpdatesCount' : 0,
                 'poTranslated': 0,
                 'poUntranslated': len(template),
                 'poCurrentPercent': 0,
@@ -180,7 +219,7 @@ class LanguageTemplates:
 
                 # NOTE: To get a 100% value:
                 # 1.- currentPercent + rosettaPercent + untranslatedPercent
-                # 2.- translatedPercent + untranslatedPercent 
+                # 2.- translatedPercent + untranslatedPercent
                 # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
                 # untranslatedPercent
                 retdict.update({
@@ -188,7 +227,7 @@ class LanguageTemplates:
                     'poCurrentCount': currentCount,
                     'poRosettaCount': rosettaCount,
                     'poUpdatesCount' : updatesCount,
-                    'poNonUpdatesCount' : nonUpdatesCount, 
+                    'poNonUpdatesCount' : nonUpdatesCount,
                     'poTranslated': translated,
                     'poUntranslated': untranslated,
                     'poCurrentPercent': currentPercent,
@@ -262,29 +301,38 @@ class ViewPOFile:
             self.submitted = False
             return ""
 
+
 class TranslatorDashboard:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.person = IPerson(self.request.principal, None)
+
     def projects(self):
         return getUtility(IProjects)
+
+
+class ViewPreferences:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.person = IPerson(self.request.principal, None)
 
     def languages(self):
         return getUtility(ILanguages)
 
     def selectedLanguages(self):
-        person = IPerson(self.request.principal, None)
-        if person is None:
-            # XXX
-            person = fake_person()
-
-        return list(person.languages())
+        return list(self.person.languages())
 
     def submit(self):
-        if "SAVE" in self.request.form:
-            if self.request.method == "POST":
-                person = IPerson(self.request.principal, None)
-                if person is None:
-                    # XXX
-                    person = fake_person()
+        person = self.person
+        self.submitted_personal = False
+        self.error_msg = None
 
+        if "SAVE-LANGS" in self.request.form:
+            if self.request.method == "POST":
                 oldInterest = list(person.languages())
 
                 if 'selectedlanguages' in self.request.form:
@@ -307,6 +355,41 @@ class TranslatorDashboard:
                         person.removeLanguage(language)
             else:
                 raise RuntimeError("This form must be posted!")
+        elif "SAVE-PERSONAL" in self.request.form:
+            if self.request.method == "POST":
+                # First thing to do, check the password if it's wrong we stop.
+                currentPassword = self.request.form['currentPassword']
+                ssha = SSHADigestEncryptor()
+                if currentPassword and ssha.validate(currentPassword, person.password):
+                    # The password is valid
+                    password1 = self.request.form['newPassword1']
+                    password2 = self.request.form['newPassword2']
+                    if password1 and password1 == password2:
+                        try:
+                            person.password = ssha.encrypt(password1)
+                        except UnicodeEncodeError:
+                            self.error_msg = \
+                                "The password can only have ascii characters."
+                    elif password1:
+                        #The passwords are differents.
+                        self.error_msg = \
+                            "The two passwords you entered did not match."
+
+                    given = self.request.form['given']
+                    if given and person.givenName != given:
+                        person.givenName = given
+                    family = self.request.form['family']
+                    if family and person.familyName != family:
+                        person.familyName = family
+                    display = self.request.form['display']
+                    if display and person.displayName != display:
+                        person.displayName = display
+                else:
+                    self.error_msg = "The username or password you entered is not valid."
+            else:
+                raise RuntimeError("This form must be posted!")
+
+            self.submitted_personal = True
 
 
 class ViewSearchResults:
@@ -328,7 +411,6 @@ class ViewSearchResults:
 
 
 class ViewPOExport:
-
     def __call__(self):
         pofile = self.context
         poExport = POExport(pofile.poTemplate)
@@ -340,6 +422,7 @@ class ViewPOExport:
         self.request.response.setHeader('Content-disposition',
                 'attachment; filename="%s.po"' % languageCode)
         return exportedFile
+
 
 class ViewMOExport:
 
@@ -363,7 +446,7 @@ class ViewMOExport:
             if os.WEXITSTATUS(status) == 0:
                 # The command worked
                 output = msgfmt.fromchild.read()
-                
+
                 self.request.response.setHeader('Content-Type',
                     'application/x-gmo')
                 self.request.response.setHeader('Content-Length',
@@ -385,26 +468,34 @@ class TranslatePOTemplate:
     def __init__(self, context, request):
         # This sets up the following instance variables:
         #
-        # context:
-        #   The context PO template object.
-        # request:
-        #   The request from the browser.
-        # codes:
-        #   A list of codes for the langauges to translate into.
-        # languages:
-        #   A list of languages to translate into.
-        # pluralForms:
-        #   A dictionary by language code of plural form counts.
-        # badLanguages:
-        #   A list of languages for which no plural form information is
-        #   available.
-        # offset:
-        #   The offset into the template of the first message being
-        #   translated.
-        # count:
-        #   The number of messages being translated.
-        # error:
-        #   A flag indicating whether an error ocurred during initialisation.
+        #  context:
+        #    The context PO template object.
+        #  request:
+        #    The request from the browser.
+        #  codes:
+        #    A list of codes for the langauges to translate into.
+        #  languages:
+        #    A list of languages to translate into.
+        #  pluralForms:
+        #    A dictionary by language code of plural form counts.
+        #  badLanguages:
+        #    A list of languages for which no plural form information is
+        #    available.
+        #  offset:
+        #    The offset into the template of the first message being
+        #    translated.
+        #  count:
+        #    The number of messages being translated.
+        #  error:
+        #    A flag indicating whether an error ocurred during initialisation.
+        #
+        # No initialisation if performed if the request's principal is not
+        # authenticated.
+
+        person = IPerson(request.principal, None)
+
+        if person is None:
+            return
 
         self.context = context
         self.request = request
@@ -426,11 +517,6 @@ class TranslatePOTemplate:
                 except KeyError:
                     pass
         else:
-            person = IPerson(request.principal, None)
-            if person is None:
-                # XXX
-                person = fake_person()
-
             self.languages = list(person.languages())
 
         # Get plural form information.
@@ -683,44 +769,38 @@ class TranslatePOTemplate:
                         "Got translation for msgid %s which is not in "
                         "the template." % repr(msgid_text))
 
-                # Get hold of an appropriate message set in the PO file.
+                # Get hold of an appropriate message set in the PO file,
+                # creating it if necessary.
                 # XXX: Message set creation should probably be lazier also.
 
                 try:
                     po_set = pofiles[code][msgid_text]
-                    print ">>> msgid found (%s, %s)" % (code, msgid_text)
                 except KeyError:
                     po_set = pofiles[code].createMessageSetFromText(msgid_text)
-                    print ">>> msgid created (%s, %s)" % (code, msgid_text)
+
+                # Get a hold of a list of existing translations for the
+                # message set.
 
                 old_translations = po_set.translations()
-                print ">>> old_translations:\n", old_translations
 
                 for index in new_translations:
+                    # For each translation, add it to the database if it is
+                    # non-null and different to the old one.
                     if (new_translations[index] is not None and
                             new_translations[index] != '' and
                             new_translations[index] !=
                             old_translations[index]):
-                        print "accepting translation:\n", (index, old_translations[index],
-                            new_translations[index])
                         po_set.makeTranslationSighting(
                             person = person,
                             text = new_translations[index],
                             pluralForm = index,
                             update = True,
-                            fromPOFile = False
-                            )
-                        new_translations = po_set.translations()
-                        print ">>> new_translations:\n", new_translations
-
-                print
-                print
+                            fromPOFile = False)
 
         self.submitted = True
 
-        from pprint import pformat
-        from xml.sax.saxutils import escape
-        return "<pre>" + escape(pformat(sets)) + "</pre>"
+        # XXX: Should return the number of new translations or something
+        # useful like that.
 
 # XXX: Implement class ViewTranslationEfforts: to create new Efforts
 
@@ -778,7 +858,7 @@ class LanguageTranslationEffortCategories:
 
             # NOTE: To get a 100% value:
             # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent 
+            # 2.- translatedPercent + untranslatedPercent
             # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
             # untranslatedPercent
             retdict = {
@@ -788,7 +868,7 @@ class LanguageTranslationEffortCategories:
                 'poCurrentCount': currentCount,
                 'poRosettaCount': rosettaCount,
                 'poUpdatesCount' : updatesCount,
-                'poNonUpdatesCount' : nonUpdatesCount, 
+                'poNonUpdatesCount' : nonUpdatesCount,
                 'poTranslated': translated,
                 'poUntranslated': untranslated,
                 'poCurrentPercent': currentPercent,
@@ -818,4 +898,19 @@ class ViewTranslationEffortCategory:
             person = fake_person()
             for language in person.languages():
                 yield LanguageTemplates(language, self.context.poTemplates())
+
+class LogIn:
+
+    def isSameHost(self, url):
+        """Returns True if the url appears to be from the same host as
+        we are."""
+        return url.startswith(self.request.getApplicationURL())
+
+    def login(self):
+        referer = self.request.getHeader('referer')  # Traditional w3c speling
+        if referer and self.isSameHost(referer):
+            self.request.response.redirect(referer)
+        else:
+            self.request.response.redirect(self.request.getURL(1))
+        return ''
 

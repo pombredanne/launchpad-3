@@ -96,22 +96,31 @@ class IDistroReleaseSourceReleaseApp(Interface):
     """A SourcePackageRelease Proxy """
     sourcepackagerelease = Attribute("SourcePackageRelease")
     archs = Attribute("Builded archs")
+    builddepends = Attribute("Builddepends for this sourcepackagerelease")
+    builddependsindep = Attribute("BuilddependsIndep for this sourcepackagerelease")
+    distroreleasename = Attribute("The Distro Release name need to make links to bin packages")
 
     def __getitem__(name):
         """Retrieve a package release build by arch."""
 
+class IbuilddepsContainer(Interface):
+    name = Attribute("Package name for a builddepends/builddependsindep")
+    signal = Attribute("Dependence Signal e.g = >= <= <")
+    version = Attribute("Package version for a builddepends/builddependsindep")
 
 class IDistroReleaseApp(Interface):
     """A Release Proxy """
     release = Attribute("Release")
-    name = Attribute("Release name")
-    title = Attribute("Release title")
-    description = Attribute("Release description")
-    version = Attribute("Release version")
+    roles = Attribute("Release Roles")
 
     def getPackageContainer(name):
         """ Returns the associated IPackageSet """
 
+    def findSourcesByName(name):
+        """Returns The Release SourcePackages by name"""
+
+    def findBinariesByName(name):
+        """Returns The Release BianriesPackages by name"""
 
 class IDistroBinariesApp(Interface):
     """A Binaries Source Tag """
@@ -148,6 +157,7 @@ class IDistroReleaseBinaryReleaseApp(Interface):
     """A Binary Release Proxy """
     binarypackagerelease = Attribute("BinaryPackageRelease")
     version = Attribute("BinaryPackageRelease Version ?!?!")
+    sourcedistrorelease = Attribute("The DistroRelease from where the binary's SourcePackageRelease came from")
     archs = Attribute("Builded archs")
 
     def __getitem__(name):
@@ -191,32 +201,24 @@ class IDistroReleaseTeamApp(Interface):
     release= Attribute("Release")
     team = Attribute("Team")
 
-
-# it is deprecated BTW !!!
-class ITeam(Interface):
-     """auxiliar object to receive STUB person"""
-     displayname = Attribute("name")
-     role = Attribute("role")
-
-
-# they didn't work as expected. spiv: help :)
 class IDistroReleaseRole(Interface):
     """A DistroReleaseRole Object """
-    release= Attribute("Release")
+    distrorelease= Attribute("Release")
     person = Attribute("Person")
     role = Attribute("Role")
-
+    rolename = Attribute("Rolename")
+    
 class IDistributionRole(Interface):
     """A Distribution Role Object"""
     distribution = Attribute("Distribution")
     person = Attribute("Person")
     role = Attribute("Role")
-
-#########################################
+    rolename = Attribute("Rolename")
 
 class IPeopleApp(Interface):
     """A People Tag """
-    entries = Attribute("Number of person entries")
+    p_entries = Attribute("Number of person entries")
+    t_entries = Attribute("Number of teams entries")
 
     def __getitem__(release):
         """retrieve personal by name"""
@@ -235,6 +237,12 @@ class IPersonApp(Interface):
     irc = Attribute("IRC")    
     gpg = Attribute("GPG")
 
+    members = Attribute("Members of a Team")
+    teams = Attribute("Team which I'm a member")
+    subteams = Attribute("Sub Teams")
+    distroroles = Attribute("Distribution Roles")
+    distroreleaseroles = Attribute("Distrorelase Roles")
+    
 # new people related table interfaces
 
 class ISoyuzEmailAddress(Interface):
@@ -279,7 +287,9 @@ class IMembership(Interface):
     team = Attribute("Team")
     role= Attribute("Role on Team")
     status= Attribute("Status of this Relation")
-
+    rolename = Attribute("Role Name")
+    statusname = Attribute("Status Name")
+    
 class ITeamParticipation(Interface):
     """Team Participation for Users"""
     person = Attribute("Owner")
@@ -354,6 +364,7 @@ class IProduct(Interface):
     """A Product.  For example 'firefox' in the 'mozilla' project."""
 
     name = Attribute("The product's name, unique within a project.")
+    displayname = Attribute("The product's display name.")
 
     title = Attribute("The product's title.")
 
@@ -430,12 +441,19 @@ class IPackagePublishing(Interface):
     distroarchrelease = Attribute("Distro Arch Relese")
     packages = Attribute("XXX")
 
+class IBuild(Interface):
+    """A Build interface"""
+    distroarchrelease = Attribute("The Ditro Arch Release")
+
+
 class IBinaryPackage(Interface):
     """A binary package, e.g apache-utils"""
     # See the BinaryPackage table
     binarypackagename = Attribute("Binary Package Name ID")
+    sourcepackagerelease = Attribute("Sourcepackagerelease from where the binary comes")
     shortdesc = Attribute("Short Description")
     description = Attribute("Full Description")
+    build = Attribute("Binary Package Build")
     name = Attribute("Binary Package Name")
 
 class IBinaryPackageName(Interface):
@@ -461,20 +479,28 @@ class ISourcePackage(Interface):
 
     maintainer = Attribute("Maintainer")
     name = Attribute("A string")
-    title = Attribute("Package Title")
+    shortdesc = Attribute("Package Shortdesc")
     description = Attribute("Package Description")
+    distro = Attribute("Package Distribution")
     ##releases = Attribute("List of ISourcePackageRelease objects")
     proposed = Attribute("A source package release with upload status of "
                          "PROPOSED, else None")
+    product = Attribute("A Product, or None")
 
 class ISourcePackageRelease(Interface):
     """A source package release, e.g. apache-utils 2.0.48-3"""
     # See the SourcePackageRelease table
 
-    version = Attribute("A version string")
-    creator = Attribute("Person that created this release")
     sourcepackage = Attribute("The source package this is a release for")
-
+    srcpackageformat = Attribute("Source Package Format")
+    creator = Attribute("Person that created this release")
+    version = Attribute("A version string")
+    dateuploaded = Attribute("Date of Upload")
+    urgency = Attribute("Source Package Urgency")
+    dscsigningkey = Attribute("DSC Signing Key")
+    component = Attribute("Source Package Component")
+    changelog = Attribute("Source Package Change Log")
+    
     def branches():
         """Return the list of branches in a source package release"""
 

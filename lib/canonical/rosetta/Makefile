@@ -17,8 +17,8 @@ fullcheck: sql-tests
 .PHONY: fullcheck
 
 testdb:
-	dropdb launchpad_test
-	make -C ../../../database/schema launchpad_test
+	#dropdb launchpad_test
+	make -C ../../../database/schema
 
 .PHONY: testdb
 

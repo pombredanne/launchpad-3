@@ -8,12 +8,12 @@ import unittest
 
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.database.sqlbase import SQLBase
 from canonical.rosetta.interfaces import ILanguages
+from canonical.database.doap import DBProject
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
-    xxxRosettaProject, RosettaProduct, RosettaLanguages
+    RosettaProduct, RosettaLanguages
 from canonical.rosetta.poexport import POExport
-from sqlobject import connectionForURI
+import canonical.lp
 
 
 expected = '''# traducci\xc3\xb3n de es.po al Spanish
@@ -110,6 +110,7 @@ msgstr ""
 msgid "Migrating `%s':"
 msgstr ""
 
+# This is an example of commenttext for a multiline msgset
 #: addressbook/gui/component/addressbook-migrate.c:1123
 msgid ""
 "The location and hierarchy of the Evolution contact folders has changed since "
@@ -117,6 +118,10 @@ msgid ""
 "\\n"
 "Please be patient while Evolution migrates your folders..."
 msgstr ""
+"La ubicaci\xc3\xb3n y jerarqu\xc3\xada de las carpetas de contactos de Evolution ha cambiado "
+"desde Evolution 1.x.\\n"
+"\\n"
+"Tenga paciencia mientras Evolution migra sus carpetas..."
 
 #: addressbook/gui/widgets/e-addressbook-model.c:151
 #, c-format
@@ -124,6 +129,21 @@ msgid "%d contact"
 msgid_plural "%d contacts"
 msgstr[0] "%d contacto"
 msgstr[1] "%d contactos"
+
+#: addressbook/gui/widgets/eab-gui-util.c:275
+#, c-format
+msgid ""
+"Opening %d contact will open %d new window as well.\\n"
+"Do you really want to display this contact?"
+msgid_plural ""
+"Opening %d contacts will open %d new windows as well.\\n"
+"Do you really want to display all of these contacts?"
+msgstr[0] ""
+"Abrir %d contacto abrir\xc3\xa1 %d ventanas nuevas tambi\xc3\xa9n.\\n"
+"\xc2\xbfQuiere realmente mostrar este contacto?"
+msgstr[1] ""
+"Abrir %d contactos abrir\xc3\xa1 %d ventanas nuevas tambi\xc3\xa9n.\\n"
+"\xc2\xbfQuiere realmente mostrar todos estos contactos?"
 
 #~ msgid "_Add Group"
 #~ msgstr "_A\xc3\xb1adir grupo"
@@ -135,11 +155,11 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
         super(POExportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
         utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+        canonical.lp.initZopeless()
 
     def testPoExportAdapter(self):
         try:
-            project = xxxRosettaProject.selectBy(name = 'gnome')[0]
+            project = DBProject.selectBy(name = 'gnome')[0]
             product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
             poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-2.0')[0]
         except IndexError, e:

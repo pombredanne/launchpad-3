@@ -2,11 +2,10 @@
 # arch-tag: 752bd71e-584e-416e-abff-a4eb6c82399c
 
 from zope.component.tests.placelesssetup import PlacelessSetup
-from canonical.database.sqlbase import SQLBase
+import canonical.lp
 from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
     RosettaProduct
 from canonical.database.doap import DBProjects
-from sqlobject import connectionForURI
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 from optparse import OptionParser
 from transaction import get_transaction
@@ -14,7 +13,7 @@ from transaction import get_transaction
 class PODBBridge(PlacelessSetup):
 
     def __init__(self):
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+        canonical.lp.initZopeless()
 
     def imports(self, person, file, projectName, productName, poTemplateName,
         languageCode=None):
@@ -57,7 +56,7 @@ class PODBBridge(PlacelessSetup):
                 poFile = poTemplate.poFile(languageCode)
             except KeyError:
                 poFile = poTemplate.newPOFile(person, languageCode)
-            importer = POFileImporter(poFile, None)
+            importer = POFileImporter(poFile, person)
         importer.doImport(file)
 
 if __name__ == '__main__':
@@ -74,6 +73,9 @@ if __name__ == '__main__':
         help="The template the imported file belongs to")
     parser.add_option("-l", "--language", dest="language",
         help="The language code, for importing PO files")
+    parser.add_option("-D", "--debug", dest="debug",
+        action="store_true", default=False,
+        help="Activate extra debug output")
 
     (options, args) = parser.parse_args()
 
@@ -81,18 +83,23 @@ if __name__ == '__main__':
         if getattr(options, name) is None:
             raise RuntimeError("No %s specified." % name)
 
+    if options.debug:
+        from canonical.rosetta import pofile
+        pofile.DEBUG=True
+
     print "Connecting to database..."
     bridge = PODBBridge()
     in_f = file(options.file, 'rU')
     person = RosettaPerson.get(int(options.owner))
-    transaction = get_transaction()
     try:
         print "Importing %s ..." % options.file
         bridge.imports(person, in_f, options.project, options.product,
                        options.potemplate, options.language)
+    except:
+        print "aborting database transaction"
+        get_transaction().abort()
+        raise
+    else:
         # Explicit commit added in an attempt to fix the fact that message set
         # sequence numbers are not being written to the database.
-        transaction.commit()
-    except:
-        transaction.abort()
-        raise
+        get_transaction().commit()

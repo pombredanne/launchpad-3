@@ -1,8 +1,8 @@
 from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
-from canonical.soyuz.database import SoyuzSourcePackage
+from canonical.soyuz.database import SoyuzSourcePackage, SoyuzBinaryPackage
 from sqlobject import LIKE, OR, AND
 
-
+from canonical.database.sqlbase import quote
 
 class DistrosSearchView(object):
 
@@ -38,12 +38,12 @@ class PeopleSearchView(object):
 
         name = self.request.get("name", "")
 
-        #FIXME: add operator '%' to query all persons
-        #FIXME: use 'UPPER(field) LIKE UPPER('%%name%%') 
         if name:
-            name_like = LIKE(SoyuzPerson.q.displayname,
-                             '%%' + name + '%%')
-            self.results = SoyuzPerson.select(AND(name_like))
+            name = name.replace('%', '%%')
+            query = quote('%%'+ name.upper() + '%%')
+
+            self.results = SoyuzPerson.select('UPPER(displayname) LIKE %s OR \
+            UPPER(teamdescription) LIKE %s' %(query, query))
 
             self.entries = self.results.count()
             self.enable_results = True
@@ -119,7 +119,7 @@ class ReleasesAddView(object):
             #FIXME: verify the results 
             self.enable_added = True
             
-class ReleasesEditView(object):
+class ReleaseEditView(object):
 
     def __init__(self, context, request):
         self.context = context
@@ -140,6 +140,22 @@ class ReleasesEditView(object):
             self.context.release.version = version
             #FIXME: verify the results 
             self.enable_edited = True
+
+class ReleaseSearchView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.sources = []
+        self.binaries = []
+        
+        name = request.get("name", "")
+        
+        if name:
+            self.sources = list(context.findSourcesByName(name))
+            self.binaries = list(context.findBinariesByName(name))
+        else:
+            self.sources = []
+            self.binaries = []
             
 class DistrosReleaseSourcesSearchView(object):
 

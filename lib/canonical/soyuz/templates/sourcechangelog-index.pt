@@ -14,18 +14,12 @@
 
 <div metal:fill-slot="main">
 
-
-    <h1> 
-     <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
-	TITLE </span>
-     <span tal:content="context/sourcepackagerelease/version">
-	Version</span>-
-     <span tal:content="context/arch">
-	Arch</span>
-    </h1>
-
+    <h1> <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc" /> ChangeLog </h1>
     
+    <pre>
+      <span tal:content="context/sourcepackagerelease/changelog" />
+    </pre>
+
 </div>
 </body>
 </html>
- 

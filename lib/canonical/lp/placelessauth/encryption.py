@@ -23,13 +23,16 @@ class SSHADigestEncryptor(object):
             salt += chr(random.randrange(256))
         return salt
 
-    def encrypt(self, plaintext):
-        pw = str(plaintext)
-        salt = self.generate_salt()
+    def encrypt(self, plaintext, salt=None):
+        plaintext = str(plaintext)
+        if salt is None:
+            salt = self.generate_salt()
         v = binascii.b2a_base64(sha.new(plaintext + salt).digest() + salt)
         return v[:-1]
 
     def validate(self, plaintext, encrypted):
+        encrypted = str(encrypted)
+        plaintext = str(plaintext)
         try:
             ref = binascii.a2b_base64(encrypted)
         except binascii.Error:

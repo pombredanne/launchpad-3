@@ -93,7 +93,7 @@
 <traverse for="canonical.soyuz.sql.DistroReleaseApp" getter="getPackageContainer" />
 
    <pages for="canonical.soyuz.sql.DistroReleaseApp"
-	  allowed_attributes="results"	 
+	  allowed_attributes="results sources binaries"	 
 	  permission="zope.Public"> 
 	
 	<page  name="index.html"
@@ -116,11 +116,21 @@
 
 	<page for="canonical.soyuz.sql.DistroReleaseApp"
 	  permission="zope.Public"
-	  class="canonical.soyuz.browser.ReleasesEditView"
+	  class="canonical.soyuz.browser.ReleaseEditView"
 	  name="+edit"
           template="templates/release-edit.pt"	
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+edit"
 	/>
+	
+	<page for="canonical.soyuz.sql.DistroReleaseApp"
+	  permission="zope.Public"
+	  class="canonical.soyuz.browser.ReleaseSearchView"
+	  name="+search"
+          template="templates/release-search.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+search"
+	/>
+
+	
 
 <!-- Tuesday Stuff -->
 
@@ -176,6 +186,15 @@
 	<page  name="index.html"
           template="templates/sourcepackagerelease-index.pt"	
 	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/index.html"
+	/>
+   </pages>
+
+   <pages for="canonical.soyuz.sql.DistroReleaseSourceReleaseApp"
+	  allowed_attributes="results"	 
+	  permission="zope.Public"> 
+	<page  name="+changelog"
+          template="templates/sourcechangelog-index.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+changelog"
 	/>
    </pages>
 

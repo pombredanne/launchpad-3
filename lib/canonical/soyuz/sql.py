@@ -25,7 +25,6 @@ from canonical.soyuz.interfaces import IBinaryPackageSet, ISourcePackageSet
 from canonical.soyuz.interfaces import ISourcePackage, ISoyuzPerson, IProject
 from canonical.soyuz.interfaces import IProjects, IProduct
 from canonical.soyuz.interfaces import ISync, IDistribution, IRelease
-from canonical.soyuz.interfaces import IDistributionRole, IDistroReleaseRole
 
 from canonical.soyuz.interfaces import IDistroBinariesApp
 
@@ -52,6 +51,9 @@ from canonical.arch.database import Branch, Changeset
 from canonical.soyuz.database import SoyuzEmailAddress, GPGKey, ArchUserID, \
      WikiName, JabberID, IrcID, Membership, TeamParticipation
 
+from canonical.soyuz.database import DistributionRole, DistroReleaseRole
+
+from string import split, join
 
 
 class DistrosApp(object):
@@ -95,7 +97,8 @@ class DistroApp(object):
 class DistroReleaseApp(object):
     def __init__(self, release):
         self.release = release
-        
+        self.roles=DistroReleaseRole.selectBy(distroreleaseID=self.release.id) 
+
     def getPackageContainer(self, name):
         if name == 'source':
             return SourcePackages(self.release)
@@ -104,13 +107,43 @@ class DistroReleaseApp(object):
         else:
             raise KeyError, name
 
+    def _sourcequery(self):
+        return (
+            'SourcePackageUpload.sourcepackagerelease=SourcePackageRelease.id '
+            'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+            'AND SourcePackageUpload.distrorelease = %d '
+            'AND SourcePackage.sourcepackagename = SourcePackageName.id'
+            % (self.release.id))
+        
+    def findSourcesByName(self, pattern):
+        query = self._sourcequery()
+        pattern = pattern.replace('%', '%%')
+        query += ' AND SourcePackageName.name LIKE %s' % quote('%%' + pattern + '%%')
+        from sets import Set
+        return Set(SoyuzSourcePackage.select(query))
+
+    where = (
+        'PackagePublishing.binarypackage = BinaryPackage.id AND '
+        'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
+        'DistroArchRelease.distrorelease = %d '
+        )
+
+    def findBinariesByName(self, pattern):
+        query = self.where % self.release.id
+        pattern = pattern.replace('%', '%%')
+        query += 'AND  BinaryPackage.binarypackagename = BinarypackageName.id '
+        query += 'AND  BinarypackageName.name LIKE %s' % quote('%%' + pattern + '%%')
+        from sets import Set
+        return Set(SoyuzBinaryPackage.select(query))
+
+
 class DistroReleasesApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
 
     def __getitem__(self, name):
         return DistroReleaseApp(Release.selectBy(distributionID=
-                                                    self.distribution.id,
+                                                 self.distribution.id,
                                                  name=name)[0])
     def __iter__(self):
     	return iter(Release.selectBy(distributionID=self.distribution.id))
@@ -124,9 +157,20 @@ class DistroReleaseSourceReleaseBuildApp(object):
         self.sourcepackagerelease = sourcepackagerelease
         self.arch = arch
 
+class builddepsContainer(object):
+    def __init__(self, name, version):
+        self.name = name
+        tmp = split(version)
+        if len(tmp) <= 1:
+            self.signal = None
+            self.version = ''
+        else:
+            self.signal = tmp[0]
+            self.version = tmp[1][:-1]
 
 class DistroReleaseSourceReleaseApp(object):
-    def __init__(self, sourcepackage, version):
+    def __init__(self, sourcepackage, version, distroreleasename):
+        self.distroreleasename = distroreleasename
         results = SoyuzSourcePackageRelease.selectBy(
                 sourcepackageID=sourcepackage.id, version=version)
         if results.count() == 0:
@@ -137,6 +181,25 @@ class DistroReleaseSourceReleaseApp(object):
         # FIXME: stub
         self.archs = ['i386','AMD64']
         
+        if self.sourcepackagerelease.builddepends:
+            self.builddepends = []
+            builddepends = split(self.sourcepackagerelease.builddepends, ',')
+            for pack in builddepends:
+                tmp = split(pack)
+                self.builddepends.append( builddepsContainer( tmp[0],join(tmp[1:]) ) )
+        else:
+            self.builddepends = None
+
+
+        if self.sourcepackagerelease.builddependsindep:
+            self.builddependsindep = []
+            builddependsindep = split(self.sourcepackagerelease.builddependsindep, ',')
+            for pack in builddependsindep:
+                tmp = split(pack)
+                self.builddependsindep.append( builddepsContainer( tmp[0],join(tmp[1:]) ) )
+        else:
+            self.builddependsindep = None
+
     def __getitem__(self, arch):
         return DistroReleaseSourceReleaseBuildApp(self.sourcepackagerelease,
                                                   arch)
@@ -150,20 +213,9 @@ class DistroReleaseSourceApp(object):
     def __init__(self, release, sourcepackage):
         self.release = release
         self.sourcepackage = sourcepackage
-        # FIXME: stub
-        #         self.lastversions = ['1.2.3-4',
-        #                              '1.2.3-5',
-        #                              '1.2.3-6',
-        #                              '1.2.4-0',
-        #                              '1.2.4-1']
-
-        #self.currentversions = [CurrentVersion('1.2.4-0',['i386', 'AMD64']),
-        #                        CurrentVersion('1.2.3-6',['PPC'])
-        #                        ]
-                                
 
     def __getitem__(self, version):
-        return DistroReleaseSourceReleaseApp(self.sourcepackage, version)
+        return DistroReleaseSourceReleaseApp(self.sourcepackage, version, self.release.name)
 
     def proposed(self):
         return self.sourcepackage.proposed(self.release)
@@ -279,7 +331,7 @@ class DistroSourcesApp(object):
 
     def __getitem__(self, name):
         return DistroReleaseSourcesApp(Release.selectBy(distributionID=\
-                                                            self.distribution.id,
+                                                        self.distribution.id,
                                                         name=name)[0])
 
     def __iter__(self):
@@ -290,68 +342,23 @@ class DistroSourcesApp(object):
 ###########################################################
 
 # Team app component (team)
-#FIXME: I shouls be moved to database.py !! and work for instance 
-class DistributionRole(SQLBase):
-
-    implements(IDistributionRole)
-
-    _table = 'Distributionrole'
-    _columns = [
-        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
-                   notNull=True),
-        ForeignKey(name='distribution', dbName='distribution',
-                   foreignKey='Distribution', notNull=True),
-        IntCol('role', dbName='role')
-        ]
-
-
-class DistroReleaseRole(SQLBase):
-
-    implements(IDistroReleaseRole)
-
-    _table = 'Distroreleaserole'
-    _columns = [
-        ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
-                   notNull=True),
-        ForeignKey(name='distrorelease', dbName='distrorelease',
-                   foreignKey='Release',
-                   notNull=True),
-        IntCol('role', dbName='role')
-        ]
-
-#FIXME: just usefull for STUBs
-class Team(object):
-    def __init__(self, displayname, role):
-        self.displayname = displayname
-        self.role = role
-
-
 class DistroReleaseTeamApp(object):
     def __init__(self, release):
         self.release = release
 
-#FIXME: STUB sucks         
-#        self.team=DistroReleaseRole.select()
-        self.team = [Team('Matt Zimmerman', 'Maintainer'),
-                       Team('Robert Collins', 'Translator'),
-                       Team('Lalo Martins', 'Contribuitors')
-                       ]
+        self.team=DistroReleaseRole.selectBy(distroreleaseID=
+                                             self.release.id)
         
 
 class DistroTeamApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
-#FIXME: STUB sucks         
-#        self.team=DistributionRole.select()
-
-        self.team = [Team('Mark Shuttleworth', 'Maintainer'),
-                     Team('James Blackwell', 'Translator'),
-                     Team('Steve Alexander', 'Contribuitors')
-                     ]
+        self.team = DistributionRole.selectBy(distributionID=
+                                            self.distribution.id)
 
     def __getitem__(self, name):
         return DistroReleaseTeamApp(Release.selectBy(distributionID=
-                                                       self.distribution.id,
+                                                     self.distribution.id,
                                                      name=name)[0])
 
     def __iter__(self):
@@ -361,11 +368,12 @@ class DistroTeamApp(object):
 # new People Branch
 class PeopleApp(object):
     def __init__(self):
-        self.entries = SoyuzPerson.select('teamowner IS NULL').count()
+        #FIXME these names are totaly crap
+        self.p_entries = SoyuzPerson.select('teamowner IS NULL').count()
+        self.t_entries = SoyuzPerson.select('teamowner IS NOT NULL').count()
 
     #FIXME: traverse by ID ?
     def __getitem__(self, id):
-        print 'PeopleApp, __getitem__,', id
         try:
             return PersonApp(int(id))
         except Exception, e:
@@ -373,18 +381,73 @@ class PeopleApp(object):
             raise
 
     def __iter__(self):
-        return iter(SoyuzPerson.select('teamowner IS NULL'))
+        #FIXME is that the only way to ORDER
+        return iter(SoyuzPerson.select('1=1 ORDER by displayname'))
 
 class PersonApp(object):
     def __init__(self, id):
         self.id = id
-        # FIXME: I know it seems totally nasty ...
-        # it should query By ID ... 
         self.person = SoyuzPerson.get(self.id)
+
+        # FIXME: Most of this code probably belongs as methods/properties of
+        #        SoyuzPerson
+
         try:
-            self.email = SoyuzEmailAddress.selectBy(personID=self.id)[0]
+            self.members = Membership.selectBy(teamID=self.id)
+            if self.members.count() == 0:
+                self.members = None                
         except IndexError:
-            self.email = None
+            self.members = None
+
+        try:
+            self.teams = TeamParticipation.selectBy(personID=self.id)
+            if self.teams.count() == 0:
+                self.teams = None                
+        except IndexError:
+            self.teams = None
+
+        try:
+            #thanks spiv !
+            query = "team = %d "%self.id
+            query += "AND Person.id = TeamParticipation.person "
+            query += "AND Person.teamowner IS NOT NULL"
+            
+            self.subteams = TeamParticipation.select(query)
+            
+            if self.subteams.count() == 0:
+                self.subteams = None                
+        except IndexError:
+            self.subteams = None
+
+        try:
+            self.distroroles = DistributionRole.selectBy(personID=self.id)
+            if self.distroroles.count() == 0:
+                self.distroroles = None
+                
+        except IndexError:
+            self.distroroles = None
+
+        try:
+            self.distroreleaseroles = DistroReleaseRole.selectBy(personID=\
+                                                                 self.id)
+            if self.distroreleaseroles.count() == 0:
+                self.distroreleaseroles = None
+        except IndexError:
+            self.distroreleaseroles = None
+            
+        try:
+            # Prefer validated email addresses
+            self.email = SoyuzEmailAddress.selectBy(
+                personID=self.id,
+                status=int(dbschema.EmailAddressStatus.VALIDATED))[0]
+        except IndexError:
+            try:
+                # If not validated, fallback to new
+                self.email = SoyuzEmailAddress.selectBy(
+                    personID=self.id,
+                    status=int(dbschema.EmailAddressStatus.NEW))[0]
+            except IndexError:
+                self.email = None
         try:
             self.wiki = WikiName.selectBy(personID=self.id)[0]
         except IndexError:
@@ -459,8 +522,13 @@ class DistroReleaseBinaryReleaseBuildApp(object):
 
 class DistroReleaseBinaryReleaseApp(object):
     def __init__(self, binarypackagerelease, version):
-        self.binarypackagerelease = binarypackagerelease
         self.version = version
+        self.binarypackagerelease = binarypackagerelease
+
+        query = 'SourcePackageUpload.distrorelease = DistroRelease.id '
+        query += 'AND SourcePackageUpload.sourcepackagerelease = %i ' %(self.binarypackagerelease.sourcepackagerelease.id)
+        self.sourcedistrorelease = Release.select(query)[0]
+
         # FIXME: stub
         self.archs = ['i386','AMD64']
 
@@ -471,20 +539,8 @@ class DistroReleaseBinaryReleaseApp(object):
     
 class DistroReleaseBinaryApp(object):
     def __init__(self, binarypackage, release):
-        # FIXME: stub
         self.binarypackage = binarypackage
         self.release = release
-
-##         self.lastversions = ['1.2.3-4',
-##                              '1.2.3-5',
-##                              '1.2.3-6',
-##                              '1.2.4-0',
-##                              '1.2.4-1']
-
-
-##         Self.currentversions = [CurrentVersion('1.2.4-0',['i386', 'AMD64']),
-##                                 CurrentVersion('1.2.3-6',['PPC'])
-##                                 ]
 
     def currentReleases(self):
         """The current releases of this binary package by architecture.
@@ -609,9 +665,6 @@ class SoyuzPerson(SQLBase):
                    foreignKey='SoyuzPerson', notNull=True),
         StringCol('teamdescription', dbName='teamdescription'),
         IntCol('karma', dbName='karma'),
-# THE table Karma should exists, isn't it ?!?!  
-#        ForeignKey(name='karma', dbName='karma', foreignKey='Karma',
-#                   notNull=True),
         DateTimeCol('karmatimestamp', dbName='karmatimestamp', notNull=True)
         ]
 

@@ -47,6 +47,11 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.soyuz.database.Distribution">
+    <allow interface="canonical.soyuz.interfaces.IDistribution"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
   <content class="canonical.soyuz.sql.DistributionRole">
     <allow interface="canonical.soyuz.interfaces.IDistributionRole"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
@@ -54,11 +59,6 @@
 
   <content class="canonical.soyuz.sql.DistroReleaseRole">
     <allow interface="canonical.soyuz.interfaces.IDistroReleaseRole"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.soyuz.sql.Team">
-    <allow interface="canonical.soyuz.interfaces.ITeam"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
@@ -114,6 +114,11 @@
 
   <content class="canonical.soyuz.database.SoyuzBinaryPackage">
     <allow interface="canonical.soyuz.interfaces.IBinaryPackage"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.sql.SoyuzBuild">
+    <allow interface="canonical.soyuz.interfaces.IBuild"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
@@ -222,6 +227,11 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.soyuz.sql.builddepsContainer">
+    <allow interface="canonical.soyuz.interfaces.IbuilddepsContainer"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
 
   <!-- UNUSED STUFF YET -->
 
@@ -233,7 +243,7 @@
     <allow interface="canonical.soyuz.interfaces.IProject"/>
   </content>
   
-  <content class="canonical.soyuz.sql.SoyuzProduct">
+  <content class="canonical.soyuz.database.SoyuzProduct">
     <allow interface="canonical.soyuz.interfaces.IProduct"/>
   </content>
   

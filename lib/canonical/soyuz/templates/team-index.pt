@@ -16,57 +16,58 @@
 
   <h1><span tal:content="context/distribution/title" /> Team Overview</h1>
 
-  <div>
-  <h3><span tal:content="context/distribution/title" /> Description </h3>
-  <p> <span tal:content="context/distribution/description" />
-  </div>
+
+  <p>Go to 
+     <a href="../">
+     <span tal:content="context/distribution/title"/> Release Page</a>
+     for more Information about the Distribution itself.
 
   <table width="50%">
-   <tr>
-      <td>
-      <h4><span tal:content="context/distribution/title" /> Team</h4>
-      </td>
-      <td>
-      <h4>Releases</h4>
-      </td>
-  </tr>
-  <tr>
-  <td>
-  <table class="listing">	
-   <tr> <th> Name</th> <th> Role</th> </tr>
-    <tal:block tal:repeat="team context/team">
-      <tr><td><span tal:content="team/displayname">Displayname</span></td>
-	<td><span tal:content="team/role">ROLE</span></td></tr>
-    </tal:block>
-  </table>
-  </td>
-  <td>
-    <li tal:repeat="release context">
-        <a tal:content="release/name"
-	   tal:attributes="href release/name">
-	  distribution title
-	</a>
-      </li>
-  </td>
+  <tr><td>
+    <div>
+    <table class="listing">	
+       <legend>Teams</legend>
+       <tr> <th> Name</th> <th> Role</th> </tr>
+       <tr tal:repeat="team context/team">
+          <td><a tal:attributes="href string:../../../people/${team/person/id}"
+	         tal:content="team/person/displayname">
+               Displayname</a></td>
+          <td><span tal:content="team/rolename">ROLENAME</span>
+          (<span tal:content="team/role">ROLE</span>)</td>
+       </tr>
+     </table>
+     </div>
+  </td><td valign="top">
+   <div>
+   <table>
+    <legend>Releases</legend>
+    <tr tal:repeat="release context">
+        <td><a tal:content="release/title"
+	       tal:attributes="href release/name">RELEASE</a>
+	</td>
+    </tr>
+   </table> 
+   </div>    
   </table>
 
-  <h3>Package Maintainers for <span tal:content="context/distribution/title" /></h3>
+  <div class="dummy">
+  <h3>Package Maintainers for 
+  <span tal:content="context/distribution/title"/></h3>
 
     <form name="add" action="" method="POST">
     	<table>
-
 	<tr><td>Maintainer</td> 
 	<td><input type="text" name="name"/></td>
 	<td> <input type="submit" value="Search"/></td>
 	<td> <table>
-	     <tr><td><a href="">View List</a></td></tr>
+	     <tr><td><a href="+list">View List</a></td></tr>
 	     <tr><td> (350 entries)</td></tr>
 	     </table>
 	</td> 
 	</tr>
 	</table>
     </form>
-
+   </div>
 
 </div>
 

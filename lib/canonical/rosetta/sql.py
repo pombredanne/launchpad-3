@@ -21,7 +21,7 @@ standardTemplateTopComment = '''# PO template for %(productname)s
 # Copyright (c) %(copyright)s %(year)s
 # This file is distributed under the same license as the %(productname)s package.
 # PROJECT MAINTAINER OR MAILING LIST <EMAIL@ADDRESS>, %(year)s.
-# 
+#
 '''
 
 # XXX: project-id-version needs a version
@@ -42,7 +42,7 @@ standardPOFileTopComment = '''# %(languagename)s translation for %(productname)s
 # Copyright (c) %(copyright)s %(year)s
 # This file is distributed under the same license as the %(productname)s package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
-# 
+#
 '''
 
 standardPOFileHeader = '''msgid ""
@@ -248,7 +248,7 @@ def createMessageIDSighting(messageSet, messageID):
         poMessageID_=messageID,
         dateFirstSeen="NOW",
         dateLastSeen="NOW",
-        inLastRevision=False,
+        inLastRevision=True,
         pluralForm=0)
 
 
@@ -719,7 +719,8 @@ class RosettaPOMessageSet(SQLBase):
             POMsgIDSighting.pomsgset = %d AND
             POMsgIDSighting.pomsgid = POMsgID.id AND
             POMsgIDSighting.inlastrevision = TRUE
-            ''' % self.id, clauseTables=('POMsgIDSighting',))
+            ''' % self.id, clauseTables=('POMsgIDSighting',),
+            orderBy='POMsgIDSighting.pluralform')
 
     def getMessageIDSighting(self, pluralForm, allowOld=False):
         """Return the message ID sighting that is current and has the
@@ -793,9 +794,6 @@ class RosettaPOMessageSet(SQLBase):
         results = list(RosettaPOTranslationSighting.select(
             'pomsgset = %d AND active = TRUE' % self.id,
             orderBy='pluralForm'))
-
-        #print "----->", list(map(lambda x: (x.pluralForm,
-        #    x.poTranslation), list(results)))
 
         translations = []
 
@@ -919,7 +917,7 @@ class RosettaPOMessageSet(SQLBase):
 
             existing = existing[0]
             # XXX: Do we always want to set inLastRevision to True?
-            existing.set(datelastSeen = "NOW", inLastRevision = True)
+            existing.set(dateLastSeen = "NOW", inLastRevision = True)
 
             return existing
 
@@ -1148,6 +1146,21 @@ class RosettaPerson(SQLBase):
             ORDER BY ???
             '''
 
+    def translatedTemplates(self):
+        '''
+        SELECT * FROM POTemplate WHERE
+            id IN (SELECT potemplate FROM pomsgset WHERE
+                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
+                    origin = 2
+                ORDER BY datefirstseen DESC))
+        '''
+        return RosettaPOTemplate.select('''
+            id IN (SELECT potemplate FROM pomsgset WHERE
+                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
+                    origin = 2
+                ORDER BY datefirstseen DESC))
+            ''')
+
     _labelsJoin = RelatedJoin('RosettaLabel', joinColumn='person',
         otherColumn='label', intermediateTable='PersonLabel')
 
@@ -1185,16 +1198,16 @@ class RosettaBranch(SQLBase):
 
 def personFromPrincipal(principal):
     from zope.app.security.interfaces import IUnauthenticatedPrincipal
+    from canonical.lp.placelessauth.launchpadsourceutility import \
+        LaunchpadPrincipal
+
     if IUnauthenticatedPrincipal.providedBy(principal):
         return None
-    else:
-        # XXX: Fill in real query.
-        ret = RosettaPerson.selectBy(displayName='Dafydd Harries')
 
-        if ret.count() == 0:
-            raise KeyError, principal
-        else:
-            return ret[0]
+    if not isinstance(principal, LaunchpadPrincipal):
+        return None
+
+    return RosettaPerson.get(principal.id)
 
 
 class RosettaSchemas(object):

@@ -1,6 +1,4 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-#
-# Empty __init__.py module to make this into a Package.
 
 __metaclass__ = type
 
@@ -9,8 +7,15 @@ from types import ClassType
 from zope.interface.advice import addClassAdvisor
 from zope.interface import classImplements
 
+from sqlobject import connectionForURI
+from canonical.database.sqlbase import SQLBase
+
 dbname = "launchpad_test"
 dbhost = ""
+
+def initZopeless():
+    SQLBase.initZopeless(connectionForURI('postgres://%s/%s' %
+        (dbhost, dbname)))
 
 def decorates(interface, context='context'):
     """Make an adapter into a decorator.

@@ -8,16 +8,18 @@ import sys, sets, warnings, textwrap, codecs
 from canonical.rosetta.ipofile import IPOMessage, IPOHeader, IPOParser
 from zope.interface import implements
 
+DEBUG=False
+
 # Exceptions and warnings
 
 class POSyntaxError(Exception):
     """ Syntax error in a po file """
     def __init__(self, lno=None):
         self.lno = lno
-        
+
     def __str__(self):
         if self.lno:
-            return 'Po file: syntax error on line %d' % self.lno
+            return 'Po file: syntax error on or before line %d' % self.lno
         else:
             return 'Po file: syntax error in the header entry'
 
@@ -26,12 +28,12 @@ class POInvalidInputError(Exception):
     def __init__(self, lno=None, msg=None):
         self.lno = lno
         self.msg = msg
-        
+
     def __str__(self):
         if self.msg:
             return self.msg
         elif self.lno:
-            return 'Po file: invalid input on line %d' % self.lno
+            return 'Po file: invalid input on or before line %d' % self.lno
         else:
             return 'Po file: invalid input in the header entry'
 
@@ -40,12 +42,12 @@ class POSyntaxWarning(Warning):
     def __init__(self, lno=0, msg=None):
         self.lno = lno
         self.msg = msg
-        
+
     def __str__(self):
         if self.msg:
             return self.msg
         elif self.lno:
-            return 'Po file: syntax warning on line %d' % self.lno
+            return 'Po file: syntax warning on or before line %d' % self.lno
         else:
             return 'Po file: syntax warning in the header entry'
 
@@ -73,7 +75,7 @@ class POMessage(object):
             if 'header' not in kw or type(kw['header'].nplurals) is not int:
                 raise POInvalidInputError(msg="File has plural forms, but plural-forms "
                                           "header entry is missing or invalid")
-            if len(kw['msgstrPlurals']) != kw['header'].nplurals:
+            if len(kw['msgstrPlurals']) > kw['header'].nplurals:
                 raise POInvalidInputError(lno=kw['_lineno'],
                                           msg="Bad number of plural-forms in entry "
                                           "'%s' (line %d)" % (kw['msgid'], kw['_lineno']))
@@ -120,7 +122,7 @@ class POMessage(object):
 
         >>> unicode(POMessage(msgid="foo", msgstr="bar"))
         u'msgid "foo"\nmsgstr "bar"'
-        
+
         obsolete entries are prefixed with #~
         >>> unicode(POMessage(msgid="foo", msgstr="bar", flags=("fuzzy",), obsolete=True))
         u'#, fuzzy\n#~ msgid "foo"\n#~ msgstr "bar"'
@@ -288,7 +290,7 @@ class POHeader(dict, POMessage):
             field, value = field.strip(), value.strip()
             if field.lower() == 'plural-forms':
                 try:
-                    self[field] = value
+                    self.__setitem__(field, value, False)
                 except ValueError:
                     raise POInvalidInputError(msg='Malformed plural-forms header entry')
             else:
@@ -463,11 +465,17 @@ class POParser(object):
     def append(self):
         if self._partial_transl:
             for message in self.messages:
-		if message.msgid == self._partial_transl['msgid']:
-                    raise POInvalidInputError('Po file: duplicate msgid on line %d'
+                if message.msgid == self._partial_transl['msgid']:
+                    raise POInvalidInputError('Po file: duplicate msgid ending on line %d'
                                               % self._lineno)
-            transl = self.translation_factory(header=self.header,
-                                              **self._partial_transl)
+            try:
+                transl = self.translation_factory(header=self.header,
+                                                  **self._partial_transl)
+            except POInvalidInputError:
+                if DEBUG:
+                    import traceback
+                    traceback.print_exc()
+                raise POInvalidInputError(self._lineno)
             self.messages.append(transl)
         self._partial_transl = None
 
@@ -476,6 +484,9 @@ class POParser(object):
             self.header = self.header_factory(messages=self.messages, **self._partial_transl)
             self.header.finish()
         except POSyntaxError:
+            if DEBUG:
+                import traceback
+                traceback.print_exc()
             raise POSyntaxError(self._lineno)
         if self.messages:
             warnings.warn(POSyntaxWarning(self._lineno,
@@ -505,7 +516,7 @@ class POParser(object):
         if l[:2] == '#~':
             obsolete = True
             l = l[2:].lstrip()
-        # If we get a comment line after a msgstr or a line starting with 
+        # If we get a comment line after a msgstr or a line starting with
         # msgid, this is a new entry
         # XXX: l.startswith('msgid') is needed because not all msgid/msgstr
         # pairs have a leading comment
@@ -658,7 +669,7 @@ def _write_inner(writer, header):
 
 def write(f, header, recode=None, use_replace=False):
     """Write a message catalog to an encoded file.
-    
+
     Second argument should be a IPOHeader object.  The messages to
     dump are acquired from its 'messages' attribute.
 
@@ -717,11 +728,15 @@ if __name__ == '__main__':
         in_f = file(sys.argv[1], 'rU')
     else:
         in_f = sys.stdin
-    if len(sys.argv) > 2:
+    while len(sys.argv) > 2:
         if sys.argv[2] == '--diff':
             from cStringIO import StringIO
             do_diff = True
             out_f = StringIO()
+            del sys.argv[2]
+        if sys.argv[2] == '--debug':
+            DEBUG = True
+            del sys.argv[2]
         else:
             out_f = file(sys.argv[2], 'w')
     else:

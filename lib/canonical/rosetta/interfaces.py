@@ -564,6 +564,9 @@ class IPerson(Interface):
         Results are sorted most-recently translated first.
         """
 
+    def translatedTemplates():
+        """Templates this person has translated, most recent first."""
+
     # Invariant: len(list(translatedProjects())) > 0 implies isTranslator
 
     def languages():
@@ -729,13 +732,13 @@ class ITranslationEffort(Interface):
 
     project = Attribute("""The Project associated with this translation
         effort.""")
-    
+
     categoriesSchema = Attribute("""The schema that defines the valid
         categories we have for this effort.""")
 
     def category(name):
         """Returns the category with the given name."""
-        
+
     def categories():
         """Returns an iterator over this translation effort's categories."""
 

@@ -14,30 +14,14 @@
 
 <div metal:fill-slot="main">
 
-
-    <h1> 
-     <tal:block tal:replace="context/binarypackagerelease/shortdesc">
-	TITLE </tal:block>
-     <tal:block tal:replace="context/version">
-	Version</tal:block>-
-     <tal:block tal:replace="context/arch">
-	Arch</tal:block>
-    </h1>
+<h1><span tal:content="context/binarypackagerelease/shortdesc">
+     TITLE </span>
+    <span tal:content="context/version">Version</span>-
+    <span tal:content="context/arch">Arch</tal:block>
+</h1>
     
-    <h4>SourcepackageRelease-index (...ubuntu/src/warty/apache2/1.3.6-2/i386) </h4>
-
-    <p>
-     <tal:block tal:replace="context/binarypackagerelease/shortdesc">
-	TITLE </tal:block>
-     <tal:block tal:replace="context/version">
-	Version</tal:block>-
-     <tal:block tal:replace="context/arch">
-	Arch</tal:block> Informations will be were
-
 
 </div>
-
-    <li> <a href="packages">Packages</a></li>
-  </body>
+</body>
 </html>
  

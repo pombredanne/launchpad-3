@@ -34,16 +34,28 @@
     <p class="discreet">
     These language name headlines are based on the user preferences, if
     the user hasn't set anything, it's the stuff we can extract from
-    browser/IP:
+    browser/IP.
     </p>
 
-    <div tal:condition="view/thereAreTemplates">
+    <tal:block condition="view/thereAreTemplates">
+        <!--
+        XXX: There is no pulldown.
+
         <div class="documentDescription">
         Here are the translation resources available, select language from the
         pulldown, and click an entry to translate.
         </div>
+        -->
 
-        <div tal:repeat="LT view/languageTemplates">
+        <div tal:condition="not: view/person">
+            <ul>
+                <li tal:repeat="template context/poTemplates">
+                    <a tal:attributes="href string:${template/name}/translate"
+                        tal:content="template/title">template</a></li>
+            </ul>
+        </div>
+
+        <div tal:condition="view/person" tal:repeat="LT view/languageTemplates">
 
             <h2 tal:content="LT/language/englishName">Language</h2>
 
@@ -61,9 +73,9 @@
                         <!--
                         XXX: Assumption that a PO file exists for this
                         language.
-			CarlosPerelloMarin: Fixed for the statistics, we
-			should implement the export.po in a way we get
-			an empty .po file from the .pot one
+                        CarlosPerelloMarin: Fixed for the statistics, we
+                        should implement the export code in a way we get
+                        an empty .po file from the .pot one
                         -->
                         <td><a tal:attributes="href
                             string:${template/name}/translate"
@@ -73,7 +85,7 @@
                         <td>
                             <img src="++resource++green-bar.png"
                                 height="15"
-                                alt="Translated & non updated graph"
+                                alt="Translated &amp; non updated graph"
                                 tal:condition="template/poNonUpdatesCount"
                                 tal:attributes="width template/poNonUpdatesPercent;
                                                 title string: Translated: ${template/poNonUpdatesPercent}%"
@@ -83,13 +95,13 @@
                                 tal:condition="template/poUpdatesCount"
                                 tal:attributes="width template/poUpdatesPercent;
                                                 title string: Updates: ${template/poUpdatesPercent}%"
-			    /><img src="++resource++dwelled-bar.png"
+                            /><img src="++resource++dwelled-bar.png"
                                 height="15"
                                 alt="Rosetta additions graph"
                                 tal:condition="template/poRosettaCount"
                                 tal:attributes="width template/poRosettaPercent;
                                                 title string: Rosetta additions: ${template/poRosettaPercent}%"
-			    /><img src="++resource++red-bar.png"
+                            /><img src="++resource++red-bar.png"
                                 height="15"
                                 alt="Fuzzy graph"
                                 tal:condition="template/poUntranslated"
@@ -97,21 +109,21 @@
                                                 title string: Untranslated: ${template/poUntranslatedPercent}%" />
                         </td>
                         <td><a tal:attributes="href
-			    string:${template/name}/export.po">
-			    <img src="++resource++download.png" alt="Download PO file" />Download .po</a></td>
+                            string:${template/name}/${LT/language/code}/po">
+                            <img src="++resource++download.png" alt="Download PO file" />Download .po</a></td>
                     </tr>
                 </tbody>
             </table>
 
         </div>
-    </div> <!-- tal:condition="view/thereAreTemplates -->
-  
-    <div tal:condition="not: view/thereAreTemplates">
+    </tal:block> <!-- condition="view/thereAreTemplates -->
+
+    <tal:block condition="not: view/thereAreTemplates">
         <p>
         Rosetta doesn't currently know of any translatable resources for
         <span tal:content="context/title">product title</span>.
         </p>
-    </div>
+    </tal:block>
 
 </div>
 

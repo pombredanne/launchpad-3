@@ -24,7 +24,7 @@ class POExport:
         header = POHeader(
             commentText = poFile.topComment,
             msgstr = poFile.header)
-        
+
         if poFile.headerFuzzy:
             header.flags.add('fuzzy')
 

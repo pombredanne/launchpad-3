@@ -22,9 +22,9 @@
     This file contains <i tal:content="view/num_messages">N messages</i>
     </p>
 
-    <p><a href="translate?languages=cy,jp">Translate this POT file</a>.</p>
+    <p><a href="translate">Translate this template</a>.</p>
 
-    <p><a href="upload">Update this POT file's data</a>.</p>
+    <p><a href="upload">Update this template's data</a>.</p>
 
     <h2>Translations</h2>
 

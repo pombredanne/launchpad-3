@@ -50,5 +50,8 @@
   <!-- enable the placeless authentication utility -->
   <include package="canonical.lp.placelessauth" />
 
+  <!-- A permission for anybody who has authenticated themselves. -->
+  <permission id="launchpad.AnyPerson" title="Any Person" />
+
 </configure>
 <!-- arch-tag: 9139ef7c-314a-4ffe-b905-fdb59c075d1c -->

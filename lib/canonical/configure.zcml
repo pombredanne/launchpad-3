@@ -4,6 +4,9 @@
 
   <include file="meta.zcml" />
 
+  <!-- This needs to be included early on because it defines permissions. -->
+  <include package="canonical.lp" />
+
   <!-- The default Zope 3 configuration of the SimpleComponentTraverser is
        that it applies to any object that provides Interface.
        This excludes objects that we're using just as instances of classes
@@ -62,7 +65,6 @@
       />
 
   <include file="browser-exception.zcml" />
-  <include package="canonical.lp" />
   <include package="canonical.widgets" />
   <include package="canonical.database" />
 

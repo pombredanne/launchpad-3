@@ -33,7 +33,7 @@
 	    <div class="formHelp">
 	    Enter the person Name .
             </div>
-	    <input type="text" name="name"/>
+	    <input type="text" name="name" tal:attributes="value request/name|nothing"/>
 	 </div>
 	 <div class="formControls">
 	    <input type="submit" value="Search"/>
@@ -46,8 +46,9 @@
 	 <a href="+list">View List</a>
 	 </td></tr>
 	 <tr><td>
-	 <b>(<span tal:content="context/entries">xx</span> Members)</b>
-	 </td></tr>
+	 <b>(<span tal:content="context/p_entries">xx</span> Members and
+	 <span tal:content="context/t_entries">xx</span> Teams)</b>
+	 </td></tr>	
 	 </table>
 	 </div>
 	 </td></tr>
@@ -56,18 +57,20 @@
   </div>
 
 
-  <tla:block tal:condition="view/enable_results">
+  <tal:block tal:condition="view/results">
   <div>
   <h3>Results</h3>
   <h4><span tal:content="view/entries"/> entries found</h4>
   <ul>
+  
   <li tal:repeat="person view/results"> 
-  <a tal:attributes="href person/id"
-  tal:content="person/displayname">
-  </a></li>
+      <a tal:attributes="href person/id"
+         tal:content="person/displayname"></a>
+  </li>
+
   </ul>
   </div>
-  </tla:block>
+  </tal:block>
 
 
 

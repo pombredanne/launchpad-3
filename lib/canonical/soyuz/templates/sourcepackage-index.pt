@@ -14,66 +14,104 @@
 
 <div metal:fill-slot="main">
 
-    <h1>
-       <tal:block
-       tal:replace="context/sourcepackage/title">TITLE</tal:block>
-    </h1>
-    <h2>Sourcepackage-index (...ubuntu/src/warty/apache2/) </h2>
-    <table width="80%">
-    <tr>
-    <td>
-    <p> <h4>Description:  </h4> <tal:block tal:replace="context/sourcepackage/description" />
-    <p> <h4>Package name: </h4> <tal:block tal:replace="context/sourcepackage/name" />
-    <p> <h4>Maintainer:   </h4> <tal:block tal:replace="context/sourcepackage/maintainer/displayname" />
+    <h1><span tal:content="context/sourcepackage/shortdesc"/></h1>
 
-	<tal:dummy tal:define="proposed context/proposed" tal:condition="proposed">
-    <p> <h4>Proposed:</h4>
-    <a tal:content="proposed/version" tal:attributes="href proposed/version">
-      VERSION
-    </a>
-	</tal:dummy>
-
-    <p> <h4>Current:</h4>
-
-    <tal:block tal:repeat="current context/currentversions">
-
-      <a tal:content="current/currentversion" 
-      tal:attributes="href current/currentversion">
-      CURRENTVERSION
-      </a>( 
-
-    <tal:block tal:repeat="currentbuild current/currentbuilds">
-      [
-      <a tal:content="currentbuild" tal:attributes="href
-      string:${current/currentversion}/${currentbuild}">
-      CURRENTBUILD
-      </a> 
-      ]
-
-    </tal:block>
-      )<br>
+    <table width="100%">
+       <tr>
+         <td valign="top" width="80%">
+	   <fieldset>
+	      <legend>
+	         Source Package Information
+	      </legend>
+	      <p><h4>Description:  </h4> 
+	      <tal:block tal:replace="context/sourcepackage/description" />
+	      <br>
+	      <br>
+	      <p><b>Package name: </b> 
+	      <tal:block tal:replace="context/sourcepackage/name" />
     
-    </tal:block>
+              <p><b>Maintainer:   </b> 
+	      <a
+	      tal:content="context/sourcepackage/maintainer/displayname" 
+	      tal:attributes="href 
+	      string:../../../../../people/${context/sourcepackage/maintainer/id}"
+	      />
 
-    </td>
-    <td>
-    <b>Bugs:</b> #1, #2, #3
-    <br>
-    <br>
-    <b>Last Packages:</b>
-    <li tal:repeat="lastversion context/lastversions">
-    <a tal:content="lastversion/version" tal:attributes="href lastversion/version">
-    0.0.0-0
-    </a>
-    </li>
-    </td>
-    <tr>
-    </table>
+	      <p><b>Distribution:   </b> 
+	      <a tal:content="context/sourcepackage/distro/title" 
+	      tal:attributes="href string:../../../../${context/sourcepackage/distro/name}"/>
 
+	      <p><b>Product:   </b> 
+	      <tal:dummy tal:condition="context/sourcepackage/product">
+	         <a href="no-url-yet" tal:content="context/sourcepackage/product/displayname" />
+	      </tal:dummy>
+	      <tal:dummy tal:condition="not:context/sourcepackage/product">
+	         No Product for this Package Available
+	      </tal:dummy>
+	   </fieldset>
+
+	   <fieldset>
+	      <legend>
+	         Available Versions
+	      </legend>
+	      
+	      <p><b>Proposed:</b>
+	      <tal:dummy tal:define="proposed context/proposed" tal:condition="proposed">
+	         <a tal:content="proposed/version"
+		 tal:attributes="href proposed/version" />
+	      </tal:dummy>
+
+	      <tal:dummy tal:define="proposed context/proposed" tal:condition="not:proposed">
+	         No Proposed Release Available
+	      </tal:dummy>
+
+	      <p><b>Current:</b><br>
+	      <tal:dummy tal:condition="context/currentversions">
+	      <tal:block tal:repeat="current context/currentversions">
+	         <a tal:content="current/currentversion" 
+		 tal:attributes="href current/currentversion" />
+		 (<tal:block tal:repeat="currentbuild current/currentbuilds">
+		       [<a tal:content="currentbuild" tal:attributes="href
+		       string:${current/currentversion}/${currentbuild}" />]
+		  </tal:block>
+		  )
+		  <br>
+	     </tal:block>
+	     </tal:dummy>
+	     <tal:dummy tal:condition="not:context/currentversions">
+	        No Current Releases Available
+	     </tal:dummy>
+	  </fieldset>
+       </td>
+       <td valign="top">
+          <fieldset>
+	     <legend>
+	        BUGS
+	     </legend>
+	     <div class="dummy">
+	        #1, #2, #3
+	     </div>
+	  </fieldset>    
+
+	  <tal:dummy tal:condition=" context/lastversions">    
+	     <fieldset>
+	        <legend>
+		   Last Packages
+		</legend>
+		<ul>
+		<li tal:repeat="lastversion context/lastversions">
+		   <a tal:content="lastversion/version" tal:attributes="href 
+		   lastversion/version">0.0.0-0</a>
+		</li>
+		</ul>
+	     </fieldset>
+	  </tal:dummy>
+
+      </td>
+   <tr>
+</table>
 
 </div>
-
-    <li> <a href="packages">Packages</a></li>
-  </body>
+</body>
 </html>
  

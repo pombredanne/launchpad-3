@@ -4,7 +4,7 @@
    This is some sample data for Rosetta.  This requires the default
    data to be inserted first.
 
-   arch-tag: 5734820d-754e-4297-bb54-fbe33b88af4c
+   arch-tag: c7271ec2-c8e7-4bd0-a78c-6337e9111989
 */
 
 /* All Persons have the same password: 'test' but the encrypted string is different, only
@@ -35,10 +35,15 @@ VALUES ('foo.bar@canonical.com',
 	(SELECT id FROM Person WHERE givenname='Foo'),
 	2);
 
+
 INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
-	'gnome', 'GNOME', 'The GNOME Project', 'foo', 'bar', 'http://www.gnome.org/' );
-INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
+	'gnome', 'GNOME', 'The GNOME Project', 'foo',
+	'The GNOME project provides two things: The GNOME desktop environment, an intuitive'
+	'and attractive desktop for end-users, users, and the GNOME development platform, an'
+	'extensive framework for building applications that integrate into the rest of the desktop.',
+	'http://www.gnome.org/' );
+/*INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
 	'iso-codes', 'iso-codes', 'iso-codes', 'foo', 'bar', 'http://www.gnome.org/' );
 INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
@@ -52,7 +57,7 @@ VALUES ((SELECT id FROM Project WHERE name='gnome'),
 INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Project WHERE name='iso-codes'),
 	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
-	'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', 'http://www.novell.com/' );
+	'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', 'http://www.novell.com/' );*/
 INSERT INTO ArchArchive (name, title, description, visible)
 VALUES ('gnome', 'GNOME', 'The GNOME Project', false);
 INSERT INTO ArchArchive (name, title, description, visible)
@@ -82,7 +87,7 @@ INSERT INTO License (legalese) VALUES ('GPL-2');
 
 /* Sample POTemplate file */
 
-INSERT INTO POTemplate (product, branch, priority, name, title,
+/*INSERT INTO POTemplate (product, branch, priority, name, title,
 			description, copyright, license, datecreated,
 			path, iscurrent, messagecount, owner)
 VALUES ((SELECT id FROM Product WHERE name = 'evolution'),
@@ -402,10 +407,10 @@ INSERT INTO POMsgID (msgid) VALUES ('<b>Downloading</b>');
 -- 91
 INSERT INTO POMsgID (msgid) VALUES ('<b>Searching</b>');
 -- 92
-INSERT INTO POMsgID (msgid) VALUES ('<b>Server Information</b>');
+INSERT INTO POMsgID (msgid) VALUES ('<b>Server Information</b>');*/
 /* A plural form: */
 -- 93
-INSERT INTO POMsgID (msgid) VALUES ('%d contact');
+/*INSERT INTO POMsgID (msgid) VALUES ('%d contact');
 INSERT INTO POMsgSet (primemsgid, sequence, potemplate, iscomplete, obsolete,
 		      fuzzy, filereferences, flagscomment)
 VALUES (93, 15, 1, FALSE, FALSE, FALSE,
@@ -467,7 +472,7 @@ VALUES ((SELECT id FROM POTemplate WHERE name = 'evolution-2.0'),
         'Content-Transfer-Encoding: 8bit\n'
         'Report-Msgid-Bugs-To: serrador@hispalinux.es\n'
         'X-Generator: KBabel 1.3.1\n'
-        'Plural-Forms: nplurals=2; plural=(n != 1);\n',
+        'Plural-Forms:  nplurals=2; plural=(n != 1);\n',
 	FALSE,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	2, 0, 1, 2);
@@ -505,9 +510,9 @@ INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstse
 VALUES (18, 2, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
-	
+*/	
 /* An example for a fuzzy string */
-INSERT INTO POTranslation (translation)
+/*INSERT INTO POTranslation (translation)
 VALUES ('tiene');
 INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obsolete,
 		      fuzzy) 
@@ -522,9 +527,9 @@ INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstse
 VALUES (19, 3, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
-
+*/
 /* An example for plural forms */
-INSERT INTO POTranslation (translation)
+/*INSERT INTO POTranslation (translation)
 VALUES ('%d contacto');
 
 INSERT INTO POTranslation (translation)
@@ -553,14 +558,14 @@ INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstse
 VALUES (20, 5, 1, now(), now(), TRUE, 1,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
-
+*/
 /* A multiline example */
-INSERT INTO POTranslation (translation)
+/*INSERT INTO POTranslation (translation)
 VALUES ('La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.\n\nTenga paciencia mientras Evolution migra sus carpetas...');
 INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obsolete,
 		      fuzzy, commenttext)
 VALUES (68, 5, 1, 1, TRUE, FALSE, FALSE,
-	' This is an example of commenttext for a multiline msgset');
+	'This is an example of commenttext for a multiline msgset');
 INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
 			     datelastseen, inlastrevision, pluralform)
 VALUES (21, 68, now(), now(), TRUE, 0);
@@ -569,9 +574,9 @@ INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstse
 VALUES (21, 6, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
-
+*/
 /* A plural form + multiline example */
-INSERT INTO POTranslation (translation)
+/*INSERT INTO POTranslation (translation)
 VALUES ('Abrir %d contacto abrirá %d ventanas nuevas también.\n¿Quiere realmente mostrar este contacto?');
 INSERT INTO POTranslation (translation)
 VALUES ('Abrir %d contactos abrirá %d ventanas nuevas también.\n¿Quiere realmente mostrar todos estos contactos?');
@@ -599,9 +604,9 @@ VALUES (22, 8, 1, now(), now(), TRUE, 1,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
-
+*/
 /* An example for obsolete string */
-INSERT INTO POTranslation (translation)
+/*INSERT INTO POTranslation (translation)
 VALUES ('_Añadir grupo');
 INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obsolete,
 		      fuzzy)
@@ -616,6 +621,7 @@ INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstse
 VALUES (23, 9, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
+*/
 
 INSERT INTO Schema (name, title, description, owner)
 VALUES ('translation-languages', 'Translation Languages',
