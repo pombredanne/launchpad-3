@@ -8,6 +8,11 @@ class DatabaseConstraintError(Exception):
     pass
 
 
+# XXX: not using Person at all yet
+class FakePerson(object):
+    id = 1
+XXXperson = FakePerson()
+
 # XXX: if you *modify* the adapted pofile "object", it assumes you're updating
 #      it from the latest revision (for the purposes of inLatestRevision fields).
 #      That should probably be optional.
@@ -69,6 +74,12 @@ class WatchedSet(sets.Set):
 class TranslationsList(object):
     def __init__(self, messageset):
         self._msgset = messageset
+        if self._msgset.messageIDs().count() >= 2:
+            if self._msgset.poFile is None:
+                # template
+                self._nplurals = 2
+            else:
+                self._nplurals = self._msgset.poFile.pluralForms
 
     # FIXME: this list implementation is incomplete.  Dude, if you want to do
     # del foo.msgstrs[2]
@@ -77,20 +88,40 @@ class TranslationsList(object):
     # then you're probably on crack anyway.
 
     def __setitem__(self, index, value):
+        if index > self._nplurals:
+            raise IndexError, index
         if not value:
+            if self._msgset.poFile is None:
+                # template
+                return
             try:
                 sighting = self._msgset.getTranslationSighting(index)
             except IndexError:
                 # nothing passed, nothing in the DB, then it's ok
                 return
             sighting.inLatestRevision = False
-        self._msgset.makeTranslationSighting(value, index, update=True, fromPOFile=True)
+        if self._msgset.poFile is None:
+            # template
+            raise pofile.POSyntaxError(msg="PO Template has translations!")
+        self._msgset.makeTranslationSighting(XXXperson, value, index,
+                                             update=True, fromPOFile=True)
 
     def __getitem__(self, index):
-        return self._msgset.getTranslationSighting(index).poTranslation.translation
+        try:
+            return self._msgset.getTranslationSighting(index).poTranslation.translation
+        except KeyError:
+            if index < self._nplurals:
+                return ''
+            raise IndexError, index
 
     def __len__(self):
         return self._msgset.translations().count()
+
+    def append(self, value):
+        if len(self) >= self._nplurals:
+            raise ValueError, "Too many plural forms"
+        self._msgset.makeTranslationSighting(XXXperson, value, len(self),
+                                             update=True, fromPOFile=True)
 
 
 class MessageProxy(POMessage):
@@ -108,8 +139,8 @@ class MessageProxy(POMessage):
     msgid = property(_get_msgid, _set_msgid)
 
     def _get_msgidPlural(self):
-        msgids = list(self._msgset.messageIDs())
-        if len(msgids) >= 2:
+        msgids = self._msgset.messageIDs()
+        if msgids.count() >= 2:
             return msgids[1].msgid
         return None
     def _set_msgidPlural(self, value):
@@ -118,7 +149,7 @@ class MessageProxy(POMessage):
         if old_plural is not None:
             old_plural = self._msgset.getMessageIDSighting(1)
             old_plural.inPOFile = False
-        self._msgset.makeMessageIDSighting(value, 1)
+        self._msgset.makeMessageIDSighting(value, 1, update=True)
     msgidPlural = property(_get_msgidPlural, _set_msgidPlural)
 
     def _get_msgstr(self):
@@ -126,11 +157,8 @@ class MessageProxy(POMessage):
         if len(translations) == 1:
             return translations[0].translation
     def _set_msgstr(self, value):
-        current = self._msgset.getTranslationSighting(0)
-        if value == current.poTranslation.translation:
-            return
-        current.inPOFile = False
-        new = self._msgset.makeTranslationSighting(0, index)        
+        # let's avoid duplication of code
+        self.msgstrPlurals[0] = value
     msgstr = property(_get_msgstr, _set_msgstr)
 
     def _get_msgstrPlurals(self):
@@ -141,6 +169,7 @@ class MessageProxy(POMessage):
             return TranslationsList(self._msgset)
     def _set_msgstrPlurals(self, value):
         current = self.msgstrPlurals
+        # XXX: broken if we didn't have all plural forms and now we do
         if current is not None and len(value) != len(current):
             raise ValueError("New list of message strings has different size as current one")
         if current is None:
@@ -205,7 +234,7 @@ class TemplateImporter(object):
         try:
             msgset = self.potemplate[msgid]
         except KeyError:
-            msgset = self.potemplate.makeMessageSet(msgid)
+            msgset = self.potemplate.makeMessageSet(msgid, update=True)
         else:
             try:
                 msgset.getMessageIDSighting(0).touch()
@@ -257,7 +286,7 @@ class POFileImporter(object):
         "Instantiate a single message/messageset"
         msgset = self.pofile[msgid]
         if msgset is None:
-            msgset = self.pofile.poTemplate.makeMessageSet(msgid, self.pofile)
+            msgset = self.pofile.poTemplate.makeMessageSet(msgid, self.pofile, update=True)
         else:
             msgset.getMessageIDSighting(0).touch()
         self.len += 1

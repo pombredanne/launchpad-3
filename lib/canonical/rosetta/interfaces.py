@@ -91,7 +91,7 @@ class IProduct(Interface):
         """Returns the PO template with the given name."""
 
     # XXX: branch
-    def newPOTemplate(name, title):
+    def newPOTemplate(person, name, title):
         """Creates a new PO template.
 
         Returns the newly created template.
@@ -201,7 +201,7 @@ class IEditPOTemplate(IPOTemplate):
         update is allowed, the existing one is and returned.  If it is
         not, then a KeyError is raised."""
 
-    def newPOFile(language, variant=None):
+    def newPOFile(person, language_code, variant=None):
         """Create and return a new po file in the given language. The
         variant is optional.
 
@@ -387,7 +387,7 @@ class IEditPOMessageSet(IPOMessageSet):
         is allowed, the existing one is "touched" and returned.  If it
         is not, then a KeyError is raised."""
 
-    def makeTranslationSighting(text, plural_form, update=False, fromPOFile=False):
+    def makeTranslationSighting(person, text, plural_form, update=False, fromPOFile=False):
         """Return a new translation sighting that points back to us.
         If one already exists, behaviour depends on 'update'; if update
         is allowed, the existing one is "touched" and returned.  If it
@@ -408,8 +408,8 @@ class IPOMessageIDSighting(Interface):
 
     dateLastSeen = Attribute("")
 
-    inLatestRevision = Attribute("True if this sighting is currently in the "
-                                 "upstream template or POFile, otherwise false.")
+    inLastRevision = Attribute("True if this sighting is currently in the "
+                               "upstream template or POFile, otherwise false.")
 
     pluralForm = Attribute("")
 
@@ -437,8 +437,8 @@ class IPOTranslationSighting(Interface):
 
     dateLastActive = Attribute("")
 
-    inLatestRevision = Attribute("True if this sighting is currently in the "
-                                 "upstream POFile, otherwise false.")
+    inLastRevision = Attribute("True if this sighting is currently in the "
+                               "upstream POFile, otherwise false.")
 
     origin = Attribute("Where the sighting originally came from.")
 
@@ -473,7 +473,7 @@ class IBranch(Interface):
 class IPerson(Interface):
     """A person in the system."""
 
-    presentationName = Attribute("""The name of this person.""")
+    displayName = Attribute("""The name of this person.""")
 
     # XXX: These attributes disabled because there is no support for them in
     # the database schema.

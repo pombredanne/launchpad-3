@@ -9,7 +9,8 @@ fullcheck: tests/test_interfaces_sql.py
 	(cd ../../.. ; python test.py canonical.rosetta)
 
 testdb:
-	make -C ../../../database sampledata
+	dropdb launchpad_test
+	make -C ../../../database/schema launchpad_test
 
 url-table:
 	./scripts/extract-urls.py < pages.zcml

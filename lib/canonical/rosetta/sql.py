@@ -168,8 +168,12 @@ class RosettaProduct(SQLBase):
         ForeignKey(name='project', foreignKey='RosettaProject', dbName='project',
             notNull=True),
         StringCol(name='name', dbName='name', notNull=True, unique=True),
+        StringCol(name='displayName', dbName='displayname', notNull=True),
         StringCol(name='title', dbName='title', notNull=True),
+        StringCol(name='shortDesc', dbName='shortdesc', notNull=True),
         StringCol(name='description', dbName='description', notNull=True),
+        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
+            notNull=True),
     ]
 
     _poTemplatesJoin = MultipleJoin('RosettaPOTemplate', joinColumn='product')
@@ -191,7 +195,7 @@ class RosettaProduct(SQLBase):
         else:
             return results[0]
 
-    def newPOTemplate(self, name, title):
+    def newPOTemplate(self, person, name, title):
         # XXX: we have to fill up a lot of other attributes
         if RosettaPOTemplate.selectBy(productID=self.id,
                                       name=name).count():
@@ -232,8 +236,7 @@ class RosettaPOTemplate(SQLBase):
     _columns = [
         ForeignKey(name='product', foreignKey='RosettaProduct', dbName='product',
             notNull=True),
-        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
-            notNull=True),
+        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner'),
         StringCol(name='name', dbName='name', notNull=True, unique=True),
         StringCol(name='title', dbName='title', notNull=True, unique=True),
         StringCol(name='description', dbName='description', notNull=True),
@@ -241,6 +244,12 @@ class RosettaPOTemplate(SQLBase):
         BoolCol(name='isCurrent', dbName='iscurrent', notNull=True),
         DateTimeCol(name='dateCreated', dbName='datecreated'),
         StringCol(name='copyright', dbName='copyright'),
+        ForeignKey(name='branch', foreignKey='RosettaBranch', dbName='branch',
+                   notNull=True),
+        IntCol(name='messageCount', dbName='messagecount', notNull=True),
+        IntCol(name='priority', dbName='priority', notNull=True),
+        # XXX cheating, as we don't yet have classes for these
+        IntCol(name='license', dbName='license', notNull=True),
     ]
 
     _poFilesJoin = MultipleJoin('RosettaPOFile', joinColumn='potemplate')
@@ -363,37 +372,44 @@ class RosettaPOTemplate(SQLBase):
                                               pluralForm=0)
         return msgSet
 
-    def newPOFile(self, language, variant=None):
-        # assume we are getting a IRosettaLanguage object
-        if RosettaPOFile.selectBy(poTemplate=self,
-                                  language=language,
-                                  variant=variant).count():
+    def newPOFile(self, person, language_code, variant=None):
+        try:
+            self.poFile(language_code, variant)
+        except KeyError:
+            pass
+        else:
             raise KeyError, \
                   "This template already has a POFile for %s variant %s" % \
                   (language.englishName, variant)
+        language = RosettaLanguage.selectBy(code=language_code)
+        if language.count() == 0:
+            raise ValueError, "Unknown language"
+        assert language.count() == 1
+        language = language[0]
         now = datetime.now()
         data = {
             'year': now.year,
             'languagename': language.englishName,
-            'languagecode': language.code,
+            'languagecode': language_code,
             'productname': self.product.title,
             'date': now.isoformat(' '),
-            'templatedate': self.datecreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
+            'templatedate': self.dateCreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
             'copyright': self.copyright,
             }
         return RosettaPOFile(poTemplate=self,
                              language=language,
-                             fuzzyHeader=True,
+                             headerFuzzy=True,
                              title='%(languagename)s translation for %(productname)s' % data,
-                             #description="",
+                             description="", # XXX: fill it
                              topComment=standardTemplateTopComment % data,
                              header=standardTemplateHeader % data,
-                             #lastTranslator=XXX: FIXME,
+                             lastTranslator=person,
                              currentCount=0,
                              updatesCount=0,
                              rosettaCount=0,
-                             #owner=XXX: FIXME,
-                             pluralForms=2, #FIXME
+                             owner=person,
+                             lastParsed="NOW",
+                             pluralForms=language.pluralForms or 0,
                              variant=variant)
     
     # XXX: currentCount, updatesCount and rosettaCount should be updated with
@@ -418,6 +434,8 @@ class RosettaPOFile(SQLBase):
             dbName='potemplate', notNull=True),
         ForeignKey(name='language', foreignKey='RosettaLanguage', dbName='language',
             notNull=True),
+        StringCol(name='variant', dbName='variant'),
+        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner'),
         StringCol(name='title', dbName='title', notNull=True, unique=True),
         StringCol(name='description', dbName='description', notNull=True),
         StringCol(name='topComment', dbName='topcomment', notNull=True),
@@ -429,7 +447,9 @@ class RosettaPOFile(SQLBase):
             notNull=True),
         IntCol(name='rosettaCount', dbName='rosettacount',
             notNull=True),
-        IntCol(name='pluralForms', dbName='pluralforms', notNull=True)
+        IntCol(name='pluralForms', dbName='pluralforms', notNull=True),
+        ForeignKey(name='lastTranslator', foreignKey='RosettaPerson', dbName='lasttranslator'),
+        DateTimeCol(name='lastParsed', dbName='lastparsed'),
         # XXX: missing fields
     ]
 
@@ -658,7 +678,8 @@ class RosettaPOMessageSet(SQLBase):
             inLastRevision=True,
             pluralForm=plural_form)
 
-    def makeTranslationSighting(self, text, plural_form, update=False, fromPOFile=False):
+    def makeTranslationSighting(self, person, text, plural_form,
+                              update=False, fromPOFile=False):
         """Return a new translation sighting that points back to us."""
         if type(text) is unicode:
             text = text.encode('utf-8')
@@ -671,7 +692,7 @@ class RosettaPOMessageSet(SQLBase):
             poMessageSetID=self.id,
             poTranslationID=translation.id,
             pluralForm=plural_form,
-            #person='XXX FIXME'
+            personID=person.id
             )
         if existing.count():
             assert existing.count() == 1
@@ -683,6 +704,10 @@ class RosettaPOMessageSet(SQLBase):
                          active=True,
                          inLastRevision=existing.inLastRevision or fromPOFile)
             return existing
+        if fromPOFile:
+            origin = 1
+        else:
+            origin = 2
         return RosettaPOTranslationSighting(
             poMessageSet=self,
             poTranslation=translation,
@@ -691,7 +716,9 @@ class RosettaPOMessageSet(SQLBase):
             inLastRevision=fromPOFile,
             pluralForm=plural_form,
             active=True,
-            person=0, #'XXX FIXME'
+            person=person,
+            origin=origin,
+            license=1, # XXX: FIXME
             )
 
 
@@ -732,7 +759,6 @@ class RosettaPOTranslationSighting(SQLBase):
             dbName='potranslation', notNull=True),
         ForeignKey(name='person', foreignKey='RosettaPerson',
             dbName='person', notNull=True),
-        # license
         DateTimeCol(name='dateFirstSeen', dbName='datefirstseen', notNull=True),
         DateTimeCol(name='dateLastActive', dbName='datelastactive', notNull=True),
         BoolCol(name='inLastRevision', dbName='inlastrevision', notNull=True),
@@ -740,6 +766,8 @@ class RosettaPOTranslationSighting(SQLBase):
         # See canonical.lp.dbschema.RosettaTranslationOrigin.
         IntCol(name='origin', dbName='origin', notNull=True),
         BoolCol(name='active', dbName='active', notNull=True),
+        # XXX cheating, as we don't yet have classes for these
+        IntCol(name='license', dbName='license', notNull=True),
     ]
 
 

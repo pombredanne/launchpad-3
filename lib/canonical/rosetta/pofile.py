@@ -487,7 +487,7 @@ class POParser(object):
 
     def to_unicode(self, text):
         'Convert text to unicode'
-        if self.header: # header is stored as str, not unicode!
+        if self.header: # header converts itself to unicode on finish()
             try:
                 return unicode(text, self.header.charset)
             except UnicodeError:
