@@ -86,7 +86,6 @@
 
   <include package="zope.app.basicskin" />
   <include package="zope.app.rotterdam" />
-  <defaultSkin name="Rotterdam" />
 
 
   <!-- Additional packages -->
