@@ -466,8 +466,11 @@ class POParser(object):
                 if message.msgid == self._partial_transl['msgid']:
                     raise POInvalidInputError('Po file: duplicate msgid on line %d'
                                               % self._lineno)
-            transl = self.translation_factory(header=self.header,
-                                              **self._partial_transl)
+            try:
+                transl = self.translation_factory(header=self.header,
+                                                  **self._partial_transl)
+            except POInvalidInputError:
+                raise POInvalidInputError(self._lineno)
             self.messages.append(transl)
         self._partial_transl = None
 

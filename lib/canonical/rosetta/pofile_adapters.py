@@ -287,21 +287,24 @@ class TemplateImporter(object):
         self.len += 1
         msgset.sequence = self.len
         proxy = MessageProxy(msgset, person=self.person)
-        proxy.msgidPlural = kw.get('msgidPlural', '')
-        if kw.get('msgstr'):
-            raise POInvalidInputError('PO template has msgstrs', 0)
-        proxy.commentText = kw.get('commentText', '')
-        proxy.sourceComment = kw.get('sourceComment', '')
-        proxy.fileReferences = kw.get('fileReferences', '').strip()
-        proxy.flags = kw.get('flags', ())
-        plurals = []
-        for inp_plural in kw.get('msgstrPlurals', ()):
-            if inp_plural:
+        try:
+            proxy.msgidPlural = kw.get('msgidPlural', '')
+            if kw.get('msgstr'):
                 raise POInvalidInputError('PO template has msgstrs', 0)
-            plurals.append(inp_plural)
-        proxy.msgstrPlurals = plurals
-        proxy.obsolete = kw.get('obsolete', False)
-        proxy.flush()
+            proxy.commentText = kw.get('commentText', '')
+            proxy.sourceComment = kw.get('sourceComment', '')
+            proxy.fileReferences = kw.get('fileReferences', '').strip()
+            proxy.flags = kw.get('flags', ())
+            plurals = []
+            for inp_plural in kw.get('msgstrPlurals', ()):
+                if inp_plural:
+                    raise POInvalidInputError('PO template has msgstrs', 0)
+                plurals.append(inp_plural)
+            proxy.msgstrPlurals = plurals
+            proxy.obsolete = kw.get('obsolete', False)
+            proxy.flush()
+        except:
+            raise POInvalidInputError
         return proxy
 
 
@@ -339,15 +342,18 @@ class POFileImporter(object):
         self.len += 1
         msgset.sequence = self.len
         proxy = MessageProxy(msgset, person=self.person)
-        proxy.msgidPlural = kw.get('msgidPlural', '')
-        if kw.get('msgstr'):
-            proxy.msgstr = kw['msgstr']
-        proxy.commentText = kw.get('commentText', '')
-        proxy.sourceComment = kw.get('sourceComment', '')
-        proxy.fileReferences = kw.get('fileReferences', '').strip()
-        proxy.flags = kw.get('flags', ())
-        if kw.get('msgstrPlurals'):
-            proxy.msgstrPlurals = kw['msgstrPlurals']
-        proxy.obsolete = kw.get('obsolete', False)
-        proxy.flush()
+        try:
+            proxy.msgidPlural = kw.get('msgidPlural', '')
+            if kw.get('msgstr'):
+                proxy.msgstr = kw['msgstr']
+            proxy.commentText = kw.get('commentText', '')
+            proxy.sourceComment = kw.get('sourceComment', '')
+            proxy.fileReferences = kw.get('fileReferences', '').strip()
+            proxy.flags = kw.get('flags', ())
+            if kw.get('msgstrPlurals'):
+                proxy.msgstrPlurals = kw['msgstrPlurals']
+            proxy.obsolete = kw.get('obsolete', False)
+            proxy.flush()
+        except:
+            raise POInvalidInputError
         return proxy
