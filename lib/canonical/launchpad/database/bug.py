@@ -171,9 +171,13 @@ def BugFactory(*args, **kw):
             kw.get('description', None) or
             kw.get('rfc822msgid', None)):
         raise ValueError, 'BugFactory requires a comment, rfc822msgid or description'
+
     # extract the details needed to create the bug and optional msg
-    description = kw.get('description', None)
-    summary = kw.get('shortdesc', None)
+    description = kw.get('description')
+    if not description:
+        description = kw.get('comment')
+    summary = kw.get('shortdesc')
+
     # if we have been passed only a description, then we set the summary to
     # be the first paragraph of it, up to 320 characters long
     if description and not summary:

@@ -34,5 +34,6 @@ from canonical.launchpad.browser.sourcesource import *
 from canonical.launchpad.browser.soyuz import *
 from canonical.launchpad.browser.sshkey import *
 from canonical.launchpad.browser.team import *
+from canonical.launchpad.browser.traversers import *
 from canonical.launchpad.browser.widgets import *
 

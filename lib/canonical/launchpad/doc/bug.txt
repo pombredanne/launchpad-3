@@ -200,6 +200,20 @@ subscribed:
 >>> print [subscription.person.id for subscription in public_bug.subscriptions]
 [16]
 
+The first comment made (this is submitted in the bug report) is set to
+the description of the bug:
+
+>>> public_bug.description
+u'blah blah blah'
+
+The bug description can also be accessed through the task:
+
+>>> public_bug.bugtasks[0].bugdescription
+u'blah blah blah'
+>>> public_bug.description = 'a new description'
+>>> public_bug.bugtasks[0].bugdescription
+u'a new description'
+
 But when a private bug is filed:
 
 >>> added_bug = BugFactory(

@@ -69,10 +69,6 @@
         Distro Release Task...
     </a>
 
-    <div class="documentDescription" tal:content="context/shortdesc">
-        $Bug.shortdesc
-    </div>
-
     <div class="boardCommentContent" 
         tal:content="structure context/description/fmt:nice_pre">
         $Bug.description

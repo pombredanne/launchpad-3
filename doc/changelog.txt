@@ -2,6 +2,64 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-30 21:29:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1524
+
+    Summary:
+      remove the browser:suburl configuration on IMaloneApplication. replace with a much simpler traversal function, as per SteveA's intended simplication. various other Malone fixes and improvements that I couldn't land before because PQM HATES ME.
+    Revision:
+      launchpad--devel--0--patch-1524
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-459
+       fix a broken page test (by working around a bug that's occurring somewhere in the diff code)
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-460
+       fix BugFactory so that the first comment on a bug *is* actually made the bug's description as well
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-461
+       fix IBugTask.bugdescription to be the bug description, rather than the most recent comment added on a bug
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-462
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-463
+       reverse some changes i cherrypicked from mpt, because having them in my tree is causing conflict and destruction when trying to merge from rocketfuel (perhaps related to the fact that salgado has also cherrypicked the same changes, and that code is now merged into rf.)
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-464
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-465
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-466
+       remove the browser:suburl configuration on IMaloneApplication. replace with a much simpler traversal function, as per SteveA's intended simplication.
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/traversers.py.id
+     lib/canonical/launchpad/browser/traversers.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/doc/bug.txt
+     lib/canonical/launchpad/pagetests/bugtask-management/xx-view-non-editable-bug-task.txt
+     lib/canonical/launchpad/templates/bug-index.pt
+     lib/canonical/malone/configure.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-459
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-460
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-461
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-462
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-463
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-464
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-465
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-466
+
+
 2005-03-30 21:21:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1523
 
     Summary:

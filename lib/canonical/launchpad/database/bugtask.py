@@ -94,8 +94,7 @@ class BugTask(SQLBase):
     maintainer_displayname = property(maintainer_displayname)
 
     def bugdescription(self):
-        if self.bug.messages:
-            return self.bug.messages[0].contents
+        return self.bug.description
     bugdescription = property(bugdescription)
 
     def _title(self):
