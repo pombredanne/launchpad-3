@@ -5,22 +5,23 @@ __metaclass__ = type
 from sets import Set
 
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
+from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR, IN
+from sqlobject import SQLObjectNotFound
+from sqlobject.sqlbuilder import table
 
 # Zope
+from zope.exceptions import NotFoundError
+from zope.security.interfaces import Unauthorized
 from zope.component import getUtility
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 from zope.interface import implements
 
 from canonical.lp import dbschema
-
 from canonical.launchpad.interfaces import IBugTask
-
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import nowUTC, DEFAULT
-
 from canonical.launchpad.database.sourcepackage import SourcePackage
-
+from canonical.launchpad.searchbuilder import any
 
 
 from canonical.launchpad.interfaces import IBugTasksReport, \
@@ -140,6 +141,79 @@ class BugTaskSet:
                     mark_as_readonly_sourcepackage_task(task)
 
             yield row
+
+    def get(self, id):
+        try:
+            bugtask = self.table.get(id)
+        except SQLObjectNotFound, err:
+            raise NotFoundError("BugTask with ID %s does not exist" % str(id))
+
+        return bugtask
+
+    def search(self, bug=None, status=None, priority=None, severity=None,
+               product=None, milestone=None, assignee=None, submitter=None,
+               orderby=None):
+        query = ""
+
+        # build the part of the query for FK columns
+        for arg in ('bug', 'product', 'milestone', 'assignee', 'submitter'):
+            query_arg = eval(arg)
+            if query_arg is not None:
+                if query:
+                    query += " AND "
+
+                fragment = ""
+                if isinstance(query_arg, any):
+                    quoted_ids = [quote(obj.id) for obj in query_arg.query_values]
+                    query_values = ", ".join(quoted_ids)
+                    fragment = "(BugTask.%s IN (%s))" % (arg, query_values)
+                else:
+                    fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg.id)))
+
+                query += fragment
+
+        # build the part of the query for the db schema columns
+        for arg in ('status', 'priority', 'severity'):
+            query_arg = eval(arg)
+            if query_arg is not None:
+                if query:
+                    query += " AND "
+
+                fragment = ""
+                if isinstance(query_arg, any):
+                    quoted_ids = [quote(obj) for obj in query_arg.query_values]
+                    query_values = ", ".join(quoted_ids)
+                    fragment = "(BugTask.%s IN (%s))" % (arg, query_values)
+                else:
+                    fragment = "(BugTask.%s = %s)" % (arg, str(quote(query_arg.id)))
+
+                query += fragment
+
+        user = getUtility(ILaunchBag).user
+
+        if query:
+            query += " AND "
+
+        if user:
+            query += "("
+        query += "(BugTask.bug = Bug.id AND Bug.private = FALSE)"
+        if user:
+            query += ((
+                " OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND "
+                "     (Bug.id = BugSubscription.bug) AND "
+                "     (BugSubscription.person = %(personid)d ) AND "
+                "     (BugSubscription.subscription IN (%(cc)d, %(watch)d))))") %
+                {'personid' : user.id,
+                 'cc' : dbschema.BugSubscription.CC.value,
+                 'watch' : dbschema.BugSubscription.WATCH.value})
+
+        bugtasks = BugTask.select(
+            query, clauseTables = ["Bug", "BugTask", "BugSubscription"],
+            distinct = True)
+        if orderby:
+            bugtasks = bugtasks.orderBy(orderby)
+
+        return bugtasks
 
     def add(self, ob):
         return ob

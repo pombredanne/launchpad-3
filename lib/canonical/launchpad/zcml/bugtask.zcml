@@ -5,6 +5,14 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <!-- IBugTask -->
+    <content class="canonical.launchpad.database.BugTask">
+        <require permission="launchpad.View"
+                 interface="canonical.launchpad.interfaces.IBugTask" />
+        <require permission="zope.Public"
+                 set_schema="canonical.launchpad.interfaces.IBugTask" />
+    </content>
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTask"
         name="+edit" />
@@ -77,7 +85,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="product maintainer bugtitle bugdescription milestone status priority severity assignee"
         label="Product Bug Task"
-        permission="zope.Public"
+        permission="launchpad.View"
         template="../templates/bugtask-display.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>

@@ -2,6 +2,64 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-26 23:10:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1258
+
+    Summary:
+      security documentation and the first chunk of work on bug privacy
+ internals (namely, a privacy aware, documented,
+ IBugTaskSet and IBugTask.) this is a work in progress
+    Revision:
+      launchpad--devel--0--patch-1258
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-319
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-320
+       checkpoint commit to pass an obscure authorization problem onto SteveA
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-321
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-322
+       add a document explaining how to define new permissions and security adapters
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-323
+       the first chunk of work on the bug privacy internals.
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-324
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/.arch-ids/searchbuilder.py.id
+     lib/canonical/launchpad/doc/.arch-ids/bugtask.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/security.txt.id
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/doc/security.txt
+     lib/canonical/launchpad/searchbuilder.py
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/interfaces/bug.py
+     lib/canonical/launchpad/interfaces/bugtask.py
+     lib/canonical/launchpad/permissions.zcml
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/security.zcml
+     lib/canonical/launchpad/zcml/bug.zcml
+     lib/canonical/launchpad/zcml/bugtask.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-319
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-320
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-321
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-322
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-323
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-324
+
+
 2005-01-26 19:23:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1257
 
     Summary:
