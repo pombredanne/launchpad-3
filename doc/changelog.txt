@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-13 12:18:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1310
+
+    Summary:
+      add pybaz link, and reenable test suites for buildbot/cscvs etc
+    Revision:
+      launchpad--devel--0--patch-1310
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-89
+       add pybaz link, and reenable test suites for buildbot/cscvs etc
+    
+
+    new files:
+     lib/.arch-ids/pybaz.id lib/pybaz
+
+    modified files:
+     doc/changelog.txt sourcecode/Makefile
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-89
+
+
 2005-02-11 23:17:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1309
 
     Summary:
