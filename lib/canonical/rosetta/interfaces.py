@@ -577,6 +577,9 @@ class ILanguage(Interface):
 class ILanguages(Interface):
     """The collection of languages."""
 
+    def __item__():
+        """Returns an iterator over all languages."""
+
     def __getitem__(code):
         """Get a language by its code."""
 

@@ -272,70 +272,59 @@ class ViewPOFile:
 
 
 class TranslatorDashboard:
+    # XXX: This class should be refactored and finished as soon as I (Carlos)
+    # could talk with Steve about the way to fetch the list of languages
+    # selected from the UI, please, ignore this code until then.
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        
+        self.person = IPerson(self.request.principal, None)
+        if self.person is None:
+            # XXX: Temporal hack, to be removed as soon as we have the login
+            # template working. The code duplication is just to be easier to
+            # remove this hack when is not needed anymore.
+            self.person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+        print "Inicializo el TranslatorDashBoard"
+        self.interest = list(self.person.languages())
+
     def projects(self):
         return getUtility(IProjects)
 
     def languages(self):
-        # XXX: This method is slow. We should look here when
-        # we start the optimization phase.
-        allLanguages = getUtility(ILanguages)
-        person = IPerson(self.request.principal, None)
-        if person is None:
-            # XXX: Temporal hack, to be removed as soon as we have the login
-            # template working. The code duplication is just to be easier to
-            # remove this hack when is not needed anymore.
-            person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
+        return getUtility(ILanguages)
 
-        interestedLanguages = list(person.languages())
-
-        for code in allLanguages.keys():
-            if allLanguages[code] in interestedLanguages:
-                selected = True
-            else:
-                selected = False
-
-            # XXX: We should let get the nativeName if present.
-            retdict = {
-                'selected': selected,
-                'code': code,
-                'name': allLanguages[code].englishName,
-            }
-
-            yield retdict
+    def selectedLanguages(self):
+        return self.interest
 
     def submit(self):
-        # XXX: This method is slow. We should look here when
-        # we start the optimization phase.
-        if "LANGUAGES" in self.request.form:
-            if self.request.method == "POST":
-                allLanguages = getUtility(ILanguages)
-                person = IPerson(self.request.principal, None)
-                if person is None:
-                    # XXX: Temporal hack, to be removed as soon as we have the login
-                    # template working. The code duplication is just to be easier to
-                    # remove this hack when is not needed anymore.
-                    person = RosettaPerson.selectBy(
-                        displayName='Dafydd Harries')[0]
-
-                oldInterest = list(person.languages())
-                newInterest = []
-                for code in allLanguages.keys():
-                    if code in self.request.form:
-                        newInterest.append(allLanguages[code])
-                for language in oldInterest:
-                    if language not in newInterest:
-                        person.removeLanguage(language)
-                for language in newInterest:
-                    if language not in oldInterest:
-                        person.addLanguage(language)
+        if "SAVE" in self.request.form:
+#            if self.request.method == "POST":
+#                oldInterest = self.person.languages()
+#                for language in self.oldInterest:
+#                    if language not in self.interest:
+#                        self.person.removeLanguage(language)
+#                for language in self.interest:
+#                    if language not in self.oldInterest:
+#                        self.person.addLanguage(language)
+#            else:
+#               raise RuntimeError("must post this form!")
+            print "save"
+#        elif "add2" in self.request.form:
+#            if self.request.method == "POST":
+#                # XXX: We should fix this, instead of get englishName list, we
+#                # should get language's code
+#                if isinstance(self.request.form['availablelanguages'], list):
+#                    newLanguages = self.request.form['availablelanguages']
+#                else:
+#                    newLanguages = [ self.request.form['availablelanguages'] ]
+#                for englishName in newLanguages:
+#                    for language in self.languages():
+#                        if language.englishName == englishName:
+#                            if language.code not in self.interest:
+#                                self.interest.append(language)
             else:
                 raise RuntimeError("must post this form!")
-
-            self.submitted = True
-            return "Thank you for submitting the form."
-        else:
-            self.submitted = False
-            return ""
 
 
 class ViewSearchResults:

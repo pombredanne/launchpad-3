@@ -14,7 +14,7 @@
 <body>
 
 <div metal:fill-slot="main"
-     tal:define="languages view/languages">
+     tal:define="languages view/languages; selectedLanguages view/selectedLanguages" >
 
     <h1>Personal preferences</h1>
     
@@ -27,7 +27,7 @@
 
     <div tal:content="view/submit" />
 
-    <form action="translator" method="post">
+    <form action="prefs" method="post">
     
         <div style="float: left;">
             <label>Available languages</label>
@@ -41,7 +41,7 @@
                     ondblclick="javascript:addSelectedKeywords('prefs-available-languages','prefs-selected-languages');return false;">
 
                     <option tal:repeat="language languages"
-                            tal:content="language/name"
+                            tal:content="language/englishName"
                             tal:attributes="name language/code" />
 
             </select>
@@ -65,7 +65,10 @@
                       style="width: 20em;"
                       multiple="multiple" 
                       ondblclick="javascript:removeWords('prefs-selected-languages');return false;">
-                      <option>Dummy</option>
+		      
+                      <option tal:repeat="language selectedLanguages"
+		              tal:content="language/englishName"
+			      tal:attributes="name language/code" />
               
               </select>
               <br />
@@ -76,7 +79,7 @@
         </div>    
     
         <div class="formControls">
-            <input type="submit" name="LANGUAGES" value="Save" />
+            <input type="submit" name="SAVE" value="Save" />
         </div>
     </form>
     

@@ -960,6 +960,9 @@ class RosettaPOTranslation(SQLBase):
 class RosettaLanguages(object):
     implements(ILanguages)
 
+    def __iter__(self):
+        return iter(RosettaLanguage.select())
+
     def __getitem__(self, code):
         results = RosettaLanguage.selectBy(code=code)
 
