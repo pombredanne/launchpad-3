@@ -38,8 +38,13 @@
 	      />
 
 	      <p><b>Originating Distribution:   </b> 
-	      <a tal:content="context/sourcepackage/distro/title" 
+	      <a tal:condition="context/sourcepackage/distro"
+	      tal:content="context/sourcepackage/distro/title" 
 	      tal:attributes="href string:../../../../${context/sourcepackage/distro/name}"/>
+	      <i tal:condition="not:context/sourcepackage/distro">
+	        Not available.
+	      </i>
+	            
 
 	      <p><b>Project:   </b> 
                 <tal:dummy tal:define="product context/sourcepackage/product">
