@@ -117,24 +117,20 @@ class Bug(SQLBase):
     implements(IBug)
 
     _defaultOrder = '-id'
-    _columns = [
-        DateTimeCol('datecreated', dbName='datecreated', notNull=True),
-        StringCol('name', dbName='name', unique=True, default=None),
-        StringCol('title', notNull=True),
-        StringCol('shortdesc', notNull=True),
-        StringCol('description', notNull=True),
-        ForeignKey(
-                name='owner', dbName='owner', foreignKey='Person',
-                notNull=True
-                ),
-        ForeignKey(name='duplicateof', foreignKey='Bug', dbName='duplicateof'),
-        IntCol('communityscore', notNull=True, default=0),
-        DateTimeCol('communitytimestamp', notNull=True),
-        IntCol('hits', notNull=True, default=0),
-        DateTimeCol('hitstimestamp', notNull=True),
-        IntCol('activityscore', notNull=True, default=0),
-        DateTimeCol('activitytimestamp', notNull=True),
-    ]
+
+    datecreated = DateTimeCol(notNull=True)
+    name = StringCol(unique=True, default=None)
+    title = StringCol(notNull=True)
+    shortdesc = StringCol(notNull=True)
+    description = StringCol(notNull=True)
+    owner = ForeignKey(foreignKey='Person', notNull=True, dbName='owner')
+    duplicateof = ForeignKey(foreignKey='Bug', dbName='duplicateof')
+    communityscore = IntCol(notNull=True, default=0)
+    communitytimestamp = DateTimeCol(notNull=True)
+    hits = IntCol(notNull=True, default=0)
+    hitstimestamp = DateTimeCol(notNull=True)
+    activityscore = IntCol(notNull=True, default=0)
+    activitytimestamp = DateTimeCol(notNull = True)
 
     activity = MultipleJoin('BugActivity', joinColumn='bug')
     messages = MultipleJoin('BugMessage', joinColumn='bug')
