@@ -1480,6 +1480,22 @@ VALUES (19, 5, 1, now(), now(), TRUE, 1,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
+/* A multiline example */
+INSERT INTO POTranslation (translation)
+VALUES ('La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.\n\nTenga paciencia mientras Evolution migra sus carpetas...')
+INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obsolete,
+		      fuzzy)
+VALUES (68, 5, 1, 1, TRUE, FALSE, FALSE);
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			     datelastseen, inlastrevision, pluralform)
+VALUES (20, 68, now(), now(), TRUE, 0);
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
+VALUES (20, 6, 1, now(), now(), TRUE, 0,
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+	0);
+
+
 /* An example for obsolete string */
 INSERT INTO POTranslation (translation)
 VALUES ('_Añadir grupo');
@@ -1489,15 +1505,13 @@ VALUES (95, 5, 1, 1, TRUE, TRUE, FALSE);
 
 INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
 			      datelastseen, inlastrevision, pluralform)
-VALUES (20, 95, now(), now(), TRUE, 0);
+VALUES (21, 95, now(), now(), TRUE, 0);
 
 INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
 				   inlastrevision, pluralform, person, origin)
-VALUES (20, 6, 1, now(), now(), TRUE, 0,
+VALUES (21, 7, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
-
-
 
 /* Malone sample data */
 INSERT INTO Person (displayname, givenname, familyname)
