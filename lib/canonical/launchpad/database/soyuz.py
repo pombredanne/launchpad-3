@@ -3,6 +3,7 @@ from datetime import datetime
 
 # Zope imports
 from zope.interface import implements
+from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import StringCol, ForeignKey, IntCol
@@ -15,6 +16,7 @@ from canonical.launchpad.interfaces import IDistributionRole
 from canonical.launchpad.interfaces import IDistroReleaseRole
 from canonical.launchpad.interfaces import IDistroArchRelease
 from canonical.launchpad.interfaces import IDistroTools
+from canonical.launchpad.interfaces import IBinaryPackageUtility
 
 from canonical.launchpad.database.distribution import Distribution
 
@@ -39,6 +41,24 @@ class DistroArchRelease(SQLBase):
     chroot = ForeignKey(dbName='chroot',
                         foreignKey='LibraryFileAlias',
                         notNull=False)
+
+    def findPackagesByName(self, pattern, fti=False):
+        """Search BinaryPackages matching pattern and archtag"""
+        binset = getUtility(IBinaryPackageUtility)
+        return binset.findByNameInDistroRelease(self.distrorelease.id,
+                                                pattern,
+                                                self.architecturetag,
+                                                fti)
+        
+    def __getitem__(self, name):
+        binset = getUtility(IBinaryPackageUtility)
+        try:
+            return binset.getByNameInDistroRelease(\
+                                       self.distrorelease.id,
+                                       name=name,
+                                       archtag=self.architecturetag)[0]
+        except IndexError:
+            raise KeyError
 
 class DistributionRole(SQLBase):
 

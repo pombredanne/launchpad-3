@@ -19,8 +19,12 @@ from canonical.launchpad.interfaces import IDistroRelease, \
     IBinaryPackageUtility, IDistroReleaseSet, ISourcePackageUtility
 
 from canonical.launchpad.database import SourcePackageInDistro, \
-    BinaryPackageSet, SourcePackageInDistroSet, PublishedPackageSet, \
+    SourcePackageInDistroSet, PublishedPackageSet, \
     PackagePublishing
+
+# XXX: Daniel Debonzi 20050304
+# Why can't I import with the classes above?
+from canonical.launchpad.database.soyuz import DistroArchRelease
 
 # XXX: Daniel Debonzi 20040401
 # It is been done inside DistroRelease.sourcecount to avoid
@@ -154,24 +158,33 @@ class DistroRelease(SQLBase):
         return self.__getitem__(name)
 
     def __getitem__(self, arch):
-        return BinaryPackageSet(self, arch)
-    
-    def findBinariesByName(self, pattern):
-        binariesutil = getUtility(IBinaryPackageUtility)
-        selection = Set(binariesutil.findByNameInDistroRelease(self.id, pattern))
-        # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
-        # XXX Daniel please can you go over this with SABDFL I don't
-        # understand the code here. 11/12/04
-        # expensive routine
-        # Dummy solution to avoid a binarypackage to be shown more
-        # then once
-        present = []
-        result = []
-        for srcpkg in selection:
-            if srcpkg.binarypackagename not in present:
-                present.append(srcpkg.binarypackagename)
-                result.append(srcpkg)
-        return result
+        try:
+            return DistroArchRelease.selectBy(distroreleaseID=self.id,
+                                              architecturetag=arch)[0]
+        except:
+            raise KeyError
+            
+
+# XXX: Daniel Debonzi 2005-03-04
+# I think this method is obsolet. I will comment out
+# and remove in the next days if nothing breaks
+
+##     def findBinariesByName(self, pattern):
+##         binariesutil = getUtility(IBinaryPackageUtility)
+##         selection = Set(binariesutil.findByNameInDistroRelease(self.id, pattern))
+##         # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
+##         # XXX Daniel please can you go over this with SABDFL I don't
+##         # understand the code here. 11/12/04
+##         # expensive routine
+##         # Dummy solution to avoid a binarypackage to be shown more
+##         # then once
+##         present = []
+##         result = []
+##         for srcpkg in selection:
+##             if srcpkg.binarypackagename not in present:
+##                 present.append(srcpkg.binarypackagename)
+##                 result.append(srcpkg)
+##         return result
 
 class DistroReleaseSet:
     implements(IDistroReleaseSet)

@@ -36,19 +36,6 @@
    <implements interface="zope.app.container.interfaces.IItemContainer"/>
 </content>
 
-<browser:traverse
-   for="canonical.launchpad.database.BinaryPackageSet" 
-   getter="__getitem__" />
-
-<browser:page
-   for="canonical.launchpad.database.BinaryPackageSet" 
-   permission="zope.Public"
-   name="index.html"
-   class="canonical.launchpad.browser.DistroReleaseBinariesView"
-   template="../templates/binarypackage-list.pt"
-   lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/index.html"/>
-
-
 <!-- BinaryPackagename -->
 <content class="canonical.launchpad.database.BinaryPackageName">
    <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />

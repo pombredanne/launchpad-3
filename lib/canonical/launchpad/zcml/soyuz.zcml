@@ -5,9 +5,23 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+    <!-- DistroArchRelease -->
     <content class="canonical.launchpad.database.DistroArchRelease">
         <allow interface="canonical.launchpad.interfaces.IDistroArchRelease"/>
     </content>
+
+    <browser:traverse
+        for="canonical.launchpad.database.DistroArchRelease" 
+        getter="__getitem__" />
+
+    <browser:page
+        for="canonical.launchpad.database.DistroArchRelease" 
+        permission="zope.Public"
+        name="index.html"
+        class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
+        template="../templates/binarypackage-list.pt"
+        lp:url="Soyuz/distros/$Distribution/$Distrorelease/$Archtag/index.html"/>
+
 
     <content class="canonical.launchpad.database.DistributionRole">
         <allow interface="canonical.launchpad.interfaces.IDistributionRole"/>

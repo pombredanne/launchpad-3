@@ -129,7 +129,7 @@ class DistroReleaseSourceView:
 # BinaryPackage in a DistroRelease related classes
 #
 
-class DistroReleaseBinariesView:
+class DistroArchReleaseBinariesView:
     
     def __init__(self, context, request):
         self.context = context
@@ -142,14 +142,9 @@ class DistroReleaseBinariesView:
         
         if not name:
             binary_packages = []
-            # XXX: Daniel Debonzi 20050104
-            # Returns all binarypackage available.
-            # Do not work with more than 45000 binarypackage
-            # (Actual dogfood db)
-            #binary_packages = list(self.context)
         else:
-            binary_packages = list(self.context.findPackagesByArchtagName(name,
-                                                                          self.fti))
+            binary_packages = list(self.context.findPackagesByName(name,
+                                                                   self.fti))
 
         start = int(self.request.get('batch_start', 0))
         end = int(self.request.get('batch_end', BATCH_SIZE))

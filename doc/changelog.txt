@@ -2,6 +2,35 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-05 23:29:04 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1372
+
+    Summary:
+      Changing context for url http://localhost:8086/soyuz/distros/ubuntu/hoary/i386 from BinaryPackageSet to DistroArchRelease
+    Revision:
+      launchpad--devel--0--patch-1372
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-447
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-448
+       Changing context for url http://localhost:8086/soyuz/distros/ubuntu/hoary/i386 from BinaryPackageSet to DistroArchRelease
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/packages.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/soyuz.py
+     lib/canonical/launchpad/interfaces/soyuz.py
+     lib/canonical/launchpad/zcml/binarypackage.zcml
+     lib/canonical/launchpad/zcml/soyuz.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-447
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-448
+
+
 2005-03-03 23:51:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1371
 
     Summary:
