@@ -2,6 +2,39 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-10 08:36:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1405
+
+    Summary:
+      Set email address to PREFERRED on user creation and block sql injection attacks by using correct quoting
+    Revision:
+      launchpad--devel--0--patch-1405
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--authserver--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-183
+    
+     * stuart.bishop@canonical.com/launchpad--authserver--0--patch-1
+       Set email address to PREFERRED on user creation and block sql injection attacks by using correct quoting
+    
+     * stuart.bishop@canonical.com/launchpad--authserver--0--patch-2
+       Don't alias sqlbase.quote
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-183
+       Add doctests
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/authserver/database.py
+     lib/canonical/database/sqlbase.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--authserver--0--base-0
+     stuart.bishop@canonical.com/launchpad--authserver--0--patch-1
+     stuart.bishop@canonical.com/launchpad--authserver--0--patch-2
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-183
+
+
 2005-03-10 07:06:06 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1404
 
     Summary:

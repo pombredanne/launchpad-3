@@ -307,6 +307,10 @@ def quote(x):
     '1.0'
     >>> quote("hello")
     "'hello'"
+    >>> quote("'hello'")
+    "'''hello'''"
+    >>> quote(r"\'hello")
+    "'\\\\''hello'"
 
     Timezone handling is not implemented, since all timestamps should
     be UTC anyway.

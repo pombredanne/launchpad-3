@@ -9,6 +9,7 @@ from canonical.authserver import adbapi
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.lp import dbschema
+from canonical.database.sqlbase import quote
 
 from canonical.authserver.interfaces import IUserDetailsStorage
 
@@ -82,10 +83,16 @@ class DatabaseUserDetailsStorage(object):
 
     def createUser(self, loginID, sshaDigestedPassword, displayname,
                    emailAddresses):
+        """Create a user.
+        
+        This method should only be called if the email address has been
+        validated, or the password is only known by the controller of the
+        given email address
+        """
         ri = self.connectionPool.runInteraction
         if loginID not in emailAddresses:
             emailAddresses = emailAddresses + [loginID]
-        deferred = ri(self._createUserInteraction, 
+        deferred = ri(self._createUserInteraction,
                       sshaDigestedPassword.encode('base64'),
                       displayname, emailAddresses)
         deferred.addErrback(self._eb_createUser)
@@ -109,11 +116,12 @@ class DatabaseUserDetailsStorage(object):
         displaynameOrig = displayname
         name = nickname.generate_nick(emailAddresses[0], lambda nick:
                 self._getPerson(transaction, nick))
-        displayname = displayname.replace("'", "''").encode('utf-8')
-        pw = sshaDigestedPassword.replace("'", "''")
+        displayname = quote(displayname).encode('utf-8')
+        pw = quote(sshaDigestedPassword)
         sql = ("""\
-            INSERT INTO Person (name, displayname, password)  VALUES ('%s', '%s', '%s')"""
-            % (name, displayname, pw))
+            INSERT INTO Person (name, displayname, password) VALUES
+                (%s, %s, %s)"""
+            % (quote(name), displayname, pw))
 
         transaction.execute(sql)
 
@@ -121,8 +129,8 @@ class DatabaseUserDetailsStorage(object):
         transaction.execute(
             "SELECT Person.id "
             "FROM Person "
-            "WHERE Person.displayname = '%s' "
-            "AND Person.password = '%s'"
+            "WHERE Person.displayname = %s "
+            "AND Person.password = %s"
             % (displayname, pw)
         )
 
@@ -133,10 +141,10 @@ class DatabaseUserDetailsStorage(object):
         for emailAddress in emailAddresses:
             transaction.execute(
                 "INSERT INTO EmailAddress (person, email, status) "
-                "VALUES ('%d', '%s', %d)"
+                "VALUES (%d, %s, %d)"
                 % (personID,
-                   emailAddress.replace("'", "''"),
-                   dbschema.EmailAddressStatus.NEW)
+                   quote(emailAddress),
+                   dbschema.EmailAddressStatus.PREFERRED)
             )
 
         return {
@@ -150,7 +158,7 @@ class DatabaseUserDetailsStorage(object):
                        newSshaDigestedPassword):
         ri = self.connectionPool.runInteraction
         return ri(self._changePasswordInteraction, loginID,
-                  sshaDigestedPassword.encode('base64'), 
+                  sshaDigestedPassword.encode('base64'),
                   newSshaDigestedPassword.encode('base64'))
 
     def _changePasswordInteraction(self, transaction, loginID,
@@ -165,9 +173,9 @@ class DatabaseUserDetailsStorage(object):
         
         transaction.execute(
             "UPDATE Person "
-            "SET password = '%s' "
+            "SET password = %s "
             "WHERE Person.id = %d "
-            % (str(newSshaDigestedPassword).replace("'", "''"),
+            % (str(quote(newSshaDigestedPassword)),
                personID)
         )
         
@@ -180,10 +188,10 @@ class DatabaseUserDetailsStorage(object):
             "FROM Person "
         )
         transaction.execute(
-            query + 
+            query +
             "INNER JOIN EmailAddress ON EmailAddress.person = Person.id "
-            "WHERE lower(EmailAddress.email) = '%s' "
-            % (str(loginID).lower().replace("'", "''"),)
+            "WHERE lower(EmailAddress.email) = %s"
+            % (quote(str(loginID).lower()),)
         )
         
         row = transaction.fetchone()
@@ -196,15 +204,15 @@ class DatabaseUserDetailsStorage(object):
             else:
                 transaction.execute(
                     query +
-                    "WHERE Person.id = '%d'" % (personID,)
+                    "WHERE Person.id = %d" % (personID,)
                 )
                 row = transaction.fetchone()
         if row is None:
             # Fallback #2: try treating loginID as a nickname
             transaction.execute(
                 query +
-                "WHERE Person.name = '%s'" 
-                % (str(loginID).replace("'", "''"),)
+                "WHERE Person.name = %s" 
+                % (quote(str(loginID)),)
             )
             row = transaction.fetchone()
         if row is None:
@@ -240,8 +248,8 @@ class DatabaseUserDetailsStorage(object):
             "SELECT keytype, keytext "
             "FROM SSHKey "
             "JOIN PushMirrorAccess ON SSHKey.person = PushMirrorAccess.person "
-            "WHERE PushMirrorAccess.name = '%s'"
-            % (archiveName.replace("'", "''"),)
+            "WHERE PushMirrorAccess.name = %s"
+            % (quote(archiveName),)
         )
         authorisedKeys = transaction.fetchall()
         
@@ -256,9 +264,9 @@ class DatabaseUserDetailsStorage(object):
             "SELECT keytype, keytext "
             "FROM SSHKey "
             "JOIN EmailAddress ON SSHKey.person = EmailAddress.person "
-            "WHERE EmailAddress.email = '%s' "
+            "WHERE EmailAddress.email = %s "
             "AND EmailAddress.status in (2, 4)"
-            % (email.replace("'", "''"),)
+            % (quote(email),)
         )
         authorisedKeys.extend(transaction.fetchall())
         # Replace keytype with correct DBSchema items.
