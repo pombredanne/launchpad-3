@@ -1,8 +1,9 @@
 #!/usr/bin/env python 
 
+import urllib
 import urllib2
 from xml.dom import minidom
-from canonical.launchpad.database.bug import BugTracker, BugTrackerType
+from canonical.launchpad.database.bugtracker import BugTracker, BugTrackerType
 
 class UnknownBugTrackerTypeError(Exception):
     """
@@ -76,7 +77,7 @@ class Bugzilla(ExternalSystem):
             raise NotImplementedError()
 
     def _probe_version(self):
-        print "probing version of %s" % self.baseurl
+        #print "probing version of %s" % self.baseurl
         try:
             url = urllib2.urlopen("%s/xml.cgi?id=1" % self.baseurl)
         except urllib2.HTTPError, val:
@@ -112,7 +113,7 @@ class Bugzilla(ExternalSystem):
         #data.update({'Bugzilla_login'    : login,
         #             'Bugzilla_password' : password,
         #             'GoAheadAndLogIn'   : 1})
-        getdata = urllib2.urlencode(data)
+        getdata = urllib.urlencode(data)
         url = urllib2.urlopen("%s/buglist.cgi?%s" % (self.baseurl, getdata))
         ret = url.read()
         document = minidom.parseString(ret)

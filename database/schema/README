@@ -69,7 +69,7 @@ How to roll out a new database revision
 
 3. Connect to the the test database you setup.
 
-4. Run the patches one at a time, in order, using \i patch-2-01-0.sql.
+4. Run the patches one at a time, in order, using `\i patch-2-01-0.sql`.
     Ensure there are no errors. If things have been done right, there won't be
 
 5. Get clients shutdown nicely
@@ -80,7 +80,9 @@ How to roll out a new database revision
 
 8. Run 'pg_ctl start' to start postgres
 
-9. Connect to the real database, and run the patches in order as before
+9. Connect to the real database, and run the patches in order as before except
+    this time making sure it is done in a single transaction block (`BEGIN`
+    to start a transaction, `COMMIT` to save it and `ABORT` to rollback).
 
 10. Shutdown again. Revert changes to /etc/postgres/pg_hba.conf. Startup.
 

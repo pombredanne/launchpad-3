@@ -19,7 +19,7 @@ class BugTrackerType(SQLBase):
     name = StringCol(notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
-    homepageurl = StringCol(notNull=True)
+    homepage = StringCol(notNull=True)
     owner = ForeignKey(foreignKey='Person',
                 dbName='owner', default=None)
 

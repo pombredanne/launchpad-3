@@ -3,7 +3,12 @@
 Cron job to run daily to check all of the BugWatches
 """
 
-from canonical.launchpad.database import BugWatch, BugTracker
+# Stick launchpad/lib in the PYTHONPATH to make running this script easier
+import sys, os.path
+sys.path.append(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir))
+
+from canonical.launchpad.database.bugwatch import BugWatch
+from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.database.sqlbase import SQLBase
 import sqlobject, externalsystem
 
