@@ -1,5 +1,3 @@
-import sys
-sys.path.append('../..')
 # Zope schema imports
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
@@ -9,16 +7,28 @@ _ = MessageIDFactory('launchpad')
 
 
 
-#
-# This is a Source Source interface, to allow access to the
-# SourceSource table and objects that model that table.
-#
+class IBugSystemSet(Interface):
+    """An interface for the BugSystemSet. This models a set of BugSystem's
+    (either the full set in the db or a subset). Each BugSystem is a
+    distinct instance of a bug tracking tool. For example,
+    bugzilla.mozilla.org is distinct from bugzilla.gnome.org.
+    """
+    def __getitem__(name):
+        """Get a BugSystem by its name in the database. NB! We do not want to
+        expose the BugSystem.id to the world so we use its name.
+        """
+
+    def __iter__():
+        """Iterate through BugSystems."""
+
+
+
 class ISourceSource(Interface):
     """A SourceSource job. This is a holdall for data about the upstream
     revision control system of an open source product, and whether or not
     we are able to syncronise our Arch repositories with that upstream
-    revision control system."""
-
+    revision control system. It allows for access to objects that model
+    the SourceSource table."""
     #
     # XXX Mark Shuttleworth 03/10/04 Robert Collins please give a better
     #     description of each field below.

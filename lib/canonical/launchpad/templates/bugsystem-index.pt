@@ -1,0 +1,48 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1><span tal:replace="context/title">$BugSystem.title</span></h1>
+
+    <div style="float: right; clear: both; margin-top: 0.25em;">
+    Bug system home:
+    <a tal:content="context/baseurl|default"
+       tal:attributes="href context/baseurl|nothing">(none supplied)</a>
+    </div>
+    
+    <div style="float: right; clear: both; margin-top: 0.25em;">
+    Owner:
+    <span tal:content="context/owner/displayname">(none supplied)</span>
+    </div>
+
+    <div class="documentDescription" tal:content="context/shortdesc">
+        $BugSystem.shortdesc goes here. This should be quite short,
+        just a single paragraph of text really, giving the BugSystem
+        highlights.
+    </div>
+    
+    <div tal:content="context/contactdetails">
+    The contact details for the admins of this bug tracker go here, so we
+    can get to them in an emergency.
+    </div>
+    
+    <div>
+        [ <a href="+edit">Edit</a> ]
+    </div>
+
+</div>
+
+</body>
+</html>

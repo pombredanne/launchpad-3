@@ -38,6 +38,20 @@
       utility="canonical.launchpad.interfaces.ISourcepackageContainer"
       permission="zope.Public"
       name="sourcepackage" />
+  
+  <browser:suburl
+      for="canonical.malone.IMaloneApplication"
+      utility="canonical.launchpad.interfaces.IBugSystemSet"
+      permission="zope.Public"
+      name="bugsystems" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugSystemSet"
+      name="+index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugSystem"
+      name="+index" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.ISourcepackageContainer"
@@ -65,7 +79,7 @@
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.ISourcepackage"
-      name="index" />
+      name="+malone-index" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBugExternalRefContainer"

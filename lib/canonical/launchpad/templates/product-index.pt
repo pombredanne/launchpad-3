@@ -19,7 +19,7 @@
     <div style="float: right; clear: both; margin-top: 0.25em;">
     Product home page:
     <a tal:content="context/homepageurl|default"
-       tal:attributes="href context/homepageurl|nothing">(None supplied)</a>
+       tal:attributes="href context/homepageurl|nothing">(none supplied)</a>
     </div>
 
     <div class="documentDescription" tal:content="context/shortdesc">

@@ -20,6 +20,14 @@
         <allow interface="canonical.launchpad.interfaces.IBugContainer" />
     </content>
 
+    <content class="canonical.launchpad.database.BugSystemSet">
+        <allow interface="canonical.launchpad.interfaces.IBugSystemSet" />
+    </content>
+
+    <utility
+        factory="canonical.launchpad.database.BugSystemSet"
+        provides="canonical.launchpad.interfaces.IBugSystemSet" />
+    
     <utility
         factory=".browser.BugContainer"
         provides="canonical.launchpad.interfaces.IBugContainer" />

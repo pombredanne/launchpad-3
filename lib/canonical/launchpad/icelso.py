@@ -32,7 +32,7 @@ class IBug(Interface):
             title=_('Nickname'), required=False,
             )
     title = TextLine(
-            title=_('Title'), required=True,
+            title=_('Bug Title'), required=True,
             )
     shortdesc = Text(
             title=_('Short Description'), required=True,
@@ -381,9 +381,10 @@ class IBugSystem(Interface):
     bugsystemtype = Int(title=_('Bug System Type'))
     name = TextLine(title=_('Name'))
     title = TextLine(title=_('Title'))
-    description = Text(title=_('Description'))
+    shortdesc = Text(title=_('Short Description'))
     baseurl = TextLine(title=_('Base URL'))
     owner = Int(title=_('Owner'))
+    contactdetails = Text(title=_('Contact details'))
 
 class IBugWatch(Interface):
     """A bug on a remote system."""

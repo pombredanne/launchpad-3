@@ -9,40 +9,37 @@ from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
+
 #
-# XXX duped imports, clean me up XXX
+# Database access objects
 #
-from canonical.launchpad.database import BugWatch
-from canonical.launchpad.database import Product
 from canonical.launchpad.database import \
-        Sourcepackage, SourcepackageName, Binarypackage
+        Sourcepackage, SourcepackageName, Binarypackage, \
+        BugWatch, Product, Person, EmailAddress, \
+        Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
+        ProductBugAssignment, SourcepackageBugAssignment
 from canonical.database import sqlbase
 
+#
+# I18N support for Malone
+#
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('malone')
 
 from canonical.lp import dbschema
 
+#
+# Interface imports
+#
 from canonical.launchpad.interfaces import \
         IBugMessagesView, IBugExternalRefsView, \
         IMaloneBug, IMaloneBugAttachment, \
         IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
         IBugSubscriptionContainer, \
         ISourcepackageContainer, IBugWatchContainer, \
-        IProductBugAssignmentContainer, ISourcepackageBugAssignmentContainer
+        IProductBugAssignmentContainer, \
+        ISourcepackageBugAssignmentContainer, IPerson
 
-from canonical.launchpad.database import IPerson
-
-# TODO: Anything that relies on these imports should not be in this file!
-from canonical.launchpad.database import \
-        Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
-        ProductBugAssignment, SourcepackageBugAssignment
-from canonical.launchpad.database import Sourcepackage
-from canonical.launchpad.database import Person, EmailAddress
-
-#
-# XXX duped imports, clean me up XXX
-#
 
 def traverseBug(bug, request, name):
     if name == 'attachments':
@@ -59,6 +56,7 @@ def traverseBug(bug, request, name):
         return SourcepackageBugAssignmentContainer(bug=bug.id)
     else:
        raise KeyError, name
+
 
 def traverseBugAttachment(bugattachment, request, name):
     # TODO: Find out how to make SQLObject only retrieve the
@@ -99,6 +97,7 @@ class MaloneApplicationView(object):
         else:
             self.noresults = False
             self.results = []
+
 
 class BugContainerBase(object):
     implements(IBugContainer, IAddFormCustomization)
@@ -161,11 +160,13 @@ class IMaloneBugAddForm(IMaloneBug):
             )
     owner = Int(title=_("Owner"), required=True)
 
+
 class MaloneBugAddForm(object):
     implements(IMaloneBugAddForm)
     def __init__(self, **kw):
         for k,v in kw.items():
             setattr(self, k, v)
+
 
 # TODO: It should be possible to specify all this via ZCML and not require
 # the MaloneBugView class with its ViewPageTemplateFile attributes
@@ -185,9 +186,11 @@ class MaloneBugView(object):
             '../launchpad/templates/portlet-bug-people.pt'
             )
 
+
 class MaloneBugAttachment(BugAttachment, BugContainerBase):
     implements(IMaloneBugAttachment)
     _table = 'BugAttachment'
+
 
 class BugAttachmentContentView(object):
     def __init__(self, context, request):
@@ -266,6 +269,7 @@ class BugContainer(BugContainerBase):
                   # as the return value must be adaptable to the interface
                   # used to generate the form.
 
+
 def BugAdder(object):
     def createAndAdd(self, *args, **kw):
         '''Add a bug from an IMaloneBugAddForm'''
@@ -334,6 +338,7 @@ def MaloneBugFactory(context, **kw):
             )
     return bug
 
+
 class BugAttachmentContainer(BugContainerBase):
     """A container for bug attachments."""
  
@@ -359,6 +364,7 @@ def BugAttachmentFactory(context, **kw):
     bug = context.context.bug # view.attachmentcontainer.bug
     return MaloneBugAttachment(bug=bug, **kw)
 
+
 def BugAttachmentContentFactory(context, **kw):
     bugattachment= context.context.id # view.attachment.id
     daterevised = datetime.utcnow()
@@ -368,12 +374,14 @@ def BugAttachmentContentFactory(context, **kw):
             **kw
             )
 
+
 def BugMessageFactory(context, **kw):
     bug = context.context.context.id # view.comments.bug
     return BugMessage(
             bug=bug, parent=None, datecreated=datetime.utcnow(),
             ownerID=1, rfc822msgid=make_msgid('malone'), **kw
             )
+
 
 def PersonFactory(context, **kw):
     now = datetime.utcnow()
@@ -384,9 +392,11 @@ def PersonFactory(context, **kw):
                     **kw)
     return person
 
+
 def BugSubscriptionFactory(context, **kw):
     bug = context.context.bug
     return BugSubscription(bug=bug, **kw)
+
 
 class ProductBugAssignmentContainer(BugContainerBase):
     """A container for ProductBugAssignment"""
@@ -394,9 +404,11 @@ class ProductBugAssignmentContainer(BugContainerBase):
     implements(IProductBugAssignmentContainer)
     table = ProductBugAssignment
 
+
 def ProductBugAssignmentFactory(context, **kw):
     pba = ProductBugAssignment(bug=context.context.bug, **kw)
     return pba
+
 
 class SourcepackageBugAssignmentContainer(BugContainerBase):
     """A container for SourcepackageBugAssignment"""
@@ -404,11 +416,13 @@ class SourcepackageBugAssignmentContainer(BugContainerBase):
     implements(ISourcepackageBugAssignmentContainer)
     table = SourcepackageBugAssignment
 
+
 def SourcepackageBugAssignmentFactory(context, **kw):
     sa = SourcepackageBugAssignment(bug=context.context.bug,
                                     binarypackage=None,
                                     **kw)
     return sa
+
 
 class BugExternalRefContainer(BugContainerBase):
     """A container for BugExternalRef."""
@@ -416,17 +430,20 @@ class BugExternalRefContainer(BugContainerBase):
     implements(IBugExternalRefContainer)
     table = BugExternalRef
 
+
 def BugExternalRefFactory(context, **kw):
     bug = context.context.bug
     owner = 1 # Will be id of logged in user
     datecreated = datetime.utcnow()
     return BugExternalRef(bug=bug, owner=owner, datecreated=datecreated, **kw)
 
+
 class BugWatchContainer(BugContainerBase):
     """A container for BugWatch"""
 
     implements(IBugWatchContainer)
     table = BugWatch
+
 
 def BugWatchFactory(context, **kw):
     bug = context.context.bug
@@ -436,6 +453,7 @@ def BugWatchFactory(context, **kw):
             bug=bug, owner=owner, datecreated=now, lastchanged=now,
             lastchecked=now, **kw
             )
+
 
 class BugSubscriptionContainer(BugContainerBase):
     """A container for BugSubscription objects."""
@@ -499,6 +517,7 @@ class BugExternalRefsView(object):
     def nextURL(self):
         return '..'
 
+
 class SourcepackageView(object):
     def __init__(self, context, request):
         self.context = context
@@ -523,3 +542,40 @@ class SourcepackageView(object):
         return rv
 
 
+class BugSystemSetView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+
+class BugSystemView(object):
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = request.form
+
+    def edit(self):
+        """Process a form to update or edit the details of a BugSystem
+        object. This method is triggered by a tal:dummy element in the page
+        template, so it is run even when the page is first displayed. It
+        determines whether or not a form has been submitted, and if so it
+        updates itself accordingly and redirects back to its display
+        page."""
+        #
+        # Verify that the form was in fact submitted, and that it looks like
+        # the right form (by checking the contents of the submit button
+        # field, called "Update").
+        #
+        if not self.form.has_key('Update'): return
+        if not self.form['Update'] == 'Update Bug Tracker': return
+        #
+        # Update the BugSystem, which is in self.context
+        #
+        self.context.title = self.form['title']
+        self.context.shortdesc = self.form['shortdesc']
+        self.context.baseurl = self.form['baseurl']
+        self.context.contactdetails = self.form['contactdetails']
+        #
+        # Now redirect to view it again
+        #
+        self.request.response.redirect(self.request.URL[-1])

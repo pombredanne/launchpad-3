@@ -170,7 +170,6 @@ INSERT INTO personlabel (person, label) VALUES (15, 5);
 
 
 
-INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap) VALUES (1, 1, 'ubuntu', 'Ubuntu', 'The Ubuntu Project', 'A community Linux distribution building building a slick desktop for the global market.', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community. Ubuntu also includes work to unify the translation of common opens source desktop applications and the tracking of bugs across multiple distributions.', '2004-09-24 20:58:00.633513', 'http://www.no-name-yet.com/', NULL, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap) VALUES (2, 2, 'do-not-use-info-imports', 'DO NOT USE', 'DO NOT USE', 'DO NOT USE', 'TEMPORARY project till mirror jobs are assigned to correct project', '2004-09-24 20:58:00.637677', 'http://arch.ubuntu.com/', NULL, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap) VALUES (3, 2, 'launchpad-mirrors', 'Launchpad SCM Mirrors', 'The Launchpad Mirroring Project', 'launchpad mirrors various revision control archives, that mirroring is managed here', 'A project to mirror revision control archives into Arch.', '2004-09-24 20:58:00.65398', 'http://arch.ubuntu.com/', NULL, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap) VALUES (6, 12, 'iso-codes', 'iso-codes', 'iso-codes', 'foo', 'bar', '2004-09-24 20:58:02.238443', 'http://www.gnome.org/', NULL, NULL);
@@ -188,6 +187,9 @@ It would be very interesting to know whether this second paragraph of text about
 INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap) VALUES (5, 12, 'gnome', 'GNOME', 'The GNOME Project', 'The GNOME Project is an initiative to prduce a free desktop software framework. GNOME is more than a set of applications, it is a user interface standard (the Gnome HIG) and a set of libraries that allow applications to work together in a harmonious desktop-ish way.', 'The Gnome Project was founded (when?) to build on the success of early applications using the Gtk GUI toolkit. Many of those applications are still part of Gnome, and the Gtk toolkit remains an essential part of Gnome.
 
 Gnome applications cover the full spectrum from office productivity applications to games, digital camera applications, and of course the Gnome Panel which acts as a launcher and general access point for apps on the desktop.', '2004-09-24 20:58:02.222154', 'http://www.gnome.org/', NULL, NULL);
+INSERT INTO project (id, "owner", name, displayname, title, shortdesc, description, datecreated, homepageurl, wikiurl, lastdoap) VALUES (1, 1, 'ubuntu', 'the Ubuntu Project', 'The Ubuntu Project', 'A community Linux distribution building a slick desktop for the global market. Ubuntu is absolutely free and will stay that way, contains no proprietary application software, always ships with the latest Gnome desktop software and Python integration.', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community, especially the Gnome Project. While the full range of KDE and other desktop environments are available, Ubuntu''s Gnome desktop receives most of the polish and support work done for each release.
+
+Ubuntu also includes work to unify the translation of common open source desktop applications and the tracking of bugs across multiple distributions.', '2004-09-24 20:58:00.633513', 'http://www.ubuntulinux.org/', NULL, NULL);
 
 
 
@@ -716,6 +718,10 @@ INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof
 
 
 
+INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (1, 11, 1, 2);
+INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (2, 2, 1, 3);
+INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (3, 10, 1, 3);
+INSERT INTO bugsubscription (id, person, bug, subscription) VALUES (4, 12, 1, 1);
 
 
 
@@ -727,8 +733,9 @@ INSERT INTO sourcepackagebugassignment (id, bug, sourcepackage, bugstatus, prior
 
 
 
-INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (1, 1, 1, 1, 2, 2, NULL);
 INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (2, 2, 1, 1, 2, 2, NULL);
+INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (5, 1, 4, 1, 1, 2, 1);
+INSERT INTO productbugassignment (id, bug, product, bugstatus, priority, severity, assignee) VALUES (1, 1, 1, 1, 3, 2, NULL);
 
 
 
@@ -738,6 +745,8 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 
 INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated, "owner") VALUES (1, 2, 1, '45', 'Some junk has to go here because the field is NOT NULL', '2004-09-24 20:58:04.702498', 12);
 INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated, "owner") VALUES (2, 2, 2, 'http://www.mozilla.org', 'The homepage of the project this bug is on, for no particular reason', '2004-09-24 20:58:04.720774', 12);
+INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated, "owner") VALUES (3, 1, 1, '2342', 'A very serious security error. This is most important to fix.', '2004-10-04 00:00:00', 1);
+INSERT INTO bugexternalref (id, bug, bugreftype, data, description, datecreated, "owner") VALUES (4, 1, 2, 'http://www.notdoneyet.com/delayed/', 'The sooner you think you''re nearly there the sooner some unexpected glitch pops up that catches you unawares. Focus!', '2004-10-04 00:00:00', 1);
 
 
 
@@ -745,11 +754,13 @@ INSERT INTO bugsystemtype (id, name, title, description, homepage, "owner") VALU
 
 
 
-INSERT INTO bugsystem (id, bugsystemtype, name, title, shortdesc, baseurl, "owner", contactdetails) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker', 'http://www.example.com/bugtracker', 12, 'Carrier pidgeon only');
+INSERT INTO bugsystem (id, bugsystemtype, name, title, shortdesc, baseurl, "owner", contactdetails) VALUES (1, 1, 'mozilla.org', 'The Mozilla.org Bug Tracker', 'The Mozilla.org bug tracker is the grand-daddy of bugzillas. This is where Bugzilla was conceived, born and raised. This bugzilla instance covers all Mozilla products such as Firefox, Thunderbird and Bugzilla itself.', 'http://bugzilla.mozilla.org/', 12, 'Carrier pigeon only');
 
 
 
 INSERT INTO bugwatch (id, bug, bugsystem, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (1, 2, 1, '42', 'FUBAR', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', '2004-09-24 20:58:04.740841', 12);
+INSERT INTO bugwatch (id, bug, bugsystem, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (2, 1, 1, '2000', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1);
+INSERT INTO bugwatch (id, bug, bugsystem, remotebug, remotestatus, lastchanged, lastchecked, datecreated, "owner") VALUES (3, 1, 1, '123543', '', '2004-10-04 00:00:00', '2004-10-04 00:00:00', '2004-10-04 00:00:00', 1);
 
 
 
@@ -1056,7 +1067,7 @@ SELECT pg_catalog.setval('bug_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('bugsubscription_id_seq', 1, false);
+SELECT pg_catalog.setval('bugsubscription_id_seq', 4, true);
 
 
 
@@ -1064,7 +1075,7 @@ SELECT pg_catalog.setval('sourcepackagebugassignment_id_seq', 2, true);
 
 
 
-SELECT pg_catalog.setval('productbugassignment_id_seq', 2, true);
+SELECT pg_catalog.setval('productbugassignment_id_seq', 5, true);
 
 
 
@@ -1072,7 +1083,7 @@ SELECT pg_catalog.setval('bugactivity_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('bugexternalref_id_seq', 2, true);
+SELECT pg_catalog.setval('bugexternalref_id_seq', 4, true);
 
 
 
@@ -1084,7 +1095,7 @@ SELECT pg_catalog.setval('bugsystem_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('bugwatch_id_seq', 1, true);
+SELECT pg_catalog.setval('bugwatch_id_seq', 3, true);
 
 
 

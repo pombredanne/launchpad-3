@@ -71,31 +71,56 @@
             template="../launchpad/templates/attachment-index.pt" />
     </pages>
 
-  <pages for="canonical.launchpad.interfaces.IProject"
-         permission="zope.Public">
-    <page name="index"
-          template="../launchpad/templates/malone-project-index.pt"
-          lp:url="malone/projects/$Project.name/index" />
-  </pages>
+    <pages for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public">
+        <page name="+malone-index"
+            template="../launchpad/templates/malone-project-index.pt"
+            lp:url="malone/projects/$Project.name/index" />
+    </pages>
 
-  <pages for="canonical.launchpad.interfaces.ISourcepackageContainer"
-      permission="zope.Public">
-      <page name="index"
-          template="../launchpad/templates/sourcepackages-index.pt"
-          lp:url="malone/sourcepackages/index" />
-  </pages>
+    <pages for="canonical.launchpad.interfaces.IBugSystemSet"
+        permission="zope.Public">
+        <page name="+index"
+            template="../launchpad/templates/bugsystems-index.pt"
+            lp:url="malone/bugsystems/" />
+    </pages>
 
-  <traverse for="canonical.launchpad.interfaces.ISourcepackageContainer"
+    <traverse for="canonical.launchpad.interfaces.IBugSystemSet"
+        getter="__getitem__" />
+
+    <pages for="canonical.launchpad.database.BugSystem"
+        permission="zope.Public">
+        <page name="+index"
+            template="../launchpad/templates/bugsystem-index.pt"
+            lp:url="malone/bugsystems/$BugSystem.name/" />
+    </pages>
+
+    <pages for="canonical.launchpad.database.BugSystem"
+        permission="launchpad.AnyPerson"
+        class="canonical.malone.browser.BugSystemView">
+        <page name="+edit"
+            template="../launchpad/templates/bugsystem-edit.pt"
+            lp:url="malone/bugsystems/$BugSystem.name/+edit" />
+    </pages>
+
+    <pages for="canonical.launchpad.interfaces.ISourcepackageContainer"
+        permission="zope.Public">
+        <page name="index"
+            template="../launchpad/templates/sourcepackages-index.pt"
+            lp:url="malone/sourcepackages/index" />
+    </pages>
+
+    <traverse for="canonical.launchpad.interfaces.ISourcepackageContainer"
       getter="__getitem__" />
 
-  <pages 
-      for="canonical.launchpad.interfaces.ISourcepackage" 
-      permission="zope.Public"
-      class=".browser.SourcepackageView">
-      <page name="index"
-          template="../launchpad/templates/malone-sourcepackage-index.pt"
-          lp:url="malone/sourcepackage/$Sourcepackage.name/index" />
-  </pages>
+    <pages 
+        for="canonical.launchpad.interfaces.ISourcepackage" 
+        permission="zope.Public"
+        class=".browser.SourcepackageView">
+        <page name="+malone-index"
+            template="../launchpad/templates/malone-sourcepackage-index.pt"
+            lp:url="malone/sourcepackage/$Sourcepackage.name/index" />
+    </pages>
 
     <pages 
         for="canonical.launchpad.interfaces.IBugExternalRefContainer"

@@ -12,7 +12,28 @@ from canonical.database.sqlbase import SQLBase, quote
 # canonical imports
 import canonical.launchpad.interfaces as interfaces
 from canonical.launchpad.interfaces import *
+from canonical.launchpad.dcelso import BugSystem
 from canonical.launchpad.database import *
+
+
+
+class BugSystemSet(object):
+    """Implements IBugSystemSet for a container or set of BugSystem's,
+    either the full set in the db, or a subset."""
+
+    implements(IBugSystemSet)
+
+    table = BugSystem
+    
+    def __getitem__(self, name):
+        try: return self.table.select(self.table.q.name == name)[0]
+        except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+
+    def __iter__(self):
+        for row in self.table.select():
+            yield row
 
 
 class SourceSource(SQLBase): 

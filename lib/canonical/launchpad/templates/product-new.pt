@@ -15,6 +15,7 @@
 <div metal:fill-slot="main">
 
    <tal:dummy condition="view/newproduct" />
+
     <h1>Register a New Product for: <span
     tal:content="context/displayname">$Project.displayname</span></h1>
 
@@ -28,6 +29,7 @@
         <legend>Product Details</legend>
 
         <form action="+newproduct" method="post">
+
         <div class="field">
 
             <label>Name</label>
@@ -93,7 +95,7 @@
                     plugins.</i>
                   </div>
 
-                <textarea cols="40" rows="3" name="shortdesc"></textarea>
+                <textarea cols="40" rows="4" name="shortdesc"></textarea>
         </div>
         
         <div class="field">
@@ -114,7 +116,7 @@
             <label>URL</label>
 
                   <div class="formHelp">
-                    The product home page, if it has a distinct one. Itcan
+                    The product home page, if it has a distinct one. It can
                     be the same as the overall project home page.
                   </div>
 

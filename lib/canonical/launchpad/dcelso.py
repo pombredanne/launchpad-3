@@ -272,7 +272,14 @@ class BugSystemType(SQLBase):
                 ),
     ]
 
+
 class BugSystem(SQLBase):
+    """A class to access the BugSystem table of the db. Each BugSystem is a
+    distinct instance of that bug tracking tool. For example, each Bugzilla
+    deployment is a separate BugSystem. bugzilla.mozilla.org and
+    bugzilla.gnome.org are each distinct BugSystem's.
+    """
+    implements(IBugSystem)
     _table = 'BugSystem'
     _columns = [
         ForeignKey(name='bugsystemtype', dbName='bugsystemtype',
@@ -285,6 +292,7 @@ class BugSystem(SQLBase):
                 notNull=True),
         StringCol('contactdetails', notNull=True),
         ]
+
 
 class BugWatch(SQLBase):
     implements(IBugWatch)
