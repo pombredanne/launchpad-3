@@ -13,6 +13,9 @@ from canonical.launchpad.interfaces import VersionAlreadyRegistered
 from canonical.launchpad.interfaces import BranchAlreadyRegistered
 from canonical.launchpad.interfaces import CategoryAlreadyRegistered
 
+from zope.interface import implements
+from canonical.launchpad.interfaces import IBranch
+
 #
 # Mark Shuttleworth 02/10/04
 # Commented out ArchPerson to see what will break, to 
@@ -78,6 +81,8 @@ class ArchNamespace(SQLBase):
 
 class Branch(SQLBase):
     """An ordered revision sequence in arch"""
+
+    implements(IBranch)
 
     _table = 'branch'
     _columns = [

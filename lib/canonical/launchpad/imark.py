@@ -933,8 +933,8 @@ class IProduct(Interface):
         with status information about our ability to publish that \
         source in Arch.'))
 
-    def bugs():
-        """Return ProductBugAssignments for this Product."""
+    bugs = Attribute(
+        """A list of ProductBugAssignments for this Product.""")
 
     def poTemplates():
         """Returns an iterator over this product's PO templates."""
