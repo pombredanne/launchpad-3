@@ -394,7 +394,7 @@ CREATE TABLE ArchArchive (
 */
 CREATE TABLE ArchArchiveLocation (
   archive       integer NOT NULL REFERENCES ArchArchive,
-  archivetype   integer NOT NULL REFERENCES Label, -- the Arch archive type
+  archivetype   integer NOT NULL, -- 0: readwrite, 1: readonly, 2: mirrortarget
   url           text NOT NULL,
   gpgsigned     boolean NOT NULL
 );
