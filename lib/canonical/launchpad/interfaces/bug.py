@@ -159,3 +159,9 @@ class IBugTask(Interface):
     dateassigned = Datetime()
     datecreated  = Datetime()
     owner = Int() 
+    maintainer = TextLine(
+        title=_("Maintainer"), required=True, readonly=True)
+    bugtitle = TextLine(
+        title=_("Bug Title"), required=True, readonly=True)
+    bugdescription = Text(
+        title=_("Bug Description"), required=False, readonly=True)

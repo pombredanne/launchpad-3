@@ -202,3 +202,21 @@ class BugTask(SQLBase):
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False, default=None)
 
+    def bugtitle(self):
+        return self.bug.title
+
+    def maintainer(self):
+        # XXX: Brad Bollenbach, 2005-01-06: Only implemented for upstream
+        # at the moment.
+        if self.product:
+            if self.product.owner:
+                return self.product.owner.displayname
+
+        return "(none)"
+
+    def bugdescription(self):
+        return self.bug.messages[0].contents
+
+    maintainer = property(maintainer)
+    bugtitle = property(bugtitle)
+    bugdescription = property(bugdescription)
