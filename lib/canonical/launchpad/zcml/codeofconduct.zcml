@@ -1,0 +1,71 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- This view registers 'codeofconduct' as a suburl of RootObject. -->
+    <browser:suburl
+        for="canonical.publication.RootObject"
+        class="canonical.launchpad.database.CodeOfConductSet"
+        name="codeofconduct" />
+
+
+    <!-- CodeofConduct -->
+    <content class="canonical.launchpad.database.CodeOfConduct">
+        <allow interface="canonical.launchpad.interfaces.ICodeOfConduct" />
+        <require
+            permission="launchpad.AnyPerson"
+            set_schema="canonical.launchpad.interfaces.ICodeOfConduct" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ICodeOfConduct"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ICodeOfConduct"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/codeofconduct-index.pt"
+            name="+index"
+            lp:url="codeofconduct/$CoC.version/+index" />
+    </browser:pages>
+
+    <securedutility
+        class="canonical.launchpad.database.CodeOfConductConf"
+        provides="canonical.launchpad.interfaces.ICodeOfConductConf" >
+        <allow interface="canonical.launchpad.interfaces.ICodeOfConductConf" />
+    </securedutility>
+
+
+    <!-- CodeOfConductSet -->
+    <content class="canonical.launchpad.database.CodeOfConductSet">
+        <allow interface="canonical.launchpad.interfaces.ICodeOfConductSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.CodeOfConductSet"
+        provides="canonical.launchpad.interfaces.ICodeOfConductSet" >
+        <allow interface="canonical.launchpad.interfaces.ICodeOfConductSet" />
+    </securedutility>
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.ICodeOfConductSet"
+        getter="__getitem__" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ICodeOfConductSet"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ICodeOfConductSet"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/codeofconduct-list.pt"
+            name="+index"
+            lp:url="codeofconduct/+index" />
+    </browser:pages>
+
+</configure>

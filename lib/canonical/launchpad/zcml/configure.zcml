@@ -61,6 +61,7 @@
     <include file="potranslation.zcml" />
     <include file="files.zcml" />
     <include file="package.zcml" />
+    <include file="codeofconduct.zcml" />
 
 
     <include file="widgets.zcml" />

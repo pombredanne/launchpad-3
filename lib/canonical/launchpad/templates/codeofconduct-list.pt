@@ -1,0 +1,35 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <title metal:fill-slot="title">Launchpad Code of Conduct</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+      <h1>Code of Conduct</h1>
+
+      <div class="documentDescription">
+        Fill in the CoC details here.
+      </div>
+
+      <ul>
+
+         <li tal:repeat="code context"> 
+            <img tal:condition="code/current" src="/++resource++user.gif">
+            <a tal:content="code/title" tal:attributes="href string:${code/version}"/> 
+         </li>
+      </ul>
+
+</div>
+
+</body>
+</html>

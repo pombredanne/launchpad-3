@@ -1,0 +1,30 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <title metal:fill-slot="title">Code of Conduct Release</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+      <h1>Code of Conduct Release</h1>
+
+      <div class="documentDescription">
+        <span tal:content="context/title">TITLE</span>
+        <span tal:condition="context/current">(Current Release)</span>
+      </div>
+
+      <pre tal:content="context/content">CONTENT</pre>
+
+</div>
+
+</body>
+</html>
