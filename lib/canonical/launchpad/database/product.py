@@ -13,13 +13,14 @@ from canonical.database.sqlbase import SQLBase, quote
 # canonical imports
 from canonical.lp.dbschema import BugSeverity, BugAssignmentStatus
 
-from canonical.launchpad.interfaces import *
-
 from canonical.launchpad.database.sourcesource import SourceSource
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.pofile import POTemplate
-from canonical.launchpad.interfaces import IProduct
+
+# XXX: Daniel Debonzi 2004-11-25
+# Why RCSTypeEnum is inside launchpad.interfaces?
+from canonical.launchpad.interfaces import IProduct, RCSTypeEnum
 
 class Product(SQLBase):
     """A Product."""
@@ -60,6 +61,10 @@ class Product(SQLBase):
     downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
     
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
+
+    active = BoolCol(dbName='active', notNull=True, default=True)
+
+    reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
 
     #
     # useful Joins

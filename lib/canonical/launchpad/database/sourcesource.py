@@ -16,7 +16,10 @@ from canonical.database.sqlbase import SQLBase, quote
 #from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
 # Launchpad interfaces
-from canonical.launchpad.interfaces import *
+# XXX: Daniel Debonzi 2004-11-25
+# Why RCSTypeEnum is inside launchpad.interfaces?
+from canonical.launchpad.interfaces import ISourceSource, ISourceSourceSet, \
+                                           RCSTypeEnum
 
 # tools
 import datetime
@@ -109,6 +112,11 @@ class SourceSource(SQLBase):
         project=ProjectMapper().getByName(projectname)
         product=ProductMapper().getByName(productname, project)
         self.product=product
+
+    def needsReview(self):
+        if not self.syncapproved and self.autotested:
+            return True
+        return False
 
     def _get_repository(self):
         if self.rcstype == RCSTypeEnum.cvs:
@@ -223,14 +231,56 @@ class SourceSourceSet(object):
     """The set of SourceSource's."""
     implements(ISourceSourceSet)
 
+    def __init__(self):
+        self.syncingapproved = None
+        self.processingapproved = None
+        self.autotested = None
+        self.projecttext = None
+        self._resultset = None
+
     def __getitem__(self, sourcesourcename):
-        #
-        # Strangely, the sourcesourcename appears to have been quoted
+        # XXX Strangely, the sourcesourcename appears to have been quoted
         # already. Quoting it again causes this query to break, though we
         # are not sure why.
-        #
         ss = SourceSource.select(SourceSource.q.name=="%s" % \
                                     sourcesourcename)
         return ss[0]
 
+    def exec_query(self):
+        query = ''
+        clauseTables = ['SourceSource', ]
+        if self.syncingapproved is not None:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.syncingapproved IS NOT NULL'
+        if self.autotested is not None:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + 'SourceSource.autotested IS TRUE'
+        if self.projecttext is not None:
+            if len(query) > 0:
+                query = query + ' AND '
+            query = query + """SourceSource.product = Product.id AND
+                               Product.project = Project.id AND
+                               ( ( Project.title LIKE %%%s%% ) OR
+                                 ( Project.shortdesc LIKE %%%s%% ) OR
+                                 ( Project.description LIKE %%%s%% ) OR
+                                 ( Product.title LIKE %%%s%% ) OR
+                                 ( Product.shortdesc LIKE %%%s%% ) OR
+                                 ( Product.description LIKE %%%s%% ) )
+                                 """ % ( self.projecttext, self.projecttext,
+                                         self.projecttext, self.projecttext,
+                                         self.projecttext, self.projecttext )
+            clauseTables.append('Project')
+            clauseTables.append('Product')
+        if len(query)==0:
+            query = None
+        self._resultset = SourceSource.select(query,
+                clauseTables=clauseTables)
+
+    def __iter__(self):
+        if self._resultset is None:
+            self.exec_query()
+        for source in self._resultset:
+            yield source
 

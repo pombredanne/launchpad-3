@@ -34,7 +34,7 @@
 	      <a
 	      tal:content="context/sourcepackage/maintainer/displayname" 
 	      tal:attributes="href 
-	      string:/soyuz/people/${context/sourcepackage/maintainer/name}"
+	      string:/foaf/people/${context/sourcepackage/maintainer/name}"
 	      />
 
 	      <p><b>Originating Distribution:   </b> 

@@ -19,15 +19,6 @@
       name="distros"
       />
 
-  <!-- This view registers 'people' as a suburl of RootObject/soyuz/. -->
-  <browser:suburl
-      for="canonical.soyuz.SoyuzApplication"
-      class="canonical.soyuz.personapp.PeopleApp"
-      permission="zope.Public"
-      name="people"
-      />
-
-
   <!--  packages should be applied over releases  --> 
 
   <!-- This view registers 'packages' as a suburl of SoyuzApplication.
@@ -72,7 +63,6 @@
   <include file="resources.zcml" />
   <include file="sourcepackageapp.zcml" />
   <include file="binarypackageapp.zcml" />
-  <include file="personapp.zcml" />
   <include file="distroapp.zcml" />
   <include file="importd.zcml" />
   <include file="generalapp.zcml" />

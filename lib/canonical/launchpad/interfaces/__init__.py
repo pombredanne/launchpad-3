@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugsubscription import *
 from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.bugextref import *
+from canonical.launchpad.interfaces.cveref import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugassignment import *
@@ -37,6 +38,7 @@ from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.manifest import *
+from canonical.launchpad.interfaces.manifestentry import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.team import *
 from canonical.launchpad.interfaces.wikiname import *
@@ -44,9 +46,7 @@ from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.launchpad import *
-
-# these will go...
-from canonical.launchpad.iandrew import *
+from canonical.launchpad.interfaces.pyarch import *
 
 
 class IAuthApplication(Interface):

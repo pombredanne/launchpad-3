@@ -26,6 +26,11 @@
         />
 
     <vocabulary
+        name="ValidPerson"
+        factory="canonical.launchpad.vocabularies.ValidPersonVocabulary"
+        />
+
+    <vocabulary
         name="ProductRelease"
         factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
         />

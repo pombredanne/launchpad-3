@@ -1,0 +1,53 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>DOAP Projects and Products for Review</h1>
+
+    <div class="documentDescription">
+        Please review the following projects and products.
+    </div>
+
+    <div tal:repeat="project context/forReview">
+
+        <h3>Project: <span tal:replace="project/title">project title</span></h3>
+
+        <p style="margin-left: 20px;">
+            <span tal:content="project/shortdesc">project summary</span>
+            <span tal:condition="not: project/reviewed">
+                [ <a tal:attributes="href string:${project/name}/+review">Review</a> ]
+            </span>
+        </p>
+        
+
+        <div tal:repeat="product project/products">
+        
+            <p style="margin-left: 50px;"
+               tal:condition="not: product/reviewed">
+            <b tal:content="product/title">product title</b>
+            [ <a tal:attributes="href
+            string:${project/name}/${product/name}/+review">Review</a> ]
+            <br />
+            <span tal:replace="product/shortdesc">product summary</span>
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

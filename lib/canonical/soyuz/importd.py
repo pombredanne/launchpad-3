@@ -14,7 +14,9 @@ from canonical.launchpad.interfaces import IProjectSet, IProduct, IProject
 from canonical.launchpad.database import Project as dbProject, Product \
      as dbProduct
 
-from canonical.launchpad.database import RCSTypeEnum
+# XXX: Daniel Debonzi 2004-11-25
+# Why RCSTypeEnum is inside launchpad.interfaces?
+from canonical.launchpad.interfaces import RCSTypeEnum
 
 
 class Projects(object):

@@ -12,8 +12,7 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import IBug, IBugSet
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces import IBug, IBugAddForm, IBugSet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
@@ -65,6 +64,7 @@ class Bug(SQLBase):
     packageinfestations = MultipleJoin('BugPackageInfestation', joinColumn='bug')
     watches = MultipleJoin('BugWatch', joinColumn='bug')
     externalrefs = MultipleJoin('BugExternalRef', joinColumn='bug')
+    cverefs = MultipleJoin('CVERef', joinColumn='bug')
     subscriptions = MultipleJoin('BugSubscription', joinColumn='bug')
 
     def _set_title(self, value):

@@ -5,7 +5,24 @@
 from arch import NameParser
 
 from zope.interface import implements, classProvides
-from canonical.launchpad.interfaces import *
+from canonical.launchpad.interfaces import INamespaceObject, ISourceTreeAPI, \
+                                           ISourceTreeFactory, IFileName, \
+                                           IArchiveItem, ICategoryItem, \
+                                           IRevisionFactory, IPatchlog, \
+                                           ICategoryFactory, ICategory, \
+                                           ILogMessage, IArchSourceTree \
+                                           IDirName, IPathNameFactory, \
+                                           IArchiveLocation, IArchive, \
+                                           IBranchItem, IVersionItem, \
+                                           IBranch, IBranchFactory, \
+                                           ISetupable, IPackage, \
+                                           IArchiveCollection, \
+                                           IVersion,IRevision, \
+                                           IRevisionIterable, \
+                                           ICategoryIterable, \
+                                           IVersionIterable
+
+
 from canonical.launchpad import database
 
 default_location = "/tmp/"
@@ -15,7 +32,7 @@ default_location = "/tmp/"
 
 class NamespaceObject(object):
     """
-    Implement canonical.launchpad.interfaces.INamespaceobject against the
+    Implement canonical.launchpad.interfaces.INamespaceObject against the
     Soyuz database.
     """
 
@@ -33,7 +50,7 @@ class NamespaceObject(object):
     fullname = property(fullname)
 
     _eq_interface = None
-            
+ 
     def __eq__(self,  x):
         """Are we not equal to x?"""
         return x is not None \
@@ -214,6 +231,7 @@ class Archives(object, UserDict.DictMixin):
 class ArchiveLocationRegistry(object):
     """I'm a list of the registered locations for an archive"""
 
+    # TODO move these ENUM values to dbschema.py
     readwrite    = 0
     readonly     = 1
     mirrorTarget = 2

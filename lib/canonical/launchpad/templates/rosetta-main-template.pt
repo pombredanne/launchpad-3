@@ -22,8 +22,17 @@
   <body>
       <div id="portal-top"
            tal:define="path_info request/PATH_INFO">
+               <!-- XXX: Carlos Perello Marin 23/11/2004 This is a really ugly
+               fix to handle rosetta.shuttleworthfoundation.org special
+               requests -->
+               <a href="/"
+                  tal:condition=
+                  "python:'rosetta.shuttleworthfoundation.org' in path_info">
+                  <img src="/++resource++rosetta.png" alt="Rosetta" />
+               </a>
                <a href="/rosetta"
-                  tal:condition="python:'/rosetta' in path_info">
+                  tal:condition="python:'/rosetta' in path_info and
+                  'rosetta.shuttleworthfoundation.org' not in path_info">
                   <img src="/++resource++rosetta.png" alt="Rosetta" />
                </a>
                <a href="/malone"
@@ -40,8 +49,14 @@
               tal:define="path_info request/PATH_INFO">
 
             <li class="selected"
-                tal:condition="python:'/rosetta' in path_info">
+                tal:condition="python:'/rosetta' in path_info and
+                'rosetta.shuttleworthfoundation.org' not in path_info">
               <a href="/rosetta">Rosetta</a>
+            </li>
+            <li class="selected"
+                tal:condition=
+                "python:'rosetta.shuttleworthfoundation.org' in path_info">
+              <a href="/">Rosetta</a>
             </li>
             <li class="plain"
                 tal:condition="python:'/rosetta' not in path_info">
@@ -50,7 +65,8 @@
 
           </ul>
 
-      <div id="portal-personaltools">
+      <div id="portal-personaltools"
+           tal:define="path_info request/PATH_INFO">
 
         <span tal:condition="request/lp:person">
             Logged in as
@@ -67,15 +83,33 @@
 
         &mdash;
 
-        <a href="/rosetta/translator">Translator Dashboard</a>
+        <span tal:condition=
+              "python:'rosetta.shuttleworthfoundation.org' not in path_info">
+              
+            <a href="/rosetta/translator">Translator Dashboard</a>
 
-        &mdash;
+            &mdash;
 
-        <a href="/rosetta/maintainer">Project Maintainer Dashboard</a>
+            <a href="/rosetta/maintainer">Project Maintainer Dashboard</a>
 
-        &mdash;
+            &mdash;
 
-        <a href="/rosetta/prefs">My Preferences</a>
+            <a href="/rosetta/prefs">My Preferences</a>
+        </span>
+        
+        <span tal:condition=
+              "python:'rosetta.shuttleworthfoundation.org' in path_info">
+
+            <a href="/translator">Translator Dashboard</a>
+
+            &mdash;
+
+            <a href="/maintainer">Project Maintainer Dashboard</a>
+
+            &mdash;
+
+            <a href="/prefs">My Preferences</a>
+        </span>
 
       </div>
 

@@ -126,7 +126,7 @@
     <content class="canonical.launchpad.database.BugsAssignedReport">
         <allow interface="canonical.launchpad.interfaces.IBugsAssignedReport" />
         <require
-            permission="zope.View"
+            permission="zope.Public"
             set_attributes="user minseverity minpriority showclosed" />
     </content>
 

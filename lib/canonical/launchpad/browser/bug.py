@@ -22,6 +22,8 @@ def traverseBug(bug, request, name):
         return BugAttachmentSet(bug=bug.id)
     elif name == 'references':
         return BugExternalRefSet(bug=bug.id)
+    elif name == 'cve':
+        return CVERefSet(bug=bug.id)
     elif name == 'people':
         return BugSubscriptionSet(bug=bug.id)
     elif name == 'watches':
@@ -60,6 +62,8 @@ class BugView(object):
         '../templates/portlet-bug-sourcepackageinfestation.pt')
     referencePortlet = ViewPageTemplateFile(
         '../templates/portlet-bug-reference.pt')
+    cvePortlet = ViewPageTemplateFile(
+        '../templates/portlet-bug-cve.pt')
     peoplePortlet = ViewPageTemplateFile(
         '../templates/portlet-bug-people.pt')
     assignmentsHeadline = ViewPageTemplateFile(

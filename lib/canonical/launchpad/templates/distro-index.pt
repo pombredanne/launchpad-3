@@ -28,16 +28,16 @@
 	<ul>
 	  <li><b>Glibc update has landed, please check for smoke in your
 	packages</b></li>
-	  <ul><a href="../../people/1">LamontJones</a></ul>
+	  <ul><a href="/foaf/people/1">LamontJones</a></ul>
 	  <li><b>Two weeks to Warty freeze, get your updates in or be sorry
 	  later</b></li> 
-	  <ul><a href="../../people/1">MattZimmerman</a></ul>
+	  <ul><a href="/foaf/people/1">MattZimmerman</a></ul>
 	  <li><b>Today's package changes: 22 packages updated, 22 added
 	  and 1 removed</b></li>
-	  <ul><a href="../../people/1">BuildBot</a></ul>	            
+	  <ul><a href="/foaf/people/1">BuildBot</a></ul>	            
 	  <li><b>Today's build results: 2311 packages passed, 22 failed
 	  (on 3 archs)</b></li> 
-	  <ul><a href="../../people/1">BuildBot</a></ul>
+	  <ul><a href="/foaf/people/1">BuildBot</a></ul>
 	  </ul>
           </div>
        </td></tr>
@@ -68,7 +68,7 @@
    </td></tr>
    <tr><td>
    Owner: <a tal:content="context/distribution/owner/displayname" 
-             tal:attributes="href string:../../people/${context/distribution/owner/name}">
+             tal:attributes="href string:/foaf/people/${context/distribution/owner/name}">
            OWNER</a>
    </td></tr>
    <tr><th albgign="right"><a href="+edit">Edit Information</a></th></tr>  
@@ -114,7 +114,7 @@
 	PARENTRELEASE</a>
       </td>          
 
-      <td><a tal:attributes="href string:../../people/${release/owner/name}"
+      <td><a tal:attributes="href string:/foaf/people/${release/owner/name}"
 	      tal:content="release/owner/displayname">OWNER</a>
       </td>            
     </tr>

@@ -9,6 +9,7 @@
     <option
         tal:repeat="match matches"
         tal:attributes="value match/token;
+            selected python:path('match/token') == path('view/formToken');
             onclick string:this.form['${view/name}'].value = this.value"
         tal:content="match/title" 
         />

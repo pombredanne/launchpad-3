@@ -17,7 +17,7 @@ class Librarian (object):
         self.cache_path = cache
 
 
-    def addFile(self, name, size, file, contentType=None, digest=None,
+    def addFile(self, name, size, fileobj, contentType, digest=None,
                 cache=True):
         """
         Add a file to the librarian with optional LOCAL CACHE handy
@@ -29,17 +29,13 @@ class Librarian (object):
         uploader = FileUploadClient()
         uploader.connect(self.librarian_host, self.upload_port)
 
-
-        fileid, filealias = uploader.addFile(name, size, file,
+        fileid, filealias = uploader.addFile(name, size, fileobj,
                                              contentType, digest)
 
         if cache:
-            ## XXX: cprov 20041122
-            ## Reopen to get the entire content again !?!?!        
-            file.close()
-            file = open(file.name, "rb")
-
-            self.cacheFile(fileid, filealias, name, file)
+            ## return to start of the file
+            fileobj.seek(0,0)        
+            self.cacheFile(fileid, filealias, name, fileobj)
 
         return fileid, filealias
 
@@ -62,17 +58,21 @@ class Librarian (object):
         if not self.isCached(path):
             ## Grab file from Librarian            
             fp = downloader.getFileByAlias(aliasID)            
-            
+
+            ##XXX: cprov 20041122
+            ## The URL returned from Librarian must be correct
+            # first '/' results in garbage x !!!
             x, fileid, filealias, name = path.split('/')
+
             ## Cache it 
             self.cacheFile(fileid, filealias, name, fp)
 
-            ##Link the cached file to the archive
-            path = os.path.join(self.cache_path, fileid, filealias, name)
-            self.linkFile(path, archive)
+        ##Link the cached file to the archive anyway, ensure it !!
+        path = os.path.join(self.cache_path, fileid, filealias, name)
+        self.linkFile(path, archive)
             
 
-    def cacheFile(self, fileid, filealias, name, file):
+    def cacheFile(self, fileid, filealias, name, fileobj):
         ## efective creation of a file in fielsystem
         print 'Caching file', name
 
@@ -87,7 +87,7 @@ class Librarian (object):
 
         filename = os.path.join(path, name)         
         cache = open(filename, "w")        
-        content = file.read()
+        content = fileobj.read()
         cache.write(content)
         cache.close()
         
@@ -97,8 +97,8 @@ class Librarian (object):
         return os.access(filename, os.F_OK)
 
     def linkFile(self, path, archive):
-        ## XXX: cprov 20041122
-        ## Delete if it is already present ??
+        if os.path.exists(archive):
+            os.unlink(archive)
         return os.link(path, archive)
         
 if __name__ == '__main__':

@@ -28,8 +28,7 @@
                     <input name="searchtext" size="40" />
                     <input type="submit" value="Search" />
                     <div class="formHelp">Enter any part of the project name,
-                    title or description. This will also search the products
-                    from every project.</div>
+                    title or description.</div>
                 </td>
             </tr>
         </table>
@@ -41,8 +40,10 @@
             <table class="rowNavigation" width="100%">
                 <tr tal:repeat="project view/searchresults"
                     tal:attributes="onclick string:window.location='${project/name}';"
-                    valign="top">
+                    valign="top"
+                    vspace="5">
                     <td>
+                        <img src="/++resource++product_icon.gif">
                         <b><a tal:attributes="href project/name" href="#"
                             tal:content="project/title">$Project.title</a></b>
                         (<span tal:content="project/name">$Project.name</span>)

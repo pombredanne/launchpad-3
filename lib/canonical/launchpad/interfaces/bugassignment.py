@@ -23,7 +23,8 @@ class IProductBugAssignment(Interface):
             default=int(dbschema.BugPriority.MEDIUM))
     severity = Choice(title=_('Severity'), vocabulary='BugSeverity',
             default=int(dbschema.BugSeverity.NORMAL))
-    assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
+    assignee = Choice(title=_('Assignee'), required=False,
+            vocabulary='ValidPerson')
     datecreated = Datetime(title=_('Date Created'), required=True,
                            readonly=True)
     ownerID = Int(
@@ -75,7 +76,8 @@ class ISourcePackageBugAssignment(Interface):
             title=_('Binary PackageName'), required=False,
             vocabulary='BinaryPackageName'
             )
-    assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
+    assignee = Choice(title=_('Assignee'), required=False,
+            vocabulary='ValidPerson')
     datecreated = Datetime(title=_('Date Created'), required=True,
                            readonly=True)
     ownerID = Int(

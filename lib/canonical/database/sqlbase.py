@@ -61,6 +61,12 @@ class SQLBase(SQLOS):
         finally:
             self._SO_writeLock.release()
 
+    def __int__(self):
+        '''Cast to integer, returning the primary key value'''
+        # All our SQLBase objects have an integer primary key called 'id'
+        return self.id
+
+
 class _ZopelessConnectionDescriptor(object):
     def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter,
                  debug=False):
@@ -220,11 +226,6 @@ class ZopelessTransactionManager(object):
             obj.expire()
         self.begin()
 
-    def __int__(self):
-        '''Cast to integer, returning the primary key value'''
-        # XXX: WTF?  Where is self.id set?  Is this used anywhere?
-        return self.id
-
 def quote(x):
     r"""Quote a variable ready for inclusion into an SQL statement.
     Note that you should use quote_like to create a LIKE comparison.
@@ -263,6 +264,9 @@ def quote(x):
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause
 
+    TODO: Including the single quotes was a stupid decision.
+    -- StuartBishop 2004/11/24
+
     To correctly generate a SELECT using a LIKE comparision, we need
     to make use of the SQL string concatination operator '||' and the
     quote_like method to ensure that any characters with special meaning
@@ -294,6 +298,4 @@ def quote_like(x):
     if not isinstance(x, basestring):
         raise TypeError, 'Not a string (%s)' % type(x)
     return quote(x).replace('%', r'\\%').replace('_', r'\\_')
-
-
 

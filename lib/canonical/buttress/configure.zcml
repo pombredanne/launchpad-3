@@ -12,12 +12,6 @@
         newlayer="canonical.launchpad.layers.ButtressLayer"
         name="buttress" />
 
-    <!-- general template for everything in buttress
-    <browser:pages for="*" permission="zope.Public">
-        <browser:page name="malone_template"
-            template="../launchpad/templates/main-template.pt" />
-    </browser:pages>
-     -->
     <browser:defaultView
         for="canonical.buttress.IButtressApplication"
         name="+index" />
@@ -25,8 +19,12 @@
     <browser:suburl
         for="canonical.buttress.IButtressApplication"
         utility="canonical.launchpad.interfaces.IProjectSet"
-        permission="zope.Public"
         name="upstream" />
+
+    <browser:suburl
+        for="canonical.buttress.IButtressApplication"
+        utility="canonical.launchpad.interfaces.ISourceSourceSet"
+        name="sources" />
 
     <!-- pages for the buttress application -->
     <browser:pages

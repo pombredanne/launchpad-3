@@ -53,6 +53,16 @@ class IPOTemplate(IRosettaStats):
 
     owner = Attribute("The owner of the template.")
 
+    rawfile = Attribute("The pot file itself in raw mode.")
+   
+    rawimporter = Attribute("The person that attached the rawfile.")
+    
+    daterawimport = Attribute("The date when the rawfile was attached.")
+
+    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
+        imported, 2 failed.""")
+
+
     # A "current" messageset is one that was in the latest version of
     # the POTemplate parsed and recorded in the database. Current
     # MessageSets are indicated by having 'sequence > 0'
@@ -262,6 +272,15 @@ class IPOFile(IRosettaStats):
     variant = Attribute("The language variant for this PO file.")
 
     filename = Attribute("The name of the file that was imported")
+
+    rawfile = Attribute("The pot file itself in raw mode.")
+   
+    rawimporter = Attribute("The person that attached the rawfile.")
+    
+    daterawimport = Attribute("The date when the rawfile was attached.")
+
+    rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
+        imported, 2 failed.""")
 
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""

@@ -32,7 +32,7 @@ __all__ = ('ManifestEntryType', 'Packaging', 'BranchRelationships',
 'BugExternalReferenceType', 'BugRelationship',
 'UpstreamReleaseVersionStyle', 'RevisionControlSystems',
 'ArchArchiveType', 'BugSubscription', 'RosettaTranslationOrigin',
-'DistributionRole', 'DOAPRole')
+'DistributionRole', 'DOAPRole', 'ProjectStatus')
 
 from zope.interface.advice import addClassAdvisor
 import sys
@@ -182,6 +182,35 @@ class DBSchema:
     title = "See first line of class's __doc__ docstring."
     name = "See lower-cased-spaces-inserted class name."
     items = ItemsDescriptor()
+
+
+class ProjectStatus(DBSchema):
+    """A Project Status
+
+    This is an enum of the values that Project.status can assume.
+    Essentially it indicates whether or not this project has been reviewed,
+    and if it has whether or not it passed review and should be considered
+    active.
+    """
+
+    NEW = Item(1, """
+        New
+
+        This project is new and has not been reviewed.
+        """)
+
+    ACTIVE = Item(2, """
+        Active
+
+        This Project has been reviewed and is considered active in the
+        launchpad.""")
+
+    DISABLED = Item(3, """
+        Disabled
+
+        This project has been reviewed, and has been disabled. Typically
+        this is because the contents appear to be bogus. Such a project
+        should not show up in searches etc.""")
 
 
 class ManifestEntryType(DBSchema):

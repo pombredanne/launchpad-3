@@ -224,7 +224,9 @@ class SourcePackageSet(object):
     def withBugs(self):
         pkgset = Set()
         results = self.table.select("SourcePackage.id = \
-                                     SourcePackageBugAssignment.sourcepackage")
+                                     SourcePackageBugAssignment.sourcepackage",
+                                     clauseTables=['SourcePackage',
+                                     'SourcePackageBugAssignment'])
         for pkg in results:
             pkgset.add(pkg)
         return pkgset

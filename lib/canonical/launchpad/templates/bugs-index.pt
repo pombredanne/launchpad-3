@@ -8,9 +8,28 @@
 <div metal:fill-slot="column_one">
 </div>
 
-<div metal:fill-slot="main" class="visualPadding">
+ <div metal:fill-slot="main" class="visualPadding"
+     tal:define="ass_batch view/batch">
+  <iframe width="0" height="0" frameborder="0" scrolling="no" id="blackhole"></iframe>
+
+  <script type="text/javascript">
+     function reject(url, status_cell_id) {
+        document.getElementById("blackhole").src = url;
+        document.getElementById(status_cell_id).firstChild.nodeValue = "Rejected";
+        return false; 
+     }
+     function accept(url, status_cell_id, assignee_cell_id, assignee) { 
+        document.getElementById("blackhole").src = url;
+        document.getElementById(status_cell_id).firstChild.nodeValue = "Accepted";
+        document.getElementById(assignee_cell_id).firstChild.nodeValue = assignee;
+        return false;
+     }
+  </script>
+
+
   <h1>Bugs</h1>
-  <table class="listing rowNavigation">
+  <small tal:content="python:'displaying bugs ' + str(ass_batch.startNumber()) + ' to ' + str(ass_batch.endNumber()) + ' of ' + str(ass_batch.total())">displaying 1 to 20 of 42</small>
+  <table id="ass_listing" class="listing rowNavigation">
     <tr>
       <th>Bug #</th>
       <th>Product</th>
@@ -22,28 +41,85 @@
       <th>Submitted On</th>
       <th>Submitted By</th>
       <th>Assigned To</th>
+      <th tal:condition="request/lp:person">Take Action</th>
     </tr>
-    <tr tal:repeat="assignment view/batch"
-        tal:attributes="onclick string:window.location='${assignment/bug/id}';">
-      <td tal:content="assignment/bug/id">$Bug.title</td>
-      <td tal:content="assignment/product/name|nothing">product</td>
-      <td tal:content="assignment/sourcepackage/sourcepackagename/name|nothing">package</td>
-      <td><a tal:content="assignment/bug/title" tal:attributes="href assignment/bug/id">title</a></td>
-      <td tal:content="assignment/bugstatus/lp:BugAssignmentStatus">New</td>
-      <td tal:content="assignment/priority/lp:BugPriority">High</td>
-      <td tal:content="assignment/severity/lp:BugSeverity">Medium</td>
-      <td tal:content="python:assignment.datecreated.strftime('%d %b %y')">date</td>
-      <td tal:content="assignment/owner/displayname|string:-">name</td>
-      <td tal:content="assignment/assignee/displayname|string:-">somebody</td>
+    <tr tal:repeat="assignment ass_batch">
+      <span tal:omit-tag=""
+            tal:define="bugid assignment/bug/id;
+                        product_name assignment/product/name|nothing;
+                        project_name assignment/product/project/name|nothing;
+                        package_name assignment/sourcepackage/sourcepackagename/name|nothing;
+                        ass_owner assignment/owner/name|nothing;
+                        potential_assignee request/lp:person/displayname|nothing;
+                        status assignment/bugstatus/lp:BugAssignmentStatus;
+                        assignee assignment/assignee/name|nothing;
+                        priority assignment/priority/lp:BugPriority;
+                        severity assignment/severity/lp:BugSeverity;
+                        statusid string:status${repeat/assignment/number};
+                        assigneeid string:assignee${repeat/assignment/number};">
+          <td tal:content="bugid"
+              tal:attributes="onclick string:window.location='${bugid}';">$Bug.title</td>
+          <td tal:condition="product_name"
+              tal:content="product_name"
+              tal:attributes="onclick string:window.location='${bugid}';">product</td>
+          <td tal:condition="not:product_name"
+              tal:attributes="onclick string:window.location='${bugid}';">-</td>
+          <td tal:content="python:package_name and package_name or '-'"
+              tal:attributes="onclick string:window.location='${bugid}';">-</td>
+          <td tal:attributes="onclick string:window.location='${bugid}';">
+            <a tal:content="assignment/bug/title" tal:attributes="href bugid">title</a>
+          </td>
+          <td tal:content="status"
+              tal:attributes="onclick string:window.location='${bugid}';
+                              id statusid">New</td>
+          <td tal:content="priority"
+              tal:attributes="onclick string:window.location='${bugid}';">High</td>
+          <td tal:content="severity"
+              tal:attributes="onclick string:window.location='${bugid}';">Medium</td>
+          <td tal:content="python:assignment.datecreated.strftime('%d %b %y')"
+              tal:attributes="onclick string:window.location='${bugid}';">date</td>
+          <td tal:content="assignment/owner/displayname|string:-"
+              tal:attributes="onclick string:window.location='${bugid}';">name</td>
+          <td tal:content="assignment/assignee/displayname|string:-"
+              tal:attributes="onclick string:window.location='${bugid}';
+                              id assigneeid;">somebody</td>
+          <td tal:condition="request/lp:person">
+            <a href=""
+               tal:condition="product_name"
+               tal:attributes="onClick string:return accept('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Accepted&field.priority=$priority&field.severity=$severity&field.product=$project_name $product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=${request/lp:person/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
+                <small>accept</small>
+            </a>
+            <a href=""
+               tal:condition="package_name"
+               tal:attributes="onClick string:return accept('${bugid}/packageassignments/${assignment/id}/+edit?field.bugstatus=Accepted&field.priority=$priority&field.severity=$severity&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=${request/lp:person/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
+                <small>accept</small>
+            </a>
+            &nbsp;
+            <a href=""
+               tal:condition="product_name"
+               tal:attributes="onClick string:return reject('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Rejected&field.priority=$priority&field.severity=$severity&field.product=$project_name $product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
+            </a>
+            <a href=""
+               tal:condition="package_name"
+               tal:attributes="onClick string:return reject('${bugid}/packageassignments/${assignment/id}/+edit?field.bugstatus=Rejected&field.priority=$priority&field.severity=$severity&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
+            </a>
+          </td>
+      </span>
     </tr>
     <tr class="batchnav">
-      <td class="batchnav" colspan="10">
+      <td class="batchnav" colspan="11" 
+          tal:define="prev_page_url view/batchnav/prevBatchURL;
+                      next_page_url view/batchnav/nextBatchURL">
+          <a tal:condition="prev_page_url"
+             tal:attributes="href prev_page_url">&laquo; previous</a>
           <span tal:omit-tag=""
                 tal:repeat="page_url view/batchnav/batchPageURLs">
             <a href=""
                tal:content="python:page_url.keys()[0]"
                tal:attributes="href python:page_url.values()[0]">[1]</a>
           </span>
+          <a tal:condition="next_page_url"
+             tal:attributes="href next_page_url">next &raquo;</a>
       </td>
     </tr>
   </table>

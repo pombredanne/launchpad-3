@@ -1,4 +1,4 @@
-"""Person App Components for Soyuz.
+"""Person App Components for Foaf.
 
 (c) Canonical Software Ltd. 2004, all rights reserved.
 """
@@ -17,7 +17,7 @@ from canonical.launchpad.database import SourcePackageInDistro, \
                                          IrcID, Membership, TeamParticipation,\
                                          DistributionRole, DistroReleaseRole
 
-from canonical.launchpad.database import IPeopleApp, IPersonApp
+from canonical.launchpad.interfaces import IPeopleApp, IPersonApp
 
 
 #

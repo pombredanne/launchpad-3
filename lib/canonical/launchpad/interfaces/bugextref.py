@@ -5,6 +5,8 @@ from zope.interface import Interface, Attribute
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
+from canonical.launchpad.fields import Title
+
 class IBugExternalRefsView(IAddFormCustomization):
     """BugExternalRef views"""
 
@@ -17,15 +19,15 @@ class IBugExternalRef(Interface):
     bug = Int(
             title=_('Bug ID'), required=True, readonly=True,
             )
-    bugreftype = Choice(
-            title=_('Bug Ref Type'), required=True, readonly=False,
-            vocabulary='BugRef',
+    url = TextLine(
+            title=_('URL'), required=True, readonly=False,
+            description = _("""The url of the content that is related to
+            this bug.""")
             )
-    data = TextLine(
-            title=_('Data'), required=True, readonly=False,
-            )
-    description = Text(
-            title=_('Description'), required=True, readonly=False,
+    title = Title(
+            title=_('Title'), required=True, readonly=False,
+            description=_("""A brief description of the content that is
+            being linked to.""")
             )
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
@@ -33,10 +35,6 @@ class IBugExternalRef(Interface):
     owner = Int(
             title=_('Owner'), required=False, readonly=True,
             )
-
-    def url():
-        """Return the url of the external resource."""
-
 
 
 class IBugExternalRefSet(Interface):

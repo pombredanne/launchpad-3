@@ -318,5 +318,5 @@ class BinaryPackageRelease(AbstractPackageRelease):
                 db.createBinaryPackageFile( self, alias )
 
     def is_created(self, db):
-        return db.getBinaryPackage(self.package, self.version)
+        return db.getBinaryPackage(self.package, self.version, self.architecture)
 

@@ -1,26 +1,103 @@
-
 README for Launchpad Sample Data
+================================
+
+Overview
+--------
+
+For non trivial modifications, it is best if you store your sample
+data modifications as a .sql script of INSERT, UPDATE and DELETE statements.
+This is so when you want to commit your changes it is a simple case
+of building a fresh batch of sample data, running your script, and
+making a fresh sampledata snapshot. This ensures that only the changes you
+want to make are made, as well as saving you time if somebody else updates
+the sample data while you are working.
 
 To update the sample data:
 
-  # go to the db schema directory
-  cd database/schema
-  # make a database with the current sample data
-  make
-  # connect to the db, and then do any INSERT or UPDATE commands you need
-  psql launchpad_test
-  # you could also run a script which updates the data in the way you want
-  # now dump a copy of that data to newsampledata.sql
-  # nb this excludes the language, spokenin and country tables which
-  # are managed separately in language.sql
-  make newsampledata
-  # now inspect the new sample data
-  less newsampledata.sql
-  # if you like it, make it the current sampledata
-  cp newsampledata.sql current.sql
-  # commit your changes
-  tla commit -s "updated sample data to include..." (add your comments)
-  
+    1.  Go to the db schema directory::
+
+            cd database/schema
+
+    2.  Make a database with the current sample data::
+
+            make
+
+    3.  Connect to the db, and then do any INSERT or UPDATE commands you need::
+
+            psql -d launchpad_dev -f my_sample_data_mods.sql
+
+        If there are errors, fix and start again.
+
+    4.  Make a fresh snapshot of the sample data to newsampledata.sql::
+
+            make newsampledata
+
+    5.  Inspect the new sample data::
+
+            cd ../sampledata
+            diff current.sql newsampledata.sql
+
+    6.  If it passes your sanity checks, make it the corrent sample data::
+
+            cp newsampledata.sql current.sql
+
+    7.  Ensure the tests still pass
+
+            cd ../..
+            make check
+
+    8.  Commit your changes and merge to Rocketfuel::
+
+            baz commit -s 'Added frotz to sampledata..."
+            baz mirror
+            arch-submit-merge 'Added frotz to sampledata..."
+
+
+Database Patches
+----------------
+
+If you are updating the sample data to cope with modifications to the
+database schema, you need to be aware that the sample data is loaded
+*after* the database and all its patches are built. It is fairly simple
+if you follow these steps:
+
+    1.  Make sure your patch will *not* be run when you run 'make'
+        in database/schema. Either rename it or leave it in the
+        database/schema/pending directory.
+
+    2.  Follow steps 1 & 2 from the previous section 'Overview'
+
+    3.  Run the pending database schema patch (if any)
+
+    4.  Follow steps 3 - 7 from the previous section 'Overview'.
+
+    5.  Move the pending/renamed patch to its final location
+
+    6.  Run 'make check' again because we are paranoid.
+
+    7.  Follow step 8 from the previous section 'Overview'.
+
+This process should generally only be performed by the acting DBA.
+Work that needs to be committed at the same time as database patches
+should be committed to a branch where the acting DBA can either inspect
+and give you the go ahead to commit, or for the acting DBA to simply
+tell PQM to merge in on your behalf. This should simply be a case of
+doing::
+
+    baz branch launchpad--whatever--42
+    baz commit -s 'Commit changes. Ready for merge pending DBA approval'
+    baz mirror
+
+The acting DBA can then happily checkout your code from your chinstrap
+archive mirror::
+
+    baz get some.twonk@canonical.com/launchpad--whatever--42
+    [ ... inspect and abuse ... ]
+
+TODO: Confirm & document method to merge branch into trunk, avoiding loops.
+
+Policies
+--------
 
 Creating sample data is tedious. Very. So to simplify our lives, please
 just use the following core items in your sample data. In other words,

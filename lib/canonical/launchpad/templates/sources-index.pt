@@ -1,0 +1,76 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="buttress">
+
+<body>
+
+<div metal:fill-slot="main" class="visualPadding"
+     tal:define="batch view/batch">
+
+  <h1>Revision Control Systems for the Bazaar</h1>
+
+  <form action="" method="GET">
+    <fieldset>
+        <legend>Filter Criteria</legend>
+
+        <div class="formControls">
+            <input type="text" name="projecttext" size="50">
+            <input type="submit" name="search" value="Search" />
+            <br />
+            <input type="checkbox" name="syncingapproved">
+            <b>Syncing</b>
+            <input type="checkbox" name="processingapproved">
+            <b>Processing approved</b>
+            <input type="checkbox" name="autotested">
+            <b>Autotest successful</b>
+        </div>
+
+    </fieldset>
+  </form>
+
+  <table class="listing rowNavigation" width="100%">
+    <tr>
+        <th>Project</th>
+        <th>Product</th>
+        <th>Name</th>
+        <th>Title</th>
+        <th>Date Autotested</th>
+        <th>Date Sync Approved</th>
+        <th>Date Processing Approved</th>
+    </tr>
+    <tr tal:repeat="source batch"
+        tal:attributes="onclick string:window.location='${source/name}';">
+      <td tal:content="source/product/project/name">$Project.name</td>
+      <td tal:content="source/product/name">$Product.name</td>
+      <td tal:content="source/name">$SourceSource.name</td>
+      <td tal:content="source/title">$SourceSource.title</td>
+      <td tal:content="source/autotested">$SourceSource.autotested</td>
+      <td tal:content="source/syncingapproved">$SourceSource.syncingapproved</td>
+      <td tal:content="source/processingapproved">$SourceSource.processingapproved</td>
+    </tr>
+    <tr class="batchnav">
+      <td class="batchnav" colspan="10"
+          tal:define="prev_page_url view/batchnav/prevBatchURL;
+                      next_page_url view/batchnav/nextBatchURL">
+          <a tal:condition="prev_page_url"
+             tal:attributes="href prev_page_url">&laquo; previous</a>
+          <span tal:omit-tag=""
+                tal:repeat="page_url view/batchnav/batchPageURLs">
+            <a href=""
+               tal:content="python:page_url.keys()[0]"
+               tal:attributes="href python:page_url.values()[0]">[1]</a>
+          </span>
+          <a tal:condition="next_page_url"
+             tal:attributes="href next_page_url">next &raquo;</a>
+             <br />
+            <small tal:content="python:'displaying sources ' + str(batch.startNumber()) + ' to ' + str(batch.endNumber()) + ' of ' + str(batch.total())"
+                   style="float: center;">displaying 1 to 20 of 42</small>
+      </td>
+    </tr>
+  </table>
+
+</div>
+
+</body>
+</html>

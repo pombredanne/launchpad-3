@@ -8,7 +8,9 @@
 
     <h1>Welcome to FOAF!</h1>
 
-    <h1>Search People</h1>
+    <ul>
+      <li><a href="people">People</a></li> 
+    </ul>
 
 </div>
 </body>

@@ -22,7 +22,7 @@
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.product"
   ... 
-  ... 3
+  ... launchpad-mirrors arch-mirrors
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.product-empty-marker"
   ... 
@@ -69,7 +69,7 @@
   ...
           <h1>Add Product Bug Assignment</h1>
   ...
-  <input type="text" name="field.product" value="3"
+  <input type="text" name="field.product" value="launchpad-mirrors arch-mirrors" ... />
   ...
   <select name="field.bugstatus" size="1" >
   ...
@@ -89,6 +89,8 @@
   ... Referer: http://localhost:9000/malone/bugs/2/productassignments/+new
   ... """)
   HTTP/1.1 303 See Other
+  ...
+  <BLANKLINE>
   ...
 
 
@@ -126,7 +128,7 @@
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.product"
   ... 
-  ... 3
+  ... launchpad-mirrors arch-mirrors
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.product-empty-marker"
   ... 
@@ -158,7 +160,7 @@
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.assignee"
   ... 
-  ... 22
+  ... stub
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.assignee-empty-marker"
   ... 
@@ -171,11 +173,13 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
+  <BLANKLINE>
+  ...
             <h3>Edit Product Bug Assignment</h3>
   <BLANKLINE>
             <p>Updated on ...</p>
   ...
-  <input type="text" name="field.product" value="3"
+  <input type="text" name="field.product" value="launchpad-mirrors arch-mirrors" ... />
   ...
   <a href="javascript:popup_window('@@popup-window?vocabulary=Product&amp;field=field.product','500','400')">(list)</a>
   ...
@@ -189,7 +193,7 @@
   <select name="field.severity" size="1" >
   <option selected="selected" value="Critical">Critical</option>
   ...
-  <select name="field.assignee" size="1" >
+  <input type="text" name="field.assignee" value="stub" ... />
   ...
-  <option selected="selected" value="22">Stuart Bishop</option>
+  <option selected="selected" ... value="stub">Stuart Bishop</option>
   ...

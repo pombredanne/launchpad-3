@@ -49,8 +49,7 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(userDict, userDict2)
 
         # Getting by nickname should also give the same result
-        # Note: 'name1' is Mark's nickname in the sampledata
-        userDict3 = storage._getUserInteraction(self.cursor, 'name1')
+        userDict3 = storage._getUserInteraction(self.cursor, 'sabdfl')
         self.assertEqual(userDict, userDict3)
 
     def test_getUserMissing(self):

@@ -190,10 +190,10 @@ class ArchiveMapper(object):
         except IndexError:
             raise ArchiveNotRegistered(archive.name)
         
-    def insert(self, archive):
+    def insert(self, archive, title='', description=''):
         """Insert archive into the database"""
         if self.findByName(archive.name).exists():
             raise KeyError("archive %s already exists" % archive.name)
-        Archive(name=archive.name, title='', description='', 
-                            visible=True)
+        Archive(name=archive.name, title=title, description=description, 
+                visible=True)
 

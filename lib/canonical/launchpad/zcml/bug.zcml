@@ -7,7 +7,7 @@
 
     <content class="canonical.launchpad.database.Bug">
         <allow interface="canonical.launchpad.interfaces.IBug" />
-        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IBug" />
+        <require permission="zope.Public" set_schema="canonical.launchpad.interfaces.IBug" />
     </content>
 
     <browser:defaultView

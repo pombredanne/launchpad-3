@@ -96,7 +96,6 @@ class SubURLTraverser:
         view_name = getDefaultViewName(self.context, request)
         return self.context, (view_name,)
 
-
 class RootObject(Location):
     implements(IContainmentRoot, ILaunchpadApplication)
 

@@ -315,20 +315,18 @@ def notify_bug_comment_added(bugmessage, event):
         '"%s" comment added' % bugmessage.bug.title, msg)
 
 def notify_bug_external_ref_added(ext_ref, event):
-    """Notify CC'd list that a new external reference has
+    """Notify CC'd list that a new web link has
     been added for this bug."""
     msg = """\
-Bug Ref Type: %(ref_type)s
-Data: %(data)s
-Description: %(description)s
-""" % {'ref_type' : BugExternalReferenceType.items[int(ext_ref.bugreftype)].title,
-       'data' : ext_ref.data,
-       'description' : ext_ref.description}
+URL: %(url)s
+Title: %(title)s
+""" % {'url' : ext_ref.url,
+       'title' : ext_ref.title}
 
     send_edit_notification_simple(
         ext_ref.bug,
         FROM_ADDR, get_cc_list(ext_ref.bug),
-        '"%s" external reference added' % ext_ref.bug.title, msg)
+        '"%s" web link added' % ext_ref.bug.title, msg)
 
 def notify_bug_watch_added(watch, event):
     """Notify CC'd list that a new watch has been added for this
