@@ -327,3 +327,39 @@ private, and Foo Bar is not an explicit subscriber to the bug, he will
     '...task added'
 
     >>> stub.test_emails = []
+
+If, for some odd reason, none of the subscribers on a bug have a
+preferred email set, no attempt to send a notification email will
+occur. Let's use another example to demonstrate what we mean; the same
+thing as the previous example, but this time let's "mock out" the
+bug's notificationRecipientAddresses method to pretend there are no
+recipient addresses:
+
+    >>> from zope.interface import implements
+    >>> from canonical.launchpad.interfaces import IBug, IBugTask
+
+    >>> class MockBugNoRecipientAddresses(object):
+    ...     implements(IBug)
+    ...     def __init__(self, bug):
+    ...         self.bug = bug
+    ...     def __getattr__(self, name):
+    ...         return getattr(self.bug, name)
+    ...     def notificationRecipientAddresses(self):
+    ...         return []
+    >>> class MockBugTask(object):
+    ...     implements(IBugTask)
+    ...     def __init__(self, bugtask):
+    ...         self.bugtask = bugtask
+    ...     def __getattr__(self, name):
+    ...         return getattr(self.bugtask, name)
+    ...     def bug(self):
+    ...         return MockBugNoRecipientAddresses(self.bugtask.bug)
+    ...     bug = property(bug)
+
+    >>> task_with_no_subscribers = MockBugTask(firefox_crashes_upstream)
+    >>> notify(SQLObjectCreatedEvent(task_with_no_subscribers, request))
+
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    0

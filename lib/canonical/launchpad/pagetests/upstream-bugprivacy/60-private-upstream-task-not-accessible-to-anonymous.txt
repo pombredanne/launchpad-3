@@ -1,4 +1,5 @@
-
+Trying to access the task edit page of a task on a private bug
+redirects the anonymous user to the login page.
 
   >>> print http(r"""
   ... GET /malone/tasks/16/+edit HTTP/1.1

@@ -1,3 +1,6 @@
+Foo Bar views the bugs in Ubuntu Linux. Even though there is a private
+bug filed on Ubuntu, Foo Bar cannot see it because he is not an
+explicit subscriber on the bug.
 
   >>> print http(r"""
   ... GET /malone/distros/ubuntu HTTP/1.1

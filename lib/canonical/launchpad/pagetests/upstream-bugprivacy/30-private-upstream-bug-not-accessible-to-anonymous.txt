@@ -1,4 +1,5 @@
-
+Trying to access a private upstream bug as an anonymous user results
+in being redirecting to the login page.
 
   >>> print http(r"""
   ... GET /malone/bugs/7 HTTP/1.1

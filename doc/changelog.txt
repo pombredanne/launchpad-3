@@ -2,6 +2,49 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-05 21:19:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1567
+
+    Summary:
+      fix notification email sending callsites to handle empty recipient
+ lists. small code improvements as suggested by SteveA.
+    Revision:
+      launchpad--devel--0--patch-1567
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-488
+       small improvements to BugTasksView.advanced
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-489
+       add more page test annotations
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-490
+       fix https://dogfood.ubuntu.com/malone/bugs/120 (i think; prefer to confirm that the exact problem as reported is fixed after dogfood rollout)
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-491
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/bugtask.py
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/mailnotification.py
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/20-private-distro-bug-not-visible-to-anonymous.txt
+     lib/canonical/launchpad/pagetests/distro-bugprivacy/30-private-distro-bug-not-visible-to-nonsubscriber-user.txt
+     lib/canonical/launchpad/pagetests/malone/01-check-distro-and-distrorelease-bugs.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/16-upstream-product-main-page-viewed-by-non-maintainer.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/30-private-upstream-bug-not-accessible-to-anonymous.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/60-private-upstream-task-not-accessible-to-anonymous.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/80-private-upstream-bug-accessible-to-subscribed-user.txt
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/90-private-upstream-task-accessible-to-subscribed-user.txt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-488
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-489
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-490
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-491
+
+
 2005-04-05 17:14:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1566
 
     Summary:

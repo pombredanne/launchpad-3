@@ -177,17 +177,16 @@ class BugTasksView:
         return SourcePackageNameVocabulary(None)
 
     def advanced(self):
-        '''Return 1 if the form should be rendered in advanced mode, 0
-        otherwise'''
+        """Should the form be rendered in advanced search mode?"""
         req = self.request
         marker = object()
         if req.get('advanced_submit', marker) is not marker:
-            return 1
+            return True
         if req.get('simple_submit', marker) is not marker:
-            return 0
-        if int(req.get('advanced', 0)):
-            return 1
-        return 0
+            return False
+        if req.get('advanced', 0):
+            return True
+        return False
     advanced = property(advanced)
 
     def products(self):
