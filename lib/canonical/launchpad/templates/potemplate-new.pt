@@ -31,7 +31,11 @@
 
         <legend>POTemplate Details</legend>
 
-        <form action="+newpotemplate" method="POST" enctype="multipart/form-data">
+        <!-- This action parameter should take us back to the product view
+        when the template is created. -->
+
+        <form method="POST" enctype="multipart/form-data"
+            tal:attributes="action string: ${request/URL}/..">
 
         <div class="field">
 

@@ -216,11 +216,10 @@ class ProductView:
         filename = file.filename
 
         if filename.endswith('.pot'):
-
             potfile = file.read()
 
             from canonical.rosetta.pofile import POParser
-            
+
             parser = POParser()
 
             parser.write(potfile)
@@ -230,10 +229,6 @@ class ProductView:
             potemplate.daterawimport = UTC_NOW
             potemplate.rawimporter = owner
             potemplate.rawimportstatus = RosettaImportStatus.PENDING.value
-
-        # now redirect to view the page
-        self.request.response.redirect(name)
-
 
 
 class TemplateLanguages:

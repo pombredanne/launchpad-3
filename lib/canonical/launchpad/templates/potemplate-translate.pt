@@ -56,11 +56,11 @@
         template description
     </p>
 
-    <!-- Error messages first. -->
+    <!-- Plural form error message. -->
 
-    <div tal:condition="context/hasPluralMessage">
+    <div tal:condition="view/badLanguages">
 
-        <p class="portalMessage" tal:condition="view/badLanguages">
+        <p class="portalMessage">
         This template contains plural messages. To be able to translate these
         messages, we need to have special information for each language.
         However, we do not have this information for
@@ -76,9 +76,9 @@
 
     </div>
 
-    <!-- No errors. -->
+    <!-- No plural form error. -->
 
-    <div tal:condition="not: view/error">
+    <div tal:condition="not: view/badLanguages">
 
     <div class="documentDescription">
     Hint: use the <code>Tab</code> key to move quickly between translation fields.
@@ -180,9 +180,9 @@
                     value set/messageID/text
                     " />
 
-            <legend>String #<span tal:replace="set/sequence">120</span></legend>
+            <legend>Message #<span tal:replace="set/sequence">120</span></legend>
 
-            <div class="po-comment">
+            <div class="po-comment" tal:condition="set/sourceComment">
                 <label>Developer Note</label>
                 <div tal:content="set/sourceComment">This refers to the content type.</div>
             </div>
@@ -289,12 +289,6 @@
                     >./plone_forms/discussion_reply_form.pt</pre>
             </fieldset>
 
-            <!--
-            <div class="field">
-                <label>Code reference</label>
-                <img src="/++resource++arrowRight.gif" />
-            </div>
-            -->
         </fieldset>
 
         <!-- Offset of next page, if not at end. -->
@@ -308,7 +302,7 @@
             tal:attributes="tabindex: view/makeTabIndex" />
     </form>
 
-    </div> <!-- tal:condition="not: view/error" -->
+    </div> <!-- tal:condition="not: view/badLanguages" -->
 </div>
 
 </body>
