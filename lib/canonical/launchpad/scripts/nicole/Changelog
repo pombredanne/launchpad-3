@@ -1,3 +1,11 @@
+2005-01-11 cprov:
+     -> Add Morgan's RDF support files (fetchrdf.py, rdfspli.py,
+					rdfproj.py)
+     -> Insert getProductSpec() wrapper function in rdfproj.py
+     -> Correct indentation in new files
+     -> The result dict has wrong API (missed 'devels' key)
+     -> The use of RDF is default (missed conf parameter)
+
 2004-12-15 cprov:
      -> Right FM/SF data store in DB
      -> Can INSERT products from a <namelist-file> or UPDATE 

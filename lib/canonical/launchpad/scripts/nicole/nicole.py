@@ -10,7 +10,7 @@ from database import Doap
 
 #Morgan's import
 import sourceforge 
-
+import rdfproj
 
 ## DOAP is inside our current Launchpad production DB
 DOAPDB = "launchpad_dev"
@@ -63,7 +63,7 @@ def grab_web_info(name):
 
     for short, desc in repositories:
 
-        print '@ Looking for %s on %s' % (name, desc)
+        print '@ Looking for %s on %s in WEB' % (name, desc)
         try:
             data = sourceforge.getProductSpec(name, short)
             print '@\tFound at %s' % desc        
@@ -75,8 +75,24 @@ def grab_web_info(name):
     return datas['fm']
 #    return merge_data(datas['fm'], datas['sf'])
 
-def createorupdate(doap, product_name):
-    data = grab_web_info(product_name)
+def grab_rdf_info(name):
+    print '@ Looking for %s on FM RDF' % (name)
+    data = rdfproj.getProductSpec(name)
+
+    if data is None:
+        print '@\tNot Found'
+        return
+
+    print '@\tFound at FM RDF'
+    return data
+    
+# XXX 20050111 cprov
+# Crap command line mode selection use ParseOptions
+def createorupdate(doap, product_name, mode = 'rdf'):
+    if mode == 'web':
+        data = grab_web_info(product_name)
+    else:
+        data = grab_rdf_info(product_name)
 
     if data:
         doap.ensureProduct(data, product_name, None)

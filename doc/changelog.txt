@@ -2,6 +2,52 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-11 13:19:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1173
+
+    Summary:
+      Fix and Land Morgan RDF libs for Nicole
+    Revision:
+      launchpad--devel--0--patch-1173
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-446
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-447
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-448
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-449
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-450
+       Fix and Land Morgan RDF libs for Nicole
+    
+
+    new files:
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/fetchrdf.sh.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/rdfproj.py.id
+     lib/canonical/launchpad/scripts/nicole/.arch-ids/rdfsplit.py.id
+     lib/canonical/launchpad/scripts/nicole/fetchrdf.sh
+     lib/canonical/launchpad/scripts/nicole/rdfproj.py
+     lib/canonical/launchpad/scripts/nicole/rdfsplit.py
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/Changelog
+     lib/canonical/launchpad/scripts/nicole/nicole.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-446
+     celso.providelo@canonical.com/launchpad--devel--0--patch-447
+     celso.providelo@canonical.com/launchpad--devel--0--patch-448
+     celso.providelo@canonical.com/launchpad--devel--0--patch-449
+     celso.providelo@canonical.com/launchpad--devel--0--patch-450
+
+
 2005-01-11 13:05:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1172
 
     Summary:
