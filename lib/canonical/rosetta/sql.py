@@ -126,7 +126,7 @@ class xxxRosettaProject(SQLBase):
             return ret[0]
 
     def poTemplate(self, name):
-        results = RosettaPOTemplate.selectBy(name=name)
+        results = RosettaPOTemplate.byName(name)
         count = results.count()
 
         if count == 0:
@@ -283,13 +283,13 @@ def createMessageSetFromText(potemplate_or_pofile, text):
     if isinstance(text, unicode):
         text = text.encode('utf-8')
 
-    messageIDs = RosettaPOMessageID.selectBy(msgid=text)
+    messageIDs = RosettaPOMessageID.byMsgid(text)
 
     if messageIDs.count() == 0:
         # If there are no existing message ids, create a new one.
         # We do not need to check whether there is already a message set
         # with the given text in this template.
-        messageID = RosettaPOMessageID(msgid=text)
+        messageID = RosettaPOMessageID.byMsgid(text)
     else:
         # Otherwise, use the existing one.
         assert messageIDs.count() == 1
@@ -312,7 +312,8 @@ class RosettaPOTemplate(SQLBase):
         ForeignKey(name='product', foreignKey='RosettaProduct', dbName='product',
             notNull=True),
         ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner'),
-        StringCol(name='name', dbName='name', notNull=True, unique=True),
+        StringCol(name='name', dbName='name', notNull=True, unique=True,
+            alternateID=True),
         StringCol(name='title', dbName='title', notNull=True, unique=True),
         StringCol(name='description', dbName='description', notNull=True),
         StringCol(name='path', dbName='path', notNull=True),
@@ -397,7 +398,7 @@ class RosettaPOTemplate(SQLBase):
 
         # Find a message ID with the given text.
 
-        results = RosettaPOMessageID.selectBy(msgid=key)
+        results = RosettaPOMessageID.byMsgid(key)
 
         if results.count() == 0:
             raise KeyError, key
@@ -473,7 +474,7 @@ class RosettaPOTemplate(SQLBase):
                 "This template already has a POFile for %s variant %s" %
                 (language.englishName, variant))
 
-        language = RosettaLanguage.selectBy(code=language_code)
+        language = RosettaLanguage.byCode(language_code)
 
         if language.count() == 0:
             raise ValueError, "Unknown language code '%s'" % language_code
@@ -575,7 +576,7 @@ class RosettaPOFile(SQLBase):
 
         # Find the message ID object for the given text.
 
-        results = RosettaPOMessageID.selectBy(msgid = msgid_text)
+        results = RosettaPOMessageID.byMsgid(msgid_text)
 
         if results.count() == 0:
             raise KeyError, msgid_text
@@ -598,14 +599,13 @@ class RosettaPOFile(SQLBase):
 
     def translated(self):
         return iter(RosettaPOMessageSet.select('''
-            poSet.pofile = %d AND
-            poSet.iscomplete=TRUE AND
-            poSet.primemsgid = potset.primemsgid AND
-            poSet.potemplate = potset.potemplate AND
+            POMsgSet.pofile = %d AND
+            POMsgSet.iscomplete=TRUE AND
+            POMsgSet.primemsgid = potset.primemsgid AND
+            POMsgSet.potemplate = potset.potemplate AND
             potSet.pofile IS NULL AND
             potSet.sequence <> 0''' % self.id,
             clauseTables = [
-                'POMsgSet poSet',
                 'POMsgSet potSet',
                 ]))
 
@@ -638,14 +638,13 @@ class RosettaPOFile(SQLBase):
         # how to do it in one query, feel free to refactor.
 
         seqzero = RosettaPOMessageSet.select('''
-            poSet.pofile = %d AND
-            poSet.primemsgid = potset.primemsgid AND
-            poSet.potemplate = potset.potemplate AND
+            POMsgSet.pofile = %d AND
+            POMsgSet.primemsgid = potset.primemsgid AND
+            POMsgSet.potemplate = potset.potemplate AND
             potSet.pofile IS NULL AND
-            poSet.sequence <> 0 AND
+            POMsgSet.sequence <> 0 AND
             potSet.sequence = 0''' % self.id,
             clauseTables = [
-                'POMsgSet poSet',
                 'POMsgSet potSet',
                 ])
         notinpot = RosettaPOMessageSet.select('''
@@ -896,7 +895,7 @@ class RosettaPOMessageSet(SQLBase):
         if type(text) is unicode:
             text = text.encode('utf-8')
 
-        messageIDs = RosettaPOMessageID.selectBy(msgid=text)
+        messageIDs = RosettaPOMessageID.byMsgid(text)
 
         if messageIDs.count() == 0:
             messageID = RosettaPOMessageID(msgid=text)
@@ -940,10 +939,10 @@ class RosettaPOMessageSet(SQLBase):
 
         # First get hold of a RosettaPOTranslation for the specified text.
 
-        results = RosettaPOTranslation.selectBy(translation=text)
+        results = RosettaPOTranslation.byTranslation(text)
 
         if results.count() == 0:
-            translation = RosettaPOTranslation(translation=text)
+            translation = RosettaPOTranslation.byTranslation(text)
         else:
             assert results.count() == 1
 
@@ -1030,7 +1029,8 @@ class RosettaPOMessageID(SQLBase):
     _table = 'POMsgID'
 
     _columns = [
-        StringCol(name='msgid', dbName='msgid', notNull=True, unique=True)
+        StringCol(name='msgid', dbName='msgid', notNull=True, unique=True,
+            alternateID=True)
     ]
 
 
@@ -1064,7 +1064,8 @@ class RosettaPOTranslation(SQLBase):
     _table = 'POTranslation'
 
     _columns = [
-        StringCol(name='translation', dbName='translation', notNull=True, unique=True)
+        StringCol(name='translation', dbName='translation', notNull=True,
+            unique=True, alternateID=True)
     ]
 
 
@@ -1075,7 +1076,7 @@ class RosettaLanguages(object):
         return iter(RosettaLanguage.select(orderBy='englishName'))
 
     def __getitem__(self, code):
-        results = RosettaLanguage.selectBy(code=code)
+        results = RosettaLanguage.byCode(code)
 
         if results.count() == 0:
             raise KeyError, code
@@ -1092,7 +1093,8 @@ class RosettaLanguage(SQLBase):
     _table = 'Language'
 
     _columns = [
-        StringCol(name='code', dbName='code', notNull=True, unique=True),
+        StringCol(name='code', dbName='code', notNull=True, unique=True,
+            alternateID=True),
         StringCol(name='nativeName', dbName='nativename'),
         StringCol(name='englishName', dbName='englishname'),
         IntCol(name='pluralForms', dbName='pluralforms'),

@@ -283,7 +283,7 @@
          lp:url="Soyuz/people/$person.id/+edit"
 	 name="+edit"
        />
-
+<!--
   <page for="canonical.soyuz.sql.PersonApp"
          permission="zope.Public"
 	 class="canonical.soyuz.browser.TeamJoinView"
@@ -291,7 +291,7 @@
          lp:url="Soyuz/people/$person.id/+join"
 	 name="+join"
        />
-
+-->
 
 <traverse for="canonical.soyuz.sql.DistroBinariesApp" getter="__getitem__" />
 
