@@ -18,10 +18,10 @@ from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
 from canonical.launchpad.interfaces import IPersonSet, IPasswordEncryptor
 
-from canonical.launchpad.webapp.login import ILoggedOutEvent
-from canonical.lp.placelessauth.interfaces import IPlacelessAuthUtility
-from canonical.lp.placelessauth.interfaces import IPlacelessLoginSource
-from canonical.lp.placelessauth.interfaces import ILaunchpadPrincipal
+from canonical.launchpad.webapp.interfaces import ILoggedOutEvent
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 
 
 def handle(event):

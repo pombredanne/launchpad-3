@@ -2,9 +2,28 @@
 
 __metaclass__ = type
 
+from zope.interface import Interface, implements
+
 from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
-from zope.interface import Interface
+
+
+class ILoggedInEvent(Interface):
+    """An event which gets sent after someone has logged in via a form."""
+
+class LoggedInEvent:
+    implements(ILoggedInEvent)
+    def __init__(self, request):
+        self.request = request
+
+class ILoggedOutEvent(Interface):
+    """An event which gets sent after someone has logged out via a form."""
+
+class LoggedOutEvent:
+    implements(ILoggedOutEvent)
+    def __init__(self, request):
+        self.request = request
+
 
 class IPlacelessAuthUtility(IAuthenticationService):
     """This is a marker interface for a utility that supplies the interface

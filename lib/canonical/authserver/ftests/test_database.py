@@ -10,7 +10,7 @@ from zope.interface.verify import verifyObject
 
 from twisted.enterprise import adbapi
 
-from canonical.lp.placelessauth import SSHADigestEncryptor
+from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 from canonical.authserver.database import DatabaseUserDetailsStorage
 from canonical.authserver.database import IUserDetailsStorage

@@ -5,11 +5,44 @@
 """
 __metaclass__ = type
 
-# XXX IPerson should be defined in this canonical.lp package
-from canonical.launchpad.interfaces import IPerson
-from zope.publisher.interfaces import IApplicationRequest
+import cgi
 from zope.interface import Interface, Attribute, implements
+
+from zope.publisher.interfaces import IApplicationRequest
+from zope.publisher.interfaces.browser import IBrowserApplicationRequest
+from zope.app.traversing.interfaces import ITraversable
+
+from canonical.launchpad.interfaces import IPerson
 import canonical.lp.dbschema
+
+
+class HTMLFormAPI:
+    """HTML form helper API, available as request:htmlform.
+
+    Use like:
+
+        request/htmlform:fieldname/selected/literalvalue
+
+        if request.form[fieldname] == literalvalue:
+            return "selected"
+        else:
+            return None
+
+    """
+    implements(ITraversable)
+    __used_for__ = IBrowserApplicationRequest
+
+    def __init__(self, request):
+        self.form = request.form
+
+    def traverse(self, name, furtherPath):
+        operation = furtherPath.pop()
+        value = furtherPath.pop()
+        if self.form.get(name) == value:
+            return operation
+        else:
+            return None
+
 
 class IRequestAPI(Interface):
     """Launchpad lp:... API available for an IApplicationRequest."""
@@ -46,15 +79,14 @@ class DBSchemaAPI:
         else:
             raise AttributeError, name
 
-import cgi
 
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""
 
-    def __init__(self, s):
-        self._s = s
+    def __init__(self, stringtoformat):
+        self._stringtoformat = stringtoformat
 
     def nl_to_br(self):
-        '''Quote HTML characters, then replace newlines with <br /> tags'''
-        return cgi.escape(self._s).replace('\n','<br />')
+        """Quote HTML characters, then replace newlines with <br /> tags."""
+        return cgi.escape(self._stringtoformat).replace('\n','<br />')
 

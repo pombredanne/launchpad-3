@@ -8,7 +8,7 @@ import binascii
 from zope.component import getUtility
 from zope.app.tests import ztapi
 from zope.app.tests.placelesssetup import PlacelessSetup
-from canonical.lp.placelessauth import SSHADigestEncryptor
+from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.interfaces import IPasswordEncryptor
 
 class TestSSHADigestEncryptor(PlacelessSetup, unittest.TestCase):

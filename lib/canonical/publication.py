@@ -7,7 +7,7 @@ __metaclass__ = type
 from zope.security.interfaces import Unauthorized
 from zope.security.management import newInteraction
 import transaction
-from canonical.lp.placelessauth.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.zodb
 
 from zope.app import zapi

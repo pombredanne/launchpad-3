@@ -7,7 +7,7 @@ from zope.interface import implements
 #from twisted.enterprise import adbapi
 from canonical.authserver import adbapi
 
-from canonical.lp.placelessauth import SSHADigestEncryptor
+from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.lp import dbschema
 
 from canonical.authserver.interfaces import IUserDetailsStorage

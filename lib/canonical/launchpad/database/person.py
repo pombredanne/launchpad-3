@@ -216,7 +216,7 @@ def createTeam(displayname, teamowner, teamdescription,
 
     
 def personFromPrincipal(principal):
-    """Adapt canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal 
+    """Adapt canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal
        to IPerson
     """
     if IUnauthenticatedPrincipal.providedBy(principal):

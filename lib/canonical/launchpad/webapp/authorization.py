@@ -9,7 +9,7 @@ from zope.security.checker import CheckerPublic
 from zope.security.simplepolicies import ParanoidSecurityPolicy
 from zope.security.management import system_user
 
-from canonical.lp.placelessauth import LaunchpadPrincipal
+from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 
 
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
@@ -29,6 +29,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         if not users:
             return False
         for user in users:
-            if not isinstance(user, LaunchpadPrincipal):
+            if not ILaunchpadPrincipal.providedBy(user):
                 return False
         return True

@@ -51,7 +51,7 @@
         />
     </content>
 
-    <adapter for="canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal"
+    <adapter for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
         provides="canonical.launchpad.interfaces.IPerson"
         factory="canonical.launchpad.database.personFromPrincipal" />
 

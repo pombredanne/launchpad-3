@@ -17,10 +17,10 @@ from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.basicauthadapter import BasicAuthAdapter
 
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
-from canonical.lp.placelessauth import PlacelessAuthUtility
-from canonical.lp.placelessauth import SSHADigestEncryptor
-from canonical.lp.placelessauth.interfaces import IPlacelessLoginSource
-from canonical.lp.placelessauth.interfaces import IPlacelessAuthUtility
+from canonical.launchpad.webapp.authentication import PlacelessAuthUtility
+from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.interfaces import IPasswordEncryptor
 
 Bruce = Principal('bruce', 'bruce', 'Bruce', 'bruce', 'bruce!')

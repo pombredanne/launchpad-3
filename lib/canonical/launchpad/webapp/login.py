@@ -6,25 +6,10 @@ __metaclass__ = type
 from datetime import datetime
 from zope.component import getUtility
 from zope.app.session.interfaces import ISession
-from canonical.lp.placelessauth.interfaces import IPlacelessLoginSource
-from zope.interface import Interface, implements
+from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from zope.event import notify
-
-class ILoggedInEvent(Interface):
-    """An event which gets sent after someone has logged in via a form."""
-
-class LoggedInEvent:
-    implements(ILoggedInEvent)
-    def __init__(self, request):
-        self.request = request
-
-class ILoggedOutEvent(Interface):
-    """An event which gets sent after someone has logged out via a form."""
-
-class LoggedOutEvent:
-    implements(ILoggedOutEvent)
-    def __init__(self, request):
-        self.request = request
+from canonical.launchpad.webapp.interfaces import LoggedInEvent
+from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 
 
 class BasicLoginPage:
