@@ -119,7 +119,7 @@ class ParseMaintError(Exception):
         self.args = message,;
         self.message = message;
 
-def fix_maintainer (maintainer):
+def fix_maintainer (maintainer, field_name = "Maintainer" ):
     """Parses a Maintainer or Changed-By field and returns:
   (1) an RFC822 compatible version,
   (2) an RFC2047 compatible version,
@@ -141,7 +141,7 @@ contains '.' or ',', (1) and (2) are switched to 'email (name)' format."""
     else:
         m = re_parse_maintainer.match(maintainer)
         if not m:
-            raise ParseMaintError, "%s: doesn't parse as a valid Maintainer field." % maintainer
+            raise ParseMaintError, "%s: doesn't parse as a valid %s field." % (maintainer, field_name)
         name = m.group(1)
         email = m.group(2)
         # Just in case the maintainer ended up with nested angles; check...
