@@ -130,8 +130,15 @@ def rdf2dict(rdf):
             else:
                 mydict[tagdict[tag]] = rdf[start:end]
 
-    mydict['programminglang'] = extractLangs(mydict['programminglang'])
-    mydict['devels'] = extractDevels(mydict['devels'])
+    mydict['programminglang'] = extractLangs(mydict['programminglang'])    
+    # XXX cprov 20050121
+    # Method extractDevels brakes the rest of the code,
+    # just use when you are perfectly right it is compatible
+    # or propagate the needs in database.py
+    #
+    #mydict['devels'] = extractDevels(mydict['devels'])
+    mydict['devels'] = {}
+
     #for tag in ['homepage', 'screenshot', 'list']:
     #       if mydict[tag]: mydict[tag] = getUrlRedirect(mydict[tag])
     #for tag in ['list']:
@@ -165,7 +172,8 @@ def extractDevels(rdf):
         start = rdf.find('<'+tag+'>', start+1)+len('<'+tag+'>')
         if start > -1 and start >= end:
             end = rdf.find('</'+tag+'>', start)
-            ### Morgan 20050114: Need to replace URL with an email address in the future...
+            ### XXX Morgan 20050114:
+            ### Need to replace URL with an email address in the future...
             urlStart = 0
             urlEnd = 0
             urlStart = rdf.find('<author_url>',start)+12

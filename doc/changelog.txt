@@ -2,6 +2,29 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 19:08:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1235
+
+    Summary:
+      Nicole supports Remote DB
+    Revision:
+      launchpad--devel--0--patch-1235
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-479
+       add Nicole support for remote DB via pyPgSQL
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/database.py
+     lib/canonical/launchpad/scripts/nicole/nicole.py
+     lib/canonical/launchpad/scripts/nicole/rdfproj.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-479
+
+
 2005-01-21 18:06:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1234
 
     Summary:

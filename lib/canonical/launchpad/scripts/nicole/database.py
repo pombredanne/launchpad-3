@@ -22,9 +22,10 @@ def data_sanitizer(data):
     #return ensure_unicode(data)
 
 class SQLThing:
-    def __init__(self, dbname):
+    def __init__(self, pghost, dbname):
         self.dbname = dbname
-        self.db = PgSQL.connect(database=self.dbname)
+        self.pghost = pghost
+        self.db = PgSQL.connect(host=self.pghost, database=self.dbname)
 
     def commit(self):
         return self.db.commit()
@@ -391,7 +392,7 @@ class Doap(SQLThing):
         
         # XXX cprov 
         # Problems with wierd developers name and/or email
-        if fit.pdisplayname and fit.emailname:
+        if fit.pdisplayname and fit.pemail:
             owner = self.ensurePerson(fit.pdisplayname, fit.pemail)[0]
         else:
             print "@\tDOAP wins a Product "
