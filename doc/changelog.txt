@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-22 02:58:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1239
+
+    Summary:
+      Bug privacy db patch
+    Revision:
+      launchpad--devel--0--patch-1239
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-01-22 02:48:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1238
 
     Summary:
