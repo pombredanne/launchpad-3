@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-08 12:39:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1384
+
+    Summary:
+      Pending DB patch for debonzi (mirrors)
+    Revision:
+      launchpad--devel--0--patch-1384
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-166
+       Tidy HTML docs (next time)
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-167
+       Pending DB patch for debonzi (mirrors)
+    
+
+    new files:
+     database/schema/pending/.arch-ids/debonzi-mirror.sql.id
+     database/schema/pending/debonzi-mirror.sql
+
+    modified files:
+     database/schema/Makefile doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-166
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-167
+
+
 2005-03-08 11:52:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1383
 
     Summary:
