@@ -14,8 +14,10 @@ import ThreadedAsync
 import logging
 import os
 import sys
+from time import time
 from zope.server.serverbase import ServerBase
 from canonical.poppy.filesystem import UploadFileSystem
+from canonical.lucille.uploader.filesystem import UploadFileSystem
 
 class Channel(FTPServerChannel):
 
@@ -38,6 +40,16 @@ class Channel(FTPServerChannel):
 
     def _getFileSystem(self):
         return self.uploadfilesystem
+
+    def received(self, data):
+        # XXX This is a work-around for a bug in Zope 3's ServerChannelBase
+        #     that it doesn't update self.last_activity.
+        #     This method can be removed once Zope3 is fixed, and we're using
+        #     that code.
+        #     http://collector.zope.org/Zope3-dev/350
+        #     Steve Alexander, 2005-01-18
+        self.last_activity = time()
+        FTPServerChannel.received(self, data)
 
     def cmd_pass(self, args):
         'See IFTPCommandHandler'

@@ -2,6 +2,170 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-07 18:51:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1378
+
+    Summary:
+      Small security refactor.  Ellision-aware page test runner.  Merge of Bjorn's team-awareness for malone.  Sensible ordering for dbschema vocabularies.
+    Revision:
+      launchpad--devel--0--patch-1378
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1366
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-1
+       add team awareness to Malone
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-2
+       add helper function 'login', to make it easier to write doctests
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-3
+       Rewrite bugtasks.txt and add some tests
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-4
+       merge rf
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-5
+       all authenticated users may edit distro and distro release tasks
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-6
+       clean up according to SteveA's review
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-294
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-295
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-296
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-297
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-298
+       Renamed 'person' to 'user' in authorization interface and classes.  This is clearer, and consistent with the use of 'person' and 'user' in ILaunchBag.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-299
+       Clarify use of 'user' and 'principal' in the authorization policy code.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-300
+       removed XXX comment about the need to add a warning that i have already added.  added an XXX comment as a reminder to push an equivalent warning upstream.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-301
+       Removed IObjectAuthorization from Project.  This is now covered by IProject extending IHasOwner.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-302
+       removed use of IObjectAuthorization
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-303
+       merge from rf
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-304
+       merge from rf
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-305
+       merge from rf
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-306
+       removed various minor import errors caused by merging.  improved a docstring in security.py.  removed pointless subclassing in security.py.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-307
+       changed checkPermission to checkAuthenticated in IAuthorization, for better consistency.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-308
+       created authorizations directive to declare a module that contains authorization adapter classes.  improved the dbschema->vocabulary code.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-309
+       don't short-circuit the case when principal is None in the authorization policy, so that auth adapters can check unauthenticated.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-310
+       refuel, plus resolve conflicts
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-311
+       added diffing for pagetests that deals with '...' better.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-312
+       refuel
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-313
+       merge from rf
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-314
+       made the sort-order of dbschema vocabulary items based on the items' values.  changed some malone pagestests to use the new order rather than the old arbitrary order (which had oddities like High, Low, Medium)
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-315
+       merged from bjorn's launchpad--team-awareness--0 branch.  fixed conflict in security.py
+    
+
+    new files:
+     lib/canonical/.arch-ids/chunkydiff.py.id
+     lib/canonical/chunkydiff.py
+     lib/canonical/launchpad/ftests/.arch-ids/_login.py.id
+     lib/canonical/launchpad/ftests/_login.py
+     lib/canonical/tests/.arch-ids/chunkydiff.txt.id
+     lib/canonical/tests/.arch-ids/test_chunkydiff.py.id
+     lib/canonical/tests/chunkydiff.txt
+     lib/canonical/tests/test_chunkydiff.py
+
+    removed files:
+     lib/canonical/launchpad/.arch-ids/security.zcml.id
+     lib/canonical/launchpad/security.zcml
+
+    modified files:
+     doc/changelog.txt lib/canonical/functional.py
+     lib/canonical/launchpad/configure.zcml
+     lib/canonical/launchpad/database/bounty.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/bugtask.txt
+     lib/canonical/launchpad/doc/datehandling.txt
+     lib/canonical/launchpad/ftests/__init__.py
+     lib/canonical/launchpad/interfaces/bounty.py
+     lib/canonical/launchpad/interfaces/launchpad.py
+     lib/canonical/launchpad/interfaces/project.py
+     lib/canonical/launchpad/pagetests/malone/10-add-subscription.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-edit-package-bug-task-authenticated.txt
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/vocabularies/dbschema.py
+     lib/canonical/launchpad/webapp/authorization.py
+     lib/canonical/launchpad/webapp/meta.zcml
+     lib/canonical/launchpad/webapp/metazcml.py
+     lib/canonical/launchpad/zcml/bugtask.zcml
+     lib/canonical/poppy/server.py test.py
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--team-awareness--0--base-0
+     bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-1
+     bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-2
+     bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-3
+     bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-4
+     bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-5
+     bjorn.tillenius@canonical.com/launchpad--team-awareness--0--patch-6
+     steve.alexander@canonical.com/launchpad--devel--0--patch-294
+     steve.alexander@canonical.com/launchpad--devel--0--patch-295
+     steve.alexander@canonical.com/launchpad--devel--0--patch-296
+     steve.alexander@canonical.com/launchpad--devel--0--patch-297
+     steve.alexander@canonical.com/launchpad--devel--0--patch-298
+     steve.alexander@canonical.com/launchpad--devel--0--patch-299
+     steve.alexander@canonical.com/launchpad--devel--0--patch-300
+     steve.alexander@canonical.com/launchpad--devel--0--patch-301
+     steve.alexander@canonical.com/launchpad--devel--0--patch-302
+     steve.alexander@canonical.com/launchpad--devel--0--patch-303
+     steve.alexander@canonical.com/launchpad--devel--0--patch-304
+     steve.alexander@canonical.com/launchpad--devel--0--patch-305
+     steve.alexander@canonical.com/launchpad--devel--0--patch-306
+     steve.alexander@canonical.com/launchpad--devel--0--patch-307
+     steve.alexander@canonical.com/launchpad--devel--0--patch-308
+     steve.alexander@canonical.com/launchpad--devel--0--patch-309
+     steve.alexander@canonical.com/launchpad--devel--0--patch-310
+     steve.alexander@canonical.com/launchpad--devel--0--patch-311
+     steve.alexander@canonical.com/launchpad--devel--0--patch-312
+     steve.alexander@canonical.com/launchpad--devel--0--patch-313
+     steve.alexander@canonical.com/launchpad--devel--0--patch-314
+     steve.alexander@canonical.com/launchpad--devel--0--patch-315
+
+
 2005-03-07 15:02:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1377
 
     Summary:

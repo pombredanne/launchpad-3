@@ -5,6 +5,7 @@
 
 from canonical.launchpad.fields import Title, Summary
 from canonical.launchpad.interfaces import IRosettaStats
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
@@ -13,7 +14,7 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 
-class IProject(Interface):
+class IProject(IHasOwner):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)

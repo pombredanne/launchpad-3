@@ -7,8 +7,7 @@ from sqlobject import CurrencyCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBounty, IBountySet, \
-                                           IAddFormCustomization, \
-                                           IObjectAuthorization
+                                           IAddFormCustomization
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -19,7 +18,7 @@ import datetime
 class Bounty(SQLBase):
     """A bounty."""
 
-    implements(IBounty, IObjectAuthorization)
+    implements(IBounty)
 
     # default to listing newest first
     _defaultOrder = '-id'
@@ -38,10 +37,6 @@ class Bounty(SQLBase):
     datecreated = DateTimeCol(dbName='datecreated', notNull=True,
                           default=DEFAULT)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-
-    def checkPermission(self, principal, permission):
-        if permission == 'launchpad.Edit':
-            return self.owner.id == principal.id
 
 
 class BountySet(object):

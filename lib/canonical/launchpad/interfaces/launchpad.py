@@ -14,8 +14,8 @@ __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IDOAPApplication', 'IFOAFApplication',
            'IPasswordEncryptor', 'IReadZODBAnnotation',
            'IWriteZODBAnnotation', 'IZODBAnnotation',
-           'IAuthorization', 'IObjectAuthorization',
-           'IHasOwner', 'IOpenLaunchBag', 'ILaunchBag')
+           'IAuthorization', 'IHasOwner',
+           'IOpenLaunchBag', 'ILaunchBag')
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -108,19 +108,6 @@ class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
 
 
-class IObjectAuthorization(Interface):
-    """Authorization policy for a particular object."""
-
-    def checkPermission(person, permission):
-        """Returns True if the person has that permission on the adapted
-        object.  Otherwise returns False.
-
-        The argument person is the person who is authenticated, or None if
-        the principal is not adaptable to a Person.  So, person is None when
-        no-one is logged in.
-        """
-
-
 class IAuthorization(Interface):
     """Authorization policy for a particular object and permission."""
 
@@ -129,11 +116,11 @@ class IAuthorization(Interface):
         on the adapted object.  Otherwise returns False.
         """
 
-    def checkPermission(person):
-        """Returns True if the person has that permission on the adapted
+    def checkAuthenticated(user):
+        """Returns True if the user has that permission on the adapted
         object.  Otherwise returns False.
 
-        The argument `person` is the person who is authenticated.
+        The argument `user` is the person who is authenticated.
         """
 
 

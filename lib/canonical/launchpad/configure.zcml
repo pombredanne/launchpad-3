@@ -5,7 +5,7 @@
   <include package="canonical.launchpad.webapp" />
   <include package="canonical.launchpad.vocabularies" />
   <include package="canonical.launchpad.zcml" />
-  <include file="security.zcml" />
+  <authorizations module="canonical.launchpad.security" />
   <include file="robots.zcml" />
 
   <browser:suburl

@@ -23,7 +23,6 @@ from canonical.launchpad.interfaces import ITeamParticipationSet
 from canonical.launchpad.interfaces import IEmailAddress, IWikiName
 from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
 from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
-from canonical.launchpad.interfaces import IObjectAuthorization
 from canonical.launchpad.interfaces import IPasswordEncryptor
 from canonical.launchpad.interfaces import ISourcePackageSet, IEmailAddressSet
 from canonical.launchpad.interfaces import ICodeOfConductConf
@@ -47,7 +46,7 @@ from canonical.foaf import nickname
 class Person(SQLBase):
     """A Person."""
 
-    implements(IPerson, IObjectAuthorization)
+    implements(IPerson)
 
     name = StringCol(dbName='name', alternateID=True)
     password = StringCol(dbName='password', default=None)
@@ -86,19 +85,6 @@ class Person(SQLBase):
             directlyProvides(val, directlyProvidedBy(val) + ITeam)
         return val
     get = classmethod(get)
-
-    def checkPermission(self, principal, permission):
-        if principal is None:
-            return False
-
-        if permission == "launchpad.Edit":
-            teamowner = getattr(self.teamowner, 'id', None)
-            logged = getattr(principal, 'id', None)
-            if logged and logged == teamowner:
-                # I'm the team owner and want to change the team
-                # information.
-                return True
-            return self.id == principal.id
 
     def browsername(self):
         """Return a name suitable for display on a web page.

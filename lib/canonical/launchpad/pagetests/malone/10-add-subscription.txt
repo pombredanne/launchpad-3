@@ -48,9 +48,9 @@
           <h1>Add Person</h1>
   ...
   <select name="field.subscription" size="1" >
+  <option value="Watch">Watch</option>
   <option selected="selected" value="CC">CC</option>
   <option value="Ignore">Ignore</option>
-  <option value="Watch">Watch</option>
   </select>
   ...
   <input type="text" name="field.person" value="sabdfl" ... />

@@ -9,7 +9,7 @@
     <content class="canonical.launchpad.database.BugTask">
         <require permission="launchpad.View"
                  interface="canonical.launchpad.interfaces.IBugTask" />
-        <require permission="zope.Public"
+        <require permission="launchpad.Edit"
                  set_schema="canonical.launchpad.interfaces.IBugTask" />
     </content>
 

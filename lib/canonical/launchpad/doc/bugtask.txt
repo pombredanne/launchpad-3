@@ -22,27 +22,8 @@ All BugTask creation and retrieval is done through an IBugTaskSet utility.
 
 To create a bug task, you have to be logged in:
 
-    >>> import zope.security.management
-    >>> from zope.interface import implements
-    >>> from zope.app.tests import ztapi
-    >>> from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
-    >>> from canonical.launchpad.interfaces import ILaunchBag
-    >>> class Participation:
-    ...     interaction = None
-    >>> foobar = LaunchpadPrincipal(
-    ...     16, "firefox maintainer",
-    ...     "i can't think of a description to write here")
-    >>> foobar_participation = Participation()
-    >>> foobar_participation.principal = foobar
-    >>> zope.security.management.newInteraction(foobar_participation)
-    >>> class MockLaunchBag(object):
-    ...     implements(ILaunchBag)
-    ...     def __init__(self, login=None, user=None):
-    ...         self.login = login
-    ...         self.user = user
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag,
-    ...     MockLaunchBag("foo.bar@canonical.com", foobar))
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
 
 There are three kinds of bug tasks. We need to pass the bug task creation
 methods some other objects to create a task, so lets get the utilities we need
@@ -62,6 +43,8 @@ Next, we need to grab some values to provide for priority, severity and status.
 
     >>> from canonical.lp.dbschema import BugTaskStatus, BugSeverity, BugPriority
     >>> STATUS_NEW = BugTaskStatus.NEW.value
+    >>> STATUS_ACCEPTED = BugTaskStatus.ACCEPTED.value
+    >>> STATUS_FIXED = BugTaskStatus.FIXED.value
     >>> SEVERITY_NORMAL = BugSeverity.NORMAL.value
     >>> PRIORITY_MEDIUM = BugPriority.MEDIUM.value
 
@@ -109,20 +92,7 @@ with the system as an anonymous (i.e. unauthenticated) user:
 
     >>> from canonical.launchpad.interfaces import IPerson
     >>> from canonical.launchpad.database import Person
-    >>> class Principal:
-    ...     def __init__(self, id):
-    ...         self.id = id
-    ...         self.groups = []
-    >>> principal = Principal('launchpad.anonymous')
-
-    >>> anon_participation = Participation()
-    >>> anon_participation.principal = principal
-
-    >>> zope.security.management.endInteraction()
-    >>> zope.security.management.newInteraction(anon_participation)
-
-    >>> launchbag = MockLaunchBag()
-    >>> ztapi.provideUtility(ILaunchBag, launchbag)
+    >>> login('launchpad.anonymous')
 
 let's fetch the BugTask with ID 1:
 
@@ -173,6 +143,137 @@ There's also support for searching tasks based on a string of text, e.g.:
     >>> print [bugtask.bug.id for bugtask in bugtasks]
     [5]
 
+Editing Bug Tasks 
+-----------------
+    
+Upstream Bug Tasks
+^^^^^^^^^^^^^^^^^^
+
+Only the maintainer and the assignee (if there is one) may edit upstream
+bug tasks.
+
+    >>> login('launchpad.anonymous')
+    >>> upstream_task.status = STATUS_ACCEPTED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+As you can see an anonymous user was not able to edit the task. Also the
+task is not editable by an authenticated user who is not the maintainer.
+    
+    >>> login('foo.bar@canonical.com')
+    >>> upstream_task.status = STATUS_FIXED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+    
+Now let's login as a maintainer and try again.
+
+    >>> login('test@canonical.com')
+    >>> upstream_task.status = STATUS_FIXED
+
+The maintainer could be a team as well. In that case, all members of
+that team, or members of teams which are themselves members of that
+team, are able to edit the task.
+
+Let's create a new team, a product which the team owns, and
+associate the same bug with this product:
+
+    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> policy = int(TeamSubscriptionPolicy.OPEN)
+    >>> foobar = personset.get(16)
+    >>> foo_team = personset.newTeam(
+    ...     subscriptionpolicy = policy, name = 'foo',
+    ...     teamownerID = foobar.id)
+    >>> foo_product = productset.createProduct(
+    ...     owner = foo_team.id, name = 'foo-product', 
+    ...     displayname = 'foo product', title = 'Foo',
+    ...     shortdesc = 'a great product', description = 'no long desc')
+    >>> upstream_task = bugtaskset.createTask(
+    ...     bug = bug_one, product = foo_product, owner = sabdfl,
+    ...     status = STATUS_NEW, priority = PRIORITY_MEDIUM,
+    ...     severity = SEVERITY_NORMAL)
+    >>> upstream_task.maintainer == foo_team
+    True
+
+Then let's login as the Sample Person user:
+
+    >>> login('test@canonical.com')
+
+Note that Sample Person is not a member of the Foo team:
+
+    >>> from canonical.launchpad.database import TeamParticipationSet
+    >>> teampart = TeamParticipationSet()
+    >>> sample_person = personset.get(12)
+    >>> sample_person not in teampart.getAllMembers(foo_team)
+    True
+
+Thus, he can't edit the task:
+
+    >>> upstream_task.status = STATUS_ACCEPTED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+If he joins the maintainer team, though, he's allowed to edit the task.
+Let's add him to the maintainer team:
+
+    >>> sample_person = personset.get(12)
+    >>> sample_person.joinTeam(foo_team)
+    True
+
+Now he's allowed to edit the task:
+
+    >>> upstream_task.status = STATUS_ACCEPTED
+
+Next, we demonstrate how the assignee can edit the task.  Let's remove
+the logged in person from the maintainer team, so that he can't edit the
+task anymore:
+
+    >>> sample_person.unjoinTeam(foo_team)
+    True
+    >>> upstream_task.status = STATUS_FIXED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+Then let's login as one member of the maintainer team (in this case the
+team owner) and assign Sample Person to the task:
+
+    >>> login('foo.bar@canonical.com')
+    >>> upstream_task.assignee = sample_person.id
+
+Now Sample Person is allowed to edit the bug task again:
+
+    >>> login('test@canonical.com')
+    >>> upstream_task.status = STATUS_FIXED
+
+
+Distro and Distro Release Bug Tasks
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The policy for editing distro and distro release bug tasks is more
+relaxed. Anonymous may not edit the task:
+
+    >>> login('launchpad.anonymous')
+    >>> distro_task.status = STATUS_FIXED
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('status', 'launchpad.Edit')
+
+    >>> distro_release_task.assignee = sample_person
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ('assignee', 'launchpad.Edit')
+
+But all authenticated users may, even though they're neither a
+maintainer nor an assignee:
+
+    >>> login('test@canonical.com')
+    >>> distro_task.status = STATUS_FIXED
+    >>> distro_release_task.assignee = sample_person
+
+
 Bug Privacy
 ===========
 
@@ -182,16 +283,7 @@ anyone.
 
 Let's log in as the user Foo Bar (to be allowed to edit bugs):
 
-    >>> foobar = LaunchpadPrincipal(
-    ...     16, "firefox maintainer",
-    ...     "i can't think of a description to write here")
-    >>> foobar_participation = Participation()
-    >>> foobar_participation.principal = foobar
-    >>> zope.security.management.endInteraction()
-    >>> zope.security.management.newInteraction(foobar_participation)
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag,
-    ...     MockLaunchBag("foo.bar@canonical.com", foobar))
+    >>> login('foo.bar@canonical.com')
 
 and mark one of the Firefox bugs private:
 
@@ -229,17 +321,7 @@ But attribute access on the IBugTask will raise an authorization exception:
 
 But, logged in as the Firefox maintainer:
 
-    XXX: Brad Bollenbach, 2005-01-26: Simulating a login in a test needs to be
-    a one-liner. See: https://launchpad.ubuntu.com/malone/bugs/104
-
-    >>> firefox_maintainer = Person.get(12)
-    >>> firefox_maintainer_participation = Participation()
-    >>> firefox_maintainer_participation.principal = firefox_maintainer
-    >>> zope.security.management.endInteraction()
-    >>> zope.security.management.newInteraction(firefox_maintainer_participation)
-
-    >>> ztapi.provideUtility(
-    ...     ILaunchBag, MockLaunchBag("test@canonical.com", firefox_maintainer))
+    >>> login('test@canonical.com')
 
 We'll find all four IBugTasks that match the search criteria, as the maintainer
 is also an explicit subscriber in this case.
@@ -281,5 +363,8 @@ constraints will be violated.
 XXX: Brad Bollenbach, 2005-02-03: this shouldn't be in a doctest, but I don't
 have time to think about a better place to put this at the moment.
 
+    >>> import zope.security.management
+    >>> from zope.app.tests import ztapi
+    >>> from canonical.launchpad.interfaces import ILaunchBag
     >>> ztapi.unprovideUtility(ILaunchBag)
     >>> zope.security.management.endInteraction()

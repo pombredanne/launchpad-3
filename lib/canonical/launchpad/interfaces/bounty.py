@@ -10,9 +10,10 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Summary, Title, TimeInterval
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.interfaces import IHasOwner
 
 
-class IBounty(Interface):
+class IBounty(IHasOwner):
     """The core bounty description."""
 
     id = Int(

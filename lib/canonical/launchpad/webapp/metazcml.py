@@ -6,9 +6,10 @@
 __metaclass__ = type
 
 import sets
+import inspect
 from zope.interface import Interface, implements
-from zope.component import queryView, queryMultiView, getDefaultViewName, \
-    getUtility
+from zope.component import queryView, queryMultiView, getDefaultViewName
+from zope.component import getUtility
 from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine
 from zope.configuration.fields import GlobalObject, PythonIdentifier, Path
@@ -36,6 +37,32 @@ except ImportError:
     # This code can go once we've upgraded Zope.
     from zope.publisher.interfaces.browser import IBrowserRequest
     IDefaultBrowserLayer = IBrowserRequest
+
+
+class IAuthorizationsDirective(Interface):
+    """Set up authorizations as given in a module."""
+
+    module = GlobalObject(title=u'module', required=True)
+
+
+def _isAuthorization(module_member):
+    return (type(module_member) is type and
+            IAuthorization.implementedBy(module_member))
+
+
+def authorizations(_context, module):
+    if not inspect.ismodule(module):
+        raise TypeError("module attribute must be a module: %s, %s" %
+                        module, type(module))
+    provides = IAuthorization
+    for nameinmodule, authorization in inspect.getmembers(module,
+                                                          _isAuthorization):
+        if (authorization.permission is not None and
+            authorization.usedfor is not None):
+            name = authorization.permission
+            for_ = [authorization.usedfor]
+            factory = [authorization]
+            adapter(_context, factory, provides, for_, name=name)
 
 
 class ISecuredUtilityDirective(Interface):

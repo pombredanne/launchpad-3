@@ -46,6 +46,7 @@ from zope.app.publication.http import HTTPPublication
 from canonical.publication import BrowserPublication
 import zope.app.tests.setup
 from zope.app.component.hooks import setSite, getSite
+from canonical.chunkydiff import elided_source
 
 # XXX: When we've upgraded Zope 3 to a newer version, we'll just import
 #      IHeaderOutput from zope.publisher.interfaces.http.
@@ -543,6 +544,12 @@ def sample_test_suite():
     suite.addTest(unittest.makeSuite(SampleFunctionalTest))
     return suite
 
+class SpecialOutputChecker(doctest.OutputChecker):
+    def output_difference(self, example, got, optionflags):
+        got = elided_source(example.want, got)
+        return doctest.OutputChecker.output_difference(
+            self, example, got, optionflags)
+
 def FunctionalDocFileSuite(*paths, **kw):
     globs = kw.setdefault('globs', {})
     globs['http'] = http
@@ -567,7 +574,7 @@ def FunctionalDocFileSuite(*paths, **kw):
 
     kw['optionflags'] = (doctest.ELLIPSIS | doctest.REPORT_NDIFF |
                          doctest.NORMALIZE_WHITESPACE)
-
+    kw['checker'] = SpecialOutputChecker()
     return doctest.DocFileSuite(*paths, **kw)
 
 if __name__ == '__main__':

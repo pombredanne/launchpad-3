@@ -40,22 +40,6 @@ warnings.filterwarnings(
         "error", category=DeprecationWarning, module="email"
         )
 
-# This is a hack to use canonical.difflib instead of standard difflib
-# so we can easily test it. Comment out and commit to rocketfuel if
-# it causes grief -- StuartBishop 20041130
-# Turned off - we need more context or linenumbers. eg. I'm being told I
-# have an unexpected line, but no way to tell where.
-def monkey_patch_doctest():
-    import canonical.difflib
-    sys.modules['difflib'] = canonical.difflib
-    import difflib
-    assert hasattr(difflib.Differ, 'fancy_compare'), \
-            'Failed to monkey patch difflib'
-    import zope.testing.doctest
-    import canonical.doctest
-    zope.testing.doctest.OutputChecker = canonical.doctest.OutputChecker
-#monkey_patch_doctest()
-
 from canonical.ftests import pgsql
 pgsql.installFakeConnect()
 
