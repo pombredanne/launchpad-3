@@ -23,8 +23,9 @@ from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
 from canonical.launchpad.database import Product, ProductSeriesSet, Bug, \
      BugFactory, ProductMilestoneSet, Milestone, SourceSourceSet, Person
 from canonical.launchpad.interfaces import IPerson, IProduct, IProductSet, \
-     IPersonSet, IBugTaskSet, IAging
+     IPersonSet, IBugTaskSet, IAging, ITeamParticipationSet, ILaunchBag
 from canonical.launchpad.browser.productrelease import newProductRelease
+from canonical.launchpad.helpers import is_maintainer
 
 #
 # Traversal functions that help us look up something
@@ -175,6 +176,7 @@ class ProductBugsView:
         self.batch = Batch(
             list(self.bugtask_search()), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
+        self.is_maintainer = is_maintainer(self.context)
 
     def hideGlobalSearchBox(self):
         """Should the global search box be hidden on the page?"""

@@ -3,12 +3,13 @@
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
 from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.interfaces import IHasOwner
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 
-class IDistroRelease(Interface):
+class IDistroRelease(IHasOwner):
     """A Release Object"""
     id = Attribute("The distrorelease's unique number.")
     name = TextLine(title=_("Name"), required=True,

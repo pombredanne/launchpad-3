@@ -2,11 +2,12 @@
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, \
                         TextLine, Password
 from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad.interfaces import IHasOwner
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-class IDistribution(Interface):
+class IDistribution(IHasOwner):
     """A Distribution Object"""
     id = Attribute("The distro's unique number.")
     name = TextLine(

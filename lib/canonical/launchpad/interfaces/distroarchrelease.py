@@ -1,9 +1,10 @@
+from canonical.launchpad.interfaces import IHasOwner
 # Zope schema imports
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-class IDistroArchRelease(Interface):
+class IDistroArchRelease(IHasOwner):
     """DistroArchRelease Table Interface"""
     distrorelease = Attribute("DistroRelease")
     processorfamily = Attribute("ProcessorFamily")

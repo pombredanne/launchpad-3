@@ -1,0 +1,14 @@
+
+Check so that a Foo Bar which is the member of the maintainer team
+sees the checkboxes.
+
+  >>> print http(r"""
+  ... GET /malone/products/ubuntu HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+              <input type="checkbox" name="task" value="3" />
+  ...

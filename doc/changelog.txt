@@ -2,6 +2,86 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-22 21:38:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1478
+
+    Summary:
+      make the bugtask listing team aware
+    Revision:
+      launchpad--devel--0--patch-1478
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1460
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-1
+       allow members of the maintainer group to mass-edit bugtasks
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-2
+       merge rf
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-3
+       make MockLanchBag include person as well
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-4
+       add helper function is_maintainer()
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-5
+       launchpad.user should be a Person
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-6
+       user launchbag.user instead of launchbag.person
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-7
+       make IDistribution, IDistro[Arch]Release extend IHasOwner
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-8
+       use helper.is_maintainer()
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-9
+       merge rf
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-10
+       merge rf
+    
+     * bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-11
+       rename helper.py to helpers.py
+    
+
+    new files:
+     lib/canonical/launchpad/.arch-ids/helpers.py.id
+     lib/canonical/launchpad/doc/.arch-ids/helpers.txt.id
+     lib/canonical/launchpad/doc/helpers.txt
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-massedit-upstream-bugtask.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-massedit-upstream-bugtask.txt
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/distribution.py
+     lib/canonical/launchpad/browser/distrorelease.py
+     lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/ftests/_login.py
+     lib/canonical/launchpad/interfaces/distribution.py
+     lib/canonical/launchpad/interfaces/distroarchrelease.py
+     lib/canonical/launchpad/interfaces/distrorelease.py
+     lib/canonical/launchpad/templates/bugtask-search-listing.pt
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--base-0
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-1
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-2
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-3
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-4
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-5
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-6
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-7
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-8
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-9
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-10
+     bjorn.tillenius@canonical.com/launchpad--production-bug-231--0--patch-11
+
+
 2005-03-22 20:26:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1477
 
     Summary:

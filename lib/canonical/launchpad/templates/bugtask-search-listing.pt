@@ -3,7 +3,6 @@
   <form action="" method="GET"
      tal:define="listing_columns view/task_columns;
                  logged_in request/lp:person;
-                 is_maintainer python:logged_in and logged_in.id == context.owner.id;
                  task_batch view/batch">
 
   <small> 
@@ -33,7 +32,7 @@
   <table id="ass_listing"
          class="listing rowNavigation">
     <tr>
-      <th tal:condition="is_maintainer">Select</th>
+      <th tal:condition="view/is_maintainer">Select</th>
       <th tal:condition="python:'id' in listing_columns">Bug #</th>
       <th tal:condition="python:'product' in listing_columns">Product</th>
       <th tal:condition="python:'package' in listing_columns">Package</th>
@@ -64,7 +63,7 @@
                         severity task/severity/title;
                         statusid string:status${repeat/task/number};
                         assigneeid string:assignee${repeat/task/number};">
-          <td tal:condition="is_maintainer">
+          <td tal:condition="view/is_maintainer">
             <input type="checkbox" name="task" value="" tal:attributes="value task/id" />
           </td>
           <td tal:content="bugid"
@@ -158,8 +157,8 @@
     </tr>
   </table>
 
-  <input tal:condition="is_maintainer" type="submit" name="assign_to_milestone" value="Assign to Milestone" />
-  <select tal:condition="is_maintainer" name="milestone">
+  <input tal:condition="view/is_maintainer" type="submit" name="assign_to_milestone" value="Assign to Milestone" />
+  <select tal:condition="view/is_maintainer" name="milestone">
     <option tal:repeat="milestone context/milestones"
             tal:attributes="value milestone/name"
             tal:content="milestone/name">milestone1</option>

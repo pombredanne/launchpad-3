@@ -6,7 +6,7 @@ import zope.security.management
 from zope.interface import implements
 from zope.app.tests import ztapi
 from zope.component import getUtility
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import ILaunchBag, IPerson
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 
 class MockLaunchBag(object):
@@ -42,7 +42,8 @@ def login(email):
     else:
         login_src = getUtility(IPlacelessLoginSource)
         principal = login_src.getPrincipalByLogin(email)
-        launchbag = MockLaunchBag(email, principal)
+        user = IPerson(principal)
+        launchbag = MockLaunchBag(email, user)
 
     participation.principal = principal
     ztapi.provideUtility(ILaunchBag, launchbag)

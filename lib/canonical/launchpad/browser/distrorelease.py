@@ -10,8 +10,10 @@ from sqlobject import LIKE, AND
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import BugTaskStatus
-from canonical.launchpad.interfaces import IBugTaskSet
+from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag, \
+    ITeamParticipationSet
 from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.helpers import is_maintainer
 
 BATCH_SIZE = 20
 
@@ -35,6 +37,7 @@ class DistroReleaseView(object):
         self.batch = Batch(
             list(bugtasks_to_show), int(request.get('batch_start', 0)))
         self.batchnav = BatchNavigator(self.batch, request)
+        self.is_maintainer = is_maintainer(self.context)
 
     def task_columns(self):
         return [
