@@ -5,8 +5,10 @@ from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
 from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.cred.checkers import ICredentialsChecker
+from twisted.cred.portal import IRealm
 
 from zope.interface import implements
+import binascii
 
 
 class SubsystemOnlySession(session.SSHSession, object):
@@ -29,23 +31,25 @@ class SFTPOnlyAvatar(avatar.ConchUser):
 
 
 class Realm:
-    implements(portal.IRealm)
+    implements(IRealm)
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         return interfaces[0], SFTPOnlyAvatar(avatarId), lambda: None
 
 
 class Factory(factory.SSHFactory):
-    publicKeys = {
-        'ssh-rsa': hostPublicKey
-    }
-    privateKeys = {
-        'ssh-rsa': hostPrivateKey
-    }
     services = {
         'ssh-userauth': userauth.SSHUserAuthServer,
         'ssh-connection': connection.SSHConnection
     }
+
+    def __init__(self, hostPublicKey, hostPrivateKey):
+        self.publicKeys = {
+            'ssh-rsa': hostPublicKey
+        }
+        self.privateKeys = {
+            'ssh-rsa': hostPrivateKey
+        }
 
 
 class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
@@ -57,12 +61,13 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
     def checkKey(self, credentials):
         authorizedKeys = self.authserver.getSSHKeys(credentials.username)
         authorizedKeys.addCallback(self._cb_hasAuthorisedKey, credentials)
+        authorizedKeys.addErrback(eb)
         return authorizedKeys
                 
     def _cb_hasAuthorisedKey(self, keys, credentials):
-        for keytype, keytext in credentials:
+        for keytype, keytext in keys:
             try:
-                if base64.decodestring(l2[1]) == credentials.blob:
+                if keytext.decode('base64') == credentials.blob:
                     return True
             except binascii.Error:
                 continue
