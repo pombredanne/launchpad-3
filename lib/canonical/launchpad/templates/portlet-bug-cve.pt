@@ -1,16 +1,16 @@
 <div class="portlet">
 
-    <h4>CVE References:</h4>
+    <h4>CVE References</h4>
 
     <div class="portletBody">
         <div class="portletContent odd"
              tal:repeat="ref context/cverefs">
-            <a tal:attributes="href ref/url">
+            <a tal:attributes="href python:ref.url()">
                 <img src="/++resource++link_icon.gif" alt="" />
                 <span tal:replace="ref/cveref">123134</span>:
                 <span tal:replace="ref/title">title goes here</span>
             </a>
-            [ <a tal:attributes="href string:references/${ref/id}/+edit">
+            [ <a tal:attributes="href string:cverefs/${ref/id}/+edit">
             Edit</a> ]
         </div>
 

@@ -29,7 +29,12 @@
         keyword_arguments="url title"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bugs.id/references/+new" />
+        lp:url="malone/bugs/$Bugs.id/references/+new">
+        <browser:widget
+            field="url"
+            class="zope.app.form.browser.TextWidget"
+            displayWidth="60" />
+    </browser:addform>
 
     <browser:editform
         name="+edit"

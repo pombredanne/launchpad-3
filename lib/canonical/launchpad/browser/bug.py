@@ -11,7 +11,7 @@ from canonical.launchpad.database import BugAttachmentSet, \
         SourcePackageBugAssignmentSet, \
         BugProductInfestationSet, \
         BugPackageInfestationSet, Person, Bug, \
-        BugsAssignedReport, BugSet
+        BugsAssignedReport, BugSet, CVERefSet
 
 from canonical.launchpad.interfaces import IPerson
 
@@ -22,7 +22,7 @@ def traverseBug(bug, request, name):
         return BugAttachmentSet(bug=bug.id)
     elif name == 'references':
         return BugExternalRefSet(bug=bug.id)
-    elif name == 'cve':
+    elif name == 'cverefs':
         return CVERefSet(bug=bug.id)
     elif name == 'people':
         return BugSubscriptionSet(bug=bug.id)

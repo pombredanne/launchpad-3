@@ -33,7 +33,7 @@ class CVERef(SQLBase):
         """
 
         return 'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=%s' % (
-                                                                  self.data)
+                                                                  self.cveref)
 
 
 class CVERefSet(BugSetBase):

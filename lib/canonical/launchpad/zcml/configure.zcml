@@ -21,6 +21,7 @@
     <include file="bugassignment.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugextref.zcml" />
+    <include file="cveref.zcml" />
     <include file="bugtracker.zcml" />
     <include file="bugattachment.zcml" />
     <include file="message.zcml" />
