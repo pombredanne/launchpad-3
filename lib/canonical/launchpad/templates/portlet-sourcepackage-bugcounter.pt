@@ -1,5 +1,5 @@
   <div class="portlet">
-      <h4>Bug Count</h4>
+      <h4>Package Bugs</h4>
       <div class="portletBody">
 
         <div class="portletContent even">
@@ -23,9 +23,12 @@
            <td>Fixed and Pending</td>
 	   <td tal:content="python:context.bugsCounter[4]">N</td>
 	</tr><tr>
-           <td colspan="2" align="center">
-               <a tal:attributes="href string:/malone/packages/${context/sourcepackage/name}">
-                  View Bug List</a></td></tr>
+           <td colspan="2">
+           <ul style="margin-bottom: 0; margin-top: 0;">
+               <li><a tal:attributes="href string:/malone/packages/${context/sourcepackage/name}">
+                  View Bug List</a>
+               <li style="margin-bottom: 0"><a tal:attributes="href string:/malone/bugs/+new?field.title=title&field.sourcepackage=${context/sourcepackage/id}&field.distro=${context/sourcepackage/distro/name}&field.product=&UPDATE_SUBMIT=Add">File a new bug</a></ul></td>
+          </tr>
         </table>
       </div>
     </div>
