@@ -531,8 +531,9 @@ VALUES (20, 5, 1, now(), now(), TRUE, 1,
 INSERT INTO POTranslation (translation)
 VALUES ('La ubicación y jerarquía de las carpetas de contactos de Evolution ha cambiado desde Evolution 1.x.\n\nTenga paciencia mientras Evolution migra sus carpetas...');
 INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obsolete,
-		      fuzzy)
-VALUES (68, 5, 1, 1, TRUE, FALSE, FALSE);
+		      fuzzy, commenttext)
+VALUES (68, 5, 1, 1, TRUE, FALSE, FALSE,
+	'This is an example of commenttext for a multiline msgset');
 INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
 			     datelastseen, inlastrevision, pluralform)
 VALUES (21, 68, now(), now(), TRUE, 0);
