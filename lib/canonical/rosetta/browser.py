@@ -83,7 +83,6 @@ def request_languages(request):
         if lang not in languages:
             languages.append(lang)
     return languages
-    
 
 def parse_cformat_string(s):
     '''Parse a printf()-style format string into a sequence of interpolations
@@ -120,6 +119,66 @@ def parse_cformat_string(s):
     # Give up.
 
     raise ValueError(s)
+
+def parse_translation_form(form):
+    # Extract msgids from the form.
+
+    sets = {}
+
+    for key in form:
+        match = re.match('set_(\d+)_msgid$', key)
+
+        if match:
+            id = int(match.group(1))
+            sets[id] = {}
+            sets[id]['msgid'] = form[key].replace('\r', '')
+            sets[id]['translations'] = {}
+            sets[id]['fuzzy'] = {}
+
+    # Extract non-plural translations from the form.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_translation_([a-z]+)$', key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+
+            if not id in sets:
+                raise AssertionError("Orphaned translation in form.")
+
+            sets[id]['translations'][code] = {}
+            sets[id]['translations'][code][0] = form[key].replace('\r', '')
+
+    # Extract plural translations from the form.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_translation_([a-z]+)_(\d+)$', key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+            pluralform = int(match.group(3))
+
+            if not id in sets:
+                raise AssertionError("Orphaned translation in form.")
+
+            if not code in sets[id]['translations']:
+                sets[id]['translations'][code] = {}
+
+            sets[id]['translations'][code][pluralform] = form[key]
+
+    # Extract fuzzy statuses from the form.
+
+    for key in form:
+        match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
+
+        if match:
+            id = int(match.group(1))
+            code = match.group(2)
+            sets[id]['fuzzy'][code] = True
+
+    return sets
 
 
 def escape_msgid(s):
@@ -910,60 +969,7 @@ class TranslatePOTemplate:
         if not "SUBMIT" in self.request.form:
             return None
 
-        sets = {}
-
-        # Extract msgids from form.
-
-        for key in self.request.form:
-            match = re.match('set_(\d+)_msgid$', key)
-
-            if match:
-                id = int(match.group(1))
-                sets[id] = {}
-                sets[id]['msgid'] = self.request.form[key].replace('\r', '')
-                sets[id]['translations'] = {}
-                sets[id]['fuzzy'] = {}
-
-        # Extract translations from form.
-
-        for key in self.request.form:
-            match = re.match(r'set_(\d+)_translation_([a-z]+)$', key)
-
-            if match:
-                id = int(match.group(1))
-                code = match.group(2)
-
-                if not id in sets:
-                    raise AssertionError("Orphaned translation in form.")
-
-                sets[id]['translations'][code] = {}
-                sets[id]['translations'][code][0] = (
-                    self.request.form[key].replace('\r', ''))
-
-                continue
-
-            match = re.match(r'set_(\d+)_translation_([a-z]+)_(\d+)$', key)
-
-            if match:
-                id = int(match.group(1))
-                code = match.group(2)
-                pluralform = int(match.group(3))
-
-                if not id in sets:
-                    raise AssertionError("Orphaned translation in form.")
-
-                if not code in sets[id]['translations']:
-                    sets[id]['translations'][code] = {}
-
-                sets[id]['translations'][code][pluralform] = self.request.form[key]
-
-            # We check if the msgset is fuzzy or not for this language.
-            match = re.match(r'set_(\d+)_fuzzy_([a-z]+)$', key)
-
-            if match:
-                id = int(match.group(1))
-                code = match.group(2)
-                sets[id]['fuzzy'][code] = True
+        sets = parse_translation_form(self.request.form)
 
         # Get/create a PO file for each language.
         # XXX: This should probably be done more lazily.
