@@ -10,8 +10,8 @@ from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
 from canonical.launchpad.interfaces import ILanguages
 from canonical.launchpad.database import Project
-from canonical.launchpad.database import RosettaPerson, RosettaPOTemplate, \
-    RosettaProduct, RosettaLanguages
+from canonical.launchpad.database import Person, POTemplate, \
+    Product, Languages
 from canonical.rosetta.poexport import POExport
 import canonical.lp
 
@@ -154,14 +154,14 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
     def setUp(self):
         super(POExportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
-        utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
+        utilityService.provideUtility(ILanguages, Languages(), '')
         canonical.lp.initZopeless()
 
     def testPoExportAdapter(self):
         try:
             project = Project.selectBy(name = 'gnome')[0]
-            product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
-            poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-2.0')[0]
+            product = Product.selectBy(projectID = project.id, name = 'evolution')[0]
+            poTemplate = POTemplate.selectBy(productID = product.id, name='evolution-2.0')[0]
         except IndexError, e:
             raise IndexError, "Couldn't find record in database, please import sampledata.sql to do the tests."
         export = POExport(poTemplate)

@@ -699,6 +699,7 @@ class Person(SQLBase):
     implements(IPerson)
 
     _columns = [
+        StringCol('name', default=None),
         StringCol('displayname', default=None),
         StringCol('givenname', default=None),
         StringCol('familyname', default=None),

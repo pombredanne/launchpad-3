@@ -106,7 +106,7 @@ class POMessage(object):
         def wrap(self, text):
             return [self.initial_indent + text]
 
-    def __unicode__(self, wrap=77):
+    def __unicode__(self, wrap=78):
         r'''
         Text representation of the message.  Should wrap correctly.
         For some of these examples to work (the ones with plural forms),
@@ -140,7 +140,7 @@ class POMessage(object):
         '(this single-quote is here to appease emacs)
         '''
         if wrap:
-            wrapper = textwrap.TextWrapper(wrap, subsequent_indent=u'"',
+            wrapper = textwrap.TextWrapper(wrap - 1, subsequent_indent=u'"',
                                            break_long_words=False)
             wrapper.initial_indent = wrapper.subsequent_indent
         else:

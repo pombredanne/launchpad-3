@@ -18,13 +18,13 @@ from canonical.authserver.database import IUserDetailsStorage
 class TestDatabaseSetup(unittest.TestCase):
     def setUp(self):
         self.connection = psycopg.connect('dbname=launchpad_test')
-        self.cursor = self.connection.cursor() 
+        self.cursor = self.connection.cursor()
 
 class DatabaseStorageTestCase(TestDatabaseSetup):
     def test_verifyInterface(self):
-        self.failUnless(verifyObject(IUserDetailsStorage, 
+        self.failUnless(verifyObject(IUserDetailsStorage,
                                      DatabaseUserDetailsStorage(None)))
-    
+
     def test_getUser(self):
         # Getting a user should return a valid dictionary of details
 
@@ -78,8 +78,8 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
         self.fredsalt = ssha.decode('base64')[20:]
         self.cursor.execute(
-            "INSERT INTO Person (displayname, password) "
-            "VALUES ('Fred Flintstone', '%s')"
+            "INSERT INTO Person (name, displayname, password) "
+            "VALUES ('fflintst', 'Fred Flintstone', '%s')"
             % ssha
         )
         self.cursor.execute(
@@ -124,7 +124,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertNotEqual({}, userDict)
         self.assertEqual(displayname, userDict['displayname'])
         self.assertEqual(emailaddresses, userDict['emailaddresses'])
-        
+
     def test_createUserUnicode(self):
         # Creating a user should return a user dict with that user's details
         storage = DatabaseUserDetailsStorage(None)
@@ -140,7 +140,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertNotEqual({}, userDict)
         self.assertEqual(displayname, userDict['displayname'])
         self.assertEqual(emailaddresses, userDict['emailaddresses'])
-        
+
     # FIXME: behaviour of this case isn't defined yet
     ##def test_createUserFailure(self):
     ##    # Creating a user with a loginID that already exists should fail
@@ -163,12 +163,12 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         authDict = storage._authUserInteraction(self.cursor, 'fred@bedrock',
                                                 newSsha)
         self.assertEqual(goodDict, authDict)
-        
+
         # ...but not the old
         authDict = storage._authUserInteraction(self.cursor, 'fred@bedrock',
                                                 ssha)
         self.assertEqual({}, authDict)
-        
+
     def test_changePasswordFailure(self):
         storage = DatabaseUserDetailsStorage(None)
         # Changing a password without giving the right current pw should fail
@@ -179,7 +179,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
                                                       'fred@bedrock', ssha,
                                                       newSsha)
         self.assertEqual({}, userDict)
-        
+
     def tearDown(self):
         # Remove dummy data added to DB.
         self.connection.rollback()

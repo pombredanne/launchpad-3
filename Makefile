@@ -15,7 +15,7 @@ check:
 	@
 
 XXXcheck: build
-	#$(MAKE) -C sourcecode check
+	$(MAKE) -C sourcecode check
 	PYTHONPATH=$(HERE)/lib ./test.py
 
 debugging-on:

@@ -12,7 +12,7 @@ import sys
 import os
 import shutil
 from zope.interface.verify import verifyClass, verifyObject
-from canonical.launchpad.database import dbname, nuke
+from canonical.arch.database import dbname, nuke
 import psycopg
 import tempfile
 import arch

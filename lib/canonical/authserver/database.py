@@ -96,12 +96,14 @@ class DatabaseUserDetailsStorage(object):
         # TODO: Catch bad types, e.g. unicode, and raise appropriate exceptions
 
         # Create the Person
-        transaction.execute(
-            "INSERT INTO Person (displayname, password) "
-            "VALUES ('%s', '%s')"
-            % (displayname.replace("'", "''").encode('utf-8'),
-              sshaDigestedPassword.replace("'", "''"))
-        )
+        name = displayname.replace(" ", "")[:8].lower()
+        displayname = displayname.replace("'", "''").encode('utf-8')
+        pw = sshaDigestedPassword.replace("'", "''")
+        sql = (u"""\
+            INSERT INTO Person (name, displayname, password)  VALUES ('%s', '%s', '%s')"""
+            % (name, displayname, pw))
+
+        transaction.execute(sql)
 
         # Get the ID of the new person
         transaction.execute(

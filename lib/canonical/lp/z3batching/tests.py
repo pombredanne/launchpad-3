@@ -17,8 +17,8 @@ $Id: tests.py,v 1.3 2004/04/29 15:43:47 fdrake dead $
 """
 import unittest
 
-from bugtracker.batching import Batch
-from bugtracker.batching.interfaces import IBatch
+from canonical.lp.z3batching import Batch
+from canonical.lp.z3batching.interfaces import IBatch
 
 class BatchTest(unittest.TestCase):
 

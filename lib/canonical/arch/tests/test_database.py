@@ -14,8 +14,6 @@ from zope.interface.verify import verifyClass, verifyObject
 
 from canonical.arch.tests.test_framework import DatabaseTestCase
 
-from canonical.launchpad.database import DBHandle
-
 from canonical.launchpad.interfaces import VersionAlreadyRegistered
 from canonical.launchpad.interfaces import VersionAlreadyRegistered
 from canonical.launchpad.interfaces import BranchAlreadyRegistered
