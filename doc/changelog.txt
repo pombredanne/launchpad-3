@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 11:56:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1180
+
+    Summary:
+      Added the needed db changes to do the hoary import into Rosetta
+    Revision:
+      launchpad--devel--0--patch-1180
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-475
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--devel--0--patch-476
+       Added the needed db changes to do the hoary import into Rosetta
+    
+
+    new files:
+     database/schema/pending/.arch-ids/carlos-distro-potemplate.sql.id
+     database/schema/pending/carlos-distro-potemplate.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-475
+     carlos.perello@canonical.com--2004/launchpad--devel--0--patch-476
+
+
 2005-01-12 11:30:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1179
 
     Summary:
