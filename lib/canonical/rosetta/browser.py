@@ -139,7 +139,7 @@ def parse_translation_form(form):
     # Extract non-plural translations from the form.
 
     for key in form:
-        match = re.match(r'set_(\d+)_translation_([a-z]+)$', key)
+        match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)$', key)
 
         if match:
             id = int(match.group(1))
@@ -154,7 +154,8 @@ def parse_translation_form(form):
     # Extract plural translations from the form.
 
     for key in form:
-        match = re.match(r'set_(\d+)_translation_([a-z]+)_(\d+)$', key)
+        match = re.match(r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)_(\d+)$',
+            key)
 
         if match:
             id = int(match.group(1))

@@ -23,6 +23,7 @@ from canonical.launchpad.database.translation_effort import TranslationEffort
 from canonical.launchpad.database.soyuz import DistributionRole
 from canonical.launchpad.database.soyuz import DistroReleaseRole
 from canonical.launchpad.database.bug import Bug
+from canonical.launchpad.database.pofile import POTemplate
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.lp.dbschema import KarmaField

@@ -339,6 +339,16 @@ def test_parse_translation_form():
     False
     >>> x[1]['fuzzy']['es']
     True
+
+    Test with a language which contains a country code. This is a regression
+    test.
+
+    >>> x = parse_translation_form({
+    ... 'set_1_msgid' : 'foo',
+    ... 'set_1_translation_pt_BR_0' : 'bar',
+    ... })
+    >>> x[1]['translations']['pt_BR'][0]
+    'bar'
     '''
 
 def test_RosettaProjectView():
