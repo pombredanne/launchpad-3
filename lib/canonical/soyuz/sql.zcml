@@ -270,16 +270,8 @@
     <allow interface="canonical.database.doap.IProjects"/>
   </content>
   
-  <content class="canonical.database.doap.DBProject">
-    <allow interface="canonical.database.doap.IProject"/>
-  </content>
-  
   <content class="canonical.soyuz.importd.SoyuzProject">
     <allow interface="canonical.database.doap.IProject"/>
-  </content>
-  
-  <content class="canonical.database.doap.Product">
-    <allow interface="canonical.database.doap.IProduct"/>
   </content>
   
   <content class="canonical.soyuz.importd.SoyuzProduct">
@@ -292,11 +284,6 @@
 
 
 	
-  <utility
-      factory="canonical.soyuz.importd.Projects"
-      provides="canonical.database.doap.IProjects"
-      />
-
 <!--DUMMY CONTENT -->
   <content class="canonical.soyuz.sql.CurrentVersion">
     <allow interface="canonical.soyuz.interfaces.ICurrentVersion"/>
