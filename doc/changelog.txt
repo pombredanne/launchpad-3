@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-17 20:28:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1330
+
+    Summary:
+      logging in FileDownloadClient.getPathForAlias
+    Revision:
+      launchpad--devel--0--patch-1330
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-63
+       logging in FileDownloadClient.getPathForAlias
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/doap/fileimporter.py
+     lib/canonical/librarian/client.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-63
+
+
 2005-02-17 19:44:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1329
 
     Summary:

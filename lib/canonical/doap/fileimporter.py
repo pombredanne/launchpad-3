@@ -38,7 +38,7 @@ class ProductReleaseImporter:
         pr = self._ensureProductRelease(filename)
 
         # Now create the release file
-        ProductReleaseFile(productreleaseID=pr.id, libraryfileID=aliasID, 
+        ProductReleaseFile(productreleaseID=pr.id, libraryfileID=aliasID,
                            filetype=int(dbschema.UpstreamFileType.CODETARBALL))
 
         # ...and we're done!
@@ -61,7 +61,7 @@ class ProductReleaseImporter:
 
     def _downloadIntoLibrarian(self, url, filename):
         """Download a URL, and upload it directly into the librarian.
-        
+
         Returns the library alias ID of the file.
         """
         # FIXME: cope with web/ftp servers that don't give the size of files by
