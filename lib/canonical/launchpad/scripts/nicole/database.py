@@ -135,11 +135,13 @@ class FitData(object):
         try:
             self.pdisplayname = data_sanitizer(data['devels'].keys()[0])
             self.pemail = data_sanitizer(data['devels'].values()[0])
+        except KeyError:
+            print '@\tNo Devel'
         except IndexError:
             print '@\tNo Devel'
             
         ## both have project
-        self.name = data_sanitizer(data['product'])
+        self.name = data_sanitizer(data['product']).split()[0].lower()
 
         ## only SF has projectname
         if 'productaname' in data.keys():
@@ -159,9 +161,11 @@ class FitData(object):
         ## both have description
         self.description = data_sanitizer(data['description'])
 
-        ## both have homepage 
-        self.homepage = data_sanitizer(data['homepage'])
-
+        ## both have homepage
+        try:
+            self.homepage = data_sanitizer(data['homepage'])
+        except KeyError:
+            pass
         ## support several plangs
         try:
             plang_list = data['programminglang']
@@ -170,16 +174,22 @@ class FitData(object):
                 temp_plang += ' ' + plang  
 
             plang = data_sanitizer(temp_plang)
-        except:
-            plang = None
-
-        screenshot = data_sanitizer(data['screenshot'])
+        except KeyError:
+            pass
+        
+        try:
+            screenshot = data_sanitizer(data['screenshot'])
+        except KeyError:
+            pass
 
         ## we cannot support several lists
         try:
             listurl = data_sanitizer(data['list'][0])
-        except:
+        except KeyError:
             listurl = None
+        except IndexError:
+            listurl = None
+
     
         if 'sf' in data.keys():
             self.sourceforgeproject = data_sanitizer(data['sf'])
@@ -202,13 +212,18 @@ class Doap(SQLThing):
         WHERE product = %s AND sourcepackage = %s""",
                                   (product_id, package_id))
 
-    def getSourcePackageByName(self, name):
-        # only get the Ubuntu source package
+    def getSourcePackageByName(self, name, distroname):
+        # XXX cprov
+        # if distroname wasn't provided use Ubuntu
+        if not distroname:
+            distroname = 'ubuntu'
+            
         return self._query_single("""SELECT SourcePackage.id
-            FROM SourcePackage,SourcePackagename
-            WHERE SourcePackage.distro = 1 AND
+            FROM SourcePackage,SourcePackagename,Distribution
+            WHERE SourcePackage.distro = Distribution.id AND
             SourcePackage.sourcepackagename = SourcePackageName.id AND
-            SourcePackageName.name = %s;""", (name,))
+            Distribution.name = %s AND
+            SourcePackageName.name = %s;""", (distroname, name,))
 
     def getSourcePackageName(self, name):
         return self._query_single("""SELECT id FROM sourcepackagename
@@ -288,11 +303,7 @@ class Doap(SQLThing):
         return self._query_single("""SELECT * FROM productseries WHERE
         name=%s AND product=%s;""", (name, product))
 
-    def updateProduct(self, data, productname, packagename):
-        ## ensure packaging anyway
-        if packagename:
-            self.ensurePackaging(productname, packagename)
-
+    def updateProduct(self, data, productname):
         ## if there is no data available simply return
         if not data:
             print '@\t No data available for Update'
@@ -364,22 +375,23 @@ class Doap(SQLThing):
         self._insert("productseries", dbdata)
         print '@\tProduct Series %s Created' % displayname
             
-    def ensureProduct(self, data, productname, packagename=None):
+    def ensureProduct(self, data, productname, ownername=None):
 
         if self.getProductByName(productname):
-            self.updateProduct(data, productname, packagename)
+            self.updateProduct(data, productname)
             return 
 
         ## Fits the data (sanitizer, multiple entries handling, clean-up, etc)
         fit = FitData(data, productname)
-
-        #XXX cprov 
+        
+        # XXX cprov 
         # Problems with wierd developers name and/or email
-        try:
+        if fit.pdisplayname and fit.emailname:
             owner = self.ensurePerson(fit.pdisplayname, fit.pemail)[0]
-        except:
-            print "@\t Mark wins a Product "
-            owner = 1
+        else:
+            print "@\tDOAP wins a Product "
+            owner = self.getPersonByName(ownername)[0]
+            
 
         ## Create a product based on fitted data
         self.createProduct(owner, fit)
@@ -410,14 +422,8 @@ class Doap(SQLThing):
         
         self.createProductSeries(product, name, displayname, shortdesc)
         
-        ## product/source packaging
-        if not packagename:
-            return 
 
-        self.ensurePackaging(productname, packagename) 
-
-
-    def ensurePackaging(self, productname, packagename):
+    def ensurePackaging(self, productname, packagename, distroname):
         
         product = self.getProductByName(productname)
         
@@ -428,19 +434,18 @@ class Doap(SQLThing):
             print '@ %s Product not Found !!!!' % productname
             return
 
-        sourcepackage = self.getSourcePackageByName(packagename)
+        sourcepackage = self.getSourcePackageByName(packagename, distroname)
         
-        if sourcepackage:
-            package_id = sourcepackage[0]
-        else:
+        if not sourcepackage:
             ## Aborting !!!
-            print '@ %s SourcePackage not Found !!!!' % packagename
             return
 
+        package_id = sourcepackage[0]
+        
         ## verify the respective packaging entry
         if self.getPackaging(product_id, package_id):
             print '@\tPackaging Entry Found'
-            return
+            return True
         
         ##XXX: hardcoded Prime Packaging
         packaging = 1
@@ -452,5 +457,6 @@ class Doap(SQLThing):
 
         self._insert("packaging", dbdata)
         print '@\tPackaging %s - %s Created' % (productname, packagename)
-
+        # finished with success
+        return True
         

@@ -2,6 +2,52 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-15 13:13:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1205
+
+    Summary:
+      finished Nicole redesign
+    Revision:
+      launchpad--devel--0--patch-1205
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-459
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-460
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-461
+       same list format for dopackaging or not in Nicole
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-462
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-463
+       Workarround on Nicole for RDF Support
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-464
+       select and verify correct PATH for xml files in Nicole
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/Changelog
+     lib/canonical/launchpad/scripts/nicole/README
+     lib/canonical/launchpad/scripts/nicole/database.py
+     lib/canonical/launchpad/scripts/nicole/nicole.py
+     lib/canonical/launchpad/scripts/nicole/rdfproj.py
+     lib/canonical/launchpad/scripts/nicole/rdfsplit.py
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-459
+     celso.providelo@canonical.com/launchpad--devel--0--patch-460
+     celso.providelo@canonical.com/launchpad--devel--0--patch-461
+     celso.providelo@canonical.com/launchpad--devel--0--patch-462
+     celso.providelo@canonical.com/launchpad--devel--0--patch-463
+     celso.providelo@canonical.com/launchpad--devel--0--patch-464
+
+
 2005-01-14 23:43:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1204
 
     Summary:
