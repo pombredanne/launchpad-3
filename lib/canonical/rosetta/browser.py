@@ -300,6 +300,16 @@ class ViewPOFile:
 
 
 class TranslatorDashboard:
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+        self.person = IPerson(self.request.principal, None)
+
+        # XXX
+        if self.person is None:
+            self.person = fake_person()
+
     def projects(self):
         return getUtility(IProjects)
 
