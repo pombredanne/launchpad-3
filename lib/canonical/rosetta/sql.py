@@ -199,7 +199,7 @@ class RosettaPOFile(SQLBase):
             potSet.potemplate = {self.poTemplate.id} AND
             potSet.pomsgid = pomsgid.id;
         '''
-        return RosettaPOMessageSet.select('''
+        res = RosettaPOMessageSet.select('''
             pofile.potemplate = %d AND
             poSet.id = %d AND
             poSet.pomsgid = pomsgid.id AND
@@ -213,6 +213,9 @@ class RosettaPOFile(SQLBase):
                 'POFile pofile',
                 'POMsgID pomsgid',
                 ])
+        if res.count() == 0:
+            raise KeyError, messageSet.id
+        return res[0]
 
     def translated(self):
         '''
