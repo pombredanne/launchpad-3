@@ -129,14 +129,14 @@ This bug is essential to fix as soon as possible. It affects system stability, d
 
 <a href="productassignments/+new"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-    title="Add new reference to a Product that is affected.">
+    title="Mark this bug as occurring upstream">
     <img src="++resource++add.gif" alt="+" />
     File Against Upstream...
 </a>
 
 <a href="packageassignments/+new"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-    title="Add new reference to an existing Source Package that is affected.">
+    title="Mark this bug as occurring in another package">
     <img src="++resource++add.gif" alt="+" />
     File Against Package...
 </a>

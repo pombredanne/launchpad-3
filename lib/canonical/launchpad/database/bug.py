@@ -186,4 +186,8 @@ class BugsAssignedReport(object):
             bugs.add(bug)
         for bug in self.productAssigneeBugs():
             bugs.add(bug)
+        buglistwithdates = [ (bug.datecreated, bug) for bug in bugs ]
+        buglistwithdates.sort()
+        buglistwithdates.reverse()
+        bugs = [ bug[1] for bug in buglistwithdates ]
         return bugs

@@ -135,7 +135,7 @@
         class="canonical.launchpad.browser.BugsAssignedReportView"
         permission="launchpad.AnyPerson">
         <browser:page name="+index"
-              template="../templates/malone-bugsassigned.pt"
+              template="../templates/bugs-assigned.pt"
               lp:url="malone/assigned/" />
     </browser:pages>
 

@@ -1,5 +1,6 @@
 <div class="portlet">
-    <h4>External References</h4>
+
+    <h4>Related Web Links</h4>
 
     <div class="portletBody">
         <div class="portletContent odd"
@@ -11,29 +12,10 @@
             </a>
         </div>
 
-<!--
-        <div class="portletContent even">
-            <strong xtal:condition="">Other references</strong>
-            <br />
-            <a href="#"
-               title="Relevant description">Relevant URL</a>
-            <a href="#"
-               title="Another description">Another URL</a>
-        </div>
--->
-
-<!-- Previous code
-            <a xtal:content="ref/description"
-               xtal:attributes="title ref/bugreftype/lp:BugExternalReferenceType;
-                                href ref/url;">
-                The reference
-            </a>
--->
-
         <div class="portletContent odd">
-            <form action="references/+new" method="post">
-                <input type="submit" value="Add Reference" />
-            </form>
+            <img src="++resource++add.gif" alt="Add">
+            <a href="references/+new">Add web link...
+            </a>
         </div>
     </div>
 </div>

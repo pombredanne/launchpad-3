@@ -68,6 +68,26 @@
 
         <h2>Comments</h2>
 
+        <div class="boardComment">
+            <fieldset class="collapsible collapsed">
+                <legend>New comment on this bug</legend>
+    
+                <div class="field">
+                    <form action="+messages/+new" method="post">
+                        <label>Comment</label>
+                        <div class="formHelp">
+                            If you have additional relevant information,
+                            enter it below.
+                        </div>
+                        <b>Subject:</b> <input name="field.title" type="text" size="50"/><br />
+                        <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
+                        <input type="submit" name="UPDATE_SUBMIT" value="Add" />
+                    </form>
+                </div>
+    
+            </fieldset>
+        </div>
+
         <div class="boardComment" tal:repeat="message context/messages">
 
             <div class="boardCommentDetails">
@@ -98,81 +118,25 @@
                 </div>
             </div>
 
-        <fieldset class="collapsible collapsed">
-            <legend>Follow-up</legend>
+            <fieldset class="collapsible collapsed">
+                <legend>Follow-up on this comment</legend>
 
-            <!--
-            <div class="field">
-                <label>Current status</label>
-                <div class="formHelp">
-                Change status, if necessary
+                <div class="field">
+                    <form action="messages/+new" method="post">
+                        <label>Comment</label>
+                        <div class="formHelp">
+                            If you have additional relevant information,
+                            enter it below.
+                        </div>
+                        <input name="field.title" type="text" /><br />
+                        <textarea name="field.contents"></textarea>
+                        <input type="submit" name="UPDATE_SUBMIT" value="Add" />
+                    </form>
                 </div>
-                <select>
-                    <option>No change</option>
-                    <option>Resolve</option>
-                    <option>Reject</option>
-                    <option>Re-open</option>
-                </select>
-            </div>
-            -->
-
-            <div class="field">
-                <form action="messages/+new" method="post">
-                    <label>Comment</label>
-                    <div class="formHelp">
-                        If you have additional relevant information,
-                        enter it below.
-                    </div>
-                    <input name="field.title" type="text" /><br />
-                    <textarea name="field.contents"></textarea>
-                    <input type="submit" name="UPDATE_SUBMIT" value="Add" />
-                </form>
-            </div>
-        </fieldset>
+            </fieldset>
             <div class="visualClear"></div>
 
-            <!--
-            <div class="boardCommentActions" >
-                <form method="post" tal:attributes="action
-                    string:messages/${message/id}/+reply">
-                    <input class="standalone" type="submit"
-                        value="Reply to this" />
-                </form>
-            </div>
-            -->
         </div>
-
-        <fieldset>
-            <legend>Follow-up</legend>
-
-            <!--
-            <div class="field">
-                <label>Current status</label>
-                <div class="formHelp">
-                Change status, if necessary
-                </div>
-                <select>
-                    <option>No change</option>
-                    <option>Resolve</option>
-                    <option>Reject</option>
-                    <option>Re-open</option>
-                </select>
-            </div>
-            -->
-
-            <div class="field">
-                <form action="+messages/+new" method="post">
-                    <label>Comment</label>
-                    <div class="formHelp">
-                        If you have additional relevant information,
-                        enter it below.
-                    </div>
-                    <b>Subject:</b> <input name="field.title" type="text" size="50"/><br />
-                    <b>Comment:</b> <textarea name="field.contents" rows="10"></textarea>
-                    <input type="submit" name="UPDATE_SUBMIT" value="Add" />
-                </form>
-            </div>
-        </fieldset>
 
     </div>
 </div>

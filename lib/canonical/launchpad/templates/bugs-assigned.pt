@@ -16,34 +16,34 @@
 <div metal:fill-slot="main">
 
 
-    <h1>Bugs Assigned to <span tal:content="context/user/browsername">The
+    <h1>Bugs Assigned to <span tal:content="context/user/browsername">
     Person</span></h1>
     
     <div tal:condition="context/assignedBugs">
     
-        <table class="listing rowNavigation">
-        
+        <table class="listing rowNavigation" width="100%">
+
             <tr>
                 <th>Bug #</th>
                 <th>Details</th>
             </tr>
-            
+
             <tr tal:repeat="bug context/assignedBugs"
                 tal:attributes="onclick
-                       string:window.location='/malone/bugs/${bug/id}'">
-                <td>
-                     <span tal:content="bug/id">
-                         $Bug.id</span>
-                </td>
-                <td>
-                     <span tal:content="bug/title">
-                         $Bug.title</span><br>
-                     <span tal:content="bug/shortdesc">
-                         $Bug.shortdesc</span>
-                </td>
+                string:window.location='/malone/bugs/${bug/id}'">
+                <td><span tal:replace="bug/id">$Bug.id</span></td>
+                <td tal:attributes="title bug/shortdesc">
+                    <b><span tal:replace="bug/title">$Bug.title</span></b></td>
             </tr>
-            
+ 
         </table>
+        
+    <p>These are the bugs that are in the work list for <span
+    tal:replace="context/user/browsername">the person</span>. These bugs
+    might occur in upstream products or distribution packages which <span
+    tal:replace="context/user/browsername">the person</span> maintains, or
+    they might have been explicitly assigned. Click on the bug to see more
+    detail.</p>
         
     </div>
 
@@ -51,7 +51,7 @@
     No bugs are currently assigned to <span
     tal:replace="context/user/browsername">Person</span>. You can assign a bug by
     clicking on the "Add Product" or "Add Package" links near the top of the
-    main bug page, assigning the bug to a product or person and then also
+    main bug page, assigning the bug to an upstream product or package and then also
     assigning it to a specific person for action.
     </div>
   
@@ -61,3 +61,4 @@
 </body>
 
 </html>
+
