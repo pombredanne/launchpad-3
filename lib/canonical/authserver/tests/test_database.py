@@ -158,6 +158,16 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         # In fact, it should return the same dict as getUser
         goodDict = storage._getUserInteraction(self.cursor, 'fred@bedrock')
         self.assertEqual(goodDict, userDict)
+
+        # And we should be able to authenticate with the new password...
+        authDict = storage._authUserInteraction(self.cursor, 'fred@bedrock',
+                                                newSsha)
+        self.assertEqual(goodDict, authDict)
+        
+        # ...but not the old
+        authDict = storage._authUserInteraction(self.cursor, 'fred@bedrock',
+                                                ssha)
+        self.assertEqual({}, authDict)
         
     def test_changePasswordFailure(self):
         storage = DatabaseUserDetailsStorage(None)

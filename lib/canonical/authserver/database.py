@@ -136,7 +136,8 @@ class DatabaseUserDetailsStorage(object):
                        newSshaDigestedPassword):
         ri = self.connectionPool.runInteraction
         return ri(self._changePasswordInteraction, loginID,
-                  sshaDigestedPassword, newSshaDigestedPassword)
+                  sshaDigestedPassword.encode('base64'), 
+                  newSshaDigestedPassword.encode('base64'))
 
     def _changePasswordInteraction(self, transaction, loginID,
                                    sshaDigestedPassword,

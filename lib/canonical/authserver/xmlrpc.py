@@ -47,6 +47,8 @@ class UserDetailsResource(xmlrpc.XMLRPC):
         if self.debug:
             print ("changePassword(%r, %r, %r)"
                    % (loginID, sshaDigestedPassword, newSshaDigestedPassword))
-        return self.storage.changePassword(loginID, sshaDigestedPassword,
-                                           newSshaDigestedPassword)
+        return self.storage.changePassword(
+            loginID, sshaDigestedPassword.decode('base64'),
+            newSshaDigestedPassword.decode('base64')
+        )
 
