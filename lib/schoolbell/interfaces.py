@@ -43,19 +43,20 @@ class ICalendar(Interface):
         """
 
     def expand(first, last):
-        """Return an ICalendar with recurring events expanded.
+        """Return an iterator over all expanded events in a given time period.
+
+        "Expanding" here refers to expanding recurring events, that is,
+        creating objects for all occurrences of recurring events.  If a
+        recurring event has occurreces that overlap the specified time
+        interval, every such occurrence is represented as a new calendar event
+        with the `dtstart` attribute replaced with the date and time of that
+        occurrence.  These events provide IExpandedCalendarEvent and have an
+        additional attribute which points to the original event.
 
         `first` and `last` are datetime.datetimes and define a half-open
         time interval.
 
-        The returned calendar contains all nonrecurring events that overlap
-        the interval.
-
-        If a recurring event has occurreces that overlap the specified time
-        interval, every such occurrence is represented as a new calendar
-        event with the `dtstart` attribute replaced with the date and time
-        of that occurrence.  These events provide IExpandedCalendarEvent
-        and have an additional attribute which points to the original event.
+        The order of returned events is not defined.
         """
 
 

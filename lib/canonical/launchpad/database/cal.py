@@ -5,7 +5,7 @@ from sqlobject import MultipleJoin
 from sqlobject import SQLObjectNotFound
 
 from schoolbell.interfaces import ICalendarEvent
-from schoolbell.mixins import CalendarMixin
+from schoolbell.mixins import CalendarMixin, CalendarEventMixin
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import ILaunchpadCalendar
@@ -32,19 +32,24 @@ class Calendar(SQLBase, CalendarMixin):
 
 class CalendarSubscription(SQLBase):
     person = ForeignKey(dbName='person', notNull=True, foreignKey='Person')
-    calendar = ForeignKey(dbName='calendar', notNull=True, foreignKey='Calendar')
+    calendar = ForeignKey(dbName='calendar', notNull=True,
+                          foreignKey='Calendar')
 
-class CalendarEvent(SQLBase):
+
+class CalendarEvent(SQLBase, CalendarEventMixin):
     implements(ICalendarEvent)
 
     unique_id = StringCol(dbName='unique_id', notNull=True, length=255,
                           alternateID=True, alternateMethodName='byUniqueID')
-    calendar = ForeignKey(dbName='calendar', notNull=True, foreignKey='Calendar')
+    calendar = ForeignKey(dbName='calendar', notNull=True,
+                          foreignKey='Calendar')
     dtstart = DateTimeCol(dbName='dtstart', notNull=True)
     # actually an interval ...
     duration = DateTimeCol(dbName='duration', notNull=True)
     title = StringCol(dbName='title', notNull=True)
     location = StringCol(dbName='location', notNull=True, default='')
+
+    # The following attributes are all used for recurring events
     recurrence = EnumCol(dbName='recurrence', notNull=True,
                          enumValues=['', 'SECONDLY', 'MINUTELY', 'HOURLY',
                                      'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'],
@@ -55,11 +60,9 @@ class CalendarEvent(SQLBase):
     interval = IntCol(dbName='interval', default=None)
     rec_list = StringCol(dbName='rec_list', default=None)
 
-    def not_implemented(self, *args, **kw):
+    def not_implemented(*args, **kw):
         raise NotImplementedError
 
-    __eq__ = __ne__ = __lt__ = __gt__ = __le__ = __ge__ = not_implemented
-
-    hasOccurrences = not_implemented
-    replace = not_implemented
+    hasOccurrences = not_implemented    # TODO
+    replace = not_implemented           # TODO
 

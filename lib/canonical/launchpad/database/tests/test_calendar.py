@@ -131,7 +131,12 @@ def doctest_Calendar():
           ...
         KeyError: 'e3'
 
-    TODO: test the expand method
+    You can ask to see all events that occur within a specified time interval
+
+        >>> events = cal.expand(datetime.datetime(2004, 12, 15, 0, 0),
+        ...                     datetime.datetime(2004, 12, 15, 0, 36))
+        >>> [e.title for e in events]
+        [u'Hack']
 
     """
 
@@ -161,8 +166,45 @@ def doctest_CalendarEvent():
         >>> verifyObject(ICalendarEvent, e1)
         True
 
-    TODO: test hasOccurrences and other methods
+    Calendar events can be compared with other calendar events, so you can
+    sort them by dtstart, among other things.
 
+        >>> e2 = CalendarEvent(unique_id="e2", calendar=calendar, title="Hack",
+        ...                    dtstart=datetime.datetime(2004, 12, 15, 17, 19),
+        ...                    duration=datetime.timedelta(minutes=5))
+
+        >>> e1 == e2
+        False
+        >>> e1 != e2
+        True
+        >>> e1 < e2
+        True
+        >>> e1 <= e2
+        True
+        >>> e1 > e2
+        False
+        >>> e1 >= e2
+        False
+
+        >>> e1 == e1
+        True
+        >>> e1 != e1
+        False
+        >>> e1 < e1
+        False
+        >>> e1 <= e1
+        True
+        >>> e1 > e1
+        False
+        >>> e1 >= e1
+        True
+
+    TODO: Check events are equal only if all the interesting attributes are
+          equal.
+
+    TODO: Check that events with the same dtstart compare titles.
+
+    TODO: Check that events with the same dtstart and titles compare unique_id.
     """
 
 
