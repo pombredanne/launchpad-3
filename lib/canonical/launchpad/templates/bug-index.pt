@@ -45,18 +45,18 @@
             <span tal:replace="context/title" />
         </h1>
 
+        <div tal:replace="structure view/assignmentsHeadline" />
+
         <div class="discreet">
-            <!--<span class="bug-confirmed"
-                title="Bug status">Confirmed</span>-->
+
             <span tal:condition="context/name">
                 Bugname: <a href="" tal:content="context/name">$Bug.name</a>,
             </span>
+
             Created
             <span tal:replace="python:context.datecreated.strftime(
                 '%d %b %y %H:%M')">13 Sep 04 12:15</span>.
         </div>
-
-        <div tal:replace="structure view/assignmentsHeadline" />
 
         <div class="documentDescription" tal:content="context/shortdesc">
             $Bug.shortdesc

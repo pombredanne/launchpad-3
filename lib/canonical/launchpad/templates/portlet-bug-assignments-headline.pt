@@ -6,7 +6,7 @@
     specialised assignments page.
 -->
 
-<table class="listing" style="width: 100%;">
+<table class="listing rowNavigation" style="width: 100%;">
     <thead>
         <tr>
             <th title="Source Package Assignment">Upstream / Package</th>
@@ -20,7 +20,8 @@
 
     <tbody>
         <!-- Upstream Assignments -->
-        <tr tal:repeat="bugass context/productassignment">
+        <tr tal:repeat="bugass context/productassignment"
+            tal:attributes="onclick string:window.location='productassignments/${bugass/id}/+edit';">
            
             <td>
                 <img src="++resource++product_icon.gif" 
@@ -73,9 +74,10 @@ This bug is essential to fix as soon as possible. It affects system stability, d
 
 
         <!-- Distribution Package Assignments -->
-        <tr tal:repeat="bugass context/packageassignment">
+        <tr tal:repeat="bugass context/packageassignment"
+            tal:attributes="onclick string:window.location='packageassignments/${bugass/id}/+edit';">
            
-            <td tal:attributes="class string:packageName severity${bugass/severity/lp:BugSeverity}Row">
+            <td>
                 <img src="++resource++product_icon.gif" 
                      title="Package Assignment" />
                 <a href=""
