@@ -10,8 +10,8 @@
 
     <ul>
         <li><a href="bugs/+new">Create a new bug report.</a></li>
-        <li><a href="package">See source packages with bugs assigned
-        to them</a></li>
+        <li><a href="packages">See Distro Package Bugs</a></li>
+        <li><a href="projects">See Upstream Bugs</a></li>
         <li><a href="bugs">See the complete bug list</a></li>
         <li tal:condition="request/lp:person">
           <span tal:define="name request/lp:person/name">
@@ -23,7 +23,6 @@
           <a href="bugs/created">Show bugs you created</a>
         </li>
         <li><a href="bugs/assigned">See the bugs assigned to you</a></li>
-        <li><a href="projects/+search">Search projects</a></li>
         <li><a href="bugtrackers">List all known bug trackers</a></li>
         <li><a href="bugtrackers">Register a new bug tracker with Malone</a></li>
     </ul>

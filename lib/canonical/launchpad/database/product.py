@@ -11,6 +11,8 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 
 # canonical imports
+from canonical.lp.dbschema import BugSeverity, BugAssignmentStatus
+
 from canonical.launchpad.interfaces import *
 
 from canonical.launchpad.database.sourcesource import SourceSource
@@ -207,4 +209,26 @@ class Product(SQLBase):
             orderBy='title',
         )
         return distros
+
+    def bugsummary(self):
+        """Return a matrix of the number of bugs for each status and
+        severity"""
+        bugmatrix = {}
+        for severity in BugSeverity.items:
+            bugmatrix[severity] = {}
+            for status in BugAssignmentStatus.items:
+                bugmatrix[severity][status] = 0
+        for bugass in self.bugs:
+            bugmatrix[bugass.severity][bugass.bugstatus] += 1
+        resultset = [ [ '', ] ]
+        for status in BugAssignmentStatus.items:
+            resultset[0].append(status.title)
+        severities = BugSeverity.items
+        for severity in severities:
+            statuses = BugAssignmentStatus.items
+            statusline = [ severity.title, ]
+            for status in statuses:
+                statusline.append(bugmatrix[severity][status])
+            resultset.append(statusline)
+        return resultset
 

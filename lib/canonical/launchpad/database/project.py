@@ -131,10 +131,6 @@ class ProjectSet:
 
     def new(self, name, displayname, title, homepageurl, shortdesc, 
             description, owner):
-        #
-        # XXX Mark Shuttleworth 03/10/04 Should the "new" method to create
-        #     a new project be on ProjectSet? or Project?
-        #
         name = name.encode('ascii')
         displayname = displayname.encode('ascii')
         title = title.encode('ascii')

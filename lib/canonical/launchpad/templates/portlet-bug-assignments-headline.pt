@@ -9,7 +9,12 @@
 <table class="listing rowNavigation" style="width: 100%;">
     <thead>
         <tr>
-            <th title="Source Package Assignment">Upstream / Package</th>
+            <th title="Assignment to...">
+                <img src="++resource++download.png" 
+                     title="Product Assignment" />Upstream /
+                <img src="++resource++product_icon.gif" 
+                     title="Package Assignment" />
+                     Package</th>
             <th title="State">State</th>
             <th title="Severity">Sev</th>
             <th title="Priority">Pri</th>
@@ -24,14 +29,14 @@
             tal:attributes="onclick string:window.location='productassignments/${bugass/id}/+edit';">
            
             <td>
-                <img src="++resource++product_icon.gif" 
-                     title="Product Assignment" />
                 <a href=""
                    tal:attributes="href
                    string:/doap/projects/${bugass/product/project/name}/${bugass/product/name}"
                    tal:content="bugass/product/name">
                 $Product.name
                 </a>
+                <img src="++resource++download.png" 
+                     title="Product Assignment" />
             </td>
             
             <td><acronym tal:content="bugass/bugstatus/lp:BugAssignmentStatus"
@@ -78,13 +83,13 @@ This bug is essential to fix as soon as possible. It affects system stability, d
             tal:attributes="onclick string:window.location='packageassignments/${bugass/id}/+edit';">
            
             <td>
-                <img src="++resource++product_icon.gif" 
-                     title="Package Assignment" />
                 <a href=""
-                   tal:attributes="href string:/malone/package/${bugass/sourcepackage/name}"
+                   tal:attributes="href string:/malone/packages/${bugass/sourcepackage/name}"
                    tal:content="bugass/sourcepackage/name">
                 $SourcePackageName.name
                 </a>
+                <img src="++resource++product_icon.gif" 
+                     title="Package Assignment" />
             </td>
             
             <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
@@ -122,16 +127,17 @@ This bug is essential to fix as soon as possible. It affects system stability, d
     </tbody>
 </table>
 
-<a href="packageassignments/+new"
-    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-    title="Add new reference to an existing Source Package that is affected.">
-    <img src="++resource++add.gif" alt="+" />
-    Add Package
-</a>
-                
 <a href="productassignments/+new"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Add new reference to a Product that is affected.">
     <img src="++resource++add.gif" alt="+" />
-    Add Product
+    File Against Upstream...
 </a>
+
+<a href="packageassignments/+new"
+    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+    title="Add new reference to an existing Source Package that is affected.">
+    <img src="++resource++add.gif" alt="+" />
+    File Against Package...
+</a>
+                

@@ -58,6 +58,10 @@ class IProduct(Interface):
     releases = Attribute(_("""An iterator over the ProductReleases for this
         product."""))
 
+    bugsummary = Attribute(_("""A matrix by bug severity and status of the
+        number of bugs of that severity and status assigned to this
+        product."""))
+
     def poTemplates():
         """Returns an iterator over this product's PO templates."""
 
@@ -103,3 +107,5 @@ class IProduct(Interface):
 
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
+
+

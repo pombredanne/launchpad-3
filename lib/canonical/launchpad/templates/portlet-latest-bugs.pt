@@ -11,11 +11,11 @@
             </tr>
         </table>
 
-        <a tal:attributes="href string:/malone/product/${context/project/name}/${context/name}"
+        <a tal:attributes="href string:/malone/projects/${context/project/name}/${context/name}"
             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
             title="See all bugs for this product">
             <img src="++resource++add.gif" alt="+" />
-            More...
+            More bugs...
         </a><br />
 
         <a href="+filebug"

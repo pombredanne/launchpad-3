@@ -18,6 +18,11 @@
         for="canonical.launchpad.interfaces.IProject"
         name="+index" />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        layer="canonical.launchpad.layers.MaloneLayer"
+        name="+malone-index" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
         class="canonical.launchpad.browser.ProjectView"
@@ -46,12 +51,11 @@
             lp:url="doap/projects/$Project.name/+newbugtracker" />
     </browser:pages>
 
-    <!-- XXX Mark Shuttleworth 18/10/04
-             this needs to disappear or be integrated with Layers -->
-    <browser:pages for="canonical.launchpad.interfaces.IProject"
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProject"
         permission="zope.Public">
         <browser:page name="+malone-index"
-            template="../templates/malone-project-index.pt"
+            template="../templates/project-bugs.pt"
             lp:url="malone/projects/$Project.name/index" />
     </browser:pages>
 
@@ -77,14 +81,13 @@
         permission="zope.Public"
         class="canonical.launchpad.browser.ProjectContainerView"
         lp:url="doap/projects/">
-        <!-- XXX lp-projects is a guess -->
         <browser:page
             name="+index" 
-            template="../templates/lp-projects-index.pt"
+            template="../templates/projects-index.pt"
             lp:url="doap/projects/+index" />
         <browser:page
             name="+search"
-            template="../templates/lp-projects-search.pt"
+            template="../templates/projects-search.pt"
             lp:url="doap/projects/+search" />
     </browser:pages>
 

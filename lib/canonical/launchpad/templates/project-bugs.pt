@@ -1,0 +1,44 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="rosetta">
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Bug Summary for <span tal:content="context/title">Project
+    Title</span></h1>
+
+    <div tal:content="context/shortdesc">Project Summary</div>
+    
+    <div tal:repeat="prod context/products">
+        
+        <br clear="right" />
+
+        <h2 tal:content="prod/title">Product Title</h2>
+
+        <table class="listing rowNavigation"
+               tal:define="summary prod/bugsummary"
+               style="float: right;">
+            <tr>
+              <th></th>
+            </tr>
+            <tr tal:repeat="severity summary">
+                <td tal:repeat="bugcount severity"
+                    tal:content="bugcount">x
+                </td>
+           </tr>
+        </table>
+
+        <p tal:content="prod/shortdesc">Product Summary</p>
+
+        <p><img src="++resource++add.gif">
+           <a href="#" tal:attributes="href prod/name">See all
+           bugs in <span tal:replace="prod/displayname">product</span>...</a></p>
+    
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -47,7 +47,7 @@
         for="canonical.malone.IMaloneApplication"
         utility="canonical.launchpad.interfaces.ISourcePackageContainer"
         permission="zope.Public"
-        name="package" />
+        name="packages" />
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"

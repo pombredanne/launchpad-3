@@ -3,8 +3,44 @@
 
     <div class="portletBody">
         <div class="portletContent even"
-             tal:define="subscriptions context/subscriptions">
+             tal:define="subscriptions context/subscriptions;
+                         productass context/productassignment;
+                         packageass context/packageassignment">
 
+            <h5>owner:</h5>
+            <ul class="people">
+                <li><span
+                tal:replace="context/owner/browsername">owner</span></li>
+            </ul>
+
+            <tal:products tal:define="products python:[p for p in productass]" >
+
+            <h5 tal:condition="products">upstream maintainers:</h5>
+
+            <ul class="people">
+                <li tal:repeat="ass products"
+                    tal:content="ass/product/owner/browsername">Product
+                    Maintainer</li>
+                <li tal:repeat="ass products"
+                    tal:content="ass/assignee/browsername|default"></li>
+            </ul>
+
+            </tal:products>
+            
+            <tal:packages tal:define="packages python:[p for p in packageass]" >
+
+            <h5 tal:condition="packages">package maintainers:</h5>
+
+            <ul class="people">
+                <li tal:repeat="ass packages"
+                    tal:content="ass/sourcepackage/maintainer/browsername">Package
+                    Maintainer</li>
+                <li tal:repeat="ass packages"
+                    tal:content="ass/assignee/browsername|default"></li>
+            </ul>
+
+            </tal:packages>
+            
           <tal:subscriptions
             tal:define="ccs python:[s for s in subscriptions if s.subscription==2];
                         watches python:[s for s in subscriptions if s.subscription==1];

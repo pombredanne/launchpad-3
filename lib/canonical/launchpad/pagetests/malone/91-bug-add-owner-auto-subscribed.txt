@@ -8,38 +8,9 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <h4>Subscriptions</h4>
-  <BLANKLINE>
-      <div class="portletBody">
-          <div class="portletContent even">
-  <BLANKLINE>
-  <BLANKLINE>
-  <BLANKLINE>
               <h5>cc:</h5>
               <ul class="people">
                   <li>
                     <a href="people/7/+edit">Foo Bar</a>
                   </li>
-              </ul>
-  <BLANKLINE>
-  <BLANKLINE>
-              <ul class="people">
-              </ul>
-  <BLANKLINE>
-  <BLANKLINE>
-              <ul class="people">
-              </ul>
-  <BLANKLINE>
-  <BLANKLINE>
-          <a href="people/+new" style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;" title="Add a subscriber to this bug.">
-              <img src="++resource++add.gif" alt="+" />
-              Subscribe
-          </a><br />
-          </div>
-  <BLANKLINE>
-      </div>
-  ...
-          <h1>
-              testing something
-          </h1>
   ...

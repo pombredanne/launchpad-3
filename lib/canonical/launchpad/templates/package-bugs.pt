@@ -5,7 +5,7 @@
 <body>
 
 <div metal:fill-slot="main">
-    <h1>Bugs Assigned To Source Package: 
+    <h1>Bugs for Package: 
         <span tal:content="context/name">$SourcePackage.title</span>
     </h1>
     <div class="documentDescription"
@@ -14,8 +14,6 @@
     <div tal:content="context/description">$SourcePackage.description
     </div>
 
-    <h2>Bugs assigned to this package</h2>
-    
     <table class="listing rowNavigation">
         <tr>
             <th>#</th>
@@ -30,11 +28,8 @@
             tal:attributes="onclick
                 string:window.location='../../bugs/${bugass/bug/id}';">
             <td tal:content="bugass/bug/id">#</td>
-            <td>
-                <a href="#" 
-                    tal:attributes="href string:../../bugs/${bugass/bug/id}"
-                    tal:content="bugass/bug/title">
-                    $Bug.title</a>
+            <td tal:content="bugass/bug/title" style="font-weight: bold;">
+                $Bug.title
             </td>
             <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
                 $SourcePackageBugAssignment.bugstatus
@@ -45,11 +40,11 @@
             <td tal:content="bugass/priority/lp:BugPriority">
                 $SourcePackageBugAssignment.priority
             </td>
-            <td>
-                <span tal:condition="bugass/binarypackagename"
-                tal:content="bugass/binarypackagename/name|default">
-                    (not specified)
-                </span>
+            <td tal:content="bugass/binarypackagename/name|default">
+                (unspecified)
+            </td>
+            <td tal:content="bugass/assignee/browsername|default">
+                -
             </td>
         </tr>
     </table>

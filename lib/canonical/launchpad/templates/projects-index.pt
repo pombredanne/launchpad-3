@@ -1,0 +1,68 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Launchpad Project Tracker</h1>
+
+    <fieldset>
+    
+        <legend>Search for a project</legend>
+
+        <form method="post">
+
+        <table border="0" cellpadding="1" cellspacing="2" width="100%">
+            <tr>
+                <td align="center">
+                    <input name="searchtext" size="40" />
+                    <input type="submit" value="Search" />
+                    <div class="formHelp">Enter any part of the project name,
+                    title or description. This will also search the products
+                    from every project.</div>
+                </td>
+            </tr>
+        </table>
+
+        </form>
+
+        <div tal:condition="view/searchrequested">
+        
+            <table class="rowNavigation">
+                <tr tal:repeat="project view/searchresults"
+                    tal:attributes="onclick string:window.location='${project/name}';"
+                    valign="top">
+                    <td>
+                        <b><a tal:attributes="href project/name" href="#"
+                            tal:content="project/title">$Project.title</a></b>
+                        (<span tal:content="project/name">$Project.name</span>)
+                        <a tal:attributes="href project/homepageurl"
+                            tal:content="project/homepageurl">http://www.gnu.org/</a>
+                        <br />
+                    <span tal:content="project/shortdesc">
+                        $Project.shortdesc</span>
+                    </td>
+                </tr>
+            </table>
+  
+            <div tal:condition="not: view/gotmatches"><b>No matching upstream
+            projects.</b></div>
+
+        </div>
+ 
+    </fieldset>
+
+</div>
+
+</body>
+</html>
