@@ -26,6 +26,14 @@ class IDistributions(Interface):
 
         Returns that project.
         """
+class IDistroApp(Interface):
+    distribution = Attribute("Distribution")
+    releases = Attribute("Distribution releases")
+
+    def getReleaseContainer(name):
+        """Returns an associated IReleaseContainer"""
+
+
 class IDistribution(Interface):
     """A Distribution Object"""
     id = Attribute("The distro's unique number.")
@@ -35,8 +43,6 @@ class IDistribution(Interface):
     domainname = Attribute("The distro's domain name.")
     owner = Attribute("The distro's owner.")
 
-    def getReleaseContainer(name):
-        """Returns an associated IReleaseContainer"""
 
 class IDistroReleasesApp(Interface):
     """Root object for collection of Releases"""
@@ -201,7 +207,7 @@ class IDistributionRole(Interface):
 
 class IPeopleApp(Interface):
     """A People Tag """
-
+    entries = Attribute("Number of user entries")
     def __getitem__(release):
         """retrieve personal by name"""
 
@@ -228,7 +234,8 @@ class IRelease(Interface):
     sections = Attribute("The release section.")
     releasestate = Attribute("The release's state.")
     datereleased = Attribute("The datereleased.")
-
+    parentrelease = Attribute("Parent Release")
+    owner =Attribute("Owner")
 
 ################################################################
    
@@ -409,8 +416,12 @@ class ISoyuzPerson(Interface):
     givenname = Attribute("Given name")
     familyname = Attribute("Family name")
     displayname = Attribute("Display name")
-
-
+    teamowner = Attribute("The Team Owner") 
+    teamdescription = Attribute("The Team Description")
+    karma = Attribute("Karma")
+    karmatimestamp = Attribute("Karma Time stamp")
+    password = Attribute("Passwork ?!?!")
+    
 class IManifestEntry(Interface):
     """"""
     branch = Attribute("A branch")

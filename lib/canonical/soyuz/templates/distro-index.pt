@@ -14,70 +14,100 @@
 
 <div metal:fill-slot="main">
 
-    <h1><span tal:content="context/title">TITLE</span> Distribution 
-	Overview</h1>
+    <h1><span tal:content="context/distribution/title">TITLE</span> 
+    Distribution Overview</h1>
 
    <table width="80%">
-   <tr> 
-   <td>
+   <tr> <td>
      <h4>Latest Posts</h4>
-   </td>
-   <td>
+   </td><td>
      <h4>Related Links</h4>
-   </td>
-   </tr>
-   <tr>
-   <td>
-    <ul> <b><a href="">Hello World</a> by <a href="">Lamont</a></b></ul>
-    <ul> <b><a href="">Soyuz Rocks</a> by <a href="">Cprov</a></b></ul>
-    <ul> <b><a href="">Launchpad burns</a> by <a href="">Kiko</a></b></ul>
-   </td>
-   <td>
-   <ul> <a href="src"><span tal:content="context/title">TITLE</span>
-         Sourcepackages</a> </ul> 
-   <ul> <a href="bin"><span tal:content="context/title">TITLE</span>
-         Binarypackages</a> </ul> 
-   <ul> <a href="team"><span
-   tal:content="context/title">TITLE</span> 
-   Team </a> </ul> 
-   </td>
-   </tr>
-   <tr>
-   <td>
-   <h3><span tal:content="context/title">TITLE</span> Distribution
-      Description</h3> 
-   </td>
-   </tr>
-   <tr>
-   <td>
-   <div>
-   <p><span tal:content="context/description">DESCRIPTION</span>
-   </div>
-   </td>
-   <td>
-       <table>
-        <tr>
-         <th>
-	  <a href="+edit">Edit <span tal:content="context/title">TITLE</span>
-	     Information</a>   
-         </th>
-        </tr>
-        <tr>
-         <th>
-	  <a href="releases/+new">Create a new <span
-	     tal:content="context/title">TITLE</span> Release</a> 
-	 </th>
-        </tr>
-        <tr>
-         <th>
-	  <a href="releases">See Current <span
-	     tal:content="context/title">TITLE</span> Releases</a> 
-	 </th>
-	</tr>
-       </table>
-    </td>
-    </tr>
+   </td></tr>
+   <tr><td>
+    <table>
+    <tr><td><i>Hello World</i></td><td></td></tr>
+    <tr><td></td><td><a href="../../people/1">Lamont</a></td></tr>
+    <tr><td><i>Soyuz Rocks</i></td><td></td></tr>
+    <tr><td></td><td><a href="../../people/1">Cprov</a></td></tr>
+    <tr><td><i>Launchpad burns</i></td><td></td></tr>
+    <tr><td></td><td><a href="../../people/1">Kiko</a></td></tr>
     </table>
+   </td><td>
+   <ul> <a href="src"><span tal:content="context/distribution/title">
+   TITLE</span> Sourcepackages</a></ul> 
+   <ul> <a href="bin"><span tal:content="context/distribution/title">
+   TITLE</span> Binarypackages</a></ul>  
+   <ul> <a href="team"><span
+   tal:content="context/distribution/title">TITLE</span> 
+   Team </a> </ul> 
+   <ul> <a href="+translations"><span
+   tal:content="context/distribution/title">TITLE</span> 
+   Translations </a> </ul> 
+   <ul> <a href="+bugs"><span
+   tal:content="context/distribution/title">TITLE</span> 
+   Bugs</a> </ul> 
+   </td></tr>
+   <tr><td>
+   <h3><span tal:content="context/distribution/title">TITLE</span> Distribution
+      Description</h3> 
+   </td></tr>
+   <tr><td>
+   <div>
+   <p><span tal:content="context/distribution/description">DESCRIPTION</span>
+   </div>
+   </td></tr>
+   <tr><td>
+    <p> <a href="+edit">Edit <span
+    tal:content="context/distribution/title">
+    TITLE</span> Information</a>   
+   </td></tr>  
+   <tr><td>
+   <table class="listing">
+    <tr>
+      <th>Name</th>
+      <th>Title</th>
+      <th>Description</th>
+      <th>Version</th>
+      <th>Packages</th>
+      <th>Status</th>
+      <th>Date Released</th>
+      <th>Parent Release</th>
+      <th>Owner</th>
+    </tr>
+    <tr tal:repeat="release context/releases">
+      <td><a tal:content="release/name"
+	   tal:attributes="href string:releases/${release/name}">
+	   distribution name</a>
+      </td>
+      <td tal:content="release/title">TITLES</td>
+      <td tal:content="release/description">DESCRIPTION</td>
+      <td tal:content="release/version">VERSION</td>
+      <td>
+       <table>
+       <tr>
+       <th><a tal:attributes="href string:src/${release/name}">SRC</a></th>
+       <th><a tal:attributes="href string:bin/${release/name}">BIN</a></th>
+       </tr>
+       </table>
+      </td>
+      <td tal:content="release/releasestate">RELEASESTATE</td>
+      <td tal:content="release/datereleased">DATERELEASED</td>      
+      <td>xxxx</td>          
+      <td tal:content="release/owner/displayname">OWNER</td>            
+    </tr>
+    </table>    
+   </td></tr>
+   <tr><td>
+   <p><a href="releases/+new">Create a new <span
+        tal:content="context/distribution/title">TITLE</span>
+	 Release</a>
+   </td></tr>
+   <tr><td>
+   <p><a href="releases">See Current <span
+	tal:content="context/distribution/title">TITLE</span> 
+	Releases</a><b>(DEPRECATED!!)</b> 
+  </td></tr>
+  </table>
  
 </div>
 

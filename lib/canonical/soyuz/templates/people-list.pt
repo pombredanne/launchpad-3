@@ -1,0 +1,57 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <h1>Soyuz People List</h1>
+
+
+  <table class="listing">
+    <tr>
+      <th>Displayname</th>
+      <th>Givenname</th>
+      <th>Familyname</th>
+      <th>Team Owner</th>
+      <th>Team Description</th>
+      <th>Karma</th>
+    </tr>
+    <tr tal:repeat="person context">
+      <td>
+        <a tal:content="person/displayname" 
+	   tal:attributes="href person/id">
+	  displayname
+	</a>
+      </td>
+      <td>
+        <span tal:content="person/givenname"> 
+	  givenname</span>
+      </td><td>
+        <span tal:content="person/familyname">
+	 familyname</span>
+      </td><td>
+        <span tal:content="person/teamowner">
+	  teamowner</span>
+      </td><td>
+        <span tal:content="person/teamdescription">
+	  teamowner</span>
+      </td><td>
+        <span tal:content="person/karma"> 
+	  karma</span></td>
+    </tr>
+  </table>    
+ 
+</div>
+
+</body>
+</html>

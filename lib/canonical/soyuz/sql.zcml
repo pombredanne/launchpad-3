@@ -125,6 +125,10 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.soyuz.sql.DistroApp">
+    <allow interface="canonical.soyuz.interfaces.IDistroApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
 
   <content class="canonical.soyuz.sql.SoyuzDistribution">
     <allow interface="canonical.soyuz.interfaces.IDistribution"/>

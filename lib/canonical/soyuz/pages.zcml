@@ -41,8 +41,8 @@
 	
   <!-- This view registers 'releases' as 'traverse' of 
 	        	     RootObject/soyuz/distros/$Distribution.name/. -->
-  <traverse for="canonical.soyuz.sql.SoyuzDistribution" getter="getReleaseContainer" />	
-   <pages for="canonical.soyuz.sql.SoyuzDistribution"
+  <traverse for="canonical.soyuz.sql.DistroApp" getter="getReleaseContainer" />	
+   <pages for="canonical.soyuz.sql.DistroApp"
 	  permission="zope.Public"
 	  allowed_attributes="results context">
 	
@@ -60,7 +60,7 @@
 	/>
   </pages>
 
-  <page for="canonical.soyuz.sql.SoyuzDistribution"
+  <page for="canonical.soyuz.sql.DistroApp"
          permission="zope.Public"
 	 class="canonical.soyuz.browser.DistrosEditView"
 	 name="+edit"
@@ -211,11 +211,21 @@
 	  allowed_attributes="results"	 
 	  permission="zope.Public"> 
 
-	<page  name="index.html"
-          template="templates/people-index.pt"	
-	  lp:url="Soyuz/people/index.html"
+	<page  name="+list"
+          template="templates/people-list.pt"	
+	  lp:url="Soyuz/people/+list"
 	/>
    </pages>
+
+  <page for="canonical.soyuz.sql.PeopleApp"
+         permission="zope.Public"
+	 class="canonical.soyuz.browser.PeopleSearchView"
+	 template="templates/people-index.pt"
+         lp:url="Soyuz/people/index.html"
+	 name="index.html"
+       />
+
+
 
 
    <pages for="canonical.soyuz.sql.PersonApp"

@@ -14,21 +14,54 @@
 
 <div metal:fill-slot="main">
 
-  <h1>People Overview</h1>
+  <h1>Soyuz People Overview</h1>
 
-  <table class="listing">
-    <tr>
-      <th>Displayname</th>
-    </tr>
-    <tr tal:repeat="person context">
-      <td>
-        <a tal:content="person/displayname" 
-	   tal:attributes="href person/id">
-	  displayname
-	</a>
-      </td>
-    </tr>
-  </table>    
+  <div class="documentDescription">	
+  This Application should help the user to find more Information about
+  each developer in Soyuz, I mean, it should be the portal for each
+  personal user page .... 
+  </div>
+ 
+ <div>
+    <form name="search" action="" method="POST">
+    <fieldset>
+    	<legend><h3>Search Soyuz People</h3></legend>
+	<table>
+	<tr><td>
+	<div class="field">
+	    <label>Name</label>
+	    <div class="formHelp">
+	    Enter the person Name .
+            </div>
+	    <input type="text" name="name"/>
+	 </div>
+	 <div class="formControls">
+	    <input type="submit" value="Search"/>
+	 </div>
+	 </td>
+	 <td>
+	 <div>
+	 <table>
+	 <tr><td>
+	 <a href="+list">View List</a>
+	 </td></tr>
+	 <tr><td>
+	 <b>(<span tal:content="context/entries">xx</span> Members)</b>
+	 </td></tr>
+	 </table>
+	 </div>
+	 </td></tr>
+	 </table>
+  </form>
+  </div>
+
+
+  <ul>
+  <li tal:repeat="person view/results"> 
+  <a tal:attributes="href person/id"
+  tal:content="person/displayname">
+  </a></li>
+  </ul>
 
 
 

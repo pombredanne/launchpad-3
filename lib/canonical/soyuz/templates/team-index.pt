@@ -16,7 +16,6 @@
 
   <h1><span tal:content="context/distribution/title" /> Team Overview</h1>
 
-
   <div>
   <h3><span tal:content="context/distribution/title" /> Description </h3>
   <p> <span tal:content="context/distribution/description" />

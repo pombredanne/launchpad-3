@@ -48,10 +48,33 @@ from canonical.arch.database import Branch, Changeset
 
 class DistrosApp(object):
     def __getitem__(self, name):
-        return SoyuzDistribution.selectBy(name=name.encode("ascii"))[0]
+        return DistroApp(name)
 
     def __iter__(self):
     	return iter(SoyuzDistribution.select())
+
+class DistroApp(object):
+
+    def __init__(self, name):
+        self.distribution = SoyuzDistribution.selectBy(name=\
+                                                       name.encode('ascii'))[0]
+        
+        self.releases = Release.selectBy(distributionID=self.distribution.id)
+
+    def getReleaseContainer(self, name):
+        if name == 'releases':
+            return DistroReleasesApp(self.distribution)
+        if name == 'src':
+            return DistroSourcesApp(self.distribution)
+        if name == 'bin':
+            return DistroBinariesApp(self.distribution) 
+        if name == 'team':
+            return DistroTeamApp(self.distribution)
+        if name == 'people':
+            return DistroPeopleApp(self.distribution)
+        else:
+            raise KeyError, name
+
 
 # Release app component Section (releases)
 class DistroReleaseApp(object):
@@ -238,8 +261,7 @@ class DistributionRole(SQLBase):
         ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
                    notNull=True),
         ForeignKey(name='distribution', dbName='distribution',
-                   foreignKey='SoyuzDistribution',
-                   notNull=True),
+                   foreignKey='Distribution', notNull=True),
         IntCol('role', dbName='role')
         ]
 
@@ -253,7 +275,7 @@ class DistroReleaseRole(SQLBase):
         ForeignKey(name='person', dbName='person', foreignKey='SoyuzPerson',
                    notNull=True),
         ForeignKey(name='distrorelease', dbName='distrorelease',
-                   foreignKey='SoyuzDistribution',
+                   foreignKey='Release',
                    notNull=True),
         IntCol('role', dbName='role')
         ]
@@ -278,7 +300,8 @@ class DistroTeamApp(object):
     def __init__(self, distribution):
         self.distribution = distribution
         
-#self.team = DistributionRole.select(distributionID=self.distribution.id)
+#        self.team=DistributionRole.select()
+
         self.team = [Team('Mark Shuttleworth', 'Maintainer'),
                      Team('James Blackwell', 'Translator'),
                      Team('Steve Alexander', 'Contribuitors')
@@ -299,7 +322,7 @@ class DistroTeamApp(object):
 # new People Branch
 class PeopleApp(object):
     def __init__(self):
-        pass
+        self.entries = SoyuzPerson.select().count()
 
     def __getitem__(self, id):
         return PersonApp(id)
@@ -310,7 +333,7 @@ class PeopleApp(object):
 class PersonApp(object):
     def __init__(self, id):
         self.id = id
-#        self.person = SoyuzPerson.selectBy(id=id)
+        #self.person = SoyuzPerson.selectBy(SoyuzPersonID=self.id)
         
 
 ################################################################
@@ -482,8 +505,18 @@ class SoyuzPerson(SQLBase):
         StringCol('givenname', dbName='givenname'),
         StringCol('familyname', dbName='familyname'),
         StringCol('displayname', dbName='displayname'),
-    ]
+        StringCol('password', dbName='password'),
+        ForeignKey(name='teamowner', dbName='teamowner',
+                   foreignKey='SoyuzPerson', notNull=True),
+        StringCol('teamdescription', dbName='teamdescription'),
+        IntCol('karma', dbName='karma'),
+# THE table Karma should exists, isn't it ?!?!  
+#        ForeignKey(name='karma', dbName='karma', foreignKey='Karma',
+#                   notNull=True),
+        DateTimeCol('karmatimestamp', dbName='karmatimestamp', notNull=True)
+        ]
 
+    
 class SoyuzDistribution(SQLBase):
 
     implements(IDistribution)
@@ -495,22 +528,9 @@ class SoyuzDistribution(SQLBase):
         StringCol('description', dbName='description'),
         StringCol('domainname', dbName='domainname'),
         ForeignKey(name='owner', dbName='owner', foreignKey='SoyuzPerson',
-                   notNull=True),
+                   notNull=True)
         ]
 
-    def getReleaseContainer(self, name):
-        if name == 'releases':
-            return DistroReleasesApp(self)
-        if name == 'src':
-            return DistroSourcesApp(self)
-        if name == 'bin':
-            return DistroBinariesApp(self) 
-        if name == 'team':
-            return DistroTeamApp(self)
-        if name == 'people':
-            return DistroPeopleApp(self)
-        else:
-            raise KeyError, name
 
 
 class Release(SQLBase):
@@ -520,7 +540,7 @@ class Release(SQLBase):
     _table = 'DistroRelease'
     _columns = [
         ForeignKey(name='distribution', dbName='distribution',
-                   foreignKey='Distribution', notNull=True),
+                   foreignKey='SoyuzDistribution', notNull=True),
         StringCol('name', dbName='name', notNull=True),
         StringCol('title', dbName='title', notNull=True),
         StringCol('description', dbName='description', notNull=True),
@@ -531,8 +551,10 @@ class Release(SQLBase):
                    notNull=True),
         IntCol('releasestate', dbName='releasestate', notNull=True),
         DateTimeCol('datereleased', dbName='datereleased', notNull=True),
+        ForeignKey(name='parentrelease', dbName='parentrelease',
+                   foreignKey='Release'),
         ForeignKey(name='owner', dbName='owner', foreignKey='SoyuzPerson',
-                   notNull=True),
+                   notNull=True)
     ]
 
 

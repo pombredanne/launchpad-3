@@ -1,4 +1,4 @@
-from canonical.soyuz.sql import SoyuzDistribution, Release
+from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
 from sqlobject import LIKE, OR, AND
 
 
@@ -19,7 +19,21 @@ class DistrosSearchView(object):
             title_like = LIKE(SoyuzDistribution.q.title, "%%"+title+"%%")
             description_like = LIKE(SoyuzDistribution.q.description,
                                     "%%"+description+"%%")
-            self.results = SoyuzDistribution.select(AND(name_like, title_like, description_like))
+            self.results = SoyuzDistribution.select(AND(name_like, title_like,\
+                                                        description_like))
+
+class PeopleSearchView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.results = []
+
+        name = self.request.get("name", "").encode("ascii")
+
+        if name:
+            name_like = LIKE(SoyuzPerson.q.displayname, "%%"+name+"%%")
+            self.results = SoyuzPerson.select(AND(name_like))
 
 
 
@@ -53,9 +67,9 @@ class DistrosEditView(object):
         description = self.request.get("description", "").encode("ascii")
 
         if name or title or description:
-            self.context.name = name
-            self.context.title = title
-            self.context.description = description
+            self.context.distribution.name = name
+            self.context.distribution.title = title
+            self.context.distribution.description = description
 
 
 
