@@ -908,6 +908,7 @@ INSERT INTO potranslation (id, translation) VALUES (8, 'Abrir %d contactos abrir
 ¿Quiere realmente mostrar todos estos contactos?');
 INSERT INTO potranslation (id, translation) VALUES (9, '_Añadir grupo');
 INSERT INTO potranslation (id, translation) VALUES (10, '%d foo');
+INSERT INTO potranslation (id, translation) VALUES (11, ' tarjetas');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potranslation'::pg_catalog.regclass;
@@ -978,7 +979,7 @@ Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
 X-Generator: KBabel 1.3.1
 Plural-Forms: nplurals=2; plural=(n != 1);
-', false, 13, NULL, 2, 0, 1, NULL, NULL, 2, NULL, NULL);
+', false, 13, NULL, 5, 0, 1, NULL, NULL, 2, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'pofile'::pg_catalog.regclass;
@@ -994,6 +995,8 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, comme
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (6, 6, 1, true, false, false, NULL, 16);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (7, 7, 1, true, true, false, NULL, 17);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (8, 8, 1, false, false, false, NULL, 18);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (9, 0, 1, false, false, false, NULL, 4);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, fuzzy, commenttext, potmsgset) VALUES (10, 0, 1, true, false, false, NULL, 5);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'pomsgset'::pg_catalog.regclass;
@@ -1039,6 +1042,7 @@ INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefir
 INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (8, 6, 8, 1, '2004-09-24 21:58:06.273004', '2004-09-24 21:58:06.273004', true, 1, true, 0, 13);
 INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (9, 7, 9, 1, '2004-09-24 21:58:06.307785', '2004-09-24 21:58:06.307785', true, 0, true, 0, 13);
 INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (10, 8, 10, 1, '2004-11-08 19:32:21.604729', '2004-11-08 19:32:21.604729', true, 0, true, 0, 13);
+INSERT INTO potranslationsighting (id, pomsgset, potranslation, license, datefirstseen, datelastactive, inlastrevision, pluralform, active, origin, person) VALUES (11, 10, 11, 1, '2004-11-15 16:04:49.157656', '2004-11-15 16:04:49.157656', false, 0, true, 2, 13);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'potranslationsighting'::pg_catalog.regclass;
@@ -1301,6 +1305,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'launchpaddatabaserevision'::pg_catalog.regclass;
 
+INSERT INTO launchpaddatabaserevision (major, minor, patch) VALUES (4, 8, 0);
 INSERT INTO launchpaddatabaserevision (major, minor, patch) VALUES (4, 7, 0);
 
 
@@ -1534,7 +1539,7 @@ SELECT pg_catalog.setval('pomsgid_id_seq', 99, true);
 
 
 
-SELECT pg_catalog.setval('potranslation_id_seq', 10, true);
+SELECT pg_catalog.setval('potranslation_id_seq', 11, true);
 
 
 
@@ -1556,7 +1561,7 @@ SELECT pg_catalog.setval('pofile_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('pomsgset_id_seq', 8, true);
+SELECT pg_catalog.setval('pomsgset_id_seq', 10, true);
 
 
 
@@ -1564,7 +1569,7 @@ SELECT pg_catalog.setval('pomsgidsighting_id_seq', 21, true);
 
 
 
-SELECT pg_catalog.setval('potranslationsighting_id_seq', 10, true);
+SELECT pg_catalog.setval('potranslationsighting_id_seq', 11, true);
 
 
 
