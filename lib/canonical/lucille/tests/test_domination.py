@@ -47,7 +47,7 @@ class TestDominator(unittest.TestCase):
         self.assertEqual( src["foo"][0].status,
                           PackagePublishingStatus.PUBLISHED );
         self.assertEqual( src["foo"][1].status,
-                          PackagePublishingStatus.SUPERCEDED );
+                          PackagePublishingStatus.SUPERSEDED );
 
     def testBasicBinaryDominate(self):
         """canonical.lucille.Dominator should correctly dominate binaries"""
@@ -58,7 +58,7 @@ class TestDominator(unittest.TestCase):
         self.assertEqual( bin["foo"][0].status,
                           PackagePublishingStatus.PUBLISHED );
         self.assertEqual( bin["foo"][1].status,
-                          PackagePublishingStatus.SUPERCEDED );
+                          PackagePublishingStatus.SUPERSEDED );
 
     def testSortSourcePackages(self):
         """canonical.lucille.Dominator should correctly sort sources"""
@@ -103,10 +103,10 @@ class TestDominator(unittest.TestCase):
             FakeBinary('1.0-1',PackagePublishingStatus.PUBLISHED,'bar')
             ]
         d.dominate(splist,bplist)
-        self.assertEqual(splist[0].status, PackagePublishingStatus.SUPERCEDED)
+        self.assertEqual(splist[0].status, PackagePublishingStatus.SUPERSEDED)
         self.assertEqual(splist[1].status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(splist[2].status, PackagePublishingStatus.PUBLISHED)
-        self.assertEqual(bplist[0].status, PackagePublishingStatus.SUPERCEDED)
+        self.assertEqual(bplist[0].status, PackagePublishingStatus.SUPERSEDED)
         self.assertEqual(bplist[1].status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(bplist[2].status, PackagePublishingStatus.PUBLISHED)
 

@@ -75,7 +75,7 @@ class BinaryPackage(SQLBase):
                                                               distroRelease)
 
     def lastversions(self):
-        """Return the SUPERCEDED BinaryPackages in a DistroRelease
+        """Return the SUPERSEDED BinaryPackages in a DistroRelease
            that comes from the same SourcePackage"""
 
         #
@@ -98,7 +98,7 @@ class BinaryPackage(SQLBase):
                  'AND PackagePublishing.status = %d'
                  %(self.binarypackagename.id,
                    self.build.distroarchrelease.id,
-                   dbschema.PackagePublishingStatus.SUPERCEDED,
+                   dbschema.PackagePublishingStatus.SUPERSEDED,
                    ))
 
         return list(BinaryPackage.select(query,
