@@ -1,0 +1,20 @@
+<div class="portlet">
+    <h4>Actions:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <img src="/++resource++edit.gif">
+        <a href="+edit">Edit Details</a><br />
+        <img src="/++resource++edit.gif">
+        <a href="+addsources">Add RCS</a><br />
+        <img src="/++resource++edit.gif">
+        Add Package<br />
+        <img src="/++resource++edit.gif">
+        <a href="+addseries">Add Series</a><br />
+        <img src="/++resource++edit.gif">
+        <a href="+addrelease">Add Release</a>
+
+        </div>
+    </div>
+</div>

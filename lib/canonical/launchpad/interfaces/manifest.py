@@ -9,19 +9,20 @@ _ = MessageIDFactory('launchpad')
 # Manifest Related Interfaces
 #
 
-class IManifestEntry(Interface):
-    """"""
-    branch = Attribute("A branch")
+class IManifest(Interface):
+    """A Manifest. Manifests are like Arch Configs, they tell us about the
+    set of branches and other elements that make up a package of code from
+    upstream, or a distro package."""
 
+    id = Int(title=_('Manifest ID'), required=True, readonly=True)
 
-class IBranch(Interface):
-    """A branch of some source code"""
+    datecreated = Datetime(title=_('Date Created'), description=_("""The
+        date this manifest was created."""), required=True, readonly=True )
 
-    changesets = Attribute("List of changesets in a branch")
+    owner = Int(title=_('Manifest owner'), description=_("""The person who
+        created this manifest entry."""), required=True)
 
-
-class IChangeset(Interface):
-    """A changeset"""
-
-    message = Attribute("The log message for this changeset")
+    uuid = TextLine(title=_('Universally Unique ID'), description=_("""A UUID that is
+        guaranteed to identify this manifest uniquely."""), required=True,
+        readonly=True)
 

@@ -40,6 +40,8 @@ class Project(SQLBase):
     homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
     wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
+    active = BoolCol(dbName='active', notNull=True, default=True)
+    reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     
     # convenient joins
     _products = MultipleJoin('Product', joinColumn='project')
@@ -109,6 +111,29 @@ class ProjectSet:
                        homepageurl = url,
                        owner = owner,
                        datecreated = 'now')
+
+    def forReview(self):
+        query = """Product.project=Project.id AND
+                 ( Product.reviewed IS FALSE OR
+                   Project.reviewed IS FALSE )"""
+        clauseTables = ['Project', 'Product']
+        results = []
+        for project in Project.select(query, clauseTables=clauseTables):
+            if project not in results:
+                results.append(project)
+        return results
+
+    def forSyncReview(self):
+        query = """Product.project=Project.id AND
+                 ( Product.reviewed IS FALSE OR
+                   Project.reviewed IS FALSE )"""
+        clauseTables = ['Project', 'Product']
+        results = []
+        for project in Project.select(query, clauseTables=clauseTables):
+            if project not in results:
+                results.append(project)
+        return results
+
 
     def search(self, query, search_products = False):
         query = quote('%' + query + '%')

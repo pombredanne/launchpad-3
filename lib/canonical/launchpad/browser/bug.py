@@ -62,6 +62,8 @@ class BugView(object):
         '../templates/portlet-bug-sourcepackageinfestation.pt')
     referencePortlet = ViewPageTemplateFile(
         '../templates/portlet-bug-reference.pt')
+    cvePortlet = ViewPageTemplateFile(
+        '../templates/portlet-bug-cve.pt')
     peoplePortlet = ViewPageTemplateFile(
         '../templates/portlet-bug-people.pt')
     assignmentsHeadline = ViewPageTemplateFile(

@@ -61,6 +61,10 @@ class Product(SQLBase):
     
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
 
+    active = BoolCol(dbName='active', notNull=True, default=True)
+
+    reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+
     #
     # useful Joins
     #

@@ -56,6 +56,10 @@ class IProject(Interface):
                                   name for this project, if it is in
                                   freshmeat."""),
                                 required=False)
+    active = Bool(title=_('Active'), required=False, description=_("""Whether
+        or not this project is considered active."""))
+    reviewed = Bool(title=_('Reviewed'), required=False, description=_("""Whether
+        or not this project has been reviewed."""))
 
     def bugtrackers():
         """Return the BugTrackers for this Project."""
@@ -109,6 +113,10 @@ class IProjectSet(Interface):
 
     def search(query):
         """Search for projects matching a certain strings."""
+
+    def forReview():
+        """Return a list of Projects which need review, or which have
+        products that needs review."""
 
 
 class IProjectBugTracker(Interface):

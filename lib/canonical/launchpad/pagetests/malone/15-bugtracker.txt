@@ -1,0 +1,119 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bugtrackers HTTP/1.1
+  ... Referer: http://localhost:9000/malone/bugtrackers/newbugtracker
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+    <h1>Known Bug Tracking Systems</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugtrackers/+newbugtracker HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugtrackers
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <h1>Register a New Bug Tracking System</h1>
+  ...
+                  <input type="text" name="name" size="15" value="" style="text-transform: lowercase" />
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bugtrackers/+newbugtracker HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 154
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/malone/bugtrackers/+newbugtracker
+  ... 
+  ... name=testbugtrck&title=Test+bug+Tracker&shortdesc=Test+test&baseurl=http%3A%2F%2Ftest.bugs.com%2F&contactdetails=sdfdsfsdfdf&Register=Register+Bug+Tracker""")
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: http://localhost:9000/malone/bugtrackers
+  <BLANKLINE>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugtrackers HTTP/1.1
+  ... Referer: http://localhost:9000/malone/bugtrackers/+newbugtracker
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  ...Test bug Tracker...
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugtrackers/testbugtrck HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugtrackers
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <h1>Test bug Tracker</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugtrackers/testbugtrck/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugtrackers/testbugtrck
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+                  <input type="text" name="title" size="30"
+                         value="Test bug Tracker" />
+  ...
+
+
+  >>> print http(r"""
+  ... POST /malone/bugtrackers/testbugtrck/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 133
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/malone/bugtrackers/testbugtrck/+edit
+  ... 
+  ... title=Test+Bug+Tracker&shortdesc=Test+test&baseurl=http%3A%2F%2Ftest.bugs.com%2F&contactdetails=sdfdsfsdfdf&Update=Update+Bug+Tracker""")
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: http://localhost:9000/malone/bugtrackers/testbugtrck
+  <BLANKLINE>
+  ...
+      <h1>Edit: <span>Test Bug Tracker</span></h1>
+  ...
+
+
+  >>> print http(r"""
+  ... GET /malone/bugtrackers/testbugtrck HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugtrackers/testbugtrck/+edit
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+      <h1>Test Bug Tracker</h1>
+  ...

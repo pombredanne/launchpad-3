@@ -67,14 +67,16 @@
     </browser:pages>
 
     <browser:editform
-        name="+editme"
+        name="+review"
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
-        label="Edit Upstream Project Details:"
-        fields="name title shortdesc description homepageurl wikiurl sourceforgeproject freshmeatproject"
+        label="Review Upstream Project Details:"
+        fields="name displayname title shortdesc description homepageurl
+                wikiurl sourceforgeproject freshmeatproject active
+                reviewed"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-editform.pt"
-        lp:url="doap/projects/$Project.name/+editme">
+        lp:url="doap/projects/$Project.name/+review">
     </browser:editform>
 
         
@@ -105,6 +107,16 @@
             name="+search"
             template="../templates/projects-search.pt"
             lp:url="doap/projects/+search" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProjectSet"
+        class="canonical.launchpad.browser.ProjectSetView"
+        permission="launchpad.AnyPerson">
+        <browser:page
+            name="+forreview"
+            template="../templates/doap-review.pt"
+            lp:url="doap/+forreview" />
     </browser:pages>
 
     <browser:page

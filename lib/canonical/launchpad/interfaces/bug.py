@@ -92,6 +92,7 @@ class IBug(Interface):
     packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
+    cverefs = Attribute('CVE references for this bug')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
 
 class IBugAddForm(IBug):

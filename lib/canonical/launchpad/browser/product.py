@@ -53,6 +53,12 @@ class ProductView(object):
     branchesPortlet = ViewPageTemplateFile(
         '../templates/portlet-product-branches.pt')
 
+    detailsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-details.pt')
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-product-actions.pt')
+
     def __init__(self, context, request):
         self.context = context
         self.product = context

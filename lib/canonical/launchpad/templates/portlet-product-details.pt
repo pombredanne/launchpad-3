@@ -1,0 +1,21 @@
+<div class="portlet">
+    <h4>Upstream details:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent even">
+
+        <b>Product home page:</b><br />
+        <a tal:content="context/homepageurl|default"
+           tal:attributes="href context/homepageurl|nothing">(none
+        supplied)</a><br />
+        <b>Lead Maintainer:</b><br />
+        <img src="/++resource++user.gif">
+        <span tal:replace="context/owner/browsername">ownername</span><br />
+        <b>Status:</b><br />
+        <div tal:condition="context/reviewed">Reviewed<br /></div>
+        <div tal:condition="context/active">Active<br /></div>
+        <div tal:condition="not: context/active">Disabled<br /></div>
+
+        </div>
+    </div>
+</div>

@@ -65,6 +65,7 @@ class Bug(SQLBase):
     packageinfestations = MultipleJoin('BugPackageInfestation', joinColumn='bug')
     watches = MultipleJoin('BugWatch', joinColumn='bug')
     externalrefs = MultipleJoin('BugExternalRef', joinColumn='bug')
+    cverefs = MultipleJoin('CVERef', joinColumn='bug')
     subscriptions = MultipleJoin('BugSubscription', joinColumn='bug')
 
     def _set_title(self, value):

@@ -6,6 +6,8 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
+from canonical.launchpad.fields import Title, Summary
+
 class IProduct(Interface):
     """A DOAP Product. DOAP describes the open source world as Projects
     and Products. Each Project may be responsible for several Products.
@@ -17,28 +19,53 @@ class IProduct(Interface):
     # in SQLObject soon. 12/10/04
     id = Int(title=_('The Product ID'))
     
-    project = Int(title=_('The Project that is responsible for this product.'))
+    project = Int(title=_('Project ID.'))
     
     owner = Int(title=_('Owner'))
 
-    name = TextLine(title=_('The short name of this product, which must be \
-        unique among all the products from the same project.'))
+    name = TextLine(title=_('Name'), description=_("""The short name of this
+        product, which must be unique among all the products from the same
+        project."""))
 
-    displayname = TextLine(title=_('The display name of this product, is \
-        the name of this product as it would appear in a paragraph of text.'))
+    displayname = TextLine(title=_('Display Name'), description=_("""The
+        display name of this product is the name of this product as it
+        would appear in a paragraph of text."""))
 
-    title = TextLine(title=_('The product title. Should be just a few words.'))
+    title = Title(title=_('Title'), description=_("""The product
+    title. Should be just a few words."""))
 
-    shortdesc = Text(title=_('A short description, should be a single \
-        short paragraph.'))
+    shortdesc = Summary(title=_('Summary'), description=_("""The summary should
+        be a single short paragraph."""))
 
-    description = Text(title=_('The product description, may be several\
-        paragraphs of text, giving the product highlights and details.'))
+    description = Text(title=_('Description'), description=_("""The product
+        description, may be several paragraphs of text, giving the product
+        highlights and details."""))
 
-    homepageurl = TextLine(title=_('A Homepage URL for this product.'))
+    homepageurl = TextLine(title=_('Homepage URL'), required=False)
 
-    manifest = TextLine(title=_('Manifest'))
+    wikiurl = TextLine(title=_('Wiki URL'), required=False)
+    
+    screenshotsurl = TextLine(title=_('Screenshots URL'), required=False)
 
+    downloadurl = TextLine(title=_('Download URL'), required=False)
+
+    programminglang = TextLine(title=_('Programming Language'),
+        required=False)
+
+    sourceforgeproject = TextLine(title=_('Sourceforge Project'),
+        required=False)
+
+    freshmeatproject = TextLine(title=_('Freshmeat Project'),
+        required=False)
+
+    manifest = Attribute(_('Manifest'))
+
+    active = Bool(title=_('Active'), description=_("""Whether or not
+        this product is considered active."""))
+    
+    reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
+        this product has been reviewed."""))
+    
     sourcesources = Attribute(_('Sources of source code. These are \
         pointers to the revision control system for that product, along \
         with status information about our ability to publish that \

@@ -101,6 +101,20 @@
 
     <!--FORMS-->
 
+    <browser:editform
+        name="+review"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IProduct"
+        label="Review Upstream Product Details:"
+        fields="name displayname title shortdesc description homepageurl
+                screenshotsurl wikiurl programminglang downloadurl
+                sourceforgeproject freshmeatproject active
+                reviewed"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-editform.pt"
+        lp:url="doap/projects/$Project.name/$Product.name/+review">
+    </browser:editform>
+
     <browser:addform
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"

@@ -38,6 +38,7 @@ from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
 from canonical.launchpad.interfaces.manifest import *
+from canonical.launchpad.interfaces.manifestentry import *
 from canonical.launchpad.interfaces.processor import *
 from canonical.launchpad.interfaces.team import *
 from canonical.launchpad.interfaces.wikiname import *
