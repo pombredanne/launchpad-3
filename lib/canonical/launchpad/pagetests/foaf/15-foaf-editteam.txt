@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /foaf/people/myemail/+edit HTTP/1.1
+  ... GET /people/myemail/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Cookie: launchpad=KzmH8.mviSHStD5wZ5Wx9y0pleczGEhmHNpZ9Q2zepl4ZR8KeoOttc
   ... """)
@@ -14,7 +14,7 @@
 
 
   >>> print http(r"""
-  ... POST /foaf/people/myemail/+edit HTTP/1.1
+  ... POST /people/myemail/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: multipart/form-data; boundary=---------------------------10179102741957765912820968610

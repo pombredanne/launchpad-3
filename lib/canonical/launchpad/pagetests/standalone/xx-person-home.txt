@@ -1,11 +1,14 @@
 
 
   >>> print http(r"""
-  ... GET /foaf/people/name17/+members HTTP/1.1
+  ... GET /people/sabdfl HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
   ...
-  ...Mark Shuttleworth...
+  ...Name:...
   ...
+
+

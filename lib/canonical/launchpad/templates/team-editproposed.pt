@@ -1,0 +1,88 @@
+<tal:do-this-first tal:content="view/processProposed" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title"><span tal:replace="context/browsername" />:
+    Proposed Members</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div class="portlet">
+    <h4>Members:</h4>
+
+    <div class="portletBody">
+      <div class="portletContent even">
+        <img src="/++resource++add.gif"><a href="+addmembers">Add Members</a><br />
+
+        <img src="/++resource++edit.gif"><a href="+editproposed">Proposed Members 
+        (<span tal:content="view/proposedCount" />)</a><br />
+
+        <img src="/++resource++edit.gif">Approved Members 
+        (<span tal:content="view/approvedCount" />)<br />
+
+        <img src="/++resource++edit.gif">Administrators
+        (<span tal:content="view/adminCount" />)<br />
+
+        <img src="/++resource++edit.gif">Expired Members
+        (<span tal:content="view/expiredCount" />)<br />
+
+        <img src="/++resource++edit.gif">Deactivated Members
+        (<span tal:content="view/deactivatedCount" />)<br />
+      </div>
+    </div>
+  </div>
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div id="content" class="documentEditable">
+
+    <div class="documentContent" id="region-content">
+
+      <h1><span tal:replace="context/browsername" />: Proposed Members</h1>
+
+      <form name="proposed" action="" method="POST">
+      <fieldset tal:define="members context/proposedmembers" 
+                tal:condition="members">
+        <legend>Members awaiting approval</legend>
+
+        <p>The following users want to join this team but their subscription
+        must be approved. Please select the action (Approve, Deny, Leave as
+        proposed) for each user, specifying also the number of days the
+        subscription should last (in case you're approving it). If you don't
+        want any subscription to expire, please leave the third column
+        blank.</p>
+
+        <p tal:repeat="member members">
+          <select tal:attributes="name string:action_${member/id}">
+            <option value="approve">Approve</option>
+            <option value="decline">Do not approve</option>
+            <option value="leave">Leave as proposed</option>
+          </select>
+          <b tal:content="member/browsername" /> with subscription expiring in
+            <input type="text" size="2"
+                   tal:attributes="name string:period_${member/id};
+                                   value context/defaultmembershipperiod" />
+          days
+        </p>
+
+        <input style="float: right" type="submit" name="proposed" value="Submit" />
+      </fieldset>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>

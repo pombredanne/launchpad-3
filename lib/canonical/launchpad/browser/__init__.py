@@ -19,6 +19,7 @@ from canonical.launchpad.browser.packages import *
 from canonical.launchpad.browser.bounty import *
 from canonical.launchpad.browser.sourcesource import *
 from canonical.launchpad.browser.people import *
+from canonical.launchpad.browser.team import *
 from canonical.launchpad.browser.soyuz import *
 from canonical.launchpad.browser.sourcepackage import *
 from canonical.launchpad.browser.distribution import *

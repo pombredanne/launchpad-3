@@ -6,7 +6,7 @@
   >>> id = EmailAddress.byEmail('bar.foo@canonical.com').id
 
   >>> print http(r"""
-  ... POST /foaf/people/name16/+emails HTTP/1.1
+  ... POST /people/name16/+emails HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded

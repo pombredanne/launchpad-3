@@ -1,0 +1,101 @@
+<tal:do-this-first tal:content="view/addMembers" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+  <title metal:fill-slot="title"><span tal:replace="context/browsername" />:
+    Add New Members</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Launchpad style sheet -->
+    <style type="text/css" media="screen">@import url(launchpad.css);</style>
+</head>
+
+<body>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div class="portlet">
+    <h4>Members:</h4>
+
+    <div class="portletBody">
+      <div class="portletContent even">
+        <img src="/++resource++add.gif"><a href="+addmembers">Add Members</a><br />
+
+        <img src="/++resource++edit.gif"><a href="+editproposed">Proposed Members 
+        (<span tal:content="view/proposedCount" />)</a><br />
+
+        <img src="/++resource++edit.gif">Approved Members 
+        (<span tal:content="view/approvedCount" />)<br />
+
+        <img src="/++resource++edit.gif">Administrators
+        (<span tal:content="view/adminCount" />)<br />
+
+        <img src="/++resource++edit.gif">Expired Members
+        (<span tal:content="view/expiredCount" />)<br />
+
+        <img src="/++resource++edit.gif">Deactivated Members
+        (<span tal:content="view/deactivatedCount" />)<br />
+      </div>
+    </div>
+  </div>
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div id="content" class="documentEditable">
+
+    <div class="documentContent" id="region-content">
+
+      <h1><span tal:replace="context/browsername" />: Add New Members</h1>
+
+      <div tal:condition="view/addedMembers" class="portalMessage">
+        <p>The following members have been added to this team:
+        <ul>
+          <tal:block tal:repeat="member view/addedMembers">
+            <li tal:content="member/browsername" />
+          </tal:block>
+        </ul>
+      </div>
+
+      <div tal:condition="view/alreadyMembers" class="portalMessage">
+        <p>These persons/teams are already members of this team:
+        <ul>
+          <tal:block tal:repeat="member view/alreadyMembers">
+              <li tal:content="member/browsername" />
+          </tal:block>
+        </ul>
+      </div>
+
+      <p>To add new members on this team, just select as many persons/teams
+      as you want on the form bellow and click on <em>Add</em>. These
+      selected users will be made approved members of this team, with their
+      subscription scheduled 
+      <tal:block tal:condition="view/defaultExpirationDate">
+        to expire in <span tal:replace="view/defaultExpirationDate" />.
+      </tal:block>
+      <tal:block tal:condition="not: view/defaultExpirationDate">
+        to never expire.
+      </tal:block>
+      This expiration date can be changed later, if wanted.
+      </p>
+
+      <form name="addmember" action="" method="POST">
+        <select multiple="multiple" size="10" name="people">
+          <tal:block tal:repeat="person view/allPeople">
+            <option tal:attributes="value person/name" 
+                    tal:content="person/browsername" />
+          </tal:block>
+        </select>
+        <br /><br />
+        <input type="submit" name="addmember" value="Add" />
+      </form>
+
+    </div>
+  </div>
+</div>
+
+
+</body>
+</html>

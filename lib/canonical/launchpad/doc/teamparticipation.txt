@@ -6,16 +6,20 @@ More information can be found in the TeamParticipationUsage spec.
 
 First of all, create some teams:
 
+>>> from datetime import datetime
 >>> from canonical.launchpad.database import Person, TeamParticipationSet
 >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+>>> from canonical.lp.dbschema import TeamMembershipStatus
 >>> teampart = TeamParticipationSet()
->>> policy = int(TeamSubscriptionPolicy.OPEN)
+>>> OPEN = int(TeamSubscriptionPolicy.OPEN)
+>>> MODERATED = int(TeamSubscriptionPolicy.MODERATED)
+>>> expires = datetime('2005-12-01')
 >>> p = Person.byName('name16')
->>> t1 = Person(subscriptionpolicy=policy, name='t1', teamowner=p)
->>> t2 = Person(subscriptionpolicy=policy, name='t2', teamowner=p)
->>> t3 = Person(subscriptionpolicy=policy, name='t3', teamowner=p)
->>> t4 = Person(subscriptionpolicy=policy, name='t4', teamowner=p)
->>> t5 = Person(subscriptionpolicy=policy, name='t5', teamowner=p)
+>>> t1 = Person(subscriptionpolicy=OPEN, name='t1', teamowner=p)
+>>> t2 = Person(subscriptionpolicy=OPEN, name='t2', teamowner=p)
+>>> t3 = Person(subscriptionpolicy=MODERATED, name='t3', teamowner=p)
+>>> t4 = Person(subscriptionpolicy=OPEN, name='t4', teamowner=p)
+>>> t5 = Person(subscriptionpolicy=OPEN, name='t5', teamowner=p)
 
 We don't return results in any particular order, so we should define
 a comparison function for the tests to use
@@ -23,24 +27,27 @@ a comparison function for the tests to use
 >>> def tcmp(a,b):
 ...     return cmp(a.name,b.name)
 
-Now, add p as a member of t3, ...
+Now, add p as a member of t3.
 
 >>> p.joinTeam(t3)
 True
->>> for m in teampart.getAllMembers(t3):
-...     print m.name
-name16
+>>> [m.name for m in teampart.getAllMembers(t3)]
+[]
 
-... t3 as a member of t2, ...
+But t3 is a MODERATED team, somebody have to approve the membership:
+
+>>> t3.setMembershipStatus(p, int(TeamMembershipStatus.APPROVED), expires, p)
+>>> [m.name for m in teampart.getAllMembers(t3)]
+[u'name16']
+
+Now we add t3 as a member of t2, ...
 
 >>> t3.joinTeam(t2)
 True
 >>> l = teampart.getAllMembers(t2)
 >>> l.sort(tcmp)
->>> for m in l:
-...     print m.name
-name16
-t3
+>>> [m.name for m in l]
+[u'name16', u't3']
 
 ... t2 as a member of t1, ...
 
@@ -48,11 +55,8 @@ t3
 True
 >>> l = teampart.getAllMembers(t1)
 >>> l.sort(tcmp)
->>> for m in l:
-...     print m.name
-name16
-t2
-t3
+>>> [m.name for m in l]
+[u'name16', u't2', u't3']
 
 ... t2 as a member of t5, ...
 
@@ -60,11 +64,8 @@ t3
 True
 >>> l = teampart.getAllMembers(t5)
 >>> l.sort(tcmp)
->>> for m in l:
-...     print m.name
-name16
-t2
-t3
+>>> [m.name for m in l]
+[u'name16', u't2', u't3']
 
 ... t5 as a member of t4
 
@@ -72,12 +73,8 @@ t3
 True
 >>> l = teampart.getAllMembers(t4)
 >>> l.sort(tcmp)
->>> for m in l:
-...     print m.name
-name16
-t2
-t3
-t5
+>>> [m.name for m in l]
+[u'name16', u't2', u't3', u't5']
 
 
 Now let's remove some members to see what happens:
@@ -87,31 +84,28 @@ True
 >>> len(teampart.getAllMembers(t3))
 0
 
->>> for m in teampart.getAllMembers(t2):
-...     print m.name
-t3
+>>> l = teampart.getAllMembers(t2)
+>>> l.sort(tcmp)
+>>> [m.name for m in l]
+[u't3']
 
 >>> l = teampart.getAllMembers(t4)
 >>> l.sort(tcmp)
->>> for m in l:
-...     print m.name
-t2
-t3
-t5
+>>> [m.name for m in l]
+[u't2', u't3', u't5']
 
 >>> l = teampart.getAllMembers(t5)
 >>> l.sort(tcmp)
->>> for m in l:
-...     print m.name
-t2
-t3
+>>> [m.name for m in l]
+[u't2', u't3']
 
 >>> t2.unjoinTeam(t5)
 True
->>> for m in teampart.getAllMembers(t5):
-...     print m.name
+>>> len(teampart.getAllMembers(t5))
+0
 
->>> for m in teampart.getAllMembers(t4):
-...     print m.name
-t5
+>>> l = teampart.getAllMembers(t4)
+>>> l.sort(tcmp)
+>>> [m.name for m in l]
+[u't5']
 

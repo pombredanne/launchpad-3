@@ -27,7 +27,7 @@
 
         <p>This is a <span tal:replace="view/subscriptionPolicyDesc" /></p>
 
-        <p class="portalMessage" tal:condition="view/membershipStatusDesc" 
+        <p class="portalMessage" tal:condition="view/userHaveMembershipEntry" 
            tal:content="view/membershipStatusDesc" />
         <form name="join" action="" method="POST">
         <table width="100%">

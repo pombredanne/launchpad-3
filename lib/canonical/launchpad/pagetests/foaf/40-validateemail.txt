@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /foaf/people/salgado/+emails HTTP/1.1
+  ... GET /people/salgado/+emails HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok
@@ -13,7 +13,7 @@
 
 
   >>> print http(r"""
-  ... POST /foaf/people/salgado/+emails HTTP/1.1
+  ... POST /people/salgado/+emails HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded

@@ -2,6 +2,182 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-08 20:25:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1389
+
+    Summary:
+      New page to edit proposed members of a team and other one to add members. Fixed pagetests so them do not reference foaf/ anylonger. A last fix when setting the preferred email: we should set only if the email we're validating is the first validated.
+    Revision:
+      launchpad--devel--0--patch-1389
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-127
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-128
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-129
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-130
+       Small fixes in IPerson and require permission=launchpad.Edit to set_schema in person.zcml
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-131
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-132
+       Use better names in TeamView. Do not display join/unjoin links when the owner is seeing a team's page.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-133
+       Moving Team views from browser/people.py to browser/team.py
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-134
+       Removing commented imports I forgot on last commit.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-135
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-136
+       Removing duplicated entries in IPerson. Adding IPerson.addMember() and IPerson.setMembershipStatus() which will be the core of the team management stuff. Extended teamparticipation.txt doctests.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-137
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-138
+       New page to edit proposed members of a team.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-139
+       New page to add new members to a team.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-140
+       Small fix to set the preferred email *only* if the user have a single validated email and no preferred, when resetting a password.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-141
+       Small fixes for team management pages: displaying onli links for working pages.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-142
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-143
+       Removing references to foaf in html links.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-144
+       Removing references to foaf on pagetests and renaming some foaf page tests
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-145
+       Do not allow addition of a team as a member of itself and change the status of subscriptions (if needed) when adding new members.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-146
+       merge from rf
+    
+
+    new files:
+     lib/canonical/launchpad/browser/.arch-ids/team.py.id
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/templates/.arch-ids/team-addmembers.pt.id
+     lib/canonical/launchpad/templates/.arch-ids/team-editproposed.pt.id
+     lib/canonical/launchpad/templates/team-addmembers.pt
+     lib/canonical/launchpad/templates/team-editproposed.pt
+
+    removed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-person-emails.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-person-emails.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/__init__.py
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/teamparticipation.txt
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/foaf/00-foaf-team-join.txt
+     lib/canonical/launchpad/pagetests/foaf/01-foaf-team-join-alreadyjoined.txt
+     lib/canonical/launchpad/pagetests/foaf/10-foaf-newteam.txt
+     lib/canonical/launchpad/pagetests/foaf/15-foaf-editteam.txt
+     lib/canonical/launchpad/pagetests/foaf/20-foaf-restricted-team-join.txt
+     lib/canonical/launchpad/pagetests/foaf/30-foaf-createaccount.txt
+     lib/canonical/launchpad/pagetests/foaf/32-foaf-addemail.txt
+     lib/canonical/launchpad/pagetests/foaf/33-foaf-mergepeople.txt
+     lib/canonical/launchpad/pagetests/foaf/34-foaf-deleteemail.txt
+     lib/canonical/launchpad/pagetests/foaf/40-validateemail.txt
+     lib/canonical/launchpad/pagetests/foaf/45-setpreferredemail.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-people-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-people-list.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-people-search.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-person-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-person-home.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-person-packages.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-team-list.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-team-members.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-team-unjoin.txt
+     lib/canonical/launchpad/templates/team-editmembers.pt
+     lib/canonical/launchpad/templates/team-index.pt
+     lib/canonical/launchpad/templates/team-join.pt
+     lib/canonical/launchpad/templates/team-members.pt
+     lib/canonical/launchpad/zcml/person.zcml
+
+    renamed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-people-index.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-people-index.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-people-list.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-people-list.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-person-edit.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-person-edit.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-person-home.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-person-home.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-person-packages.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-person-packages.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-search-people.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-people-search.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-team-list.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-team-list.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-team-members.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-team-members.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-foaf-team-unjoin.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-team-unjoin.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-people-index.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-people-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-people-list.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-people-list.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-person-edit.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-person-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-person-home.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-person-home.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-person-packages.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-person-packages.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-search-people.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-people-search.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-team-list.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-team-list.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-team-members.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-team-members.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-team-unjoin.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-team-unjoin.txt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-127
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-128
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-129
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-130
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-131
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-132
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-133
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-134
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-135
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-136
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-137
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-138
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-139
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-140
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-141
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-142
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-143
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-144
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-145
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-146
+
+
 2005-03-08 19:34:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1388
 
     Summary:

@@ -31,6 +31,7 @@
 
       <h1>Active Members of <span tal:replace="context/browsername" /></h1>
 
+      <br />
       <div>This team currently have <em>
         <span tal:replace="view/activeMembersCount" /></em> active members:
       </div>
@@ -45,7 +46,7 @@
         </tr>
         <tr tal:repeat="membership view/activeMemberships">
           <tal:block tal:define="member membership/person">
-          <td><a tal:attributes="href string:/foaf/people/${member/name}">
+          <td><a tal:attributes="href string:/people/${member/name}">
             <span tal:replace="member/browsername" /></a></td>
           <td tal:content="membership/datejoined/date"></td>
           <td tal:condition="membership/dateexpires"
@@ -78,7 +79,7 @@
       </div>
 
       <div style="float: right; padding-right: 1em">
-        <p><a href="+editmembers">Manage All Members</a></p>
+        <p><a href="+addmembers">Manage All Members</a></p>
       </div>
 
     </div>

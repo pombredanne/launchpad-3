@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /foaf/people/name16/+newteam HTTP/1.1
+  ... GET /people/name16/+newteam HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -13,7 +13,7 @@
 
 
   >>> print http(r"""
-  ... POST /foaf/people/name16/+newteam HTTP/1.1
+  ... POST /people/name16/+newteam HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: multipart/form-data; boundary=---------------------------1760323702686760077201237089
@@ -55,14 +55,14 @@
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
-  Location: /foaf/people/myemail
+  Location: /people/myemail
   ...
   ...Create a new Team...
   ...
 
 
   >>> print http(r"""
-  ... GET /foaf/people/myemail HTTP/1.1
+  ... GET /people/myemail HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

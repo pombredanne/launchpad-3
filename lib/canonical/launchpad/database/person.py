@@ -200,6 +200,70 @@ class Person(SQLBase):
         results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
         return bool(results.count())
 
+    def addMember(self, person, status, expires=None, reviewer=None,
+                  comment=None):
+        assert self.teamowner is not None
+        assert not person.hasMembershipEntryFor(self)
+        assert status in [int(TeamMembershipStatus.APPROVED),
+                          int(TeamMembershipStatus.PROPOSED)]
+
+        if expires is None and self.defaultmembershipperiod:
+            expires = datetime.utcnow() + \
+                      timedelta(self.defaultmembershipperiod)
+        
+        TeamMembership(personID=person.id, teamID=self.id, status=status,
+                       dateexpires=expires, reviewer=reviewer, 
+                       reviewercomment=comment)
+
+        if status == int(TeamMembershipStatus.APPROVED):
+            _fillTeamParticipation(person, self)
+
+    def setMembershipStatus(self, person, status, expires=None, reviewer=None,
+                            comment=None):
+        results = TeamMembership.selectBy(personID=person.id, teamID=self.id)
+        assert results.count() == 1
+        tm = results[0]
+
+        if reviewer is not None:
+            # Make sure the reviewer is either the team owner or one of the
+            # administrators.
+            pass
+
+        approved = int(TeamMembershipStatus.APPROVED)
+        admin = int(TeamMembershipStatus.ADMIN)
+        expired = int(TeamMembershipStatus.EXPIRED)
+        declined = int(TeamMembershipStatus.DECLINED)
+        deactivated = int(TeamMembershipStatus.DEACTIVATED)
+        proposed = int(TeamMembershipStatus.PROPOSED)
+
+        # Make sure the transition from the current status to the given status
+        # is allowed. All allowed transitions are in the TeamMembership spec.
+        if tm.status in [admin, approved]:
+            assert status in [approved, admin, expired, deactivated]
+        elif tm.status in [deactivated]:
+            assert status in [approved]
+        elif tm.status in [expired]:
+            assert status in [approved, admin]
+        elif tm.status in [proposed]:
+            assert status in [approved, declined]
+        elif tm.status in [declined]:
+            assert status in [proposed, approved]
+
+        if expires is None and self.defaultmembershipperiod:
+            expires = datetime.utcnow() + \
+                      timedelta(self.defaultmembershipperiod)
+
+        tm.status = status
+        tm.dateexpires = expires
+        tm.reviewer = reviewer
+        tm.reviewercomment = comment
+
+        if (status == approved and tm.status != admin) or \
+           (status == admin and tm.status != approved):
+            _fillTeamParticipation(person, self)
+        elif status in [deactivated, expired]:
+            _cleanTeamParticipation(person, self)
+
     def unjoinTeam(self, team):
         results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
         assert results.count() <= 1
@@ -211,14 +275,10 @@ class Person(SQLBase):
                              int(TeamMembershipStatus.APPROVED)):
             return False
 
-        tm.status = int(TeamMembershipStatus.DEACTIVATED)
-        _cleanTeamParticipation(self, team)
+        team.setMembershipStatus(self, int(TeamMembershipStatus.DEACTIVATED))
         return True
 
     def joinTeam(self, team):
-        if self.inTeam(team):
-            return False
-
         if team.subscriptionpolicy == int(TeamSubscriptionPolicy.RESTRICTED):
             return False
         elif team.subscriptionpolicy == int(TeamSubscriptionPolicy.MODERATED):
@@ -226,29 +286,20 @@ class Person(SQLBase):
         elif team.subscriptionpolicy == int(TeamSubscriptionPolicy.OPEN):
             status = int(TeamMembershipStatus.APPROVED)
 
-        days = team.defaultmembershipperiod
-        expires = None
-        if days:
-            expires = datetime.utcnow() + timedelta(days)
-
         results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
         if results.count() == 1:
             tm = results[0]
             if tm.status == TeamMembershipStatus.DECLINED:
                 # The user is a DECLINED member, we just have to change the
                 # status according to the team's subscriptionpolicy.
-                tm.status = status
-                tm.dateexpires = expires
+                team.setMembershipStatus(self, status)
             else:
                 # The user is a member and the status is not DECLINED, there's
                 # nothing we can do for it.
                 return False
         else:
-            TeamMembership(personID=self.id, teamID=team.id, status=status,
-                           dateexpires=expires)
-                           
-        if status == int(TeamMembershipStatus.APPROVED):
-            _fillTeamParticipation(self, team)
+            team.addMember(self, status)
+
         return True
 
     def getMembershipsByStatus(self, status):

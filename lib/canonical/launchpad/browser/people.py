@@ -1,14 +1,12 @@
 # Copyright 2004 Canonical Ltd
 
 # sqlobject/sqlos
-from sqlobject import LIKE, AND, SQLObjectNotFound
+from sqlobject import SQLObjectNotFound
 from canonical.database.sqlbase import quote, flushUpdates
 
 # lp imports
 from canonical.lp.dbschema import EmailAddressStatus, SSHKeyType
 from canonical.lp.dbschema import LoginTokenType
-from canonical.lp.dbschema import TeamMembershipStatus
-from canonical.lp.dbschema import TeamSubscriptionPolicy
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -18,7 +16,6 @@ from canonical.foaf.nickname import generate_nick
 # database imports
 from canonical.launchpad.database import WikiName
 from canonical.launchpad.database import JabberID
-from canonical.launchpad.database import TeamParticipation, TeamMembership
 from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID
 from canonical.launchpad.database import Person
@@ -30,7 +27,6 @@ from canonical.launchpad.interfaces import ILaunchBag, ILoginTokenSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
 
 from canonical.launchpad.mail.sendmail import simple_sendmail
-from canonical.launchpad.browser.editview import SQLObjectEditView
 
 # zope imports
 from zope.event import notify
@@ -131,40 +127,6 @@ class FOAFSearchView(object):
         return Person.select(query, orderBy='displayname')
 
 
-class TeamAddView(AddView):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-        self._nextURL = '.'
-
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
-        # XXX: salgado, 2005-02-04: For now, we're using the email only for 
-        # generating the nickname. We must decide if we need or not to 
-        # require an email address for each team.
-        email = kw.pop('email')
-        kw['name'] = generate_nick(email)
-        kw['teamownerID'] = getUtility(ILaunchBag).user.id
-        team = getUtility(IPersonSet).newTeam(**kw)
-        notify(ObjectCreatedEvent(team))
-        self._nextURL = '/foaf/people/%s' % team.name
-        return team
-
-
-class TeamEditView(SQLObjectEditView):
-
-    def __init__(self, context, request):
-        SQLObjectEditView.__init__(self, context, request)
-
-
 class PersonView(object):
     """A simple View class to be used in Person's pages where we don't have
     actions and all we need is the context/request."""
@@ -182,6 +144,84 @@ class PersonView(object):
 
     def sshkeysCount(self):
         return len(self.context.sshkeys)
+
+
+class PersonEditView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.errormessage = None
+        self.user = getUtility(ILaunchBag).user
+
+    def edit_action(self):
+        if self.request.method != "POST":
+            # Nothing to do
+            return False
+
+        person = self.context
+        request = self.request
+
+        password = request.form.get("password")
+        newpassword = request.form.get("newpassword")
+        newpassword2 = request.form.get("newpassword2")
+        displayname = request.form.get("displayname")
+
+        encryptor = getUtility(IPasswordEncryptor)
+        if not encryptor.validate(password, person.password):
+            self.errormessage = "Wrong password. Please try again."
+            return False
+
+        if not displayname:
+            self.errormessage = "Your display name cannot be emtpy."
+            return False
+
+        if newpassword:
+            if newpassword != newpassword2:
+                self.errormessage = "New password didn't match."
+                return False
+            else:
+                newpassword = encryptor.encrypt(newpassword)
+                person.password = newpassword
+
+        person.displayname = displayname
+        person.givenname = request.form.get("givenname")
+        person.familyname = request.form.get("familyname")
+
+        wiki = request.form.get("wiki")
+        wikiname = request.form.get("wikiname")
+        network = request.form.get("network")
+        nickname = request.form.get("nickname")
+        jabberid = request.form.get("jabberid")
+        archuserid = request.form.get("archuserid")
+
+        #WikiName
+        if person.wiki:
+            person.wiki.wiki = wiki
+            person.wiki.wikiname = wikiname
+        elif wiki and wikiname:
+            WikiName(personID=person.id, wiki=wiki, wikiname=wikiname)
+
+        #IrcID
+        if person.irc:
+            person.irc.network = network
+            person.irc.nickname = nickname
+        elif network and nickname:
+            IrcID(personID=person.id, network=network, nickname=nickname)
+
+        #JabberID
+        if person.jabber:
+            person.jabber.jabberid = jabberid
+        elif jabberid:
+            JabberID(personID=person.id, jabberid=jabberid)
+
+        #ArchUserID
+        if person.archuser:
+            person.archuser.archuserid = archuserid
+        elif archuserid:
+            ArchUserID(personID=person.id, archuserid=archuserid)
+
+        return True
 
 
 class RequestPeopleMergeView(AddView):
@@ -301,232 +341,6 @@ def sendMergeRequestEmail(token, dupename, appurl):
 
     subject = "Launchpad: Merge of Accounts Requested"
     simple_sendmail(fromaddress, token.email, subject, message)
-
-
-class TeamView(object):
-    """A simple View class to be used in Team's pages where we don't have
-    actions to process.
-    """
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def activeMembersCount(self):
-        return len(self.context.approvedmembers + self.context.administrators)
-
-    def activeMemberships(self):
-        status = int(TeamMembershipStatus.ADMIN)
-        admins = self.context.getMembershipsByStatus(status)
-
-        status = int(TeamMembershipStatus.APPROVED)
-        members = self.context.getMembershipsByStatus(status)
-        return admins + members
-
-    def userInTeam(self):
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return False
-
-        return user.inTeam(self.context)
-
-    def subscriptionPolicyDesc(self):
-        policy = self.context.subscriptionpolicy
-        if policy == int(TeamSubscriptionPolicy.RESTRICTED):
-            return "Restricted team. Only administrators can add new members"
-        elif policy == int(TeamSubscriptionPolicy.MODERATED):
-            return ("Moderated team. New subscriptions are subjected to "
-                    "approval by one of the team's administrators.")
-        elif policy == int(TeamSubscriptionPolicy.OPEN):
-            return "Open team. Any user can join and no approval is required"
-
-    def membershipStatusDesc(self):
-        tm = self._getMembership()
-        if tm is None:
-            return "You are not a member of this team."
-
-        if tm.status == int(TeamMembershipStatus.PROPOSED):
-            desc = ("You are currently a proposed member of this team."
-                    "Your subscription depends on approval by one of the "
-                    "team's administrators.")
-        elif tm.status == int(TeamMembershipStatus.APPROVED):
-            desc = ("You are currently an approved member of this team.")
-        elif tm.status == int(TeamMembershipStatus.ADMIN):
-            desc = ("You are currently an administrator of this team.")
-        elif tm.status == int(TeamMembershipStatus.DEACTIVATED):
-            desc = "Your subscription for this team is currently deactivated."
-            if tm.reviewercomment is not None:
-                desc += "The reason provided for the deactivation is: '%s'" % \
-                        tm.reviewercomment
-        elif tm.status == int(TeamMembershipStatus.EXPIRED):
-            desc = ("Your subscription for this team is currently expired, "
-                    "waiting for renewal by one of the team's administrators.")
-        elif tm.status == int(TeamMembershipStatus.DECLINED):
-            desc = ("Your subscription for this team is currently declined. "
-                    "Clicking on the 'Join' button will put you on the "
-                    "proposed members queue, waiting for approval by one of "
-                    "the team's administrators")
-
-        return desc
-
-    def userCanRequestToUnjoin(self):
-        """Return true if the user can request to unjoin this team.
-
-        The user can request only if its subscription status is APPROVED or
-        ADMIN.
-        """
-        tm = self._getMembership()
-        if tm is None:
-            return False
-
-        allowed = [TeamMembershipStatus.APPROVED, TeamMembershipStatus.ADMIN]
-        if tm.status in allowed:
-            return True
-        else:
-            return False
-
-    def userCanRequestToJoin(self):
-        """Return true if the user can request to join this team.
-
-        The user can request if it never asked to join this team, if it
-        already asked and the subscription status is DECLINED or if the team's
-        subscriptionpolicy is OPEN and the user is not an APPROVED or ADMIN
-        member.
-        """
-        tm = self._getMembership()
-        if tm is None:
-            return True
-
-        adminOrApproved = [int(TeamMembershipStatus.APPROVED),
-                           int(TeamMembershipStatus.ADMIN)]
-        open = TeamSubscriptionPolicy.OPEN
-        if tm.status == TeamMembershipStatus.DECLINED or \
-           (tm.status not in adminOrApproved and \
-            tm.team.subscriptionpolicy == open):
-            return True
-        else:
-            return False
-
-    def _getMembership(self):
-        user = getUtility(ILaunchBag).user
-        if user is None:
-            return None
-        tm = TeamMembership.selectBy(personID=user.id, teamID=self.context.id)
-        if tm.count() == 1:
-            return tm[0]
-        else:
-            return None
-
-    def joinAllowed(self):
-        """Return True if this is not a restricted team."""
-        restricted = int(TeamSubscriptionPolicy.RESTRICTED)
-        return self.context.subscriptionpolicy != restricted
-
-
-class TeamJoinView(TeamView):
-
-    def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToJoin():
-            # Nothing to do
-            return
-
-        user = getUtility(ILaunchBag).user
-        if self.request.form.get('join'):
-            user.joinTeam(self.context)
-
-        self.request.response.redirect('./')
-
-
-class TeamUnjoinView(TeamView):
-
-    def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToUnjoin():
-            # Nothing to do
-            return
-
-        user = getUtility(ILaunchBag).user
-        if self.request.form.get('unjoin'):
-            user.unjoinTeam(self.context)
-
-        self.request.response.redirect('./')
-
-
-class PersonEditView(object):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.errormessage = None
-        self.user = getUtility(ILaunchBag).user
-
-    def edit_action(self):
-        if self.request.method != "POST":
-            # Nothing to do
-            return False
-
-        person = self.context
-        request = self.request
-
-        password = request.form.get("password")
-        newpassword = request.form.get("newpassword")
-        newpassword2 = request.form.get("newpassword2")
-        displayname = request.form.get("displayname")
-
-        encryptor = getUtility(IPasswordEncryptor)
-        if not encryptor.validate(password, person.password):
-            self.errormessage = "Wrong password. Please try again."
-            return False
-
-        if not displayname:
-            self.errormessage = "Your display name cannot be emtpy."
-            return False
-
-        if newpassword:
-            if newpassword != newpassword2:
-                self.errormessage = "New password didn't match."
-                return False
-            else:
-                newpassword = encryptor.encrypt(newpassword)
-                person.password = newpassword
-
-        person.displayname = displayname
-        person.givenname = request.form.get("givenname")
-        person.familyname = request.form.get("familyname")
-
-        wiki = request.form.get("wiki")
-        wikiname = request.form.get("wikiname")
-        network = request.form.get("network")
-        nickname = request.form.get("nickname")
-        jabberid = request.form.get("jabberid")
-        archuserid = request.form.get("archuserid")
-
-        #WikiName
-        if person.wiki:
-            person.wiki.wiki = wiki
-            person.wiki.wikiname = wikiname
-        elif wiki and wikiname:
-            WikiName(personID=person.id, wiki=wiki, wikiname=wikiname)
-
-        #IrcID
-        if person.irc:
-            person.irc.network = network
-            person.irc.nickname = nickname
-        elif network and nickname:
-            IrcID(personID=person.id, network=network, nickname=nickname)
-
-        #JabberID
-        if person.jabber:
-            person.jabber.jabberid = jabberid
-        elif jabberid:
-            JabberID(personID=person.id, jabberid=jabberid)
-
-        #ArchUserID
-        if person.archuser:
-            person.archuser.archuserid = archuserid
-        elif archuserid:
-            ArchUserID(personID=person.id, archuserid=archuserid)
-
-        return True
 
 
 class EmailAddressEditView(object):
@@ -725,75 +539,4 @@ class SSHKeyEditView(object):
         comment = sshkey.comment
         sshkey.destroySelf()
         return 'Key "%s" removed' % comment
-
-
-class TeamMembersEditView:
-
-    # XXX: salgado, 2005-01-12: Not yet ready for review. I'm working on
-    # this.
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-        self._actionMethods = {'authorize': self.authorizeProposed,
-                               'notauthorize': self.removeMember,
-                               'revokeadmin': self.revokeAdminiRole,
-                               'removeadmin': self.removeMember,
-                               'giveadmin': self.giveAdminRole,
-                               'removemember': self.removeMember}
-
-
-    def formSubmitted(self):
-        if self.request.method != "POST":
-            return False
-
-        if "PROPOSED_MEMBERS_CHANGES" in self.request.form or \
-           "ADMIN_CHANGES" in self.request.form or \
-           "MEMBERS_CHANGES" in self.request.form:
-            self.processChanges()
-            return True
-        else:
-            return False
-
-    def processChanges(self):
-        action = self.request.form.get('action')
-        people = self.request.form.get('selected')
-
-        if not people:
-            return 
-
-        if not isinstance(people, list):
-            people = [people]
-
-        method = self._actionMethods[action]
-        for personID in people:
-            method(int(personID), self.context)
-
-    def _getMembership(self, personID, teamID):
-        membership = TeamMembership.selectBy(personID=personID, teamID=teamID)
-        assert membership.count() == 1
-        return membership[0]
-
-    def authorizeProposed(self, personID, team):
-        membership = self._getMembership(personID, team.id)
-        membership.status = int(TeamMembershipStatus.APPROVED)
-
-    def removeMember(self, personID, team):
-        if personID == team.teamowner.id:
-            return
-
-        membership = self._getMembership(personID, team.id)
-        membership.destroySelf()
-        teampart = TeamParticipation.selectBy(personID=personID,
-                                              teamID=team.id)
-        assert teampart.count() == 1
-        teampart[0].destroySelf()
-
-    def giveAdminRole(self, personID, team):
-        membership = self._getMembership(personID, team.id)
-        membership.status = int(TeamMembershipStatus.ADMIN)
-
-    def revokeAdminiRole(self, personID, team):
-        membership = self._getMembership(personID, team.id)
-        membership.role = int(TeamMembershipRole.MEMBER)
 

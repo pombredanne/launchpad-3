@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /foaf/people/+requestmerge HTTP/1.1
+  ... GET /people/+requestmerge HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -13,7 +13,7 @@
 
 
   >>> print http(r"""
-  ... POST /foaf/people/+requestmerge HTTP/1.1
+  ... POST /people/+requestmerge HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: multipart/form-data; boundary=---------------------------153178557535218118471519623
@@ -43,7 +43,7 @@
   >>> id = PersonSet().getByName('foo')
 
   >>> print http(r"""
-  ... GET /foaf/people/+requestmerge-multiple?dupe=%d HTTP/1.1
+  ... GET /people/+requestmerge-multiple?dupe=%d HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """ % id)
   HTTP/1.1 200 Ok
@@ -60,7 +60,7 @@
   >>> email2 = EmailAddressSet().getByEmail('bar.foo@canonical.com')
 
   >>> print http(r"""
-  ... POST /foaf/people/+requestmerge-multiple?dupe=%d HTTP/1.1
+  ... POST /people/+requestmerge-multiple?dupe=%d HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded

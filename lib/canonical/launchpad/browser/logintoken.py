@@ -78,8 +78,13 @@ class ResetPasswordView(object):
 
         # Make sure this person has a preferred email address.
         emailaddress = EmailAddress.byEmail(self.context.email)
+        emailaddress.status = int(EmailAddressStatus.VALIDATED)
+        flushUpdates()
         person = emailaddress.person
-        if person.preferredemail is None:
+        if person.preferredemail is None and \
+           len(person.validatedemails) == 1:
+            # This user have no preferred email set and this is the only
+            # validated email he owns. We must set it as the preferred one.
             person.preferredemail = emailaddress
 
         encryptor = getUtility(IPasswordEncryptor)
@@ -199,7 +204,7 @@ class NewAccountView(AddView):
                              status=int(EmailAddressStatus.PREFERRED))
         notify(ObjectCreatedEvent(email))
 
-        self._nextURL = '/foaf/people/%s' % person.name
+        self._nextURL = '/people/%s' % person.name
         self.context.destroySelf()
 
         loginsource = getUtility(IPlacelessLoginSource)

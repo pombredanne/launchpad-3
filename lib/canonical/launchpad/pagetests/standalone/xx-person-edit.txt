@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... POST /foaf/people/name16/+edit HTTP/1.1
+  ... POST /people/name16/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... 
   ... displayname=Foo+Bar&givenname=Foo&familyname=Bar&wiki=none&wikiname=none&network=freenode&nickname=foobar&archuserid=foobar&jabberid=foobar%40jabber.org&newpassword=&newpassword2=&password=test""")

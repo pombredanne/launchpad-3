@@ -48,12 +48,16 @@
           <tr>
             <td>Active Members:</td>
             <td><span tal:content="view/activeMembersCount" />
-                <tal:block tal:condition="view/userInTeam">
+                <tal:block tal:condition="view/userIsActiveMember">
+                <tal:block tal:condition="not: view/userIsOwner">
                   <a href="+unjoin">(Unjoin)</a>
                 </tal:block>
+                </tal:block>
 
-                <tal:block tal:condition="not: view/userInTeam">
+                <tal:block tal:condition="not: view/userIsActiveMember">
+                <tal:block tal:condition="not: view/userIsOwner">
                   <a href="+join">(Join)</a>
+                </tal:block>
                 </tal:block>
             </td>
           </tr>

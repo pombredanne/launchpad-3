@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /foaf/people/name17/+join HTTP/1.1
+  ... GET /people/name17/+join HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok
@@ -11,7 +11,7 @@
 
 
   >>> print http(r"""
-  ... POST /foaf/people/name17/+join HTTP/1.1
+  ... POST /people/name17/+join HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -24,7 +24,7 @@
 
 
   >>> print http(r"""
-  ... GET /foaf/people/name17/ HTTP/1.1
+  ... GET /people/name17/ HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok

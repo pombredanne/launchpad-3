@@ -129,7 +129,7 @@
 
 
   >>> print http(r"""
-  ... GET /foaf/people/foo HTTP/1.1
+  ... GET /people/foo HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...

@@ -99,7 +99,7 @@
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <require 
-          permission="zope.Public"
+          permission="launchpad.Edit"
           set_schema="canonical.launchpad.interfaces.IPerson" />
   </content>
 
@@ -178,17 +178,40 @@
           lp:url="foaf/person/$person.id/+members" />
   </browser:pages>
 
-  <!-- XXX: salgado, 2005-01-12: The following code, together with
-  templates and view classes are not yet ready. I'm working on then right
-  now. -->
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.Edit"
       class="canonical.launchpad.browser.TeamMembersEditView">
       <browser:page
-          name="+editmembers"
-          template="../templates/team-editmembers.pt"
-          lp:url="foaf/person/$person.id/+editmembers" />
+          name="+editproposed"
+          template="../templates/team-editproposed.pt"
+          lp:url="foaf/person/$person.id/+editproposed" />
+      <browser:page
+          name="+addmembers"
+          template="../templates/team-addmembers.pt"
+          lp:url="foaf/person/$person.id/+addmembers" />
+      <!--
+      <browser:page
+          name="+editapproved"
+          template="../templates/team-editapproved.pt"
+          lp:url="foaf/person/$person.id/+editapproved" />
+      <browser:page
+          name="+editadmins"
+          template="../templates/team-editadmins.pt"
+          lp:url="foaf/person/$person.id/+editadmins" />
+      <browser:page
+          name="+editexpired"
+          template="../templates/team-editexpired.pt"
+          lp:url="foaf/person/$person.id/+editexpired" />
+      <browser:page
+          name="+editdeactivated"
+          template="../templates/team-editdeactivated.pt"
+          lp:url="foaf/person/$person.id/+editdeactivated" />
+      <browser:page
+          name="+editdeclined"
+          template="../templates/team-editdeclined.pt"
+          lp:url="foaf/person/$person.id/+editdeclined" />
+      -->
   </browser:pages>
 
   <browser:editform

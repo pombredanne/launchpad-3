@@ -80,9 +80,6 @@ class IPerson(Interface):
                                     "Played by this Person/Team."))
     notvalidatedemails = Attribute("Emails waiting validation.")
 
-    # XXX: salgado: 2005-11-01: Is it possible to move this properties to
-    # ITeam to ensure that they are acessible only via Persons marked
-    # with the ITeam interface?
     administrators = Attribute(("List of ADMIN members of this Team.")) 
     expiredmembers = Attribute("List of EXPIRED members of this Team.")
     approvedmembers = Attribute("List of APPROVED Members of this Team.")
@@ -103,15 +100,16 @@ class IPerson(Interface):
             title=_('Email Address'), required=True,
             description=_("Please give the email address for this Team. "))
 
-    defaultmembershipperiod = TextLine(
-            title=_('Period a Subscription Lasts'), required=False, 
+    defaultmembershipperiod = Int(
+            title=_('Number of days a subscription lasts'), required=False, 
             description=_("This is the number of days all "
-                "subscriptions will last unless a different value "
-                "is provided when the subscription is approved. A value of "
-                "0 (zero) means that subscription will never expire."))
+                "subscriptions will last unless a different value is provided "
+                "when the subscription is approved. After this " "period the "
+                "subscription is expired and must be renewed. A value of 0 "
+                "(zero) means that subscription will never expire."))
 
-    defaultrenewalperiod = TextLine(
-            title=_('Period a Subscription Lasts After a Renew'),
+    defaultrenewalperiod = Int(
+            title=_('Number of days a renewed subscription lasts'),
             required=False, 
             description=_("This is the number of days all "
                 "subscriptions will last after being renewed. After this "
@@ -174,27 +172,24 @@ class IPerson(Interface):
         DEACTIVATED and remove the relevant entries in teamparticipation.
         """
 
-    def hasMembershipEntryFor(team):
-        """Tell if this person is a direct member of the given team."""
+    def addMember(person, status, expires=None, reviewer=None, comment=None):
+        """Add person as a member of this team.
 
-    def joinTeam(team):
-        """Join the given team if its subscriptionpolicy is not RESTRICTED.
-
-        Join the given team according to the policies and defaults of that
-        team:
-        - If the team subscriptionpolicy is OPEN, the user is added as
-          an APPROVED member with a NULL TeamMembership.reviewer.
-        - If the team subscriptionpolicy is MODERATED, the user is added as
-          a PROPOSED member and one of the team's administrators have to
-          approve the membership.
+        Make sure status is either APPROVED or PROPOSED and add a
+        TeamMembership entry for this person with the given status, reviewer,
+        expiration date and reviewer comment. This method is also responsible
+        for filling the TeamParticipation table in case the status is APPROVED.
         """
 
-    def unjoinTeam(team):
-        """Unjoin the given team.
+    def setMembershipStatus(person, status, expires=None, reviewer=None,
+                            comment=None):
+        """Set the status of the person's membership on this team.
 
-        If there's a membership entry for this person on the given team and
-        its status is either APPROVED or ADMIN, we change the status to
-        DEACTIVATED and remove the relevant entries in teamparticipation.
+        This method will ensure that we only allow the status transitions
+        specified in the TeamMembership spec. It's also responsible for
+        filling/cleaning the TeamParticipation table when the transition
+        requires it and setting the expiration date, reviewer and
+        reviewercomment.
         """
 
 
