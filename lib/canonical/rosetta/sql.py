@@ -1073,7 +1073,7 @@ class RosettaLanguages(object):
     implements(interfaces.ILanguages)
 
     def __iter__(self):
-        return iter(RosettaLanguage.select())
+        return iter(RosettaLanguage.select(orderBy='englishName'))
 
     def __getitem__(self, code):
         results = RosettaLanguage.selectBy(code=code)
