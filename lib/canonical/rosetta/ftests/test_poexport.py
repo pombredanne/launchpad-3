@@ -145,6 +145,13 @@ msgstr[1] ""
 "Abrir %d contactos abrir\xc3\xa1 %d ventanas nuevas tambi\xc3\xa9n.\\n"
 "\xc2\xbfQuiere realmente mostrar todos estos contactos?"
 
+#: addressbook/gui/widgets/foo.c:345
+#, fuzzy, c-format
+msgid "%d foo"
+msgid_plural "%d bars"
+msgstr[0] "%d foo"
+msgstr[1] ""
+
 #~ msgid "_Add Group"
 #~ msgstr "_A\xc3\xb1adir grupo"
 '''
