@@ -23,6 +23,11 @@
    factory="canonical.launchpad.mailnotification.notify_bug_assigned_package_added" />
 
 <subscriber
+   for="canonical.launchpad.interfaces.ISourcePackageBugAssignment
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.mailnotification.notify_bug_assigned_package_modified" />
+
+<subscriber
    for="canonical.launchpad.interfaces.IBugProductInfestation
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_product_infestation_added" />

@@ -7,7 +7,8 @@
         <tr tal:repeat="pkginfest context/packageinfestations"
             tal:attributes="onclick
             string:window.location='packageinfestations/${pkginfest/id}/+edit';">
-            <td tal:content="pkginfest/sourcepackagerelease/version">$Product.title</td>
+            <td nowrap tal:content="python: pkginfest.sourcepackagerelease.sourcepackage.sourcepackagename.name + ' ' +
+                             pkginfest.sourcepackagerelease.version">$Product.title</td>
             <td tal:content="pkginfest/infestationstatus/lp:BugInfestationStatus">
                 $ProductBugAssignment.bugstatus
             </td>

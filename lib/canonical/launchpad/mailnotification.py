@@ -12,9 +12,45 @@ from canonical.launchpad.vocabularies import BugTrackerVocabulary
 
 FROM_MAIL = "noreply@bbnet.ca"
 
+def send_edit_notification(from_addr, to_addrs, subject, edit_header_line,
+                           changes):
+    if changes:
+        msg = """%s
+
+The following changes were made:
+
+""" % edit_header_line
+        for changed_field in changes.keys():
+            msg += "%s: %s => %s\n" % (
+                changed_field, changes[changed_field]["old"], changes[changed_field]["new"])
+
+        simple_sendmail(from_addr, to_addrs, subject, msg)
+
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug."""
     return ['test@bbnet.ca']
+
+def get_changes(before, after, fields):
+    """Return what changed from the object before to after for the
+    passed-in fields. fields is a tuple of (field_name, display_value_func)
+    tuples, where display_value_func is used to convert the differences
+    in attribute values into something you could display in, for example,
+    a change notification email."""
+    changes = {}
+
+    for field_name, display_value_func in fields:
+        old_val = getattr(before, field_name, None)
+        new_val = getattr(after, field_name, None)
+        if old_val != new_val:
+            changes[field_name] = {}
+            if display_value_func:
+                changes[field_name]['old'] = display_value_func(old_val)
+                changes[field_name]['new'] = display_value_func(new_val)
+            else:
+                changes[field_name]['old'] = old_val
+                changes[field_name]['new'] = new_val
+
+    return changes
 
 def notify_bug_assigned_product_added(product_assignment, event):
     """Notify CC'd list that this bug has been assigned to
@@ -42,27 +78,24 @@ Assigned: %(assigned)s
 def notify_bug_assigned_product_modified(modified_product_assignment, event):
     """Notify CC'd list that this bug product assignment has been
     modified, describing what the changes were."""
-    change = {}
-    for name in event.edited_fields:
-        old_val = getattr(event.object_before_modification, name)
-        new_val = getattr(event.object, name)
+    changes = get_changes(
+        before = event.object_before_modification,
+        after = event.object,
+        fields = (
+            ("product", lambda v: v.displayname),
+            ("bugstatus", lambda v: BugAssignmentStatus.items[v].title),
+            ("priority", lambda v: BugPriority.items[v].title),
+            ("severity", lambda v: BugSeverity.items[v].title),
+            ("assignee", lambda v: v.displayname)))
 
-        if old_val != new_val:
-            change[name] = {}
-            change[name]["old"] = old_val
-            change[name]["new"] = new_val
-
-    msg = """\
-The following changes were made:
-
-"""
-    for changed_field in change.keys():
-        msg += "%s: %s => %s\n" % (
-            changed_field, change[changed_field]["old"], change[changed_field]["new"])
-
-    simple_sendmail(
-        FROM_MAIL, get_cc_list(modified_product_assignment.bug),
-        '"%s" was modified' % modified_product_assignment.bug.title, msg)
+    send_edit_notification(
+        from_addr = FROM_MAIL,
+        to_addrs = get_cc_list(modified_product_assignment.bug),
+        subject = '"%s" product assignment edited' % modified_product_assignment.bug.title,
+        edit_header_line = (
+            "Edited assignment to product: %s" %
+            modified_product_assignment.product.displayname),
+        changes = changes)
 
 def notify_bug_assigned_package_added(package_assignment, event):
     """Notify CC'd list that this bug has been assigned to
@@ -92,6 +125,28 @@ Assigned: %(assigned)s
         FROM_MAIL, get_cc_list(package_assignment.bug),
         '"%s" package assignment' % package_assignment.bug.title, msg)
 
+def notify_bug_assigned_package_modified(modified_package_assignment, event):
+    """Notify CC'd list that something had been changed about this bug
+    package assignment."""
+    changes = get_changes(
+        before = event.object_before_modification,
+        after = event.object,
+        fields = (
+            ("bugstatus", lambda v: BugAssignmentStatus.items[v].title),
+            ("priority", lambda v: BugPriority.items[v].title),
+            ("severity", lambda v: BugSeverity.items[v].title),
+            ("binarypackagename", lambda v: v.name),
+            ("assignee", lambda v: v.displayname)))
+
+    send_edit_notification(
+        from_addr = FROM_MAIL,
+        to_addrs = get_cc_list(modified_package_assignment.bug),
+        subject = '"%s" package assignment edited' % modified_package_assignment.bug.title,
+        edit_header_line = (
+            "Edited assignment to package: %s" %
+            modified_package_assignment.sourcepackage.sourcepackagename.name),
+        changes = changes)
+
 def notify_bug_product_infestation_added(product_infestation, event):
     """Notify CC'd list that this bug has infested a
     product release."""
@@ -109,31 +164,25 @@ Infestation: %(infestation)s
 
 def notify_bug_product_infestation_modified(modified_product_infestation, event):
     """Notify CC'd list that this product infestation has been edited."""
-    old_bpa = event.object_before_modification
-    new_bpa = event.object
-
-    change = {}
-
-    old_pr = old_bpa.productrelease
-    new_pr = new_bpa.productrelease
-    if old_pr != new_pr:
-        change['productrelease'] = {}
-        change['productrelease']['old'] = "%s %s" % (
-            old_pr.product.name, old_pr.version)
-        change['productrelease']['new'] = "%s %s" % (
-            new_pr.product.name, new_pr.version)
-
-    old_status = old_bpa.infestationstatus
-    new_status = new_bpa.infestationstatus
-    if old_status != new_status:
-        change['infestationstatus'] = {}
-        change['infestationstatus']['old'] = BugInfestationStatus.items[old_status].title
-        change['infestationstatus']['new'] = BugInfestationStatus.items[new_status].title
+    changes = get_changes(
+        before = event.object_before_modification,
+        after = event.object,
+        fields = (
+            ("productrelease", lambda v: "%s %s" % (
+                v.product.name, v.version)),
+            ("infestationstatus", lambda v: BugInfestationStatus.items[v].title)))
 
     send_edit_notification(
-        FROM_MAIL, get_cc_list(modified_product_infestation.bug),
-        '"%s" product infestation edited' % modified_product_infestation.bug.title,
-        change)
+        from_addr = FROM_MAIL,
+        to_addrs = get_cc_list(modified_product_infestation.bug),
+        subject = (
+            '"%s" product infestation edited' %
+            event.object_before_modification.bug.title),
+        edit_header_line = (
+            "Edited infested product: %s" %
+            event.object_before_modification.productrelease.product.displayname + " " +
+            event.object_before_modification.productrelease.version),
+        changes = changes)
 
 def notify_bug_package_infestation_added(package_infestation, event):
     """Notify CC'd list that this bug has infested a
@@ -152,30 +201,22 @@ Infestation: %(infestation)s
 
 def notify_bug_package_infestation_modified(modified_package_infestation, event):
     """Notify CC'd list that this package infestation has been modified."""
-    old_bpi = event.object_before_modification
-    new_bpi = event.object
-
-    change = {}
-    old_spr = old_bpi.sourcepackagerelease
-    new_spr = new_bpi.sourcepackagerelease
-    if  old_spr != new_spr:
-        change['sourcepackagerelease'] = {}
-        change['sourcepackagerelease']['old'] = "%s %s" % (
-            old_spr.name, old_spr.version)
-        change['sourcepackagerelease']['new'] = "%s %s" % (
-            new_spr.name, new_spr.version)
-
-    old_status = old_bpi.infestationstatus
-    new_status = new_bpi.infestationstatus
-    if old_status != new_status:
-        change['infestationstatus'] = {}
-        change['infestationstatus']['old'] = BugInfestationStatus.items[old_status].title
-        change['infestationstatus']['new'] = BugInfestationStatus.items[new_status].title
+    changes = get_changes(
+        before = event.object_before_modification,
+        after = event.object,
+        fields = (
+            ("sourcepackagerelease", lambda v: "%s %s" % (v.name, v.version)),
+            ("infestationstatus", lambda v: BugInfestationStatus.items[v].title)))
 
     send_edit_notification(
-        FROM_MAIL, get_cc_list(modified_package_infestation.bug),
-        '"%s" package infestation edited' % modified_package_infestation.bug.title,
-        change)
+        from_addr = FROM_MAIL,
+        to_addrs = get_cc_list(modified_package_infestation.bug),
+        subject = '"%s" package infestation edited' % modified_package_infestation.bug.title,
+        edit_header_line = (
+            "Edited infested package: %s" %
+            event.object_before_modification.sourcepackagerelease.sourcepackage.sourcepackagename.name + " " +
+            event.object_before_modification.sourcepackagerelease.version),
+        changes = changes)
 
 def notify_bug_comment_added(comment, event):
     """Notify CC'd list that a comment was added to this bug."""
@@ -220,37 +261,19 @@ Remote Bug: %(remote_bug)s
         '"%s" watch added' % watch.bug.title, msg)
 
 def notify_bug_watch_modified(modified_bug_watch, event):
-    orig = event.object_before_modification
-    new = event.object
-
     btv = BugTrackerVocabulary(modified_bug_watch.bug)
-    change = {}
-    old_bt = getattr(orig, "bugtracker")
-    new_bt = getattr(new, "bugtracker")
-    if old_bt != new_bt:
-        change["bugtracker"] = {}
-        change["bugtracker"]["old"] = btv.getTermByToken(old_bt.id).title
-        change["bugtracker"]["new"] = btv.getTermByToken(new_bt.id).title
-
-    old_rb = getattr(orig, "remotebug")
-    new_rb = getattr(new, "remotebug")
-    if old_rb != new_rb:
-        change["remotebug"] = {}
-        change["remotebug"]["old"] = old_rb
-        change["remotebug"]["new"] = new_rb
+    changes = get_changes(
+        before = event.object_before_modification,
+        after = event.object,
+        fields = (
+            ("bugtracker", lambda v: btv.getTermByToken(v.id).title),
+            ("remotebug", lambda v: v)))
 
     send_edit_notification(
-        FROM_MAIL, get_cc_list(modified_bug_watch.bug),
-        '"%s" watch edited' % modified_bug_watch.bug.title,
-        change)
-
-def send_edit_notification(from_addr, to_addrs, subject, change):
-    if change:
-        msg = """The following changes were made:
-
-"""
-        for changed_field in change.keys():
-            msg += "%s: %s => %s\n" % (
-                changed_field, change[changed_field]["old"], change[changed_field]["new"])
-
-        simple_sendmail(from_addr, to_addrs, subject, msg)
+        from_addr = FROM_MAIL,
+        to_addrs = get_cc_list(modified_bug_watch.bug),
+        subject = '"%s" watch edited' % event.object_before_modification.bug.title,
+        edit_header_line = (
+            "Edited watch on bugtracker: %s" %
+            event.object_before_modification.bugtracker.title),
+        changes = changes)

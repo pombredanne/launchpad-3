@@ -96,6 +96,7 @@
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
         fields="bugstatus priority severity binarypackagename assignee"
         label="Edit SourcePackage Bug Assignment"
