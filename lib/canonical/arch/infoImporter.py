@@ -42,7 +42,8 @@ class RCSTypeEnum:
 RCSNames = {1: 'cvs', 2: 'svn', 3: 'arch', 4: 'package', 5: 'bitkeeper'}
 
 
-class SourceSource(SQLBase, importd.Job.Job):
+class SourceSource(SQLBase): 
+    #, importd.Job.Job):
     #from canonical.soyuz.sql import SourcePackage, Branch
     """SourceSource table!"""
 

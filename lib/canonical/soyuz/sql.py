@@ -403,24 +403,29 @@ class Sync(object):
 #                    default=None),
     def update(self, **kwargs):
         """update a Sync, possibly reparenting"""
-        self._update('name', 'name', kwargs)
-        self._update('title', 'title', kwargs)
-        self._update('description', 'description', kwargs)
-        self._update('cvsroot', 'cvsroot', kwargs)
-        self._update('cvsmodule', 'cvsmodule', kwargs)
-        self._update('cvstarfile', 'cvstarfileurl', kwargs)
-        self._update('branchfrom', 'cvsbranch', kwargs)
-        self._update('svnrepository','svnrepository', kwargs)
-        self._update('category', 'newbranchcategory', kwargs)
-        self._update('branchto', 'newbranchbranch', kwargs)
-        self._update('archversion', 'newbranchversion', kwargs)
-        self._update('archarchive', 'newarchive', kwargs)
+#        self._update('name', 'name', kwargs)
+#        self._update('title', 'title', kwargs)
+        if kwargs.has_key('title'):
+            import pdb; pdb.set_trace()
+            self._sync.set(title=kwargs['title'])
+            print self._sync.title, "AAA"
+        print self._sync, "%r" % self._sync
+#        self._update('description', 'description', kwargs)
+#        self._update('cvsroot', 'cvsroot', kwargs)
+#        self._update('cvsmodule', 'cvsmodule', kwargs)
+#        self._update('cvstarfile', 'cvstarfileurl', kwargs)
+#        self._update('branchfrom', 'cvsbranch', kwargs)
+#        self._update('svnrepository','svnrepository', kwargs)
+#        self._update('category', 'newbranchcategory', kwargs)
+#        self._update('branchto', 'newbranchbranch', kwargs)
+#        self._update('archversion', 'newbranchversion', kwargs)
+#        self._update('archarchive', 'newarchive', kwargs)
     def _update(self, myattr, dbattr, source):
         """update myattr & dbattr from source's myattr"""
         if not source.has_key(myattr):
             return
-        print "updating ", myattr, source[value]
-        setattr(self._sync, dbattr, source[value])
+        print "updating ", myattr, source[myattr]
+        setattr(self._sync, dbattr, source[myattr])
         setattr(self, myattr, getattr(self._sync, dbattr))
  
 

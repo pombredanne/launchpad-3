@@ -91,7 +91,7 @@
 
             <span class="fieldRequired" title="Required">(Required)</span>
 
-                <input type="text" name="module" size="30"
+                <input type="text" name="cvsmodule" size="30"
                        tal:attributes="value context/cvsmodule" />
         </div>
 

@@ -29,9 +29,11 @@ def connect():
     SQLBase.initZopeless(conn)
     DBHandle = conn.getConnection()
 
-connect()
+#connect()
 
 def nuke():
+    if not DBHandle:
+        connect()
     cursor = DBHandle.cursor()
     cursor.execute("DELETE FROM ChangesetFileHash")    
     cursor.execute("DELETE FROM ChangesetFile")
