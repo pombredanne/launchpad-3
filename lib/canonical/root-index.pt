@@ -1,0 +1,15 @@
+<html>
+  <head>
+    <title>
+      Launchpad root
+    </title>
+  </head>
+  <body>
+    <h1>Launchpad!</h1>
+    <ul>
+      <li><a href="rosetta">Rosetta</a></li>
+      <li><a href="soyuz">Soyuz</a></li>
+      <li><a href="malone">Malone</a></li>
+    </ul>
+  </body>
+</html>

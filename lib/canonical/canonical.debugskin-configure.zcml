@@ -1,0 +1,1 @@
+<include package="canonical" file="debug.zcml"/>

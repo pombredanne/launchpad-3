@@ -1,0 +1,27 @@
+<configure xmlns="http://namespaces.zope.org/browser">
+    <!-- Style sheets -->
+    <resource name="plone.css" file="styles/plone.css" />
+    <resource name="launchpad.css" file="styles/launchpad.css" />
+
+    <!-- Images -->
+    <resource name="green-bar.png" file="images/green-bar.png" />
+    <resource name="blue-bar.png" file="images/blue-bar.png" />
+    <resource name="red-bar.png" file="images/red-bar.png" />
+
+    <resource name="info.gif" file="images/info.gif" />
+    <resource name="info.png" file="images/info.png" />
+    <resource name="download.png" file="images/download.png" />
+
+    <resource name="arrowBottom.gif" file="images/arrowBottom.gif" />
+    <resource name="arrowDown.gif" file="images/arrowDown.gif" />
+    <resource name="arrowRight.gif" file="images/arrowRight.gif" />
+
+
+    <resource name="print.gif" file="images/print.gif" />
+    <resource name="sendto.gif" file="images/sendto.gif" />
+
+    <resource name="languages.gif" file="images/languages.gif" />
+    <resource name="add.gif" file="images/add.gif" />
+
+</configure>
+<!-- arch-tag: 0f9efb09-00d3-48dd-b5e7-711a9ed3ffff -->

@@ -1,0 +1,176 @@
+<metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+<metal:block define-slot="top_slot" />
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xml:lang="en"
+      lang="en"
+      tal:attributes="lang default_language|default;
+                      xml:lang default_language|default;">
+  <head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(++resource++plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(++resource++launchpad.css);</style>
+  </head>
+
+  <body>
+      <div id="portal-top"
+           tal:define="path_info request/PATH_INFO">
+               <a href="/rosetta"
+                  tal:condition="python:'/rosetta' in path_info">
+                   <img src="++resource++rosetta.png" alt="Rosetta" />
+               </a>
+               <a href="/rosetta"
+                  tal:condition="python:'/malone' in path_info">
+                   <img src="++resource++malone.png" alt="Rosetta" />
+               </a>
+      </div>
+      
+          <ul id="portal-globalnav"
+              tal:define="path_info request/PATH_INFO">
+
+            <li class="selected"
+                tal:condition="python:path_info.endswith('/ubuntu')">
+              <a href="http://localhost:8080/ubuntu">Ubuntu</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:not path_info.endswith('/ubuntu')">
+              <a href="http://localhost:8080/ubuntu">Ubuntu</a>
+            </li>
+
+            <li class="selected"
+                tal:condition="python:'/malone' in path_info">
+              <a href="/malone">Malone</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:'/malone' not in path_info">
+              <a href="/malone">Malone</a>
+            </li>
+
+            <li class="selected"
+                tal:condition="python:'/rosetta' in path_info">
+              <a href="/rosetta">Rosetta</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:'/rosetta' not in path_info">
+              <a href="/rosetta">Rosetta</a>
+            </li>
+
+            <li class="selected"
+                tal:condition="python:'/soyuz' in path_info">
+              <a href="/soyuz">Soyuz</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:'/soyuz' not in path_info">
+              <a href="/soyuz">Soyuz</a>
+            </li>
+
+            <li class="selected"
+                tal:condition="python:'/lists' in path_info">
+              <a href="/lists">Lists</a>
+            </li>
+            <li class="plain"
+                tal:condition="python:'/lists' not in path_info">
+              <a href="/lists">Lists</a>
+            </li>
+          </ul>
+
+      <div id="portal-personaltools">
+
+        <a href="/rosetta/translator"
+           class="authenticated">My Dashboard (Translator)</a>
+        &mdash;
+        <a href="/rosetta/maintainer"
+           class="authenticated">My Dashboard (Project Maintainer)</a>
+
+      </div>
+      
+      <div id="portal-breadcrumbs">
+        You are here
+        <span tal:define="parts python:request.get('PATH_INFO').split('/')"
+              tal:repeat="crumb parts">
+          <a tal:attributes="href python:'/'.join(parts[0:repeat['crumb'].number()])"
+             tal:content="crumb">home</a>
+          <span tal:condition="not:repeat/crumb/end"
+                class="breadcrumbSeparator"> &raquo; </span>
+        </span>
+      </div>
+
+      <div class="visualClear"></div>
+
+      <table id="portal-columns">
+        <tbody>
+          <tr>
+            <td id="portal-column-content">
+              <div style="float: right; margin-top: 1em;">
+                <a href="javascript:this.print();">
+                    <img src="++resource++print.gif"
+                         alt="Print"
+                         title="Print this page" />
+                </a>
+                
+                <a href="sendto">
+                    <img src="++resource++sendto.gif"
+                         alt="Send to"
+                         title="Send this page to somebody" />
+                </a>
+              </div>
+              <metal:main define-slot="main">
+              <p>Main content area.</p>
+              </metal:main>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <!-- end column wrapper -->
+
+      <div class="visualClear">&nbsp;</div>
+
+      <metal:block>
+        <div id="portal-footer">
+            Copyright 2004 Canonical Ltd.<br />
+            <a href="sitemap">Site map</a> &mdash;
+            <a href="legal">Legal</a>
+        </div>
+
+        <p class="discreet">
+        The below is an explanation for the developers and testers
+        that emulates some of the features not present yet with color coding.
+        </p>
+
+        <table class="listing" style="margin: auto;">
+            <thead>
+                <tr>
+                    <th>Legend</th>
+                    <th>CSS class</th>
+                    <th>Used for</th>
+                </tr>
+            </thead>
+            
+            <tbody>
+                <tr>
+                    <td><span class="discreet">Comment</span></td>
+                    <td><code>discreet</code></td>
+                    <td>Comments that are used to explain the interface for the developers - not visible to the public in the final version.</td>
+                </tr>
+                <tr class="even">
+                    <td><span class="portalMessage">Status message</span></td>
+                    <td><code>portalMessage</code></td>
+                    <td>Status messages</td>
+                </tr>
+                <tr>
+                    <td><span class="authenticated">Only for logged in</span></td>
+                    <td><code>authenticated</code></td>
+                    <td>Elements that are only visible to logged in users</td>
+                </tr>
+                <tr>
+                    <td><span class="anonymous">Only for anonymous</span></td>
+                    <td><code>anonymous</code></td>
+                    <td>Elements that are <em>explicitly</em> only visible to anonymous in users</td>
+                </tr>
+            </tbody>
+        </table>
+
+      </metal:block>
+  </body>
+</html>
+</metal:page>

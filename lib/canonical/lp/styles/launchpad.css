@@ -1,0 +1,85 @@
+.rosettaTile {
+    display: block;
+    width: 40%;
+    padding: 1em;
+    margin: 1em;
+    background-color: #dee7ec;
+    border: 1px solid #8cacbb;
+    text-decoration: none;
+}
+
+.rosettaDashboardElement {
+    width: 30%;
+    float: left;
+    margin: 1em;
+}
+
+label.language-code {
+    width: 6em;
+}
+
+fieldset.message-strings {
+    width: 43%;
+    float: left;
+    display: block;
+    margin-right: 1em;
+}
+
+fieldset.two-column {
+    width: 45%;
+    float: left;
+    display: block;
+    margin-right: 1em;
+}
+
+
+fieldset input {
+}
+
+
+/* Plone elements that should be changed */
+
+h1, h2, h3, h4, h5, h6 {
+    text-shadow: #999999 3px 3px 3px;
+}
+
+.listing td {
+    padding-bottom: 0.3em;
+}
+
+label {
+    font-weight: bold;    
+}
+
+.listingBar a {
+    text-decoration: none;
+}
+
+.portlet a {
+    text-decoration: none;
+}
+
+
+/* XXX Just setting a fixed width until the rest of the layout is in place */
+
+#portal-column-content {
+    width: 600px;
+}
+
+#portal-columns {
+    margin: auto;
+}
+
+/* Explanatory elements, just until the correct mechanisms are in place */
+
+.authenticated {
+    border: 2px dashed green;
+    padding: 2px;
+    margin: 2px;
+}
+
+.anonymous {
+    border: 2px dashed red;
+    padding: 2px;
+    margin: 2px;
+}

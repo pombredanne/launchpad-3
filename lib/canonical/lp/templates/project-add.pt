@@ -1,0 +1,98 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <h1>Add project</h1>
+
+    <div class="documentDescription">
+    Please fill in the details below to register a project in the Launchpad system.
+    </div>
+
+    <fieldset>
+
+        <legend>Project Details</legend>
+
+        <div class="field">
+
+            <label>Name</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    The name of the project is a short name - a unique
+                    name that identifies the project, and is used in 
+                    URLs and references to the project. All lowercase,
+                    no special characters.
+                  </div>
+
+                <input type="text" name="name" size="30"
+                       value="" style="text-transform: lowercase" />
+        </div>
+
+        <div class="field">
+
+            <label>Title</label>
+
+            <span class="fieldRequired" title="Required">(Required)</span>
+
+                  <div class="formHelp">
+                    This is the full name of the project, can contain
+                    spaces, special characters etc.
+                  </div>
+
+                <input type="text" name="title" size="30"
+                       value="" />
+        </div>
+
+        <div class="field">
+
+            <label>Description</label>
+
+                  <div class="formHelp">
+                    A brief description of the project.
+                  </div>
+
+                <textarea cols="40" rows="5"></textarea>
+        </div>
+
+        <div class="field">
+
+            <label>URL</label>
+
+                  <div class="formHelp">
+                    The project home page, if it exists.
+                  </div>
+
+                <input type="text" name="title" size="30"
+                       tabindex="3" value="http://" />
+        </div>
+
+
+        <div class="formControls">
+
+            <input class="context" type="submit"
+                   tabindex="5"
+                   name="form.button.Register"
+                   value="Register" />
+
+        </div>
+
+
+    </fieldset>
+
+</div>
+
+</body>
+</html>

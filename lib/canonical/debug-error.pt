@@ -1,0 +1,17 @@
+<html xmetal:use-macro="context/@@standard_macros/dialog">
+<body>
+<div xmetal:fill-slot="body">
+
+  <h3>
+    Error type: 
+    <tal:span tal:replace="view/error_type" />
+  </h3>
+
+  <div tal:content="structure view/htmltext | default">
+     HTML rendering of error should go here.
+  </div>
+
+</div>
+</body>
+</html>
+

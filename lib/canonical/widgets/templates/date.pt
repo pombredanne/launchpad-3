@@ -1,0 +1,29 @@
+<div tal:define="val view/formvalue">
+  <input maxlen="2" type="text" 
+    tal:attributes="name string:${view/name}.day; value val/day" />
+  <select tal:attributes="name string:${view/name}.month"
+    tal:define="mon val/month">
+    <option tal:condition="not:context/required"></option>
+    <option value="1" tal:attributes="selected python:mon==1">Jan</option>
+    <option value="2" tal:attributes="selected python:mon==2">Feb</option>
+    <option value="3" tal:attributes="selected python:mon==3">Mar</option>
+    <option value="4" tal:attributes="selected python:mon==4">Apr</option>
+    <option value="5" tal:attributes="selected python:mon==5">May</option>
+    <option value="6" tal:attributes="selected python:mon==6">Jun</option>
+    <option value="7" tal:attributes="selected python:mon==7">Jul</option>
+    <option value="8" tal:attributes="selected python:mon==8">Aug</option>
+    <option value="9" tal:attributes="selected python:mon==9">Sep</option>
+    <option value="10" tal:attributes="selected python:mon==10">Oct</option>
+    <option value="11" tal:attributes="selected python:mon==11">Nov</option>
+    <option value="12" tal:attributes="selected python:mon==12">Dec</option>
+  </select>
+  <select 
+    tal:attributes="name string:${view/name}.year"
+    tal:define="sel val/year">
+    <option tal:condition="not:context/required"></option>
+    <option tal:repeat="year python:range(view.minyear, view.maxyear+1)"
+      tal:content="year" tal:attributes="selected python:sel==year">
+      2004
+    </option>
+  </select>
+</div>
