@@ -33,6 +33,8 @@ class Manifest(SQLBase):
     uuid = StringCol(dbName='uuid', notNull=True, default=uuidgen())
 
     entries = MultipleJoin('ManifestEntry', joinColumn='manifest')
+    
+    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
 
     def __iter__(self):
         return self.entries

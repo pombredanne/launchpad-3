@@ -53,3 +53,8 @@ class BranchRelationship(SQLBase):
         return html
         
 
+class BranchLabel(SQLBase):
+    _table = 'BranchLabel'
+
+    label = ForeignKey(foreignKey='Label', dbName='label', notNull=True)
+    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=True)
