@@ -8,10 +8,10 @@
   <addform
     name="register"
     for=".interfaces.IMaloneApplication"
-    schema=".interfaces.IPerson"
+    schema="canonical.database.foaf.IPerson"
     label="Register"
     fields="presentationname givenname familyname password"
-    content_factory=".sql.PersonFactory"
+    content_factory=".browser.PersonFactory"
     arguments=""
     keyword_arguments="presentationname givenname familyname password"
     permission="zope.View"
@@ -25,10 +25,10 @@
   <addform
     name="+new"
     for=".interfaces.IBugContainer"
-    schema=".interfaces.IBug"
+    schema="canonical.database.malone.IBug"
     label="Add a Bug"
     fields="nickname title description"
-    content_factory=".sql.BugFactory"
+    content_factory=".browser.BugFactory"
     arguments=""
     keyword_arguments="nickname title description"
     permission="zope.View"
@@ -40,7 +40,7 @@
     may not be desirable -->
   <editform
     name="+edit"
-    schema=".interfaces.IBug"
+    schema="canonical.database.malone.IBug"
     label="Change Bug Information"
     permission="zope.View"
     template="templates/default-editform.pt"
@@ -51,11 +51,11 @@
   <!-- BugAttachment forms -->
   <addform
     name="+new"
-    schema=".interfaces.IBugAttachment"
-    for=".interfaces.IBugAttachmentContainer"
+    schema=".interfaces.IMaloneBugAttachment"
+    for=".browser.IBugAttachmentContainer"
     label="Add a Bug Attachment"
     fields="title description"
-    content_factory=".sql.BugAttachmentFactory"
+    content_factory=".browser.BugAttachmentFactory"
     arguments=""
     keyword_arguments="title description"
     permission="zope.View"
@@ -64,7 +64,7 @@
     />
 
   <editform
-    schema=".interfaces.IBugAttachment"
+    schema=".interfaces.IMaloneBugAttachment"
     label="Change Bug Attachment Information"
     name="+edit"
     permission="zope.View"
@@ -74,7 +74,7 @@
 
   <!-- BugAttachmentContent -->
   <page
-    for=".interfaces.IBugAttachmentContent"
+    for="canonical.database.malone.IBugAttachmentContent"
     class=".browser.BugAttachmentContentView"
     name="index"
     attribute="index"
@@ -84,11 +84,11 @@
 
   <addform
     name="+new"
-    schema=".interfaces.IBugAttachmentContent"
-    for=".interfaces.IBugAttachment"
+    schema="canonical.database.malone.IBugAttachmentContent"
+    for=".interfaces.IMaloneBugAttachment"
     label="Add a Bug Attachment Content"
     fields="filename content changecomment mimetype owner"
-    content_factory=".sql.BugAttachmentContentFactory"
+    content_factory=".browser.BugAttachmentContentFactory"
     arguments=""
     keyword_arguments="filename content changecomment mimetype owner"
     permission="zope.View"
@@ -97,7 +97,7 @@
     />
 
   <editform
-    schema=".interfaces.IBugAttachmentContent"
+    schema="canonical.database.malone.IBugAttachmentContent"
     label="Change Bug Attachment Content"
     name="+edit"
     permission="zope.View"
@@ -107,7 +107,7 @@
 
   <!-- IBugMessage -->
   <view
-    for=".interfaces.IBug"
+    for="canonical.database.malone.IBug"
     name="comments"
     class=".browser.BugMessagesView"
     permission="zope.View"
@@ -123,11 +123,11 @@
 
   <addform
     name="+new"
-    schema=".interfaces.IBugMessage"
+    schema="canonical.database.malone.IBugMessage"
     for=".interfaces.IBugMessagesView"
     label="Add a Comment"
     fields="title contents personmsg distribution"
-    content_factory=".sql.BugMessageFactory"
+    content_factory=".browser.BugMessageFactory"
     arguments=""
     keyword_arguments="title contents personmsg distribution"
     permission="zope.View"
@@ -135,14 +135,13 @@
     lp:url="malone/bugs/$Bug.id/comments/+new"
     />
 
-
   <addform
     name="new-pba"
-    schema=".interfaces.IProductBugAssignment"
-    for=".interfaces.IBug"
+    schema="canonical.database.malone.IProductBugAssignment"
+    for="canonical.database.malone.IBug"
     label="Add Product Bug Assignment"
     fields="product bugstatus priority severity"
-    content_factory=".sql.ProductBugAssignmentFactory"
+    content_factory=".browser.ProductBugAssignmentFactory"
     arguments=""
     keyword_arguments="product bugstatus priority severity"
     permission="zope.View"
@@ -159,11 +158,11 @@
 
   <addform
     name="new-sa"
-    schema=".interfaces.ISourcepackageBugAssignment"
-    for=".interfaces.IBug"
+    schema="canonical.database.malone.ISourcepackageBugAssignment"
+    for="canonical.database.malone.IBug"
     label="Add Sourcepackage Bug Assignment"
     fields="sourcepackage bugstatus priority severity"
-    content_factory=".sql.SourcepackageBugAssignmentFactory"
+    content_factory=".browser.SourcepackageBugAssignmentFactory"
     arguments=""
     keyword_arguments="sourcepackage bugstatus priority severity"
     permission="zope.View"
@@ -172,11 +171,11 @@
 
   <addform
     name="+new"
-    schema=".interfaces.IBugExternalRef"
-    for=".interfaces.IBugExternalRefContainer"
+    schema="canonical.database.malone.IBugExternalRef"
+    for=".browser.IBugExternalRefContainer"
     label="Add External Reference"
     fields="bugreftype data description"
-    content_factory=".sql.BugExternalRefFactory"
+    content_factory=".browser.BugExternalRefFactory"
     arguments=""
     keyword_arguments="bugreftype data description"
     permission="zope.View"
@@ -185,7 +184,7 @@
 
   <editform
     name="+edit"
-    schema=".interfaces.IBugExternalRef"
+    schema="canonical.database.malone.IBugExternalRef"
     label="Change Bug External Reference"
     permission="zope.View"
     template="templates/default-editform.pt"
@@ -193,11 +192,11 @@
 
   <addform
     name="+new"
-    schema=".interfaces.IBugSubscription"
-    for=".interfaces.IBugSubscriptionContainer"
+    schema="canonical.database.malone.IBugSubscription"
+    for=".browser.IBugSubscriptionContainer"
     label="Add Person"
     fields="subscription person"
-    content_factory=".sql.BugSubscriptionFactory"
+    content_factory=".browser.BugSubscriptionFactory"
     arguments=""
     keyword_arguments="subscription person"
     permission="zope.View"

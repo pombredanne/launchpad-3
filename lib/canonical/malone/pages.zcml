@@ -40,7 +40,7 @@
   <traverse for="canonical.malone.interfaces.IBugContainer"
             getter="__getitem__" />
 
-  <pages for="canonical.malone.interfaces.IBug"
+  <pages for=".interfaces.IMaloneBug"
          permission="zope.Public"
          lp:url="malone/bugs/$Bugs.id">
     <page name="index"
@@ -64,7 +64,7 @@
   <traverse for="canonical.malone.interfaces.IBugAttachmentContainer"
             getter="__getitem__" />
 
-  <pages for="canonical.malone.interfaces.IBugAttachment"
+  <pages for=".interfaces.IBugAttachment"
          permission="zope.Public"
          lp:url="malone/bugs/$Bugs.id/attachments/$Attachment.id">
     <page name="index"
@@ -81,7 +81,7 @@
   <traverse for="canonical.malone.interfaces.IProjectContainer"
             getter="__getitem__" />
 
-  <pages for="canonical.malone.interfaces.IProject"
+  <pages for="canonical.database.doap.IProject"
          permission="zope.Public">
     <page name="index"
           template="templates/project-index.pt"
@@ -108,7 +108,7 @@
   <traverse for="canonical.malone.interfaces.IBugSubscriptionContainer"
             getter="__getitem__" />
 
-  <pages for="canonical.malone.interfaces.IBugExternalRef"
+  <pages for="canonical.database.malone.IBugExternalRef"
          permission="zope.Public">
     <page name="index"
           template="templates/reference-index.pt"

@@ -1,109 +1,59 @@
 <configure
-    xmlns="http://namespaces.zope.org/zope"
-    xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:rdb="http://namespaces.zope.org/rdb">
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser">
 
   <!-- Content directives.  We need to make sure SubURLs and other kinds of
        traversal work properly.  We also need to make security declarations.
-    -->
+  -->
 
-  <content class="canonical.malone.sql.BugContainer">
-    <allow interface="canonical.malone.interfaces.IBugContainer" />
+  <content class=".browser.MaloneBugAttachment">
+    <allow interface=".interfaces.IMaloneBugAttachment" />
+    <require permission="zope.View" set_schema=".interfaces.IMaloneBug" />
+  </content>
+
+  <content class=".browser.MaloneBug">
+    <allow interface=".interfaces.IMaloneBug" />
+    <require permission="zope.View" set_schema=".interfaces.IMaloneBug" />
+  </content>
+
+  <content class=".browser.BugContainer">
+    <allow interface=".interfaces.IBugContainer" />
   </content>
 
   <utility
-      factory="canonical.malone.sql.BugContainer"
-      provides="canonical.malone.interfaces.IBugContainer" />
+      factory=".browser.BugContainer"
+      provides=".interfaces.IBugContainer" />
 
-  <content class="canonical.malone.sql.Bug">
-    <allow interface="canonical.malone.interfaces.IBug" />
-    <allow interface="canonical.malone.interfaces.IUsesAddForm" />
-    <implements interface="canonical.publication.IHasSuburls"/>
-    <require permission="zope.View" set_schema=".interfaces.IBug" />
-  </content>
-
-  <content class="canonical.malone.sql.BugAttachmentContainer">
-    <allow interface="canonical.malone.interfaces.IBugAttachmentContainer" />
+  <content class=".browser.BugAttachmentContainer">
+    <allow interface=".interfaces.IBugAttachmentContainer" />
   </content>
 
   <utility
-      factory="canonical.malone.sql.BugAttachmentContainer"
-      provides="canonical.malone.interfaces.IBugAttachmentContainer" />
+      factory=".browser.BugAttachmentContainer"
+      provides=".interfaces.IBugAttachmentContainer" />
 
-  <content class="canonical.malone.sql.BugActivity">
-    <allow interface="canonical.malone.interfaces.IBugActivity" />
-  </content> 
-
-  <content class="canonical.malone.sql.BugExternalRefContainer">
-    <allow interface="canonical.malone.interfaces.IBugExternalRefContainer" />
-    <allow interface="canonical.malone.interfaces.IUsesAddForm" />
+  <content class=".browser.BugExternalRefContainer">
+    <allow interface=".interfaces.IBugExternalRefContainer" />
   </content>
 
   <utility
-      factory="canonical.malone.sql.BugExternalRefContainer"
-      provides="canonical.malone.interfaces.IBugExternalRefContainer" />
+      factory=".browser.BugExternalRefContainer"
+      provides=".interfaces.IBugExternalRefContainer" />
 
-  <content class="canonical.malone.sql.BugExternalRef">
-    <allow interface="canonical.malone.interfaces.IBugExternalRef" />
-  </content>
-
-  <content class="canonical.malone.sql.BugMessage">
-    <allow interface="canonical.malone.interfaces.IBugMessage" />
-  </content>
-
-  <content class="canonical.malone.sql.BugAttachment">
-    <allow interface="canonical.malone.interfaces.IBugAttachment" />
-    <allow interface="canonical.malone.interfaces.IUsesAddForm" />
-    <require permission="zope.View" set_schema=".interfaces.IBugAttachment" />
-  </content>
-
-  <content class="canonical.malone.sql.BugAttachmentContent">
-    <allow interface="canonical.malone.interfaces.IBugAttachmentContent" />
-  </content>
-
-  <content class="canonical.malone.sql.Person">
-    <allow interface="canonical.malone.interfaces.IPerson" />
-  </content>
-
-  <content class="canonical.malone.sql.Project">
-    <allow interface="canonical.malone.interfaces.IProject" />
-  </content>
-
-  <content class="canonical.malone.sql.ProjectContainer">
-    <allow interface="canonical.malone.interfaces.IProjectContainer" />
+  <content class=".browser.BugSubscriptionContainer">
+    <allow interface=".interfaces.IBugSubscriptionContainer" />
   </content>
 
   <utility
-      factory="canonical.malone.sql.ProjectContainer"
-      provides="canonical.malone.interfaces.IProjectContainer" />
+      factory=".browser.BugSubscriptionContainer"
+      provides=".interfaces.IBugSubscriptionContainer" />
 
-  <content class="canonical.malone.sql.Product">
-    <allow interface="canonical.malone.interfaces.IProduct" />
-  </content>
-
-  <content class="canonical.malone.sql.Sourcepackage">
-    <allow interface="canonical.malone.interfaces.ISourcepackage" />
-  </content>
-
-  <content class="canonical.malone.sql.ProductBugAssignment">
-    <allow interface="canonical.malone.interfaces.IProductBugAssignment" />
-  </content>
-
-  <content class="canonical.malone.sql.SourcepackageBugAssignment">
-    <allow interface="canonical.malone.interfaces.ISourcepackageBugAssignment"/>
-  </content>
-
-  <content class="canonical.malone.sql.BugSubscriptionContainer">
-    <allow interface="canonical.malone.interfaces.IBugSubscriptionContainer" />
-    <allow interface="canonical.malone.interfaces.IUsesAddForm" />
+  <content class=".browser.ProjectContainer">
+    <allow interface=".interfaces.IProjectContainer" />
   </content>
 
   <utility
-      factory="canonical.malone.sql.BugSubscriptionContainer"
-      provides="canonical.malone.interfaces.IBugSubscriptionContainer" />
-
-  <content class="canonical.malone.sql.BugSubscription">
-    <allow interface="canonical.malone.interfaces.IBugSubscription" />
-  </content>
+      factory=".browser.ProjectContainer"
+      provides=".interfaces.IProjectContainer" />
 
 </configure>

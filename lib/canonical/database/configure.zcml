@@ -1,0 +1,63 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
+
+  <!-- TODO: Consider splitting this into multiple files, matching the .py -->
+
+  <content class="canonical.database.malone.Bug">
+    <allow interface="canonical.database.malone.IBug" />
+    <require permission="zope.View"
+      set_schema="canonical.database.malone.IBug" />
+  </content>
+
+  <content class="canonical.database.malone.BugActivity">
+    <allow interface="canonical.database.malone.IBugActivity" />
+  </content> 
+
+  <content class="canonical.database.malone.BugExternalRef">
+    <allow interface="canonical.database.malone.IBugExternalRef" />
+  </content>
+
+  <content class="canonical.database.malone.BugMessage">
+    <allow interface="canonical.database.malone.IBugMessage" />
+  </content>
+
+  <content class="canonical.database.malone.BugAttachment">
+    <allow interface="canonical.database.malone.IBugAttachment" />
+    <require permission="zope.View"
+      set_schema="canonical.database.malone.IBugAttachment" />
+  </content>
+
+  <content class="canonical.database.malone.BugAttachmentContent">
+    <allow interface="canonical.database.malone.IBugAttachmentContent" />
+  </content>
+
+  <content class="canonical.database.malone.ProductBugAssignment">
+    <allow interface="canonical.database.malone.IProductBugAssignment" />
+  </content>
+
+  <content class="canonical.database.malone.SourcepackageBugAssignment">
+    <allow interface="canonical.database.malone.ISourcepackageBugAssignment"/>
+  </content>
+
+  <content class="canonical.database.malone.BugSubscription">
+    <allow interface="canonical.database.malone.IBugSubscription" />
+  </content>
+
+  <content class="canonical.database.doap.Project">
+    <allow interface="canonical.database.doap.IProject" />
+  </content>
+
+  <content class="canonical.database.doap.Product">
+    <allow interface="canonical.database.doap.IProduct" />
+  </content>
+
+  <content class="canonical.database.doap.Sourcepackage">
+    <allow interface="canonical.database.doap.ISourcepackage" />
+  </content>
+
+  <content class="canonical.database.foaf.Person">
+    <allow interface="canonical.database.foaf.IPerson" />
+  </content>
+
+</configure>
