@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-09 14:57:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1296
+
+    Summary:
+      Example production dump restoration script
+    Revision:
+      launchpad--devel--0--patch-1296
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-130
+       Restore production db dump example script
+    
+
+    new files:
+     database/schema/.arch-ids/restoredump.sh.id
+     database/schema/restoredump.sh
+
+    modified files:
+     database/schema/security.cfg doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-130
+
+
 2005-02-08 22:25:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1295
 
     Summary:
