@@ -63,16 +63,19 @@ class SQLBase(SQLOS):
 
 
 class _ZopelessConnectionDescriptor(object):
-    def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter):
+    def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter,
+                 debug=False):
         self.connectionURI = connectionURI
         self.sqlosAdapter = sqlosAdapter
         self.transactions = {}
+        self.debug = debug
 
     def __get__(self, inst, cls=None):
         tid = thread.get_ident()
         if tid not in self.transactions:
             conn = connectionForURI(self.connectionURI).makeConnection()
             adapted = self.sqlosAdapter(conn)
+            adapted.debug = self.debug
             self.transactions[tid] = adapted.transaction()
         return self.transactions[tid]
 
@@ -81,14 +84,14 @@ class _ZopelessConnectionDescriptor(object):
         import warnings
         warnings.warn("Something tried to set a _connection.  Ignored.")
 
-    def install(cls, connectionURI, sqlClass=SQLBase):
+    def install(cls, connectionURI, sqlClass=SQLBase, debug=False):
         if isinstance(sqlClass.__dict__.get('_connection'),
                 _ZopelessConnectionDescriptor):
             import warnings
             warnings.warn("Already installed a _connection descriptor!  Overriding!")
             #raise RuntimeError, "Already installed _connection descriptor."
         cls.sqlClass = sqlClass
-        sqlClass._connection = cls(connectionURI)
+        sqlClass._connection = cls(connectionURI, debug=debug)
     install = classmethod(install)
 
     def uninstall(cls):
@@ -181,13 +184,13 @@ class ZopelessTransactionManager(object):
 
     """
 
-    def __init__(self, connectionURI, sqlClass=SQLBase):
+    def __init__(self, connectionURI, sqlClass=SQLBase, debug=False):
         # XXX: Importing a module-global and assigning it as an instance
         #      attribute smells funny.  Why not just use transaction.manager
         #      instead of self.manager?
         from transaction import manager
         self.manager = manager
-        _ZopelessConnectionDescriptor.install(connectionURI)
+        _ZopelessConnectionDescriptor.install(connectionURI, debug=debug)
         self.sqlClass = sqlClass
         #self.cls._connection = adapter(self.connection.makeConnection())
         #self.dm = self.cls._connection._dm

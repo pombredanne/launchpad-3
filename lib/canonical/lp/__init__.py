@@ -13,8 +13,9 @@ from canonical.database.sqlbase import ZopelessTransactionManager
 dbname = "launchpad_ftest"
 dbhost = ""
 
-def initZopeless():
-    return ZopelessTransactionManager('postgres://%s/%s' % (dbhost, dbname))
+def initZopeless(debug=False):
+    return ZopelessTransactionManager('postgres://%s/%s' % (dbhost, dbname),
+                                      debug=debug)
 
 def decorates(interface, context='context'):
     """Make an adapter into a decorator.
