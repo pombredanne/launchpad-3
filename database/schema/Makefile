@@ -4,6 +4,12 @@
 
 PYTHON=python2.3
 
+# The database dump to restore on database creation
+SAMPLEDATA=../sampledata/current.sql
+
+# The database dump to create
+NEWSAMPLEDATA=../sampledata/newsampledata.sql
+
 # The development database
 DBNAME=launchpad_dev
 
@@ -28,7 +34,7 @@ test: create
 	@ echo "* Loading language data"
 	@ psql -d ${TEST_DBNAME} -f ../languages.sql | grep : | cat
 	@ echo "* Loading sample data"
-	@ psql -d ${TEST_DBNAME} -f ../sampledata/current.sql | grep : | cat
+	@ psql -d ${TEST_DBNAME} -f $(SAMPLEDATA) | grep : | cat
 	@ echo "* Setting up full text indexes"
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
 	@ echo "* Adding comments"
@@ -141,7 +147,7 @@ newsample-soyuz:
 	pg_dump -d ${DBNAME} -a -D -O --table=potemplate | grep -v "\(SET \| TOC \)" > ../sampledata/new-rosetta.sql
 
 newsampledata:
-	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} | grep -v "\( TOC \|INSERT INTO \"language\" \|INSERT INTO spokenin \|INSERT INTO country \|INSERT INTO launchpaddatabaserevision \|'language_id_seq\|country_id_seq\|^--\)" > ../sampledata/newsampledata.sql
+	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} | grep -v "\( TOC \|INSERT INTO \"language\" \|INSERT INTO spokenin \|INSERT INTO country \|INSERT INTO launchpaddatabaserevision \|'language_id_seq\|country_id_seq\|^--\)" > $(NEWSAMPLEDATA)
 
 .PHONY: default base all
 
