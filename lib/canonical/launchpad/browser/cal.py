@@ -12,6 +12,7 @@ from zope.interface import implements
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
+
 from schoolbell.interfaces import IEditCalendar
 from schoolbell.simple import SimpleCalendarEvent
 from canonical.launchpad.interfaces import ICalendarView, ICalendarWeekView
@@ -19,6 +20,9 @@ from canonical.launchpad.interfaces import ICalendarDayView, ICalendarMonthView
 from canonical.launchpad.interfaces import ICalendarYearView
 from canonical.launchpad.interfaces import ICalendarDayInfo, ICalendarEventInfo
 from canonical.launchpad.interfaces import ICalendarMonthInfo
+from canonical.launchpad.interfaces import ICalendarEventCollection
+
+from canonical.launchpad.database import CalendarEvent
 
 from schoolbell.utils import prev_month, next_month
 from schoolbell.utils import weeknum_bounds, check_weeknum
@@ -94,6 +98,8 @@ def traverseCalendar(calendar, request, name):
     elif name == 'this-year':
         return MonthView(calendar,
                          year=now.year)
+    elif name == 'events':
+        return CalendarEventCollection(calendar)
 
 class CalendarView(object):
     """Base class for the various calendar views"""
@@ -112,6 +118,15 @@ class CalendarView(object):
         self.weekViewURL = '../%04d-W%02d' % (isoyear, isoweek)
         self.monthViewURL = '../%04d-%02d' % (date.year, date.month)
         self.yearViewURL = '../%04d' % date.year
+
+class CalendarEventCollection(object):
+    implements(ICalendarEventCollection)
+
+    def __init__(self, calendar):
+        self.calendar = calendar
+
+    def __getitem__(self, number):
+        return CalendarEvent.get(id=number)
 
 class MonthInfo(object):
     implements(ICalendarMonthInfo)

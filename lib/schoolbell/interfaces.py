@@ -266,6 +266,12 @@ class ICalendarEvent(Interface):
 
     """
 
+    id = Int(
+        title=u"An internal ID for the event",
+        required=True, readonly=True,
+        description=u"""An ID for the event, guaranteed to be unique locally
+        but not globally.""")
+
     unique_id = TextLine(
         title=u"UID",
         description=u"""

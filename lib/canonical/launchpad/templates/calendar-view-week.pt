@@ -49,9 +49,11 @@
                    tal:content="day/dayname">Monday</a></h2>
             <ul>
               <li tal:repeat="event day/events">
+                <a tal:attributes="href string:../events/${event/event/id}/">
                 <span tal:replace="event/timestring">12:00</span>
                 -
                 <span tal:replace="event/event/title">Title</span>
+                </a>
               </li>
             </ul>
             </div>

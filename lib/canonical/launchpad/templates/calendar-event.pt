@@ -1,0 +1,21 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xml:lang="en" lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+  <head>
+    <title metal:fill-slot="title">
+      <span tal:replace="context/title">Event Title</span>
+    </title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+  </head>
+
+  <body>
+
+    <div metal:fill-slot="main">
+      <h1 tal:content="context/title">Event Title</h1>
+      <p>Start time: <span tal:replace="context/dtstart">Start</span></p>
+      <p>Location: <span tal:replace="context/location">location</span></p>
+    </div>
+  </body>
+</html>

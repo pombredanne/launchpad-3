@@ -46,6 +46,25 @@
       for="schoolbell.interfaces.ICalendar"
       function="canonical.launchpad.browser.traverseCalendar" />
 
+  <content class="canonical.launchpad.browser.CalendarEventCollection">
+    <allow interface="canonical.launchpad.interfaces.ICalendarEventCollection" />
+  </content>
+  <browser:traverse
+      for="canonical.launchpad.interfaces.ICalendarEventCollection"
+      getter="__getitem__" />
+
+  <browser:defaultView
+      for="schoolbell.interfaces.ICalendarEvent"
+      name="+index" />
+  <browser:pages
+      for="schoolbell.interfaces.ICalendarEvent"
+      permission="zope.Public">
+    <browser:page
+        template="../templates/calendar-event.pt"
+        name="+index"
+        lp:url="$obj/calendar/events/$Event.id" />
+  </browser:pages>  
+
   <content class="canonical.launchpad.browser.MonthInfo">
     <allow interface="canonical.launchpad.interfaces.ICalendarMonthInfo" />
   </content>

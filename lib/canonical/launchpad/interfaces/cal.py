@@ -135,6 +135,9 @@ class ICalendarEventInfo(Interface):
     timestring = TextLine(
         title=_("The event start time as a string"))
 
+class ICalendarEventCollection(Interface):
+    def __getitem__(key):
+        """Get an event."""
 
 class ICalendarEventAddForm(Interface):
     """Schema for the New Calendar Event form."""
