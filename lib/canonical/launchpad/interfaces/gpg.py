@@ -23,3 +23,16 @@ class IGPGKey(Interface):
     revoked = Bool(title=_("Revoked"), required=True)
     
     algorithmname = Attribute("The Algorithm Name")
+
+
+class IGPGKeySet(Interface):
+    """The set of GPGKeys."""
+
+    def new(self, ownerID, keyid, pubkey, fingerprint, keysize,
+            algorithm, revoked):
+        """Create a new GPGKey pointing to the given Person."""
+
+    def get(id, default=None):
+        """Return the GPGKey object for the given id.
+        Return the given default if there's now object with the given id.
+        """

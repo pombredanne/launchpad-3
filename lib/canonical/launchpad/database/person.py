@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import IEmailAddress, IWikiName
 from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
 from canonical.launchpad.interfaces import IIrcIDSet, IArchUserIDSet
 from canonical.launchpad.interfaces import ISSHKeySet, IJabberIDSet
-from canonical.launchpad.interfaces import IWikiNameSet
+from canonical.launchpad.interfaces import IWikiNameSet, IGPGKeySet
 from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
 from canonical.launchpad.interfaces import IKarmaPointsManager
 from canonical.launchpad.interfaces import IPasswordEncryptor
@@ -97,6 +97,7 @@ class Person(SQLBase):
     subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
                                      otherColumn='bounty',
                                      intermediateTable='BountySubscription')
+    gpgkeys = MultipleJoin('GPGKey', joinColumn='owner')
 
     def get(cls, id, connection=None, selectResults=None):
         """Override the classmethod get from the base class.
@@ -497,16 +498,6 @@ class Person(SQLBase):
         return irc[0]
     irc = property(irc)
 
-    def gpg(self):
-        # XXX: salgado, 2005-01-14: This method will probably be replaced
-        # by a MultipleJoin since we have a good UI to add multiple
-        # GPGKeys. 
-        gpg = GPGKey.selectBy(ownerID=self.id)
-        if gpg.count() == 0:
-            return None
-        return gpg[0]
-    gpg = property(gpg)
-
     def maintainerships(self):
         maintainershipsutil = getUtility(IMaintainershipSet)
         return list(maintainershipsutil.getByPersonID(self.id))
@@ -670,7 +661,8 @@ class PersonSet(object):
         # Verify the the SignedCoC version too
         # we can't do it before add the field version on
         # SignedCoC version.
-        query = ('Person.id = SignedCodeOfConduct.person AND '
+        # Needs DISTINCT or check to prevent Sign CoC twice.
+        query = ('Person.id = SignedCodeOfConduct.owner AND '
                  'SignedCodeOfConduct.active = True')
 
         return Person.select(query, clauseTables=clauseTables)
@@ -934,6 +926,22 @@ class GPGKey(SQLBase):
         return self.algorithm.title
     
     algorithmname = property(_algorithmname)
+
+
+class GPGKeySet(object):
+    implements(IGPGKeySet)
+
+    def new(self, ownerID, keyid, pubkey, fingerprint, keysize,
+            algorithm, revoked):
+        return GPGKey(owner=ownerID, keyid=keyid, pubkey=pubkey,
+                      figerprint=fingerprint, keysize=keysize,
+                      algorithm=algorithm, revoked=revoked)
+
+    def get(self, id, default=None):
+        try:
+            return GPGKey.get(id)
+        except SQLObjectNotFound:
+            return default
 
 
 class SSHKey(SQLBase):

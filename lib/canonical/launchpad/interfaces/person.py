@@ -74,7 +74,8 @@ class IPerson(Interface):
 
     # Properties of the Person object.
     ubuntite = Attribute("Ubuntite Flag")
-    gpg = Attribute("GPG")
+    unvalidatedEmails = Attribute("The unvalidated emails requested by this person")
+    gpgkeys = Attribute("List of GPGkeys")
     irc = Attribute("IRC")
     bugs = Attribute("Bug")
     wiki = Attribute("Wiki")

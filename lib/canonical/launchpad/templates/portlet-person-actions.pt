@@ -22,6 +22,8 @@
         <a href="+emails">Email Addresses</a><br />
         <img src="/++resource++info_icon.gif">
         <a href="+editsshkey">SSH Keys</a><br />
+        <img src="/++resource++info_icon.gif">
+        <a href="+editgpgkey">GPG Keys</a><br />
 
         </div>
     </div>

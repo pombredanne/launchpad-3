@@ -240,30 +240,21 @@ class SignedCodeOfConductSet(object):
 
         # XXX cprov 20050328
         # Do not support multiple keys
-        if fingerprint != user.gpg.fingerprint:
+        gpg = user.gpgkeys[0]
+        
+        if fingerprint != gpg.fingerprint:
             return ('User and Signature do not match.\n'
                     'Sig %s != User %s' % (fingerprint,
-                                           user.gpg.fingerprint))
+                                           gpg.fingerprint))
         
-        if user.gpg.revoked:
+        if gpg.revoked:
             return  'Signed with a revoked Key.'
 
         # recover the current CoC release
         coc = CodeOfConduct(getUtility(ICodeOfConductConf).current)
         current = coc.content
                 
-        # XXX cprov 20050322
-        # Is this kind of comparition enough ?
-        # or should we try something like:
-        #from difflib import ndiff
-        #diff = ndiff(plain.splitlines(1),
-        #             current.splitlines(1))
-        #print 15 * '*', 'BEGIN DIFF', 15 * '*'
-        #print ''.join(diff)
-        #print 15 * '*', 'END DIFF', 15 * '*'
-        # INSTEAD of
-        #if plain != current:
-        #    return 'CoCs do not match'
+        # calculate text digest 
         plain_dig = sha(plain).hexdigest()
         current_dig = sha(current).hexdigest()
 
@@ -271,8 +262,6 @@ class SignedCodeOfConductSet(object):
             return ('CoCs digest do not match: %s vs. %s' % (plain_dig,
                                                              current_dig))
              
-        # XXX cprov 20050328
-        # do not support multiple keys
         subject = 'Launchpad: Code of Conduct Signature Acknowledge'
         content = ('Digitally Signed by %s\n\n'
                    '----- Signed Code Of Conduct -----\n'
@@ -283,7 +272,7 @@ class SignedCodeOfConductSet(object):
         sendAdvertisementEmail(user, subject, content)
         
         # Store the signature 
-        SignedCodeOfConduct(owner=user.id, signingkey=user.gpg.id,
+        SignedCodeOfConduct(owner=user.id, signingkey=gpg.id,
                             signedcode=signedcode, active=True)
 
     def searchByDisplayname(self, displayname, searchfor=None):

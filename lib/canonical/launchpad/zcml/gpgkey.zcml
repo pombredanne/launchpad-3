@@ -19,4 +19,16 @@
             lp:url="foaf/people/$person.id/+showgpg" />
     </browser:pages>
 
+    <!-- GPGKeySet -->
+    <content class="canonical.launchpad.database.GPGKeySet">
+        <allow interface="canonical.launchpad.interfaces.IGPGKeySet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.GPGKeySet"
+        provides="canonical.launchpad.interfaces.IGPGKeySet">
+        <allow interface="canonical.launchpad.interfaces.IGPGKeySet" />
+    </securedutility>
+
+
 </configure>

@@ -2,6 +2,110 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-04 18:23:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1552
+
+    Summary:
+      Person - GPGKey Handling prototype
+    Revision:
+      launchpad--devel--0--patch-1552
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-553
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-554
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-555
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-556
+       EditGPG keys pages added, no changes on DB yet just UI test.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-557
+       Missed template for "Person Edit GPGKeys" page
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-558
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-559
+       Workarround on CoC code to accept multiples gpgkeys, but not supporting it yet.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-560
+       Bug #277 solved: field renamed in SignedCoC form 'person' to 'owner'
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-561
+       GPGKeySet added and messages repaired
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-562
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-563
+       SSH related pagetests repaired and improved method_wrapper on PersonView
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-564
+       Add better description to filed SignedCoC.signedcode suggested by Bug #286, not sure yet about the Deattached Signature.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-565
+       Add pagetests for 'Ubuntites' and 'Edit GPG Keys' pages. 
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-566
+       Add "Claim Key" to +editgpgkey and link to export keys ala +sshkey
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-567
+       mirroring
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-568
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-569
+       Minor changes on 'Person - Edit GPG keys' page
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-codeofconduct-ubuntites.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-person-editgpgkeys.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-codeofconduct-ubuntites.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-person-editgpgkeys.txt
+     lib/canonical/launchpad/templates/.arch-ids/person-gpgkey.pt.id
+     lib/canonical/launchpad/templates/person-gpgkey.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/database/codeofconduct.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/codeofconduct.py
+     lib/canonical/launchpad/interfaces/gpg.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/foaf/95-add-sshkey.txt
+     lib/canonical/launchpad/pagetests/foaf/96-del-sshkey.txt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/person-sshkey.pt
+     lib/canonical/launchpad/templates/portlet-person-actions.pt
+     lib/canonical/launchpad/zcml/gpgkey.zcml
+     lib/canonical/launchpad/zcml/person.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-553
+     celso.providelo@canonical.com/launchpad--devel--0--patch-554
+     celso.providelo@canonical.com/launchpad--devel--0--patch-555
+     celso.providelo@canonical.com/launchpad--devel--0--patch-556
+     celso.providelo@canonical.com/launchpad--devel--0--patch-557
+     celso.providelo@canonical.com/launchpad--devel--0--patch-558
+     celso.providelo@canonical.com/launchpad--devel--0--patch-559
+     celso.providelo@canonical.com/launchpad--devel--0--patch-560
+     celso.providelo@canonical.com/launchpad--devel--0--patch-561
+     celso.providelo@canonical.com/launchpad--devel--0--patch-562
+     celso.providelo@canonical.com/launchpad--devel--0--patch-563
+     celso.providelo@canonical.com/launchpad--devel--0--patch-564
+     celso.providelo@canonical.com/launchpad--devel--0--patch-565
+     celso.providelo@canonical.com/launchpad--devel--0--patch-566
+     celso.providelo@canonical.com/launchpad--devel--0--patch-567
+     celso.providelo@canonical.com/launchpad--devel--0--patch-568
+     celso.providelo@canonical.com/launchpad--devel--0--patch-569
+
+
 2005-04-04 15:05:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1551
 
     Summary:
