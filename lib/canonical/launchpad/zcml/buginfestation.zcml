@@ -30,6 +30,7 @@
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IBugProductInfestation"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IBugProductInfestation"
         fields="productrelease infestationstatus"
         label="Edit Infested Product Release"

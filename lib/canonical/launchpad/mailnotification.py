@@ -107,6 +107,34 @@ Infestation: %(infestation)s
         FROM_MAIL, get_cc_list(product_infestation.bug),
         '"%s" product infestation' % product_infestation.bug.title, msg)
 
+def notify_bug_product_infestation_modified(modified_product_infestation, event):
+    """Notify CC'd list that this product infestation has been edited."""
+    old_bpa = event.object_before_modification
+    new_bpa = event.object
+
+    change = {}
+
+    old_pr = old_bpa.productrelease
+    new_pr = new_bpa.productrelease
+    if old_pr != new_pr:
+        change['productrelease'] = {}
+        change['productrelease']['old'] = "%s %s" % (
+            old_pr.product.name, old_pr.version)
+        change['productrelease']['new'] = "%s %s" % (
+            new_pr.product.name, new_pr.version)
+
+    old_status = old_bpa.infestationstatus
+    new_status = new_bpa.infestationstatus
+    if old_status != new_status:
+        change['infestationstatus'] = {}
+        change['infestationstatus']['old'] = BugInfestationStatus.items[old_status].title
+        change['infestationstatus']['new'] = BugInfestationStatus.items[new_status].title
+
+    send_edit_notification(
+        FROM_MAIL, get_cc_list(modified_product_infestation.bug),
+        '"%s" product infestation edited' % modified_product_infestation.bug.title,
+        change)
+
 def notify_bug_package_infestation_added(package_infestation, event):
     """Notify CC'd list that this bug has infested a
     source package release."""
@@ -146,7 +174,7 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
 
     send_edit_notification(
         FROM_MAIL, get_cc_list(modified_package_infestation.bug),
-        '"%s" package infestation' % modified_package_infestation.bug.title,
+        '"%s" package infestation edited' % modified_package_infestation.bug.title,
         change)
 
 def notify_bug_comment_added(comment, event):
@@ -213,16 +241,16 @@ def notify_bug_watch_modified(modified_bug_watch, event):
 
     send_edit_notification(
         FROM_MAIL, get_cc_list(modified_bug_watch.bug),
-        '"%s" was modified' % modified_bug_watch.bug.title,
+        '"%s" watch edited' % modified_bug_watch.bug.title,
         change)
 
 def send_edit_notification(from_addr, to_addrs, subject, change):
-    msg = """The following changes were made:
+    if change:
+        msg = """The following changes were made:
 
 """
-    for changed_field in change.keys():
-        msg += "%s: %s => %s\n" % (
-            changed_field, change[changed_field]["old"], change[changed_field]["new"])
+        for changed_field in change.keys():
+            msg += "%s: %s => %s\n" % (
+                changed_field, change[changed_field]["old"], change[changed_field]["new"])
 
-    simple_sendmail(from_addr, to_addrs, subject, msg)
-
+        simple_sendmail(from_addr, to_addrs, subject, msg)
