@@ -5,7 +5,10 @@
   <include package="canonical" />
 
   <include files="package-includes/*-meta.zcml" />
+  <includeOverrides file="override-meta.zcml" />
+
   <include files="package-includes/*-configure.zcml" />
+  <includeOverrides file="override-configure.zcml" />
 
   <!-- Provide local overrides of standard configurations-->
   <includeOverrides file="overrides.zcml" />

@@ -15,12 +15,15 @@ check:
 	PYTHONPATH=$(HERE)/lib ./test.py
 
 debugging-on:
-	cp ./lib/canonical/canonical.debugskin-configure.zcml ./package-includes/
-	cp ./lib/canonical/canonical.apidoc-configure.zcml ./package-includes/
+	ln -s ../lib/canonical/canonical.debugskin-configure.zcml ./package-includes/+canonical.debugskin-configure.zcml
+	ln -s ../lib/canonical/canonical.apidoc-configure.zcml ./package-includes/+canonical.apidoc-configure.zcml
 
 debugging-off:
-	rm ./package-includes/canonical.debugskin-configure.zcml
-	rm ./package-includes/canonical.apidoc-configure.zcml
+	rm -f ./package-includes/+canonical.debugskin-configure.zcml
+	rm -f ./package-includes/+canonical.apidoc-configure.zcml
+	# backwards compatibility for old style
+	rm -f ./package-includes/canonical.debugskin-configure.zcml
+	rm -f ./package-includes/canonical.apidoc-configure.zcml
 
 .PHONY: check debugging-on debugging-off
 
