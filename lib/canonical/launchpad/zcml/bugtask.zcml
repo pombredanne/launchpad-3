@@ -112,7 +112,8 @@
         for="canonical.launchpad.interfaces.IEditableDistroBugTask"
         class="canonical.launchpad.browser.bug.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename bugtitle bugdescription status priority severity assignee"
+        fields="sourcepackagename binarypackagename bugtitle bugdescription
+                status priority severity assignee"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-editform.pt"
@@ -152,7 +153,8 @@
         for="canonical.launchpad.interfaces.IEditableDistroBugTask"
         class="canonical.launchpad.browser.bug.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename bugtitle bugdescription status priority severity assignee"
+        fields="sourcepackagename binarypackagename bugtitle bugdescription
+                status priority severity assignee"
         label="Edit SourcePackage Bug Task"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-editform.pt"

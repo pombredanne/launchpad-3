@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 22:29:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1425
+
+    Summary:
+      response to bugtask.zcml code review
+    Revision:
+      launchpad--devel--0--patch-1425
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-411
+       response to bugtask.zcml code review
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/zcml/bugtask.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-411
+
+
 2005-03-11 22:19:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1424
 
     Summary:
