@@ -1,9 +1,7 @@
 # arch-tag: da5d31ba-6994-4893-b252-83f4f66f0aba
 
 from canonical.arch.sqlbase import SQLBase, quote
-from canonical.rosetta.interfaces import IProjects, IProject, IProduct, \
-    IPOTemplate, IPOFile, IPOMessageSet, IPOMessageIDSighting, IPOMessageID, \
-    IPOTranslationSighting, IPOTranslation, ILanguage, ILanguages, IPerson
+from canonical.rosetta.interfaces import *
 from sqlobject import ForeignKey, MultipleJoin, IntCol, BoolCol, StringCol, \
     DateTimeCol
 from zope.interface import implements
@@ -106,7 +104,7 @@ class RosettaProduct(SQLBase):
 
 
 class RosettaPOTemplate(SQLBase):
-    implements(IPOTemplate)
+    implements(IEditPOTemplate)
 
     _table = 'POTemplate'
 
@@ -191,16 +189,13 @@ class RosettaPOTemplate(SQLBase):
             '''
             % self.id).count()
 
-
-class RosettaEditPOTemplate(RosettaPOTemplate):
+    # IEditPOTemplate
     def expireAllMessages(self):
         self._connection.query('UPDATE POMsgSet SET sequence = 0'
                                ' WHERE potemplate = %d AND pofile = NULL'
                                % self.id)
 
-    def newMessageSet(text):
-        # XXX: return a RosettaEditPOMessageSet? Why would you create
-        # an object that you don't intend to edit? :-)
+    def newMessageSet(self, text):
         messageIDs = RosettaPOMessageID.selectBy(text=text)
         if messageIDs.count() == 0:
             messageID = RosettaPOMessageID(text=text)
@@ -214,7 +209,7 @@ class RosettaEditPOTemplate(RosettaPOTemplate):
                                    obsolete=False,
                                    fuzzy=False)
 
-    def createPOFile(language):
+    def createPOFile(self, language):
         # XXX: are we getting a string or a IRosettaLanguage object?
         if RosettaPOFile.selectBy(poTemplate=self, language=language).count():
             raise KeyError, "This template already has a POFile for %s" % language.englishName
@@ -224,7 +219,7 @@ class RosettaEditPOTemplate(RosettaPOTemplate):
 
 
 class RosettaPOFile(SQLBase):
-    implements(IPOFile)
+    implements(IEditPOFile)
 
     _table = 'POFile'
 
@@ -331,7 +326,7 @@ class RosettaPOFile(SQLBase):
         '''Same as untranslated(), but with COUNT.'''
         return len(self.poTemplate) - self.translated_count()
 
-class RosettaEditPOFile(RosettaPOFile):
+    # IEditPOFile
     def expireAllMessages(self):
         self._connection.query('UPDATE POMsgSet SET sequence = 0'
                                ' WHERE pofile = %d'
@@ -339,7 +334,7 @@ class RosettaEditPOFile(RosettaPOFile):
 
 
 class RosettaPOMessageSet(SQLBase):
-    implements(IPOMessageSet)
+    implements(IEditPOMessageSet)
 
     _table = 'POMsgSet'
 
@@ -412,8 +407,7 @@ class RosettaPOMessageSet(SQLBase):
                 poMessageSetID=self.id)
 
 
-class RosettaEditPOMessageSet(RosettaPOMessageSet):
-    """Interface for editing a MessageSet."""
+    # IEditPOMessageSet
 
     def makeMessageIDSighting(self, text, plural_form):
         """Return a new message ID sighting that points back to us."""
