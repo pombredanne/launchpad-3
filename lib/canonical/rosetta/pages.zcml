@@ -82,10 +82,14 @@
     <page name="index"
           template="templates/pofile-index.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language"/>
-    <page name="+edit"
-          template="templates/pofile-edit.pt"
-          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
   </pages>
+
+  <page name="+edit"
+        permission="launchpad.AnyPerson"
+        class="canonical.rosetta.browser.ViewPOFile"
+        for="canonical.rosetta.interfaces.IPOFile"
+        template="templates/pofile-edit.pt"
+        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
 
   <page name="po"
         for="canonical.rosetta.interfaces.IPOFile"
@@ -118,9 +122,6 @@
     <page name="about"
           template="templates/about.pt"
           lp:url="Rosetta/about" />
-    <page name="maintainer"
-          template="templates/dashboard-maintainer.pt"
-          lp:url="Rosetta/maintainer" />
     <page name="search"
           template="templates/search.pt"
           lp:url="Rosetta/search" />
@@ -137,6 +138,12 @@
           template="templates/sendto.pt"
           lp:url="Rosetta/sendto" />
   </pages>
+
+  <page for="canonical.rosetta.interfaces.IRosettaApplication"
+        permission="launchpad.AnyPerson"
+        name="maintainer"
+        template="templates/dashboard-maintainer.pt"
+        lp:url="Rosetta/maintainer" />
 
   <pages for="canonical.rosetta.interfaces.IRosettaApplication"
          permission="launchpad.AnyPerson"
