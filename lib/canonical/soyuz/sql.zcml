@@ -48,6 +48,10 @@
     <allow interface="canonical.soyuz.interfaces.IBinaryPackage"/>
   </content>
 
+  <content class="canonical.soyuz.sql.SoyuzBinaryPackageBuild">
+    <allow interface="canonical.soyuz.interfaces.IBinaryPackageBuild"/>
+  </content>
+
   <content class="canonical.soyuz.sql.SourcePackages">
     <allow interface="canonical.soyuz.interfaces.IPackageSet"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>

@@ -196,13 +196,17 @@ class IBinaryPackage(Interface):
     ##releases = Attribute("List of IBinaryPackageRelease objects")
 
 
-class IBinaryPackageRelease(Interface):
-    """A binary package release, e.g apache-utils 2.0.48-4_i386"""
-    # See the BinaryPackageRelease table
+class IBinaryPackageBuild(Interface):
+    """A binary package build, e.g apache-utils 2.0.48-4_i386"""
+    # See the BinaryPackageBuild table
 
-    name = Attribute("A string")
     version = Attribute("A version string")
-    sourceRelease = Attribute("An ISourcePackageRelease")
+    sourcePackageRelease = Attribute("An ISourcePackageRelease")
+    sourcepackage = Attribute("An ISourcePackage")
+    binaryPackage = Attribute("An ISourcePackageRelease")
+    processor = Attribute("An ISourcePackageRelease")
+    binpackageformat = Attribute("An ISourcePackageRelease")
+    datebuilt = Attribute("An ISourcePackageRelease")
 
 
 class ISourcePackage(Interface):

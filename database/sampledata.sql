@@ -30,10 +30,10 @@ INSERT INTO Distrorelease (name, title, description, distribution, version, comp
 
 
 -- Binarypackage
-INSERT INTO Binarypackage (name, title, description) values ('mozilla-firefox-0.8', 'Mozilla Firefox', 'some text');
-INSERT INTO Binarypackage (name, title, description) values ('mozilla-thunderbird-1.5', 'Mozilla Thunderbird', 'text');
-INSERT INTO Binarypackage (name, title, description) values ('mozilla-browser-1.4', 'Mozilla Browser', 'text and so');
-INSERT INTO Binarypackage (name, title, description) values ('emacs21-1.6', 'Emacs21 Programming Editor', 'fofofof');
+INSERT INTO Binarypackage (name, title, description) values ('mozilla-firefox', 'Mozilla Firefox', 'some text');
+INSERT INTO Binarypackage (name, title, description) values ('mozilla-thunderbird', 'Mozilla Thunderbird', 'text');
+INSERT INTO Binarypackage (name, title, description) values ('mozilla-browser', 'Mozilla Browser', 'text and so');
+INSERT INTO Binarypackage (name, title, description) values ('emacs21', 'Emacs21 Programming Editor', 'fofofof');
 INSERT INTO Binarypackage (name, title, description) values ('bash-1.8', 'Bash', 'another data');
 
  
@@ -52,7 +52,7 @@ VALUES ((SELECT id FROM ProcessorFamily WHERE name = 'x86'),
 INSERT INTO BinarypackageBuild (sourcepackagerelease, binarypackage, processor,
                                  binpackageformat, version, datebuilt)
 VALUES ((SELECT id FROM SourcepackageRelease WHERE version = '0.9.1-1'),
-         (SELECT id FROM Binarypackage WHERE name = 'mozilla-firefox-0.8'),
+         (SELECT id FROM Binarypackage WHERE name = 'mozilla-firefox'),
  	(SELECT id FROM Processor WHERE name = '386'),
  	1, -- DEB
  	'0.9.1-1',
