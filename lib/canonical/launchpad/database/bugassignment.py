@@ -31,12 +31,12 @@ class ProductBugAssignment(SQLBase):
                           default=None)
 
 
-class SourcepackageBugAssignment(SQLBase):
-    """A relationship between a Sourcepackage and a Bug."""
+class SourcePackageBugAssignment(SQLBase):
+    """A relationship between a SourcePackage and a Bug."""
 
-    implements(ISourcepackageBugAssignment)
+    implements(ISourcePackageBugAssignment)
 
-    _table = 'SourcepackageBugAssignment'
+    _table = 'SourcePackageBugAssignment'
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug')
     sourcepackage = ForeignKey(dbName='sourcepackage', notNull=True,

@@ -143,7 +143,7 @@
         getter="__getitem__" />
 
     <pages
-        for="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer"
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
         permission="zope.Public">
         <page name="index"
             template="../launchpad/templates/sourcepackagebugassignments-index.pt"
@@ -151,7 +151,7 @@
     </pages>
 
     <traverse
-        for="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer"
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer"
         getter="__getitem__" />
 
     <pages

@@ -6,15 +6,15 @@
 
     <vocabulary
         name="SourcePackage"
-        factory="canonical.launchpad.vocabulary.SourcepackageVocabulary" />
+        factory="canonical.launchpad.vocabulary.SourcePackageVocabulary" />
 
     <vocabulary
         name="BinaryPackage"
-        factory="canonical.launchpad.vocabulary.BinarypackageVocabulary" />
+        factory="canonical.launchpad.vocabulary.BinaryPackageVocabulary" />
 
     <vocabulary
         name="BinaryPackageName"
-        factory="canonical.launchpad.vocabulary.BinarypackageNameVocabulary" />
+        factory="canonical.launchpad.vocabulary.BinaryPackageNameVocabulary" />
 
     <vocabulary
         name="Person"

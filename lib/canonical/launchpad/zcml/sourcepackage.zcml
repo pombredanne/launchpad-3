@@ -12,17 +12,6 @@
       <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
-<!--
-    <content class="canonical.launchpad.database.SourcePackageRelease">
-        <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease" />
-        <allow
-            interface="zope.app.form.browser.interfaces.IAddFormCustomization" />
-        <require
-            permission="zope.View"
-            set_schema="canonical.launchpad.interfaces.ISourcePackageRelease" />
-    </content>
--->
-
     <!-- UTILITY DECLARATION-->
 
     <!-- VOCABULARIES -->

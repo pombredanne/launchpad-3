@@ -79,37 +79,37 @@ VALUES (timestamp '2004-07-05 00:00',
 /*
 --CodeRelease
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+VALUES ((SELECT id FROM SourcePackageRelease WHERE 
 	dateuploaded = timestamp '2004-06-29 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+VALUES ((SELECT id FROM SourcePackageRelease WHERE 
 	dateuploaded = timestamp '2004-06-30 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-30 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+VALUES ((SELECT id FROM SourcePackageRelease WHERE 
 	dateuploaded = timestamp '2004-07-01 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-01 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+VALUES ((SELECT id FROM SourcePackageRelease WHERE 
 	dateuploaded = timestamp '2004-07-02 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-02 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+VALUES ((SELECT id FROM SourcePackageRelease WHERE 
 	dateuploaded = timestamp '2004-07-03 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-03 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+VALUES ((SELECT id FROM SourcePackageRelease WHERE 
 	dateuploaded = timestamp '2004-07-04 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-07-04 00:00'));
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest) 
-VALUES ((SELECT id FROM SourcepackageRelease WHERE 
+VALUES ((SELECT id FROM SourcePackageRelease WHERE 
 	dateuploaded = timestamp '2004-07-05 00:00'),
  (SELECT id FROM Manifest WHERE datecreated = timestamp '2004-06-29 00:00'));
 

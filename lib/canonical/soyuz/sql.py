@@ -638,7 +638,7 @@ class DistroReleaseBinaryApp(object):
                                              version, self.release)
 
 class DistroReleaseBinariesApp(object):
-    """Binarypackages from a Distro Release"""
+    """BinaryPackages from a Distro Release"""
     where = (
         'PackagePublishing.binarypackage = BinaryPackage.id AND '
         'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '

@@ -107,16 +107,16 @@
         factory=".browser.BugProductInfestationContainer"
         provides="canonical.launchpad.interfaces.IBugProductInfestationContainer" />
 
-    <content class=".browser.SourcepackageBugAssignmentContainer">
-        <allow interface="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer" />
+    <content class=".browser.SourcePackageBugAssignmentContainer">
+        <allow interface="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer" />
         <allow
             interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
     </content>
 
     <utility
-        factory=".browser.SourcepackageBugAssignmentContainer"
-        provides="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer" />
+        factory=".browser.SourcePackageBugAssignmentContainer"
+        provides="canonical.launchpad.interfaces.ISourcePackageBugAssignmentContainer" />
 
     <content class=".browser.BugSubscriptionContainer">
         <allow interface="canonical.launchpad.interfaces.IBugSubscriptionContainer" />

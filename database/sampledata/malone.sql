@@ -20,8 +20,8 @@ timestamp '2004-06-29 00:00',
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest)
 VALUES (
-(SELECT id FROM Sourcepackage WHERE sourcepackagename =
-	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
+(SELECT id FROM SourcePackage WHERE sourcepackagename =
+	(SELECT id FROM SourcePackagename WHERE name = 'mozilla-firefox')),
 (SELECT max(id) FROM Manifest)
 );
 
@@ -43,11 +43,11 @@ timestamp '2004-06-28 00:00', 'mozilla-thunderbird-0.8.0',
 );
 
 /*
-INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+INSERT INTO SourcePackageRelease (sourcepackage, srcpackageformat, creator,
 version, dateuploaded, urgency)
 VALUES (
-(SELECT id FROM Sourcepackage WHERE sourcepackagename =
-	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird')),
+(SELECT id FROM SourcePackage WHERE sourcepackagename =
+	(SELECT id FROM SourcePackagename WHERE name = 'mozilla-thunderbird')),
 1, (SELECT id FROM Person WHERE displayname='Sample Person'),
 '0.8.0-1', timestamp '2004-06-29 00:00', 1
 );
@@ -61,8 +61,8 @@ timestamp '2004-06-29 00:00',
 
 INSERT INTO CodeRelease (sourcepackagerelease, manifest)
 VALUES (
-(SELECT id FROM Sourcepackage WHERE sourcepackagename =
-	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird')),
+(SELECT id FROM SourcePackage WHERE sourcepackagename =
+	(SELECT id FROM SourcePackagename WHERE name = 'mozilla-thunderbird')),
 (SELECT max(id) FROM Manifest)
 );
 
@@ -105,16 +105,16 @@ VALUES (
 
 -- Assign bug 'bob' to the mozilla-firefox sourcepackage and firefox-0.81
 -- binary package (OPEN, WONTFIX, 2)
-INSERT INTO SourcepackageBugAssignment (
+INSERT INTO SourcePackageBugAssignment (
     bug, sourcepackage, bugstatus, priority, severity, binarypackage, assignee
     )
 VALUES (
     (SELECT id FROM Bug WHERE name='bob'),
-    (SELECT id FROM Sourcepackage WHERE sourcepackagename =
-	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox')),
+    (SELECT id FROM SourcePackage WHERE sourcepackagename =
+	(SELECT id FROM SourcePackagename WHERE name = 'mozilla-firefox')),
     2, 4, 2,
     (SELECT id FROM BinaryPackage WHERE version='0.8' AND binarypackagename = (
-        SELECT id FROM BinarypackageName WHERE name='mozilla-firefox'
+        SELECT id FROM BinaryPackageName WHERE name='mozilla-firefox'
         )),
     (SELECT id FROM Person WHERE displayname='Sample Person')
 );
@@ -123,11 +123,11 @@ VALUES (
 UPDATE Bug SET name=NULL WHERE name='bob';
 
 /*
-INSERT INTO SourcepackageBugAssignment
+INSERT INTO SourcePackageBugAssignment
     (bug, sourcepackage, bugstatus, priority, severity, binarypackage)
 VALUES (
     (SELECT id FROM Bug WHERE name='blackhole'),
-    (SELECT id FROM Sourcepackage WHERE name='mozilla-thunderbird'),
+    (SELECT id FROM SourcePackage WHERE name='mozilla-thunderbird'),
     2, 4, 2, NULL
     );
 */

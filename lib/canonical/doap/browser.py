@@ -8,7 +8,3 @@ class DOAPApplicationView(object):
         self.context = context
         self.request = request
 
-
-#
-# A View Class for Product
-# This has moved to launchpad.browser(product.py)

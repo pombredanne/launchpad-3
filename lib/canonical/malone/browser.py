@@ -22,7 +22,7 @@ from canonical.launchpad.database import \
         SourcePackage, SourcePackageName, BinaryPackage, \
         BugTracker, BugsAssignedReport, BugWatch, Product, Person, EmailAddress, \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
-        ProductBugAssignment, SourcepackageBugAssignment, \
+        ProductBugAssignment, SourcePackageBugAssignment, \
         BugProductInfestation, BugPackageInfestation
 from canonical.database import sqlbase
 
@@ -41,9 +41,9 @@ from canonical.launchpad.interfaces import \
         IBugMessagesView, IBugExternalRefsView, \
         IMaloneBug, IMaloneBugAttachment, \
         IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
-        IBugSubscriptionContainer, ISourcepackageContainer, \
+        IBugSubscriptionContainer, ISourcePackageContainer, \
         IBugWatchContainer, IProductBugAssignmentContainer, \
-        ISourcepackageBugAssignmentContainer, IBugProductInfestationContainer, \
+        ISourcePackageBugAssignmentContainer, IBugProductInfestationContainer, \
         IBugPackageInfestationContainer, IPerson
 
 
@@ -59,7 +59,7 @@ def traverseBug(bug, request, name):
     elif name == 'productassignments':
         return ProductBugAssignmentContainer(bug=bug.id)
     elif name == 'sourcepackageassignments':
-        return SourcepackageBugAssignmentContainer(bug=bug.id)
+        return SourcePackageBugAssignmentContainer(bug=bug.id)
     elif name == 'productinfestations':
         return BugProductInfestationContainer(bug=bug.id)
     elif name == 'packageinfestations':
@@ -306,7 +306,7 @@ class BugContainer(BugContainerBase):
             pba = ProductBugAssignment(bug=bug, product=product)
 
         # If the user has specified a sourcepackage, create the
-        # SourcepackageBugAssignment. This might also link to the
+        # SourcePackageBugAssignment. This might also link to the
         # binary package if it was specified.
         sourcepkgid = getattr(ob, 'sourcepackage', None)
         binarypkgid = getattr(ob, 'binarypackage', None)
@@ -343,7 +343,7 @@ def BugAdder(object):
             pba = ProductBugAssignment(bug=bug, product=product)
 
         # If the user has specified a sourcepackage, create the
-        # SourcepackageBugAssignment. This might also link to the
+        # SourcePackageBugAssignment. This might also link to the
         # binary package if it was specified.
         sourcepkgid = getattr(ob, 'sourcepackage', None)
         binarypkgid = getattr(ob, 'binarypackage', None)
@@ -353,7 +353,7 @@ def BugAdder(object):
                 binarypkg = BinaryPackage.get(binarypkgid)
             else:
                 binarypkg = None
-            sba = SourcepackageBugAssignment(
+            sba = SourcePackageBugAssignment(
                     bug=bug, sourcepackage=sourcepkg,
                     binarypackage=binarypkg,
                     )
@@ -524,15 +524,15 @@ def BugPackageInfestationFactory(context, **kw):
         **kw)
     return bpi
 
-class SourcepackageBugAssignmentContainer(BugContainerBase):
-    """A container for SourcepackageBugAssignment"""
+class SourcePackageBugAssignmentContainer(BugContainerBase):
+    """A container for SourcePackageBugAssignment"""
 
-    implements(ISourcepackageBugAssignmentContainer)
-    table = SourcepackageBugAssignment
+    implements(ISourcePackageBugAssignmentContainer)
+    table = SourcePackageBugAssignment
 
 
-def SourcepackageBugAssignmentFactory(context, **kw):
-    sa = SourcepackageBugAssignment(bug=context.context.bug,
+def SourcePackageBugAssignmentFactory(context, **kw):
+    sa = SourcePackageBugAssignment(bug=context.context.bug,
                                     binarypackage=None,
                                     **kw)
     return sa
@@ -583,14 +583,14 @@ class BugSubscriptionContainer(BugContainerBase):
         conn.query('DELETE FROM BugSubscription WHERE id=%d' % int(id))
 
 
-class SourcepackageContainer(object):
-    """A container for Sourcepackage objects."""
+class SourcePackageContainer(object):
+    """A container for SourcePackage objects."""
 
-    implements(ISourcepackageContainer)
+    implements(ISourcePackageContainer)
     table = SourcePackage
 
     #
-    # We need to return a Sourcepackage given a name. For phase 1 (warty)
+    # We need to return a SourcePackage given a name. For phase 1 (warty)
     # we can assume that there is only one package with a given name, but
     # later (XXX) we will have to deal with multiple source packages with
     # the same name.
@@ -604,19 +604,19 @@ class SourcepackageContainer(object):
         for row in self.table.select():
             yield row
 
-    _bugassignments = SourcepackageBugAssignment
+    _bugassignments = SourcePackageBugAssignment
 
     def bugassignments(self, orderby='-id'):
         # TODO: Ordering
         return self._bugassignments.select(orderBy=orderby)
 
     #
-    # return a result set of Sourcepackages with bugs assigned to them
+    # return a result set of SourcePackages with bugs assigned to them
     # which in future might be limited by distro, for example
     #
     def withBugs(self):
         return self.table.select("SourcePackage.id = \
-        SourcepackageBugAssignment.sourcepackage")
+        SourcePackageBugAssignment.sourcepackage")
 
 
 class BugExternalRefsView(object):
@@ -632,13 +632,13 @@ class BugExternalRefsView(object):
         return '..'
 
 
-class SourcepackageView(object):
+class SourcePackageView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
     def affectedBinaryPackages(self):
-        '''Return a list of [Binarypackage, {severity -> count}]'''
+        '''Return a list of [BinaryPackage, {severity -> count}]'''
         m = {}
         sevdef = {}
         BugSeverity = dbschema.BugSeverity

@@ -40,7 +40,7 @@ def append_list(data):
 
 def get_current_packages(doap):
     packagenames = []
-    print '@ Retrieve Sourcepackage Information From Soyuz'
+    print '@ Retrieve SourcePackage Information From Soyuz'
     ## get all project names from doap
     ##packages = doap.getSourcePackageNames()
 
@@ -60,7 +60,7 @@ def get_current_packages(doap):
         packagenames.append(sources.Section['Package'])
         index += 1
 
-    print '@ %d Sourcepackages from Soyuz' % index        
+    print '@ %d SourcePackages from Soyuz' % index        
     return index, packagenames
 
 

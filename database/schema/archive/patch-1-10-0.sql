@@ -10,9 +10,9 @@ ALTER TABLE Bug ADD CHECK (not id = duplicateof);
 ALTER TABLE ProductBugAssignment ADD assignee integer REFERENCES Person(id);
 ALTER TABLE ProductBugAssignment ALTER COLUMN assignee SET NOT NULL;
 
-ALTER TABLE SourcepackageBugAssignment ADD assignee integer 
+ALTER TABLE SourcePackageBugAssignment ADD assignee integer 
     REFERENCES Person(id);
-ALTER TABLE SourcepackageBugAssignment ALTER COLUMN assignee SET NOT NULL;
+ALTER TABLE SourcePackageBugAssignment ALTER COLUMN assignee SET NOT NULL;
 
 /* DistroRelease name unique */
 ALTER TABLE Distribution ADD UNIQUE (name);

@@ -70,7 +70,7 @@ class SQLObjectVocabularyBase(object):
         return self.getTerm(token)
 
 
-class SourcepackageVocabulary(SQLObjectVocabularyBase):
+class SourcePackageVocabulary(SQLObjectVocabularyBase):
     # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
     # no test data for me to check yet. This'll be fixed by the end
     # of the week (2004/10/08) as we get Malone into usable shape.
@@ -84,7 +84,7 @@ class SourcepackageVocabulary(SQLObjectVocabularyBase):
         return self.getTerm(token)
 
 
-class BinarypackageNameVocabulary(SQLObjectVocabularyBase):
+class BinaryPackageNameVocabulary(SQLObjectVocabularyBase):
     _table = BinaryPackageName
     _orderBy = 'name'
 
@@ -102,12 +102,12 @@ class ProductVocabulary(SQLObjectVocabularyBase):
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.displayname or obj.title)
 
-# We cannot refer to a Binarypackage unambiguously by a name, as
-# we have no assurace that a generated name using $BinarypackageName.name
-# and $Binarypackage.version will be unique
+# We cannot refer to a BinaryPackage unambiguously by a name, as
+# we have no assurace that a generated name using $BinaryPackageName.name
+# and $BinaryPackage.version will be unique
 # TODO: The edit sourcepackagebugassignment for does not default its
 # binary package field
-class BinarypackageVocabulary(SQLObjectVocabularyBase):
+class BinaryPackageVocabulary(SQLObjectVocabularyBase):
     # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
     # no test data for me to check yet. This'll be fixed by the end
     # of the week (2004/10/08) as we get Malone into usable shape.

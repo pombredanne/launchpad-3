@@ -94,11 +94,11 @@ COMMENT ON COLUMN Bug.name IS
   Soyuz
 */
 -- Are these soyuz or butress?
-COMMENT ON COLUMN Sourcepackage.sourcepackagename IS 
+COMMENT ON COLUMN SourcePackage.sourcepackagename IS 
     'A lowercase name identifying the sourcepackage';
-COMMENT ON COLUMN SourcepackageName.name IS
+COMMENT ON COLUMN SourcePackageName.name IS
     'A lowercase name identifying one or more sourcepackages';
-COMMENT ON COLUMN BinarypackageName.name IS
+COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
 COMMENT ON COLUMN SourcePackage.srcpackageformat IS 
     'The format of this source package, e.g. DPKG, RPM, EBUILD, etc.';
@@ -183,20 +183,20 @@ COMMENT ON COLUMN DistroReleaseQueueBuild.distroreleasequeue IS 'This integer fi
 
 COMMENT ON COLUMN DistroReleaseQueueBuild.build IS 'This integer field refers to the Build record related to this upload.';
 
--- SourcepackageRelease
-COMMENT ON COLUMN SourcepackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
+-- SourcePackageRelease
+COMMENT ON COLUMN SourcePackageRelease.section IS 'This integer field references the Section which the source package claims to be in';
 
-/* SourcepackagePublishing and PackagePublishing */
+/* SourcePackagePublishing and PackagePublishing */
 
-COMMENT ON COLUMN SourcepackagePublishing.datepublished IS 'This column contains the timestamp at which point the SourcepackageRelease progressed from a pending publication to being published in the respective DistroRelease';
+COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'This column contains the timestamp at which point the SourcePackageRelease progressed from a pending publication to being published in the respective DistroRelease';
 
-COMMENT ON COLUMN SourcepackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
+COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
 
-COMMENT ON COLUMN SourcepackagePublishing.datepublished IS 'This column contains the timestamp at which point the Build progressed from a pending publication to being published in the respective DistroRelease';
+COMMENT ON COLUMN SourcePackagePublishing.datepublished IS 'This column contains the timestamp at which point the Build progressed from a pending publication to being published in the respective DistroRelease';
 
-COMMENT ON COLUMN SourcepackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
+COMMENT ON COLUMN SourcePackagePublishing.scheduleddeletiondate IS 'This column is only used when the the publishing record is PendingRemoval. It indicates the earliest time that this record can be removed. When a publishing record is removed, the files it embodies are made candidates for removal from the pool.';
 
-COMMENT ON COLUMN SourcepackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
+COMMENT ON COLUMN SourcePackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
 
 COMMENT ON COLUMN PackagePublishing.status IS 'This column contains the status of the publishing record. The valid states are described in dbschema.py in PackagePublishingStatus. Example states are "Pending" and "Published"';
 

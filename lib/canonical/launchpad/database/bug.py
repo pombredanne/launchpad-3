@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces.bug import IBug
 from canonical.launchpad.interfaces import *
 
 from canonical.launchpad.database.bugassignment \
-        import SourcepackageBugAssignment, ProductBugAssignment
+        import SourcePackageBugAssignment, ProductBugAssignment
 from canonical.launchpad.database.package import SourcePackage
 from canonical.launchpad.database.product import Product
 
@@ -50,7 +50,7 @@ class Bug(SQLBase):
     messages = MultipleJoin('BugMessage', joinColumn='bug')
     # TODO: Standardize on pluralization and naming for table relationships
     productassignment = MultipleJoin('ProductBugAssignment', joinColumn='bug')
-    sourceassignment = MultipleJoin('SourcepackageBugAssignment',
+    sourceassignment = MultipleJoin('SourcePackageBugAssignment',
                                     joinColumn='bug')
     productinfestations = MultipleJoin('BugProductInfestation', joinColumn='bug')
     packageinfestations = MultipleJoin('BugPackageInfestation', joinColumn='bug')
@@ -288,7 +288,7 @@ class BugsAssignedReport(object):
         # initialise the user to None, will raise an exception if the
         # calling class does not set this to a person.id
         self.user = None
-        self.BSA = SourcepackageBugAssignment
+        self.BSA = SourcePackageBugAssignment
         self.BPA = ProductBugAssignment
 
     def assignedBugs(self):

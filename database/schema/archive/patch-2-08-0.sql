@@ -1,10 +1,10 @@
 SET client_min_messages TO error;
 
-ALTER TABLE SourcepackageBugAssignment DROP CONSTRAINT "$3";
-ALTER TABLE SourcepackageBugAssignment 
+ALTER TABLE SourcePackageBugAssignment DROP CONSTRAINT "$3";
+ALTER TABLE SourcePackageBugAssignment 
     RENAME COLUMN binarypackage TO binarypackagename;
-ALTER TABLE SourcepackageBugAssignment ADD FOREIGN KEY (binarypackagename)
-    REFERENCES BinarypackageName;
+ALTER TABLE SourcePackageBugAssignment ADD FOREIGN KEY (binarypackagename)
+    REFERENCES BinaryPackageName;
 
 /* GPG Key id's aren't necessarily unique, but fingerprints are */
 

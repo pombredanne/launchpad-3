@@ -47,7 +47,7 @@ class IProduct(Interface):
     sourcepackages = Attribute(_("List of distribution packages for this \
         product"))
 
-    packages = Attribute (_('Sourcepackages related to a Product'))
+    packages = Attribute (_('SourcePackages related to a Product'))
 
     bugs = Attribute(
         """A list of ProductBugAssignments for this Product.""")

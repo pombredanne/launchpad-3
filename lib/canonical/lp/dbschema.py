@@ -267,7 +267,7 @@ class Packaging(DBSchema):
         ''')
 
     INCLUDES = Item(2, '''
-        Sourcepackage Includes Product
+        SourcePackage Includes Product
 
         This source package includes some part or all of the product. For
         example, the "cadaver" source package has an "includes" Packaging
@@ -812,7 +812,7 @@ class DistroReleaseQueueStatus(DBSchema):
     part of a DistroRelease. These are managed via the DistroReleaseQueue
     table and related tables and eventually (assuming a successful upload
     into the DistroRelease) the effects are published via the PackagePublishing
-    and SourcepackagePublishing tables.
+    and SourcePackagePublishing tables.
     """
 
     UNCHECKED = Item(1, '''

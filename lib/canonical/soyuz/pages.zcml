@@ -346,7 +346,7 @@
 	  name="index.html"
      	  class="canonical.soyuz.browser.DistroReleaseBinariesView"
           template="../launchpad/templates/binarypackage-list.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/index.html"
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/index.html"
 	/>
 
   <page for="canonical.soyuz.sql.DistroReleaseBinariesApp"
@@ -366,7 +366,7 @@
 
 	<page  name="index.html"
           template="../launchpad/templates/binarypackage-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/index.html"
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/index.html"
 	/>
    </pages>
 
@@ -378,12 +378,12 @@
 
 	<page  name="index.html"
           template="../launchpad/templates/binarypackagerelease-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/index.html"
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/$version/index.html"
 	/>
 
 	<page  name="+license"
           template="../launchpad/templates/binarypackagerelease-license.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/+license"
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/$version/+license"
 	/>
    </pages>
 
@@ -393,7 +393,7 @@
 
 	<page  name="index.html"
           template="../launchpad/templates/binarypackagebuild-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/$version/$archtag/index.html"
+	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/$version/$archtag/index.html"
 	/>
    </pages>
 

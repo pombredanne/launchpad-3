@@ -21,16 +21,16 @@ class IProductBugAssignmentContainer(Interface):
     def __iter__():
         """Iterate through ProductBugAssignments for a given bug."""
 
-class ISourcepackageBugAssignmentContainer(Interface):
-    """A container for ISourcepackageBugAssignment objects."""
+class ISourcePackageBugAssignmentContainer(Interface):
+    """A container for ISourcePackageBugAssignment objects."""
 
     bug = Int(title=_("Bug id"), readonly=True)
 
     def __getitem__(key):
-        """Get a SourcepackageBugAssignment"""
+        """Get a SourcePackageBugAssignment"""
 
     def __iter__():
-        """Iterate through SourcepackageBugAssignments for a given bug."""
+        """Iterate through SourcePackageBugAssignments for a given bug."""
 
 
 class IProductBugAssignment(Interface):
@@ -45,7 +45,7 @@ class IProductBugAssignment(Interface):
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
 
 
-class ISourcepackageBugAssignment(Interface):
+class ISourcePackageBugAssignment(Interface):
     """The status of a bug with regard to a source package."""
 
     id = Int(title=_('ID'), required=True, readonly=True)

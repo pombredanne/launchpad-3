@@ -11,7 +11,7 @@
         <tr tal:repeat="bugass context/sourceassignment"
             tal:attributes="onclick string:window.location='sourcepackageassignments/${bugass/id}/+edit';">
         <td tal:content="bugass/sourcepackage/sourcepackagename/name">
-            $SourcepackageName.name
+            $SourcePackageName.name
         </td>
             <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
                 $ProductBugAssignment.bugstatus
@@ -27,7 +27,7 @@
                     tal:omit-tag=""
                     tal:condition="bugass/binarypackagename"
                     tal:content="bugass/binarypackagename/name">
-                    $BinarypackageName.name
+                    $BinaryPackageName.name
                 </span>
                 <span
                     tal:omit-tag=""

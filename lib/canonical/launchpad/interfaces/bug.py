@@ -67,7 +67,7 @@ class IBug(Interface):
     people = Attribute('SQLObject.Multijoin of IPerson')
     productassignment = Attribute('SQLObject.Multijoin of IProductBugAssigment')
     sourceassignment = Attribute(
-            'SQLObject.Multijoin of ISourcepackageBugAssignment'
+            'SQLObject.Multijoin of ISourcePackageBugAssignment'
             )
     productinfestations = Attribute('List of product release infestations.')
     packageinfestations = Attribute('List of package release infestations.')
@@ -169,20 +169,20 @@ class IBugWatchContainer(Interface):
     def __iter__():
         """Iterate through BugWatches for a given bug."""
 
-class ISourcepackageContainer(Interface):
+class ISourcePackageContainer(Interface):
     """A container for ISourcePackage objects."""
 
     def __getitem__(key):
         """Get an ISourcePackage by name"""
 
     def __iter__():
-        """Iterate through Sourcepackages."""
+        """Iterate through SourcePackages."""
 
     def bugassignments(self, orderby='-id'):
-        """Sequence of SourcepackageBugAssignment, in order"""
+        """Sequence of SourcePackageBugAssignment, in order"""
 
     def withBugs(self):
-        """Return a sequence of Sourcepackage, that have bugs assigned to
+        """Return a sequence of SourcePackage, that have bugs assigned to
         them. In future, we might pass qualifiers to further limit the list
         that is returned, such as a name filter."""
 

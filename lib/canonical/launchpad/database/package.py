@@ -198,7 +198,7 @@ class SourcePackage(SQLBase):
 
     # Got from the old SourcePackage class
     bugs = MultipleJoin(
-            'SourcepackageBugAssignment', joinColumn='sourcepackage'
+            'SourcePackageBugAssignment', joinColumn='sourcepackage'
             )
 
     sourcepackagereleases = MultipleJoin(

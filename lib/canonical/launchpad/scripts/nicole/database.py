@@ -85,7 +85,7 @@ class Doap(SQLThing):
 
 
     def getSourcePackage(self, name):
-        return self._query_single("""SELECT id FROM Sourcepackage WHERE
+        return self._query_single("""SELECT id FROM SourcePackage WHERE
                                      sourcepackagename = (SELECT id from
                                      sourcepackagename WHERE name = %s);""",
                                   (name,))
