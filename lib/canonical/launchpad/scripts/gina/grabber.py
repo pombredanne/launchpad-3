@@ -115,7 +115,8 @@ def get_tagfiles(root, distrorelease, component, arch):
     os.system("gzip -dc %s > %s" % (di_zipped, di_tagfile))
     difile = os.fdopen(difd)
 
-    return srcfile, sources_tagfile, binfile, binaries_tagfile, difile, di_tagfile
+    return (srcfile, sources_tagfile, binfile, binaries_tagfile, difile,
+            di_tagfile)
 
 def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
     try:

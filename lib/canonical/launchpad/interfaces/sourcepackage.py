@@ -31,10 +31,11 @@ class ISourcePackage(Interface):
     maintainer = Int(title=_("Maintainer"), required=True)
     title = TextLine(title=_("Title"), required=True)
     shortdesc = Text(title=_("Description"), required=True)
+    srcpackageformat = Int(title=_('Source package format'), required=True)
     description = Text(title=_("Description"), required=True)
     manifest = Int(title=_("Manifest"), required=False)
     distro = Int(title=_("Distribution"), required=False)
-    sourcepackagename = Int(title=_("SourcePackage Name"), required=True)
+    sourcepackagename = Int(title=_("Source package name"), required=True)
     bugs = Attribute("bugs")
 
     product = Attribute("Product, or None")

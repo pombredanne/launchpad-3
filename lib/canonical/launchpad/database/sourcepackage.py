@@ -39,7 +39,10 @@ class SourcePackage(SQLBase):
     shortdesc   = StringCol(dbName='shortdesc', notNull=True)
     description = StringCol(dbName='description', notNull=True)
 
-    distro            = ForeignKey(foreignKey='Distribution', dbName='distro')
+    srcpackageformat = IntCol(dbName='srcpackageformat', notNull=True)
+
+    distro            = ForeignKey(foreignKey='Distribution', 
+                                   dbName='distro')
     manifest          = ForeignKey(foreignKey='Manifest', dbName='manifest')
     maintainer        = ForeignKey(foreignKey='Person', dbName='maintainer', 
                                    notNull=True)
