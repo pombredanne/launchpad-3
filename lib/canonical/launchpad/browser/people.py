@@ -30,6 +30,9 @@ from canonical.launchpad.interfaces import IPasswordEncryptor
 
 from canonical.launchpad.mail.sendmail import simple_sendmail
 
+# browser import
+from canonical.launchpad.browser.cal import CalendarInfoPortlet
+
 # zope imports
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -145,6 +148,8 @@ class TeamAddView(AddView):
 class PersonView(object):
     """A simple View class to be used in Person's pages where we don't have
     actions and all we need is the context/request."""
+
+    calendarInfoPortlet = CalendarInfoPortlet('../templates/portlet-calendar-info.pt')
 
     def __init__(self, context, request):
         self.context = context

@@ -15,14 +15,15 @@ from zope.event import notify
 from zope.security import checkPermission
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
+from zope.app.pagetemplate.viewpagetemplatefile import \
+     ViewPageTemplateFile, BoundPageTemplate
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 from schoolbell.simple import SimpleCalendarEvent
-from canonical.launchpad.interfaces import IPerson, IRequestTzInfo
-from canonical.launchpad.interfaces import ICalendarDay, ICalendarWeek
-from canonical.launchpad.interfaces import ICalendarMonth, ICalendarYear
-from canonical.launchpad.interfaces import ICalendarEventCollection
+from canonical.launchpad.interfaces import \
+     IPerson, IRequestTzInfo, ICalendarDay, ICalendarWeek, ICalendarOwner, \
+     ICalendarMonth, ICalendarYear,  ICalendarEventCollection
 
 from canonical.launchpad.database import Calendar, CalendarEvent
 from canonical.launchpad.components.cal import CalendarSubscriptionSet
@@ -597,3 +598,49 @@ class ViewCalendarSubscriptions(object):
                 colour = self.request.get('colour.%d' % id, None)
                 if colour:
                     self._subscriptions.setColour(calendar, colour)
+
+
+class CalendarInfoPortletView(object):
+    def __init__(self, view):
+        self.request = view.request
+        self.context = ICalendarOwner(view.context).calendar
+
+        self.user_timezone = IRequestTzInfo(self.request).getTzInfo()
+        now = datetime.now(self.user_timezone)
+
+        self.month ='%s %04d' % (monthnames[now.month-1], now.year)
+
+
+        # create array of day information for each day of the month
+        self.daynames = [ d[0] for d in daynames ]
+        self.days = []
+        for i in range(calendar.monthrange(now.year, now.month)[1]):
+            self.days.append({ 'day': i+1,
+                               'dayURL': 'calendar/%04d-%02d-%02d'
+                                         % (now.year, now.month, i+1),
+                               'hasEvents': False })
+
+        # convert to UTC time offsets
+        start = date(now.year, now.month, 1)
+        end = next_month(start)
+        start = datetime(start.year, start.month, 1,
+                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
+        end = datetime(end.year, end.month, 1,
+                         0, 0, 0, 0, self.user_timezone).astimezone(UTC)
+
+        for event in self.context.expand(start, end):
+            dtstart = event.dtstart.astimezone(self.user_timezone)
+            self.days[dtstart.day - 1]['hasEvents'] = True
+
+        # lay out the dayinfo objects in a 2D grid
+        self.layout = calendar.monthcalendar(now.year, now.month)
+
+        self.canSubscribe = (IPerson(self.request.principal, None) is not None)
+
+class CalendarInfoPortlet(object):
+    def __init__(self, template_filename):
+        self.template = ViewPageTemplateFile(template_filename)
+    def __call__(self, view, *args, **kw):
+        return self.template(CalendarInfoPortletView(view), *args, **kw)
+    def __get__(self, instance, type=None):
+        return BoundPageTemplate(self, instance)

@@ -15,6 +15,10 @@
 
 <body>
 
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure view/calendarInfoPortlet" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
   <div id="content" class="documentEditable">
