@@ -1,6 +1,9 @@
 check:
 	python ../../../test_on_merge.py canonical.rosetta
 
+noisycheck:
+	(cd ../../.. ; python test.py canonical.rosetta)
+
 url-table:
 	./scripts/extract-urls.py < pages.zcml
 

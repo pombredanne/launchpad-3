@@ -77,13 +77,18 @@ class TranslationsList(object):
 
     def __setitem__(self, index, value):
         current = self._msgset.getTranslationSighting(index)
-        if value == current.poTranslation.text:
-            return
-        current.setCurrent(False)
-        new = self._msgset.makeTranslationSighting(value, index)
+        if current is not None:
+            if value == current.poTranslation.text:
+                return
+            current.setCurrent(False)
+        if value:
+            self._msgset.makeTranslationSighting(value, index)
 
     def __getitem__(self, index):
         return self._msgset.getTranslationSighting(index).poTranslation.text
+
+    def __len__(self):
+        return self._msgset.translations().count()
 
 
 class MessageProxy(POMessage):
@@ -112,7 +117,7 @@ class MessageProxy(POMessage):
             old_plural = self._msgset.getMessageIDSighting(1)
             old_plural.setCurrent(False)
         self._msgset.makeMessageIDSighting(value, 1)
-    msgidPlural = property(_get_msgidPlural)
+    msgidPlural = property(_get_msgidPlural, _set_msgidPlural)
 
     def _get_msgstr(self):
         translations = self._msgset.translations()
@@ -124,7 +129,7 @@ class MessageProxy(POMessage):
             return
         current.setCurrent(False)
         new = self._msgset.makeTranslationSighting(0, index)        
-    msgstr = property(_get_msgstr)
+    msgstr = property(_get_msgstr, _set_msgstr)
 
     def _get_msgstrPlurals(self):
         translations = self._msgset.translations()
@@ -134,11 +139,13 @@ class MessageProxy(POMessage):
             return TranslationsList(self._msgset)
     def _set_msgstrPlurals(self, value):
         current = self.msgstrPlurals
-        if len(value) != len(current):
+        if current is not None and len(value) != len(current):
             raise ValueError("New list of message strings has different size as current one")
+        if current is None:
+            current = TranslationsList(self._msgset)
         for index, item in enumerate(value):
             current[index] = item
-    msgstrPlurals = property(_get_msgstrPlurals)
+    msgstrPlurals = property(_get_msgstrPlurals, _set_msgstrPlurals)
 
     def _get_commentText(self):
         return self._msgset.commentText
@@ -200,22 +207,27 @@ class TemplateImporter(object):
         if msgset is None:
             msgset = potemplate.newMessageSet(msgid)
         else:
-            msgset.getMessageIDSighting(0).touch()
+            msgset.getMessageIDSighting(0)#.touch()
         self.len += 1
         msgset.sequence = self.len
         proxy = MessageProxy(msgset)
         proxy.msgidPlural = kw.get('msgidPlural', '')
         if kw.get('msgstr'):
             # if not is_it_the_header:
-            #    raise "You're on crack."
+            raise "You're on crack. (%r) as msgstr" % kw['msgstr']
             proxy.msgstr = kw['msgstr']
         proxy.commentText = kw.get('commentText', '')
         proxy.sourceComment = kw.get('sourceComment', '')
         proxy.fileReferences = kw.get('fileReferences', '').strip()
         proxy.flags = kw.get('flags', ())
-        if kw.get('msgstrPlurals'):
-            raise "You're on crack."
+        plurals = []
+        for inp_plural in kw.get('msgstrPlurals', ()):
+            if inp_plural:
+                raise "You're on crack (%r)." % kw.get('msgstrPlurals')
+            plurals.append(inp_plural)
+        proxy.msgstrPlurals = plurals
         proxy.obsolete = kw.get('obsolete', False)
+        return proxy
 
 
 class POFileImporter(object):
@@ -256,3 +268,4 @@ class POFileImporter(object):
         if kw.get('msgstrPlurals'):
             proxy.msgstrPlurals = kw['msgstrPlurals']
         proxy.obsolete = kw.get('obsolete', False)
+        return proxy

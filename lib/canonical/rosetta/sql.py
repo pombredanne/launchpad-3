@@ -218,18 +218,31 @@ class RosettaPOTemplate(SQLBase):
                                % self.id)
 
     def newMessageSet(self, text):
+        if type(text) is unicode:
+            text = text.encode('utf-8')
         messageIDs = RosettaPOMessageID.selectBy(text=text)
         if messageIDs.count() == 0:
             messageID = RosettaPOMessageID(text=text)
         else:
             messageID = messageIDs[0]
-        return RosettaPOMessageSet(poTemplate=self,
+        msgSet = RosettaPOMessageSet(poTemplate=self,
                                    poFile=None,
                                    primeMessageID_=messageID,
                                    sequence=0,
                                    isComplete=False,
                                    obsolete=False,
-                                   fuzzy=False)
+                                   fuzzy=False,
+                                   commentText='',
+                                   fileReferences='',
+                                   sourceComment='',
+                                   flagsComment='')
+        sighting = RosettaPOMessageIDSighting(poMessageSet=msgSet,
+                                              poMessageID_=messageID,
+                                              firstSeen="NOW",
+                                              lastSeen="NOW",
+                                              inPOFile=False,
+                                              pluralForm=0)
+        return msgSet
 
     def createPOFile(self, language, variant):
         # assume we are getting a IRosettaLanguage object
@@ -402,7 +415,7 @@ class RosettaPOMessageSet(SQLBase):
     def getMessageIDSighting(self, plural_form):
         """Return the message ID sighting that is current and has the
         plural form provided."""
-        ret = RosettaPOMessageIdSighting.selectBy(poMessageSet=self,
+        ret = RosettaPOMessageIDSighting.selectBy(poMessageSetID=self.id,
                                                    pluralForm=plural_form)
         if ret.count() == 0:
             raise KeyError, plural_form
@@ -438,7 +451,10 @@ class RosettaPOMessageSet(SQLBase):
     def getTranslationSighting(self, plural_form):
         """Return the translation sighting that is current and has the
         plural form provided."""
-        raise NotImplementedError
+        translations = RosettaPOTranslationSighting.selectBy(
+            poMessageSetID=self.id,
+            inPOFile=True,
+            pluralForm=plural_form)
 
     def translationSightings(self):
         if self.poFile == None:
@@ -452,14 +468,16 @@ class RosettaPOMessageSet(SQLBase):
 
     def makeMessageIDSighting(self, text, plural_form):
         """Return a new message ID sighting that points back to us."""
+        if type(text) is unicode:
+            text = text.encode('utf-8')
         messageIDs = RosettaPOMessageID.selectBy(text=text)
         if messageIDs.count() == 0:
             messageID = RosettaPOMessageID(text=text)
         else:
             messageID = messageIDs[0]
         existing = RosettaPOMessageIDSighting.selectBy(
-            poMessageSet=self,
-            poMessageID=messageID,
+            poMessageSetID=self.id,
+            poMessageID_ID=messageID.id,
             pluralForm=plural_form)
         if existing.count():
             existing = existing[0]
@@ -467,24 +485,27 @@ class RosettaPOMessageSet(SQLBase):
             return existing
         return RosettaPOMessageIDSighting(
             poMessageSet=self,
-            poMessageID=messageID,
+            poMessageID_=messageID,
             firstSeen="NOW",
             lastSeen="NOW",
-            isCurrent=True,
+            inPOFile=True,
             pluralForm=plural_form)
 
     def makeTranslationSighting(self, text, plural_form):
         """Return a new translation sighting that points back to us."""
+        if type(text) is unicode:
+            text = text.encode('utf-8')
         translations = RosettaPOTranslation.selectBy(text=text)
         if translations.count() == 0:
             translation = RosettaPOTranslation(text=text)
         else:
             translation = translations[0]
         existing = RosettaPOTranslationSighting.selectBy(
-            poMessageSet=self,
-            poTranslation=translation,
+            poMessageSetID=self.id,
+            poTranslationID=translation.id,
             pluralForm=plural_form,
-            person='XXX FIXME')
+            #person='XXX FIXME'
+            )
         if existing.count():
             existing = existing[0]
             existing.touch()
@@ -494,10 +515,11 @@ class RosettaPOMessageSet(SQLBase):
             poTranslation=translation,
             firstSeen="NOW",
             lastTouched="NOW",
-            isCurrent=True,
+            inPOFile=True,
             pluralForm=plural_form,
             deprecated=False,
-            person='XXX FIXME')
+            person=0, #'XXX FIXME'
+            )
 
 
 class RosettaPOMessageIDSighting(SQLBase):
@@ -507,7 +529,7 @@ class RosettaPOMessageIDSighting(SQLBase):
 
     _columns = [
         ForeignKey(name='poMessageSet', foreignKey='RosettaPOMsgSet', dbName='pomsgset', notNull=True),
-        ForeignKey(name='poMessageID', foreignKey='RosettaPOMsgID', dbName='pomsgid', notNull=True),
+        ForeignKey(name='poMessageID_', foreignKey='RosettaPOMsgID', dbName='pomsgid', notNull=True),
         DateTimeCol(name='firstSeen', dbName='firstseen', notNull=True),
         DateTimeCol(name='lastSeen', dbName='lastseen', notNull=True),
         BoolCol(name='inPOFile', dbName='inpofile', notNull=True),

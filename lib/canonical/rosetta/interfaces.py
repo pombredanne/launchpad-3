@@ -291,7 +291,7 @@ class IPOMessageIDSighting(Interface):
 
     poMessageSet = Attribute("")
 
-    poMessageID = Attribute("")
+    poMessageID_ = Attribute("")
 
     firstSeen = Attribute("")
 
