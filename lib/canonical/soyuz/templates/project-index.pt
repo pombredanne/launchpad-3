@@ -37,7 +37,7 @@
         </form>
 
         <dl tal:repeat="product view/products">
-            <dt><a tal:attributes="href product/name">Product 1 title</a></dt>
+            <dt><a tal:attributes="href product/name" tal:content="product/title">Product 1 title</a></dt>
             <dd tal:content="product/description"></dd>
         </dl>
         
