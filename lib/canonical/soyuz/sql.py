@@ -592,7 +592,7 @@ class DistroReleaseBinaryApp(object):
     def currentReleases(self):
         """
         The current releases of this binary package by architecture.
-8        Returns: a dict of version -> list-of-architectures
+        Returns: a dict of version -> list-of-architectures
         """
         binaryReleases = list(self.binarypackage.current(self.release))
         current = {}

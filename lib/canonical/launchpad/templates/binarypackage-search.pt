@@ -19,24 +19,58 @@
     <span tal:content="context/release/title"> TITLE </span>
     </h1>
 
-    <form name="search" action="" method="POST">
+    <form name="search" action="" method="GET">
     Name: <input type="text" name="name" 
         tal:attributes="value request/name|nothing" />
 	<input type="hidden" name="release" tal:attributes="value context/release/name" />
     <input type="submit" value="Search"/>
     </form>
 
-   <h4 tal:condition="view/search_action">Search Results</h4>
+   <h4>Search Results</h4>
 
-    <ul>
-    <li tal:repeat="package view/results">  
-      <a tal:attributes="href package/name" tal:content="package/name">
-        PACKAGE
-      </a>
-       - 
-      <span tal:content="package/shortdesc"> TITLE </span>
-    </li>
-    </ul>
+  <tal:block tal:define="bn view/searchBinariesBatchNavigator;
+                         prev_url bn/prevBatchURL;
+                         next_url bn/nextBatchURL;">
+
+  <table>
+    <tr>
+      <th tal:condition="bn">Binary Packages</th>
+    </tr>
+    <tr tal:repeat="release python:list(bn.currentBatch())">      
+      <tal:dummy tal:define="package release">
+      <td><a tal:content="string: ${package/name} : ${package/shortdesc}"
+             tal:attributes="href package/name">PACKAGE</a>
+      </td>
+      </tal:dummy>
+    </tr>    
+    <tr>
+    <td align="center">
+    <fieldset>
+    <div>
+    	  <table>
+	  <tr>
+	  <!-- <th condition="not: prev_url"><< prev</th> -->
+          <th tal:condition="prev_url">
+	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
+	  </th>
+          <th tal:repeat="page_link bn/batchPageURLs">
+	     <a tal:attributes="href python:page_link.values()[0]"
+                tal:content="python:page_link.keys()[0]"></a>
+	  </th>
+          <th tal:condition="next_url" >
+	     <a tal:attributes="href next_url"><b>Next >></b></a>
+          </th>
+          <!-- <th condition="not: next_url">next >></th> -->
+          </tr>
+	  </table>
+     </div>
+     </fieldset>
+    </td>
+    </tr>
+  </table>
+  </tal:block>
+
+
 
 </div>
 

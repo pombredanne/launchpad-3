@@ -434,6 +434,9 @@ class ReleasesAddView(object):
             enable_added = True
         return enable_added
 
+##XXX: (batch+duplicated) cprov 20041006
+## The two following classes are almost like a duplicated piece
+## of code. We should look for a better way for use Batching Pages
 class DistroReleaseSourcesView(object):
 
     BATCH_SIZE = 20
@@ -448,6 +451,24 @@ class DistroReleaseSourcesView(object):
         end = int(self.request.get('batch_end', self.BATCH_SIZE))
         batch_size = self.BATCH_SIZE
         batch = Batch(list = source_packages, start = start,
+                      size = batch_size)
+
+        return BatchNavigator(batch = batch, request = self.request)
+
+class DistroReleaseBinariesView(object):
+
+    BATCH_SIZE = 20
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def binaryPackagesBatchNavigator(self):
+        binary_packages = list(self.context)
+        start = int(self.request.get('batch_start', 0))
+        end = int(self.request.get('batch_end', self.BATCH_SIZE))
+        batch_size = self.BATCH_SIZE
+        batch = Batch(list = binary_packages, start = start,
                       size = batch_size)
 
         return BatchNavigator(batch = batch, request = self.request)
@@ -499,42 +520,57 @@ class ReleaseSearchView(object):
 
         return enable_result
 
+##XXX: (batch+duplicated) cprov 20041003
+## AGAIN !!!
+
 class DistrosReleaseSourcesSearchView(object):
+
+    BATCH_SIZE = 20
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        
+    def searchBinariesBatchNavigator(self):        
 
-    def search_action(self):
-        enable_result = False
         name = self.request.get("name", "")
 
         if name:
-            self.results = list(self.context.findPackagesByName(name))
-            enable_result = True
+            binary_packages = list(self.context.findPackagesByName(name))
+            start = int(self.request.get('batch_start', 0))
+            end = int(self.request.get('batch_end', self.BATCH_SIZE))
+            batch_size = self.BATCH_SIZE
+            batch = Batch(list = binary_packages, start = start,
+                          size = batch_size)
+            return BatchNavigator(batch = batch,
+                                  request = self.request)
         else:
-            self.results = []
+            return None
 
-        return enable_result
 
 class DistrosReleaseBinariesSearchView(object):
 
+    BATCH_SIZE = 20
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
-    def search_action(self):
-        enable_result = False
         
+    def searchBinariesBatchNavigator(self):        
+
         name = self.request.get("name", "")
 
         if name:
-            self.results = list(self.context.findPackagesByName(name))
-            enable_result = True
+            binary_packages = list(self.context.findPackagesByName(name))
+            start = int(self.request.get('batch_start', 0))
+            end = int(self.request.get('batch_end', self.BATCH_SIZE))
+            batch_size = self.BATCH_SIZE
+            batch = Batch(list = binary_packages, start = start,
+                          size = batch_size)
+            return BatchNavigator(batch = batch,
+                                  request = self.request)
         else:
-            self.results = []
-
-        return enable_result
+            return None
 
 
 ##XXX: (old+stuff) cprov 20041003

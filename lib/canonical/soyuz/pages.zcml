@@ -148,7 +148,7 @@
                                           getter="__getitem__" />
    <pages for="canonical.soyuz.sql.DistroReleaseSourcesApp"
 	  allowed_attributes="results"
-      class="canonical.soyuz.browser.DistroReleaseSourcesView"
+          class="canonical.soyuz.browser.DistroReleaseSourcesView"
 	  permission="zope.Public">
 	<page  name="index.html"
           template="../launchpad/templates/sourcepackage-list.pt"
@@ -318,7 +318,8 @@
 	 name="+join"
        />
 
-<traverse for="canonical.soyuz.sql.DistroBinariesApp" getter="__getitem__" />
+<traverse for="canonical.soyuz.sql.DistroBinariesApp" 
+	  getter="__getitem__" />
 
    <pages for="canonical.soyuz.sql.DistroBinariesApp"
 	  allowed_attributes="results"
@@ -331,17 +332,17 @@
    </pages>
 
 
-<traverse for="canonical.soyuz.sql.DistroReleaseBinariesApp" getter="__getitem__" />
+<traverse for="canonical.soyuz.sql.DistroReleaseBinariesApp" 
+          getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sql.DistroReleaseBinariesApp"
+   <page for="canonical.soyuz.sql.DistroReleaseBinariesApp"
 	  allowed_attributes="results"
-	  permission="zope.Public">
-
-	<page  name="index.html"
+	  permission="zope.Public"
+	  name="index.html"
+     	  class="canonical.soyuz.browser.DistroReleaseBinariesView"
           template="../launchpad/templates/binarypackage-list.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$Binarypackage.name/index.html"
 	/>
-   </pages>
 
   <page for="canonical.soyuz.sql.DistroReleaseBinariesApp"
          permission="zope.Public"
