@@ -22,9 +22,9 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugSubscription"
-        label="Change Bug Subscription"
+        label="Modify Bug Subscription"
         permission="launchpad.AnyPerson"
-        template="../templates/default-editform.pt"
+        template="../templates/bugsubscription-edit.pt"
         fields="subscription"
         lp:url="malone/bugs/$Bug.id/people/$BugSubscription.id/+edit" />
 

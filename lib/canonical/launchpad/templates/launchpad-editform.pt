@@ -6,7 +6,15 @@
   <body>
 
   <div metal:fill-slot="main">
-    <div metal:define-macro="body">
+
+  <div tal:condition="nothing">
+    This file is a modified version of zope/app/form/browser/edit.pt for use
+    in the Launchpad system. You should not edit this file, but rather use
+    it from your custom editform. You create your own template for the
+    specific editform, called table-edit.pt for example, which is the template
+    which uses this one.</div>
+
+    <div metal:define-macro="editform">
 
       <form action="." tal:attributes="action request/URL" method="post"
             enctype="multipart/form-data">
@@ -18,7 +26,8 @@
               metal:define-slot="heading"
               >Edit something</h3>
 
-          <p tal:define="status view/update"
+          <p class="portalMessage"
+             tal:define="status view/update"
              tal:condition="status"
              tal:content="status" />
 
@@ -37,6 +46,12 @@
             a descriptive paragraph.
           </div>
 
+          <fieldset>
+
+          <legend metal:define-slot="editform_legend" tal:replace="nothing">
+             Fieldset Legend
+          </legend>
+
           <div class="row"
                metal:define-slot="extra_top" tal:replace="nothing">
             <div class="label">Extra top</div>
@@ -52,7 +67,9 @@
             <div class="label">Extra bottom</div>
             <div class="field"><input type="text" style="width:100%" /></div>
           </div>
-          <div class="separator"></div>
+
+          </fieldset>
+
         </div>
 
         <div class="row">
@@ -62,6 +79,7 @@
                    i18n:attributes="value submit-button"/>
           </div>
         </div>
+
         <div class="row" metal:define-slot="extra_buttons"
               tal:replace="nothing">
         </div>

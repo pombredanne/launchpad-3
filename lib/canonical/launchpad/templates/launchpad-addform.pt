@@ -52,7 +52,7 @@
 
         <legend metal:define-slot="form_legend">Add Form Legend</legend>
 
-        <div metal:use-macro="context/@@widget_macros/launchpad_widget_rows" />
+        <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
 
         </fieldset>
 
