@@ -8,6 +8,7 @@
     <!-- Project -->
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
+        <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
         <require
             permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IProject"

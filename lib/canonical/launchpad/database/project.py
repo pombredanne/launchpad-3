@@ -16,17 +16,19 @@ from canonical.database.sqlbase import SQLBase, quote
 # Launchpad interfaces
 from canonical.launchpad.interfaces import IProject, IProjectSet, \
                                            IProjectBugTracker,\
-                                           IObjectAuthorization
+                                           IObjectAuthorization, \
+                                           ICalendarOwner
 
 # Import needed database objects
 from canonical.launchpad.database.product import Product
+from canonical.launchpad.database.cal import Calendar
 
 from sets import Set
 
 class Project(SQLBase):
     """A Project"""
 
-    implements(IProject, IObjectAuthorization)
+    implements(IProject, IObjectAuthorization, ICalendarOwner)
 
     _table = "Project"
 
@@ -51,6 +53,16 @@ class Project(SQLBase):
     _bugtrackers = RelatedJoin('BugTracker', joinColumn='project',
                                            otherColumn='bugtracker',
                                            intermediateTable='ProjectBugTracker')
+
+    _calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
+                           default=None, forceDBName=True)
+    def calendar(self):
+        if not self._calendar:
+            self._calendar = Calendar(ownerID=self.owner.id,
+                                      title='%s Calendar' % self.displayname,
+                                      revision=0)
+        return self._calendar
+    calendar = property(calendar)
 
     def checkPermission(self, principal, permission):
         if permission == "launchpad.Edit":
