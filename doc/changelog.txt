@@ -2,6 +2,33 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 13:18:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1227
+
+    Summary:
+      Use 16 characters as the token length. Destroy all LoginTokens after they're successfully 'used'. Some new docstrings explaining LoginToken Views and Interfaces.
+    Revision:
+      launchpad--devel--0--patch-1227
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-97
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-98
+       Use 16 characters as the token length. Destroy all LoginTokens after they're successfully 'used'. Some new docstrings explaining LoginToken Views and Interfaces.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/interfaces/logintoken.py
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-97
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-98
+
+
 2005-01-21 00:37:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1226
 
     Summary:

@@ -24,21 +24,25 @@ class ResetPasswordView(object):
         self.submitted = False
 
     def processForm(self):
+        """Check the email address, check if both passwords match and then
+        reset the user's password. When password is successfully changed, the
+        LoginToken (self.context) used is removed, so nobody can use it again.
+        """
         if self.request.method != "POST":
-            return False
+            return
 
         email = self.request.form.get("email").strip()
         if email != self.context.email:
             self.errormessage = ("The email address you provided didn't "
                                  "match with the one you provided when you "
                                  "requested the password reset.")
-            return False
+            return
 
         password = self.request.form.get("password")
         password2 = self.request.form.get("password2")
         if not password and not password2:
             self.errormessage = "Your password cannot be empty."
-            return False
+            return
 
         if password != password2:
             self.errormessage = "Password didn't match."
@@ -54,7 +58,7 @@ class ResetPasswordView(object):
         password = encryptor.encrypt(password)
         person.password = password
         self.submitted = True
-        return True
+        self.context.destroySelf()
 
     def success(self):
         return self.submitted and not self.errormessage
@@ -74,6 +78,13 @@ class ValidateEmailView(object):
         return False
 
     def validate(self):
+        """Check the requester and requesteremail, verify if the user provided
+        the correct password and then set the email address status to
+        VALIDATED. Also, if this is the first validated email for this user,
+        we set it as the PREFERRED one for that user.
+        When everything went ok, we delete the LoginToken (self.context) from
+        the database, so nobody can use it again.
+        """
         # Email validation requests must have a registered requester.
         assert self.context.requester is not None
         assert self.context.requesteremail is not None
@@ -104,12 +115,14 @@ class ValidateEmailView(object):
             assert results.count() == 1
             email = results[0]
             email.status = status
+            self.context.destroySelf()
             return
 
         # New email validated by the user. We must add it to our emailaddress
         # table.
         email = EmailAddress(email=self.context.email, status=status,
                              person=requester.id)
+        self.context.destroySelf()
 
 
 class NewAccountView(AddView):
@@ -124,6 +137,10 @@ class NewAccountView(AddView):
         return self._nextURL
 
     def createAndAdd(self, data):
+        """Check if both passwords match and then create a new Person.
+        When everything went ok, we delete the LoginToken (self.context) from
+        the database, so nobody can use it again.
+        """
         kw = {}
         for key, value in data.items():
             kw[str(key)] = value
@@ -151,5 +168,6 @@ class NewAccountView(AddView):
                              status=int(EmailAddressStatus.PREFERRED))
         notify(ObjectCreatedEvent(email))
         self._nextURL = '/foaf/people/%s' % person.name
+        self.context.destroySelf()
         return True
 

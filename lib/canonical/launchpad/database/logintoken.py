@@ -34,7 +34,7 @@ class LoginTokenSet(object):
     def new(self, requester, requesteremail, email, tokentype):
         """See ILoginTokenSet"""
         characters = '0123456789bcdfghjklmnpqrstvwxz'
-        length = 40
+        length = 16
         token = ''.join([random.choice(characters) for count in range(length)])
         return LoginToken(requester=requester, requesteremail=requesteremail,
                           email=email, token=token, tokentype=int(tokentype),

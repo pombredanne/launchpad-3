@@ -9,7 +9,8 @@ _ = MessageIDFactory('launchpad')
 class ILoginToken(Interface):
     """The object that stores one time tokens used for validating email
     addresses and other tasks that require verifying if an email address is
-    valid such as password recovery and account merging."""
+    valid such as password recovery, account merging and registration of new
+    accounts. All LoginTokens must be deleted once they are "consumed"."""
     id = Int(
         title=_('ID'), required=True, readonly=True,
         )
@@ -35,6 +36,14 @@ class ILoginToken(Interface):
         title=_('The token (not the URL) emailed used to uniquely identify this request.'),
                 required=True,
         )
+
+    def destroySelf():
+        """Remove this LoginToken from the database.
+
+        We need this because once the token is used (either when registering a
+        new user, validating an email address or reseting a password), we have
+        to delete it so nobody can use that token again.
+        """
 
 
 class ILoginTokenSet(Interface):
