@@ -81,26 +81,100 @@ class ISourcePackageFilesToPublish(Interface):
     drd = Int(
             title=_('Distribution'), required=True, readonly=True,
             )
-    sprfid = Int(
-            title=_('Sourcepackage release file id'), required=True,
-            readonly=True,
-            )
-    sprfalias = Int(
-            title=_('Sourcepackage release file alias'), required=True,
-            readonly=True,
-            )
-    sprftype = Int(
-            title=_('Sourcepackage release file type'), required=True,
-            readonly=True,
-            )
-    sppdrel = Int(
-            title=_('Distribution release'), required=True, readonly=True,
-            )
+
     sppid = Int(
             title=_('Sourcepackage publishing record id'), required=True,
             readonly=True,
             )
 
+    pfalias = Int(
+            title=_('Sourcepackage release file alias'), required=True,
+            readonly=True,
+            )
+ 
     lfaname = TextLine(
             title=_('File name'), required=True, readonly=True,
+            )
+
+    cname = TextLine(
+            title=_('Component name'), required=True, readonly=True,
+            )
+
+    spname = TextLine(
+            title=_('Source package name'), required=True, readonly=True,
+            )
+
+class IBinaryPackageFilesToPublish(Interface):
+    """Source package release files due for publishing"""
+
+    drd = Int(
+            title=_('Distribution'), required=True, readonly=True,
+            )
+
+    ppid = Int(
+            title=_('Package publishing record id'), required=True,
+            readonly=True,
+            )
+
+    pfalias = Int(
+            title=_('Binarypackage file alias'), required=True,
+            readonly=True,
+            )
+ 
+    lfaname = TextLine(
+            title=_('File name'), required=True, readonly=True,
+            )
+
+    cname = TextLine(
+            title=_('Component name'), required=True, readonly=True,
+            )
+
+    spname = TextLine(
+            title=_('Source package name'), required=True, readonly=True,
+            )
+
+class IPublishedSourcePackageOverrides(Interface):
+    """Source package overrides published and thus due for putting on disk"""
+
+    drname = TextLine(
+            title=_('Distro Release name'), required=True, readonly=True,
+            )
+    spname = TextLine(
+            title=_('Binary package name'), required=True, readonly=True,
+            )
+    cname = TextLine(
+            title=_('Component name'), required=True, readonly=True,
+            )
+    sname = TextLine(
+            title=_('Section name'), required=True, readonly=True,
+            )
+    
+    distro = Int(
+            title=_('Distribution ID'), required=True, readonly=True,
+            )
+
+
+
+class IPublishedBinaryPackageOverrides(Interface):
+    """Binary package overrides published and thus due for putting on disk"""
+
+    drname = TextLine(
+            title=_('Distro Release name'), required=True, readonly=True,
+            )
+    bpname = TextLine(
+            title=_('Binary package name'), required=True, readonly=True,
+            )
+    cname = TextLine(
+            title=_('Component name'), required=True, readonly=True,
+            )
+    sname = TextLine(
+            title=_('Distro Release name'), required=True, readonly=True,
+            )
+    
+    priority = Int(
+            title=_('Priority'), required=True, readonly=True,
+            )
+    
+    distro = Int(
+            title=_('Distribution ID'), required=True, readonly=True,
             )

@@ -11,7 +11,10 @@ from canonical.database.sqlbase import SQLBase, quote
 # canonical imports
 from canonical.launchpad.interfaces import IPackagePublishing, \
                                            ISourcePackagePublishing, \
-                                           ISourcePackageFilesToPublish
+                                           ISourcePackageFilesToPublish, \
+                                           IBinaryPackageFilesToPublish, \
+                                           IPublishedSourcePackageOverrides, \
+                                           IPublishedBinaryPackageOverrides
 
 from canonical.launchpad.database import DistroRelease, DistroArchRelease
 
@@ -42,7 +45,6 @@ class SourcePackagePublishing(SQLBase):
         ForeignKey(name='distrorelease', foreignKey='DistroRelease', dbName='distrorelease'),
         ForeignKey(name='component', foreignKey='Component', dbName='component'),
         ForeignKey(name='section', foreignKey='Section', dbName='section'),
-        IntCol('priority'),
         IntCol('status'),
         DateTimeCol('scheduleddeletiondate', default=None)
     ]
@@ -51,18 +53,80 @@ class SourcePackagePublishing(SQLBase):
 class SourcePackageFilesToPublish(SQLBase):
     """A source package file which needs publishing"""
 
+    _idType = str
+
     implements(ISourcePackageFilesToPublish)
 
     drd = IntCol(dbName='drd', unique=False, default=None, notNull=True)
-    sppdrel = IntCol(dbName='sppdrel', unique=False, default=None,
-                     notNull=True)
-    sppid = IntCol(dbName='sppid', unique=False, default=None, notNull=True)
-    sprfid = IntCol(dbName='sprfid', unique=False, default=None, notNull=True)
-    sprfalias = IntCol(dbName='sprfalias', unique=False, default=None,
-                       notNull=True)
-    sprftype = IntCol(dbName='sprftype', unique=False, default=None,
-                      notNull=True)
 
+    pp = ForeignKey(dbName='sppid', foreignKey='SourcePackagePublishing')
+
+    pfalias = IntCol(dbName='pfalias', unique=False, default=None,
+                       notNull=True)
+    
     lfaname = StringCol(dbName='lfaname', unique=False, default=None,
                         notNull=True)
 
+    cname = StringCol(dbName='cname', unique=False, default=None,
+                        notNull=True)
+
+    spname = StringCol(dbName='spname', unique=False, default=None,
+                        notNull=True)
+
+class BinaryPackageFilesToPublish(SQLBase):
+    """A binary package file which needs publishing"""
+
+    _idType = str
+
+    implements(IBinaryPackageFilesToPublish)
+
+    drd = IntCol(dbName='drd', unique=False, default=None, notNull=True)
+
+    pp = ForeignKey(dbName='ppid', foreignKey='PackagePublishing')
+
+    pfalias = IntCol(dbName='pfalias', unique=False, default=None,
+                       notNull=True)
+    
+    lfaname = StringCol(dbName='lfaname', unique=False, default=None,
+                        notNull=True)
+
+    cname = StringCol(dbName='cname', unique=False, default=None,
+                        notNull=True)
+
+    spname = StringCol(dbName='spname', unique=False, default=None,
+                        notNull=True)
+
+
+class PublishedSourcePackageOverrides(SQLBase):
+    """Source package overrides published and thus due for putting on disk"""
+
+    implements(IPublishedSourcePackageOverrides)
+
+    drname = StringCol(dbName='drname', unique=False, default=None,
+                       notNull=True)
+    spname = StringCol(dbName='spname', unique=False, default=None,
+                       notNull=True)
+    cname = StringCol(dbName='cname', unique=False, default=None,
+                       notNull=True)
+    sname = StringCol(dbName='sname', unique=False, default=None,
+                       notNull=True)
+    distro = IntCol(dbName='distro', unique=False, default=None, notNull=True)
+
+
+
+class PublishedBinaryPackageOverrides(SQLBase):
+    """Binary package overrides published and thus due for putting on disk"""
+
+    implements(IPublishedBinaryPackageOverrides)
+
+    drname = StringCol(dbName='drname', unique=False, default=None,
+                       notNull=True)
+    spname = StringCol(dbName='spname', unique=False, default=None,
+                       notNull=True)
+    cname = StringCol(dbName='cname', unique=False, default=None,
+                       notNull=True)
+    sname = StringCol(dbName='sname', unique=False, default=None,
+                       notNull=True)
+    distro = IntCol(dbName='distro', unique=False, default=None, notNull=True)
+    priority = IntCol(dbName='priority', unique=False, default=None,
+                      notNull=True)
