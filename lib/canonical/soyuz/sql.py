@@ -365,7 +365,6 @@ class PeopleApp(object):
 
     #FIXME: traverse by ID ?
     def __getitem__(self, id):
-        print 'PeopleApp, __getitem__,', id
         try:
             return PersonApp(int(id))
         except Exception, e:
@@ -378,13 +377,22 @@ class PeopleApp(object):
 class PersonApp(object):
     def __init__(self, id):
         self.id = id
-        # FIXME: I know it seems totally nasty ...
-        # it should query By ID ... 
         self.person = SoyuzPerson.get(self.id)
+        # FIXME: Most of this code probably belongs as methods/properties of
+        #        SoyuzPerson
         try:
-            self.email = SoyuzEmailAddress.selectBy(personID=self.id)[0]
+            # Prefer validated email addresses
+            self.email = SoyuzEmailAddress.selectBy(
+                personID=self.id,
+                status=int(dbschema.EmailAddressStatus.VALIDATED))[0]
         except IndexError:
-            self.email = None
+            try:
+                # If not validated, fallback to new
+                self.email = SoyuzEmailAddress.selectBy(
+                    personID=self.id,
+                    status=int(dbschema.EmailAddressStatus.NEW))[0]
+            except IndexError:
+                self.email = None
         try:
             self.wiki = WikiName.selectBy(personID=self.id)[0]
         except IndexError:
