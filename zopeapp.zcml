@@ -53,9 +53,7 @@
   <include package="zope.app.registration" />
 
   <!-- Services -->
-  <!-- not using placeful error service
   <include package="zope.app.errorservice" />
-    -->
   <include package="zope.app.pluggableauth" />
   <include package="zope.app.site" />
   <include package="zope.app.adapter" />
