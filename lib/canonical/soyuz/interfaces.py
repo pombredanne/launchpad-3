@@ -221,6 +221,7 @@ class ISourcePackageRelease(Interface):
 
     version = Attribute("A version string")
     creator = Attribute("Person that created this release")
+    sourcepackage = Attribute("The source package this is a release for")
 
     def branches():
         """Return the list of branches in a source package release"""

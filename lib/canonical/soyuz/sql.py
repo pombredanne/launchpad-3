@@ -156,7 +156,8 @@ class GenericPackages:
     def _query(self):
         return (
             'SourcePackageUpload.sourcepackagerelease = SourcePackage.id '
-            'AND %d = SourcePackageUpload.distrorelease'
+            'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
+            'AND SourcePackageUpload.distrorelease = %d '
             % (self.release.id))
         
     def __getitem__(self, name):
@@ -195,8 +196,8 @@ class SourcePackages(GenericPackages):
     """
     implements(ISourcePackageSet)
 
-    table = SourcePackage
-    clauseTables = ('SourcePackageUpload',)
+    table = SourcePackageRelease
+    clauseTables = ('SourcePackage', 'SourcePackageUpload',)
 
 ###########################################################################
 
