@@ -18,7 +18,25 @@
     <h1>About Rosetta</h1>
 
     <p>
-    Information about Rosetta goes here.
+    Rosetta is a web tool for translating any open source software into any
+    language. The ultimate goal of the Rosetta Project is to ensure that every
+    piece of open source software is usable in every language. We invite you to
+    find the open source software you use the most, and help to translate it into
+    your own home language, if it is not already completely translated. All you
+    need is a web browser, a good knowledge of the application you are translating,
+    and a good knowledge of English and your own language.
+    </p>
+
+    <p>
+    To participate in the development and testing of Rosetta please join the <a
+    href="http://lists.ubuntulinux.org/mailman/listinfo/rosetta-testers">Rosetta
+    testers mailing list</a>.
+    </p>
+
+    <p>
+    Currently we have only a few applications listed in Rosetta. If you'd like
+    a piece of software added to Rosetta, please submit a <a
+    href="projects/+request">request for a project to be included</a>.
     </p>
 
 </div>

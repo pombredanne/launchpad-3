@@ -7,6 +7,7 @@ import re, os, popen2
 from math import ceil
 import smtplib
 import sys
+from xml.sax.saxutils import escape as xml_escape
 
 from zope.component import getUtility
 from canonical.rosetta.interfaces import ILanguages, IPerson
@@ -492,9 +493,9 @@ class TranslatePOTemplate:
         # No initialisation if performed if the request's principal is not
         # authenticated.
 
-        person = IPerson(request.principal, None)
+        self.person = IPerson(request.principal, None)
 
-        if person is None:
+        if self.person is None:
             return
 
         self.context = context
@@ -517,7 +518,7 @@ class TranslatePOTemplate:
                 except KeyError:
                     pass
         else:
-            self.languages = list(person.languages())
+            self.languages = list(self.person.languages())
 
         # Get plural form information.
 
@@ -620,7 +621,7 @@ class TranslatePOTemplate:
 
         lines = []
 
-        for line in text.split('\n'):
+        for line in xml_escape(text).split('\n'):
             match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
 
             if match:
@@ -731,17 +732,12 @@ class TranslatePOTemplate:
 
         pofiles = {}
 
-        person = IPerson(self.request.principal, None)
-
-        if person is None:
-            person = fake_person()
-
         for language in self.languages:
             try:
                 pofiles[language.code] = self.context.poFile(language.code)
             except KeyError:
                 pofiles[language.code] = self.context.newPOFile(
-                    person, language.code)
+                    self.person, language.code)
 
         # Put the translations in the database.
 
@@ -791,7 +787,7 @@ class TranslatePOTemplate:
                             new_translations[index] !=
                             old_translations[index]):
                         po_set.makeTranslationSighting(
-                            person = person,
+                            person = self.person,
                             text = new_translations[index],
                             pluralForm = index,
                             update = True,
