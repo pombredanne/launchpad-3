@@ -135,12 +135,13 @@ class SoyuzSourcePackage(SQLBase):
     def getRelease(self, version):
         return SoyuzSourcePackageRelease.selectBy(version=version)[0]
 
-    def uploadsByStatus(self, distroRelease, status):
+    def uploadsByStatus(self, distroRelease, sourcepackageRelease, status):
         uploads = list(SoyuzSourcePackageRelease.select(
             'SourcePackageUpload.sourcepackagerelease=SourcepackageRelease.id'
             ' AND SourcepackageUpload.distrorelease = %d'
+            ' AND SourcePackageUpload.sourcepackagerelease = %d'
             ' AND SourcePackageUpload.uploadstatus = %d'
-            % (distroRelease.id, status)
+            % (distroRelease.id, sourcepackageRelease.id, status)
         ))
 
         if uploads:
@@ -148,8 +149,9 @@ class SoyuzSourcePackage(SQLBase):
         else:
             return None
 
-    def proposed(self, distroRelease):
+    def proposed(self, distroRelease, sourcepackageRelease):
         return self.uploadsByStatus(distroRelease,
+                                    sourcepackageRelease,
                                     dbschema.SourceUploadStatus.PROPOSED)
 
 class SoyuzSourcePackageRelease(SQLBase):

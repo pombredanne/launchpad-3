@@ -135,13 +135,15 @@ class DistroReleaseSourceApp(object):
         return DistroReleaseSourceReleaseApp(self.sourcepackage, version)
 
     def proposed(self):
-        return self.sourcepackage.sourcepackage.proposed(self.release)
+        return self.sourcepackage.sourcepackage.proposed(self.release,
+                                                         self.sourcepackage)
     proposed = property(proposed)
 
     def currentversions(self):
         # FIXME: Probably should be more than just PUBLISHED uploads (e.g.
         # NEW + ACCEPTED + PUBLISHED?)
         return self.sourcepackage.sourcepackage.uploadsByStatus(self.release,
+                                                                self.sourcepackage,
                 dbschema.SourceUploadStatus.PUBLISHED)
     currentversions = property(currentversions)
 
