@@ -250,7 +250,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             "  %d,"
             "  'garbage123',"
             "  'fred@bedrock')"
-            % (dbschema.SSHKeyType.DSA,)
+            % (dbschema.SSHKeyType.DSA.value, )
         )
 
         # Add test push mirror access

@@ -28,9 +28,7 @@ class BugSubscription(SQLBase):
 
 def BugSubscriptionFactory(context, **kw):
     bug = context.context.bug
-    subscription = kw.pop('subscription')
-    subscription = dbschema.BugSubscription.items[subscription]
-    return BugSubscription(bug=bug, subscription=subscription, **kw)
+    return BugSubscription(bug=bug, **kw)
 
 
 class BugSubscriptionSet(BugSetBase):

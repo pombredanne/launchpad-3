@@ -151,8 +151,8 @@ def notify_bugtask_edited(modified_bugtask, event):
         before = event.object_before_modification,
         after = task,
         fields = (
-            ("status", lambda v: BugTaskStatus.items[v].title),
-            ("priority", lambda v: BugPriority.items[v].title),
+            ("status", lambda v: v.title),
+            ("priority", lambda v: v.title),
             ("severity", lambda v: BugSeverity.items[v].title),
             ("binarypackagename", lambda v: (v and v.name) or "(none)"),
             ("assignee", lambda v: (v and v.displayname) or "(not assigned)")))
@@ -182,7 +182,7 @@ Infestation: %(infestation)s
 """ % {'product' :
          product_infestation.productrelease.product.name + " " +
          product_infestation.productrelease.version,
-       'infestation' : BugInfestationStatus.items[product_infestation.infestationstatus].title}
+       'infestation' : product_infestation.infestationstatus.title}
 
     send_edit_notification_simple(
         product_infestation.bug,
@@ -197,7 +197,7 @@ def notify_bug_product_infestation_modified(modified_product_infestation, event)
         fields = (
             ("productrelease", lambda v: "%s %s" % (
                 v.product.name, v.version)),
-            ("infestationstatus", lambda v: BugInfestationStatus.items[v].title)))
+            ("infestationstatus", lambda v: v.title)))
 
     send_edit_notification(
         bug = modified_product_infestation.bug,
@@ -221,7 +221,7 @@ Infestation: %(infestation)s
 """ % {'package' :
          package_infestation.sourcepackagerelease.sourcepackage.name + " " +
          package_infestation.sourcepackagerelease.version,
-       'infestation' : BugInfestationStatus.items[package_infestation.infestationstatus].title}
+       'infestation' : package_infestation.infestationstatus.title}
 
     send_edit_notification_simple(
         package_infestation.bug,
@@ -236,7 +236,7 @@ def notify_bug_package_infestation_modified(modified_package_infestation, event)
         fields = (
             ("sourcepackagerelease", lambda v: "%s %s" % (
                 v.sourcepackage.sourcepackagename.name, v.version)),
-            ("infestationstatus", lambda v: BugInfestationStatus.items[v].title)))
+            ("infestationstatus", lambda v: v.title)))
 
     send_edit_notification(
         bug = modified_package_infestation.bug,

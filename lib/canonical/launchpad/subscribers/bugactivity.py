@@ -27,13 +27,13 @@ def what_changed(sqlobject_modified_event):
 
         # figure out the orig value
         if f == 'status':
-            val_before = BugTaskStatus.items[val_before].title
+            val_before = val_before.title
         elif f == 'priority':
-            val_before = BugPriority.items[val_before].title
+            val_before = val_before.title
         elif f == 'severity':
-            val_before = BugSeverity.items[val_before].title
+            val_before = val_before.title
         elif f == 'infestationstatus':
-            val_before = BugInfestationStatus.items[val_before].title
+            val_before = val_before.title
         elif isinstance(val_before, Person):
             val_before = val_before.name
         elif isinstance(val_before, SourcePackageRelease):
@@ -47,13 +47,13 @@ def what_changed(sqlobject_modified_event):
 
         # figure out the new value
         if f == 'status':
-            val_after = BugTaskStatus.items[val_after].title
+            val_after = val_after.title
         elif f == 'priority':
-            val_after = BugPriority.items[val_after].title
+            val_after = val_after.title
         elif f == 'severity':
-            val_after = BugSeverity.items[val_after].title
+            val_after = val_after.title
         elif f == 'infestationstatus':
-            val_after = BugInfestationStatus.items[val_after].title
+            val_after = val_after.title
         elif isinstance(val_after, Person):
                     val_after = val_after.name
         elif isinstance(val_after, SourcePackageRelease):

@@ -49,10 +49,10 @@ class IBugTask(IHasDateCreated):
         default=dbschema.BugTaskStatus.NEW)
     priority = Choice(
         title=_('Priority'), vocabulary='BugPriority',
-        default=int(dbschema.BugPriority.MEDIUM))
+        default=dbschema.BugPriority.MEDIUM)
     severity = Choice(
         title=_('Severity'), vocabulary='BugSeverity',
-        default=int(dbschema.BugSeverity.NORMAL))
+        default=dbschema.BugSeverity.NORMAL)
     assignee = Choice(
         title=_('Assignee'), required=False, vocabulary='ValidPerson')
     binarypackagename = Choice(

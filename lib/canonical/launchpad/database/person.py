@@ -66,8 +66,10 @@ class Person(SQLBase):
     karma = IntCol(dbName='karma', default=0)
     karmatimestamp = DateTimeCol(dbName='karmatimestamp', default=UTC_NOW)
 
-    subscriptionpolicy = IntCol(dbName='subscriptionpolicy', 
-                                default=TeamSubscriptionPolicy.MODERATED)
+    subscriptionpolicy = EnumCol(
+        dbName='subscriptionpolicy',
+        schema=TeamSubscriptionPolicy,
+        default=TeamSubscriptionPolicy.MODERATED)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
                                      default=None)
@@ -311,7 +313,8 @@ class Person(SQLBase):
 
     def getMembershipsByStatus(self, status):
         query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
-                 "AND Person.id = TeamMembership.team") % (self.id, status)
+                 "AND Person.id = TeamMembership.team") % (
+                 self.id, status.value)
         return list(TeamMembership.select(query, clauseTables=['Person']))
 
     def _getEmailsByStatus(self, status):
@@ -321,7 +324,8 @@ class Person(SQLBase):
 
     def getMembersByStatus(self, status):
         query = ("TeamMembership.team = %d AND TeamMembership.status = %d "
-                 "AND TeamMembership.person = Person.id") % (self.id, status)
+                 "AND TeamMembership.person = Person.id") % (
+                 self.id, status.value)
         return list(Person.select(query, clauseTables=['TeamMembership']))
 
     #
@@ -679,12 +683,12 @@ class EmailAddress(SQLBase):
     _table = 'EmailAddress'
 
     email = StringCol(dbName='email', notNull=True, alternateID=True)
-    status = IntCol(dbName='status', notNull=True)
+    status = EnumCol(dbName='status', schema=EmailAddressStatus, notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
     def _statusname(self):
         for status in EmailAddressStatus.items:
-            if status.value == self.status:
+            if status == self.status:
                 return status.title
         return 'Unknown (%d)' %self.status
     
@@ -810,7 +814,7 @@ class TeamMembership(SQLBase):
 
     def _statusname(self):
         for statusitem in TeamMembershipStatus.items:
-            if statusitem.value == self.status:
+            if statusitem == self.status:
                 return statusitem.title
         return 'Unknown (%d)' % self.status
     statusname = property(_statusname)

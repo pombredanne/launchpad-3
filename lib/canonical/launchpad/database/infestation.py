@@ -133,9 +133,6 @@ def BugProductInfestationFactory(context, **kw):
 
 def BugPackageInfestationFactory(context, **kw):
     now = datetime.utcnow()
-    if 'infestationstatus' in kw:
-        kw['infestationstatus'] = dbschema.BugInfestationStatus.items[
-            kw['infestationstatus']]
     return BugPackageInfestation(
         bug=context.context.bug,
         explicit=True,

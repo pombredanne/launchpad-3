@@ -102,7 +102,7 @@ class SourcePackage(SQLBase):
         query = (' distrorelease = %d '
                  ' AND sourcepackage = %d'
                  ' AND publishingstatus = %d'
-                 % (distroRelease.id, self.id, status))
+                 % (distroRelease.id, self.id, status.value))
 
         if do_sort:
             # XXX: Daniel Debonzi 2004-12-01

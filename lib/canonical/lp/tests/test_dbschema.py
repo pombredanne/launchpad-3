@@ -6,6 +6,16 @@ from zope.testing.doctestunit import DocTestSuite
 
 def test_constructor():
     """
+    We're definitely intending to do something that we should be warned
+    about: compare an Item to an int.  So, disable these warnings for just
+    this module.
+
+    >>> import warnings
+    >>> warnings.filterwarnings("ignore", "comparison of DBSchema",
+    ...     module=__name__)
+
+    We can import Item.
+
     >>> from canonical.lp.dbschema import Item
 
     An Item can be created only within a class suite, and its first arg
@@ -42,23 +52,29 @@ def test_constructor():
     An Item can be cast into an int or a string, for use as a replacement in
     SQL statements.
 
-    >>> print "SELECT * from Foo where Foo.id = '%d';" % SomeClass.attribute
+    >>> print "SELECT * from Foo where Foo.id = '%d';" % (
+    ...     SomeClass.attribute.value)
     SELECT * from Foo where Foo.id = '2';
     >>> print "SELECT * from Foo where Foo.id = '%s';" % SomeClass.attribute
     SELECT * from Foo where Foo.id = '2';
+    >>> int(SomeClass.attribute)
+    Traceback (most recent call last):
+    ...
+    TypeError: Cannot cast Item to int.  Use item.value instead.
 
-    An Item is comparable to ints.
+    An Item is not particularly comparable to ints.  It always compares
+    unequal.
 
     >>> 1 == SomeClass.attribute
     False
     >>> 1 != SomeClass.attribute
     True
     >>> 2 == SomeClass.attribute
-    True
+    False
     >>> SomeClass.attribute == 1
     False
     >>> SomeClass.attribute == 2
-    True
+    False
     >>> hash(SomeClass.attribute)
     2
     >>> SomeClass._items[2] is SomeClass.attribute
@@ -76,7 +92,7 @@ def test_constructor():
     True
     >>> item == proxied_item
     True
-    >>> item != proxied_item
+    >>> item.__ne__(proxied_item)
     False
 
     An Item has an informative representation.
@@ -107,6 +123,13 @@ def test_constructor():
     True
     >>> SomeOtherClass.attr3 == SomeClass.attr3
     False
+
+    An Item can be used as a key in a dict.
+
+    >>> d = {SomeClass.attribute: 'some class attribute',
+    ...      SomeClass.attr3: 'some other class attriubte'}
+    >>> d[SomeClass.attr3]
+    'some other class attriubte'
 
     """
 

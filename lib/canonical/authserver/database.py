@@ -144,7 +144,7 @@ class DatabaseUserDetailsStorage(object):
                 "VALUES (%d, %s, %d)"
                 % (personID,
                    quote(emailAddress),
-                   dbschema.EmailAddressStatus.PREFERRED)
+                   dbschema.EmailAddressStatus.PREFERRED.value)
             )
 
         return {

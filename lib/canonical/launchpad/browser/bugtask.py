@@ -91,8 +91,8 @@ class BugTasksReportView:
 class BugTasksView:
 
     DEFAULT_STATUS = (
-        int(dbschema.BugTaskStatus.NEW),
-        int(dbschema.BugTaskStatus.ACCEPTED))
+        dbschema.BugTaskStatus.NEW.value,
+        dbschema.BugTaskStatus.ACCEPTED.value)
 
     def __init__(self, context, request):
         self.context = context

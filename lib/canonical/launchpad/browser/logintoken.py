@@ -38,10 +38,8 @@ class LoginTokenView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        # XXX: Need to allow DBSchema Items to be keys in a dict!
-        # -- Steve Alexander 2005-03-09
         url = urllib.basejoin(str(request.URL),
-                              self.PAGES[context.tokentype.value])
+                              self.PAGES[context.tokentype])
         request.response.redirect(url)
 
 
@@ -81,7 +79,7 @@ class ResetPasswordView(object):
 
         # Make sure this person has a preferred email address.
         emailaddress = EmailAddress.byEmail(self.context.email)
-        emailaddress.status = int(EmailAddressStatus.VALIDATED)
+        emailaddress.status = EmailAddressStatus.VALIDATED
         flushUpdates()
         person = emailaddress.person
         if person.preferredemail is None and \
@@ -141,12 +139,12 @@ class ValidateEmailView(object):
         reqemail = results[0]
         assert reqemail.person == requester
 
-        status = int(EmailAddressStatus.VALIDATED)
+        status = EmailAddressStatus.VALIDATED
         if not requester.preferredemail and not requester.validatedemails:
             # This is the first VALIDATED email for this Person, and we
             # need it to be the preferred one, to be able to communicate
             # with the user.
-            status = int(EmailAddressStatus.PREFERRED)
+            status = EmailAddressStatus.PREFERRED
 
         results = EmailAddress.selectBy(email=self.context.email)
         if results.count() > 0:
@@ -204,7 +202,7 @@ class NewAccountView(AddView):
         notify(ObjectCreatedEvent(person))
 
         email = EmailAddress(person=person.id, email=self.context.email,
-                             status=int(EmailAddressStatus.PREFERRED))
+                             status=EmailAddressStatus.PREFERRED)
         notify(ObjectCreatedEvent(email))
 
         self._nextURL = '/people/%s' % person.name
@@ -259,7 +257,7 @@ class MergePeopleView(object):
         # dupe account, so we can assign it to him.
         email = getUtility(IEmailAddressSet).getByEmail(self.context.email)
         email.person = self.context.requester.id
-        email.status = int(EmailAddressStatus.VALIDATED)
+        email.status = EmailAddressStatus.VALIDATED
         flushUpdates()
         
         # Now we must check if the dupe account still have registered email

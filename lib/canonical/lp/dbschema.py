@@ -21,6 +21,7 @@ __metaclass__ = type
 
 # This should be in alphabetical order. please keep it that way.
 __all__ = (
+'EnumCol',
 'ArchArchiveType',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
@@ -67,6 +68,7 @@ __all__ = (
 
 from zope.interface.advice import addClassAdvisor
 import sys
+import warnings
 
 from sqlobject.col import SOCol, Col
 from sqlobject.include import validators
@@ -246,7 +248,7 @@ class Item:
         return cls
 
     def __int__(self):
-        return self.value
+        raise TypeError("Cannot cast Item to int.  Use item.value instead.")
 
     def __str__(self):
         return str(self.value)
@@ -257,9 +259,11 @@ class Item:
     def __sqlrepr__(self, dbname):
         return repr(self.value)
 
-    def __eq__(self, other):
+    def __eq__(self, other, stacklevel=2):
         if isinstance(other, int):
-            return self.value == other
+            warnings.warn('comparison of DBSchema Item to an int: %r' % self,
+                stacklevel=stacklevel)
+            return False
         # Cannot use isinstance, because 'other' might be security proxied.
         ##elif isinstance(other, Item):
         elif other.__class__ == Item:
@@ -268,7 +272,7 @@ class Item:
             return False
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        return not self.__eq__(other, stacklevel=3)
 
     def __hash__(self):
         return self.value

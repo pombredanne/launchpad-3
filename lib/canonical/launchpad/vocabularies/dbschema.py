@@ -17,7 +17,7 @@ def vocab_factory(schema):
     """
     def factory(context, schema=schema):
         """Adapt IDBSchema to IVocabulary."""
-        items = [(int(item), item.title, item) for item in schema.items]
+        items = [(item.value, item.title, item) for item in schema.items]
         items.sort()
         items = [(title, value) for sortkey, title, value in items]
         return SimpleVocabulary.fromItems(items)

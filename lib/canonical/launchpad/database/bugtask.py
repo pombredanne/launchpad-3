@@ -244,9 +244,9 @@ class BugTaskSet:
                 "                (Bug.id = BugSubscription.bug) AND "
                 "                (BugSubscription.person = %(personid)d) AND "
                 "                (BugSubscription.subscription IN (%(cc)d, %(watch)d))))))") %
-                {'personid' : user.id,
-                 'cc' : dbschema.BugSubscription.CC,
-                 'watch' : dbschema.BugSubscription.WATCH})
+                {'personid': user.id,
+                 'cc': dbschema.BugSubscription.CC.value,
+                 'watch': dbschema.BugSubscription.WATCH.value})
 
         bugtasks = BugTask.select(
             query, clauseTables = ["Bug", "BugTask"])

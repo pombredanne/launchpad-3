@@ -99,7 +99,7 @@ class BinaryPackage(SQLBase):
                  'AND PackagePublishing.status = %d'
                  %(self.binarypackagename.id,
                    self.build.distroarchrelease.id,
-                   dbschema.PackagePublishingStatus.SUPERSEDED,
+                   dbschema.PackagePublishingStatus.SUPERSEDED.value,
                    ))
 
         return list(BinaryPackage.select(query,

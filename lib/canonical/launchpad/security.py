@@ -162,8 +162,8 @@ class PublicToAllOrPrivateToExplicitSubscribersForBugTask(AuthorizationBase):
             # private bug
             for subscription in self.obj.bug.subscriptions:
                 if (subscription.person.id == user.id and
-                   (subscription.subscription == BugSubscription.WATCH.value
-                    or subscription.subscription == BugSubscription.CC.value)):
+                   (subscription.subscription == BugSubscription.WATCH
+                    or subscription.subscription == BugSubscription.CC)):
                     return True
 
             return False
@@ -192,7 +192,7 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
         else:
             # private bug
             watch_or_cc = (
-                BugSubscription.WATCH.value, BugSubscription.CC.value)
+                BugSubscription.WATCH, BugSubscription.CC)
             for subscription in self.obj.subscriptions:
                 if (subscription.person.id == user.id and 
                     subscription.subscription in watch_or_cc):
