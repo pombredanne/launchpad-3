@@ -17,9 +17,17 @@
     <h1><span tal:replace="context/title">$Product.title</span></h1>
 
     <div style="float: right; clear: both; margin-top: 0.25em;">
-    Product home page:
-    <a tal:content="context/homepageurl|default"
-       tal:attributes="href context/homepageurl|nothing">(none supplied)</a>
+
+        Product home page:
+        <a tal:content="context/homepageurl|default"
+           tal:attributes="href context/homepageurl|nothing">(none
+        supplied)</a><br />
+        [ <a href="+edit">Edit Product Details</a> ]<br />
+        [ <a href="+addsources">Add Revision Control System</a> ]<br />
+        [ TODO: allow creation of link to packages ]<br />
+        [ <a href="+addseries">Add a Release Series</a> ]<br />
+        [ <a href="+addrelease">Register a New Release</a> ]
+
     </div>
 
     <div class="documentDescription" tal:content="context/shortdesc">
@@ -27,6 +35,7 @@
         just a single paragraph of text really, giving the product
         highlights.
     </div>
+
     <div tal:content="context/description">
         $Product.description goes here. This should be a longer piece of
         text, up to three paragraphs in length, which gives much more
@@ -36,12 +45,8 @@
         something else, for example).
     </div>
 
-    <div>
-        [ <a href="+edit">Edit Product Details</a> ]
-    </div>
-
-
     <div tal:condition="context/sourcesources">
+
         <h2>Revision Control System</h2>
 
         <dl tal:repeat="source context/sourcesources">
@@ -52,10 +57,6 @@
             <dd tal:content="source/description"></dd>
         </dl>
 
-    </div>
-
-    <div>
-        [ <a href="+addsources">Add Revision Control System</a> ]
     </div>
 
     <div tal:condition="context/sourcepackages">
@@ -75,10 +76,6 @@
             
         </ul>
 
-    </div>
-
-    <div>
-        [ TODO: link to packages ]
     </div>
 
     <div tal:condition="context/serieslist">
@@ -101,16 +98,15 @@
         </ul>
     </div>
 
-    [ <a href="+addseries">Add a Release Series</a> ]
-
-    <div >
+    <div tal:condition="context/releases">
 
         <h2>Releases of <span
         tal:replace="context/displayname">$Product.displayname</span></h2>
 
-        <ol tal:repeat="release context/releases">
+        <ol>
         
-            <li><b><span tal:content="release/version">version</span></b>: 
+            <li tal:repeat="release context/releases">
+                <b><span tal:content="release/version">version</span></b>: 
                 "<span tal:content="release/title">title</span>"
                 [ <a href="" tal:attributes="href release/version">View</a>
                 ]<br />
@@ -119,8 +115,6 @@
         </ol>
 
     </div>
-
-    [ <a href="+addrelease">Register a New Release</a> ]
 
 </div>
 

@@ -1,0 +1,14 @@
+
+
+  >>> print http(r"""
+  ... GET /doap/projects/mozilla/firefox/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/doap/projects/mozilla/firefox
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+      <h1>Edit "..." Product
+      Details</h1>
+  ...

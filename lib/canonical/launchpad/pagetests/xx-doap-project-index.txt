@@ -1,0 +1,11 @@
+
+
+  >>> print http(r"""
+  ... GET /doap/projects/mozilla/firefox HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+      <h1>...</h1>
+  ...
