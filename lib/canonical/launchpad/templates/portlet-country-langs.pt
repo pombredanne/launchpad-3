@@ -2,7 +2,7 @@
      tal:condition="view/requestCountry"
      tal:define="country view/requestCountry">
 
-    <h4><span tal:replace="country/name">country</span>:</h4>
+    <h4>Languages in <span tal:replace="country/name">country</span>:</h4>
 
     <div class="portletBody">
 
@@ -10,7 +10,6 @@
 
             <div tal:condition="country/languages" tal:omit-tag>
             
-                <b>Local languages:</b><br />
                 <span tal:repeat="lang country/languages" tal:omit-tag>
                     o <span tal:replace="lang/englishname" /><br />
                 </span>

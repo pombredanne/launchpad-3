@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import IDistribution, \
                                            IDistroApp, \
                                            IDistroReleaseApp, \
                                            IDistroReleasesApp, \
-                                           IAuthorization, IDistrosSet,\
+                                           IAuthorization, IDistributionSet,\
                                            ISourcePackageSet,\
                                            IBinaryPackageSet   
 
@@ -37,7 +37,7 @@ class DistrosApp(object):
     implements(IDistribution)
 
     def __init__(self):
-        self.dst = getUtility(IDistrosSet)
+        self.dst = getUtility(IDistributionSet)
         self.entries = self.dst.getDistrosCounter()
 
     def __getitem__(self, name):
@@ -51,10 +51,10 @@ class DistroApp(object):
     implements(IDistroApp, IAuthorization)
 
     def __init__(self, name):
-        dstutil = getUtility(IDistrosSet)
+        dstutil = getUtility(IDistributionSet)
         self.distribution = dstutil.getDistribution(name)
 
-        self.releases = self.distribution.releases
+        self.releases = list(self.distribution.releases)
 
         if len(self.releases) != 0:
             self.enable_releases = True
@@ -129,3 +129,5 @@ class DistroReleasesApp(object):
 
     def __iter__(self):
         return iter(self.distribution.releases)
+
+

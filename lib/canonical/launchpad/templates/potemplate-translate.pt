@@ -46,11 +46,11 @@
       read <a href="/rosetta/+about">more about Rosetta</a> or start
       translating <span
       tal:replace="context/product/displayname">product</span> immediately.
+      This specific translation template is called "<span
+      tal:replace="context/title">template title</span>"
     </p>
 
-    <p tal:content="context/product/shortdesc">
-        product summary
-    </p>
+    <h2>Translation Template Description:</h2>
 
     <p tal:content="context/description">
         template description
@@ -80,10 +80,6 @@
 
     <div tal:condition="not: view/badLanguages">
 
-    <div class="documentDescription">
-    Hint: use the <code>Tab</code> key to move quickly between translation fields.
-    </div>
-
     <!-- Display settings. -->
 
     <form method="post" tal:attributes="action request/URL">
@@ -91,7 +87,6 @@
         <legend>Display Settings</legend>
             <div class="field">
                 <label>Show</label>
-                <br/>
                 <!--
                 Yes, I know, the logic for the 'checked' attributes is
                 somewhat evil.
@@ -101,22 +96,20 @@
                     tal:attributes="checked
                         python:('', 'checked')[view.show == 'translated']" />
                     translated messages</label>
-                <br/>
                 <label><input name="show" type="radio" value="untranslated"
                     tal:attributes="checked
                         python:('', 'checked')[view.show == 'untranslated']" />
                     untranslated messages</label>
-                <br/>
                 <label><input name="show" type="radio" value="all"
                     tal:attributes="checked
                         python:('', 'checked')[view.show == 'all']" />
                     all messages</label>
-            </div>
 
-            <input type="hidden" name="languages"
-                tal:condition="view/codes"
-                tal:attributes="value view/codes" />
-            <input type="submit" value="Change" />
+                <input type="hidden" name="languages"
+                    tal:condition="view/codes"
+                    tal:attributes="value view/codes" />
+                <input type="submit" value="Change" />
+            </div>
         </fieldset>
     </form>
 

@@ -550,11 +550,25 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distribution'::pg_catalog.regclass;
 
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig) VALUES (1, 'ubuntu', 'Ubuntu', 'Ubuntu is a new concept of GNU/Linux Distribution based on Debian GNU/Linux.', 'domain', 1, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of GNU/Linux Operating System.', 'domain', 1, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is a non commercial distribution of a GNU/Linux Operating System for many platforms.', 'domain', 1, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very customizeable GNU/Linux Distribution', 'domain', 1, NULL);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig) VALUES (5, 'porkypigpolka', 'Porky Pig Polka Distribution', 'Should be near the Spork concept of GNU/Linux Distribution', 'domain', 1, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, "owner",
+lucilleconfig) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new
+approach to Linux Distribution that includes regular releases, and a
+simplified single-CD installation system.', 'ubuntulinux.org', 1, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, "owner",
+lucilleconfig) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a
+commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, "owner",
+lucilleconfig) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
+a non commercial distribution of a GNU/Linux Operating System for many
+platforms.', 'debian.org', 1, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, "owner",
+lucilleconfig) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
+customizeable GNU/Linux Distribution that is designed to let you build every
+single package yourself, with your own preferences.', 'gentoo.org', 1, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, "owner",
+lucilleconfig) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux',
+'Kubuntu is an entirely free Linux distribution that uses the K Desktop
+Environment as its default desktop after install.', 'kubuntu.org', 1, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distribution'::pg_catalog.regclass;
@@ -576,14 +590,36 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrorelease'::pg_catalog.regclass;
 
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc) VALUES (1, 1, 'warty', 'Warty', 'This is the first stable release of Ubuntu', '1.0.0', 1, 1, 3, '2004-08-20 00:00:00', NULL, 1, NULL, 'This is the first stable release of Ubuntu');
+INSERT INTO distrorelease (id, distribution, name, title, description,
+"version", components, sections, releasestate, datereleased, parentrelease,
+"owner", lucilleconfig, shortdesc) VALUES (1, 1, 'warty', 'The Warty Warthog
+Release', 'Warty was the first stable release of Ubuntu. Key feature goals
+included releasing on time, with the latest version of the Gnome Desktop
+Environment, and the creation of all the infrastructure required to manage
+Ubuntu itself. Warty includes excellent support for Python, with most of the
+widely used Python libraries installed by default.', '4.10', 1, 1, 3,
+'2004-08-20 00:00:00', NULL, 1, NULL, 'Warty is the first release of Ubuntu,
+with a planned release date of October 2004.');
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 1, 1, 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc) VALUES (3, 1, 'hoary', 'Hoary Crazy-Unstable', 'Hoary is the next release of Ubuntu', '0.0.1', 1, 1, 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the next release of Ubuntu');
+INSERT INTO distrorelease (id, distribution, name, title, description,
+"version", components, sections, releasestate, datereleased, parentrelease,
+"owner", lucilleconfig, shortdesc) VALUES (3, 1, 'hoary', 'The Hoary
+Hedgehod Release', 'Hoary is the second release of Ubuntu. Key feature goals
+include the integration of Hoary with the Launchpad for bugs and translation
+information, as well as Gnome 2.10 and the X.org window system.', '5.04', 1,
+1, 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of
+Ubuntu, with release planned for April 2005.');
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 1, 1, 3, '2004-04-01 00:00:00', 2, 7, NULL, 'The release that we would not expect');
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 1, 1, 4, '2003-01-01 00:00:00', NULL, 2, NULL, 'WOODY is the current stable verison of Debian GNU/Linux');
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 1, 1, 3, '2004-09-29 00:00:00', 6, 5, NULL, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.');
 INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, 1, 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.');
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestate, datereleased, parentrelease, "owner", lucilleconfig, shortdesc) VALUES (5, 1, 'grumpy', 'G-R-U-M-P-Y', 'Grumpy is far far away, but should be the third release of Ubuntu', '0.0.1', 1, 1, 1, '2004-08-29 00:00:00', 1, 1, NULL, 'Grumpy is far far away, but should be the third release of Ubuntu');
+INSERT INTO distrorelease (id, distribution, name, title, description,
+"version", components, sections, releasestate, datereleased, parentrelease,
+"owner", lucilleconfig, shortdesc) VALUES (5, 1, 'grumpy', 'The Grumpy
+Groundhog Release', 'Grumpy, the third release of Ubuntu Linux, is not yet
+in active development. This information is purely a placeholder.', '5.10',
+1, 1, 1, '2004-08-29 00:00:00', 1, 1, NULL, 'Grumpy is the third release of
+Ubuntu, planned for October 2005.');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrorelease'::pg_catalog.regclass;

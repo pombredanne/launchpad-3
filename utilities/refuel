@@ -13,23 +13,23 @@ if [ $? -gt 0 ]; then
 fi;
 
 # check for loose files
-baz lint -t --strict
+baz status --lint --untagged-files --strict
 if [ $? -gt 0 ]; then
   echo "You have untagged files. Please add them and commit before refueling."
   exit 1
 fi
 
 # now merge launchpad with the rocketfuel repo
-baz star-merge -t rocketfuel@canonical.com/launchpad--devel--0
+baz star-merge --two-way rocketfuel@canonical.com/launchpad--devel--0
 
 # check for conflicts, and if none exist, commit the merge
-test -z $(find . -name "*.orig" -or -name "*.rej" -print)
-if [ $? -gt 0 ]; then
+FILELIST=$(find . -name "*.orig" -or -name "*.rej" -print)
+if [ ! -z "$FILELIST" ]; then
   echo "WARNING: You have conflicts. Please resolve them and commit before doing"
   echo "         any additional work."
   exit 1
 else
-  baz diff -q
+  baz diff --quiet
   if [ $? -gt 0 ]; then
     # commit the merged changes
     baz commit -s "merge rocketfuel"

@@ -13,6 +13,7 @@
 
 
 <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/detailsPortlet" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">

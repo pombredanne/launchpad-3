@@ -41,6 +41,11 @@ class IRosettaApplication(ILaunchpadApplication):
 class ISoyuzApplication(ILaunchpadApplication):
     """Application root for soyuz."""
 
+    def distributions():
+        """Return a list of distributions that are entirely managed
+        by Soyuz. This does not include distributions which are parsed by
+        the backend tools, such as Fedora and Debian."""
+
 
 class IDOAPApplication(ILaunchpadApplication):
     """DOAP application root."""

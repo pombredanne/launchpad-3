@@ -3,30 +3,12 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-
-class IDistribution(Interface):
-    """A Distribution Object"""
-    id = Attribute("The distro's unique number.")
-    name = Attribute("The distro's name.")
-    title = Attribute("The distro's title.")
-    description = Attribute("The distro's description.")
-    domainname = Attribute("The distro's domain name.")
-    owner = Attribute("The distro's owner.")
-    releases = Attribute("DistroReleases inside this Distributions")
-    role_users = Attribute("Roles inside this Distributions")
-    
-    bugCounter = Attribute("The distro bug counter")
-
-    def getRelease(name):
-        """Returns an Release that matchs name"""
-
 class IDistroReleaseRole(Interface):
     """A Distroreleaserole Object """
     distrorelease= Attribute("Release")
     person = Attribute("Person")
     role = Attribute("Role")
     rolename = Attribute("Rolename")
-    
 
 class IDistributionRole(Interface):
     """A Distribution Role Object"""
@@ -34,7 +16,6 @@ class IDistributionRole(Interface):
     person = Attribute("Person")
     role = Attribute("Role")
     rolename = Attribute("Rolename")
-
 
 class IDistroRelease(Interface):
     """A Release Object"""
@@ -65,10 +46,6 @@ class IComponent(Interface):
 
 class ISection(Interface):
     name = Attribute("The Section Name")
-
-#
-# Distributions related Applications Interfaces
-#
 
 class IDistributions(Interface):
     """Root object for collection of Distributions"""
@@ -134,19 +111,7 @@ class IDistroArchRelease(Interface):
     processorfamily = Attribute("ProcessorFamily")
     architecturetag = Attribute("ArchitectureTag")
     owner = Attribute("Owner")
-    
-class IDistrosSet(Interface):
-    """Interface for DistrosSet"""
-
-    def getDistros():
-        """Returns all distributions available on the Database"""
-
-    def getDistrosCounter():
-        """Returns the number of Distributions available"""
-
-    def getDistribution(name):
-        """Returns a Distribution with name=name"""
-
+ 
 class IDistroTools(Interface):
     """Interfaces to Tools for Distribution and DistroRelase Manipulation"""
 

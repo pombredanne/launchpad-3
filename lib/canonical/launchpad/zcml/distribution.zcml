@@ -1,0 +1,21 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <content class="canonical.launchpad.database.Distribution">
+        <allow interface="canonical.launchpad.interfaces.IDistribution"/>
+        <require
+            permission="zope.Public"
+            set_attributes="name title description domainname"
+            />
+        <implements interface="zope.app.container.interfaces.IItemContainer"/>
+    </content>
+
+    <utility
+        factory="canonical.launchpad.database.DistributionSet"
+        provides="canonical.launchpad.interfaces.IDistributionSet" />
+
+</configure>

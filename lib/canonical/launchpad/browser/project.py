@@ -52,6 +52,9 @@ class ProjectView(object):
     trackersPortlet = ViewPageTemplateFile(
         '../templates/portlet-project-trackers.pt')
 
+    detailsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-project-details.pt')
+
     def edit(self):
         """
         Update the contents of a Project. This method is called by a

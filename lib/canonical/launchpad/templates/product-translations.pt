@@ -36,13 +36,18 @@
     possible to upload a po template -->
     <tal:block condition="not: view/templates">
 
+        <h2>Translation Setup Required</h2>
+
+        <p class="portalMessage">Advanced Users Only</p>
+
         <p><span tal:replace="context/displayname">This product</span>
         has not yet been setup for translation through Rosetta. If you have
         the latest PO Template for <span
         tal:replace="context/displayname">this product</span> then you can
         upload it and start translating immediately. If not, you'll need to
-        ask the product maintainer, or lead translater, to upload it here,
-        then let you know that you can start translating.
+        ask the product maintainer, or lead translater, to upload it here.
+        You can give them the URL of this page for certainty. As soon as
+        that has been done you will be able to start translating.
 
         <!-- the "add a template" link is in here because we don't really
         want people to add multiple templates for the moment. so once there

@@ -4,12 +4,23 @@
 """
 from zope.interface import implements
 from canonical.launchpad.interfaces import ISoyuzApplication
+from canonical.launchpad.database import Distribution
 
 __metaclass__ = type
 
-class SoyuzApplication:
-    """Something that URLs get attached to.  See configure.zcml."""
+class SoyuzApplication(object):
+    """The core Soyuz application object. This is really just a placeholder
+    for traversal purposes."""
     implements(ISoyuzApplication)
-    name = 'Soyuz'
 
-# arch-tag: 095a4ca8-1a0f-4287-bb2d-fdd0d48b576b
+    def distributions(self):
+        """See ISoyuzApplication."""
+        dists = Distribution.select()
+        distlist = []
+        # only show distros that are actively managed through soyuz as
+        # opposed to back-end monitored
+        for dist in dists:
+            if dist.name not in ['debian', 'redhat', 'fedora', 'gentoo']:
+                distlist.append(dist)
+        return distlist
+

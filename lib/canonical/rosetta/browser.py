@@ -16,9 +16,10 @@ from zope.i18n.interfaces import IUserPreferredLanguages
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import ILanguageSet, IPerson
-from canonical.launchpad.interfaces import IProjectSet, IProductSet
-from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.interfaces import ILanguageSet, IPerson, \
+        IProjectSet, IProductSet, IPasswordEncryptor, \
+        IRequestLocalLanguages, IRequestPreferredLanguages
+
 from canonical.launchpad.database import Language, Person, POTemplate, POFile
 
 from canonical.rosetta.poexport import POExport
@@ -41,10 +42,8 @@ def count_lines(text):
 
 def canonicalise_code(code):
     '''Convert a language code to a standard xx_YY form.'''
-
     if '-' in code:
         language, country = code.split('-', 1)
-
         return "%s_%s" % (language, country.upper())
     else:
         return code
@@ -76,8 +75,12 @@ def request_languages(request):
 
     # If the user is not authenticated, or they are authenticated but have no
     # languages set, try looking at the HTTP headers for clues.
-    codes = IUserPreferredLanguages(request).getPreferredLanguages()
-    return codes_to_languages(codes)
+    languages = IRequestPreferredLanguages(request).getPreferredLanguages()
+    for lang in IRequestLocalLanguages(request).getLocalLanguages():
+        if lang not in languages:
+            languages.append(lang)
+    return languages
+    
 
 def parse_cformat_string(s):
     '''Parse a printf()-style format string into a sequence of interpolations

@@ -4,6 +4,9 @@
     i18n_domain="launchpad"
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
+    <!-- this includes all the badness that must be split up -->
+    <include file="soyuz.zcml" />
+
     <!-- Content class configuration -->
     <include file="branch.zcml" />
     <include file="country.zcml" />
@@ -29,7 +32,7 @@
     <include file="message.zcml" />
     <include file="bounty.zcml" />
     <include file="build.zcml" />
-    <include file="distro.zcml" />
+    <include file="distribution.zcml" />
     <include file="person.zcml" />
     <include file="processor.zcml" />
     <include file="language.zcml" />

@@ -299,7 +299,7 @@ class SourcePackageRelease(SQLBase):
     #
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
-        from canonical.launchpad.database.distro import DistroArchRelease
+        from canonical.launchpad.database.soyuz import DistroArchRelease
         clauseTables = ('PackagePublishing', 'BinaryPackage', 'Build')
         
         archReleases = Set(DistroArchRelease.select(

@@ -144,12 +144,20 @@ class DummyRequest:
         raise key
 
 def adaptRequestToLanguages(request):
-    return DummyPreferredLanguages()
+    return DummyRequestLanguages()
 
 
-class DummyPreferredLanguages:
+class DummyRequestLanguages:
+
     def getPreferredLanguages(self):
-        return ('ja',)
+        return [DummyLanguage('ja', 1),
+            DummyLanguage('es', 2),
+            DummyLanguage('fr', 3),]
+
+    def getLocalLanguages(self):
+        return [DummyLanguage('da', 4),
+            DummyLanguage('as', 5),
+            DummyLanguage('sr', 6),]
 
 
 def test_count_lines():
@@ -211,15 +219,17 @@ def test_request_languages():
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
     >>> from zope.i18n.interfaces import IUserPreferredLanguages
-
+    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
+    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
     >>> from canonical.rosetta.browser import request_languages
 
-    Frist, test with a person who has a single preferred language.
+    First, test with a person who has a single preferred language.
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
     >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
-    >>> #ztapi.provideAdapter(IUserPreferredLanguages)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
     >>> languages = request_languages(DummyRequest())
     >>> len(languages)
@@ -234,11 +244,12 @@ def test_request_languages():
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
     >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToNoLanguagePerson)
-    >>> ztapi.provideAdapter(IBrowserRequest, IUserPreferredLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
     >>> languages = request_languages(DummyRequest())
     >>> len(languages)
-    1
+    6
     >>> languages[0].code
     'ja'
 

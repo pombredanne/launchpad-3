@@ -15,7 +15,7 @@
         <img src="/++resource++user.gif">
         <span tal:replace="context/owner/browsername">ownername</span><br />
 
-        <b>Status:</b><br />
+        <b>Product Status:</b><br />
         <span tal:condition="context/reviewed"
               tal:omit-tag>Reviewed<br /></span>
         <span tal:condition="context/active"

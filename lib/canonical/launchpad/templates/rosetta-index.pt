@@ -18,6 +18,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure view/countryPortlet" />
+    <div tal:replace="structure view/browserLangPortlet" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">

@@ -1,9 +1,13 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad">
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Overview of Distributions in
+    Soyuz</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -14,36 +18,42 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Distributions overview: (<span tal:content="context/entries"/>
-   Distributions)</h1>
+    <h1>Soyuz Distribution</h1>
 
-  <div class="documentDescription">
-  <p> This page shows all Distributions Hosted by Soyuz Application 
-  </div>
+    
+        <p>This page shows all distributions that are represented in the Soyuz
+        Distribution Management System. Note that some of these
+        distributions are "read-only", we monitor those distributions and
+        present package information for them in Soyuz, but they cannot be
+        altered or managed in Soyuz. The Soyuz representations of those
+        distributions might be out of date.</p>
 
-  <table class="listing">
-    <tr>
-      <th>Title</th>
-      <th>Description</th>
-    </tr>
-    <tr tal:repeat="distribution context/distributions">
-      <td>
-        <a tal:content="distribution/title" 
-	   tal:attributes="href distribution/name">
-	  distribution name
-	</a>
-      </td>
-      <td tal:content="distribution/description">
-        description
-      </td>
-    </tr>
-  </table>    
+    <table width="100%" class="listing rowNavigation">
+        <tr>
+            <th>Name</th>
+            <th>Title</th>
+        </tr>
+        <tr tal:repeat="distribution context/distributions"
+            tal:attributes="onclick
+                string:window.location='${distribution/name}'">
+            <td>
+                <a tal:content="distribution/name" 
+	               tal:attributes="href distribution/name">
+	               distribution name
+	            </a>
+            </td>
+            <td tal:content="distribution/title">
+                distribution title
+            </td>
+        </tr>
+    </table>    
 
-<fieldset>
-<div>
-<a href="+add">Add New Distribution</a>
-</div>
-</fieldset>
+    <div style="float: right;">
+        (<span tal:replace="context/entries" /> distributions)
+    </div>
+
+    <p><img src="/++resource++add.gif"> <a href="+add">Add
+    New Distribution</a></p>
 
 </div>
 

@@ -14,4 +14,14 @@
         factory="canonical.launchpad.utilities.GeoIP"
         provides="canonical.launchpad.interfaces.IGeoIP" />
 
+    <adapter
+        for="zope.publisher.interfaces.browser.IBrowserRequest"
+        factory="canonical.launchpad.utilities.RequestLocalLanguages"
+        provides="canonical.launchpad.interfaces.IRequestLocalLanguages" />
+
+    <adapter
+        for="zope.publisher.interfaces.browser.IBrowserRequest"
+        factory="canonical.launchpad.utilities.RequestPreferredLanguages"
+        provides="canonical.launchpad.interfaces.IRequestPreferredLanguages" />
+
 </configure>

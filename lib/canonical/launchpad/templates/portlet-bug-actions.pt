@@ -1,6 +1,6 @@
 <div class="portlet">
 
-    <h4>Add</h4>
+    <h4>Add to bug:</h4>
 
     <div class="portletBody"
          tal:define="bug_url string:/malone/bugs/${context/id}">

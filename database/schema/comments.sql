@@ -202,11 +202,13 @@ COMMENT ON COLUMN SourcePackage.srcpackageformat IS
 COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
 
 
-/* Lucille's configuration */
+/* Distribution */
 
-COMMENT ON COLUMN distribution.lucilleconfig IS 'Configuration
+COMMENT ON COLUMN Distribution.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
 generating archives for this distribution';
+
+/* DistroRelease */
 
 COMMENT ON COLUMN distrorelease.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and

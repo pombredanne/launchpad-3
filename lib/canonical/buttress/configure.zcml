@@ -19,7 +19,7 @@
     <browser:suburl
         for="canonical.buttress.IButtressApplication"
         utility="canonical.launchpad.interfaces.IProductSet"
-        name="upstream" />
+        name="products" />
 
     <browser:suburl
         for="canonical.buttress.IButtressApplication"

@@ -1,0 +1,15 @@
+<div class="portlet" tal:condition="view/browserLanguages">
+
+    <h4>Your browser languages:</h4>
+
+    <div class="portletBody">
+
+        <div class="portletContent even">
+
+            <span tal:repeat="lang view/browserLanguages" tal:omit-tag>
+                o <span tal:replace="lang/englishname" /><br />
+            </span>
+
+        </div>
+    </div>
+</div>
