@@ -98,6 +98,11 @@ class FileUploadProtocol(basic.LineReceiver):
     def command_STORE(self, args):
         try:
             size, name = args.split(None, 2)
+            try:
+                name = name.decode('utf-8')
+            except:
+                raise ProtocolViolation(
+                    "STORE command expects the filename to be in UTF-8")
             size = int(size)
         except ValueError:
             raise ProtocolViolation(
