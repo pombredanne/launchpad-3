@@ -6,7 +6,7 @@ import canonical.rosetta.interfaces as interfaces
 from canonical.database.doap import IProject, IProjects
 
 from sqlobject import ForeignKey, MultipleJoin, RelatedJoin, IntCol, \
-    BoolCol, StringCol, DateTimeCol
+    BoolCol, StringCol, DateTimeCol, SQLObjectNotFound
 from zope.interface import implements, directlyProvides
 from zope.component import getUtility
 from canonical.rosetta import pofile
@@ -57,113 +57,6 @@ standardPOFileHeader = (
 "X-Rosetta-Version: 0.1\n"
 "Plural-Forms: nplurals=%(nplurals)d; plural=%(pluralexpr)s\n"
 )
-
-
-class xxxRosettaProjects(object):
-    implements(IProjects)
-
-    def __iter__(self):
-        return iter(RosettaProject.select())
-
-    def __getitem__(self, name):
-        ret = RosettaProject.selectBy(name=name)
-
-        if ret.count() == 0:
-            raise KeyError, name
-        else:
-            return ret[0]
-
-    def new(self, name, title, url, description, owner):
-        if RosettaProject.selectBy(name=name).count():
-            raise KeyError("There is already a project with that name")
-
-        return RosettaProject(name=name,
-                              displayName=displayName,
-                              title=title, url=url,
-                              description=description,
-                              owner=owner, datecreated='now')
-
-    def search(self, query):
-        # XXX: Double % should not be necessary.
-        query = quote('%%' + query + '%%')
-        #query = quote(query)
-        return RosettaProject.select('''title ILIKE %s  OR description ILIKE %s''' %
-            (query, query))
-
-
-class xxxRosettaProject(SQLBase):
-    implements(interfaces.IRosettaProject)
-
-    _table = 'Project'
-
-    _columns = [
-        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
-            notNull=True),
-        StringCol(name='name', dbName='name', notNull=True, unique=True),
-        StringCol(name='displayName', dbName='displayName', notNull=True),
-        StringCol(name='title', dbName='title', notNull=True),
-        StringCol(name='description', dbName='description', notNull=True),
-        DateTimeCol(name='datecreated', dbName='datecreated', notNull=True),
-        StringCol(name='url', dbName='homepageurl')
-    ]
-
-    _productsJoin = MultipleJoin('RosettaProduct', joinColumn='project')
-
-    def products(self):
-        return iter(self._productsJoin)
-
-    # XXX: Which one is the difference between products and rosetta products
-    # Should be implemented correctly.
-    def rosettaProducts(self):
-        return self.products()
-
-    def product(self, name):
-        ret = RosettaProduct.selectBy(name=name)
-
-        if ret.count() == 0:
-            raise KeyError, name
-        else:
-            return ret[0]
-
-    def poTemplate(self, name):
-        results = RosettaPOTemplate.byName(name)
-        count = results.count()
-
-        if count == 0:
-            raise KeyError, name
-        elif count > 1:
-            raise RuntimeError("Duplicate PO file name.")
-        else:
-            return results[0]
-
-    def poTemplates(self):
-        for p in self.products():
-            for t in p.poTemplates():
-                yield t
-
-    def messageCount(self):
-        count = 0
-        for p in self.products():
-            count += p.messageCount()
-        return count
-
-    def currentCount(self, language):
-        count = 0
-        for p in self.products():
-            count += p.currentCount(language)
-        return count
-
-    def updatesCount(self, language):
-        count = 0
-        for p in self.products():
-            count += p.updatesCount(language)
-        return count
-
-    def rosettaCount(self, language):
-        count = 0
-        for p in self.products():
-            count += p.rosettaCount(language)
-        return count
 
 
 class RosettaProduct(SQLBase):
@@ -283,23 +176,19 @@ def createMessageSetFromText(potemplate_or_pofile, text):
     if isinstance(text, unicode):
         text = text.encode('utf-8')
 
-    messageIDs = RosettaPOMessageID.byMsgid(text)
-
-    if messageIDs.count() == 0:
-        # If there are no existing message ids, create a new one.
-        # We do not need to check whether there is already a message set
-        # with the given text in this template.
+    try:
         messageID = RosettaPOMessageID.byMsgid(text)
-    else:
-        # Otherwise, use the existing one.
-        assert messageIDs.count() == 1
-        messageID = messageIDs[0]
-
         if context.hasMessageID(messageID):
             raise KeyError(
                 "There is already a message set for this template, file and "
                 "primary msgid")
-
+                
+    except SQLObjectNotFound:
+        # If there are no existing message ids, create a new one.
+        # We do not need to check whether there is already a message set
+        # with the given text in this template.
+        messageID = RosettaPOMessageID(msgid=text)
+        
     return context.createMessageSetFromMessageID(messageID)
 
 
@@ -312,8 +201,7 @@ class RosettaPOTemplate(SQLBase):
         ForeignKey(name='product', foreignKey='RosettaProduct', dbName='product',
             notNull=True),
         ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner'),
-        StringCol(name='name', dbName='name', notNull=True, unique=True,
-            alternateID=True),
+        StringCol(name='name', dbName='name', notNull=True, unique=True),
         StringCol(name='title', dbName='title', notNull=True, unique=True),
         StringCol(name='description', dbName='description', notNull=True),
         StringCol(name='path', dbName='path', notNull=True),
@@ -397,13 +285,10 @@ class RosettaPOTemplate(SQLBase):
                     % type(key))
 
         # Find a message ID with the given text.
-
-        results = RosettaPOMessageID.byMsgid(key)
-
-        if results.count() == 0:
+        try:
+            messageID = RosettaPOMessageID.byMsgid(key)
+        except SQLObjectNotFound:
             raise KeyError, key
-
-        messageID = results[0]
 
         # Find a message set with the given message ID.
 
@@ -474,14 +359,11 @@ class RosettaPOTemplate(SQLBase):
                 "This template already has a POFile for %s variant %s" %
                 (language.englishName, variant))
 
-        language = RosettaLanguage.byCode(language_code)
-
-        if language.count() == 0:
+        try:
+            language = RosettaLanguage.byCode(language_code)
+        except SQLObjectNotFound:
             raise ValueError, "Unknown language code '%s'" % language_code
 
-        assert language.count() == 1
-
-        language = language[0]
         now = datetime.now()
         data = {
             'year': now.year,
@@ -576,12 +458,10 @@ class RosettaPOFile(SQLBase):
 
         # Find the message ID object for the given text.
 
-        results = RosettaPOMessageID.byMsgid(msgid_text)
-
-        if results.count() == 0:
+        try:
+            msgid = RosettaPOMessageID.byMsgid(msgid_text)
+        except SQLObjectNotFound:
             raise KeyError, msgid_text
-
-        msgid = results[0]
 
         # Find message sets in the PO file with the found message ID.
 
@@ -895,12 +775,10 @@ class RosettaPOMessageSet(SQLBase):
         if type(text) is unicode:
             text = text.encode('utf-8')
 
-        messageIDs = RosettaPOMessageID.byMsgid(text)
-
-        if messageIDs.count() == 0:
+        try:
+            messageID = RosettaPOMessageID.byMsgid(text)
+        except SQLObjectNotFound:
             messageID = RosettaPOMessageID(msgid=text)
-        else:
-            messageID = messageIDs[0]
 
         existing = RosettaPOMessageIDSighting.selectBy(
             poMessageSetID=self.id,
@@ -938,15 +816,10 @@ class RosettaPOMessageSet(SQLBase):
                 "This method cannot be used with PO template message sets!")
 
         # First get hold of a RosettaPOTranslation for the specified text.
-
-        results = RosettaPOTranslation.byTranslation(text)
-
-        if results.count() == 0:
+        try:
             translation = RosettaPOTranslation.byTranslation(text)
-        else:
-            assert results.count() == 1
-
-            translation = results[0]
+        except SQLObjectNotFound:
+            translation = RosettaPOTranslation(translation=text)
 
         # Now get hold of any existing translation sightings.
 
@@ -1076,12 +949,10 @@ class RosettaLanguages(object):
         return iter(RosettaLanguage.select(orderBy='englishName'))
 
     def __getitem__(self, code):
-        results = RosettaLanguage.byCode(code)
-
-        if results.count() == 0:
+        try:
+            return RosettaLanguage.byCode(code)
+        except SQLObjectNotFound:
             raise KeyError, code
-        else:
-            return results[0]
 
     def keys(self):
         return [language.code for language in RosettaLanguage.select()]
