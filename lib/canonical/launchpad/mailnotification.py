@@ -5,7 +5,7 @@ from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
 from canonical.launchpad.interfaces import IBug
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.database import BugTracker, EmailAddress
+from canonical.launchpad.database import Bug, BugTracker, EmailAddress
 from canonical.lp.dbschema import BugAssignmentStatus, BugPriority, \
      BugSeverity, BugInfestationStatus, BugExternalReferenceType, \
      BugSubscription
@@ -69,18 +69,18 @@ def get_changes(before, after, fields):
 
     return changes
 
-def notify_bug_added(bug, event):
+def notify_bug_added(bug_add_form, event):
     """Notify the owner and the global notification list that a bug
     was added."""
     owner = "(no owner)"
     spname = "(none)"
     pname = "(none)"
-    if bug.owner:
-        owner = bug.owner.displayname
-    if bug.sourcepackage:
-        spname = bug.sourcepackage.sourcepackagename.name
-    if bug.product:
-        pname = bug.product.displayname
+    if bug_add_form.owner:
+        owner = bug_add_form.owner.displayname
+    if bug_add_form.sourcepackage:
+        spname = bug_add_form.sourcepackage.sourcepackagename.name
+    if bug_add_form.product:
+        pname = bug_add_form.product.displayname
 
     msg = """\
 Title: %(title)s
@@ -89,23 +89,36 @@ Description: %(description)s
 Source Package: %(source_package)s
 Product: %(product)s
 Owner: %(owner)s
-""" % {'title' : bug.title,
-       'short_desc' : bug.shortdesc,
-       'description' : bug.description,
+""" % {'title' : bug_add_form.title,
+       'short_desc' : bug_add_form.shortdesc,
+       'description' : bug_add_form.description,
        'source_package' : spname,
        'product' : pname,
        'owner' : owner}
 
-    if bug.owner:
-        owner_email = EmailAddress.select(
-            EmailAddress.q.personID == bug.owner.id)[0].email
-        # XXX Dafydd Harries, 2004/10/11
-        # This should be converted to use send_edit_notification_simple().
-        # This is difficult because it turns out that the "bug" passed in is
-        # actually a MaloneBugAddForm, and it seems impossible to get the
-        # actual bug from that.
-        simple_sendmail(
-            FROM_ADDR, [owner_email], "'%s' added" % bug.title, msg)
+    # XXX Dafydd Harries, 2004/10/11
+    # This should be converted to use send_edit_notification_simple().
+    # This is difficult because it turns out that the "bug" passed in is
+    # actually a MaloneBugAddForm, and it seems impossible to get the
+    # actual bug from that.
+    bug = Bug.get(bug_add_form.id)
+    send_edit_notification_simple(
+        bug,
+        FROM_ADDR,
+        get_cc_list(bug),
+        "'%s' added" % bug.title, msg)
+
+
+##     if bug.owner:
+##         owner_email = EmailAddress.select(
+##             EmailAddress.q.personID == bug.owner.id)[0].email
+##         # XXX Dafydd Harries, 2004/10/11
+##         # This should be converted to use send_edit_notification_simple().
+##         # This is difficult because it turns out that the "bug" passed in is
+##         # actually a MaloneBugAddForm, and it seems impossible to get the
+##         # actual bug from that.
+##         simple_sendmail(
+##             FROM_ADDR, [owner_email], "'%s' added" % bug.title, msg)
 
 def notify_bug_modified(modified_bug, event):
     """Notify the Cc'd list that this bug has been modified."""

@@ -41,7 +41,7 @@ class Bug(SQLBase):
     shortdesc = StringCol(dbName='shortdesc', notNull=True)
     description = StringCol(dbName='description', notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
-    duplicateof = ForeignKey(dbName='duplicateof', foreignKey='Bug')
+    duplicateof = ForeignKey(dbName='duplicateof', foreignKey='Bug', default=None)
     datecreated = DateTimeCol(dbName='datecreated', notNull=True)
     communityscore = IntCol(dbName='communityscore', notNull=True, default=0)
     communitytimestamp = DateTimeCol(dbName='communitytimestamp', notNull=True)
@@ -97,51 +97,36 @@ class MaloneBug(Bug):
     def nextURL(self):
         return '.'
 
+def BugFactory(*args, **kw):
+    """Create a bug from an IBugAddForm"""
+    bug = MaloneBug(
+        title = kw['title'],
+        shortdesc = kw['shortdesc'],
+        description = kw['description'],
+        owner = kw['owner'])
 
-class MaloneBugAddForm(object):
-    implements(IMaloneBugAddForm)
-    def __init__(self, **kw):
-        for k,v in kw.items():
-            setattr(self, k, v)
+    # If the user has specified a product, create the ProductBugAssignment
+    if kw.get('product', None):
+        ProductBugAssignment(bug=bug, product=kw['product'])
 
+    if kw.get('sourcepackage', None):
+        SourcePackageBugAssignment(
+            bug=bug, sourcepackage=kw['sourcepackage'], binarypackagename=None)
 
-def BugAdder(object):
-    def createAndAdd(self, *args, **kw):
-        '''Add a bug from an IMaloneBugAddForm'''
-        kw = {}
-        attrs = ['name', 'title', 'shortdesc', 'description', 'duplicateof',]
-        for a in attrs:
-            kw[a] = getattr(ob, a, None)
-        #kw['ownerID'] = IPerson(self.request.principal).id
-        bug = MaloneBug(**kw)
+    BugSubscription(
+        person = kw['owner'], bugID = bug.id,
+        subscription = BugSubscriptionVocab.CC.value)
 
-        # If the user has specified a product, create the ProductBugAssignment
-        productid = getattr(ob, 'product', None)
-        if productid:
-            product = Product.get(productid)
-            pba = ProductBugAssignment(bug=bug, product=product)
+    class BugAdded(object):
+        implements(IBugAddForm)
+        def __init__(self, **kw):
+            for attr, val in kw.items():
+                setattr(self, attr, val)
 
-        # If the user has specified a sourcepackage, create the
-        # SourcePackageBugAssignment. This might also link to the
-        # binary package if it was specified.
-        sourcepkgid = getattr(ob, 'sourcepackage', None)
-        binarypkgid = getattr(ob, 'binarypackage', None)
-        if sourcepkgid:
-            sourcepkg = SourcePackage.get(sourcepkgid)
-            if binarypkgid:
-                binarypkg = BinaryPackage.get(binarypkgid)
-            else:
-                binarypkg = None
-            sba = SourcePackageBugAssignment(
-                    bug=bug, sourcepackage=sourcepkg,
-                    binarypackage=binarypkg,
-                    )
+    bug_added = BugAdded(**kw)
+    bug_added.id = bug.id
 
-        return ob # Return this rather than the bug we created from it,
-                  # as the return value must be adaptable to the interface
-                  # used to generate the form.
-
-
+    return bug_added
 
 class BugContainer(BugContainerBase):
     """A container for bugs."""
@@ -159,36 +144,6 @@ class BugContainer(BugContainerBase):
     def __iter__(self):
         for row in self.table.select():
             yield row
-
-    def add(self, ob):
-        '''Add a bug from an IMaloneBugAddForm'''
-        kw = {}
-        attrs = ['name', 'title', 'shortdesc', 'description', 'duplicateof',]
-        for a in attrs:
-            kw[a] = getattr(ob, a, None)
-        kw['ownerID'] = ob.owner.id
-
-        bug = MaloneBug(**kw)
-
-        # If the user has specified a product, create the ProductBugAssignment
-        product = getattr(ob, 'product', None)
-        if product:
-            pba = ProductBugAssignment(bug=bug, product=product)
-
-        sourcepkg = getattr(ob, 'sourcepackage', None)
-        if sourcepkg:
-            sba = SourcePackageBugAssignment(
-                bug=bug, sourcepackage=sourcepkg, binarypackagename=None)
-
-        BugSubscription(
-            personID = kw['ownerID'], bugID = bug.id,
-            subscription = BugSubscriptionVocab.CC.value)
-
-
-        return ob # Return this rather than the bug we created from it,
-                  # as the return value must be adaptable to the interface
-                  # used to generate the form.
-
 
 def MaloneBugFactory(context, **kw):
     now = datetime.utcnow()

@@ -129,10 +129,10 @@
     <browser:addform
         name="+new"
         for="canonical.launchpad.interfaces.IBugContainer"
-        schema="canonical.launchpad.interfaces.IMaloneBugAddForm"
+        schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Create A New Bug Record"
         fields="title shortdesc description sourcepackage product owner"
-        content_factory="canonical.launchpad.database.MaloneBugAddForm"
+        content_factory="canonical.launchpad.database.BugFactory"
         arguments=""
         keyword_arguments="title shortdesc description sourcepackage product owner"
         permission="launchpad.AnyPerson"

@@ -113,9 +113,9 @@ class IMaloneBug(IBug, IAddFormCustomization):
     pass
 
 
-class IMaloneBugAddForm(IMaloneBug):
-    ''' Information we need to create a bug '''
-    #email = TextLine(title=_("Your Email Address"))
+class IBugAddForm(IMaloneBug):
+    """Information we need to create a bug"""
+    id = Int(title=_("Bug #"), required=False)
     product = Choice(
             title=_("Product"), required=False,
             vocabulary="Product",

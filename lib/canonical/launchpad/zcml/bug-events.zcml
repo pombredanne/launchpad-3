@@ -3,7 +3,7 @@
     i18n_domain="launchpad">
 
 <subscriber
-   for="canonical.launchpad.interfaces.IBug
+   for="canonical.launchpad.interfaces.IBugAddForm
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_added" />
 
