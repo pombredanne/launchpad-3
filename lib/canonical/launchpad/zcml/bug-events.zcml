@@ -7,13 +7,6 @@
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_added" />
 
-<!-- XXX: Brad Bollenbach, 2005-02-04: Not yet implemented
-<subscriber
-   for="canonical.launchpad.interfaces.IBugAddForm
-        zope.app.event.interfaces.IObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.bugprivacy.make_subscriptions_explicit_on_private_bug" />
--->
-
 <subscriber
    for="canonical.launchpad.interfaces.IBugAddForm
         zope.app.event.interfaces.IObjectCreatedEvent"
@@ -21,7 +14,7 @@
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
-        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+        canonical.launchpad.event.interfaces.ISQLObjectToBeModifiedEvent"
    factory="canonical.launchpad.subscribers.bugprivacy.make_subscriptions_explicit_on_private_bug" />
 
 <subscriber

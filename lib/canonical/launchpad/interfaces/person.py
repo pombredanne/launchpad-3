@@ -64,13 +64,13 @@ class IPerson(Interface):
     ubuntite = Attribute("Ubuntite Flag")
     unvalidatedEmails = Attribute("The unvalidated emails requested by this person")
     gpg = Attribute("GPG")
-    irc = Attribute("IRC")    
+    irc = Attribute("IRC")
     bugs = Attribute("Bug")
     wiki = Attribute("Wiki")
     teams = Attribute("List of teams this Person is a member of.")
     emails = Attribute("Email")
     jabber = Attribute("Jabber")
-    archuser = Attribute("Arch user")    
+    archuser = Attribute("Arch user")
     packages = Attribute("A Selection of SourcePackageReleases")
     activities = Attribute("Karma")
     memberships = Attribute(("List of TeamMembership objects for Teams this "
@@ -96,7 +96,7 @@ class IPerson(Interface):
                             "which this Team is a member of."))
 
     teamowner = Int(title=_('Team Owner'), required=False, readonly=False)
-    teamdescription = Text(title=_('Team Description'), required=False, 
+    teamdescription = Text(title=_('Team Description'), required=False,
                            readonly=False)
 
     preferredemail = Int(title=_("The preferred email address for this "
@@ -107,7 +107,7 @@ class IPerson(Interface):
             description=_("Please give the email address for this Team. "))
 
     defaultmembershipperiod = Int(
-            title=_('Number of days a subscription lasts'), required=False, 
+            title=_('Number of days a subscription lasts'), required=False,
             description=_("This is the number of days all "
                 "subscriptions will last unless a different value is provided "
                 "when the subscription is approved. After this " "period the "
@@ -116,7 +116,7 @@ class IPerson(Interface):
 
     defaultrenewalperiod = Int(
             title=_('Number of days a renewed subscription lasts'),
-            required=False, 
+            required=False,
             description=_("This is the number of days all "
                 "subscriptions will last after being renewed. After this "
                 "period the subscription is expired and must be renewed "
@@ -167,7 +167,7 @@ class IPerson(Interface):
           approve the membership.
 
         Teams cannot call this method because they're not allowed to
-        login and thus can't "join" another team. Instead, they're added 
+        login and thus can't "join" another team. Instead, they're added
         as a member (using the addMember() method) by a team administrator.
         """
 
@@ -208,7 +208,7 @@ class IPerson(Interface):
 
 class ITeam(IPerson):
     """ITeam extends IPerson.
-    
+
     The teamowner should never be None."""
 
 
@@ -254,7 +254,7 @@ class IPersonSet(Interface):
 
         Return the default value if there is no such person.
         """
-    
+
     def getAll():
         """Return all Persons and Teams."""
 
@@ -338,7 +338,7 @@ class ITeamMembership(Interface):
 
     datejoined = Text(title=_("Date Joined"), required=True, readonly=True)
     dateexpires = Text(title=_("Date Expires"), required=False, readonly=False)
-    reviewercomment = Text(title=_("Reviewer Comment"), required=False, 
+    reviewercomment = Text(title=_("Reviewer Comment"), required=False,
                            readonly=False)
     status= Int(title=_("If Membership was approved or not"), required=True,
                 readonly=False)
@@ -374,7 +374,7 @@ class ITeamMembershipSet(Interface):
 class ITeamMembershipSubset(Interface):
     """A Set for TeamMembership objects of a given team."""
 
-    newmember = Choice(title=_('New member'), required=True, 
+    newmember = Choice(title=_('New member'), required=True,
                        vocabulary='Person',
                        description=_("The user or team which is going to be "
                                      "added as the new member of this team."))
@@ -435,7 +435,7 @@ class ITeamParticipationSet(Interface):
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want the PersonVocabulary."""
 
-    dupeaccount = Choice(title=_('Duplicated Account'), required=True, 
+    dupeaccount = Choice(title=_('Duplicated Account'), required=True,
                          vocabulary='Person',
                          description=_("The duplicated account you found in "
                                        "Launchpad"))

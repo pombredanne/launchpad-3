@@ -29,7 +29,8 @@ what those notifications look like:
     >>> import email
     >>> from zope.event import notify
     >>> from zope.app.event.objectevent import ObjectCreatedEvent
-    >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
+    >>> from canonical.launchpad.event.sqlobjectevent import \
+    ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent
     >>> from canonical.launchpad.database.bug import BugFactory
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IProductSet, IPersonSet, \
@@ -241,6 +242,13 @@ To demonstrate what we mean, let's make the firefox crashing bug
 report private:
 
     >>> firefox_bug = getUtility(IBugSet).get(firefox_crashes.id)
+
+    >>> new_values = {"private" : True}
+    >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
+    ...     firefox_bug, new_values)
+
+    >>> notify(bug_will_be_set_private)
+
     >>> firefox_bug.private = True
     >>> bug_before_modification = MockObject()
     >>> bug_before_modification.title = firefox_bug.title
@@ -251,6 +259,7 @@ report private:
     >>> bug_modified = SQLObjectModifiedEvent(
     ...     firefox_bug, bug_before_modification,
     ...     ["private"], bug_submitter)
+
     >>> notify(bug_modified)
 
     >>> transaction.commit()

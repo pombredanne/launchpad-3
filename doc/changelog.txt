@@ -2,6 +2,75 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-23 16:03:36 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1481
+
+    Summary:
+      various privacy fixes. added an event published before an object is actually modified (for some bug privacy ninjitsu). code refactoring along the way.
+    Revision:
+      launchpad--devel--0--patch-1481
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-433
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-434
+       fix a permissions problem that was preventing implicit subscribers (e.g. a maintainer) from setting a bug private
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-435
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-436
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-437
+       make available some privacy code that I'm working on to demonstrate to SteveA a use case for needing a pre-object-modification event hook
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-438
+       protect Bug. add a new event that's published right before a bug is modified to sanely handle setting a bug private while not currently an explicit subscriber (e.g. when a maintainer or assignee sets the bug private.)
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-439
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-440
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-441
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-442
+       small functional doctest fix for permissions on private bugs
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/.arch-ids/95-make-bug-private-as-implicit-subscriber.txt.id
+     lib/canonical/launchpad/pagetests/upstream-bugprivacy/95-make-bug-private-as-implicit-subscriber.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/editview.py
+     lib/canonical/launchpad/doc/bug.txt
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/event/interfaces.py
+     lib/canonical/launchpad/event/sqlobjectevent.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/subscribers/bugprivacy.py
+     lib/canonical/launchpad/zcml/bug-events.zcml
+     lib/canonical/launchpad/zcml/bug.zcml
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-433
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-434
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-435
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-436
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-437
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-438
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-439
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-440
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-441
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-442
+
+
 2005-03-23 12:50:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1480
 
     Summary:

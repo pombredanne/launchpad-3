@@ -214,6 +214,35 @@ class PublicToAllOrPrivateToExplicitSubscribersForROBugTask(
     usedfor = IReadOnlyUpstreamBugTask
 
 
+class EditPublicByLoggedInUserAndPrivateByExplicitSubscribers(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IBug
+
+    def checkAuthenticated(self, user):
+        """Allow any logged in user to edit a public bug, and only
+        explicit subscribers to edit private bugs.
+        """
+        if not self.obj.private:
+            # public bug
+            return True
+        else:
+            # private bug
+            for subscription in self.obj.subscriptions:
+                subscriber = subscription.person
+                if ITeam.providedBy(subscriber):
+                    if user.inTeam(subscriber):
+                        return True
+                else:
+                    if subscriber.id == user.id:
+                        return True
+
+        return False
+
+    def checkUnauthenticated(self):
+        """Never allow unauthenticated users to edit a bug."""
+        return False
+
+
 class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IBug
@@ -227,12 +256,14 @@ class PublicToAllOrPrivateToExplicitSubscribersForBug(AuthorizationBase):
             return True
         else:
             # private bug
-            watch_or_cc = (
-                BugSubscription.WATCH, BugSubscription.CC)
             for subscription in self.obj.subscriptions:
-                if (subscription.person.id == user.id and 
-                    subscription.subscription in watch_or_cc):
-                    return True
+                subscriber = subscription.person
+                if ITeam.providedBy(subscriber):
+                    if user.inTeam(subscriber):
+                        return True
+                else:
+                    if subscriber.id == user.id:
+                        return True
 
         return False
 
