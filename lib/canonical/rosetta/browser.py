@@ -534,7 +534,7 @@ class ViewPOExport:
 
         self.request.response.setHeader('Content-Type', 'application/x-po')
         self.request.response.setHeader('Content-Length', len(exportedFile))
-        self.request.response.setHeader('Content-disposition',
+        self.request.response.setHeader('Content-Disposition',
                 'attachment; filename="%s.po"' % languageCode)
         return exportedFile
 
@@ -889,6 +889,9 @@ class TranslatePOTemplate:
                 id = int(match.group(1))
                 code = match.group(2)
 
+                if not id in sets:
+                    raise AssertionError("Orphaned translation in form.")
+
                 sets[id]['translations'][code] = {}
                 sets[id]['translations'][code][0] = (
                     self.request.form[key].replace('\r', ''))
@@ -901,6 +904,9 @@ class TranslatePOTemplate:
                 id = int(match.group(1))
                 code = match.group(2)
                 pluralform = int(match.group(3))
+
+                if not id in sets:
+                    raise AssertionError("Orphaned translation in form.")
 
                 if not code in sets[id]['translations']:
                     sets[id]['translations'][code] = {}
@@ -986,12 +992,12 @@ class TranslatePOTemplate:
                     po_set.fuzzy = True
                 elif code not in set['fuzzy'] and po_set.fuzzy == True:
                     po_set.fuzzy = False
-                
 
         self.submitted = True
 
         # XXX: Should return the number of new translations or something
         # useful like that.
+
 
 # XXX: Implement class ViewTranslationEfforts: to create new Efforts
 
@@ -1003,6 +1009,7 @@ class ViewTranslationEffort:
         for language in request_languages(self.request):
             yield LanguageTranslationEffortCategories(language,
                 self.context.categories())
+
 
 class LanguageTranslationEffortCategories:
     def __init__(self, language, translationEffortCategories):

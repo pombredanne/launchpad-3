@@ -87,6 +87,12 @@ class POTemplate(SQLBase):
     messagecount = IntCol(dbName='messagecount', notNull=True)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=False,
         default=None)
+    rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
+    rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
+        notNull=False, default=None)
+    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False)
+    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False)
+
 
     def currentMessageSets(self):
         return POTMsgSet.select(
@@ -618,6 +624,12 @@ class POFile(SQLBase):
     pluralforms = IntCol(dbName='pluralforms', notNull=True)
     variant = StringCol(dbName='variant', notNull=False, default=None)
     filename = StringCol(dbName='filename', notNull=False, default=None)
+    rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
+    rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
+        notNull=False, default=None)
+    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False)
+    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False)
+
 
     def currentMessageSets(self):
         return POMsgSet.select(
