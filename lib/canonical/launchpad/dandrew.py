@@ -6,8 +6,6 @@ from canonical.launchpad.interfaces import ArchiveAlreadyRegistered, ArchiveNotR
 from sqlobject import StringCol, BoolCol, ForeignKey, IntCol, DateTimeCol, \
                       MultipleJoin
 
-from canonical.launchpad.database import BranchRelationship
-
 from canonical.launchpad.interfaces import RevisionNotRegistered
 from canonical.launchpad.interfaces import RevisionAlreadyRegistered
 from canonical.launchpad.interfaces import VersionNotRegistered
@@ -100,6 +98,7 @@ class Branch(SQLBase):
         return repository
 
     def createRelationship(self, branch, relationship):
+        from canonical.launchpad.database import BranchRelationship
         BranchRelationship(subject=self, object=branch, label=relationship)
 
     def getRelations(self):
