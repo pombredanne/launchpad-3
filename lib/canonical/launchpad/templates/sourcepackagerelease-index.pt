@@ -50,6 +50,16 @@
        Component</span>
 
     <p><b>Binary Packages:</b> 
+      <i>
+        <a tal:condition="context/sourcepackagerelease/changelog"
+	   href="+changelog">
+	   View Changelog
+	</a>
+      <tal:dummy tal:condition="not:context/sourcepackagerelease/changelog">
+      	  No Changelog for this Source Release
+      </tal:dummy>
+      </i> 
+
        <ul>
          <li tal:repeat="binary context/sourcepackagerelease/binaries" >
           <a tal:content="binary/name"
@@ -63,32 +73,42 @@
          </li>
        </ul>
 
-    <div align="right">
+  <p><b>Builds:</b> 
+
+   <tal:dummy tal:condition="not:context/archs">
+     <i> No Builds Available</i>
+   </tal:dummy>
       <i>
-        <a tal:condition="context/sourcepackagerelease/changelog"
-	   href="+changelog">
-	   Changelog
-	</a>
-      <tal:dummy tal:condition="not:context/sourcepackagerelease/changelog">
-      	  No Changelog for this Source Release
+        <a tal:condition="context/archs" href="+buildlog">
+	   View BuildLogs</a>
+
+      <tal:dummy tal:condition="not:context/archs">
+      	  <i>No Build for this Source Release</i>
       </tal:dummy>
       </i> 
+   <br>
+   <tal:block tal:repeat="arch context/archs">
+     [
+       <a tal:content="arch" tal:attributes="href arch">ARCH</a>
+     ]    
+   </tal:block>
+
+
+    <div align="right">
     </div>
 
   </fieldset>
 
+  <fieldset condition="context/builddepends">
+    <legend>
+      Build Dependences
+    </legend>
+
   <table width="100%">
     <tr>
-      <td width="50%" valign="top">
-        <h4>Build Package Dependences</h4>
-
-	<div class="dummy">
-	(XXX: Some links can be broken for sample data reasons.)
-	</div	 >
- 
-        <tal:dummy condition="context/builddepends">
+      <td valign="top">
 	  <ul>
-	    <span tal:repeat="builddepends context/builddepends">
+	    <span tal:repeat="builddepends python:context.builddepends[0]">
 	      <li>
 	        <a tal:content="builddepends/name" tal:attributes="href
 		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
@@ -99,65 +119,90 @@
 	      </li>
 	    </span>
 	  </ul>
-	</tal:dummy>
       </td>
-
-      <td width="50%" valign="top">
-
-        <h4>Build Package DependencesIndep</h4>
-
-	<div class="dummy">
-	  (XXX: Some links can be broken for sample data reasons.)
-	</div>
-	<tal:dummy condition="context/builddependsindep">
+      <td valign="top">
 	  <ul>
-	    <span
-	    tal:repeat="builddepends context/builddependsindep">
+	    <span tal:repeat="builddepends python:context.builddepends[1]">
 	      <li>
 	        <a tal:content="builddepends/name" tal:attributes="href
-		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/>
+		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
 		<tal:dummy condition="builddepends/signal">
-		  (<span tal:content="builddepends/signal" />
+		  (<span tal:content="builddepends/signal" /> 
 		  <span tal:content="builddepends/version" /> )
 		</tal:dummy>
 	      </li>
 	    </span>
 	  </ul>
-	</tal:dummy>
+      </td>
+      <td valign="top">
+	  <ul>
+	    <span tal:repeat="builddepends python:context.builddepends[2]">
+	      <li>
+	        <a tal:content="builddepends/name" tal:attributes="href
+		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
+		<tal:dummy condition="builddepends/signal">
+		  (<span tal:content="builddepends/signal" /> 
+		  <span tal:content="builddepends/version" /> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+      </td>
+
+    </tr>
+    <tr>
+      <td>
+        <h4> Plataform Independent </h4>
       </td>
     </tr>
+    <tr>
+      <td valign="top">
+	  <ul>
+	    <span tal:repeat="builddependsindep python:context.builddependsindep[0]">
+	      <li>
+	        <a tal:content="builddependsindep/name" tal:attributes="href
+		string:../../../../bin/${context/distroreleasename}/${builddependsindep/name}"/> 
+		<tal:dummy condition="builddependsindep/signal">
+		  (<span tal:content="builddependsindep/signal" /> 
+		  <span tal:content="builddependsindep/version" /> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+      </td>
+      <td valign="top">
+	  <ul>
+	    <span tal:repeat="builddependsindep python:context.builddependsindep[1]">
+	      <li>
+	        <a tal:content="builddependsindep/name" tal:attributes="href
+		string:../../../../bin/${context/distroreleasename}/${builddependsindep/name}"/> 
+		<tal:dummy condition="builddependsindep/signal">
+		  (<span tal:content="builddependsindep/signal" /> 
+		  <span tal:content="builddependsindep/version" /> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+      </td>
+      <td valign="top">
+	  <ul>
+	    <span tal:repeat="builddependsindep python:context.builddependsindep[2]">
+	      <li>
+	        <a tal:content="builddependsindep/name" tal:attributes="href
+		string:../../../../bin/${context/distroreleasename}/${builddependsindep/name}"/> 
+		<tal:dummy condition="builddependsindep/signal">
+		  (<span tal:content="builddependsindep/signal" /> 
+		  <span tal:content="builddependsindep/version" /> )
+		</tal:dummy>
+	      </li>
+	    </span>
+	  </ul>
+      </td>
+
+    </tr>
   </table>
+  </fieldset>
 
-<!-- XXX: Daniel Debonzi 2004-10-28 -->
-<!-- Is the Bugs for a SourcePackageRelease? -->
-<!--   <p><h4>Package Bugs:</h4>  -->
-<!--     <div class="dummy"> -->
-<!--       <span>#1, #2, #3</span> -->
-<!--     </div> -->
-
-  <p><h4>Builds:</h4> 
-
-   <tal:dummy tal:condition="not:context/archs">
-     <i> No Builds Available</i>
-   </tal:dummy>
-
-   <tal:block tal:repeat="arch context/archs">
-     [
-       <a tal:content="arch" tal:attributes="href arch">ARCH</a>
-     ]    
-   </tal:block>
-
-    <div align="right">
-      <i>
-        <a tal:condition="context/archs" href="+buildlog">
-	   BuildLogs
-	</a>
-
-      <tal:dummy tal:condition="not:context/archs">
-      	  <i>No Build for this Source Release</i>
-      </tal:dummy>
-      </i> 
-    </div>
 
 </div>
 </body>

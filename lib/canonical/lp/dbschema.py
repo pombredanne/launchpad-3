@@ -1646,12 +1646,51 @@ class DistributionRole(DBSchema):
     a distribution, other than being a package maintainer.
     """
 
+    DM = Item (1, """
+        Distro Master
+
+        Oversees all distribution activities.
+        """
+    )
+    SO = Item (2, """
+        Security Overlord
+
+        Ensures no sharp edges are left in the distribution.
+        """
+    )
+    PD = Item (3, """
+        Prophet of Doom
+
+        Makes hand-wavy predictions.
+        """
+    )
+
+class DistroReleaseRole(DBSchema):
+    """Distribution Role
+
+    This schema documents the roles that a person can play in
+    a distribution, other than being a package maintainer.
+    """
+
     RM = Item (1, """
         Release Manager
 
-        Release Manager"""
-    )
+        Distribution Release Manager""")
+    
+    SO = Item (2, """
+        Security Officer
 
+        Distribution Release Manager""")
+
+    BW = Item (3, """
+        Bug Wrangler
+
+        Corrals and keeps the release bugs under control""")
+
+    UB = Item (4, """
+        User Bender
+        
+        Convinces users that it's a feature""")
 
 class DOAPRole(DBSchema):
     """DOAP Role

@@ -91,4 +91,5 @@
     factory="canonical.launchpad.database.TeamParticipationSet"
     provides="canonical.launchpad.interfaces.ITeamParticipationSet" />
 
+
 </configure>

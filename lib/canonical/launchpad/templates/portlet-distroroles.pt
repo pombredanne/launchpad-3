@@ -1,74 +1,68 @@
-<div class="portlet" tal:condition="view/is_owner"> 
-
+<div tal:omit-tag="" class="portlet" tal:condition="view/is_owner"> 
+    <!-- XXX ensure we add the role early -->
     <div tal:omit-tag="" tal:condition="view/add_role"/>
-
-    <h4>Submit a New Role</h4>
-
-    <div class="portletBody">
-      <div class="portletContent even">
-        <form name="add" action="" method="POST">
- 	<table>
-	<tr><td>
-	<div class="field">
-	    <label>Person</label>
-	    <span class="fieldRequired" title="Required">(Required)</span>
-	    <div class="formHelp">
-	    Select a Person Name.
-            </div>
-	    <select class="listing" name="person">
-	      <option tal:repeat="person view/people"
-	              tal:content="person/displayname"
-	              tal:attributes="value person/id">DISPLAYNAME</option>
-            </select>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="field">
-	    <label>Role</label>
-	    <span class="fieldRequired" title="Required">(Required)</span>
-	    <div class="formHelp">
-	    Select a Role
-            </div>
-	    <select class="listing" name="role">
-	      <option value="">None</option>
-	      <option tal:repeat="role view/roles"
-	              tal:content="role/title"
-	              tal:attributes="value role/value">ROLE</option>
-            </select>
-	</div>
-	</td></tr>
-	<tr><td>
-	<div class="formControls">
-	  <input class="listing" type="submit" value="Submit"/>
-	</div>
-	</td></tr>
-	</table>
-        </form>
-	</div>
-</div>
 </div>
 
 <div class="portlet"> 
-   <h4>Roles</h4>
+  <h4>Roles</h4>
 
-   <div class="portletBody">
+  <div class="portletBody">
     <div class="portletContent even">
 
-    <div tal:condition="not:view/get_roles">
-         <p>No Member Yet
-    </div>
+      <div tal:condition="not:view/get_role_users">
+        <p>No users are currently assigned to roles
+      </div>
 
-    <div tal:condition="view/get_roles">	
-      <p tal:repeat="team view/get_roles"> 
+      <div tal:condition="view/get_role_users">	
+        <p tal:repeat="team view/get_role_users">
           <img src="/++resource++user.gif" alt=""/>
           <a class="link" 
-	     tal:attributes="href string:/foaf/people/${team/person/name}"
-	     tal:content="team/person/displayname">PERSON</a> as
-	     <span tal:content="team/rolename">ROLE</span>
-      </p>
+             tal:attributes="href string:/foaf/people/${team/person/name}"
+             tal:content="team/person/displayname">PERSON</a> as
+          <span tal:content="team/rolename">ROLE</span>
+        </p>
+      </div>
+
     </div>
-   </div>
   </div>
 </div>
 
+<div class="portlet" tal:condition="view/is_owner"> 
+
+  <h4>Add a new role</h4>
+
+  <div class="portletBody"> 
+
+    <form name="add" action="" method="post">
+
+      <table>
+        <tr><td>
+          <div class="field" style="margin:0">
+            <label>Person</label>
+            <span class="fieldRequired" title="Required">(Required)</span>
+            <select title="Select a person" class="listing" name="person">
+              <option tal:repeat="person view/get_people"
+                      tal:content="person/displayname"
+                      tal:attributes="value person/id">DISPLAYNAME</option>
+            </select>
+          </div>
+        </td></tr>
+        <tr><td>
+          <div class="field" style="margin:0">
+            <label>Role</label>
+            <span class="fieldRequired" title="Required">(Required)</span>
+            <select title="Select a role" class="listing" name="role">
+              <option tal:repeat="role view/get_roles"
+                      tal:content="role/title"
+                      tal:attributes="value role/value">ROLE</option>
+            </select>
+          </div>
+        </td></tr>
+        <tr><td class="formControls">
+          <input class="listing" type="submit" value="Submit"/>
+        </td></tr>
+      </table>
+    </form>
+  </div>
+</div>
 

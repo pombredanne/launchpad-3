@@ -13,7 +13,7 @@ class IDistribution(Interface):
     domainname = Attribute("The distro's domain name.")
     owner = Attribute("The distro's owner.")
     releases = Attribute("DistroReleases inside this Distributions")
-    roles = Attribute("Roles inside this Distributions")
+    role_users = Attribute("Roles inside this Distributions")
     
     bugCounter = Attribute("The distro bug counter")
 
@@ -58,6 +58,7 @@ class IDistroRelease(Interface):
     shortdesc = Attribute("Distrorelease Short Description")
     lucilleconfig = Attribute("Lucille Configuration Field")
     bugCounter = Attribute("The distro bug counter")
+    role_users = Attribute("Roles inside this Releases")
 
 class IComponent(Interface):
     name = Attribute("The Component Name")

@@ -83,7 +83,6 @@ class DistroReleaseApp(object):
 
     def __init__(self, release):
         self.release = release
-        self.roles = release.roles 
 
     def checkPermission(self, principal, permission):
         if permission == 'launchpad.Edit':

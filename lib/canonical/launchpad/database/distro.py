@@ -68,9 +68,7 @@ class DistroReleaseRole(SQLBase):
         ]
 
     def _rolename(self):
-        # XXX: Daniel Debonzi 2004-10-14
-        # using DistributionRole dbschema instead of DistroReleaseRole
-        for role in dbschema.DistributionRole.items:
+        for role in dbschema.DistroReleaseRole.items:
             if role.value == self.role:
                 return role.title
         return 'Unknown (%d)' %self.role
@@ -92,8 +90,10 @@ class Distribution(SQLBase):
                    notNull=True)
         ]
 
-    releases = MultipleJoin('DistroRelease', joinColumn='distribution') 
-    roles = MultipleJoin('DistributionRole', joinColumn='distribution')
+    releases = MultipleJoin('DistroRelease', 
+                            joinColumn='distribution') 
+    role_users = MultipleJoin('DistributionRole', 
+                              joinColumn='distribution')
    
     def getRelease(self, name):
         return DistroRelease.selectBy(distributionID = self.id,
@@ -185,8 +185,8 @@ class DistroRelease(SQLBase):
 
     architectures = MultipleJoin( 'DistroArchRelease',
                                   joinColumn='distrorelease' )
-
-    roles = MultipleJoin('DistroReleaseRole', joinColumn='distrorelease')
+    role_users = MultipleJoin('DistroReleaseRole', 
+                              joinColumn='distrorelease')
 
     def displayname(self):
         return "%s %s (%s)" % (self.distribution.title, self.version,

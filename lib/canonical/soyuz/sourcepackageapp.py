@@ -162,26 +162,35 @@ class DistroReleaseSourceReleaseApp(object):
         archReleases = self.sourcepackagerelease.architecturesReleased(distrorelease)
         self.archs = [a.architecturetag for a in archReleases]
 
-        if self.sourcepackagerelease.builddepends:
-            self.builddepends = []
 
-            depends = ParseSrcDepends(self.sourcepackagerelease.builddepends)
-            for dep in depends:
-                self.builddepends.append(builddepsSet(*dep[0]))
+    def builddepends(self):
+        if not self.sourcepackagerelease.builddepends:
+            return None
+        
+        builddepends = ([], [], [])
 
-        else:
-            self.builddepends = None
+        depends = ParseSrcDepends(self.sourcepackagerelease.builddepends)
 
+        for i in range(len(depends)):
+            dep = depends[i]
+            builddepends[i % 3].append(builddepsSet(*dep[0]))
+        return builddepends
 
-        if self.sourcepackagerelease.builddependsindep:
-            self.builddependsindep = []
+    builddepends = property(builddepends)
 
-            depends = ParseSrcDepends(self.sourcepackagerelease.builddependsindep)
-            for dep in depends:
-                self.builddependsindep.append(builddepsSet(*dep[0]))
-
-        else:
-            self.builddependsindep = None
+    def builddependsindep(self):
+        if not self.sourcepackagerelease.builddependsindep:
+            return None
+        builddependsindep = ([], [], [])
+        
+        depends = ParseSrcDepends(self.sourcepackagerelease.builddependsindep)
+        
+        for i in range(len(depends)):
+            dep = depends[i]
+            builddependsindep[i % 3].append(builddepsSet(*dep[0]))
+        return builddependsindep
+                
+    builddependsindep = property(builddependsindep)
 
     def __getitem__(self, arch):
         return DistroReleaseSourceReleaseBuildApp(self.sourcepackagerelease,

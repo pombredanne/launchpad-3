@@ -7,16 +7,17 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp import dbschema                       
 
 # zope imports
+from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 
 # interface import
 from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.interfaces import IDistroTools
 
+# XXX: get rid of database dependencies
 from canonical.launchpad.database import Distribution
-from canonical.launchpad.database import DistroRelease
-from canonical.launchpad.database import Person
 from canonical.launchpad.database import DistributionRole
 from canonical.launchpad.database import DistroReleaseRole
 
@@ -233,16 +234,14 @@ class AddRoleViewBase(object):
         self.context = context
         self.request = request
 
-        self.roles = dbschema.DistributionRole.items
-        self.people = Person.select(orderBy='displayname')
-
     def is_owner(self):
         person = IPerson(self.request.principal, None)
         if not person:
             return False
 
         # XXX: cprov 20041202
-        # verify also the DistributionRoles for persons with Admin Role
+        # verify also the DistributionRoles for persons 
+        # with Admin Role
         owner = self.get_container().owner
         return owner.id == person.id
 
@@ -257,8 +256,22 @@ class AddRoleViewBase(object):
         # XXX: check for duplicates -- user,role should be unique.
 
         # XXX: change to container.create_role (?)
-        return self.create_role(container.id, person, role)
+        return self.create_role_user(container.id, person, role)
 
+    def get_people(self):
+        return getUtility(IPersonSet).getAll()
+
+    def get_role_users(self):
+        return self.get_container().role_users
+
+    def create_role_user(self):
+        raise NotImplementedError
+
+    def get_roles(self):
+        raise NotImplementedError
+
+    def get_container(self):
+        raise NotImplementedError
 
 class AddDistroRoleView(AddRoleViewBase):
     rolesPortlet = ViewPageTemplateFile(
@@ -267,15 +280,12 @@ class AddDistroRoleView(AddRoleViewBase):
     def get_container(self):
         return self.context.distribution
 
-    # XXX rename!
-    def get_roles(self):
-        # XXX: rename roles to role_members
-        return self.context.distribution.roles
-
-    def create_role(self, container_id, person, role):
+    def create_role_user(self, container_id, person, role):
         return DistributionRole(distribution=container_id,
                                 personID=person, role=role)
 
+    def get_roles(self):
+        return dbschema.DistributionRole.items
 
 class AddDistroReleaseRoleView(AddRoleViewBase):
     rolesPortlet = ViewPageTemplateFile(
@@ -284,13 +294,10 @@ class AddDistroReleaseRoleView(AddRoleViewBase):
     def get_container(self):
         return self.context.release
     
-    # XXX rename!
-    def get_roles(self):
-        # XXX: move to DistroRelease.role_members (?)
-        return DistroReleaseRole.selectBy(distroreleaseID=\
-                                          self.context.release.id)        
-
-    def create_role(self, container_id, person, role):
+    def create_role_user(self, container_id, person, role):
         return DistroReleaseRole(distrorelease=container_id,
                                  personID=person, role=role)
+    
+    def get_roles(self):
+        return dbschema.DistroReleaseRole.items
 

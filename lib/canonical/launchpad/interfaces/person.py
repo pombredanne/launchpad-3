@@ -72,6 +72,9 @@ class IPersonSet(Interface):
 
         Returns the default value if there is no such person.
         """
+    
+    def getAll():
+        """Returns all People in a database"""
 
 class IEmailAddress(Interface):
     """The object that stores the IPerson's emails."""
@@ -131,3 +134,4 @@ class IPersonApp(Interface):
 
     roleset = Attribute("Possible Roles")
     statusset = Attribute("Possible Status")
+

@@ -141,6 +141,9 @@ class PersonSet(object):
         except SQLObjectNotFound:
             return default
 
+    def getAll(self):
+        return Person.select(orderBy='displayname')
+
     def getByEmail(self, email, default=None):
         """See IPersonSet."""
         results = EmailAddress.selectBy(email=email)
