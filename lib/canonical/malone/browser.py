@@ -375,15 +375,16 @@ class ProjectContainer(object):
             yield row
 
     def search(self, name, title):
-        if name and title:
-            return Project.select(AND(Project.q.name==name,
-                                      Project.q.title==title))
-        elif name:
-            return Project.select(Project.q.name==name)
-        elif title:
-            return Project.select(LIKE(Project.q.title, '%%' + title + '%%'))
-        else:
-            return []
+        q = '1=1'
+        if name:
+            q += """ AND name LIKE '%%%%' || %s || '%%%%' """ % (
+                    sqlbase.quote(name.lower())
+                    )
+        if title:
+            q += """ AND lower(title) LIKE '%%%%' || %s || '%%%%'""" % (
+                    sqlbase.quote(title.lower())
+                    )
+        return Project.select(q)
 
 
 class SourcepackageContainer(object):
