@@ -17,9 +17,9 @@ def setUp(test):
     _reconnect_sqlos()
 
 def tearDown(test):
-    LaunchpadTestSetup().tearDown()
     _disconnect_sqlos()
     sqlos.connection.connCache = {}
+    LaunchpadTestSetup().tearDown()
 
 # Files that have special needs can construct their own suite
 special = {

@@ -2,6 +2,32 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-15 12:52:48 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1315
+
+    Summary:
+      fix the Exception exceptions.AttributeError: "NoneType object has no attribute InterfaceError" in <bound method Transaction.__del__ of <sqlobject.dbconnection.Transaction object at 0xb5cc7e6c>> ignored
+    Revision:
+      launchpad--devel--0--patch-1315
+
+    Patches applied:
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-100
+       fix the Exception exceptions.AttributeError: "NoneType object has no attribute InterfaceError" in <bound method Transaction.__del__ of <sqlobject.dbconnection.Transaction object at 0xb5cc7e6c>> ignored
+    
+     * robert.collins@canonical.com/launchpad--devel--0--patch-101
+       fix remaining Transaction.__del__ errors
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/database/sqlbase.py
+     lib/canonical/launchpad/ftests/harness.py
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+
+    new patches:
+     robert.collins@canonical.com/launchpad--devel--0--patch-100
+     robert.collins@canonical.com/launchpad--devel--0--patch-101
+
+
 2005-02-14 22:01:20 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1314
 
     Summary:
