@@ -1,3 +1,4 @@
+  Let's create the account which will be named 'foo'
 
 
   >>> print http(r"""

@@ -1,3 +1,5 @@
+  'foo' is a dupe account for 'name16'. Let's merge them, and keep only
+  'name16'.
 
 
   >>> print http(r"""
@@ -171,3 +173,9 @@
   ...
   ...The merge you requested was concluded with success...
   ...
+
+
+  XXX: As soon as stub finishes the code to reassign everything that's owned
+  by one person to another, we'll be able to check here if the team created by
+  'foo' is now owned by 'name16'.
+

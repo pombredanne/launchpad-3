@@ -125,7 +125,8 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
 
         The admin team can also edit any Person.
         """
-        return self.obj.id == user.id or self.user.inTeam('admins')
+        admins = getUtility(IPersonSet).getByName('admins')
+        return self.obj.id == user.id or self.user.inTeam(admins)
 
 
 class TaskEditableByMaintainerOrAssignee(AuthorizationBase):

@@ -1,3 +1,4 @@
+  'foo' adds a new email in launchpad and validates it.
 
 
   >>> print http(r"""

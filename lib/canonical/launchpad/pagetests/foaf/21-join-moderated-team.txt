@@ -1,36 +1,25 @@
+  Now, 'myemail' is a MODERATED team, and 'name16' will join again.
 
 
   >>> print http(r"""
-  ... GET /people/name17 HTTP/1.1
+  ... GET /people/myemail/+join HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...Unjoin...
+  ...This is a Moderated team...
   ...
 
 
   >>> print http(r"""
-  ... GET /people/name17/+unjoin HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Are you sure you want to unjoin...
-  ...
-
-
-  >>> print http(r"""
-  ... POST /people/name17/+unjoin HTTP/1.1
+  ... POST /people/myemail/+join HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... unjoin=Unjoin""")
+  ... join=Join""")
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -38,12 +27,25 @@
 
 
   >>> print http(r"""
-  ... GET /people/name17/ HTTP/1.1
+  ... GET /people/myemail/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...Join...
+  ...my own team...
   ...
+
+
+  >>> from canonical.launchpad.database import Person, TeamMembership
+  >>> foobar = Person.byName('name16')
+  >>> team = Person.byName('myemail')
+  >>> tm = TeamMembership.selectBy(personID=foobar.id, teamID=team.id)[0]
+  >>> tm.statusname
+  'Proposed Member'
+
+  Proposed Members are not shown as "real" team members by our API.
+
+  >>> foobar.inTeam(team)
+  False

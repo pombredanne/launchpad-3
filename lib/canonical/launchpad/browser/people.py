@@ -405,7 +405,7 @@ class EmailAddressEditView(object):
             if getattr(user.preferredemail, 'id', None) != id:
                 email = EmailAddress.get(id)
                 assert email.person == user
-                assert email.status == int(EmailAddressStatus.VALIDATED)
+                assert email.status == EmailAddressStatus.VALIDATED
                 user.preferredemail = email
 
         ids = self.request.form.get("REMOVE_EMAIL")

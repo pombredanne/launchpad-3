@@ -5,7 +5,7 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.lp import dbschema
+from canonical.lp.dbschema import TeamSubscriptionPolicy, TeamMembershipStatus
 
 
 class IPerson(Interface):
@@ -80,12 +80,15 @@ class IPerson(Interface):
                                     "Played by this Person/Team."))
     notvalidatedemails = Attribute("Emails waiting validation.")
 
-    administrators = Attribute(("List of ADMIN members of this Team.")) 
-    expiredmembers = Attribute("List of EXPIRED members of this Team.")
-    approvedmembers = Attribute("List of APPROVED Members of this Team.")
-    proposedmembers = Attribute("List of PROPOSED members of this Team.")
-    declinedmembers = Attribute("List of DECLINED members of this Team.")
-    deactivatedmembers = Attribute("List of DEACTIVATED members of this Team.")
+    activemembers = Attribute("List of members with ADMIN or APPROVED status")
+    administrators = Attribute("List of members with ADMIN status")
+    expiredmembers = Attribute("List of members with EXPIRED status")
+    approvedmembers = Attribute("List of members with APPROVED status")
+    proposedmembers = Attribute("List of members with PROPOSED status")
+    declinedmembers = Attribute("List of members with DECLINED status")
+    inactivemembers = Attribute(("List of members with EXPIRED or "
+                                 "DEACTIVATED status"))
+    deactivatedmembers = Attribute("List of members with DEACTIVATED status")
 
     subteams = Attribute(("List of subteams of this Team. That is, teams "
                           "which are members of this Team."))
@@ -120,7 +123,7 @@ class IPerson(Interface):
     subscriptionpolicy = Choice(
             title=_('Subscription Policy'),
             required=True, vocabulary='TeamSubscriptionPolicy',
-            default=int(dbschema.TeamSubscriptionPolicy.MODERATED),
+            default=TeamSubscriptionPolicy.MODERATED,
             description=_('How new subscriptions should be handled for this '
                           'team. "Moderated" means that all subscriptions must '
                           'be approved, "Open" means that any user can join '
@@ -152,7 +155,7 @@ class IPerson(Interface):
     def hasMembershipEntryFor(team):
         """Tell if this person is a direct member of the given team."""
 
-    def joinTeam(team):
+    def join(team):
         """Join the given team if its subscriptionpolicy is not RESTRICTED.
 
         Join the given team according to the policies and defaults of that
@@ -162,17 +165,27 @@ class IPerson(Interface):
         - If the team subscriptionpolicy is MODERATED, the user is added as
           a PROPOSED member and one of the team's administrators have to
           approve the membership.
+
+        Teams cannot call this method because they're not allowed to
+        login and thus can't "join" another team. Instead, they're added 
+        as a member (using the addMember() method) by a team administrator.
         """
 
-    def unjoinTeam(team):
-        """Unjoin the given team.
+    def leave(team):
+        """Leave the given team.
 
         If there's a membership entry for this person on the given team and
         its status is either APPROVED or ADMIN, we change the status to
         DEACTIVATED and remove the relevant entries in teamparticipation.
+
+        Teams cannot call this method because they're not allowed to
+        login and thus can't "leave" another team. Instead, they have their
+        subscription deactivated (using the setMembershipStatus() method) by
+        a team administrator.
         """
 
-    def addMember(person, status, expires=None, reviewer=None, comment=None):
+    def addMember(person, status=TeamMembershipStatus.APPROVED, expires=None,
+                  reviewer=None, comment=None):
         """Add person as a member of this team.
 
         Make sure status is either APPROVED or PROPOSED and add a
@@ -292,6 +305,7 @@ class IEmailAddressSet(Interface):
 
 class ITeamMembership(Interface):
     """TeamMembership for Users"""
+
     id = Int(title=_('ID'), required=True, readonly=True)
     team = Int(title=_("Team"), required=True, readonly=False)
     person = Int(title=_("Owner"), required=True, readonly=False)
@@ -306,6 +320,33 @@ class ITeamMembership(Interface):
 
     # Properties
     statusname = Attribute("Status Name")
+
+    def isExpired():
+        """Return True if this membership's status is EXPIRED."""
+
+
+class ITeamMembershipSet(Interface):
+    """A Set for TeamMembership objects."""
+
+    def getByPersonAndTeam(personID, teamID, default=None):
+        """Return the TeamMembership object for the given person and team.
+
+        If there's no TeamMembership for this person in this team, return the
+        default value.
+        """
+
+
+class ITeamMembershipSubset(Interface):
+    """A Set for TeamMembership objects of a given team."""
+
+    team = Attribute(_("The team for which this subset is for."))
+
+    def getByPersonName(name, default=None):
+        """Return the TeamMembership object for the person with the given name.
+
+        If there's no TeamMembership for this person in this team, return the
+        default value.
+        """
 
 
 class ITeamParticipation(Interface):

@@ -1,3 +1,4 @@
+  Now we login with account 'foo'
 
 
   >>> print http(r"""

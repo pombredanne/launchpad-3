@@ -10,11 +10,10 @@ from canonical.database.sqlbase import flushUpdates
 
 from canonical.foaf.nickname import generate_nick
 
-# database imports
-from canonical.launchpad.database import TeamParticipation, TeamMembership
-
 # interface import
 from canonical.launchpad.interfaces import IPersonSet, ILaunchBag
+from canonical.launchpad.interfaces import ITeamMembershipSet
+from canonical.launchpad.interfaces import ITeamMembershipSubset
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
@@ -71,14 +70,6 @@ class TeamView(object):
     def activeMembersCount(self):
         return len(self.context.approvedmembers + self.context.administrators)
 
-    def activeMemberships(self):
-        status = int(TeamMembershipStatus.ADMIN)
-        admins = self.context.getMembershipsByStatus(status)
-
-        status = int(TeamMembershipStatus.APPROVED)
-        members = self.context.getMembershipsByStatus(status)
-        return admins + members
-
     def userIsOwner(self):
         """Return True if the user is the owner of this Team."""
         return self.context.teamowner == getUtility(ILaunchBag).user
@@ -100,12 +91,12 @@ class TeamView(object):
 
     def subscriptionPolicyDesc(self):
         policy = self.context.subscriptionpolicy
-        if policy == int(TeamSubscriptionPolicy.RESTRICTED):
+        if policy == TeamSubscriptionPolicy.RESTRICTED:
             return "Restricted team. Only administrators can add new members"
-        elif policy == int(TeamSubscriptionPolicy.MODERATED):
+        elif policy == TeamSubscriptionPolicy.MODERATED:
             return ("Moderated team. New subscriptions are subjected to "
                     "approval by one of the team's administrators.")
-        elif policy == int(TeamSubscriptionPolicy.OPEN):
+        elif policy == TeamSubscriptionPolicy.OPEN:
             return "Open team. Any user can join and no approval is required"
 
     def membershipStatusDesc(self):
@@ -113,23 +104,23 @@ class TeamView(object):
         if tm is None:
             return "You are not a member of this team."
 
-        if tm.status == int(TeamMembershipStatus.PROPOSED):
+        if tm.status == TeamMembershipStatus.PROPOSED:
             desc = ("You are currently a proposed member of this team."
                     "Your subscription depends on approval by one of the "
                     "team's administrators.")
-        elif tm.status == int(TeamMembershipStatus.APPROVED):
+        elif tm.status == TeamMembershipStatus.APPROVED:
             desc = ("You are currently an approved member of this team.")
-        elif tm.status == int(TeamMembershipStatus.ADMIN):
+        elif tm.status == TeamMembershipStatus.ADMIN:
             desc = ("You are currently an administrator of this team.")
-        elif tm.status == int(TeamMembershipStatus.DEACTIVATED):
+        elif tm.status == TeamMembershipStatus.DEACTIVATED:
             desc = "Your subscription for this team is currently deactivated."
             if tm.reviewercomment is not None:
                 desc += "The reason provided for the deactivation is: '%s'" % \
                         tm.reviewercomment
-        elif tm.status == int(TeamMembershipStatus.EXPIRED):
+        elif tm.status == TeamMembershipStatus.EXPIRED:
             desc = ("Your subscription for this team is currently expired, "
                     "waiting for renewal by one of the team's administrators.")
-        elif tm.status == int(TeamMembershipStatus.DECLINED):
+        elif tm.status == TeamMembershipStatus.DECLINED:
             desc = ("Your subscription for this team is currently declined. "
                     "Clicking on the 'Join' button will put you on the "
                     "proposed members queue, waiting for approval by one of "
@@ -137,8 +128,8 @@ class TeamView(object):
 
         return desc
 
-    def userCanRequestToUnjoin(self):
-        """Return true if the user can request to unjoin this team.
+    def userCanRequestToLeave(self):
+        """Return true if the user can request to leave this team.
 
         The user can request only if its subscription status is APPROVED or
         ADMIN.
@@ -179,15 +170,12 @@ class TeamView(object):
         user = getUtility(ILaunchBag).user
         if user is None:
             return None
-        tm = TeamMembership.selectBy(personID=user.id, teamID=self.context.id)
-        if tm.count() == 1:
-            return tm[0]
-        else:
-            return None
+        tms = getUtility(ITeamMembershipSet)
+        return tms.getByPersonAndTeam(user.id, self.context.id)
 
     def joinAllowed(self):
         """Return True if this is not a restricted team."""
-        restricted = int(TeamSubscriptionPolicy.RESTRICTED)
+        restricted = TeamSubscriptionPolicy.RESTRICTED
         return self.context.subscriptionpolicy != restricted
 
 
@@ -200,29 +188,68 @@ class TeamJoinView(TeamView):
 
         user = getUtility(ILaunchBag).user
         if self.request.form.get('join'):
-            user.joinTeam(self.context)
+            user.join(self.context)
 
         self.request.response.redirect('./')
 
 
-class TeamUnjoinView(TeamView):
+class TeamLeaveView(TeamView):
 
     def processForm(self):
-        if self.request.method != "POST" or not self.userCanRequestToUnjoin():
+        if self.request.method != "POST" or not self.userCanRequestToLeave():
             # Nothing to do
             return
 
         user = getUtility(ILaunchBag).user
-        if self.request.form.get('unjoin'):
-            user.unjoinTeam(self.context)
+        if self.request.form.get('leave'):
+            user.leave(self.context)
 
         self.request.response.redirect('./')
+
+
+class TeamMembersView(object):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.team = self.context.team
+        self.request = request
+
+    def activeMembersCount(self):
+        return len(self.team.approvedmembers + self.team.administrators)
+
+    def proposedMembersCount(self):
+        return len(self.team.proposedmembers)
+
+    def inactiveMembersCount(self):
+        return len(self.team.expiredmembers +
+                   self.team.deactivatedmembers)
+
+    def activeMemberships(self):
+        status = TeamMembershipStatus.ADMIN
+        admins = self.team.getMembershipsByStatus(status)
+
+        status = TeamMembershipStatus.APPROVED
+        members = self.team.getMembershipsByStatus(status)
+        return admins + members
+
+    def proposedMemberships(self):
+        status = TeamMembershipStatus.PROPOSED
+        return self.team.getMembershipsByStatus(status)
+
+    def inactiveMemberships(self):
+        status = TeamMembershipStatus.EXPIRED
+        expired = self.team.getMembershipsByStatus(status)
+
+        status = TeamMembershipStatus.DEACTIVATED
+        deactivated = self.team.getMembershipsByStatus(status)
+        return expired + deactivated
 
 
 class TeamMembersEditView:
 
     def __init__(self, context, request):
         self.context = context
+        self.team = context.team
         self.request = request
         self.user = getUtility(ILaunchBag).user
         self.addedMembers = []
@@ -231,23 +258,8 @@ class TeamMembersEditView:
     def allPeople(self):
         return getUtility(IPersonSet).getAll()
 
-    def proposedCount(self):
-        return len(self.context.proposedmembers)
-
-    def approvedCount(self):
-        return len(self.context.approvedmembers)
-
-    def adminCount(self):
-        return len(self.context.administrators)
-
-    def expiredCount(self):
-        return len(self.context.expiredmembers)
-
-    def deactivatedCount(self):
-        return len(self.context.deactivatedmembers)
-
     def defaultExpirationDate(self):
-        days = self.context.defaultmembershipperiod
+        days = self.team.defaultmembershipperiod
         if days:
             return (datetime.utcnow() + timedelta(days)).date()
         else:
@@ -257,23 +269,18 @@ class TeamMembersEditView:
         if self.request.method != "POST":
             return
 
-        team = self.context
+        team = self.team
         for person in team.proposedmembers:
             action = self.request.form.get('action_%d' % person.id)
             membership = self._getMembership(person.id, team.id)
-            expires = None
             if action == "approve":
-                status = int(TeamMembershipStatus.APPROVED)
-                days = int(self.request.form.get('period_%d' % person.id))
-                if days:
-                    expires = datetime.utcnow() + timedelta(days)
+                status = TeamMembershipStatus.APPROVED
             elif action == "decline":
-                status = int(TeamMembershipStatus.DECLINED)
-            elif action == "leave":
+                status = TeamMembershipStatus.DECLINED
+            elif action == "hold":
                 continue
 
-            team.setMembershipStatus(person, status, expires=expires,
-                                     reviewer=self.user)
+            team.setMembershipStatus(person, status, reviewer=self.user)
 
         flushUpdates()
 
@@ -281,12 +288,12 @@ class TeamMembersEditView:
         if self.request.method != "POST":
             return
         
-        team = self.context
+        team = self.team
         names = self.request.form.get('people')
         if not isinstance(names, (list, tuple)):
             names = [names]
-        approved = int(TeamMembershipStatus.APPROVED)
-        admin = int(TeamMembershipStatus.ADMIN)
+        approved = TeamMembershipStatus.APPROVED
+        admin = TeamMembershipStatus.ADMIN
         personset = getUtility(IPersonSet)
         for name in names:
             person = personset.getByName(name)
@@ -295,7 +302,7 @@ class TeamMembersEditView:
                 continue
 
             if person.hasMembershipEntryFor(team):
-                membership = self._getMembership(person.id, team)
+                membership = self._getMembership(person.id, team.id)
                 if membership.status in (approved, admin):
                     self.alreadyMembers.append(person)
                 else:
@@ -306,46 +313,14 @@ class TeamMembersEditView:
                 team.addMember(person, approved, reviewer=self.user)
                 self.addedMembers.append(person)
 
-    def processChanges(self):
-        action = self.request.form.get('action')
-        people = self.request.form.get('selected')
-
-        if not people:
-            return 
-
-        if not isinstance(people, list):
-            people = [people]
-
-        method = self._actionMethods[action]
-        for personID in people:
-            method(int(personID), self.context)
-
     def _getMembership(self, personID, teamID):
-        membership = TeamMembership.selectBy(personID=personID, teamID=teamID)
-        assert membership.count() == 1
-        return membership[0]
+        tms = getUtility(ITeamMembershipSet)
+        membership = tms.getByPersonAndTeam(personID, teamID)
+        assert membership is not None
+        return membership
 
-    def authorizeProposed(self, personID, team):
-        membership = self._getMembership(personID, team.id)
-        membership.status = int(TeamMembershipStatus.APPROVED)
 
-    def removeMember(self, personID, team):
-        if personID == team.teamowner.id:
-            return
-
-        membership = self._getMembership(personID, team.id)
-        membership.destroySelf()
-        teampart = TeamParticipation.selectBy(personID=personID,
-                                              teamID=team.id)
-        assert teampart.count() == 1
-        teampart[0].destroySelf()
-
-    def giveAdminRole(self, personID, team):
-        membership = self._getMembership(personID, team.id)
-        membership.status = int(TeamMembershipStatus.ADMIN)
-
-    def revokeAdminiRole(self, personID, team):
-        membership = self._getMembership(personID, team.id)
-        membership.role = int(TeamMembershipRole.MEMBER)
-
+def traverseTeam(team, request, name):
+    if name == 'members':
+        return ITeamMembershipSubset(team)
 

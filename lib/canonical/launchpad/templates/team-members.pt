@@ -5,7 +5,7 @@
 
 <head>
   <title metal:fill-slot="title">Members of 
-    <span tal:replace="context/browsername">Name</span></title>
+    <span tal:replace="context/team/browsername" /></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -19,69 +19,128 @@
   <div id="content" class="documentEditable">
     <ul class="contentViews">
       <li id="contentview-profile" class="plain">
-        <a href=".">Team Information</a>
+        <a href="../">Team Information</a>
       </li>
 
       <li id="contentview-members" class="selected">
-        <a href="+members">Active Members</a>
+        <a href=".">Members</a>
       </li>
     </ul>
 
     <div class="documentContent" id="region-content">
 
-      <h1>Active Members of <span tal:replace="context/browsername" /></h1>
+    <tal:block tal:define="activeMembersCount view/activeMembersCount;
+                           inactiveMembersCount view/inactiveMembersCount;
+                           proposedMembersCount view/proposedMembersCount">
+
+      <h1>Members of <span tal:replace="context/team/browsername" /></h1>
 
       <br />
-      <div>This team currently have <em>
-        <span tal:replace="view/activeMembersCount" /></em> active members:
-      </div>
+      <p>These are all members of this team. You can add new ones in the <a
+        href="+add">Add Members</a> page of this team.</p>
 
-      <table tal:condition="view/activeMembersCount"
-             width="100%" id="ass_listing" class="listing rowNavigation">
-        <tr>
-          <th>Name</th>
-          <th>Joined</th>
-          <th>Expires</th>
-          <th>Status</th>
-        </tr>
-        <tr tal:repeat="membership view/activeMemberships">
-          <tal:block tal:define="member membership/person">
-          <td><a tal:attributes="href string:/people/${member/name}">
-            <span tal:replace="member/browsername" /></a></td>
-          <td tal:content="membership/datejoined/date"></td>
-          <td tal:condition="membership/dateexpires"
-              tal:content="membership/dateexpires/date"></td>
-          <td tal:condition="not: membership/dateexpires">Never</td>
-          <td tal:content="membership/statusname"></td>
-          </tal:block>
-        </tr>
-      </table>
+      <fieldset tal:condition="activeMembersCount">
+        <legend>Active members</legend>
 
-      <div tal:define="proposedmembers context/proposedmembers;
-                       expiredmembers context/expiredmembers;
-                       deactivatedmembers context/deactivatedmembers"
-           tal:condition="python: proposedmembers or expiredmembers or deactivatedmembers">
-        There's also:
-        <div tal:condition="proposedmembers" style="margin: 0.5em 2em">
-          <span tal:replace="python: len(proposedmembers)" />
-          new member(s) awaiting for approval.
+        <p>Active members are comprised of <em>approved members</em> and 
+        <em>administrators</em> of a team. These members can be promoted 
+        to administrators, demoted to normal members, deactivated or can
+        have their expiration date changed.</p>
+
+        <table width="100%" id="ass_listing" class="listing">
+          <tr>
+            <th>Name</th>
+            <th>Joined</th>
+            <th>Expires</th>
+            <th>Status</th>
+          </tr>
+          <tr tal:repeat="membership view/activeMemberships">
+            <tal:block tal:define="member membership/person">
+            <td><a tal:attributes="href member/name"
+                   title="Edit this subscription">
+              <img src="/++resource++edit.gif"></a>&nbsp;&nbsp;
+              <a tal:attributes="href string:/people/${member/name}">
+              <span tal:replace="member/browsername" /></a></td>
+            <td tal:content="membership/datejoined/date"></td>
+            <td tal:condition="membership/dateexpires"
+                tal:content="membership/dateexpires/date"></td>
+            <td tal:condition="not: membership/dateexpires">Never</td>
+            <td tal:content="membership/statusname"></td>
+            </tal:block>
+          </tr>
+        </table>
+
+      </fieldset>
+
+      <fieldset tal:condition="proposedMembersCount">
+        <legend>Proposed members</legend>
+
+        <p>Proposed members are the ones who wish to join this team, but in
+        order for them to become real members a team administrator must 
+        approve it's subscription. A team administrator can also decline
+        proposed subscriptions if they think a member should not join this
+        team.</p>
+
+        <table width="100%" id="ass_listing" class="listing">
+          <tr>
+            <th>Name</th>
+            <th>Join requested in</th>
+          </tr>
+          <tr tal:repeat="membership view/proposedMemberships">
+            <tal:block tal:define="member membership/person">
+            <td><a tal:attributes="href member/name"
+                   title="Approve/Decline this subscription">
+              <img src="/++resource++edit.gif"></a>&nbsp;&nbsp;
+              <a tal:attributes="href string:/people/${member/name}">
+              <span tal:replace="member/browsername" /></a></td>
+            <td tal:content="membership/datejoined/date"></td>
+            </tal:block>
+          </tr>
+        </table>
+
+        <div style="float:right">
+          <a href="+editproposed">Edit All Proposed Members</a>
         </div>
+      </fieldset>
 
-        <div tal:condition="expiredmembers" style="margin: 0.5em 2em">
-          <span tal:replace="python: len(expiredmembers)" />
-          member(s) whose subscription is expired.
-        </div>
+      <fieldset tal:condition="inactiveMembersCount">
+        <legend>Inactive members</legend>
 
-        <div tal:condition="deactivatedmembers" style="margin: 0.5em 2em">
-          <span tal:replace="python: len(deactivatedmembers)" />
-          member(s) whose subscription have been canceled.
-        </div>
-      </div>
+        <p>These are members who, at some point were active members for this
+        team but are not anylonger. Either their subscriptions have
+        <em>expired</em> or were <em>deactivated</em> by themselves or any
+        administrator of this team. Inactive members can become active members
+        again only if a team administrator renew their subscriptions (in case 
+        of <em>expired</em> ones) or reactivate it (for <em>deactivated</em>
+        ones).</p>
 
-      <div style="float: right; padding-right: 1em">
-        <p><a href="+addmembers">Manage All Members</a></p>
-      </div>
+        <table width="100%" id="ass_listing" class="listing">
+          <tr>
+            <th>Name</th>
+            <th>Joined in</th>
+            <th>Status</th>
+          </tr>
+          <tr tal:repeat="membership view/inactiveMemberships">
+            <tal:block tal:define="member membership/person">
+            <td><a tal:attributes="href member/name"
+                   title="Renew/Reactivate this subscription">
+              <img src="/++resource++edit.gif"></a>&nbsp;&nbsp;
+              <a tal:attributes="href string:/people/${member/name}">
+              <span tal:replace="member/browsername" /></a></td>
+            <td tal:content="membership/datejoined/date"></td>
+            <td tal:condition="membership/isExpired">Membership expired in
+              <span tal:replace="membership/dateexpires/date" />
+            </td>
+            <td tal:condition="not: membership/isExpired"
+                tal:content="membership/statusname">
+            </td>
+            </tal:block>
+          </tr>
+        </table>
 
+      </fieldset>
+
+    </tal:block>
     </div>
   </div>
 </div>

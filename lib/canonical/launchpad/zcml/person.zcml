@@ -164,6 +164,10 @@
 
 
   <!-- Team Views -->
+  <browser:traverse
+      for="canonical.launchpad.interfaces.ITeam"
+      function="canonical.launchpad.browser.traverseTeam" />
+
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"
       permission="zope.Public"
@@ -172,46 +176,6 @@
           name="+index"
           template="../templates/team-index.pt"
           lp:url="foaf/person/$person.id/index" />
-      <browser:page
-          name="+members"
-          template="../templates/team-members.pt"
-          lp:url="foaf/person/$person.id/+members" />
-  </browser:pages>
-
-  <browser:pages
-      for="canonical.launchpad.interfaces.ITeam"
-      permission="launchpad.Edit"
-      class="canonical.launchpad.browser.TeamMembersEditView">
-      <browser:page
-          name="+editproposed"
-          template="../templates/team-editproposed.pt"
-          lp:url="foaf/person/$person.id/+editproposed" />
-      <browser:page
-          name="+addmembers"
-          template="../templates/team-addmembers.pt"
-          lp:url="foaf/person/$person.id/+addmembers" />
-      <!--
-      <browser:page
-          name="+editapproved"
-          template="../templates/team-editapproved.pt"
-          lp:url="foaf/person/$person.id/+editapproved" />
-      <browser:page
-          name="+editadmins"
-          template="../templates/team-editadmins.pt"
-          lp:url="foaf/person/$person.id/+editadmins" />
-      <browser:page
-          name="+editexpired"
-          template="../templates/team-editexpired.pt"
-          lp:url="foaf/person/$person.id/+editexpired" />
-      <browser:page
-          name="+editdeactivated"
-          template="../templates/team-editdeactivated.pt"
-          lp:url="foaf/person/$person.id/+editdeactivated" />
-      <browser:page
-          name="+editdeclined"
-          template="../templates/team-editdeclined.pt"
-          lp:url="foaf/person/$person.id/+editdeclined" />
-      -->
   </browser:pages>
 
   <browser:editform
@@ -240,11 +204,11 @@
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.TeamUnjoinView">
+      class="canonical.launchpad.browser.TeamLeaveView">
       <browser:page
-          name="+unjoin"
-          template="../templates/team-unjoin.pt"
-          lp:url="foaf/person/$person.id/+unjoin" />
+          name="+leave"
+          template="../templates/team-leave.pt"
+          lp:url="foaf/person/$person.id/+leave" />
   </browser:pages>
 
 </configure>

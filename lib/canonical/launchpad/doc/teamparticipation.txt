@@ -21,18 +21,21 @@ First of all, create some teams:
 >>> t4 = Person(subscriptionpolicy=OPEN, name='t4', teamowner=p)
 >>> t5 = Person(subscriptionpolicy=OPEN, name='t5', teamowner=p)
 
+
 We don't return results in any particular order, so we should define
 a comparison function for the tests to use
 
 >>> def tcmp(a,b):
 ...     return cmp(a.name,b.name)
 
+
 Now, add p as a member of t3.
 
->>> p.joinTeam(t3)
+>>> p.join(t3)
 True
 >>> [m.name for m in teampart.getAllMembers(t3)]
 []
+
 
 But t3 is a MODERATED team, somebody have to approve the membership:
 
@@ -40,37 +43,39 @@ But t3 is a MODERATED team, somebody have to approve the membership:
 >>> [m.name for m in teampart.getAllMembers(t3)]
 [u'name16']
 
-Now we add t3 as a member of t2, ...
 
->>> t3.joinTeam(t2)
-True
+Now we add t3 as a member of t2. But t3 is a team, and because teams take no
+actions, it can't actually "join" t2. Instead, an administrator of t2 have 
+to addMember() it.
+
+>>> t2.addMember(t3)
 >>> l = teampart.getAllMembers(t2)
 >>> l.sort(tcmp)
 >>> [m.name for m in l]
 [u'name16', u't3']
 
+
 ... t2 as a member of t1, ...
 
->>> t2.joinTeam(t1)
-True
+>>> t1.addMember(t2)
 >>> l = teampart.getAllMembers(t1)
 >>> l.sort(tcmp)
 >>> [m.name for m in l]
 [u'name16', u't2', u't3']
 
+
 ... t2 as a member of t5, ...
 
->>> t2.joinTeam(t5)
-True
+>>> t5.addMember(t2)
 >>> l = teampart.getAllMembers(t5)
 >>> l.sort(tcmp)
 >>> [m.name for m in l]
 [u'name16', u't2', u't3']
 
+
 ... t5 as a member of t4
 
->>> t5.joinTeam(t4)
-True
+>>> t4.addMember(t5)
 >>> l = teampart.getAllMembers(t4)
 >>> l.sort(tcmp)
 >>> [m.name for m in l]
@@ -79,7 +84,7 @@ True
 
 Now let's remove some members to see what happens:
 
->>> p.unjoinTeam(t3)
+>>> p.leave(t3)
 True
 >>> len(teampart.getAllMembers(t3))
 0
@@ -99,8 +104,11 @@ True
 >>> [m.name for m in l]
 [u't2', u't3']
 
->>> t2.unjoinTeam(t5)
-True
+
+t2 can't leave() t5 because it's a team and teams take no actions. We have to
+call setMembershipStatus() for t2 in t5, to make it a DEACTIVATED member.
+
+>>> t5.setMembershipStatus(t2, TeamMembershipStatus.DEACTIVATED)
 >>> len(teampart.getAllMembers(t5))
 0
 

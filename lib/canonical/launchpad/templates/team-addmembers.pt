@@ -5,7 +5,7 @@
       i18n:domain="launchpad">
 
 <head>
-  <title metal:fill-slot="title"><span tal:replace="context/browsername" />:
+  <title metal:fill-slot="title"><span tal:replace="context/team/browsername" />:
     Add New Members</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
@@ -15,40 +15,13 @@
 
 <body>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div class="portlet">
-    <h4>Members:</h4>
-
-    <div class="portletBody">
-      <div class="portletContent even">
-        <img src="/++resource++add.gif"><a href="+addmembers">Add Members</a><br />
-
-        <img src="/++resource++edit.gif"><a href="+editproposed">Proposed Members 
-        (<span tal:content="view/proposedCount" />)</a><br />
-
-        <img src="/++resource++edit.gif">Approved Members 
-        (<span tal:content="view/approvedCount" />)<br />
-
-        <img src="/++resource++edit.gif">Administrators
-        (<span tal:content="view/adminCount" />)<br />
-
-        <img src="/++resource++edit.gif">Expired Members
-        (<span tal:content="view/expiredCount" />)<br />
-
-        <img src="/++resource++edit.gif">Deactivated Members
-        (<span tal:content="view/deactivatedCount" />)<br />
-      </div>
-    </div>
-  </div>
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <div id="content" class="documentEditable">
 
     <div class="documentContent" id="region-content">
 
-      <h1><span tal:replace="context/browsername" />: Add New Members</h1>
+      <h1><span tal:replace="context/team/browsername" />: Add New Members</h1>
 
       <div tal:condition="view/addedMembers" class="portalMessage">
         <p>The following members have been added to this team:

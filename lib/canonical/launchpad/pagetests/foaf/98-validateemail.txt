@@ -1,3 +1,5 @@
+  'salgado' have an email address that was probably added by gina, let's
+  validate it now.
 
 
   >>> print http(r"""
@@ -82,3 +84,13 @@
   ...
   ...<h1>Email validated successfully.</h1>...
   ...
+
+
+  This is the first email 'salgado' is validating, it must be set as the
+  preferred one.
+
+  >>> from canonical.launchpad.database import EmailAddress
+  >>> e = EmailAddress.byEmail(to_addrs)
+  >>> e.statusname
+  'Preferred Email Address'
+

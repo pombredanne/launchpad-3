@@ -233,7 +233,7 @@ If he joins the maintainer team, though, he's allowed to edit the task.
 Let's add him to the maintainer team:
 
     >>> sample_person = personset.get(12)
-    >>> sample_person.joinTeam(foo_team)
+    >>> sample_person.join(foo_team)
     True
 
 Now he's allowed to edit the task:
@@ -244,7 +244,7 @@ Next, we demonstrate how the assignee can edit the task.  Let's remove
 the logged in person from the maintainer team, so that he can't edit the
 task anymore:
 
-    >>> sample_person.unjoinTeam(foo_team)
+    >>> sample_person.leave(foo_team)
     True
     >>> upstream_task.status = STATUS_FIXED
     Traceback (most recent call last):

@@ -20,6 +20,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
 from canonical.launchpad.interfaces import ITeamMembership, ITeamParticipation
 from canonical.launchpad.interfaces import ITeamParticipationSet
+from canonical.launchpad.interfaces import ITeamMembershipSet
+from canonical.launchpad.interfaces import ITeamMembershipSubset
 from canonical.launchpad.interfaces import IEmailAddress, IWikiName
 from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
 from canonical.launchpad.interfaces import ISSHKey, IGPGKey, IKarma
@@ -201,8 +203,8 @@ class Person(SQLBase):
         results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
         return bool(results.count())
 
-    def addMember(self, person, status, expires=None, reviewer=None,
-                  comment=None):
+    def addMember(self, person, status=TeamMembershipStatus.APPROVED,
+                  expires=None, reviewer=None, comment=None):
         assert self.teamowner is not None
         assert not person.hasMembershipEntryFor(self)
         assert status in [TeamMembershipStatus.APPROVED,
@@ -244,7 +246,7 @@ class Person(SQLBase):
         elif tm.status in [deactivated]:
             assert status in [approved]
         elif tm.status in [expired]:
-            assert status in [approved, admin]
+            assert status in [approved]
         elif tm.status in [proposed]:
             assert status in [approved, declined]
         elif tm.status in [declined]:
@@ -265,7 +267,9 @@ class Person(SQLBase):
         elif status in [deactivated, expired]:
             _cleanTeamParticipation(person, self)
 
-    def unjoinTeam(self, team):
+    def leave(self, team):
+        assert self.teamowner is None
+
         results = TeamMembership.selectBy(personID=self.id, teamID=team.id)
         assert results.count() <= 1
         if results.count() == 0:
@@ -279,7 +283,9 @@ class Person(SQLBase):
         team.setMembershipStatus(self, TeamMembershipStatus.DEACTIVATED)
         return True
 
-    def joinTeam(self, team):
+    def join(self, team):
+        assert self.teamowner is None
+
         if team.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
             return False
         elif team.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
@@ -349,6 +355,14 @@ class Person(SQLBase):
     def _approvedmembers(self):
         return self.getMembersByStatus(TeamMembershipStatus.APPROVED)
     approvedmembers = property(_approvedmembers)
+
+    def _activemembers(self):
+        return self.approvedmembers + self.administrators
+    activemembers = property(_activemembers)
+
+    def _inactivemembers(self):
+        return self.expiredmembers + self.deactivatedmembers
+    inactivemembers = property(_inactivemembers)
 
     def _memberships(self):
         return list(TeamMembership.selectBy(personID=self.id))
@@ -801,9 +815,23 @@ class TeamMembership(SQLBase):
         return 'Unknown (%d)' % self.status
     statusname = property(_statusname)
 
+    def isExpired(self):
+        return self.status == TeamMembershipStatus.EXPIRED
+
+
+class TeamMembershipSet(object):
+
+    implements(ITeamMembershipSet)
+
+    def getByPersonAndTeam(self, personID, teamID, default=None):
+        results = TeamMembership.selectBy(personID=personID, teamID=teamID)
+        if results.count() < 1:
+            return default
+        assert results.count() == 1
+        return results[0]
+
 
 class TeamParticipationSet(object):
-    """ A Set for TeamParticipation objects. """
 
     implements(ITeamParticipationSet)
 

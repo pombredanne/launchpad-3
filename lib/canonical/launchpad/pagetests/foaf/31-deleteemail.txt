@@ -1,4 +1,5 @@
-
+  'name16' don't want to use bar.foo@canonical.com on Launchpad. Let's remove
+  it.
 
   Get the id of the email address we want to delete. 
 

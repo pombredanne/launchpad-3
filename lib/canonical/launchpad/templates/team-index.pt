@@ -24,7 +24,7 @@
       </li>
 
       <li id="contentview-members" class="plain">
-        <a href="+members">Active Members</a>
+        <a href="members/">Members</a>
       </li>
     </ul>
 
@@ -50,7 +50,7 @@
             <td><span tal:content="view/activeMembersCount" />
                 <tal:block tal:condition="view/userIsActiveMember">
                 <tal:block tal:condition="not: view/userIsOwner">
-                  <a href="+unjoin">(Unjoin)</a>
+                  <a href="+leave">(Leave)</a>
                 </tal:block>
                 </tal:block>
 

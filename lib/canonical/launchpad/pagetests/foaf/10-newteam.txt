@@ -1,8 +1,9 @@
+  Let's create a team with the person named 'foo' as the owner.
 
 
   >>> print http(r"""
   ... GET /people/name16/+newteam HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -14,7 +15,7 @@
 
   >>> print http(r"""
   ... POST /people/name16/+newteam HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... Content-Length: ...
   ... Content-Type: multipart/form-data; boundary=---------------------------1760323702686760077201237089
   ... 
@@ -37,7 +38,7 @@
   ... -----------------------------1760323702686760077201237089
   ... Content-Disposition: form-data; name="field.subscriptionpolicy"
   ... 
-  ... Moderated Team
+  ... Open Team
   ... -----------------------------1760323702686760077201237089
   ... Content-Disposition: form-data; name="field.subscriptionpolicy-empty-marker"
   ... 
@@ -63,7 +64,7 @@
 
   >>> print http(r"""
   ... GET /people/myemail HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
