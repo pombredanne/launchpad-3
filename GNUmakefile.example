@@ -1,0 +1,8 @@
+# You can copy this to GNUmakefile, and set Z3LIBPATH appropriately so that
+# you can run the Soyuz app server using "make run" and without having to
+# set your PYTHONPATH.
+
+include Makefile
+Z3LIBPATH=/stuff/public-repository/Zope3/src
+
+# arch-tag: 673c6efc-67b2-4a58-9fdf-a41283fe14a2

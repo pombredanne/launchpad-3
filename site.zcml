@@ -1,0 +1,15 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+  <include file="zopeapp.zcml" />
+
+  <include files="package-includes/*-meta.zcml" />
+  <include files="package-includes/*-configure.zcml" />
+
+  <!-- Provide local overrides of standard configurations-->
+  <includeOverrides file="overrides.zcml" />
+
+  <include file="securitypolicy.zcml" />
+  <include file="principals.zcml" />
+
+</configure>
+<!-- arch-tag: 25fbfebd-e1cf-41e1-a051-1c7ac3a72a78 -->
