@@ -2,6 +2,61 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-28 15:03:40 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1505
+
+    Summary:
+      Implemented HoaryTranslations spec
+    Revision:
+      launchpad--devel--0--patch-1505
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1500
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-1
+       Implemented the needed restrictions so only owners of POFiles are able to edit translations for distroreleases and sourcepackages
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-2
+       Finish basic implemented needed for hoary translations
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-3
+       Merge with rocketfuel
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-4
+       Removed useless code
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-5
+       Moved the canEditTranslations function into POTemplate object and minor changes requested after the Steve's code review
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-6
+       Removed pending patch not needed anymore and fixed a typo
+    
+     * carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-7
+       Test fixed
+    
+
+    modified files:
+     database/sampledata/current.sql
+     database/schema/patch-11-12-0.sql doc/changelog.txt
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/interfaces/pofile.py
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+     lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/tests/test_browser.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-1
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-2
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-3
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-4
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-5
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-6
+     carlos.perello@canonical.com--2004/launchpad--HoaryTranslations--0--patch-7
+
+
 2005-03-28 14:13:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1504
 
     Summary:

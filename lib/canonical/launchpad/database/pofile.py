@@ -616,6 +616,29 @@ class POTemplate(SQLBase, RosettaStats):
 
         return results.count() > 0
 
+    def canEditTranslations(self, person):
+        """See IPOTemplate."""
+        if self.distrorelease is None:
+            return True
+
+        owner = self.owner
+
+        if ITeam.providedBy(owner) and person.inTeam(owner):
+            return True
+        elif owner.id == person.id:
+            return True
+
+        # Now we check for the owners of the PO files.
+        for pofile in self.poFiles:
+            owner = pofile.owner
+            if ITeam.providedBy(owner) and person.inTeam(owner):
+                return True
+            elif owner.id == person.id:
+                return True
+
+        return False
+
+
     # Methods defined in IEditPOTemplate
 
     def expireAllMessages(self):
@@ -1092,8 +1115,7 @@ class POFile(SQLBase, RosettaStats):
                              default=None)
     owner = ForeignKey(foreignKey='Person',
                        dbName='owner',
-                       notNull=False,
-                       default=None)
+                       notNull=True)
     pluralforms = IntCol(dbName='pluralforms',
                          notNull=True)
     variant = StringCol(dbName='variant',

@@ -9,7 +9,7 @@ from StringIO import StringIO
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ITeamParticipationSet, \
-    ILaunchBag, IHasOwner
+    ILaunchBag, IHasOwner, ITeam
 
 def is_maintainer(hasowner):
     """Return True if the logged in user is an owner of hasowner.
@@ -220,3 +220,4 @@ def getValidNameFromString(invalid_name):
     name = name.replace(' ', '-')
 
     return name
+

@@ -937,9 +937,9 @@ class TranslatePOTemplate:
         self.context = context
         self.request = request
 
-        self.person = getUtility(ILaunchBag).user
+        self.user = getUtility(ILaunchBag).user
 
-        if self.person is None:
+        if self.user is None:
             return
 
         self.codes = request.form.get('languages')
@@ -1036,9 +1036,17 @@ class TranslatePOTemplate:
         if not self.show in ('translated', 'untranslated', 'all'):
             self.show = 'all'
 
+        # Now, we check restrictions to implement HoaryTranslations spec.
+        if not context.canEditTranslations(self.user):
+            # We *only* show the ones without untranslated strings
+            self.show = 'untranslated'
+
         # Get a TabIndexGenerator.
 
         self.tig = TabIndexGenerator()
+
+    def canEditTranslations(self):
+        return self.context.canEditTranslations(self.user)
 
     def makeTabIndex(self):
         return self.tig.generate()
@@ -1063,6 +1071,11 @@ class TranslatePOTemplate:
         for name in ('offset',):
             if name in kw:
                 parameters[name] = kw[name]
+
+        # Now, we check restrictions to implement HoaryTranslations spec.
+        if not self.canEditTranslations():
+            # We *only* show the ones without untranslated strings
+            parameters['show'] = 'untranslated'
 
         if parameters:
             keys = parameters.keys()
@@ -1192,7 +1205,7 @@ class TranslatePOTemplate:
 
         for language in self.languages:
             pofiles[language.code] = self.context.getOrCreatePOFile(
-                language.code, None, owner=self.person)
+                language.code, None, owner=self.user)
 
         # Put the translations in the database.
 
@@ -1236,7 +1249,7 @@ class TranslatePOTemplate:
                 fuzzy = code in set['fuzzy']
 
                 po_set.updateTranslation(
-                    person=self.person,
+                    person=self.user,
                     new_translations=new_translations,
                     fuzzy=fuzzy,
                     fromPOFile=False)

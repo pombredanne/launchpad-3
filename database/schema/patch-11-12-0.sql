@@ -27,7 +27,7 @@ ALTER TABLE SignedCodeOfConduct ADD CONSTRAINT
 /* POFile.owner should be NOT NULL */
 UPDATE POFile SET owner=Person.id
     FROM Person WHERE Person.name='rosetta-admins' AND POFile.owner IS NULL;
-ALTER TABLE POTemplate ALTER COLUMN owner SET NOT NULL;
+ALTER TABLE POFile ALTER COLUMN owner SET NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (11, 12, 0);
 

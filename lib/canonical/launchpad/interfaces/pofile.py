@@ -244,6 +244,15 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         """Test whether this template has any message sets which are plural
         message sets."""
 
+    def canEditTranslations(person):
+        """Say if a person is able to edit existing translations.
+
+        Return True or False depending if the user is allowed to edit those
+        translations.
+
+        At this moment, only translations from a distro release are locked.
+        """
+
     # TODO provide a way to look through non-current message ids.
 
 

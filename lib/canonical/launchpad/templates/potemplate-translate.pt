@@ -99,7 +99,9 @@
 
     <!-- Display settings. -->
 
-    <form method="post" tal:attributes="action view/URL">
+    <form method="post"
+          tal:condition="view/canEditTranslations"
+          tal:attributes="action view/URL">
         <fieldset>
         <legend>Display Settings</legend>
             <div class="field">
