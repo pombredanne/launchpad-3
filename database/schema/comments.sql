@@ -118,6 +118,19 @@ COMMENT ON COLUMN ProductBugAssignment.datecreated IS 'A timestamp for the creat
 COMMENT ON TABLE SourcepackageBugAssignment IS 'Links a given Bug to a particular sourcepackage.';
 COMMENT ON COLUMN SourcePackageBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
 
+COMMENT ON TABLE bugassignment IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
+COMMENT ON COLUMN bugassignment.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
+COMMENT ON COLUMN bugassignment.product IS 'The product in which this bug shows up.';
+COMMENT ON COLUMN bugassignment.sourcepackagename IS 'The name of the sourcepackage in which this bug shows up.';
+COMMENT ON COLUMN bugassignment.distro IS 'The distro of the named sourcepackage.';
+COMMENT ON COLUMN bugassignment.status IS 'The general health of the bug, e.g. Accepted, Rejected, etc.';
+COMMENT ON COLUMN bugassignment.priority IS 'The importance of fixing this bug.';
+COMMENT ON COLUMN bugassignment.severity IS 'The impact of this bug.';
+COMMENT ON COLUMN bugassignment.binarypackagename IS 'The name of the binary package built from the source package. This column may only contain a value if this bugassignment is linked to a sourcepackage (not a product)';
+COMMENT ON COLUMN bugassignment.assignee IS 'The person who has been assigned to fix this bug in this product or (sourcepackagename, distro)';
+COMMENT ON COLUMN bugassignment.dateassigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
+COMMENT ON COLUMN bugassignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it''s the date the bug was assigned to this product, which could have come later.';
+
 
 -- CVERef
 COMMENT ON TABLE CVERef IS 'This table stores CVE references for bugs. CVE is a way of tracking security problems across multiple vendor products.';

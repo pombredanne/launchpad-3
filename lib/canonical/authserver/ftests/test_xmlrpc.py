@@ -53,12 +53,13 @@ class XMLRPCTestCase(LaunchpadTestCase):
         emptyDict = self.server.authUser('invalid@email', '')
         self.assertEqual({}, emptyDict)
 
-        # Create a user
+        # Create a user. Note we have to pass in their email address twice
+        # (for historical reasons - should refactor one day)
         self.server.createUser(
-                'nobody@example.com',
+                'nobody@example.com', # Used to generate the Person.name
                 SSHADigestEncryptor().encrypt('testpw'),
                 'Display Name',
-                ['nobody@example.com',]
+                ['nobody@example.com',] # The email addresses stored
                 )
 
         # Authenticate a user. This requires two queries - one to retrieve
