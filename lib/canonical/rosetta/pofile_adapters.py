@@ -1,6 +1,5 @@
 from ipofile import IPOHeader, IPOMessage
 from pofile import POHeader, POMessage, POParser, POInvalidInputError
-from interfaces import IPOMessageSet
 from zope.interface import implements
 import sets
 

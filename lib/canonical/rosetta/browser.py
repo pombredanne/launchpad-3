@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 import re
+from math import ceil
 
 from zope.component import getUtility
 from canonical.rosetta.interfaces import IProjects, ILanguages, IPerson
@@ -191,7 +192,7 @@ class ViewPOExport:
 
 class TranslatePOTemplate:
     defaultCount = 5
-    multiLineThreshold = 40
+    charactersPerLine = 40
 
     def __init__(self, context, request):
         self.context = context
@@ -291,9 +292,13 @@ class TranslatePOTemplate:
         return text.replace('\n', u'\u21b5<br/>\n')
 
     def _messageID(self, messageID):
+        add = lambda x, y: x + y
+        lineCeiling = lambda x: int(ceil(float(len(x)) / self.charactersPerLine))
+        lines : reduce(add, map(lines, messageID.msgid.split('\n'))),
+
         return {
-            'isMultiline' : (len(messageID.msgid) > self.multiLineThreshold or
-                '\n' in messageID.msgid),
+            'lines' : lines,
+            'isMultiline' : lines > 0,
             'text' : self._munge(messageID.msgid)
         }
 

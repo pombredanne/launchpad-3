@@ -151,7 +151,7 @@ class RosettaProject(SQLBase):
         for p in self.products():
             count += p.updatesCount(language)
         return count
-        
+
     def rosettaCount(self, language):
         count = 0
         for p in self.products():
@@ -220,7 +220,7 @@ class RosettaProduct(SQLBase):
         for t in self.poTemplates():
             count += t.updatesCount(language)
         return count
-        
+
     def rosettaCount(self, language):
         count = 0
         for t in self.poTemplates():
@@ -417,7 +417,7 @@ class RosettaPOTemplate(SQLBase):
                              lastParsed="NOW",
                              pluralForms=language.pluralForms or 0,
                              variant=variant)
-    
+
     # XXX: currentCount, updatesCount and rosettaCount should be updated with
     # a way that let's us query the database instead of use the cached value
     def currentCount(self, language):
@@ -425,7 +425,7 @@ class RosettaPOTemplate(SQLBase):
 
     def updatesCount(self, language):
         return self.poFile(language).updatesCount
-        
+
     def rosettaCount(self, language):
         return self.poFile(language).rosettaCount
 
@@ -883,8 +883,10 @@ class RosettaPerson(SQLBase):
 
     # XXX: not fully implemented
     def languages(self):
-        for code in ('cy', 'es'):
-            yield RosettaLanguage.selectBy(code=code)[0]
+        languages = getUtility(ILanguages)
+
+        for code in ('ja', 'es'):
+            yield languages[code]
 
 
 class RosettaBranch(SQLBase):
