@@ -244,7 +244,7 @@ def do_publishing(pkgs, lp, source):
 def do_backpropogation(kdb, lp, sources, keyrings):
     names = sources.keys() 
     # You can vary order here by doing names.sort() or names.reverse()
-    names.reverse()
+    names.sort()
     for srcpkg in names:
         if not sources[srcpkg].is_processed:
             sources[srcpkg].process_package(kdb, package_root, keyrings)

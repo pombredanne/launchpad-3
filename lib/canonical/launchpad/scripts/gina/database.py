@@ -277,9 +277,12 @@ class Launchpad(SQLThing):
         section = self.getSectionByName(src.section)[0]
         if src.urgency not in priomap:
             src.urgency = "low"
+        name = self.getSourcePackageName(src.package)
         data = {
+            "sourcepackagename":       name[0],
             "sourcepackage":           srcpkgid,
             "version":                 src.version,
+            "maintainer":              src.maintainer,
             "dateuploaded":            src.date_uploaded,
             "builddepends":            src.build_depends,
             "builddependsindep":       src.build_depends_indep,
@@ -318,13 +321,16 @@ class Launchpad(SQLThing):
         # really the truth
         component = self.getComponentByName(src.component)[0]
         section = self.getSectionByName(src.section)[0]
+        name = self.getSourcePackageName(src.package)
         
         data = {
+            "sourcepackagename":       name[0],
             "sourcepackage":           srcpkgid,
             "version":                 release["version"],
             "dateuploaded":            release["parsed_date"],
             "component":               component,
             "creator":                 maintid,
+            "maintainer":              maintid,
             "urgency":                 priomap[release["urgency"]],
             "changelog":               self.ensure_string_format(release["changes"]),
             "section":                 section,

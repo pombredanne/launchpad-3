@@ -6,7 +6,10 @@
 
         <img src="/++resource++edit.gif">
 	<a href="+edit">Edit Release Information</a> <br />
-
+        <img src="/++resource++add.gif">
+        <a href="+sources">See Source Package</a><br />
+        <img src="/++resource++add.gif">
+	<a href="+bugs">See Distro Release Bugs</a><br />
         </div>
     </div>
 </div>
