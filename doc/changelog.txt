@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-17 04:14:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1448
+
+    Summary:
+      importd needs DELETE on archnamespace
+    Revision:
+      launchpad--devel--0--patch-1448
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-204
+       importd needs delete on archnamespace
+    
+
+    modified files:
+     database/schema/security.cfg doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-204
+
+
 2005-03-16 22:32:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1447
 
     Summary:
