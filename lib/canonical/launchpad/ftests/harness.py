@@ -22,10 +22,10 @@ def _disconnect_sqlos():
     try:
         name = zapi.getUtility(IConnectionName).name
         db_adapter = zapi.getUtility(IZopeDatabaseAdapter, name)
-        if db_adapter.isConnected():
-            # we have to disconnect long enough to drop
-            # and recreate the DB
-            db_adapter.disconnect()
+        # we have to disconnect long enough to drop
+        # and recreate the DB
+        db_adapter.disconnect()
+        assert db_adapter._v_connection is None
     except ComponentLookupError, err:
         # configuration not yet loaded, no worries
         pass
@@ -39,8 +39,9 @@ def _reconnect_sqlos():
     db_adapter = None
     name = zapi.getUtility(IConnectionName).name
     db_adapter = zapi.getUtility(IZopeDatabaseAdapter, name)
-    if not db_adapter.isConnected():
-        db_adapter.connect()
+    db_adapter.disconnect()
+    assert db_adapter._v_connection is None
+    db_adapter.connect()
     assert db_adapter.isConnected(), 'Failed to reconnect'
     return db_adapter
 
@@ -74,8 +75,6 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
 
     def tearDown(self):
         FunctionalTestSetup().tearDown()
-        #if self.sqlos_dbadapter.isConnected():
-        #    self.sqlos_dbadapter.disconnect()
         _disconnect_sqlos()
         LaunchpadFunctionalTestSetup.sqlos_dbadapter = None
         super(LaunchpadFunctionalTestSetup, self).tearDown()

@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-12 15:00:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1186
+
+    Summary:
+      Test harness tweaks attempting to solve Kinnison & Carlos failures
+    Revision:
+      launchpad--devel--0--patch-1186
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-77
+       Test harness tweaks attempting to solve Kinnison & Carlos failures
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/doc/testing.txt
+     lib/canonical/launchpad/ftests/harness.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-77
+
+
 2005-01-12 14:53:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1185
 
     Summary:

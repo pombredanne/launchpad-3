@@ -120,8 +120,8 @@ environment.
 
 You have full access to the SQLBase objects
 
->>> stub = Person.byName('sabdfl')
->>> stub.displayname
+>>> sabdfl = Person.byName('sabdfl')
+>>> sabdfl.displayname
 u'Mark Shuttleworth'
 
 You also have access to the Zope3 component architecture, as registered
