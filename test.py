@@ -24,6 +24,20 @@ sys.path.append(os.path.join(here, 'lib'))
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
+# This is a hack to use canonical.difflib instead of standard difflib
+# so we can easily test it. # Comment out and commit to rocketfuel if
+# it causes grief 
+# Hmm... causing grief :-( Probably redefining Differ.compare to avoid
+# patching Z3
+'''
+import canonical.difflib
+sys.modules['difflib'] = canonical.difflib
+import difflib
+assert hasattr(difflib.Differ, 'fancy_compare'), \
+        'Failed to monkey patch difflib'
+difflib.Differ.compare = difflib.Differ.fancy_compare
+'''
+
 # This is a terrible hack to divorce the FunctionalTestSetup from
 # its assumptions about the ZODB.
 from zope.app.tests.functional import FunctionalTestSetup

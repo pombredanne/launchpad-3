@@ -19,7 +19,7 @@ from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtracker import BugTracker
 from canonical.database.sqlbase import SQLBase, quote_like, quote
 
-from sqlobject import AND, OR
+from sqlobject import AND, OR, CONTAINSSTRING
 
 
 class IHugeVocabulary(IVocabulary):
@@ -72,7 +72,7 @@ class SQLObjectVocabularyBase(object):
 
     def __contains__(self, obj):
         try:
-            objs = list(self._table.select(self._table.q.id == obj.id))
+            objs = list(self._table.select(self._table.q.id == int(obj)))
             if len(objs) > 0:
                 return True
         except ValueError:
@@ -106,10 +106,10 @@ class SQLObjectVocabularyBase(object):
 
 
 class SourcePackageVocabulary(SQLObjectVocabularyBase):
+    implements(IHugeVocabulary)
+
     _table = SourcePackage
     _orderBy = 'id'
-
-    implements(IHugeVocabulary)
 
     def _toTerm(self, obj):
         name = obj.sourcepackagename.name
@@ -119,11 +119,11 @@ class SourcePackageVocabulary(SQLObjectVocabularyBase):
         return self.getTerm(token)
 
     def search(self, query):
-        '''Returns products where the sourcepackage name starts with the given
+        '''Returns products where the sourcepackage name contains the given
         query. Returns an empty list if query is None or an empty string.
 
-        We don't do a proper substring match, as this will be slow because
-        PostgreSQL cannot do this search using an index.
+        This won't use indexes. If this is too slow, we need full text
+        searching.
 
         '''
         if not query:
@@ -132,25 +132,50 @@ class SourcePackageVocabulary(SQLObjectVocabularyBase):
         objs = [self._toTerm(r)
             for r in t.select('''
                 sourcepackage.sourcepackagename = sourcepackagename.id
-                AND sourcepackagename.name like %s || '%%'
+                AND sourcepackagename.name like '%%' || %s || '%%'
                 ''' % quote_like(query.lower()),
-                    #t.q.sourcepackagename.name.startswith(query.lower()),
                     ['SourcePackageName']
                     )
             ]
         return objs
 
+class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
+    '''A SQLObjectVocabulary base for database tables that have a unique
+        name column.
+        
+        Provides all methods required by IHugeVocabulary,
+        although it doesn't actually specify this interface since it may
+        not actually be huge and require the custom widgets.
 
-class BinaryPackageNameVocabulary(SQLObjectVocabularyBase):
-    _table = BinaryPackageName
+        May still want to override _toTerm to provide a nicer title
+        and search to search on titles or descriptions.
+    '''
     _orderBy = 'name'
 
     def _toTerm(self, obj):
         return SimpleTerm(obj.id, obj.name, obj.name)
 
     def getTermByToken(self, token):
-        return self.getTerm(token)
+        objs = list(self._table.selectBy(name=token))
+        if not objs:
+            raise LookupError, token
+        return self._toTerm(objs[0])
 
+    def search(self, query):
+        '''Return terms where query is a subtring of the name'''
+        if not query:
+            return []
+        objs = self._table.select(
+            CONTAINSSTRING(self._table.q.name, query)
+            )
+        return [self._toTerm(obj) for obj in objs]
+
+
+class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
+    implements(IHugeVocabulary)
+
+    _table = BinaryPackageName
+    _orderBy = 'name'
 
 
 class ProductVocabulary(SQLObjectVocabularyBase):
@@ -183,16 +208,17 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         return self._toTerm(objs[0])
 
     def search(self, query):
-        '''Returns products where the product name starts with the given
+        '''Returns products where the product name contains the given
         query. Returns an empty list if query is None or an empty string.
 
-        We don't do a proper substring match, as this will be slow because
-        PostgreSQL cannot do this search using an index.
+        Note that this cannot use an index - if it is too slow we need
+        full text searching.
 
         '''
         if not query:
             return []
-        words = [quote_like(word)[:-1]+"%%'" for word in query.lower().split()]
+        words = ["'%%" + quote_like(word)[1:-1] + "%%'"
+            for word in query.lower().split()]
         sql = []
         for word in words:
             sql.append("product.name like %s" % word)
@@ -228,15 +254,37 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
     # of the week (2004/10/08) as we get Malone into usable shape.
     _table = BugTracker
 
-class PersonVocabulary(SQLObjectVocabularyBase):
+class PersonVocabulary(NamedSQLObjectVocabulary):
+    implements(IHugeVocabulary)
     _table = Person
     _orderBy = 'familyname'
 
     def _toTerm(self, obj):
         return SimpleTerm(
-                obj, obj.id, obj.displayname or '%s %s' % (
+                obj, obj.name, obj.displayname or '%s %s' % (
                     obj.givenname, obj.familyname))
 
+    def search(self, query):
+        '''Return terms where query is a subtring of the name'''
+        # TODO: This may actually be fast enough, or perhaps we will
+        # need to implement full text search inside PostgreSQL (tsearch or
+        # similar) -- StuartBishop 2004/11/24
+        if not query:
+            return []
+        kw = {}
+        if self._orderBy:
+            kw['orderBy'] = self._orderBy
+        query = quote('%%%s%%' % quote_like(query.lower())[1:-1])
+        objs = self._table.select('''
+            lower(name) LIKE %(query)s
+            OR lower(displayname) LIKE %(query)s
+            OR lower(givenname) LIKE %(query)s
+            OR lower(familyname) LIKE %(query)s
+            ''' % vars(), **kw)
+        return [self._toTerm(obj) for obj in objs]
+
+
+class ValidPersonVocabulary(PersonVocabulary):
     def __iter__(self):
         kw = {}
         if self._orderBy:
@@ -245,13 +293,33 @@ class PersonVocabulary(SQLObjectVocabularyBase):
             yield self._toTerm(obj)
 
     def __contains__(self, obj):
-        try:
-            objs = list(self._table.select(self._table.q.id == obj.id))
-            if len(objs) > 0:
-                return True
-        except ValueError:
-            pass
-        return False
+        objs = list(self._table.select(AND(
+            self._table.q.id == int(obj),
+            self._table.q.password is not None
+            )))
+        return len(objs) > 0
+
+    def search(self, query):
+        '''Return terms where query is a subtring of the name'''
+        # TODO: This may actually be fast enough, or perhaps we will
+        # need to implement full text search inside PostgreSQL (tsearch or
+        # similar) -- StuartBishop 2004/11/24
+        if not query:
+            return []
+        query = quote('%%%s%%' % quote_like(query.lower())[1:-1])
+        kw = {}
+        if self._orderBy:
+            kw['orderBy'] = self._orderBy
+        objs = self._table.select('''
+            password IS NOT NULL
+            AND (
+                lower(name) LIKE %(query)s
+                OR lower(displayname) LIKE %(query)s
+                OR lower(givenname) LIKE %(query)s
+                OR lower(familyname) LIKE %(query)s
+                )
+            ''' % vars(), **kw)
+        return [self._toTerm(obj) for obj in objs]
 
 
 

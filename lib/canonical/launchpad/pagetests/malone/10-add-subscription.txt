@@ -32,7 +32,7 @@
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.person"
   ... 
-  ... 1
+  ... sabdfl
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.person-empty-marker"
   ... 
@@ -53,9 +53,7 @@
   <option value="Watch">Watch</option>
   </select>
   ...
-  <select name="field.person" size="1" >
-  ...
-  </select>
+  <input type="text" name="field.person" value="sabdfl" ... />
   ...
 
 

@@ -8,7 +8,7 @@ class IBugSubscription(Interface):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = Choice(
-            title=_('Person ID'), required=True, vocabulary='Person',
+            title=_('Person ID'), required=True, vocabulary='ValidPerson',
             readonly=True,
             )
     bug = Int(title=_('Bug ID'), required=True, readonly=True)
