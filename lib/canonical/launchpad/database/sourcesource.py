@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin, IS
 # tools
 import datetime
 from sets import Set
+import logging
 
 class SourceSource(SQLBase): 
     """SourceSource table"""
@@ -135,7 +136,10 @@ class SourceSource(SQLBase):
             return self.cvsroot
         elif self.rcstype == RCSTypeEnum.svn:
             return self.svnrepository
+        elif self.rcstype == RCSTypeEnum.package:
+            return 
         else:
+            logging.critical ("unhandled source rcs type: %s", self.rcstype)
             # FIXME!
             return None
 
