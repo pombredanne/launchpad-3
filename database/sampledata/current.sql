@@ -2,6 +2,15 @@
 
 
 
+
+
+
+
+
+
+
+
+
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (1, 'Mark Shuttleworth', 'Mark', 'Shuttleworth', NULL, NULL, NULL, NULL, NULL, 'name1');
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (2, 'Robert Collins', 'Robert', 'Collins', NULL, NULL, NULL, NULL, NULL, 'name2');
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, karma, karmatimestamp, name) VALUES (3, 'Dave Miller', 'Dave', 'Miller', NULL, NULL, NULL, NULL, NULL, 'name3');
@@ -762,6 +771,14 @@ INSERT INTO bugmessage (id, bug, datecreated, title, contents, "owner", parent, 
 
 
 
+SELECT pg_catalog.setval('launchpadfile_id_seq', 1, false);
+
+
+
+SELECT pg_catalog.setval('scrapedproject_id_seq', 1, false);
+
+
+
 SELECT pg_catalog.setval('person_id_seq', 22, true);
 
 
@@ -986,11 +1003,9 @@ SELECT pg_catalog.setval('potranslation_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('language_id_seq', 632, true);
 
 
 
-SELECT pg_catalog.setval('country_id_seq', 240, true);
 
 
 

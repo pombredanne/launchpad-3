@@ -151,14 +151,14 @@ def get_plural_form_data(path):
 
 def insert_language(cnx, data, plural_forms):
     # Ewwww!
-    data['code'] = data['code'].encode('ascii')
+    data['code'] = data['code'].encode('ascii').strip()
+    data['englishname'] = data['englishname'].encode('utf-8').strip()
+    if 'nativename' in data:
+        data['nativename'] = data['nativename'].encode('utf-8').strip()
 
     if data['code'] in plural_forms:
-        data['pluralforms'] = plural_forms[data['code']]['nplurals']
-        data['pluralexpression'] = plural_forms[data['code']]['plural']
-    else:
-        data['pluralforms'] = None
-        data['pluralexpression'] = None
+        data['pluralforms'] = str(plural_forms[data['code']]['nplurals'])
+        data['pluralexpression'] = str(plural_forms[data['code']]['plural'])
 
     cr = cnx.cursor()
     rosetta_trans = cnx.cursor()
@@ -194,9 +194,9 @@ def insert_language(cnx, data, plural_forms):
                 POTranslationSighting.active = TRUE AND
                 POTranslationSighting.potranslation = POTranslation.id""",
         { 'languagecode': data['code'],
-          'englishname': data['englishname'].encode('utf-8') })
+          'englishname': data['englishname'] })
     if rosetta_trans.rowcount > 0:
-        data['nativename'] = rosetta_trans.fetchone()[0]
+        data['nativename'] = rosetta_trans.fetchone()[0].encode('utf-8')
 
     rosetta_trans.close()
 
@@ -205,12 +205,12 @@ def insert_language(cnx, data, plural_forms):
         cr.execute(
             """INSERT INTO Language (%s) VALUES (%s)""" % (
                 ','.join(data.keys()),
-                ','.join([str(psycopg.QuotedString(value.encode('utf-8').strip())) for value in data.values()])))
+                ','.join([str(psycopg.QuotedString(value)) for value in data.values()])))
     else:
         # It already exists, we should check if it needs any update
         # That's if the englishname != from data['englishname']
         language_row = cr.fetchone()
-        if language_row[0] != data['englishname'].encode('utf-8'):
+        if language_row[0] != data['englishname']:
             rosetta_trans.execute(
                 """SELECT POTranslation.translation
                     FROM POMsgID, POMsgSet, POTranslationSighting,
@@ -231,14 +231,14 @@ def insert_language(cnx, data, plural_forms):
                         POMsgSet.id = POTranslationSighting.pomsgset AND
                         POTranslationSighting.deprecated = FALSE AND
                         POTranslationSighting.potranslation = POTranslation.id""",
-                { 'languagecode': data['code'].encode('utf-8'),
+                { 'languagecode': data['code'],
                   'englishname': language_row[0] })
             if rosetta_trans.rowcount > 0:
                 # We need to update the englishname and the nativename
                 cr.execute(
                     """UPDATE Language SET englishname='%s', nativename='%s'
                         WHERE code='%s'""" %(
-                    data['englishname'].encode('utf-8'),
+                    data['englishname'],
                     rosetta_trans.fetchone()[0],
                     data['code']))
             else:
@@ -246,7 +246,7 @@ def insert_language(cnx, data, plural_forms):
                 cr.execute(
                     """UPDATE Language SET englishname='%s', nativename=NULL
                         WHERE code='%s'""" %(
-                    data['englishname'].encode('utf-8'),
+                    data['englishname'],
                     data['code']))
             print ("%r has been updated" % data)
             rosetta_trans.close()
@@ -261,8 +261,9 @@ def insert_language(cnx, data, plural_forms):
                     data['code']))
             print ("%r has been updated" % data)
 
-        if (language_row[1] != data['pluralforms']) or (language_row[2] !=
-                data['pluralexpression']):
+        if ('pluralforms' in data and 'pluralexpression' in data and
+                (language_row[1] != data['pluralforms'] or language_row[2] !=
+                data['pluralexpression'])):
             cr.execute(
                 """UPDATE Language SET pluralforms=%(pluralforms)d,
                     pluralexpression=%(pluralexpression)s WHERE code=%(code)s""", data)
@@ -323,7 +324,7 @@ def import_spoken(cnx, plural_forms):
 
             data = {
                 'code': u'%s_%s' % pair,
-                'englishname': unicode('%s from %s' % (
+                'englishname': unicode('%s (%s)' % (
                     spoken_row[2],
                     spoken_row[3]), 'utf-8')}
 
