@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 19:17:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1422
+
+    Summary:
+      response to bugtask.py code review
+    Revision:
+      launchpad--devel--0--patch-1422
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-406
+       response to bugtask.py code review
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-407
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bugtask.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-406
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-407
+
+
 2005-03-11 17:55:18 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1421
 
     Summary:

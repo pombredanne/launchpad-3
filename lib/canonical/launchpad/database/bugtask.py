@@ -1,11 +1,11 @@
-
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
+
 from sets import Set
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR, IN
+from sqlobject import DateTimeCol, ForeignKey
+from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import table
 
@@ -20,7 +20,7 @@ from canonical.lp import dbschema
 from canonical.lp.dbschema import EnumCol
 from canonical.launchpad.interfaces import IBugTask
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.database.constants import nowUTC, DEFAULT
+from canonical.database.constants import nowUTC
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -125,46 +125,47 @@ class BugTaskSet:
 
     def __getitem__(self, id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        principal = _get_authenticated_principal()
-        try:
-            task = self.table.select(self.table.q.id == id)[0]
-            if task.product:
-                # upstream task
-                if principal and (
-                    (principal.id == task.product.owner.id) or
-                    (task.assignee and principal.id == task.assignee.id)):
-                    mark_as_editable_upstream_task(task)
-                else:
-                    mark_as_readonly_upstream_task(task)
-            else:
-                # sourcepackage task
-                if principal:
-                    mark_as_editable_sourcepackage_task(task)
-                else:
-                    mark_as_readonly_sourcepackage_task(task)
+        principal = getUtility(ILaunchBag).user
 
-            return task
-        except IndexError:
-            # Convert IndexError to KeyErrors to get Zope's NotFound page
+        try:
+            task = self.table.get(id)
+        except SQLObjectNotFound, err:
             raise KeyError, id
+
+        if task.product:
+            # upstream task
+            if principal and (
+                (principal.id == task.product.owner.id) or
+                (task.assignee and principal.id == task.assignee.id)):
+                mark_task(task, IEditableUpstreamBugTask)
+            else:
+                mark_task(task, IReadOnlyUpstreamBugTask)
+        else:
+            # sourcepackage task
+            if principal:
+                mark_task(task, IEditableDistroBugTask)
+            else:
+                mark_task(task, IReadOnlyDistroBugTask)
+
+        return task
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        principal = _get_authenticated_principal()
+        user = getUtility(ILaunchBag).user
 
         for row in self.table.select(self.table.q.bugID == self.bug):
             if row.product:
                 # upstream task
-                if principal and principal.id == row.product.owner.id:
-                    mark_as_editable_upstream_task(row)
+                if user is not None and user.id == row.product.owner.id:
+                    mark_task(row, IEditableUpstreamBugTask)
                 else:
-                    mark_as_readonly_upstream_task(row)
+                    mark_task(row, IReadOnlyUpstreamBugTask)
             else:
                 # sourcepackage task
-                if principal:
-                    mark_as_editable_sourcepackage_task(task)
+                if user is not None:
+                    mark_task(task, IEditableDistroBugTask)
                 else:
-                    mark_as_readonly_sourcepackage_task(task)
+                    mark_task(task, IReadOnlyDistroBugTask)
 
             yield row
 
@@ -276,52 +277,23 @@ class BugTaskSet:
 
         return BugTask(**bugtask_args)
 
-    def add(self, ob):
-        return ob
-
-    def nextURL(self):
-        return '.'
-
-def _get_authenticated_principal():
-    # XXX, Brad Bollenbach, 2005-01-05: should possible move this into some api
-    # module that contains shortcut functions for getting at stuff in the
-    # launchbag
-    launchbag = getUtility(ILaunchBag)
-    if launchbag.login:
-        return launchbag.user
-
 def mark_task(obj, iface):
     directlyProvides(obj, iface + directlyProvidedBy(obj))
-
-def mark_as_editable_upstream_task(task):
-    mark_task(task, IEditableUpstreamBugTask)
-
-def mark_as_readonly_upstream_task(task):
-    mark_task(task, IReadOnlyUpstreamBugTask)
-
-def mark_as_editable_sourcepackage_task(task):
-    mark_task(task, IEditableDistroBugTask)
-
-def mark_as_readonly_sourcepackage_task(task):
-    mark_task(task, IReadOnlyDistroBugTask)
 
 def BugTaskFactory(context, **kw):
     return BugTask(bugID=context.context.bug, **kw)
 
 # REPORTS
-class BugTasksReport(object):
+class BugTasksReport:
 
     implements(IBugTasksReport)
 
     def __init__(self):
         # initialise the user to None, will raise an exception if the
         # calling class does not set this to a person.id
-        from canonical.launchpad.database import BugTask, Bug
         self.user = None
         self.minseverity = 0
         self.minpriority = 0
-        self.Bug = Bug
-        self.BT = BugTask
         self.showclosed = False
 
     # bugs assigned (i.e. tasks) to packages maintained by the user
@@ -337,7 +309,7 @@ class BugTasksReport(object):
 
         if not self.showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
-        return list(self.BT.select(querystr, clauseTables=clauseTables))
+        return list(BugTask.select(querystr, clauseTables=clauseTables))
 
     # bugs assigned (i.e. tasks) to products owned by the user
     def maintainedProductBugs(self):
@@ -352,7 +324,7 @@ class BugTasksReport(object):
 
         if not self.showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
-        return list(self.BT.select(querystr, clauseTables=clauseTables))
+        return list(BugTask.select(querystr, clauseTables=clauseTables))
 
     # package bugs assigned specifically to the user
     def packageAssigneeBugs(self):
@@ -364,7 +336,7 @@ class BugTasksReport(object):
             self.user.id, self.minseverity, self.minpriority)
         if not self.showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
-        return list(self.BT.select(querystr))
+        return list(BugTask.select(querystr))
 
     # product bugs assigned specifically to the user
     def productAssigneeBugs(self):
@@ -376,7 +348,7 @@ class BugTasksReport(object):
             self.user.id, self.minseverity, self.minpriority)
         if not self.showclosed:
             querystr = querystr + ' AND BugTask.status < 30'
-        return list(self.BT.select(querystr))
+        return list(BugTask.select(querystr))
 
     # all bugs assigned to a user
     def assignedBugs(self):
@@ -389,8 +361,10 @@ class BugTasksReport(object):
             bugs.add(bugtask.bug)
         for bugtask in self.productAssigneeBugs():
             bugs.add(bugtask.bug)
-        buglistwithdates = [ (bug.datecreated, bug) for bug in bugs ]
+
+        buglistwithdates = [(bug.datecreated, bug) for bug in bugs]
         buglistwithdates.sort()
         buglistwithdates.reverse()
-        bugs = [bug[1] for bug in buglistwithdates]
+        bugs = [bug for datecreated, bug in buglistwithdates]
+
         return bugs
