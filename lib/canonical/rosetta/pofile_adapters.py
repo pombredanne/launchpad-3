@@ -357,6 +357,8 @@ class TemplateImporter(object):
         # each import, if an importer does more than one,
         # has to start with a fresh parser
         self.parser = POParser(translation_factory=self)
+        # We should reset also the sequence number
+        self.len = 0
         # mark all messages as not in file (sequence=0)
         self.potemplate.expireAllMessages()
         # XXX: what policy here? small bites? lines?
@@ -456,6 +458,8 @@ class POFileImporter(object):
         # each import, if an importer does more than one,
         # has to start with a fresh parser
         self.parser = POParser(translation_factory=self)
+        # We should reset also the sequence number
+        self.len = 0
         # mark all messages as not in file (sequence=0)
         self.pofile.expireAllMessages()
         # XXX: what policy here? small bites? lines?
