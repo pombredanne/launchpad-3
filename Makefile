@@ -37,7 +37,7 @@ all: inplace runners
 ##
 ##build:
 ##	$(PYTHON) setup.py $(SETUPFLAGS) build
-inplace:
+inplace: build
 
 build:
 	$(MAKE) -C sourcecode build
