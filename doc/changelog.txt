@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-30 18:15:30 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1521
+
+    Summary:
+      another fix for test_reconnector.txt
+    Revision:
+      launchpad--devel--0--patch-1521
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-343
+       remove printing of 'thread start' from test_reconnector.txt, as it isn't significant for debugging, and can occur in one of two places.
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-344
+       remove printing of 'thread start' from test_reconnector.txt, as it isn't significant for debugging, and can occur in one of two places. really this time.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/database/ftests/test_reconnector.txt
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-343
+     steve.alexander@canonical.com/launchpad--devel--0--patch-344
+
+
 2005-03-30 16:39:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1520
 
     Summary:

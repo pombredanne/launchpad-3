@@ -87,7 +87,6 @@ Executing a query now blocks until the database connection can be reestablished.
     >>> import threading
     >>> thread_result = []
     >>> def foo():
-    ...     print "thread start"
     ...     cur.execute('SELECT 1;')
     ...     print "thread after execute"
     ...     thread_result.append(cur.fetchone()[0])
@@ -95,7 +94,6 @@ Executing a query now blocks until the database connection can be reestablished.
     >>> thread = threading.Thread(target=foo)
     >>> thread.start()
     >>> time.sleep(1)
-    thread start
     >>> thread_result
     []
     >>> thread.isAlive()
