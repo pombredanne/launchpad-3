@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-14 23:43:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1204
+
+    Summary:
+      fix LaunchBag.user's broken adaptation when no user is logged in. this
+ does not currently have a test (see bug #58/production)
+    Revision:
+      launchpad--devel--0--patch-1204
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-303
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-304
+       fix LaunchBag.user's broken adaptation when no user is logged in. this does not currently have a test (see bug #58/production)
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/webapp/launchbag.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-303
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-304
+
+
 2005-01-14 22:19:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1203
 
     Summary:
