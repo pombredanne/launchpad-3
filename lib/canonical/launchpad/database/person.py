@@ -59,7 +59,16 @@ class Person(SQLBase):
 
     def browsername(self):
         """Returns a name suitable for display on a web page."""
-        if self.displayname: return self.displayname
+        # XXX: This is *so* bogus.
+        #      1. browsername is not initialized
+        #      2. browsername is treated as a list sometimes and a
+        #         string other times
+        #      3. the docstring is totally unclear as to what the contract
+        #         for this method is
+        #      4. there is no test
+        # Steve Alexander, Tue Dec 14 14:30:38 UTC 2004
+        if self.displayname:
+            return self.displayname
         if self.familyname:
             browsername.append(self.familyname.upper())
         if self.givenname:
