@@ -31,6 +31,10 @@
             lp:url="malone/bugs/$Bug.id/productassignments/index" />
     </browser:pages>
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductBugAssignment"
+        name="+edit" />
+
     <browser:addform
         name="+new"
         schema="canonical.launchpad.interfaces.IProductBugAssignment"
@@ -83,6 +87,10 @@
             template="../templates/sourcepackagebugassignments-index.pt"
             lp:url="malone/bugs/$Bug.id/sourcepackageassignments/index" />
     </browser:pages>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
+        name="+edit" />
 
     <browser:addform
         name="+new"

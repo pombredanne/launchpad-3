@@ -30,11 +30,12 @@
            
             <td>
                 <a href=""
-                   tal:attributes="href
-                   string:/malone/projects/${bugass/product/project/name}/${bugass/product/name}"
-                   tal:content="bugass/product/name">
-                $Product.name
-                </a>
+                    tal:condition="nothing"
+                    tal:attributes="href string:/malone/projects/${bugass/product/project/name}/${bugass/product/name}"
+                    tal:content="bugass/product/name">$Product.name</a>
+                <span tal:omit-tag="" tal:content="bugass/product/name">
+                    $Product.name
+                </span>
                 <img src="++resource++download.png" 
                      title="Product Assignment" />
             </td>
@@ -84,10 +85,15 @@ This bug is essential to fix as soon as possible. It affects system stability, d
            
             <td>
                 <a href=""
-                   tal:attributes="href string:/malone/packages/${bugass/sourcepackage/name}"
-                   tal:content="bugass/sourcepackage/name">
-                $SourcePackageName.name
+                    tal:condition="nothing"
+                    tal:attributes="href string:/malone/packages/${bugass/sourcepackage/name}"
+                    tal:content="bugass/sourcepackage/name">
+                    $SourcePackageName.name
                 </a>
+                <span tal:omit-tag=""
+                    tal:content="bugass/sourcepackage/name">
+                    $SourcePackageName.name
+                </span>
                 <img src="++resource++product_icon.gif" 
                      title="Package Assignment" />
             </td>
