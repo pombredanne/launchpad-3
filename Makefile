@@ -16,9 +16,11 @@ check:
 
 debugging-on:
 	cp ./lib/canonical/canonical.debugskin-configure.zcml ./package-includes/
+	cp ./lib/canonical/canonical.apidoc-configure.zcml ./package-includes/
 
 debugging-off:
 	rm ./package-includes/canonical.debugskin-configure.zcml
+	rm ./package-includes/canonical.apidoc-configure.zcml
 
 .PHONY: check debugging-on debugging-off
 
