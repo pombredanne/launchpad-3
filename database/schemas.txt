@@ -778,7 +778,7 @@ Arch Archive Type
  into which we can only push changes from the upstream. This schema
  documents those states.
 
- 0 readwrite: ReadWrite Archive
+ 1 readwrite: ReadWrite Archive
      This archive can be written to with new changesets, it
      is an archive which we "own" and therefor are free to
      write changesets into. Note that an archive which has
@@ -787,11 +787,11 @@ Arch Archive Type
      changesets in it as we mirror the changes in the CVS
      repository.
  
- 1 readonly: Read Only Archive
+ 2 readonly: Read Only Archive
      An archive in the "readonly" state can only be published
      and read from, it cannot be written to.
      
- 2 mirrortarget: Mirror Target
+ 3 mirrortarget: Mirror Target
      We can write into this archive, but we can only write 
      changesets which have actually come from the upstream
      arch archive of which this is a mirror.
