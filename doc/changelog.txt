@@ -2,6 +2,55 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-14 21:12:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1432
+
+    Summary:
+      make the bug task's edit page team aware.
+    Revision:
+      launchpad--devel--0--patch-1432
+
+    Patches applied:
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1405
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-1
+       make the bug task edit page team aware
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-2
+       merge rf
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-3
+       merge rf
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-4
+       fix indentation, remove unused variable
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-5
+       fix indentation, remove unused variable
+    
+     * bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-6
+       merge rf
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-edit-upstream-bug-task-team-aware.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-edit-upstream-bug-task-team-aware.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/bugtask.py
+     lib/canonical/launchpad/security.py
+
+    new patches:
+     bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--base-0
+     bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-1
+     bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-2
+     bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-3
+     bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-4
+     bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-5
+     bjorn.tillenius@canonical.com/launchpad--team-awareness-edit-page--0--patch-6
+
+
 2005-03-14 19:16:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1431
 
     Summary:

@@ -12,7 +12,7 @@ from sqlobject.sqlbuilder import table
 # Zope
 from zope.exceptions import NotFoundError
 from zope.security.interfaces import Unauthorized
-from zope.component import getUtility
+from zope.component import getUtility, getAdapter
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 from zope.interface import implements
 
@@ -26,7 +26,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 
 from canonical.launchpad.interfaces import IBugTasksReport, \
     IBugTaskSet, IEditableUpstreamBugTask, IReadOnlyUpstreamBugTask, \
-    IEditableDistroBugTask, IReadOnlyDistroBugTask, ILaunchBag
+    IEditableDistroBugTask, IReadOnlyDistroBugTask, ILaunchBag, IAuthorization
 
 class BugTask(SQLBase):
     implements(IBugTask)
@@ -122,7 +122,7 @@ class BugTaskSet:
 
     def __getitem__(self, id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        principal = getUtility(ILaunchBag).user
+        user = getUtility(ILaunchBag).user
 
         try:
             task = BugTask.get(id)
@@ -131,15 +131,14 @@ class BugTaskSet:
 
         if task.product:
             # upstream task
-            if principal and (
-                (principal.id == task.product.owner.id) or
-                (task.assignee and principal.id == task.assignee.id)):
+            checker = getAdapter(task, IAuthorization, 'launchpad.Edit') 
+            if user and checker.checkAuthenticated(user):
                 mark_task(task, IEditableUpstreamBugTask)
             else:
                 mark_task(task, IReadOnlyUpstreamBugTask)
         else:
             # sourcepackage task
-            if principal:
+            if user:
                 mark_task(task, IEditableDistroBugTask)
             else:
                 mark_task(task, IReadOnlyDistroBugTask)
@@ -150,21 +149,24 @@ class BugTaskSet:
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         user = getUtility(ILaunchBag).user
 
-        for row in BugTask.select(BugTask.q.bugID == self.bug):
-            if row.product:
+        for task in BugTask.select(self.table.q.bugID == self.bug):
+            if task.product:
                 # upstream task
-                if user is not None and user.id == row.product.owner.id:
-                    mark_task(row, IEditableUpstreamBugTask)
+                checker = getAdapter(task, IAuthorization, 'launchpad.Edit') 
+                if user is not None and checker.checkAuthenticated(principal):
+                    mark_task(task, IEditableUpstreamBugTask)
                 else:
-                    mark_task(row, IReadOnlyUpstreamBugTask)
+                    mark_task(task, IReadOnlyUpstreamBugTask)
             else:
                 # sourcepackage task
+                # XXX: Bjorn Tillenius, 2005-03-10: This was broken, a test for
+                # this part should be added.
                 if user is not None:
                     mark_task(task, IEditableDistroBugTask)
                 else:
                     mark_task(task, IReadOnlyDistroBugTask)
 
-            yield row
+            yield task
 
     def get(self, id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""

@@ -95,15 +95,6 @@ class EditMilestoneByProductMaintainer(AuthorizationBase):
         return self.obj.product.owner.id == user.id
 
 
-class EditByProductOwnerOrAssignee:
-    permission = 'launchpad.Edit'
-    usedfor = IEditableUpstreamBugTask
-
-    def checkAuthenticated(self, user):
-        return (self.obj.product.owner.id == user.id or
-                self.obj.assignee.id == user.id)
-
-
 class EditTeamByTeamOwnerOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ITeam
@@ -129,7 +120,7 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
         return self.obj.id == user.id or self.user.inTeam(admins)
 
 
-class TaskEditableByMaintainerOrAssignee(AuthorizationBase):
+class EditByProductOwnerOrAssignee(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IBugTask
 
