@@ -1,24 +1,23 @@
+from canonical.authserver.client.sshkeys import TwistedAuthServer
+
 from twisted.conch import avatar
 from twisted.conch.ssh import session, filetransfer
-#from twisted.conch.interfaces import ISession
+from twisted.conch.ssh import factory, userauth, connection
+from twisted.conch.checkers import SSHPublicKeyDatabase
+from twisted.cred.checkers import ICredentialsChecker
+
+from zope.interface import implements
 
 
 class SubsystemOnlySession(session.SSHSession, object):
     """A session adapter that disables every request except request_subsystem"""
     def __getattribute__(self, name):
         # Get out the big hammer :)
+        # (I'm too lazy to override all the different request_ methods
+        # individually, or write an ISession adapter to give the same effect.)
         if name.startswith('request') and name != 'request_subsystem':
             raise AttributeError, name
         return object.__getattribute__(self, name)
-
-    #def request_shell(self, data):
-    #    return False
-    #def request_exec(self, data):
-    #    return False
-    #def request_pty_req(self, data):
-    #    return False
-    #def request_window_change(self, data):
-    #    return False
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
@@ -29,43 +28,44 @@ class SFTPOnlyAvatar(avatar.ConchUser):
     subsystemLookup = {'sftp': filetransfer.FileTransferServer}
 
 
-#class SFTPOnlySessionAdapter:
-#    implements(ISession)
-#
-#    def __init__(self, avatar):
-#        """
-#        We don't use it, but the adapter is passed the avatar as its first
-#        argument.
-#        """
-#
-#    def getPty(self, term, windowSize, attrs):
-#        """Disabled."""
-#        pass
-#    
-#    def execCommand(self, proto, cmd):
-#        """Disabled"""
-#        # XXX: Is there a better way to do this?
-#        raise Exception("no executing commands")
-#
-#    def openShell(self, trans):
-#        """Disabled"""
-#        # XXX: Is there a better way to do this?
-#        raise Exception("no executing commands")
-#
-#    def windowChanged(self, newWindowSize):
-#        """Disabled"""
-#        pass
-#
-#    def eofReceived(self):
-#        # XXX: Do we need to do anything here?
-#        pass
-#
-#    def closed(self):
-#        # XXX: Do we need to do anything here?
-#        pass
-#        
-#
-#
-#from twisted.python import components
-#components.registerAdapter(SFTPOnlySessionAdapter, SFTPOnlyAvatar, ISession)
+class Realm:
+    implements(portal.IRealm)
 
+    def requestAvatar(self, avatarId, mind, *interfaces):
+        return interfaces[0], SFTPOnlyAvatar(avatarId), lambda: None
+
+
+class Factory(factory.SSHFactory):
+    publicKeys = {
+        'ssh-rsa': hostPublicKey
+    }
+    privateKeys = {
+        'ssh-rsa': hostPrivateKey
+    }
+    services = {
+        'ssh-userauth': userauth.SSHUserAuthServer,
+        'ssh-connection': connection.SSHConnection
+    }
+
+
+class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
+    implements(ICredentialsChecker)
+
+    def __init__(self, authserverURL):
+        self.authserver = TwistedAuthServer(authserverURL)
+
+    def checkKey(self, credentials):
+        authorizedKeys = self.authserver.getSSHKeys(credentials.username)
+        authorizedKeys.addCallback(self._cb_hasAuthorisedKey, credentials)
+        return authorizedKeys
+                
+    def _cb_hasAuthorisedKey(self, keys, credentials):
+        for keytype, keytext in credentials:
+            try:
+                if base64.decodestring(l2[1]) == credentials.blob:
+                    return True
+            except binascii.Error:
+                continue
+
+        return False
+        
