@@ -1,4 +1,7 @@
-"""editview.py -- editview's for the Launchpad application."""
+"""editview.py -- editview for the Launchpad application."""
+
+__metaclass__ = type
+
 from datetime import datetime
 from transaction import get_transaction
 
@@ -17,6 +20,13 @@ class SQLObjectEditView(EditView):
     an edit form, so that listeners can figure out *what* changed."""
 
     def update(self):
+        # This method's code is mostly copy-and-pasted from
+        # EditView.update due to the fact that we want to change the
+        # semantics of the event notification to make it easy to do
+        # things like figure out what /changed/ on a bug. The bits
+        # we've customized in this method collect the previous and new
+        # values of a modified object, and notify
+        # SQLObjectModifiedEvent subscribers with that data.
         if self.update_status is not None:
             # We've been called before. Just return the status we previously
             # computed.

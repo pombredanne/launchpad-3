@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 23:01:27 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1426
+
+    Summary:
+      response to editview.py code review
+    Revision:
+      launchpad--devel--0--patch-1426
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-412
+       response to editview.py code review
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/editview.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-412
+
+
 2005-03-11 22:29:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1425
 
     Summary:
