@@ -64,7 +64,7 @@ class DistroApp(object):
             'src'     : DistroSourcesApp,
             'bin'     : DistroBinariesApp,
             'team'    : DistroTeamApp,
-            'people'  : DistroPeopleApp,
+            'people'  : PeopleApp,
         }
         if container.has_key(name):
             return container[name](self.distribution)
