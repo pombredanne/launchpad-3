@@ -297,8 +297,8 @@ VALUES ((SELECT id FROM Distrorelease WHERE name = 'grumpy'),
 /*
  * Sample data for Rosetta
  */
-/*
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín' );*/
+
+INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín' );
 INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
 	'gnome', 'GNOME', 'The GNOME Project', 'foo', 'bar', 'http://www.gnome.org/' );
@@ -317,8 +317,8 @@ INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, descr
 VALUES ((SELECT id FROM Project WHERE name='iso-codes'),
 	(SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
 	'iso-codes', 'iso-codes', 'The iso-codes', 'foo', 'bar', 'http://www.novell.com/' );
-/*INSERT INTO ArchArchive (name, title, description, visible)
-VALUES ('gnome', 'GNOME', 'The GNOME Project', false);*/
+INSERT INTO ArchArchive (name, title, description, visible)
+VALUES ('gnome', 'GNOME', 'The GNOME Project', false);
 INSERT INTO ArchArchive (name, title, description, visible)
 VALUES ('iso-codes', 'iso-codes', 'The iso-codes', false);
 INSERT INTO ArchNamespace (archarchive, category, branch, version, visible)
@@ -351,8 +351,8 @@ INSERT INTO POTemplate (product, branch, priority, name, title,
 			path, iscurrent, messagecount, owner)
 VALUES ((SELECT id FROM Product WHERE name = 'evolution'),
         (SELECT id FROM Branch
-	WHERE title = 'Evolution 1.5.90'),
-	2, 'evolution-1.5.90',
+	WHERE title = 'Evolution 2.0'),
+	2, 'evolution-2.0',
 	'Main POT file for the Evolution 2.0 development branch',
 	'I suppose we should create a long description here....',
 	'Copyright (C) 2003  Ximian Inc.',
@@ -360,6 +360,22 @@ VALUES ((SELECT id FROM Product WHERE name = 'evolution'),
 	timestamp '2004-08-17 09:10',
 	'po/', TRUE, 3, 	
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'));
+
+INSERT INTO POTemplate (product, branch, priority, name, title,
+			description, copyright, license, datecreated,
+			path, iscurrent, messagecount, owner)
+VALUES ((SELECT id FROM Product WHERE name = 'iso-codes'),
+        (SELECT id FROM Branch
+	WHERE title = 'Iso-codes 0.35'),
+	2, 'iso_639',
+	'POT file for the iso_639 strings',
+	'I suppose we should create a long description here....',
+	'Copyright',
+	(SELECT id FROM License WHERE legalese = 'GPL-2'),
+	timestamp '2004-08-17 09:10',
+	'iso_639/', TRUE, 3, 	
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'));
+
 
 --  1
 INSERT INTO POMsgID (msgid) VALUES ('evolution addressbook');
@@ -705,6 +721,28 @@ VALUES ((SELECT id FROM POTemplate WHERE name = 'evolution-2.0'),
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	2, 0, 1, 2);
 
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+		    lasttranslator, currentcount, updatescount, rosettacount,
+		    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'iso_639'),
+        (SELECT id FROM Language WHERE code = 'cy'),
+        '\n',
+        '\n',
+	FALSE,
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+	0, 0, 0, 0);
+
+INSERT INTO POFile (potemplate, language, topcomment, header, fuzzyheader,
+		    lasttranslator, currentcount, updatescount, rosettacount,
+		    pluralforms)
+VALUES ((SELECT id FROM POTemplate WHERE name = 'iso_639'),
+        (SELECT id FROM Language WHERE code = 'es'),
+        '\n',
+        '\n',
+	FALSE,
+	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
+	0, 0, 0, 0);
+
 INSERT INTO POTranslation (translation)
 VALUES ('libreta de direcciones de Evolution');
 
@@ -712,12 +750,12 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete,
 		      obsolete, fuzzy) 
 VALUES (1, 1, 1, 1, TRUE, FALSE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (16, 1, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (16, 1, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
@@ -729,12 +767,12 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obso
 		      fuzzy) 
 VALUES (2, 2, 1, 1, TRUE, FALSE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (17, 2, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (17, 2, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
@@ -746,12 +784,12 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obso
 		      fuzzy) 
 VALUES (3, 3, 1, 1, FALSE, FALSE, TRUE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (18, 3, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (18, 3, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
@@ -767,22 +805,22 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obso
 		      fuzzy) 
 VALUES (93, 4, 1, 1, TRUE, FALSE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (19, 93, now(), now(), TRUE, 0);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (19, 94, now(), now(), TRUE, 1);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (19, 4, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (19, 5, 1, now(), now(), TRUE, 1,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
@@ -794,18 +832,18 @@ INSERT INTO POMsgSet (primemsgid, sequence, potemplate, pofile, iscomplete, obso
 		      fuzzy) 
 VALUES (95, 5, 1, 1, TRUE, TRUE, FALSE);
 
-INSERT INTO POMsgIDSighting (pomsgset, pomsgid, firstseen,
-			      lastseen, inpofile, pluralform)
+INSERT INTO POMsgIDSighting (pomsgset, pomsgid, datefirstseen,
+			      datelastseen, inlastrevision, pluralform)
 VALUES (20, 95, now(), now(), TRUE, 0);
 
-INSERT INTO POTranslationSighting (pomsgset, potranslation, license, firstseen, lasttouched, 
-				   inpofile, pluralform, person, origin)
+INSERT INTO POTranslationSighting (pomsgset, potranslation, license, datefirstseen, datelastactive, 
+				   inlastrevision, pluralform, person, origin)
 VALUES (20, 6, 1, now(), now(), TRUE, 0,
 	(SELECT id FROM Person WHERE displayname = 'Carlos Perelló Marín'),
 	0);
 
- 
- 
+
+
 /* Malone sample data */
 INSERT INTO Person (displayname, givenname, familyname)
 VALUES  ('Dave Miller', 'David', 'Miller');

@@ -10,7 +10,7 @@ this is initial data for launchpad. unlike the sample data, this will be loaded 
 -- Person
 INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Mark Shuttleworth', 'Mark', 'Shuttleworth' );       -- 1
 INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Robert Collins', 'Robert', 'Collins' );             -- 2
-
+/*
 INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Dave Miller', 'David', 'Miller' );                  -- 2
 INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Colin Watson', 'Colin', 'Watson' );                 -- 3
 INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Scott James Remnant', 'Scott James', 'Remnant' );   -- 4
@@ -21,6 +21,7 @@ INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Christian Re
 INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Alexander Limi', 'Alexander', 'Limi' );             -- 10
 INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Steve Alexander', 'Steve', 'Alexander' );           -- 11
 INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín' ); -- 12
+*/
 
 ---
 
@@ -50,7 +51,7 @@ INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, descr
 INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl ) VALUES ( 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real proejcts ASAP.', 'http://arch.ubuntu.com/' );
 INSERT INTO Product ( project, owner, name, displayname, title, shortdesc, description, homepageurl ) VALUES ( 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', 'http://arch.ubuntu.com/' );
 
-
+/*
 -- Sourcepackage
 INSERT INTO Sourcepackage (maintainer, name, title, description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
@@ -315,5 +316,12 @@ VALUES ((SELECT id FROM ArchNamespace
 	       version = '1.5.90'),
 	'Evolution 1.5.90', 'text',
 	(SELECT id FROM Person WHERE displayname = 'Jeff Waugh'));
+*/
+
+/*
+--Manifest
+INSERT INTO Manifest (owner) 
+VALUES ((select id from Person where presentationname='Mark Shuttleworth'));
+*/
 
 
