@@ -1,1 +1,0 @@
-# whoompf, a package

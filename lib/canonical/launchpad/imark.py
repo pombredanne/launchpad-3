@@ -16,10 +16,6 @@ class IPOExport(Interface):
         """Exports the .po file for the specific language"""
 
 
-class IRosettaApplication(Interface):
-    """Rosetta application class."""
-
-
 class IRosettaStats(Interface):
     """Rosetta-related statistics."""
 
@@ -55,10 +51,4 @@ class IRosettaProject(IRosettaStats, IProject):
         """Return the product belonging to this project with the given
         name."""
 
-
-class IDOAPApplication(Interface):
-    """DOAP application class."""
-
-class IFOAFApplication(Interface):
-    """FOAF application class."""
 

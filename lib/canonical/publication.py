@@ -18,6 +18,7 @@ from zope.interface import implements, Interface
 from zope.interface import providedBy
 
 import canonical.launchpad.layers as layers
+from canonical.launchpad.interfaces import ILaunchpadApplication
 
 from zope.component import queryView, getDefaultViewName, queryMultiView
 from zope.component import getUtility
@@ -97,7 +98,7 @@ class SubURLTraverser:
 
 
 class RootObject(Location):
-    implements(IContainmentRoot)
+    implements(IContainmentRoot, ILaunchpadApplication)
 
 
 

@@ -1,0 +1,41 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    i18n_domain="canonical.launchpad">
+
+    <!-- Session machinery. -->
+    <utility
+        component="canonical.launchpad.webapp.session.idmanager"
+        provides="zope.app.session.interfaces.IClientIdManager"
+        />
+    <utility
+        component="canonical.launchpad.webapp.session.datacontainer"
+        provides="zope.app.session.interfaces.ISessionDataContainer"
+        />
+
+    <!-- Login and logout pages. -->
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadApplication"
+        class="canonical.launchpad.webapp.login.BasicLoginPage"
+        permission="launchpad.AnyPerson"
+        name="+basiclogin"
+        attribute="login"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadApplication"
+        template="../templates/launchpad-login.pt"
+        class="canonical.launchpad.webapp.login.CookieLoginPage"
+        permission="zope.Public"
+        name="+login"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadApplication"
+        template="../templates/launchpad-logout.pt"
+        class="canonical.launchpad.webapp.login.CookieLogoutPage"
+        permission="zope.Public"
+        name="+logout"
+        />
+
+</configure>

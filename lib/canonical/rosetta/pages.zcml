@@ -160,12 +160,6 @@
           lp:url="Rosetta/search-results" />
   </pages>
 
-  <page for="canonical.launchpad.interfaces.IRosettaApplication"
-        class="canonical.rosetta.browser.LogIn"
-        permission="launchpad.AnyPerson"
-        name="+login"
-        attribute="login"
-        lp:url="Rosetta/+login" />
 
 </configure>
 <!-- arch-tag: bd9952cf-5198-4ab5-a97f-8d2d9893b313 -->

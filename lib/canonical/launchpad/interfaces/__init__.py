@@ -13,7 +13,6 @@ from canonical.launchpad.interfaces.productseries import *
 from canonical.launchpad.interfaces.productrelease import *
 from canonical.launchpad.interfaces.sourcesource import *
 from canonical.launchpad.interfaces.sourcepackage import *
-from canonical.launchpad.interfaces.malone import *
 from canonical.launchpad.interfaces.bug import *
 from canonical.launchpad.interfaces.bugmessage import *
 from canonical.launchpad.interfaces.bugactivity import *
@@ -43,6 +42,7 @@ from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.bounty import *
+from canonical.launchpad.interfaces.launchpad import *
 
 # these will go...
 from canonical.launchpad.iandrew import *

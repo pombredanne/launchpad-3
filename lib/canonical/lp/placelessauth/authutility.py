@@ -2,9 +2,9 @@ from canonical.lp.placelessauth.interfaces import IPlacelessAuthUtility, \
      IPlacelessLoginSource
 from zope.interface import implements
 from zope.app import zapi
+from zope.app.session.interfaces import ISession
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
-
 
 class PlacelessAuthUtility(object):
     """ An authentication service which holds no state aside from its
@@ -17,22 +17,42 @@ class PlacelessAuthUtility(object):
                                   'Anonymous User')
         self.nobody.__parent__ = self
 
+    def _authenticateUsingBasicAuth(self, credentials):
+        login = credentials.getLogin()
+        if login is not None:
+            login_src = zapi.getUtility(IPlacelessLoginSource)
+            principal = login_src.getPrincipalByLogin(login)
+            if principal is not None:
+                password = credentials.getPassword()
+                if principal.validate(password):
+                    return principal
+
+    def _authenticateUsingCookieAuth(self, request):
+        session = ISession(request)
+        authdata = session['launchpad.authenticateduser']
+        if authdata.get('personid') is None:
+            return None
+        else:
+            personid = authdata['personid']
+            login_src = zapi.getUtility(IPlacelessLoginSource)
+            return login_src.getPrincipal(personid)
+
     def authenticate(self, request):
         """ See `IAuthenticationService`. """
+        # To avoid confusion (hopefully), basic auth trumps cookie auth
+        # totally, and all the time.  If there is any basic auth at all,
+        # then cookie auth won't even be considered.
 
-        # XXX allow multiple placeless principal sources?
-        login_src = zapi.getUtility(IPlacelessLoginSource)
         # XXX allow authentication scheme to be put into a view; for
         # now, use basic auth by specifying ILoginPassword.
-        a = ILoginPassword(request, None)
-        if a is not None:
-            login = a.getLogin()
-            if login is not None:
-                p = login_src.getPrincipalByLogin(login)
-                if p is not None:
-                    password = a.getPassword()
-                    if p.validate(password):
-                        return p
+        credentials = ILoginPassword(request, None)
+        if credentials is not None and credentials.getLogin() is not None:
+            return self._authenticateUsingBasicAuth(credentials)
+        else:
+            # Hack to make us not even think of using a session if there
+            # isn't already a cookie there.
+            if request.cookies.get('launchpad') is not None:
+                return self._authenticateUsingCookieAuth(request)
 
     def unauthenticatedPrincipal(self):
         """ See `IAuthenticationService`. """

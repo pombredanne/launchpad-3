@@ -95,6 +95,9 @@
   <!--  Not using folders
   <include package="zope.app.folder" />
   -->
+  <!-- Session machinery -->
+  <include file="zopeappsession.zcml" />
+
   <!-- Browser Configurations -->
   <include file="zopeappbrowser.zcml" />
 

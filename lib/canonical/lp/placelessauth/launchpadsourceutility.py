@@ -1,10 +1,12 @@
+from canonical.launchpad.interfaces import IPersonSet
 from canonical.lp.placelessauth.interfaces import IPlacelessLoginSource
 from canonical.lp.placelessauth.interfaces import IPasswordEncryptor
 from canonical.lp.placelessauth.interfaces import ILaunchpadPrincipal
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 from zope.interface import implements
-from zope.app import zapi
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 class LaunchpadLoginSource(object):
     """
@@ -18,62 +20,64 @@ class LaunchpadLoginSource(object):
         """
         Return a principal based on the person with the provided id.
         """
-        conn = self._getDBConnection()
-        cur = conn.cursor()
-        statement = ('''select id, displayname, givenname, familyname,
-        password from person where id=%s''', (id,))
-        cur.execute(*statement)
-        data = cur.fetchone()
-        if data:
-            return self._getPrincipal(*data)
-        return None
+        person = getUtility(IPersonSet).get(id)
+        if person is not None:
+            return self._principalForPerson(person)
+        else:
+            return None
 
     def getPrincipals(self, name):
         """
         Return a list of principals based on the persons who have email
         addresses starting with "name".
         """
-        conn = self._getDBConnection()
-        cur = conn.cursor()
-        likename = '%%%s%%' % name
-        statement = ("""select distinct p.id, displayname, givenname,
-        familyname, password from person as p, emailaddress as e where p.id =
-        e.person and e.email like %s""", (likename,))
-        cur.execute(*statement)
-        data = cur.fetchall()
-        L = []
-        if data:
-            for row in data:
-                L.append(self._getPrincipal(*row))
-        return L
+        raise NotImplementedError
+
+        ##conn = self._getDBConnection()
+        ##cur = conn.cursor()
+        ##likename = '%%%s%%' % name
+        ##statement = ("""select distinct p.id, displayname, givenname,
+        ##familyname, password from person as p, emailaddress as e where p.id =
+        ##e.person and e.email like %s""", (likename,))
+        ##cur.execute(*statement)
+        ##data = cur.fetchall()
+        ##L = []
+        ##if data:
+        ##    for row in data:
+        ##        L.append(self._getPrincipal(*row))
+        ##return L
 
     def getPrincipalByLogin(self, login):
         """
         Return a principal based on the person with the email address
         signified by "login".
         """
-        conn = self._getDBConnection()
-        cur = conn.cursor()
-        statement = ("""select p.id, displayname, givenname, familyname,
-        password from person as p, emailaddress as e where p.id
-        = e.person and e.email=%s""", (login,))
-        cur.execute(*statement)
-        data = cur.fetchone()
-        if data:
-            return self._getPrincipal(*data)
-        return None
+        person = getUtility(IPersonSet).getByEmail(login)
+        if person is not None:
+            return self._principalForPerson(person)
+        else:
+            return None
 
-    def _getPrincipal(self, id, presentationname, givenname, familyname,
-                      password):
+    ##def _getPrincipal(self, id, presentationname, givenname, familyname,
+    ##                  password):
+    ##    return LaunchpadPrincipal(
+    ##        id, presentationname, '%s %s' % (givenname, familyname), password
+    ##        )
+
+    def _principalForPerson(self, person):
+        person = removeSecurityProxy(person)
         return LaunchpadPrincipal(
-            id, presentationname, '%s %s' % (givenname, familyname), password
+            person.id,
+            person.displayname,
+            '%s %s' % (person.givenname, person.familyname),
+            person.password
             )
-        
-    def _getDBConnection(self):
-        name = zapi.getUtility(IConnectionName).name
-        adapter = zapi.getUtility(IZopeDatabaseAdapter, name)
-        conn = adapter()
-        return conn
+
+    ##def _getDBConnection(self):
+    ##    name = getUtility(IConnectionName).name
+    ##    adapter = getUtility(IZopeDatabaseAdapter, name)
+    ##    conn = adapter()
+    ##    return conn
 
 class LaunchpadPrincipal(object):
 
@@ -89,6 +93,6 @@ class LaunchpadPrincipal(object):
         return self.title
 
     def validate(self, pw):
-        encryptor = zapi.getUtility(IPasswordEncryptor)
+        encryptor = getUtility(IPasswordEncryptor)
         return encryptor.validate(pw, self.__pwd)
 

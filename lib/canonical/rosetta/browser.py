@@ -1038,22 +1038,3 @@ class ViewTranslationEffortCategory:
         for language in request_languages(self.request):
             yield LanguageTemplates(language, self.context.poTemplates())
 
-#
-# XXX Mark Shuttleworth 02/10/04 I've copied this into Doap, maybe Login
-#     needs to be common code in some way?
-#
-class LogIn:
-
-    def isSameHost(self, url):
-        """Returns True if the url appears to be from the same host as
-        we are."""
-        return url.startswith(self.request.getApplicationURL())
-
-    def login(self):
-        referer = self.request.getHeader('referer')  # Traditional w3c speling
-        if referer and self.isSameHost(referer):
-            self.request.response.redirect(referer)
-        else:
-            self.request.response.redirect(self.request.getURL(1))
-        return ''
-

@@ -18,6 +18,16 @@
       factory="canonical.lp.placelessauth.handle"
       />
 
+  <subscriber
+      for="canonical.launchpad.webapp.login.ILoggedInEvent"
+      factory="canonical.lp.placelessauth.handle"
+      />
+
+  <subscriber
+      for="canonical.launchpad.webapp.login.ILoggedOutEvent"
+      factory="canonical.lp.placelessauth.handle"
+      />
+
   <utility
       factory="canonical.lp.placelessauth.encryption.SSHADigestEncryptor"
       provides="canonical.lp.placelessauth.interfaces.IPasswordEncryptor"

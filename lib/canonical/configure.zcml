@@ -54,6 +54,7 @@
         provides="zope.app.server.servertype.IServerType"
         />
 
+
     <!-- This is an index.html view on the root object.
         The root object is not ever published itself.  Only its views are.
         -->
@@ -135,5 +136,10 @@
             template="launchpad/templates/errorservice-tbentry.pt"
             />
     </browser:pages>
+
+  <subscriber
+      for="zope.app.appsetup.IDatabaseOpenedEvent"
+      factory="canonical.zodb.bootstrapSubscriber"
+      />
 
 </configure>

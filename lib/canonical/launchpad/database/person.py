@@ -8,6 +8,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, SQLObjectNotFound
+from sqlobject import SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import UTC_NOW
 
@@ -45,6 +46,8 @@ class Person(SQLBase):
     languages = RelatedJoin('Language', joinColumn='person',
         otherColumn='language', intermediateTable='PersonLanguage')
 
+    # XXX Steve Alexander, 2004-11-15.
+    #     The rosetta team need to clean this up.
     _emailsJoin = MultipleJoin('RosettaEmailAddress', joinColumn='person')
 
     def emails(self):
@@ -104,8 +107,31 @@ class PersonSet(object):
 
     def __getitem__(self, personid):
         """See IPersonSet."""
-        return Person.get(personid)
+        person = self.get(personid)
+        if person is None:
+            raise KeyError, personid
+        else:
+            return person
 
+    def get(self, personid, default=None):
+        """See IPersonSet."""
+        try:
+            return Person.get(personid)
+        except SQLObjectNotFound:
+            return default
+
+    def getByEmail(self, email, default=None):
+        """See IPersonSet."""
+        results = EmailAddress.selectBy(email=email)
+        resultscount = results.count()
+        if resultscount == 0:
+            return default
+        elif resultscount == 1:
+            return results[0].person
+        else:
+            raise AssertionError(
+                'There were %s email addresses matching %s'
+                % (resultscount, email))
 
 def PersonFactory(context, **kw):
     now = datetime.utcnow()

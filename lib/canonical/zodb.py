@@ -13,11 +13,13 @@ __metaclass__ = type
 import zope.thread
 from persistent.dict import PersistentDict
 from zope.security.checker import ProxyFactory
-
+from BTrees.OOBTree import OOBTree
+from transaction import get_transaction
 
 class ZODBConnection(zope.thread.local):
     """Thread local that stores the top-level ZODB object we care about."""
     passwordresets = None
+    sessiondata = None
 
 zodbconnection = ZODBConnection()
 
@@ -35,12 +37,24 @@ def set_up_zodb_if_needed(root):
         #  zeo clients.)
         from canonical.auth import PasswordResets
         app['passwordresets'] = PasswordResets()
+    if app.get('sessiondata') is None:
+        app['sessiondata'] = OOBTree()
+
+def bootstrapSubscriber(event):
+    """Subscriber to the IDataBaseOpenedEvent.
+
+    Creates zodb stuff if not already created.
+    """
+    db = event.database
+    connection = db.open()
+    root = connection.root()
+    set_up_zodb_if_needed(root)
+    get_transaction().commit()
+    connection.close()
 
 def handle_before_traversal(root):
-    # XXX Move the next two lines to a startup event handler
-    set_up_zodb_if_needed(root)
-
     app = root[root_name]
-    # Put the password resets into the thread local
+    # Put the stuff we want access to in the thread local.
     zodbconnection.passwordresets = ProxyFactory(app['passwordresets'])
+    zodbconnection.sessiondata = app['sessiondata']
 

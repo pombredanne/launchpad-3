@@ -103,8 +103,8 @@ class FunctionalTestSetup(object):
             logging.root.addHandler(logging.StreamHandler(self.log))
             self.base_storage = DemoStorage("Memory Storage")
             self.db = DB(self.base_storage)
-            ##self.app = Debugger(self.db, config_file)
-            self.app = Debugger(None, config_file)
+            self.app = Debugger(self.db, config_file)
+            ##self.app = Debugger(None, config_file)
             self.connection = None
             self._config_file = config_file
             self._init = True
