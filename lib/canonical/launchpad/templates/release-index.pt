@@ -28,16 +28,16 @@
 
      <div class="portletContent even">
 
-     <p><a tal:attributes="href string:/soyuz/distros/${distro/name}">
-     Home Page</a>
-
-     <p><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
-      Releases</a>
-     <p><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
-      Source Packages</a>
-
-     <p><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
-     Binary Packages</a>
+     <ul>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
+     Home Page</a></li>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
+      Releases</a></li>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
+      Source Packages</a></li>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+     Binary Packages</a></li>
+     </ul>
 
      </div>
    </div>  
@@ -47,8 +47,10 @@
   <h4>Local Links</h4>
    <div class="portletBody">
      <div class="portletContent even">
-     <p><a href="+deliver">Deliver this Release</a></p>
-     <p><a href="+edit">Edit Release Information</a></p>
+     <ul>
+     <li><a href="+deliver">Deliver this Release</a></li>
+     <li><a href="+edit">Edit Release Information</a></li>
+     </ul>
      </div>
    </div>  
  </div>
@@ -75,13 +77,6 @@
 	  <span tal:content="context/release/description">description</span>   
 	 </div>
 
-<!-- Throw away this field
-        <h4>Short Description</h4>
-
-        <div>
-	  <span tal:content="context/release/shortdesc">short</span>
-	</div>
--->
          <h4>Release Information</h4>
 
          <ul>
