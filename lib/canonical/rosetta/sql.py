@@ -7,8 +7,30 @@ from sqlobject import ForeignKey, MultipleJoin, IntCol, BoolCol, StringCol, \
 from zope.interface import implements
 from canonical.rosetta import pofile
 from types import NoneType
+from datetime import datetime
 
 __metaclass__ = type
+
+standardTopComment = '''# %(languagename)s translation for %(projectname)s
+# Copyright (C) %(year)s
+# This file is distributed under the same license as the iso-codes package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, %(year)s.
+# 
+'''
+
+standardHeader = '''msgid ""
+msgstr ""
+"Project-Id-Version: %(projectname)s\n"
+"Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>\n"
+"POT-Creation-Date: %(date)s\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: %(languagename)s <%(languagecode)s@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+'''
+
 
 class RosettaProjects:
     implements(IProjects)
@@ -209,13 +231,32 @@ class RosettaPOTemplate(SQLBase):
                                    obsolete=False,
                                    fuzzy=False)
 
-    def createPOFile(self, language):
-        # XXX: are we getting a string or a IRosettaLanguage object?
+    def createPOFile(self, language, variant):
+        # assume we are getting a IRosettaLanguage object
         if RosettaPOFile.selectBy(poTemplate=self, language=language).count():
             raise KeyError, "This template already has a POFile for %s" % language.englishName
-        # FIXME: this will not run, there are a few notNull columns missing
+        now = datetime.now()
+        data = {
+            'year': now.year,
+            'languagename': language.englishName,
+            'languagecode': language.code,
+            'projectname': project.title,
+            'date': now.isoformat(' '),
+            }
         return RosettaPOFile(poTemplate=self,
-                             language=language)
+                             language=language,
+                             fuzzyHeader=True,
+                             title='%(languagename)s translation for %(projectname)s' % data,
+                             #description="",
+                             topComment=standardTopComment % data,
+                             header=standardHeader % data,
+                             #lastTranslator=FIXME,
+                             translatedCountCached=0,
+                             #updatesCount=0,
+                             rosettaOnlyCountCached=0,
+                             #owner=FIXME,
+                             pluralForms=2, #FIXME
+                             variant=variant)
 
 
 class RosettaPOFile(SQLBase):
