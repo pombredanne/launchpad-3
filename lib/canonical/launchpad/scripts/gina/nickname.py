@@ -6,7 +6,7 @@ VALID_EMAIL_1 = re.compile(
     r"^[_\.0-9a-z-+]+@([0-9a-z][0-9a-z-]+\.)+[a-z]{2,4}$")
 VALID_EMAIL_2 = re.compile(
     r"^[_\.0-9a-z-]+@([0-9a-z][0-9a-z-]+)$")
-MIN_NICK_LENGTH = 1
+MIN_NICK_LENGTH = 2
 
 class NicknameGenerationError(Exception):
     """I get raised when something went wrong generating
@@ -64,7 +64,7 @@ def generate_nick(email_addr, registered=_nick_registered,
                                       % email_addr)
 
     user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
-    user = user.replace(".", "-")
+    user = user.replace(".", "-").replace("_", "-")
     domain_parts = domain.split(".")
 
     generated_nick = user

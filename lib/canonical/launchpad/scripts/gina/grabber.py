@@ -55,7 +55,7 @@ def do_packages(source_map, bin_map, lp, kdb, keyrings, component):
 
         sources = apt_pkg.ParseTagFile(srcfile)
         while sources.Step():
-            srcpkg = SourcePackageRelease(component=component, 
+            srcpkg = SourcePackageRelease(kdb, component=component, 
                                           **dict(sources.Section))
             source_map[srcpkg.package] = srcpkg
 
@@ -80,7 +80,7 @@ def do_sections(lp, kdb):
 if __name__ == "__main__":
     # get the DB abstractors
     lp = Launchpad(LPDB, distrorelease, arch)
-    kdb = Katie(KTDB)
+    kdb = Katie(KTDB, distrorelease)
 
     # Comment this out if you need to disable the librarian integration
     # for a given run of gina. Note that without the librarian; lucille

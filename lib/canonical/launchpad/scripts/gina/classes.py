@@ -127,7 +127,9 @@ class SourcePackageRelease(AbstractPackageRelease):
                              # (Roland Bauerschmidt <rb@debian.org>, 
                              #  Marc Haber <mh+debian-packages@zugschlus.de>
     ]
-    def __init__(self, **args):
+
+    def __init__(self, kdb, **args):
+        sentinel = object()
         for k, v in args.items():
             if k == 'Binary':
                 self.binaries = stripseq(v.split(","))
@@ -148,6 +150,15 @@ class SourcePackageRelease(AbstractPackageRelease):
                 self.uploaders = [person.split(" ", 1) for person in people]
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
+        if getattr(self, 'section', sentinel) == sentinel:
+            print "Package %s lacks a section, looking it up..." % self.package
+            try:
+                self.section = kdb.getSourceSection(self.package)
+                if '/' in self.section:
+                    self.component, self.section = self.section.split("/")
+            except:
+                print "I had to assume 'misc'"
+                self.section = 'misc'
 
     def do_package(self, dir, package_root):
         self.package_root = package_root

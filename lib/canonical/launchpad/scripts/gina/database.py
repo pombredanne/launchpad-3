@@ -76,6 +76,11 @@ class SQLThing:
             raise
 
 class Katie(SQLThing):
+
+    def __init__(self, bar, suite):
+        SQLThing.__init__(self,bar)
+        self.suite = suite
+
     def getSourcePackageRelease(self, name, version):  
         return self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
@@ -95,6 +100,19 @@ class Katie(SQLThing):
     def getSections(self):
         return self._query("""SELECT section FROM section""")
 
+    def getSourceSection(self, sourcepackage):
+        return self._query_single("""
+        SELECT section.section
+          FROM section,
+               override,
+               suite
+
+         WHERE override.section = section.id
+           AND suite.id = override.suite
+           AND override.package = %s
+           AND suite.suite_name = %s
+        """, (sourcepackage, self.suite))[0]
+
 prioritymap = {
 "required": 50,
 "important": 40,
@@ -110,7 +128,7 @@ class Launchpad(SQLThing):
         self.sectcache = {}
         try:
             ddr = self._query_single("""
-            SELECT id,distro FROM distrorelease WHERE name=%s;
+            SELECT id,distribution FROM distrorelease WHERE name=%s;
             """, (dr,))
             self.distrorelease = ddr[0]
             self.distro = ddr[1]
@@ -131,7 +149,7 @@ class Launchpad(SQLThing):
             """, (self.processor))[0]
         except:
             raise ValueError, "Unable to find a processor from the processor family chosen from %s/%s" % (dr, proc)
-        print "INFO: Chosen DR(%d), PROC(%d), DAR(%d) from SUITE(%s), ARCH(%s)" % (self.distrorelease, self.processor, self.distroarchrelease, dr, proc)
+        print "INFO: Chosen D(%d) DR(%d), PROC(%d), DAR(%d) from SUITE(%s), ARCH(%s)" % (self.distro, self.distrorelease, self.processor, self.distroarchrelease, dr, proc)
 
     #
     # SourcePackageName
