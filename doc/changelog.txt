@@ -2,6 +2,34 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-08 17:44:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1290
+
+    Summary:
+      primary distro pointer columns for sabdfl review
+    Revision:
+      launchpad--devel--0--patch-1290
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-128
+       Work in progress
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-129
+       Ready for review
+    
+
+    new files:
+     database/schema/pending/.arch-ids/stub-primarydistro.sql.id
+     database/schema/pending/stub-primarydistro.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-128
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-129
+
+
 2005-02-08 17:09:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1289
 
     Summary:
