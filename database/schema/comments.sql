@@ -115,6 +115,7 @@ COMMENT ON COLUMN BinaryPackageName.name IS
     'A lowercase name identifying one or more binarypackages';
 COMMENT ON COLUMN SourcePackage.srcpackageformat IS 
     'The format of this source package, e.g. DPKG, RPM, EBUILD, etc.';
+COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
 
 
 /* Lucille's configuration */
