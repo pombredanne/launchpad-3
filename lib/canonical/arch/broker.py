@@ -10,7 +10,7 @@ from canonical.launchpad.interfaces import INamespaceObject, ISourceTreeAPI, \
                                            IArchiveItem, ICategoryItem, \
                                            IRevisionFactory, IPatchlog, \
                                            ICategoryFactory, ICategory, \
-                                           ILogMessage, IArchSourceTree \
+                                           ILogMessage, IArchSourceTree, \
                                            IDirName, IPathNameFactory, \
                                            IArchiveLocation, IArchive, \
                                            IBranchItem, IVersionItem, \
