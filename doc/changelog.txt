@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-28 12:28:10 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1346
+
+    Summary:
+      fix makefile setting of PYTHONPATH
+    Revision:
+      launchpad--devel--0--patch-1346
+
+
+    modified files:
+     Makefile doc/changelog.txt
+
+
 2005-02-28 00:21:17 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1345
 
     Summary:
