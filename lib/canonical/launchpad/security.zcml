@@ -15,7 +15,7 @@
       provides="canonical.launchpad.interfaces.IAuthorization"
       for="canonical.launchpad.interfaces.IHasOwner"
       name="launchpad.Edit"
-      factory="canonical.launchpad.security.EditByOwners"
+      factory="canonical.launchpad.security.EditByOwnersOrAdmins"
       />
 
   <adapter

@@ -24,7 +24,7 @@ class AdminByAdminsTeam:
             return person.inTeam('admins')
 
 
-class EditByOwners:
+class EditByOwnersOrAdmins:
     implements(IAuthorization)
     permission = 'launchpad.Edit'
     usedfor = IHasOwner
@@ -35,8 +35,12 @@ class EditByOwners:
     def checkPermission(self, person):
         if person is None:
             return False
+        elif person.id == self.obj.owner.id:
+            return True
+        elif person.inTeam('admins'):
+            return True
         else:
-            return person.id == self.obj.owner.id
+            return False
 
 
 class AdminSourceSourceByButtSource:
