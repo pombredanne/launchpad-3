@@ -219,8 +219,6 @@
   </content>
 
 
-  <!-- UNUSED STUFF YET -->
-
   <content class="canonical.soyuz.sql.Projects">
     <allow interface="canonical.soyuz.interfaces.IProjects"/>
   </content>
@@ -229,7 +227,7 @@
     <allow interface="canonical.soyuz.interfaces.IProject"/>
   </content>
   
-  <content class="canonical.soyuz.database.SoyuzProduct">
+  <content class="canonical.soyuz.sql.SoyuzProduct">
     <allow interface="canonical.soyuz.interfaces.IProduct"/>
   </content>
   
