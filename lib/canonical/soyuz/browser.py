@@ -660,7 +660,7 @@ class SourceSourceView(object):
         newurl = None
         if product and self.context.canChangeProduct():
             self.context.changeProduct(product)
-            newurl='../../../' + self.context.product.project.name + "/" + self.context.product.name
+            newurl='../../../../' + self.context.product.project.name + "/" + self.context.product.name
         if newurl:
             self.request.response.redirect(newurl)
 

@@ -64,7 +64,7 @@ def getOwner():
 # before 16/10/04 then please remove these classes altogether.
 #
 
-class xSoyuzProject(object):
+class SoyuzProject(object):
     implements (IProject)
     def __init__(self, dbProject=None,name=None,title=None,url=None,description=None, shortDescription=None, displayname=None):
         if dbProject is not None:
@@ -120,7 +120,7 @@ class xSoyuzProject(object):
             self._shortDescription=aDesc
         return self._shortDescription
 
-class xSoyuzProduct(object):
+class SoyuzProduct(object):
     implements (IProduct)
     def __init__(self, dbProduct=None, project=None, name=None, title=None, description=None, url=None):
         assert (project)
@@ -226,7 +226,7 @@ class ProductMapper(Mapper):
         product._product=dbproduct
     def getByName(self, name, project):
         """returns the product 'name' in project, from the database."""
-        return self.findByName(self.sanitize(name), project).next()
+        return self.findByName(self.sanitize(name), project).next()._product
     def findByName(self, likePattern, project):
         """find products in a project... may want to extend to optional project (all projects)"""
         for product in self._find(dbProduct, "name like '%s' and product.project='%d'" % (likePattern, project._project.id), SoyuzProduct, project):

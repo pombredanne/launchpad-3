@@ -12,6 +12,8 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
+#circular import
+#from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
 # Launchpad interfaces
 from canonical.launchpad.interfaces import *
@@ -103,6 +105,7 @@ class SourceSource(SQLBase):
         """change the product this sync belongs to to be 'product'"""
         assert (self.canChangeProduct())
         projectname,productname=targetname.split("/")
+        from canonical.soyuz.importd import ProjectMapper, ProductMapper
         project=ProjectMapper().getByName(projectname)
         product=ProductMapper().getByName(productname, project)
         self.product=product
