@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-16 13:02:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1320
+
+    Summary:
+      add evolution cvs source in sample data
+    Revision:
+      launchpad--devel--0--patch-1320
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-59
+       merge rocketfuel
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-60
+       add evolution cvs source in sample data
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-59
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-60
+
+
 2005-02-16 12:09:15 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1319
 
     Summary:
