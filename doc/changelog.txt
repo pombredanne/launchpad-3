@@ -2,6 +2,41 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-22 02:21:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1237
+
+    Summary:
+      Add arbitrary base converter for compressing big numbers to simple ASCII
+    Revision:
+      launchpad--devel--0--patch-1237
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-94
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-95
+       Add arbitrary base converter for compressing big numbers to simple ASCII
+    
+
+    new files:
+     lib/canonical/.arch-ids/base.py.id lib/canonical/base.py
+     lib/canonical/tests/.arch-ids/=id
+     lib/canonical/tests/.arch-ids/__init__.py.id
+     lib/canonical/tests/.arch-ids/test_base.py.id
+     lib/canonical/tests/__init__.py
+     lib/canonical/tests/test_base.py
+
+    modified files:
+     doc/changelog.txt
+
+    new directories:
+     lib/canonical/tests lib/canonical/tests/.arch-ids
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-94
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-95
+
+
 2005-01-21 22:37:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1236
 
     Summary:
