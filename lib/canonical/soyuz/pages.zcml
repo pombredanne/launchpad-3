@@ -49,7 +49,6 @@
 
 <pages 
     for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseApp"
-    class="canonical.launchpad.browser.SourcePackageReleaseView"
     permission="zope.Public">
     <page  
         name="index.html"

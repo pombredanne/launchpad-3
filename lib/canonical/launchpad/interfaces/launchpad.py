@@ -102,29 +102,33 @@ class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
 class IObjectAuthorization(Interface):
     """Authorization policy for a particular object."""
 
-    def checkPermission(principal, permission):
-        """Returns True if the principal has that permission on the adapted
-        object.
+    def checkPermission(person, permission):
+        """Returns True if the person has that permission on the adapted
+        object.  Otherwise returns False.
 
-        Otherwise returns False.
+        The argument person is the person who is authenticated, or None if
+        the principal is not adaptable to a Person.  So, person is None when
+        no-one is logged in.
         """
 
 
 class IAuthorization(Interface):
     """Authorization policy for a particular object and permission"""
 
-    def checkPermission(principal):
-        """Returns True if the principal has that permission on the adapted
-        object.
+    def checkPermission(person):
+        """Returns True if the person has that permission on the adapted
+        object.  Otherwise returns False.
 
-        Otherwise returns False.
+        The argument person is the person who is authenticated, or None if
+        the principal is not adaptable to a Person.  So, person is None when
+        no-one is logged in.
         """
 
 
 class IHasOwner(Interface):
     """An object that has an owner."""
 
-    owner = Attribute("The object's owner.  This object is an IPerson.")
+    owner = Attribute("The object's owner, which is an IPerson.")
 
 
 class ILaunchBag(Interface):
@@ -133,7 +137,9 @@ class ILaunchBag(Interface):
     project = Attribute('Project, or None')
     product = Attribute('Product, or None')
     distribution = Attribute('Distribution, or None')
+    distrorelease = Attribute('DistroRelease, or None')
     sourcepackage = Attribute('Sourcepackage, or None')
+    sourcepackagereleasepublishing = Attribute('SourcepackageReleasePublishing, or None')
     bug = Attribute('Bug, or None')
 
     user = Attribute('Currently authenticated person, or None')
@@ -145,4 +151,4 @@ class IOpenLaunchBag(ILaunchBag):
         or ignored, or whatever'''
     def clear():
         '''Empty the bag'''
-    
+

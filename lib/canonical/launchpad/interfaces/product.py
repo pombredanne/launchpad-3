@@ -20,7 +20,8 @@ class IProduct(IHasOwner):
     # in SQLObject soon. 12/10/04
     id = Int(title=_('The Product ID'))
     
-    project = Int(title=_('Project ID.'), required=False)
+    project = Choice(title=_('Project'), required=False,
+        vocabulary='Project')
     
     owner = Int(title=_('Owner'))
 

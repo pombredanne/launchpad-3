@@ -17,11 +17,11 @@ class AdminByAdminsTeam:
     def __init__(self, obj):
         self.obj = obj
 
-    def checkPermission(self, user):
-        if IPerson(user).inTeam('admins'):
-            return True
-        else:
+    def checkPermission(self, person):
+        if person is None:
             return False
+        else:
+            return person.inTeam('admins')
 
 
 class EditByOwners:
@@ -32,11 +32,11 @@ class EditByOwners:
     def __init__(self, obj):
         self.obj = obj
 
-    def checkPermission(self, user):
-        if user.id == self.obj.owner.id:
-            return True
-        else:
+    def checkPermission(self, person):
+        if person is None:
             return False
+        else:
+            return person.id == self.obj.owner.id
 
 
 class AdminSourceSourceByButtSource:
@@ -47,11 +47,11 @@ class AdminSourceSourceByButtSource:
     def __init__(self, obj):
         self.obj = obj
 
-    def checkPermission(self, user):
-        if IPerson(user).inTeam('buttsource'):
-            return True
-        else:
+    def checkPermission(self, person):
+        if person is None:
             return False
+        else:
+            return person.inTeam('buttsource')
 
 
 class EditSourceSourceByButtSource:
@@ -62,8 +62,7 @@ class EditSourceSourceByButtSource:
     def __init__(self, obj):
         self.obj = obj
 
-    def checkPermission(self, user):
-        person = IPerson(user, None)
+    def checkPermission(self, person):
         if person is None:
             return False
         if person.inTeam('buttsource'):

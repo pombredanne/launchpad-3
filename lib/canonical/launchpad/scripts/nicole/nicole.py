@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from string import split
 from time import sleep
 from re import sub
@@ -12,22 +13,28 @@ import tempfile, os
 ## DOAP is inside our current Launchpad production DB
 DOAPDB = "launchpad_dev"
 
+## USE ONLY ONE MODE !!!!!!!!!!!!!!
 ## Update mode
-## Query about new info even if there is already a project
-## and UPDATE the info OR just skip
-UPDATE = False
+UPDATE = True
 
-## Web search interval avoiding to be blocked by high threshould
-## of requests reached by second
-SLEEP = 20
-
+## Insert mode
+INSERT = False
 package_root = "/ubuntu/"
 distrorelease = "hoary"
 component = "main"
 
 
-## Projects not found
+## Web search interval avoiding to be blocked by high threshould
+## of requests reached by second
+SLEEP = 20
+
+## Entries not found
 LIST = 'nicole_notfound'
+
+sf = 0
+fm = 0
+both = 0
+skip = 0
 
 def clean_list():
     print """Cleaning 'Not Found' File List"""
@@ -42,24 +49,13 @@ def append_list(data):
     f.write('%s\n' % data)
     f.close()
 
-
-def get_current_packages(source):
+def get_current_packages():
     packagenames = []
 
     print '@ Retrieve SourcePackage Information From Soyuz'
 
     index = 0
     
-    ## get all project names from doap
-    ##packages = source.getSourcePackageNames()
-    ##    for package in packages:
-    ##        ## Anyway, I can't discard any name, since multiple names
-    ##        ##  means multiple products
-    ##        name = package['name']
-    ##        ##print '@      Getting %s' % name
-    ##        packagenames.append(name)
-    ##        index += 1
-
     ## Get SourceNames from Sources file (MAIN)
     sources_zipped = os.path.join(package_root, "dists", distrorelease,
                                   component, "source", "Sources.gz")
@@ -75,7 +71,7 @@ def get_current_packages(source):
     return index, packagenames
 
 
-def grab_project_info(name):
+def grab_web_info(name):
     print '@ Looking for %s on Sourceforge' % name    
     try:
         data_sf = getProjectSpec(name)
@@ -100,7 +96,7 @@ def grab_for_product(data, project, name):
         print '@\tCreating a Default Product'
         return
 
-    data_sf, data_fm = grab_project_info(name)        
+    data_sf, data_fm = grab_web_info(name)        
 
     if data_sf:
         doap.ensureProduct(project, data_sf, name)
@@ -110,15 +106,80 @@ def grab_for_product(data, project, name):
         print '@\tCreating a FreshMeat Product'
     else:
         print '@\tNo Product Found for %s' % name
-        ##XXX: (product+notfound) cprov 20041014
-        ## Insert a product anyway !!! see alsa-xxx for futher
-        ## result feedback
-        ##data_dummy={"project":      name,
-        ##            "projectname":  name,
-        ##            "description": 'Nicole Dummy Product Description.'
-        ##            }
-        ##doap.ensureProduct(project, data_dummy, name)
-        ##print '@\tCreating a Dummy Product'
+
+def name_filter(package):
+    ## split the package name by '-' and use just the first part
+    name = split(package, '-')[0]        
+    
+    ## XXX (project+valid_name) cprov 20041013
+    ## for god sake !!! we should avoid names shorter than 3 (!!)
+    ## chars 
+    if len(name) < 3:
+        name = package.replace('-', '')
+        
+    print '@ Proposed Project name %s'% name
+
+    return name
+
+def updater(doap, product_name):
+    global fm, sf, both
+
+    data_sf, data_fm = grab_web_info(product_name)
+
+    if data_sf and not data_fm:
+        ##present_data(data_sf)            
+        sf +=1            
+        doap.updateProduct(data_sf, product_name)
+    elif data_fm and not data_sf:
+        ##present_data(data_fm)
+        fm += 1
+        doap.updateProduct(data_fm, product_name)
+    elif data_sf and data_fm:
+        ##present_data(data_sf)
+        ##present_data(data_fm)
+        both += 1
+        ## Do we really preffer sourceforge ???
+        doap.updateProduct(data_sf, product_name)
+    else:
+        print '@\tNo Product Found for %s' % product_name
+        append_list(product_name)                
+
+    
+def grabber(package, name):
+    ##for god sake again ...
+    global fm, sf, both
+    
+    data_sf, data_fm = grab_web_info(name)        
+            
+    if data_sf and not data_fm:
+        ##present_data(data_sf)            
+        sf +=1            
+        doap.ensureProject(data_sf)
+        ## Partially Commit DB Project Info
+        doap.commit()
+        grab_for_product(data_sf, name, package)
+        
+    elif data_fm and not data_sf:
+        ##present_data(data_fm)
+        fm += 1
+        doap.ensureProject(data_fm)
+        ## Partially Commit DB Project Info
+        doap.commit()
+        grab_for_product(data_fm, name, package)
+        
+    elif data_sf and data_fm:
+        ##present_data(data_sf)
+        ##present_data(data_fm)
+        both += 1
+        doap.ensureProject(data_sf)
+        ## Partially Commit DB Project Info
+        doap.commit()
+        grab_for_product(data_fm, name, package)    
+        
+    else:
+        print '@\tNo Product Found for %s' % name
+        append_list(package)                
+        
 
 def present_data(data):
     print '========================================================'
@@ -135,94 +196,45 @@ if __name__ == "__main__":
     print 'An Open Source Project Information Finder'
 
     index = 0
-
-    sf = 0
-    fm = 0
-    both = 0
-    skip = 0
-    
     clean_list()
     
-    ##tries, packages = get_current_packages(doap)
-    tries, packages = get_current_packages(PACKAGES)
+    if INSERT:
+        tries, packages = get_current_packages()
     
-    for package in packages:
-        index += 1
-        print ' '
-        print '@ Grabbing Information About the %s (%d/%d)'% (package, index,
-                                                              tries)
-
-        ## split the package name by '-' and use just the first part
-        name = split(package, '-')[0]        
-
-        ## XXX (project+valid_name) cprov 20041013
-        ## for god sake !!! we should avoid names shorter than 3 (!!)
-        ## chars 
-        if len(name) < 3:
-            name = package.replace('-', '')
-
-        ## clean the version tag    
-        #name = sub('[0-9._]', '', name)    
-
-        print '@ Proposed Project name %s'% name
-
-        if not doap.getProject(name):
+        for package in packages:
+            index += 1
+            print ' '
+            print '@ Grabbing Information About the %s (%d/%d)'% (package,
+                                                                  index,
+                                                                  tries)
+            name = name_filter(package)
             
-            data_sf, data_fm = grab_project_info(name)        
-            
-            if data_sf and not data_fm:
-                ##present_data(data_sf)            
-                sf +=1            
-                doap.ensureProject(data_sf)
-                ## Partially Commit DB Project Info
-                doap.commit()
-                grab_for_product(data_sf, name, package)
+            if not doap.getProject(name):
                 
-            elif data_fm and not data_sf:
-                ##present_data(data_fm)
-                fm += 1
-                doap.ensureProject(data_fm)
-                ## Partially Commit DB Project Info
-                doap.commit()
-                grab_for_product(data_fm, name, package)
-
-            elif data_sf and data_fm:
-                ##present_data(data_sf)
-                ##present_data(data_fm)
-                both += 1
-                doap.ensureProject(data_sf)
-                ## Partially Commit DB Project Info
-                doap.commit()
-                grab_for_product(data_fm, name, package)    
-
+                ## Grab data 
+                grabber(package, name)            
+                ## Partially Commit DB Product Info
+                doap.commit()            
+                ##It should prevent me to be blocked again by SF
+                sleep(SLEEP)
             else:
-                print '@\tNo Product Found for %s' % name
-                append_list(package)                
-                ##XXX: (project+notfound) cprov 20041014
-                ## Insert a product anyway !!! see alsa-xxx for futher
-                ## result feedback
-                ##data_dummy={"project":      name,
-                ##            "projectname":  name,
-                ##           "description": 'Nicole Dummy Project Description.'
-                ##           } 
-                ##doap.ensureProject(data_dummy)
-                ## Partially Commit DB Project Info
-                ##doap.commit()
-                ##grab_for_product(data_dummy, name, package)
-                ##print '@\tDummy Project/Product Created'
+                print '@\tSkipping it, Already included'
+                skip += 1
+    if UPDATE:
 
+        tries, products = doap.getProductsForUpdate()
 
-            
+        for product in products:
+            index += 1
+            print ' '
+            print '@ Grabbing Information About the %s (%d/%d)'% (product[3],
+                                                                  index,
+                                                                  tries)
+            updater(doap, product[3])
             ## Partially Commit DB Product Info
-            doap.commit()
-            
-            ##It should prevent me to be blocked again by SF
-            ##
-            sleep(SLEEP)
-        else:
-            print '@\tSkipping it, Already included'
-            skip += 1
-            
+            doap.commit()            
+
+
 
     fail = tries - (sf + fm + both + skip)
 

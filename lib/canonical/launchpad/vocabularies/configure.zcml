@@ -41,6 +41,11 @@
         />
 
     <vocabulary
+        name="Project"
+        factory="canonical.launchpad.vocabularies.ProjectVocabulary"
+        />
+
+    <vocabulary
         name="Subscription"
         factory="canonical.launchpad.vocabularies.SubscriptionVocabulary"
         />

@@ -69,11 +69,16 @@
       <span tal:replace="context/distribution/displayname" /> supports the
       following architectures:</p>
 
-      <ul tal:repeat="arch context/architectures">
-          <li><span tal:replace="arch/processorfamily/name" />:
+      <ul>
+          <li tal:repeat="arch context/architectures">
+	      <span tal:replace="arch/processorfamily/name" />:
               <span tal:replace="arch/processorfamily/title" />
-             (<span tal:replace="arch/architecturetag" />) 
+             (<a tal:content="arch/architecturetag" 
+	         tal:attributes="href arch/architecturetag" />) 
           </li>
+	  <li>
+	    Source Packages: ( <a href="sources">src</a> )
+	  </li>
       </ul>
       </tal:block>
 
