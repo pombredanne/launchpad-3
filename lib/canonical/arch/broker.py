@@ -598,8 +598,7 @@ class Revision(VersionItem):
 
     def set_patchlog(self, patchlog):
         self._patchlog = patchlog
-        from canonical.database.launchpad import RevisionMapper
-        mapper = RevisionMapper()
+        mapper = database.RevisionMapper()
         mapper.update_log(self, patchlog.summary)
 
     def patchlog(self):
