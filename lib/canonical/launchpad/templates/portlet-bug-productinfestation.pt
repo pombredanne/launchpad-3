@@ -1,0 +1,21 @@
+<div>
+    <table class="listing rowNavigation">
+        <tr>
+            <th>Product Release</th>
+            <th>Infestation</th>
+            <th>Date Created</th>
+            <th>Explicit?</th>
+        </tr>
+        <tr tal:repeat="prodinfest context/productinfestations"
+            tal:attributes="onclick
+            string:window.location='productinfestations/${prodinfest/id}/+edit';">
+          <td tal:content="prodinfest/productrelease/version">Apache 1.3.0</td>
+          <td tal:content="prodinfest/infestation/lp:BugInfestationStatus">
+            Affected
+          </td>
+            <td tal:content="python:prodinfest.datecreated.strftime('%Y-%m-%d')">2004-10-08</td>
+            <td tal:content="python:(prodinfest.explicit and 'yes') or 'no'">yes</td>
+        </tr>
+    </table>
+    [ <a href="productinfestations/+new">Add an Infested Product Release</a> ]
+</div>

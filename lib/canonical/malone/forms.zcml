@@ -155,6 +155,29 @@
 
     <addform
         name="+new"
+        schema="canonical.launchpad.interfaces.IBugProductInfestation"
+        for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
+        label="Add Infested Product Release"
+        fields="productrelease infestation"
+        content_factory=".browser.BugProductInfestationFactory"
+        arguments=""
+        keyword_arguments="productrelease infestation"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-addform.pt"
+        lp:url="malone/bugs/$Bug.id/productinfestations/+new" />
+
+    <editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IBugProductInfestation"
+        schema="canonical.launchpad.interfaces.IBugProductInfestation"
+        fields="productrelease infestation"
+        label="Edit Infested Product Release"
+        permission="launchpad.AnyPerson"
+        template="../launchpad/templates/default-editform.pt"
+        lp:url="malone/bugs/$Bug.id/productinfestations/$BugProductInfestation.id/+edit" />
+
+    <addform
+        name="+new"
         schema="canonical.launchpad.interfaces.IBugExternalRef"
         for=".browser.IBugExternalRefContainer"
         label="Add External Reference"

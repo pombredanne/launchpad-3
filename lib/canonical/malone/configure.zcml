@@ -112,6 +112,14 @@
       name="index" />
 
   <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugProductInfestationContainer"
+      name="index" />
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBugPackageInfestationContainer"
+      name="index" />
+
+  <browser:defaultView
       for="canonical.launchpad.interfaces.IBugSubscriptionContainer"
       name="index" />
 

@@ -6,6 +6,10 @@
         factory=".vocabulary.ProductVocabulary" />
 
     <vocabulary
+        name="ProductRelease"
+        factory=".vocabulary.ProductReleaseVocabulary" />
+
+    <vocabulary
         name="Sourcepackage"
         factory=".vocabulary.SourcepackageVocabulary" />
 

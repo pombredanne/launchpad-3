@@ -79,6 +79,8 @@ class IBug(Interface):
     sourceassignment = Attribute(
             'SQLObject.Multijoin of ISourcepackageBugAssignment'
             )
+    productinfestations = Attribute('List of product release infestations.')
+    packageinfestations = Attribute('List of package release infestations.')
     watches = Attribute('SQLObject.Multijoin of IBugWatch')
     externalrefs = Attribute('SQLObject.Multijoin of IBugExternalRef')
     subscriptions = Attribute('SQLObject.Multijoin of IBugSubscription')
@@ -187,6 +189,28 @@ class ISourcepackageBugAssignmentContainer(Interface):
 
     def __iter__():
         """Iterate through SourcepackageBugAssignments for a given bug."""
+
+class IBugProductInfestationContainer(Interface):
+    """A container for IBugProductInfestations."""
+
+    bug = Int(title=_("Bug id"), readonly=True)
+
+    def __getitem__(key):
+        """Get a BugProductInfestation."""
+
+    def __iter__():
+        """Iterate through BugProductInfestations for a given bug."""
+
+class IBugPackageInfestationContainer(Interface):
+    """A container for IBugPackageInfestations."""
+
+    bug = Int(title=_("Bug id"), readonly=True)
+
+    def __getitem__(key):
+        """Get a BugPackageInfestation."""
+
+    def __iter__():
+        """Iterate through BugPackageInfestations for a given bug."""
 
 class IBugWatchContainer(Interface):
     """A container for IBugWatch objects."""
@@ -365,11 +389,32 @@ class ISourcepackageBugAssignment(Interface):
             )
     assignee = Choice(title=_('Assignee'), required=False, vocabulary='Person')
 
-class IBugInfestation(Interface):
-    """The bug status scorecard."""
+class IBugProductInfestation(Interface):
+    """A bug that shows up in a product release as a result of having
+    first been reported in a code release from which the product release
+    was derived."""
+
+    id = Int(title=_("Bug Product Infestation ID"), required=True, readonly=True)
+    bug = Int(title=_('Bug ID'))
+    explicit = Bool(title=_('Explicitly Created by a Human'))
+    productrelease = Choice(title=_('Product Release'),
+                            vocabulary='ProductRelease')
+    infestation = Choice(title=_('Infestation'),
+                         vocabulary=InfestationVocabulary)
+    datecreated = Datetime(title=_('Date Created'))
+    creator = Int(title=_('Creator'))
+    dateverified = Datetime(title=_('Date Verified'))
+    verifiedby = Int(title=_('Verified By'))
+    lastmodified = Datetime(title=_('Last Modified'))
+    lastmodifiedby = Int(title=_('Last Modified By'))
+
+class IBugPackageInfestation(Interface):
+    """A bug that shows up in a source package release as a result of
+    having first been reported in a code release from which the
+    source package release was derived."""
 
     bug = Int(title=_('Bug ID'))
-    coderelease = Int(title=_('Code Release'))
+    sourcepackagerelease = Int(title=_('Source Package Release'))
     explicit = Bool(title=_('Explicitly Created by a Human'))
     infestation = Choice(title=_('Infestation'),
                          vocabulary=InfestationVocabulary)

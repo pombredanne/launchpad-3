@@ -29,7 +29,7 @@ class IProject(Interface):
 
     def getProduct(name):
         """Get a product with name `name`."""
-    
+
     def rosettaProducts():
         """Iterates over Rosetta Products in this project.
         XXX Mark Shuttleworth 02/10/04 what is the difference
@@ -794,7 +794,7 @@ class IEmailAddress(Interface):
     person = Int(
         title=_('Person'), required=True,
         )
-    
+
 class IPerson(Interface):
     """A Person."""
 
@@ -893,9 +893,9 @@ class IProduct(Interface):
     and Products. Each Project may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others."""
-    
+
     project = Int(title=_('The Project that is responsible for this product.'))
-    
+
     owner = Int(title=_('Owner'))
 
     name = TextLine(title=_('The short name of this product, which must be \
@@ -965,3 +965,21 @@ class IProduct(Interface):
         where we have a translation in Rosetta but there was no translation
         in the PO file for this language when we last parsed it."""
 
+class IProductRelease(Interface):
+    """A specific release (i.e. has a version) of a product."""
+    id = Int(title=_('ID'), required=True, readonly=True)
+    product = Choice(
+        title=_('Product'), required=True, vocabulary='Product')
+    datereleased = Datetime(
+        title=_('Date Released'), required=True, readonly=True)
+    version = TextLine(
+        title=_('Version'), required=True, readonly=True)
+    title = TextLine(
+        title=_('Title'), required=True, readonly=True)
+    description = Text(
+        title=_("Description"), required=True)
+    changelog = Text(
+        title=_('Changelog'), required=True)
+    ownerID = Int(
+        title=_('Owner'), required=True, readonly=True)
+    owner = Attribute("The owner's IPerson")

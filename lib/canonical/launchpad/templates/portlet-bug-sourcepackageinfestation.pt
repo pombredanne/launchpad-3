@@ -1,0 +1,27 @@
+<div>
+    <table class="listing rowNavigation">
+        <tr>
+            <th>Source Package Release</th>
+            <th>Infestation</th>
+            <th>Date Created</th>
+            <th>Explicit?</th>
+        </tr>
+<!--
+        <tr tal:repeat="bugass context/productassignment"
+            tal:attributes="onclick
+            string:window.location='productassignments/${bugass/id}/+edit';">
+            <td tal:content="bugass/product/title">$Product.title</td>
+            <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
+                $ProductBugAssignment.bugstatus
+            </td>
+            <td tal:content="bugass/priority/lp:BugPriority">
+                $ProductBugAssignment.priority
+            </td>
+            <td tal:content="bugass/severity/lp:BugSeverity">
+                $ProductBugAssignment.severity
+            </td>
+        </tr>
+-->
+    </table>
+    [ <a href="sourcepackageinfestations/+new">Add an Infested Source Package Release</a> ]
+</div>

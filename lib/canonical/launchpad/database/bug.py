@@ -41,6 +41,8 @@ class Bug(SQLBase):
     productassignment = MultipleJoin('ProductBugAssignment', joinColumn='bug')
     sourceassignment = MultipleJoin('SourcepackageBugAssignment',
                                     joinColumn='bug')
+    productinfestations = MultipleJoin('BugProductInfestation', joinColumn='bug')
+    packageinfestations = MultipleJoin('BugPackageInfestation', joinColumn='bug')
     watches = MultipleJoin('BugWatch', joinColumn='bug')
     externalrefs = MultipleJoin('BugExternalRef', joinColumn='bug')
     subscriptions = MultipleJoin('BugSubscription', joinColumn='bug')
@@ -219,7 +221,7 @@ class SourcepackageBugAssignment(SQLBase):
 
     _columns = [
         ForeignKey(name='bug', dbName='bug', foreignKey='Bug'),
-        ForeignKey(name='sourcepackage', 
+        ForeignKey(name='sourcepackage',
                    dbName='sourcepackage', foreignKey='Sourcepackage'),
         IntCol('bugstatus', default=int(dbschema.BugAssignmentStatus.NEW)),
         IntCol('priority', default=int(dbschema.BugPriority.MEDIUM)),
@@ -309,10 +311,37 @@ class BugWatch(SQLBase):
                 notNull=True),
         ]
 
-#
-# REPORTS
-#
 
+class BugProductInfestation(SQLBase):
+    implements(IBugProductInfestation)
+    _table = 'BugProductInfestation'
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    explicit = IntCol(notNull=True, default=False)
+    productrelease = ForeignKey(dbName="productrelease", foreignKey='ProductRelease', notNull=False, default=None)
+    infestation = IntCol(notNull=False, default=None)
+    datecreated = DateTimeCol(notNull=True)
+    creator = ForeignKey(dbName="creator", foreignKey='Person', notNull=True)
+    dateverified = DateTimeCol(notNull=False)
+    verifiedby = ForeignKey(dbName="verifiedby", foreignKey='Person', notNull=False, default=None)
+    lastmodified = DateTimeCol(notNull=True)
+    lastmodifiedby = ForeignKey(dbName="lastmodifiedby", foreignKey='Person', notNull=True)
+
+class BugPackageInfestation(SQLBase):
+    implements(IBugPackageInfestation)
+    _table = 'BugPackageInfestation'
+    bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
+    explicit = IntCol(notNull=True, default=False)
+    sourcepackagerelease = ForeignKey(
+        foreignKey='SourcePackageRelease', notNull=True)
+    infestation = ForeignKey(foreignKey='BugInfestationType', notNull=True)
+    datecreated = DateTimeCol(notNull=True)
+    creator = ForeignKey(foreignKey='Person', notNull=True)
+    dateverified = DateTimeCol()
+    verifiedby = ForeignKey(foreignKey='Person')
+    lastmodified = DateTimeCol()
+    lastmodifiedby = ForeignKey(foreignKey='Person')
+
+# REPORTS
 class BugsAssignedReport(object):
 
     implements(IBugsAssignedReport)

@@ -14,7 +14,6 @@ from canonical.database.sqlbase import SQLBase, quote
 import canonical.launchpad.interfaces as interfaces
 from canonical.launchpad.interfaces import *
 
-#
 # XXX Mark Shuttleworth 06/10/06 till we sort out database locations and
 #     import sequence
 from canonical.launchpad.database.sourcesource import SourceSource
@@ -151,3 +150,15 @@ class Product(SQLBase):
             count += t.rosettaCount(language)
         return count
 
+class ProductRelease(SQLBase):
+    """A release of a product."""
+    implements(IProductRelease)
+    _table = 'ProductRelease'
+
+    product = ForeignKey(dbName='product', foreignKey="Product", notNull=True)
+    datereleased = DateTimeCol(notNull=True)
+    version = StringCol(notNull=True)
+    title = StringCol(notNull=True)
+    description = StringCol(notNull=True)
+    changelog = StringCol(notNull=True)
+    owner = ForeignKey(dbName="owner", foreignKey="Person", notNull=True)

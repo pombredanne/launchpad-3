@@ -2,6 +2,11 @@
 #
 # arch-tag: FA3333EC-E6E6-11D8-B7FE-000D9329A36C
 
+# XXX: 2004-10-08 Brad Bollenbach: I've noticed several hardcodings of
+# owner ID being set to 1 in this module (and to do some quick
+# testing, I've just done the same once more myself.) This needs
+# immediate fixing.
+
 from datetime import datetime
 from email.Utils import make_msgid
 
@@ -10,36 +15,30 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
 
-#
 # Database access objects
-#
 from canonical.launchpad.database import \
         Sourcepackage, SourcepackageName, Binarypackage, \
         BugTracker, BugWatch, Product, Person, EmailAddress, \
         Bug, BugAttachment, BugExternalRef, BugSubscription, BugMessage, \
-        ProductBugAssignment, SourcepackageBugAssignment
+        ProductBugAssignment, SourcepackageBugAssignment, \
+        BugProductInfestation
 from canonical.database import sqlbase
 
-#
 # I18N support for Malone
-#
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('malone')
 
 from canonical.lp import dbschema
 
-#
 # Interface imports
-#
 from canonical.launchpad.interfaces import \
         IBugMessagesView, IBugExternalRefsView, \
         IMaloneBug, IMaloneBugAttachment, \
         IBugContainer, IBugAttachmentContainer, IBugExternalRefContainer, \
-        IBugSubscriptionContainer, \
-        ISourcepackageContainer, IBugWatchContainer, \
-        IProductBugAssignmentContainer, \
-        ISourcepackageBugAssignmentContainer, IPerson
-
+        IBugSubscriptionContainer, ISourcepackageContainer, \
+        IBugWatchContainer, IProductBugAssignmentContainer, \
+        ISourcepackageBugAssignmentContainer, IBugProductInfestationContainer, \
+        IPerson
 
 def traverseBug(bug, request, name):
     if name == 'attachments':
@@ -54,6 +53,8 @@ def traverseBug(bug, request, name):
         return ProductBugAssignmentContainer(bug=bug.id)
     elif name == 'sourcepackageassignments':
         return SourcepackageBugAssignmentContainer(bug=bug.id)
+    elif name == 'productinfestations':
+        return BugProductInfestationContainer(bug=bug.id)
     else:
        raise KeyError, name
 
@@ -150,7 +151,7 @@ class BugContainerBase(object):
             raise KeyError, id
 
     def __iter__(self):
-        for row in self.table.select(self.table.q.bug == self.bug):
+        for row in self.table.select(self.table.q.bugID == self.bug):
             yield row
 
     def add(self, ob):
@@ -211,21 +212,21 @@ class MaloneBugAddForm(object):
 class MaloneBugView(object):
     # XXX fix these horrific relative paths
     watchPortlet = ViewPageTemplateFile(
-            '../launchpad/templates/portlet-bug-watch.pt'
-            )
+        '../launchpad/templates/portlet-bug-watch.pt')
     productAssignmentPortlet = ViewPageTemplateFile(
-            '../launchpad/templates/portlet-bug-productassignment.pt'
-            )
+        '../launchpad/templates/portlet-bug-productassignment.pt')
     sourcepackageAssignmentPortlet = ViewPageTemplateFile(
-            '../launchpad/templates/portlet-bug-sourcepackageassignment.pt'
-            )
+        '../launchpad/templates/portlet-bug-sourcepackageassignment.pt')
+    productInfestationPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-bug-productinfestation.pt')
+    sourcepackageInfestationPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-bug-sourcepackageinfestation.pt')
     referencePortlet = ViewPageTemplateFile(
             '../launchpad/templates/portlet-bug-reference.pt'
             )
     peoplePortlet = ViewPageTemplateFile(
             '../launchpad/templates/portlet-bug-people.pt'
             )
-
 
 class MaloneBugAttachment(BugAttachment, BugContainerBase):
     implements(IMaloneBugAttachment)
@@ -449,6 +450,35 @@ def ProductBugAssignmentFactory(context, **kw):
     pba = ProductBugAssignment(bug=context.context.bug, **kw)
     return pba
 
+class BugProductInfestationContainer(BugContainerBase):
+    """A container for BugProductInfestation."""
+    implements(IBugProductInfestationContainer)
+    table = BugProductInfestation
+
+    def __getitem__(self, id):
+        try:
+            return self.table.select(self.table.q.id == id)[0]
+        except IndexError:
+            # Convert IndexError to KeyErrors to get Zope's NotFound page
+            raise KeyError, id
+ 
+    def __iter__(self):
+        for row in self.table.select(self.table.q.bugID == self.bug):
+            yield row
+
+def BugProductInfestationFactory(context, **kw):
+    now = datetime.utcnow()
+    bpi = BugProductInfestation(
+        bug=context.context.bug,
+        explicit=True,
+        datecreated=now,
+        creatorID=1, # XXX: (2004-10-08) Brad Bollenbach: Should be the real owner ID
+        dateverified=now,
+        verifiedbyID=1,
+        lastmodified=now,
+        lastmodifiedbyID=1,
+        **kw)
+    return bpi
 
 class SourcepackageBugAssignmentContainer(BugContainerBase):
     """A container for SourcepackageBugAssignment"""

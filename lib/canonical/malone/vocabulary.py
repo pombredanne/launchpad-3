@@ -8,7 +8,7 @@ from zope.schema.vocabulary import SimpleTerm
 
 from canonical.launchpad.database import Person
 from canonical.launchpad.database import Sourcepackage, Binarypackage
-from canonical.launchpad.database import Product
+from canonical.launchpad.database import Product, ProductRelease
 from canonical.launchpad.database import BugTracker
 
 __metaclass__ = type
@@ -125,3 +125,11 @@ class PersonVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(
                 obj, obj.id, obj.displayname or '%s %s' % (
                     obj.givenname, obj.familyname))
+
+class ProductReleaseVocabulary(SQLObjectVocabularyBase):
+    _table = ProductRelease
+    _orderBy = 'product'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(
+            obj, obj.id, obj.product.name + " " + obj.version)

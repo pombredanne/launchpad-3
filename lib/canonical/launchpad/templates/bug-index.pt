@@ -22,11 +22,11 @@
         <li id="contentview-view" class="selected">
             <a>View</a>
         </li>
-    
+
         <li id="contentview-edit" class="plain">
             <a href="+edit">Edit</a>
         </li>
-    
+
         <li id="contentview-edit" class="plain">
             <a href="activity">History</a>
         </li>
@@ -37,13 +37,13 @@
     </div>
 
     <div class="documentContent" id="region-content">
-  
+
         <h1>
             <span tal:replace="context/title" />
         </h1>
-  
+
         <div class="discreet">
-            <!--<span class="bug-confirmed" 
+            <!--<span class="bug-confirmed"
                 title="Bug status">Confirmed</span>-->
             <span tal:condition="context/name">
                 Bugname: <a href="" tal:content="context/name">$Bug.name</a>,
@@ -56,53 +56,61 @@
         <div class="documentDescription" tal:content="context/shortdesc">
             $Bug.shortdesc
         </div>
-  
+
         <div tal:content="context/description">
             $Bug.description
         </div>
-    
+
         <h2>Product assignment</h2>
 
         <div tal:replace="structure view/productAssignmentPortlet" />
 
-        <h2>Source package assigmnent</h2>
+        <h2>Source package assignment</h2>
 
         <div tal:replace="structure view/sourcepackageAssignmentPortlet" />
-  
+
+        <h2>Product release infestations</h2>
+
+        <div tal:replace="structure view/productInfestationPortlet" />
+
+        <h2>Source package release infestations</h2>
+
+        <div tal:replace="structure view/sourcepackageInfestationPortlet" />
+
         <h2>Comments</h2>
-  
+
         <div class="boardComment" tal:repeat="message context/messages">
-            
+
             <div class="boardCommentDetails">
                 <strong tal:content="message/title">$Bugmessage.title</strong>
 
-                Posted by <span 
+                Posted by <span
                 tal:replace="message/personmsg/displayname|string:(none)">
                 $Person.displayname
-                </span> 
+                </span>
                 at <span tal:replace="python:message.datecreated.strftime(
                     '%d %b %y %H:%M')">Thursday 13:21</span>
             </div>
 
             <div class="boardCommentBody">
-                <div tal:repeat="attachment message/attachments" 
-                    class="portrait"> 
+                <div tal:repeat="attachment message/attachments"
+                    class="portrait">
                     <!-- TODO: Attachment URL when Librarian is available -->
-                    <a href="#">                    
+                    <a href="#">
                         <div tal:content="attachment/name">
                             $BugAttachment.name
                         </div>
                     </a>
                 </div>
-            
+
                 <div class="boardCommentContent" tal:content="message/contents">
                     Comment text.
                 </div>
             </div>
-                
+
         <fieldset class="collapsible collapsed">
             <legend>Follow-up</legend>
-      
+
             <!--
             <div class="field">
                 <label>Current status</label>
@@ -117,12 +125,12 @@
                 </select>
             </div>
             -->
-      
+
             <div class="field">
                 <form action="messages/+new" method="post">
                     <label>Comment</label>
                     <div class="formHelp">
-                        If you have additional relevant information, 
+                        If you have additional relevant information,
                         enter it below.
                     </div>
                     <input name="field.title" type="text" /><br />
@@ -143,10 +151,10 @@
             </div>
             -->
         </div>
-  
+
         <fieldset>
             <legend>Follow-up</legend>
-      
+
             <!--
             <div class="field">
                 <label>Current status</label>
@@ -161,12 +169,12 @@
                 </select>
             </div>
             -->
-      
+
             <div class="field">
                 <form action="messages/+new" method="post">
                     <label>Comment</label>
                     <div class="formHelp">
-                        If you have additional relevant information, 
+                        If you have additional relevant information,
                         enter it below.
                     </div>
                     <input name="field.title" type="text" /><br />

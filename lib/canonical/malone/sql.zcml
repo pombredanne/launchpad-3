@@ -25,7 +25,7 @@
     <utility
         factory="canonical.launchpad.database.BugsAssignedReport"
         provides="canonical.launchpad.interfaces.IBugsAssignedReport" />
-        
+
     <content class=".browser.BugContainer">
         <allow interface="canonical.launchpad.interfaces.IBugContainer" />
     </content>
@@ -37,7 +37,7 @@
     <utility
         factory="canonical.launchpad.database.BugTrackerSet"
         provides="canonical.launchpad.interfaces.IBugTrackerSet" />
-    
+
     <utility
         factory=".browser.BugContainer"
         provides="canonical.launchpad.interfaces.IBugContainer" />
@@ -52,7 +52,7 @@
 
     <content class=".browser.BugExternalRefContainer">
         <allow interface="canonical.launchpad.interfaces.IBugExternalRefContainer" />
-        <allow 
+        <allow
             interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
     </content>
@@ -63,8 +63,8 @@
 
     <content class=".browser.BugWatchContainer">
         <allow interface="canonical.launchpad.interfaces.IBugWatchContainer" />
-        <allow 
-            interface="zope.app.form.browser.interfaces.IAddFormCustomization" 
+        <allow
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
     </content>
 
@@ -74,8 +74,8 @@
 
     <content class=".browser.ProductBugAssignmentContainer">
         <allow interface="canonical.launchpad.interfaces.IProductBugAssignmentContainer" />
-        <allow 
-            interface="zope.app.form.browser.interfaces.IAddFormCustomization" 
+        <allow
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
     </content>
 
@@ -83,10 +83,42 @@
         factory=".browser.ProductBugAssignmentContainer"
         provides="canonical.launchpad.interfaces.IProductBugAssignmentContainer" />
 
+    <content class=".browser.BugProductInfestation">
+        <allow interface="canonical.launchpad.interfaces.IBugProductInfestation" />
+        <allow
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
+            />
+        <require permission="zope.View" set_schema="canonical.launchpad.interfaces.IBugProductInfestation" />
+    </content>
+
+    <content class="canonical.launchpad.database.product.ProductRelease">
+        <allow interface="canonical.launchpad.interfaces.IProductRelease" />
+        <allow
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
+            />
+    </content>
+
+<!--
+    <utility
+        factory=".browser.BugProductInfestation"
+        provides="canonical.launchpad.interfaces.IBugProductInfestation" />
+-->
+
+    <content class=".browser.BugProductInfestationContainer">
+        <allow interface="canonical.launchpad.interfaces.IBugProductInfestationContainer" />
+        <allow
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
+            />
+    </content>
+
+    <utility
+        factory=".browser.BugProductInfestationContainer"
+        provides="canonical.launchpad.interfaces.IBugProductInfestationContainer" />
+
     <content class=".browser.SourcepackageBugAssignmentContainer">
         <allow interface="canonical.launchpad.interfaces.ISourcepackageBugAssignmentContainer" />
-        <allow 
-            interface="zope.app.form.browser.interfaces.IAddFormCustomization" 
+        <allow
+            interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
     </content>
 
@@ -96,7 +128,7 @@
 
     <content class=".browser.BugSubscriptionContainer">
         <allow interface="canonical.launchpad.interfaces.IBugSubscriptionContainer" />
-        <allow 
+        <allow
             interface="zope.app.form.browser.interfaces.IAddFormCustomization"
             />
     </content>
