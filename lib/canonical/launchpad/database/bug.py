@@ -20,12 +20,8 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
 
 from canonical.launchpad.database.bugset import BugSetBase
-from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.message import Message, MessageSet
 from canonical.launchpad.database.bugmessage import BugMessage
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.bugsubscription import BugSubscription
-from canonical.lp.dbschema import BugSubscription as BugSubscriptionVocab
 from canonical.lp import dbschema
 
 class Bug(SQLBase):

@@ -9,7 +9,7 @@ Part of the Launchpad system.
 from zope.interface import implements
 
 # SQL object
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 

@@ -6,7 +6,7 @@ __metaclass__ = type
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from canonical.database.sqlbase import SQLBase, quote
 
@@ -226,7 +226,7 @@ class Product(SQLBase):
     def packagedInDistros(self):
         # XXX: This function-local import is so we avoid a circular import
         #   --Andrew Bennetts, 2004/11/07
-        from canonical.launchpad.database import Distribution, DistroRelease
+        from canonical.launchpad.database import Distribution
 
         # FIXME: The database access here could be optimised a lot, probably
         # with a view.  Whether it's worth the hassle remains to be seen...

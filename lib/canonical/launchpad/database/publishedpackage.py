@@ -1,18 +1,10 @@
-# Python imports
-from sets import Set
-from datetime import datetime
-
 # Zope imports
 from zope.interface import implements
-from zope.component import getUtility
 
 # SQLObject/SQLBase
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
+from sqlobject import StringCol, ForeignKey, IntCol, DateTimeCol
 
 from canonical.database.sqlbase import SQLBase, quote
-from canonical.lp import dbschema
 from canonical.launchpad.interfaces import IPublishedPackage, \
                                            IPublishedPackageSet
 

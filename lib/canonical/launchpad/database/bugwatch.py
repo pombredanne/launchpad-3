@@ -4,14 +4,14 @@ from datetime import datetime
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBugWatch, \
         IBugWatchSet
 from canonical.launchpad.database.bug import BugSetBase
 from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import nowUTC, DEFAULT
+from canonical.database.constants import nowUTC
 
 
 class BugWatch(SQLBase):

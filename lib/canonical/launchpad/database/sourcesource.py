@@ -10,7 +10,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 # SQL object
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, BoolCol
+from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 from canonical.database.sqlbase import SQLBase, quote
 
@@ -19,7 +19,6 @@ from canonical.database.sqlbase import SQLBase, quote
 # Why RCSTypeEnum is inside launchpad.interfaces?
 from canonical.launchpad.interfaces import ISourceSource, ISourceSourceAdmin, ISourceSourceSet, \
                                            RCSTypeEnum, RCSNames, IProductSet
-from canonical.lp.dbschema import ImportTestStatus
 
 # tools
 import datetime

@@ -1,3 +1,5 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
 __metaclass__ = type
 
 from sets import Set
@@ -6,20 +8,10 @@ from sets import Set
 from zope.component import getUtility
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
-from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
-
-from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import nowUTC, DEFAULT
 from canonical.launchpad.interfaces import IBugsAssignedReport, \
     IBugTaskSet, IEditableUpstreamBugTask, IReadOnlyUpstreamBugTask, \
     IEditableDistroBugTask, IReadOnlyDistroBugTask, ILaunchBag
-from canonical.launchpad.database.person import Person
-from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.bug import BugTask
-from canonical.lp import dbschema
 
 def _get_authenticated_principal():
     # XXX, Brad Bollenbach, 2005-01-05: should possible move this into some api

@@ -13,9 +13,9 @@ from datetime import datetime
 from sets import Set
 
 # canonical imports
-from canonical.launchpad.interfaces import IPOTemplate, IPOTMsgSet, \
-    IEditPOTemplate, IEditPOTMsgSet, IPOMsgID, IPOMsgIDSighting, IPOFile, \
-    IEditPOFile, IPOMsgSet, IEditPOMsgSet, IPOTranslation, \
+from canonical.launchpad.interfaces import IPOTMsgSet, \
+    IEditPOTemplate, IPOMsgID, IPOMsgIDSighting, \
+    IEditPOFile, IPOTranslation, IEditPOMsgSet, \
     IPOTranslationSighting, IPersonSet, IRosettaStats
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.database.language import Language

@@ -1,15 +1,13 @@
-
 from datetime import datetime
 
 # Zope
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import IBug, IBugExternalRef, ICVERef, \
-                                           ICVERefSet
+from canonical.launchpad.interfaces import ICVERef, ICVERefSet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.bugset import BugSetBase

@@ -2,9 +2,9 @@
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import ForeignKey, BoolCol, StringCol, IntCol, MultipleJoin
+from sqlobject import StringCol, IntCol
 from sqlobject import RelatedJoin, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote
+from canonical.database.sqlbase import SQLBase
 
 # canonical imports
 from canonical.launchpad.interfaces import ILanguageSet, ILanguage

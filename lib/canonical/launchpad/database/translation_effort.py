@@ -1,12 +1,10 @@
-
 from canonical.database.sqlbase import SQLBase, quote
 
 from canonical.launchpad.database.schema import Label
 
 import canonical.launchpad.interfaces as interfaces
 
-from sqlobject import ForeignKey, MultipleJoin, RelatedJoin, IntCol, \
-    BoolCol, StringCol, DateTimeCol, SQLObjectNotFound
+from sqlobject import ForeignKey, MultipleJoin, IntCol, StringCol
 
 from zope.interface import implements
 

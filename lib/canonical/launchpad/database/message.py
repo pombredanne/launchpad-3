@@ -1,12 +1,10 @@
-
-from datetime import datetime
 from email.Utils import make_msgid
 import string
 
 # Zope
 from zope.interface import implements
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
+from sqlobject import DateTimeCol, ForeignKey, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IMessage, IMessageSet

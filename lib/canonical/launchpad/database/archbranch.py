@@ -1,12 +1,7 @@
-
-import psycopg
-
 from canonical.database.sqlbase import quote, SQLBase
-from sqlobject import StringCol, BoolCol, ForeignKey, IntCol, DateTimeCol, \
-                      MultipleJoin
+from sqlobject import StringCol, ForeignKey, MultipleJoin
 
-from canonical.launchpad.interfaces import ArchiveAlreadyRegistered, \
-                ArchiveNotRegistered, ArchiveLocationDoublyRegistered
+from canonical.launchpad.interfaces import ArchiveNotRegistered
 from canonical.launchpad.interfaces import RevisionNotRegistered
 from canonical.launchpad.interfaces import RevisionAlreadyRegistered
 from canonical.launchpad.interfaces import VersionNotRegistered

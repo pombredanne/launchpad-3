@@ -4,7 +4,6 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, AND
 
-from canonical.launchpad.interfaces import IAuthorization
 from canonical.launchpad.interfaces.milestone import IMilestone, \
     IMilestoneSet
 from canonical.database.sqlbase import SQLBase

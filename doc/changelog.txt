@@ -2,6 +2,82 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-10 23:36:14 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1168
+
+    Summary:
+      database class code refactoring,
+ primarly focussed on cleaning up unused import pollution
+    Revision:
+      launchpad--devel--0--patch-1168
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-280
+       update copyright message
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-281
+       add copyright notice and remove missing imports
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-282
+       database class code refactoring, primarly focussed on cleaning up unused import pollution
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-283
+       merge from rf
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/archarchive.py
+     lib/canonical/launchpad/database/archbranch.py
+     lib/canonical/launchpad/database/archchangeset.py
+     lib/canonical/launchpad/database/binarypackage.py
+     lib/canonical/launchpad/database/bounty.py
+     lib/canonical/launchpad/database/branch.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugassignment.py
+     lib/canonical/launchpad/database/bugattachment.py
+     lib/canonical/launchpad/database/bugextref.py
+     lib/canonical/launchpad/database/bugmessage.py
+     lib/canonical/launchpad/database/bugsubscription.py
+     lib/canonical/launchpad/database/bugtracker.py
+     lib/canonical/launchpad/database/bugwatch.py
+     lib/canonical/launchpad/database/build.py
+     lib/canonical/launchpad/database/country.py
+     lib/canonical/launchpad/database/cveref.py
+     lib/canonical/launchpad/database/distribution.py
+     lib/canonical/launchpad/database/distrorelease.py
+     lib/canonical/launchpad/database/files.py
+     lib/canonical/launchpad/database/infestation.py
+     lib/canonical/launchpad/database/language.py
+     lib/canonical/launchpad/database/librarian.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/database/manifest.py
+     lib/canonical/launchpad/database/manifestentry.py
+     lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/database/milestone.py
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/database/processor.py
+     lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/productrelease.py
+     lib/canonical/launchpad/database/productseries.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/database/publishedpackage.py
+     lib/canonical/launchpad/database/publishing.py
+     lib/canonical/launchpad/database/queue.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/database/sourcesource.py
+     lib/canonical/launchpad/database/soyuz.py
+     lib/canonical/launchpad/database/spokenin.py
+     lib/canonical/launchpad/database/translation_effort.py
+     standard_template.py
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-280
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-281
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-282
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-283
+
+
 2005-01-10 21:26:39 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1167
 
     Summary:

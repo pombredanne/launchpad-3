@@ -1,10 +1,8 @@
-
 # Zope
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, FloatCol
-from sqlobject import CurrencyCol
+from sqlobject import StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import ICountry, ICountrySet

@@ -14,7 +14,6 @@ from canonical.database.sqlbase import SQLBase
 
 # canonical imports
 from canonical.launchpad.interfaces import ILoginToken, ILoginTokenSet
-from canonical.lp.dbschema import LoginTokenType
 
 
 class LoginToken(SQLBase):
