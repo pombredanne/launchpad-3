@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-03 22:56:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1368
+
+    Summary:
+      Page for Dowload CoC Release as text file.
+    Revision:
+      launchpad--devel--0--patch-1368
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-03-03 22:40:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1367
 
     Summary:
