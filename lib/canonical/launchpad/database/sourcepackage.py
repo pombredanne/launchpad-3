@@ -138,7 +138,7 @@ class SourcePackage(SQLBase):
 
     def lastversions(self, distroRelease):
         return self.uploadsByStatus(distroRelease, 
-                                    dbschema.PackagePublishingStatus.SUPERCEDED,
+                                    dbschema.PackagePublishingStatus.SUPERSEDED,
                                     do_sort=True)
 
 

@@ -968,7 +968,7 @@ class PackagePublishingStatus(DBSchema):
      This is important because of how new source uploads dominate binary
      uploads bit-by-bit. Packages (source or binary) enter the publishing
      tables as 'Pending', progress through to 'Published' eventually become
-     'Superceded' and then become 'PendingRemoval'. Once removed from the
+     'Superseded' and then become 'PendingRemoval'. Once removed from the
      DistroRelease the publishing record is also removed.
      """
 
@@ -985,14 +985,14 @@ class PackagePublishingStatus(DBSchema):
         This package is currently published as part of the archive for that
         distrorelease. In general there will only ever be one version of
         any source/binary package published at any one time. Once a newer
-        version becomes published the older version is marked as superceded.
+        version becomes published the older version is marked as superseded.
         """)
 
-    SUPERCEDED = Item(3, """
-        Superceded
+    SUPERSEDED = Item(3, """
+        Superseded
 
         When a newer version of a [source] package is published the existing
-        one is marked as "superceded".
+        one is marked as "superseded".
         """)
 
     PENDINGREMOVAL = Item(6, """
