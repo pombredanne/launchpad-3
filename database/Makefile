@@ -28,7 +28,7 @@ default:
 	createdb $*
 	touch $@
 
-launchpad launchpad_test: %: +%-db
+launchpad launchpad_test: %:
 	@ echo '* create the $* database tables'
 	psql --file launchpad.sql $*
 	@ echo '* populate database $* with the schema information'
