@@ -1,10 +1,24 @@
 #!/usr/bin/python
 
-"""Operate on xml files produced from Freshmeat's
-fm-projects.rdf, attempting to get an email address
-for one of the authors from the person's page
-on freshmeat.net - and then update the xml file
-with this email address within <author_email> tags."""
+"""emailfinder.py - add email addresses to xml files
+
+Operate on xml files produced from Freshmeat's fm-projects.rdf,
+attempting to get an email address for one of the authors from the
+person's page on freshmeat.net - and then update the xml file with
+this email address within <author_email> tags.
+
+usage: emailfinder.py [options]
+
+options:
+  -h, --help            show this help message and exit
+  -f FILE, --file=FILE  Single project XML file
+  -l LIST, --list=LIST  List of products
+  -d DIR, --dir=DIR     XML directory
+  -c CACHE, --cachefile=CACHE
+                        Cache file
+  -w TIME, --wait=TIME  Interval in seconds
+
+"""
 
 import os
 import sys
@@ -25,22 +39,25 @@ email_failures = 0
 files_processed = 0
 
 def find_email(filename):
-    """Read in xml file for product. If no email for author, fetch it
-    from freshmeat.net/projects/<product> and update the file."""
-
+    """Read in xml file, get email address from freshmeat.net"""
     global files_processed
     global email_cache_hits
     global email_cache_misses
     global email_file_hits
     global email_failures
     
-    rdf = open(filename).read()
+    try:
+        rdf = open(filename).read()
+    except IOError:
+        print '   FILE NOT FOUND'
+        return
+    
     files_processed = files_processed + 1
 
     # if no email continue else break
     an_email = extract_tag(rdf, 'author_email')
     if an_email:
-        email_file_hits = email_file_hits + 1
+        email_file_hits += 1
         print '   File Hit - already done'
         return
 
@@ -48,18 +65,19 @@ def find_email(filename):
     for author in extract_tags(rdf, 'author'):
         name = extract_tag(author, 'author_name')
         url = extract_tag(author, 'author_url')
-        if url == None: continue
+        if not url:
+            continue
         if email_cache.has_key(url):
             an_email = email_cache[url]
-            email_cache_hits = email_cache_hits + 1
+            email_cache_hits += 1
             print '   (found in cache)',
         else:
             time.sleep(WAIT)
             html = get_html(url)
-            email_cache_misses = email_cache_misses + 1
+            email_cache_misses += 1
             # Extract email address
             an_email = get_email(html)
-            # Quick sanity check - throw away if we can't use
+            # Reject email addresses with a space in them
             if an_email and ' ' in an_email:
                 print '   BAD EMAIL: ' + an_email
                 an_email = None
@@ -69,10 +87,12 @@ def find_email(filename):
     if an_email:
         print '   '+an_email
         email_cache[url] = an_email
-        # update file with devel
-        rdf = rdf.replace('<author_url>'+url+'</author_url>',
-                          '<author_url>'+url+'</author_url>\n        <author_email>'
-                          +an_email+'</author_email>')
+        # Add author email address to file text
+        current = '<author_url>' + url + '</author_url>'
+        proposed = ('<author_url>' + url + '</author_url>\n' +
+                    '        <author_email>' +
+                    an_email + '</author_email>')
+        rdf = rdf.replace(current, proposed)
     
         # update flag <local_status>NEW</local_status>
         rdf = rdf.replace('    <local_status>NEW</local_status>\n','')
@@ -83,27 +103,33 @@ def find_email(filename):
         open(filename,'w').write(rdf)
 
     else:
-        email_failures = email_failures + 1
+        email_failures += 1
 
 
 def extract_tag(rdf, tag):
-    """Given a piece of tag-soup, extract the text between
-    <tag> and </tag>"""
-    start = rdf.find('<'+tag+'>')
-    if start == -1: return
-    start = start + len('<'+tag+'>')
-    end = rdf.find('</'+tag+'>', start)
-    if end == -1: return   # We don't handle unbalanced tags
-    return rdf[start:end]
+    """Given tag-soup, extract the text between <tag> and </tag>"""
+    taglist = extract_tags(rdf, tag, 1)
+    if taglist:
+        return taglist[0]
+    else:
+        return None
 
 
-def extract_tags(rdf, tag):
-    """Given a piece of tag-soup, extract a list of items
-    where each is the text appearing between one of multiple
-    <tag>...</tag>"""
+def extract_tags(rdf, tag, max_occurrences=0):
+    """Extract multiple tags from tag soup/RDF
+
+    Given a piece of tag-soup, extract a list of items
+    where each is the text appearing between <tag>...</tag>.
+
+    max_occurrences is the maximum number to return
+    - use 0 for unlimited.
+
+    """
+    
     start = 0
     end = 0
     result = []
+    occurrences = 0
     while start > -1:
         start = rdf.find('<'+tag+'>', end)
         if start == -1:
@@ -112,35 +138,80 @@ def extract_tags(rdf, tag):
         end = rdf.find('</'+tag+'>', start)
         if end == -1: break   # We don't handle unbalanced tags
         result.append(rdf[start:end])
+        occurrences += 1
+        if max_occurrences and (occurrences == max_occurrences):
+            break
     return result
 
 
 def get_html(url):
-    """Fetch URL of a web page"""
+    """Fetch HTML text of a web page from the given URL"""
     try:
         urlobj = urllib2.urlopen(url)
     except (urllib2.HTTPError, urllib2.URLError):
         return None
-    html = urlobj.read()
-    urlobj.close()
-    return html
+    if urlobj is not None:
+        html = urlobj.read()
+        urlobj.close()
+        return html
+    else:
+        return None
 
 
 def get_email(html):
-    """Extract email address from a Freshmeat.net
-    user page.
+    """Extract email address from a Freshmeat.net user page.
+    
     Example: <b>Email:</b><br>
-    <a>kiko (at) async (dot) com (dot) br</a><p>"""
+    <a>kiko (at) async (dot) com (dot) br</a><p>
+
+    """
     if type(html) <> type('asd'): return None
     start = string.find(html, '<b>Email:</b>')
     if start == -1: return None
-    start = start + 22
-    end = string.find(html, '</a>', start)
+    # Find the end of the </a> tag
+    end = string.find(html, '</a>', start) + len('</a>')
     if end == -1: return None
-    email = html[start:end]
+    email = extract_tag(html[start:end], 'a')
     # unobfuscate email address
     email = unobfuscate_fm_email(email)
     return email
+
+def get_files(options):
+    files = []
+    if options.filename:
+        print 'Processing one file: ' + options.filename
+        files.append(options.filename)
+    elif options.list:
+        # Must have directory too
+        if not options.directory:
+            print 'Please specify directory as well.'
+            sys.exit(1)
+        print 'Processing list: ' + options.list
+        # Verify the access to the LIST file
+        filename = options.list
+        if not os.access(filename, os.F_OK):
+            print 'List file not found:', LIST
+            sys.exit(0)
+
+        products = open(filename).readlines()
+
+        # iter through the lines
+        for line in products:
+            # Get the first column
+            product = line.split()[0] + '.xml'
+            path = os.path.join(options.directory, product)
+            files.append(path)
+    elif options.directory:
+        # Process all files in DIR
+        print 'Processing directory ' + options.directory
+        dirfiles = os.listdir(options.directory)
+        for filename in dirfiles:
+            if filename.endswith('.xml'):
+                path = os.path.join(options.directory, filename)
+                files.append(path)
+    else:
+        pass
+    return files
 
 
 if __name__=='__main__':
@@ -149,6 +220,10 @@ if __name__=='__main__':
     parser.add_option("-f", "--file", dest="filename",
                       help="Single project XML file",
                       metavar="FILE")
+
+    parser.add_option("-l", "--list", dest="list",
+                      help="List of products",
+                      metavar="LIST")
 
     parser.add_option("-d", "--dir", dest="directory",
                       help="XML directory",
@@ -159,7 +234,7 @@ if __name__=='__main__':
                       help="Cache file",
                       metavar="CACHE")
 
-    ## Web search interval avoiding to be blocked by high threshould
+    ## Web search interval avoiding to be blocked by high threshold
     ## of requests reached by second
     parser.add_option("-w", "--wait", dest="wait",
                       help="Interval in seconds",
@@ -172,6 +247,7 @@ if __name__=='__main__':
     FILE = options.filename
     CACHE = options.cache
     WAIT = int(options.wait)
+    LIST = options.list
 
     if CACHE:
         try:
@@ -179,28 +255,21 @@ if __name__=='__main__':
             email_cache = pickle.load(cache_file)
             cache_file.close()
             print 'Cache loaded'
-        except:
+        except IOError:
             email_cache = {}
 
-    if FILE:
-        print 'Processing one file: '+FILE
-        xml_file = FILE
-        find_email(xml_file)
-    else:
-        # Process all files in DIR
-        print 'Processing directory '+DIR
-        files = os.listdir(DIR)
-        for xml_file in files:
-            if xml_file[-4:] == '.xml':
-                print xml_file
-                find_email(DIR+'/'+xml_file)
+    for xml_file in get_files(options):
+        print xml_file
+        path = os.path.join(DIR, xml_file)
+        find_email(path)
+
     if CACHE:
         try:
             cache_file = open(CACHE, 'w')
             pickle.dump(email_cache, cache_file)
             cache_file.close()
             print 'Cache saved'
-        except:
+        except IOError:
             sys.stderr.write('Could not write cache file')
     
     # Print statistics

@@ -18,7 +18,7 @@ from canonical.database.constants import UTC_NOW
 
 # canonical imports
 from canonical.launchpad.interfaces import IPerson, ITeam, IPersonSet
-from canonical.launchpad.interfaces import IMembership, ITeamParticipation
+from canonical.launchpad.interfaces import ITeamMembership, ITeamParticipation
 from canonical.launchpad.interfaces import ITeamParticipationSet
 from canonical.launchpad.interfaces import IEmailAddress, IWikiName
 from canonical.launchpad.interfaces import IIrcID, IArchUserID, IJabberID
@@ -38,8 +38,8 @@ from canonical.launchpad.database.pofile import POTemplate
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 from canonical.lp.dbschema import KarmaField
 from canonical.lp.dbschema import EmailAddressStatus
-from canonical.lp.dbschema import MembershipRole
-from canonical.lp.dbschema import MembershipStatus
+from canonical.lp.dbschema import TeamMembershipRole
+from canonical.lp.dbschema import TeamMembershipStatus
 from canonical.lp.dbschema import GPGKeyAlgorithms
 from canonical.foaf import nickname
 
@@ -222,8 +222,9 @@ class Person(SQLBase):
             return False
 
     def getMembershipByMember(self, member):
-        m = Membership.select(AND(Membership.q.teamID==self.id,
-                                  Membership.q.personID==member.id))
+        table = TeamMembership
+        m = table.select(AND(table.q.teamID==self.id,
+                             table.q.personID==member.id))
         assert m.count() == 1
         return m[0]
 
@@ -232,16 +233,18 @@ class Person(SQLBase):
                                        EmailAddress.q.status==int(status)))
 
     def _getMembersByStatus(self, status):
-        memberships = Membership.select(AND(Membership.q.teamID==self.id,
-                                            Membership.q.status==status))
+        table = TeamMembership
+        memberships = table.select(AND(table.q.teamID==self.id,
+                                       table.q.status==status))
         return [m.person for m in memberships]
 
     def _getMembersByRole(self, role):
         # Check the roles only for approved members.
-        status = int(MembershipStatus.CURRENT)
-        memberships = Membership.select(AND(Membership.q.teamID==self.id,
-                                            Membership.q.status==status,
-                                            Membership.q.role==role))
+        status = int(TeamMembershipStatus.CURRENT)
+        table = TeamMembership
+        memberships = table.select(AND(table.q.teamID==self.id,
+                                       table.q.status==status,
+                                       table.q.role==role))
         return [m.person for m in memberships]
 
     #
@@ -249,27 +252,27 @@ class Person(SQLBase):
     #
 
     def _currentmembers(self): 
-        return self._getMembersByStatus(int(MembershipStatus.CURRENT))
+        return self._getMembersByStatus(int(TeamMembershipStatus.CURRENT))
     currentmembers = property(_currentmembers)
 
     def _proposedmembers(self):
-        return self._getMembersByStatus(int(MembershipStatus.PROPOSED))
+        return self._getMembersByStatus(int(TeamMembershipStatus.PROPOSED))
     proposedmembers = property(_proposedmembers)
 
     def _administrators(self):
-        return self._getMembersByRole(int(MembershipRole.ADMIN))
+        return self._getMembersByRole(int(TeamMembershipRole.ADMIN))
     administrators = property(_administrators)
 
     def _members(self):
-        return self._getMembersByRole(int(MembershipRole.MEMBER))
+        return self._getMembersByRole(int(TeamMembershipRole.MEMBER))
     members = property(_members)
 
     def _memberships(self):
-        return Membership.selectBy(personID=self.id)
+        return TeamMembership.selectBy(personID=self.id)
     memberships = property(_memberships)
 
     def _teams(self):
-        memberships = Membership.selectBy(personID=self.id)
+        memberships = TeamMembership.selectBy(personID=self.id)
         return [m.team for m in memberships]
     teams = property(_teams)
 
@@ -517,8 +520,8 @@ def createTeam(displayname, teamowner, teamdescription, email=None):
     if Person.selectBy(name=nick).count() > 0:
         raise Error, 'Should not create another team with name %s' % nick
     
-    role = MembershipRole.ADMIN.value
-    status = MembershipStatus.CURRENT.value
+    role = TeamMembershipRole.ADMIN.value
+    status = TeamMembershipStatus.CURRENT.value
 
     team = Person(displayname=displayname,
                   givenname=None,
@@ -530,19 +533,14 @@ def createTeam(displayname, teamowner, teamdescription, email=None):
                   name=nick)
 
     if email:
-        EmailAddress(person=team.id,
-                 email=email,
-                 status=int(EmailAddressStatus.NEW))
+        new = int(EmailAddressStatus.NEW)
+        EmailAddress(person=team.id, email=email, status=new)
 
     # XXX: salgado, 2005-01-14: The owner should be added to the list of
     # members of that team?
-    Membership(personID=teamowner,
-               team=team.id,
-               role=role,
-               status=status)
+    TeamMembership(personID=teamowner, team=team.id, role=role, status=status)
 
-    TeamParticipation(personID=teamowner,
-                      teamID=team.id)
+    TeamParticipation(personID=teamowner, teamID=team.id)
 
     return team
 
@@ -656,10 +654,10 @@ class IrcID(SQLBase):
     nickname = StringCol(dbName='nickname', notNull=True)
 
 
-class Membership(SQLBase):
-    implements(IMembership)
+class TeamMembership(SQLBase):
+    implements(ITeamMembership)
 
-    _table = 'Membership'
+    _table = 'TeamMembership'
 
     team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
@@ -667,14 +665,14 @@ class Membership(SQLBase):
     status = IntCol(dbName='status', notNull=True)
 
     def _rolename(self):
-        for roleitem in MembershipRole.items:
+        for roleitem in TeamMembershipRole.items:
             if roleitem.value == self.role:
                 return roleitem.title
         return 'Unknown (%d)' % self.role
     rolename = property(_rolename)
 
     def _statusname(self):
-        for statusitem in MembershipStatus.items:
+        for statusitem in TeamMembershipStatus.items:
             if statusitem.value == self.status:
                 return statusitem.title
         return 'Unknown (%d)' % self.status

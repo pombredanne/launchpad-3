@@ -12,6 +12,7 @@ from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
 
 class FatSamStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
+    dbuser = 'librarian'
     def __init__(self, methodName='runTest'):
         # We can't use super here, because: the signatures of the two __init__
         # functions are different.  Note also that unittest.TestCase doesn't use

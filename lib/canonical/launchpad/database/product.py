@@ -21,7 +21,6 @@ from canonical.launchpad.database.pofile import POTemplate
 from canonical.launchpad.database.cal import Calendar
 
 from canonical.launchpad.interfaces import IProduct, IProductSet
-from canonical.launchpad.interfaces import IObjectAuthorization
 from canonical.launchpad.interfaces import ICalendarOwner
 
 from sets import Set
@@ -30,7 +29,7 @@ from datetime import datetime
 class Product(SQLBase):
     """A Product."""
 
-    implements(IProduct, IObjectAuthorization, ICalendarOwner)
+    implements(IProduct, ICalendarOwner)
 
     _table = 'Product'
 
@@ -115,18 +114,6 @@ class Product(SQLBase):
 
     milestones = MultipleJoin('Milestone', joinColumn = 'product')
     
-    def checkPermission(self, principal, permission):
-        if permission == "launchpad.Edit":
-            owner = getattr(self.owner, 'id', None)
-            user = getattr(principal, 'id', None)
-            # XXX cprov 20050104
-            # Uncovered case when Onwer is a Team
-            
-            # prevent NOT LOGGED and uncertain NO OWNER
-            if owner and user:
-                # I'm the product owner and want to edit
-                return user == owner
-
     def newseries(self, form):
         # Extract the details from the form
         name = form['name']

@@ -55,6 +55,13 @@
 
   <adapter
       provides="canonical.launchpad.interfaces.IAuthorization"
+      for="canonical.launchpad.interfaces.IProject"
+      name="launchpad.Edit"
+      factory="canonical.launchpad.security.EditByOwner"
+      />
+
+  <adapter
+      provides="canonical.launchpad.interfaces.IAuthorization"
       for="canonical.launchpad.interfaces.IMilestone"
       name="launchpad.Edit"
       factory="canonical.launchpad.security.EditByProductOwner"

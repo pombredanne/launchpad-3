@@ -12,7 +12,7 @@ def sorted(l):
     return l
 
 class DBTestCase(LaunchpadZopelessTestSetup, unittest.TestCase):
-
+    dbuser = 'librarian'
     def __init__(self, methodName='runTest'):
         unittest.TestCase.__init__(self, methodName)
         LaunchpadZopelessTestSetup.__init__(self)

@@ -61,6 +61,8 @@ def _reconnect_sqlos():
 class LaunchpadTestSetup(PgTestSetup):
     template = 'launchpad_ftest_template'
     dbname = 'launchpad_ftest' # Needs to match ftesting.zcml
+    dbuser = 'launchpad'
+    dbhost = 'localhost'
 
     reset_db = True
 
@@ -80,7 +82,9 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
     txn = None
     def setUp(self):
         super(LaunchpadZopelessTestSetup, self).setUp()
-        LaunchpadZopelessTestSetup.txn = initZopeless(dbname=self.dbname)
+        LaunchpadZopelessTestSetup.txn = initZopeless(
+                dbname=self.dbname, dbuser=self.dbuser
+                )
 
     def tearDown(self):
         LaunchpadZopelessTestSetup.txn.uninstall()

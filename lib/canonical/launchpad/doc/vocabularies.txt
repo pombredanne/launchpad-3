@@ -84,4 +84,12 @@ o ValidPerson - all 'valid' people. This is currently defined as people
     >>> [t.token for t in stuff]
     ['stub']
 
+o ValidOwner - all 'valid' person or team in Launchpad context, able to 
+  own an entity (Product, Project, Team, Package, etc) reflecting  
+  "Ubuntu Membership" specification.
+
+   XXX cprov 20050128
+   Now, ValidOwner simply extends Person, i.e., returns all valid person
+   or team, so we have the same usage as PersonVocabulary
+
 XXX: document more vocabularies here, particularly when they break!

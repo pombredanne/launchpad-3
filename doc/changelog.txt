@@ -2,6 +2,338 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-01 03:21:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1266
+
+    Summary:
+      Merge in database security branch
+    Revision:
+      launchpad--devel--0--patch-1266
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-38
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-1
+       Change ownership of all tables to user postgres
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-2
+       Grant permissions from config file
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-3
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-4
+       Add more tables to db security config
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-5
+       Security definitions ready for testing
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-6
+       Maintain security on sequences
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-7
+       Switch on dbsecurity and make librarian tests connect as the librarian user so they pass
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-8
+       star-merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-9
+       Update security for new tables
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-10
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-11
+       Update security.cfg for membership table rename
+    
+
+    new files:
+     database/schema/.arch-ids/security.cfg.id
+     database/schema/.arch-ids/security.py.id
+     database/schema/security.cfg database/schema/security.py
+
+    modified files:
+     database/schema/Makefile doc/changelog.txt
+     lib/canonical/ftests/pgsql.py
+     lib/canonical/launchpad/ftests/harness.py
+     lib/canonical/librarian/ftests/test_db.py
+     lib/canonical/librarian/ftests/test_storage.py
+     lib/canonical/lp/__init__.py test_on_merge.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--base-0
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-1
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-2
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-3
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-4
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-5
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-6
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-7
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-8
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-9
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-10
+     stuart.bishop@canonical.com/launchpad--dbsecurity--1--patch-11
+
+
+2005-01-31 15:26:57 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1265
+
+    Summary:
+      Adding a defaultView for LoginToken, which redirects to the right page after checking the tokentype. This way we don't have to send URLs with +validate, +newaccount, etc, and thus making the URL smaller.
+    Revision:
+      launchpad--devel--0--patch-1265
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-110
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-111
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-112
+       Adding a defaultView for LoginToken, which redirects to the right page after checking the tokentype. This way we don't have to send URLs with +validate, +newaccount, etc, and thus making the URL smaller.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-113
+       Adding template for LoginToken's defaultView
+    
+
+    new files:
+     lib/canonical/launchpad/templates/.arch-ids/logintoken-index.pt.id
+     lib/canonical/launchpad/templates/logintoken-index.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/foaf/configure.zcml
+     lib/canonical/launchpad/browser/logintoken.py
+     lib/canonical/launchpad/database/logintoken.py
+     lib/canonical/launchpad/pagetests/standalone/xx-launchpad-createaccount-and-login.txt
+     lib/canonical/launchpad/templates/forgottenpassword.txt
+     lib/canonical/launchpad/templates/newuser-email.txt
+     lib/canonical/launchpad/templates/validate-email.txt
+     lib/canonical/launchpad/zcml/logintoken.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-110
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-111
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-112
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-113
+
+
+2005-01-31 10:30:11 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1264
+
+    Summary:
+      Merge db patch to rename Membership to TeamMembership
+    Revision:
+      launchpad--devel--0--patch-1264
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--membership-rename--0--base-0
+       tag of guilherme.salgado@canonical.com/launchpad--devel--0--patch-109
+    
+     * guilherme.salgado@canonical.com/launchpad--membership-rename--0--patch-1
+       Renames: Membership -> TeamMembership; IMembership -> ITeamMembership; MembershipStatus -> TeamMembershipStatus; MembershipRole -> TeamMembershipRole
+    
+     * guilherme.salgado@canonical.com/launchpad--membership-rename--0--patch-2
+       merge from rf
+    
+     * stuart.bishop@canonical.com/launchpad--membership-rename--0--base-0
+       tag of guilherme.salgado@canonical.com/launchpad--membership-rename--0--patch-2
+    
+     * stuart.bishop@canonical.com/launchpad--membership-rename--0--patch-1
+       Move membership table rename patch from pending and tweak. Regenerate sample data
+    
+     * stuart.bishop@canonical.com/launchpad--membership-rename--0--patch-2
+       Update database revision
+    
+
+    modified files:
+     database/sampledata/current.sql
+     database/schema/patch-6-32-0.sql doc/changelog.txt
+     lib/canonical/launchpad/browser/people.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/zcml/membership.zcml
+     lib/canonical/lp/dbschema.py
+
+    renamed files:
+     database/schema/pending/.arch-ids/salgado-rename-membership.sql.id
+       ==> database/schema/.arch-ids/patch-6-32-0.sql.id
+     database/schema/pending/salgado-rename-membership.sql
+       ==> database/schema/patch-6-32-0.sql
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--membership-rename--0--base-0
+     guilherme.salgado@canonical.com/launchpad--membership-rename--0--patch-1
+     guilherme.salgado@canonical.com/launchpad--membership-rename--0--patch-2
+     stuart.bishop@canonical.com/launchpad--membership-rename--0--base-0
+     stuart.bishop@canonical.com/launchpad--membership-rename--0--patch-1
+     stuart.bishop@canonical.com/launchpad--membership-rename--0--patch-2
+
+
+2005-01-28 16:15:51 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1263
+
+    Summary:
+      Follow the doc/security spec in Product/Project
+    Revision:
+      launchpad--devel--0--patch-1263
+
+    Patches applied:
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-491
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-492
+       Merge from RF
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-493
+       Adding ValidOwnerVocabulary Documentation and Fitting Product and Project Content classes to doc/securitity.txt Specification.
+    
+     * celso.providelo@canonical.com/launchpad--devel--0--patch-494
+       Merge from RF
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/database/product.py
+     lib/canonical/launchpad/database/project.py
+     lib/canonical/launchpad/doc/vocabularies.txt
+     lib/canonical/launchpad/security.zcml
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/launchpad/zcml/project.zcml
+
+    new patches:
+     celso.providelo@canonical.com/launchpad--devel--0--patch-491
+     celso.providelo@canonical.com/launchpad--devel--0--patch-492
+     celso.providelo@canonical.com/launchpad--devel--0--patch-493
+     celso.providelo@canonical.com/launchpad--devel--0--patch-494
+
+
+2005-01-28 15:13:26 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1262
+
+    Summary:
+      emailfinder code improvements after review and discussion
+    Revision:
+      launchpad--devel--0--patch-1262
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-20
+       merge rocketfuel
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-21
+       More improvements to emailfinder from code review and discussions on LP list
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-22
+       emailfinder - remove diagnostic print
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/emailfinder.py
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--devel--0--patch-20
+     morgan.collett@canonical.com/launchpad--devel--0--patch-21
+     morgan.collett@canonical.com/launchpad--devel--0--patch-22
+
+
+2005-01-28 13:41:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1261
+
+    Summary:
+      Builder table mods and new BuildQueue table for Kinnison
+    Revision:
+      launchpad--devel--0--patch-1261
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-103
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-104
+       star-merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-105
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-106
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-107
+       Builder table mods and new BuildQueue table for Kinnison
+    
+
+    new files:
+     database/schema/.arch-ids/patch-6-31-0.sql.id
+     database/schema/patch-6-31-0.sql
+
+    modified files:
+     database/schema/comments.sql doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-103
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-104
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-105
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-106
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-107
+
+
+2005-01-28 11:52:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1260
+
+    Summary:
+      Buildd master db patch and build status dbschema
+    Revision:
+      launchpad--devel--0--patch-1260
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-11
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-12
+       star-merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-13
+       Buildd master db patch and build status dbschema
+    
+
+    new files:
+     database/schema/pending/.arch-ids/dsilvers-fiera-buildd.sql.id
+     database/schema/pending/dsilvers-fiera-buildd.sql
+
+    modified files:
+     doc/changelog.txt lib/canonical/lp/dbschema.py
+
+    new patches:
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-11
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-12
+     daniel.silverstone@canonical.com--desktop/launchpad--devel--0--patch-13
+
+
+2005-01-27 15:48:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1259
+
+    Summary:
+      emailfinder list functionality and code improvements
+    Revision:
+      launchpad--devel--0--patch-1259
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-18
+       Changes to emailfinder from code review
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-19
+       emailfinder: add list option
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/emailfinder.py
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--devel--0--patch-18
+     morgan.collett@canonical.com/launchpad--devel--0--patch-19
+
+
 2005-01-26 23:10:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1258
 
     Summary:

@@ -81,7 +81,7 @@ class IPerson(Interface):
     activities = Attribute("Karma")
     distroroles = Attribute(("List of Distribution Roles Played by this "
                              "Person/Team."))
-    memberships = Attribute(("List of Membership objects for Teams this "
+    memberships = Attribute(("List of TeamMembership objects for Teams this "
                              "Person is a member of. Either as a PROPOSED "
                              "or CURRENT member."))
     translations = Attribute("Translations")
@@ -118,7 +118,7 @@ class IPerson(Interface):
         """Return true if this person is in the named team."""
 
     def getMembershipByMember(member):
-        """Return a Membership object of the given member in this team."""
+        """Return a TeamMembership object of the given member in this team."""
 
 
 class ITeam(IPerson):
@@ -186,8 +186,8 @@ class IEmailAddress(Interface):
     statusname = Attribute("StatusName")
 
 
-class IMembership(Interface):
-    """Membership for Users"""
+class ITeamMembership(Interface):
+    """TeamMembership for Users"""
     id = Int(title=_('ID'), required=True, readonly=True)
     team = Int(title=_("Team"), required=True, readonly=False)
     person = Int(title=_("Owner"), required=True, readonly=False)

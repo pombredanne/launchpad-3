@@ -33,6 +33,8 @@ test: create
 	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
 	@ echo "* Adding comments"
 	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
+	@ echo "* Security setup"
+	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} security.py
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
 

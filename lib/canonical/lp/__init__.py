@@ -21,14 +21,27 @@ _ = MessageIDFactory('launchpad')
 # instead of a Unix domain socket.
 dbname = os.environ.get('LP_DBNAME', 'launchpad_ftest')
 dbhost = os.environ.get('LP_DBHOST', '')
+dbuser = os.environ.get('LP_DBUSER', 'launchpad')
 
-def initZopeless(debug=False, dbname=None, dbhost=None):
+def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None):
     if dbname is None:
         dbname = globals()['dbname']
     if dbhost is None:
         dbhost = globals()['dbhost']
-    return ZopelessTransactionManager('postgres://%s/%s' % (dbhost, dbname),
-                                      debug=debug)
+    if dbuser is None:
+        dbuser = globals()['dbuser']
+
+    # If the user has been specified in the dbhost, it overrides.
+    # Might want to remove this backwards compatibility feature at some
+    # point.
+    if '@' in dbhost or not dbuser:
+        dbuser = ''
+    else:
+        dbuser = dbuser + '@'
+
+    return ZopelessTransactionManager('postgres://%s%s/%s' % (
+        dbuser, dbhost, dbname,
+        ), debug=debug)
 
 def decorates(interface, context='context'):
     """Make an adapter into a decorator.
