@@ -29,32 +29,42 @@ if __name__ == '__main__':
         if getattr(options, name) is None:
             raise RuntimeError("No %s specified." % name)
 
-    initZopeless()
+    ztm = initZopeless()
 
     person = Person.get(int(options.owner))
+
     if person is None:
-        raise RuntimeError("The person %s does not exists." % options.owner)
-    product = Product.get(int(options.product))
-    if product is None:
-        raise RuntimeError("The product %s does not exists." %
+        raise RuntimeError("The person %s does not exist." % options.owner)
+
+    products = list(Product.selectBy(name = options.product))
+
+    if products == 0:
+        raise RuntimeError("The product %s does not exist." %
             options.product)
 
+    product = products[0]
+
     # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
-    poTemplate = POTemplate(product=product,
-                            name=options.name,
-                            title=options.title,
-                            description=options.description,
-                            path='',
-                            isCurrent=True,
-                            dateCreated=datetime.utcnow(),
-                            copyright='XXX: FIXME',
-                            priority=2, # XXX: FIXME
-                            branch=1, # XXX: FIXME
-                            license=1, # XXX: FIXME
-                            messageCount=0,
-                            owner=person)
+    poTemplate = POTemplate(
+        product=product,
+        name=options.name,
+        title=options.title,
+        description=options.description,
+        path='',
+        iscurrent=True,
+        datecreated=datetime.utcnow(),
+        copyright='XXX: FIXME',
+        priority=2, # XXX: FIXME
+        branch=1, # XXX: FIXME
+        license=1, # XXX: FIXME
+        messagecount=0,
+        owner=person)
+
     if poTemplate is None:
         raise RuntimeError("There was an error creating the template %s.",
-                           options.name)
-    else:
-        print "Template %s created." % options.name
+            options.name)
+
+    print "Template %s created." % options.name
+
+    ztm.commit()
+
