@@ -38,7 +38,9 @@ from canonical.launchpad.database import BinaryPackage, Build, \
                                          IrcID, Membership, TeamParticipation,\
                                          DistributionRole, DistroReleaseRole, \
                                          SourceSource, \
-                                         RCSTypeEnum, Branch, Changeset
+                                         RCSTypeEnum, Branch, Changeset,\
+                                         SourcePackageReleaseFile,\
+                                         BinaryPackageFile
 
 
 #

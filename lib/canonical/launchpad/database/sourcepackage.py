@@ -42,10 +42,9 @@ class SourcePackage(SQLBase):
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
                                    dbName='sourcepackagename', notNull=True)
 
-    releases              = MultipleJoin('SourcePackageRelease', 
-                                         joinColumn='sourcepackage')
-    bugs                  = MultipleJoin('SourcePackageBugAssignment', 
-                                         joinColumn='sourcepackage')
+    releases = MultipleJoin('SourcePackageRelease', joinColumn='sourcepackage')
+    bugs     = MultipleJoin('SourcePackageBugAssignment', 
+                            joinColumn='sourcepackage')
 
     #
     # Properties
@@ -223,21 +222,23 @@ class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)
     _table = 'SourcePackageRelease'
 
-    _columns = [
-        ForeignKey(name='sourcepackage', foreignKey='SourcePackage', dbName='sourcepackage'),
-        ForeignKey(name='creator', foreignKey='Person', dbName='creator'),
-        ForeignKey(name='dscsigningkey', foreignKey='GPGKey', dbName='dscsigningkey'),
-        ForeignKey(name='component', foreignKey='Component', dbName='component'),
-        ForeignKey(name='section', foreignKey='Section', dbName='section'),
-        DateTimeCol(name='dateuploaded', dbName='dateuploaded', notNull=True, default='NOW'),
-        IntCol(name='urgency', dbName='urgency', notNull=True),
-        StringCol(name='version', dbName='version', notNull=True),
-        StringCol(name='changelog', dbName='changelog'),
-        StringCol(name='builddepends', dbName='builddepends'),
-        StringCol(name='builddependsindep', dbName='builddependsindep'),
-        StringCol(name='architecturehintlist', dbName='architecturehintlist'),
-        StringCol(name='dsc', dbName='dsc'),
-    ]
+    section = ForeignKey(foreignKey='Section', dbName='section')
+    creator = ForeignKey(foreignKey='Person', dbName='creator')
+    component = ForeignKey(foreignKey='Component', dbName='component')
+    sourcepackage = ForeignKey(foreignKey='SourcePackage',
+                               dbName='sourcepackage')
+    dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
+
+    urgency = IntCol(dbName='urgency', notNull=True)
+    dateuploaded = DateTimeCol(dbName='dateuploaded', notNull=True,
+                               default='NOW')
+
+    dsc = StringCol(dbName='dsc')
+    version = StringCol(dbName='version', notNull=True)
+    changelog = StringCol(dbName='changelog')
+    builddepends = StringCol(dbName='builddepends')
+    builddependsindep = StringCol(dbName='builddependsindep')
+    architecturehintlist = StringCol(dbName='architecturehintlist')
 
     #
     # Properties
@@ -310,21 +311,21 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     implements(ISourcePackageReleasePublishing)
     _table = 'VSourcePackageReleasePublishing'
 
-    # All columns of SourcePackageRelease are available here too.
     # XXXkiko: IDs in this table are *NOT* unique!
     # XXXkiko: clean up notNulls
-    _columns = SourcePackageRelease._columns + [
-        IntCol(name='publishingstatus', dbName='publishingstatus', notNull=True),
-        DateTimeCol(name='datepublished', dbName='datepublished'),
-        StringCol(name='name', dbName='name', notNull=True),
-        StringCol(name='shortdesc', dbName='shortdesc', notNull=True),
-        StringCol(name='description', dbName='description', notNull=True),
-        StringCol(name='componentname', dbName='componentname', notNull=True),
-        ForeignKey(name='distrorelease', foreignKey='DistroRelease', dbName='distrorelease'),
-        ForeignKey(name='maintainer', foreignKey='Person', dbName='maintainer'),
-        #XXX: salgado: wtf is this?
-        #MultipleJoin('Build', joinColumn='sourcepackagerelease'),
-    ]
+    datepublished = DateTimeCol(dbName='datepublished')
+    publishingstatus = IntCol(dbName='publishingstatus', notNull=True)
+
+    name = StringCol(dbName='name', notNull=True)
+    shortdesc = StringCol(dbName='shortdesc', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
+    componentname = StringCol(dbName='componentname', notNull=True)
+
+    maintainer = ForeignKey(foreignKey='Person', dbName='maintainer')
+    distrorelease = ForeignKey(foreignKey='DistroRelease',
+                               dbName='distrorelease')
+    #XXX: salgado: wtf is this?
+    #MultipleJoin('Build', joinColumn='sourcepackagerelease'),
 
 
 # XXX Mark Shuttleworth: this is somewhat misleading as there

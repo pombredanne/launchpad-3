@@ -191,8 +191,11 @@ class TeamAddView(object):
                 self.error_msg = 'Password does not match'
                 return enable_added
 
-            teamowner = IPerson(self.request.principal).id
-
+            person = IPerson(self.request.principal, None)
+            
+            if person:
+                teamowner = person.id
+            
             self.results = createTeam(displayname,
                                       teamowner,
                                       teamdescription,
@@ -219,7 +222,9 @@ class TeamJoinView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.person = IPerson(self.request.principal)
+
+        self.person = IPerson(self.request.principal, None)
+
             
     def join_action(self):
         ## XXX: (proposed+member) cprov 20041003
@@ -248,7 +253,8 @@ class TeamUnjoinView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.person = IPerson(self.request.principal)
+
+        self.person = IPerson(self.request.principal, None)
             
     def unjoin_action(self):
 
@@ -285,14 +291,15 @@ class PersonView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.person = IPerson(self.request.principal)
+
+        self.person = IPerson(self.request.principal, None)
         
     def is_member(self):
 
         if self.person and self.context.person.teamowner:
 
             membership = Membership.selectBy(personID=self.person.id,
-                                                  teamID=self.context.id)
+                                             teamID=self.context.id)
             if membership.count() > 0:
                 return True
         
@@ -315,15 +322,14 @@ class PersonEditView(object):
         self.request = request
         self.results = []
         self.permission = False
+        self.person = IPerson(self.request.principal, None)
         
-        try:
-            pid = IPerson(self.request.principal).id
+        if self.person:
+            pid = self.person.id
             
             if (pid == self.context.person.id) or \
                (pid == self.context.person.teamowner.id):
                 self.permission = True
-        except:
-            pass
 
     def email_action(self):
 
@@ -497,13 +503,12 @@ class DistrosEditView(object):
         self.request = request
         self.results = []
         self.permission = False
+        self.person = IPerson(self.request.principal, None)
 
-        try:
-            if IPerson(self.request.principal).id ==\
-                   self.context.distribution.owner.id:
+        if self.person:
+            
+            if self.person.id == self.context.distribution.owner.id:
                 self.permission = True
-        except:
-            pass
 
     def edit_action(self):
         enable_edited = False
@@ -608,14 +613,13 @@ class ReleaseEditView(object):
         self.request = request
         self.results = []
         self.permission = False
+        self.person = IPerson(self.request.principal, None)
+        
+        if self.person:
 
-        try:
-            if IPerson(self.request.principal).id ==\
-                   self.context.release.owner.id:
+            if self.person.id == self.context.release.owner.id:
                 self.permission = True
-        except:
-            pass
-
+                
 
     def edit_action(self):
         enable_edited = False
