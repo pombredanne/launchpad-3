@@ -40,6 +40,7 @@ __all__ = (
 'EmailAddressStatus',
 'HashAlgorithms',
 'ImportTestStatus',
+'KarmaField',
 'ManifestEntryType',
 'MembershipRole',
 'MembershipStatus',
@@ -1712,4 +1713,43 @@ class RosettaImportStatus(DBSchema):
 
         The attached rawfile import failed.
         """)
+
+
+class KarmaField(DBSchema):
+    """Karma Field
+
+    This schema documents the different kinds of Karma that can be
+    assigned to a person. A person have a list of assigned Karmas and
+    each of these Karmas have a KarmaField.
+    """
+
+    BUG_REPORT = Item(1, """
+        Bug Report
+
+        User reported a new bug.
+    """)
+
+    BUG_FIX = Item(2, """
+        Bug Fix
+
+        User provided a patch to fix a bug.
+    """)
+
+    WIKI_EDIT = Item(3, """
+        Wiki Page Edited
+
+        User edited a Wiki page.
+    """)
+
+    WIKI_CREATE = Item(4, """
+        New Wiki Page
+
+        User created a new page in the Wiki.
+    """)
+
+    PACKAGE_UPLOAD = Item(5, """
+        Package Uploaded
+
+        User uploaded a new package to the system.
+    """)
 

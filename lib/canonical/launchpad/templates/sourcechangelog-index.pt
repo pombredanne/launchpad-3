@@ -17,7 +17,7 @@
     <h1> <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc" /> ChangeLog </h1>
     
     <pre>
-      <span tal:content="context/sourcepackagerelease/changelog" />
+      <span tal:replace="structure context/sourcepackagerelease/linkified_changelog" />
     </pre>
 
 </div>

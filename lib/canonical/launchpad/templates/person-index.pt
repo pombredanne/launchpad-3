@@ -99,6 +99,10 @@
                <td>Arch User:</td><td tal:content="context/archuser/archuserid"></td>
                </tr>
 
+               <tr tal:condition="context/person/karma">
+               <td>Karma:</td><td tal:content="context/person/karma"></td>
+               </tr>
+
                <tr tal:condition="context/gpg">
                <td>GPG:</td>
                <td tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}"></td>

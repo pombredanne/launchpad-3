@@ -104,6 +104,13 @@ class Person(SQLBase):
                             ORDER BY datefirstseen DESC)))
             ''')
 
+    def assignKarma(self, karmafield, points):
+        if karmafield not in dbschema.KarmaField.items:
+            raise TypeError('"%s" is not a valid KarmaField value')
+        Karma(person=self, karmafield=karmafield.value, points=points)
+        # XXX: I think we should recalculate the karma here.
+        self.karma += points
+
 
 class PersonSet(object):
     """The set of persons."""
@@ -378,4 +385,19 @@ class TeamParticipation(SQLBase):
     getSubTeams = classmethod(getSubTeams)
     
         
+class Karma(SQLBase):
+    _table = 'Karma'
+
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    points = IntCol(dbName='points', notNull=True, default=0)
+    karmafield = IntCol(dbName='karmafield', notNull=True)
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True, default='NOW')
+
+    def _karmafieldname(self):
+        try:
+            return dbschema.KarmaField.items[self.karmafield].title
+        except KeyError:
+            return 'Unknown (%d)' % self.karmafield
+
+    karmafieldname = property(_karmafieldname)
 
