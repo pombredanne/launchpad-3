@@ -18,7 +18,8 @@ class RosettaProjects:
         return iter(RosettaProject.select())
 
     def __getitem__(self, name):
-        return RosettaProject.selectBy(name=name)[0]
+        # XXX: encoding should not be necessary
+        return RosettaProject.selectBy(name=name.encode('ascii'))[0]
 
     def new(self, name, title, url, description, owner):
         return RosettaProject(name=name, title=title, url=url,
@@ -61,7 +62,8 @@ class RosettaProject(SQLBase):
             POTemplate.product = Product.id AND
             Product.project = %d AND
             POTemplate.name = %s''' %
-            (self.id, quote(name)),
+            # XXX: encoding should not be necessary
+            (self.id, quote(name.encode('ascii'))),
             clauseTables=('Product',))
 
         if results.count() == 0:
