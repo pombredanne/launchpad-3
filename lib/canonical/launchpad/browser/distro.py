@@ -243,80 +243,70 @@ class ReleaseSearchView(object):
         return enable_result
 
 
-class AddDistroRoleView(object):
-    rolesPortlet = ViewPageTemplateFile(
-        '../templates/portlet-distroroles.pt')
-    
+class AddRoleViewBase(object):
+    rolesPortlet = None
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
+        self.roles = dbschema.DistributionRole.items
+        self.people = Person.select(orderBy='displayname')
+
     def is_owner(self):
         person = IPerson(self.request.principal, None)
+        if not person:
+            return False
 
-        ##XXX: cprov 20041202
-        ##verify also the DistributionRoles for persons with Admin Role
-        if person:
-            return self.context.distribution.owner.id == person.id
-
-        return False
+        # XXX: cprov 20041202
+        # verify also the DistributionRoles for persons with Admin Role
+        owner = self.get_container().owner
+        return owner.id == person.id
 
     def add_role(self):
-        self.people = Person.select(orderBy='displayname')
-        self.roles = dbschema.DistributionRole.items
+        person = self.request.get("person", "")
+        role = self.request.get("role", "")
 
-        self.person = self.request.get("person", "")
-        self.role = self.request.get("role", "")
+        if not (person and role):
+            return False
 
-        if self.person and self.role:
-            res = DistributionRole(distribution=self.context.distribution.id,
-                                   personID=self.person,
-                                   role=self.role)
+        container = self.get_container()
+        # XXX: check for duplicates -- user,role should be unique.
 
-            return res
+        # XXX: change to container.create_role (?)
+        return self.create_role(container.id, person, role)
 
-        return False
 
+class AddDistroRoleView(AddRoleViewBase):
+    rolesPortlet = ViewPageTemplateFile(
+        '../templates/portlet-distroroles.pt')
+
+    def get_container(self):
+        return self.context.distribution
+
+    # XXX rename!
     def get_roles(self):
+        # XXX: rename roles to role_members
         return self.context.distribution.roles
 
-class AddDistroReleaseRoleView(object):
+    def create_role(self, container_id, person, role):
+        return DistributionRole(distribution=container_id,
+                                personID=person, role=role)
+
+
+class AddDistroReleaseRoleView(AddRoleViewBase):
     rolesPortlet = ViewPageTemplateFile(
         '../templates/portlet-distroroles.pt')
+
+    def get_container(self):
+        return self.context.release
     
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def is_owner(self):
-        person = IPerson(self.request.principal, None)
-
-        ##XXX: cprov 20041202
-        ##verify also the DistributionRoles for persons with Admin Role
-        if person:
-            return self.context.release.owner.id == person.id
-
-        return False
-
-    def add_role(self):
-        self.people = Person.select(orderBy='displayname')
-        self.roles = dbschema.DistributionRole.items
-
-        self.person = self.request.get("person", "")
-        self.role = self.request.get("role", "")
-
-        if self.person and self.role:
-            res = DistroReleaseRole(distrorelease=self.context.release.id,
-                                    personID=self.person,
-                                    role=self.role)
-
-            return res
-
-        return False
-
+    # XXX rename!
     def get_roles(self):
+        # XXX: move to DistroRelease.role_members (?)
         return DistroReleaseRole.selectBy(distroreleaseID=\
                                           self.context.release.id)        
 
-
+    def create_role(self, container_id, person, role):
+        return DistroReleaseRole(distrorelease=container_id,
+                                 personID=person, role=role)
 
