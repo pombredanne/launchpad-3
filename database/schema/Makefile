@@ -2,7 +2,9 @@
 
 DBNAME=launchpad_test
 
-$(DBNAME):
+default: all
+
+base:
 	@ echo "* Creating database \"$(DBNAME)\" with sample data."
 	@ echo "* This will hang if another process is accessing the database"
 	createdb -E UNICODE launchpad_test || echo ${DBNAME} already exists
@@ -12,11 +14,13 @@ $(DBNAME):
 	 # 2004-09-09: languages.sql puts you into more. Quite annoying.
 	 # If stdout is not a tty it behaves better. 
 	psql -d ${DBNAME} -f ../languages.sql | cat
+
+all: base
 	psql -d ${DBNAME} -f ../sampledata.sql
 	psql -d ${DBNAME} -f ../sampledata-soyuz.sql
 	psql -d ${DBNAME} -f ../sampledata-malone.sql
 	psql -d ${DBNAME} -f ../sampledata-rosetta.sql
 	psql -d ${DBNAME} -f comments.sql
 
-.PHONY: $(DBNAME)
 
+.PHONY: default base all
