@@ -4,8 +4,6 @@
  * would slow things down
  */
 
-DROP VIEW SourcePackageFilePublishing;
-
 CREATE VIEW SourcePackageFilePublishing AS SELECT
 LibraryFileAlias.id || '.' || SourcePackagePublishing.id  AS id,
            DistroRelease.distribution AS distribution,
@@ -36,8 +34,6 @@ WHERE SourcePackagePublishing.distrorelease = DistroRelease.id
 ;
 
 -- ------------------------------------------------------------------------- --
-
-DROP VIEW BinaryPackageFilePublishing;
 
 CREATE VIEW BinaryPackageFilePublishing AS SELECT
 LibraryFileAlias.id || '.' || PackagePublishing.id AS id,
@@ -79,8 +75,6 @@ WHERE DistroRelease.id = DistroArchRelease.distrorelease
 -- ------------------------------------------------------------------------- --
 -- ------------------------------------------------------------------------- --
 
-DROP VIEW SourcePackagePublishingView;
-
 CREATE VIEW SourcePackagePublishingView AS SELECT
     SourcePackagePublishing.id AS id,
             DistroRelease.name AS distroreleasename,
@@ -108,8 +102,6 @@ WHERE SourcePackagePublishing.distrorelease = DistroRelease.id
 
 -- ------------------------------------------------------------------------- --
 
-DROP VIEW BinaryPackagePublishingView;
-
 CREATE VIEW BinaryPackagePublishingView AS SELECT
       PackagePublishing.id AS id,
         DistroRelease.name AS distroreleasename,
@@ -136,14 +128,5 @@ WHERE PackagePublishing.distroarchrelease = DistroArchRelease.id
   AND PackagePublishing.section = Section.id
 ;
 
---
--- Mmm comments
---
+UPDATE launchpaddatabaserevision SET major=4, minor=12, patch=0;
 
-COMMENT ON VIEW SourcePackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a sourcepackagerelease and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
-
-COMMENT ON VIEW BinaryPackageFilePublishing IS 'This view is used mostly by Lucille while performing publishing and unpublishing operations. It lists all the files associated with a binarypackage and collates all the textual representations needed for publishing components etc to allow rapid queries from SQLObject.';
-
-COMMENT ON VIEW SourcePackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying SourcePackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';
-
-COMMENT ON VIEW BinaryPackagePublishingView IS 'This view is used mostly by Lucille while performing publishing¸ unpublishing, domination, superceding and other such operations. It provides an ID equal to the underlying PackagePublishing record to permit as direct a change to publishing details as is possible. The view also collates useful textual data to permit override generation etc.';

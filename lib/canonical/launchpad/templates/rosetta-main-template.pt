@@ -16,6 +16,7 @@
     <style type="text/css" media="screen">@import url(/++resource++launchpad.css);</style>
     <!-- Launchpad JS code -->
     <script type="text/javascript" src="/++resource++launchpad.js"></script>
+    <link rel="shortcut icon" href="/++resource++defaultFavicon.gif" />
   </head>
 
   <body>
