@@ -14,18 +14,23 @@
 
 <div metal:fill-slot="main">
 
+    <div tal:content="view/submitTranslations" />
+    <div tal:condition="not: view/submitted">
+
     <h1>Translating <span tal:replace="context/product/project/title">Project
         title</span> &mdash; <span tal:replace="context/title">POT file
         title</span></h1>
 
+    <!--
     <div style="float:right;">
-        <input type="checkbox" checked="checked" class="noborder" /> 
+        <input type="checkbox" checked="checked" class="noborder" />
         Show String Information <br />
-        <input type="checkbox" class="noborder" /> 
+        <input type="checkbox" class="noborder" />
         Show only untranslated messages<br />
-        <input type="checkbox" class="noborder" checked="checked" /> 
+        <input type="checkbox" class="noborder" checked="checked" />
         Save changes when moving between pages
     </div>
+    -->
 
     <div class="documentDescription">
     Hint: use the <code>Tab</code> key to move quickly between translation fields.
@@ -62,61 +67,71 @@
 
     </div>
 
+    <form method="POST" tal:attributes="action request/URL">
     <tal:msgstring repeat="set context">
-            <div tal:define="isPlural python: len(list(set.messageIDs())) > 1">
-        <fieldset class="message-strings">
-            <legend>String #120</legend>
+        <fieldset class="message-strings"
+                tal:define="isPlural python: len(list(set.messageIDs())) > 1">
+            <legend>String #<span tal:replace="set/sequence">120</span></legend>
 
-        <span tal:condition="isPlural">
-            <div class="field">
-                <label class="language-code">en[0]</label>
-                <span tal:content="python: set.messageIDs()[0].text">singular</span>
-            </div>
-
-            <div class="field">
-                <label class="language-code">en[1]</label>
-                <span tal:content="python: set.messageIDs()[1].text">plural</span>
-            </div>
-
-            <fieldset>
-                <legend>Plural forms translation</legend>
-
-                <span tal:repeat="language view/languages">
-
+                <!-- Simple message. -->
+                <span tal:condition="not:isPlural">
                     <div class="field">
-                         <label class="language-code"
-                            tal:content="language/englishName">pt_BR[0]</label>
-                        <img src="++resource++info.gif" title="Example: 1 dead horse." />
-                        <input type="text"
-                           xtal:attributes="value python:sighting.currentTranslation(language).text[0]" />
+                        <label class="language-code">English</label>:
+                        <span tal:content="python: set.messageIDs()[0].text">sighting</span>
                     </div>
 
-                    <div class="field">
+                    <div class="field" tal:repeat="language view/languages">
                         <label class="language-code"
-                           tal:content="language/englishName">pt_BR[1]</label>
-                        <img src="++resource++info.gif" title="Example: 5 dead horses." />
+                            tal:content="language/englishName">pt_BR</label>:
                         <input type="text"
-                           xtal:attributes="value python:sighting.currentTranslation(language).text[1]" />
+                               xtal:attributes="value python:sighting.currentTranslation(language).text[0]"
+                               tal:attributes="name
+                                   string:t_${set/id}_${language/code}" />
+                    </div>
+                </span>
+
+                <!-- Plural message. -->
+                <span tal:condition="isPlural">
+                    <div class="field">
+                        <label class="language-code">English 1</label>:
+                        <span tal:content="python: set.messageIDs()[0].text">singular</span>
                     </div>
 
+                    <div class="field">
+                        <label class="language-code">English 2</label>:
+                        <span tal:content="python: set.messageIDs()[1].text">plural</span>
+                    </div>
+
+                    <fieldset>
+                        <legend>Plural forms translation</legend>
+
+                        <span tal:repeat="language view/languages">
+
+                            <div class="field">
+                                <label class="language-code"
+                                    tal:content="language/englishName">pt_BR[0]</label>:
+                                <input type="text"
+                                   xtal:attributes="value python:sighting.currentTranslation(language).text[0]"
+                                   tal:attributes="name
+                                       string:t_${set/id}_${language/code}_0"
+                                   />
+                                <img src="++resource++info.gif" title="Example: 1 dead horse." />
+                            </div>
+
+                            <div class="field">
+                                <label class="language-code"
+                                   tal:content="language/englishName">pt_BR[1]</label>:
+                                <input type="text"
+                                   xtal:attributes="value python:sighting.currentTranslation(language).text[1]"
+                                   tal:attributes="name
+                                       string:t_${set/id}_${language/code}_0"
+                                   />
+                                <img src="++resource++info.gif" title="Example: 5 dead horses." />
+                            </div>
+
+                        </span>
+                    </fieldset>
                 </span>
-            </fieldset>
-        </span>
-
-        <span tal:condition="not:isPlural">
-
-            <div class="field">
-                <label class="language-code">en</label>
-                <span tal:content="python: set.messageIDs()[0].text">sighting</span>
-            </div>
-
-            <div class="field" tal:repeat="language view/languages">
-                <label class="language-code"
-                    tal:content="language/englishName">pt_BR</label>
-                <input type="text"
-                       xtal:attributes="value python:sighting.currentTranslation(language).text[0]" />
-            </div>
-        </span>
 
         </fieldset>
 
@@ -124,11 +139,13 @@
 
             <legend>String information</legend>
 
+            <!--
             <div class="field">
                 <label>Comment</label>
                 <img src="++resource++arrowDown.gif" />
                 <div class="discreet">This refers to the content type.</div>
             </div>
+            -->
 
             <div class="field">
                 <label>From files:</label>
@@ -137,18 +154,23 @@
                     >./plone_forms/discussion_reply_form.pt</span>
             </div>
 
+            <!--
             <div class="field">
                 <label>Code reference</label>
                 <img src="++resource++arrowRight.gif" />
             </div>
+            -->
         </fieldset>
 
         <div class="visualClear"></div>
-            </div>
     </tal:msgstring>
+
+        <input type="submit" name="SUBMIT" value="Submit" />
+    </form>
 
 <!-- Multiline example start -->
 
+    <!--
     <p class="discreet">
     This is a static version of how multiline strings are handled:
     </p>
@@ -207,10 +229,11 @@ Multiline-Blah</textarea>
     </fieldset>
 
     <div class="visualClear"></div>
+-->
 <!-- Multiline example end -->
 
 <!-- Plural example start -->
-
+<!--
     <p class="discreet">
     Plural translation example (XXX: not dynamic yet):
     </p>    
@@ -267,8 +290,10 @@ Multiline-Blah</textarea>
     </fieldset>
 
     <div class="visualClear"></div>
+-->
 <!-- Plural example end -->
 
+    </div> <!-- tal:condition="not: view/submitted" -->
 </div>
 
 </body>

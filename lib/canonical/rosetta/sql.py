@@ -183,7 +183,7 @@ class RosettaPOTemplate(SQLBase):
             POMsgSet.potemplate = %d AND
             POMsgSet.pofile IS NULL
             '''
-            % self.id))
+            % self.id, orderBy='sequence'))
 
     def __getitem__(self, msgid):
         if type(msgid) is unicode:
@@ -366,7 +366,7 @@ class RosettaPOFile(SQLBase):
     # real count.
     # The number of translated are the ones from the .po file + the ones that
     # are only translated in Rosetta.
-    def translated_count(self):
+    def translatedCount(self):
         '''Same as translated(), but with COUNT.'''
         return self.translatedCountCached + self.rosettaOnlyCountCached
 
@@ -378,9 +378,9 @@ class RosettaPOFile(SQLBase):
     # real count.
     # The number of untranslated are the ones from the .pot file - the ones
     # that we have already translated.
-    def untranslated_count(self):
+    def untranslatedCount(self):
         '''Same as untranslated(), but with COUNT.'''
-        return len(self.poTemplate) - self.translated_count()
+        return len(self.poTemplate) - self.translatedCount()
 
     # IEditPOFile
     def expireAllMessages(self):
@@ -589,7 +589,12 @@ class RosettaLanguages:
     implements(ILanguages)
 
     def __getitem__(self, code):
-        return RosettaLanguage.selectBy(code=code)
+        results = RosettaLanguage.selectBy(code=code.encode('ascii'))
+
+        if results.count() == 0:
+            raise KeyError, code
+        else:
+            return results[0]
 
     def keys(self):
         code = RosettaLanguage.select()
@@ -644,10 +649,12 @@ class RosettaPerson(SQLBase):
         for code in ('cy', 'es'):
             yield RosettaLanguage.selectBy(code=code)[0]
 
-# XXX: Should we use principal instead of hard code Joe Example?
+# XXX: This is cheating.
 def personFromPrincipal(principal):
-    ret = RosettaPerson.selectBy(presentationName = 'Carlos Perelló Marín')
+    ret = RosettaPerson.select()
+
     if ret.count() == 0:
         raise KeyError, principal
     else:
         return ret[0]
+

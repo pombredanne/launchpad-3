@@ -15,31 +15,32 @@
 <div metal:fill-slot="main">
 
     <div tal:content="view/newProjectSubmit" />
+
     <div tal:condition="not: view/submitted">
 
-    <h1>Submit project for translation</h1>
+        <h1>Submit project for translation</h1>
 
-    <p class="documentDescription">
-    There's two ways of submitting something for translation: Submitting a
-    <code>.pot</code> file, or telling us about your upstream code repository.
-    If you want us to sync with your upstream repository, there will be a
-    delay of a few hours before the project is translatable. This is the
-    recommended approach.
-    </p>
+        <p class="documentDescription">
+        There's two ways of submitting something for translation: Submitting a
+        <code>.pot</code> file, or telling us about your upstream code repository.
+        If you want us to sync with your upstream repository, there will be a
+        delay of a few hours before the project is translatable. This is the
+        recommended approach.
+        </p>
 
-    <form action="+submit" method="POST">
-    <fieldset>
-        Name: <input type="text" name="name" />
-        <br/>
-        Title: <input type="text" name="title" />
-        <br/>
-        Description:
-        <br/>
-        <textarea name="description"></textarea>
-        <br/>
-        <input type="submit" name="SUBMIT" value="Submit" />
-    </fieldset>
-    </form>
+        <form action="+submit" method="POST">
+        <fieldset>
+            Name: <input type="text" name="name" />
+            <br/>
+            Title: <input type="text" name="title" />
+            <br/>
+            Description:
+            <br/>
+            <textarea name="description"></textarea>
+            <br/>
+            <input type="submit" name="SUBMIT" value="Submit" />
+        </fieldset>
+        </form>
 
     </div>
 

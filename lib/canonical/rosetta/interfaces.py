@@ -147,7 +147,7 @@ class IPOFile(Interface):
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
 
-    def translated_count():
+    def translatedCount():
         """
         Returns the number of message sets which this PO file has current
         translations for.
@@ -158,7 +158,7 @@ class IPOFile(Interface):
         Iterate over translated message sets in this PO file.
         """
 
-    def untranslated_count():
+    def untranslatedCount():
         """
         Return the number of messages which this PO file has no translation
         for.
@@ -169,7 +169,7 @@ class IPOFile(Interface):
         Iterate over untranslated message sets in this PO file.
         """
 
-    # Invariant: translated() + untranslated() = __len__()
+    # Invariant: translatedCount() + untranslatedCount() = __len__()
     # XXX: add a test for this
 
     def __iter__():
@@ -197,6 +197,8 @@ class IEditPOFile(IPOFile):
 
 class IPOMessageSet(Interface):
     """A collection of message IDs and possibly translations."""
+
+    id = Attribute("""A unique ID for the message set.""")
 
     id = Attribute("""An identifier for this POMessageSet""")
 
