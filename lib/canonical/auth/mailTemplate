@@ -1,16 +1,21 @@
-Subject: Ubuntu: Password change request
+To: %(toaddress)s
+From: %(fromaddress)s
+Date: %(date)s
+Subject: Ubuntu: Forgotten password
 
-Hi,
+Hi
 
-You have requested to change you password that gives you access to http://www.ubuntulinux.org/
+You, or someone posing as you, has requested a new password for
+your membership with http://www.ubuntulinux.org.
 
-You have three hours in which to do so, before it expires.
+To reset your password, please click on the link below. 
+You will need to enter this email address, enter and confirm your new password.
 
-Please click on the link below, and you will be prompted to enter your email address and confirm your new password.
-http://launchpad.canonical.com/forgottenpassword/%s
+http://www.ubuntulinux.org/forgottenpassword/%(longstring)s
 
-If you have not made this request, somebody else has done so.
+You have 3 hours to reset your password, before this link expires.
 
-If you do not wish to change your account details, please ignore this email.
+Questions or comments?  Please send them to webmaster@ubuntulinux.org
 
-Ubuntu Admin
+The Ubuntu Team 
+

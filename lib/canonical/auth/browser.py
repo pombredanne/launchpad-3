@@ -5,7 +5,7 @@ from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 
 from canonical.zodb import zodbconnection
 
-from string import strip
+from string import strip, lower
 import random
 import re
 
@@ -25,11 +25,13 @@ class SendPasswordToEmail(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        ##XXX: self.success is used only for tests
-        ##Daniel Debonzi 2004-10-03
-        self.success = False
 
-        self.email = request.get("email"   "")
+        self.success = False
+        self.email = ''
+
+        email = request.get("email"   "")
+        if email:
+            self.email = lower(strip(email))
 
     def getResult(self):
         random_link = None
@@ -56,8 +58,11 @@ class SendPasswordToEmail(object):
                 ## Send email
                 SendPasswordChangeEmail(random_link, self.email)
 
-            return ('Thank you. You will receive and email shortly.'
-                    'Please reset your password as soon as possible.')
+                self.success = True
+            else:
+                return ('Your account details have not been found.'
+                        ' Please check your subscription'
+                        ' email address and try again.')
         
 
 class changeEmailPassword(object):
@@ -70,9 +75,8 @@ class changeEmailPassword(object):
         self.repassword = request.get("repassword"   "")
         self.code = request.get("code"   "")
 
-        ## The process will be done successifully
-        ## Until it fails somewhere
-        self.success = True
+        self.success = False
+        self.error = False
 
     def getResult(self):
 
@@ -90,16 +94,12 @@ class changeEmailPassword(object):
             
             else:
                 ##Get 'transaction' info from ZODB
-
-                ## How about it? Makes sense?
-                ## Must be checked
-                ## Daniel Debonzi 2004-10-03
                 resets = zodbconnection.passwordresets
 
                 try:
                     person = resets.getPerson(self.code)
                 except KeyError:
-                    self.success = False
+                    self.error = True
                     return
 
                 email_results = EmailAddress.selectBy(email=self.email)
@@ -114,7 +114,9 @@ class changeEmailPassword(object):
                     if person:
                         ssha = SSHADigestEncryptor()
                         person.password = ssha.encrypt(self.password)
-                        return 'You password has successfully been reset.'
+                        self.success = True
+                        return 'Your password has successfully been reset.'
 
-                self.success = False
+                self.error = True
                 return
+            
