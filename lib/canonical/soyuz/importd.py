@@ -1,3 +1,5 @@
+# (c) Canonical Ltd. 2004
+
 # Python standard library imports
 from sets import Set
 

@@ -94,6 +94,7 @@ class IProject(Interface):
     name = TextLine(title=_('Name'))
     title = TextLine(title=_('Title'))
     description = Text(title=_('Description'))
+    shortdesc = Text(title=_('Short Description'))
     homepageurl = TextLine(title=_('Homepage URL'))
 
     def displayName(aDesc=None):
