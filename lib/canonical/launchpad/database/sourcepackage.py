@@ -317,6 +317,7 @@ class SourcePackageRelease(SQLBase):
     sourcepackage = ForeignKey(foreignKey='SourcePackage',
                                dbName='sourcepackage', notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
+    manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
 
     urgency = IntCol(dbName='urgency', notNull=True)
     dateuploaded = DateTimeCol(dbName='dateuploaded', notNull=True,
