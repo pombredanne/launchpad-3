@@ -1042,10 +1042,16 @@ class Sync(object):
         import datetime
         self._sync.processingapproved='NOW'
         self._sync.frequency=datetime.timedelta(1)
-        print "enabled"
     def enabled(self):
         """is the sync enabled"""
         return self._sync.processingapproved is not None
+    def autosyncing(self):
+        """is the sync automatically scheduling"""
+        return self._sync.syncingapproved is not None
+    def autosync(self):
+        """enable autosyncing"""
+        self._sync.syncingapproved='NOW'
+        print "enabled"
     def update(self, **kwargs):
         """update a Sync, possibly reparenting"""
         self._update('name', 'name', kwargs)

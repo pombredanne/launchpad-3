@@ -409,6 +409,10 @@ class ISync(Interface):
     archsourcegpgkeyid = Attribute("duh")
     archsourcename = Attribute("duh")
     archsourceurl = Attribute("duh")
+    def autosync():
+        """enable this sync for automatic syncs"""
+    def autosyncing():
+        """is the sync enabled for automatic syncs?"""
     def canChangeProduct():
         """is this sync allowed to have its product changed?"""
     def changeProduct(product):

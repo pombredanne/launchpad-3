@@ -75,6 +75,11 @@
             <input type="checkbox" name="enabled" tal:attributes="checked context/enabled" />
         </div>
 
+        <div class="field">
+            <label>Auto syncing Enabled</label>
+            <div class="formHelp">Is this sync enabled for running automatic syncs?.</div>
+            <input type="checkbox" name="autosyncenabled" tal:attributes="checked context/autosyncing" />
+        </div>
 
     </fieldset>
 

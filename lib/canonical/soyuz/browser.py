@@ -270,6 +270,9 @@ class ViewSync(View):
         if self.request.form.get('enabled', None):
             if not self.context.enabled():
                 self.context.enable()
+        if self.request.form.get('autosyncenabled', None):
+            if not self.context.autosyncing():
+                self.context.autosync()
         if self.context.canChangeProduct() and self.request.form.has_key('product'):
             self.context.changeProduct(self.request.form.get('product'))
             newurl='../../../' + self.context.product.project.name + "/" + self.context.product.name #+ '/' + self.context.name
