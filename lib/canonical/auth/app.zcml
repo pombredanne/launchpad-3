@@ -1,0 +1,22 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:rdb="http://namespaces.zope.org/rdb"
+    >
+
+  <content class="canonical.auth.AuthApplication">
+    <allow interface="canonical.auth.interfaces.IAuthApplication"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.auth.PasswordReminders">
+    <allow interface="canonical.auth.interfaces.IPasswordReminders"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.auth.app.passwordChangeApp">
+    <allow interface="canonical.auth.interfaces.IpasswordChangeApp"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+</configure>

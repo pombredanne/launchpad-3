@@ -68,6 +68,7 @@
   <include file="browser-exception.zcml" />
   <include package="canonical.widgets" />
   <include package="canonical.database" />
+  <include package="canonical.auth" />
 
 </configure>
 <!-- arch-tag: 55275af7-7bbe-4d25-9596-0df3cb6c4a1f -->

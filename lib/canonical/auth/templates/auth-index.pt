@@ -1,0 +1,49 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+
+<div metal:fill-slot="main">
+
+<h2> Forgotten Password? </h2>
+
+
+<fieldset>
+  <legend>
+    User Email
+  </legend>
+  <form name="passwdretrive" method="POST">
+    <div class="formHelp">Enter your email</div>
+    <input type="text" size="50" name="email" tal:attributes="value request/email|nothing" />
+    <input type="submit" value="Send"/>
+  </form>
+
+</fieldset>
+
+<h4> 
+  <span tal:content="view/message"> MESSAGE </span>
+  <!--   XXX: Tal dummy is just a test before send email is working -->
+  <tal:dummy tal:condition="view/success">
+    <li><a class="dummy" tal:content="view/success"
+    tal:attributes="href view/success" /></li>
+  </tal:dummy>
+  <!--   XXX -->
+</h4>
+
+
+</div>
+
+
+
+</body>
+</html>

@@ -6,10 +6,17 @@
 """
 
 from persistent import Persistent
+from zope.interface import implements
+from canonical.auth.app import passwordChangeApp
+
+from canonical.auth.interfaces import IAuthApplication
+from canonical.auth.interfaces import IPasswordReminders
+
+from datetime import datetime, timedelta
 
 __metaclass__ = type
 
-class PasswordReminders(Persistent):
+class PasswordReminders(Persistent):    
     """The object that manages password reminders.
 
     Get hold of this object by using the zodb connection:
@@ -17,4 +24,29 @@ class PasswordReminders(Persistent):
     >>> from canonical.zodb import zodbconnection
     >>> reminders = zodbconnection.passwordreminders
     """
+    implements(IPasswordReminders)
 
+    def __init__(self):
+        ##FIXME: Perhaps its a good Ideia to use BTree
+        self.change_list = {}
+    
+    def append(self, personId, code):
+        self.change_list[code] = [personId, datetime.now()]
+
+    def retrieve(self, code):
+        if code not in self.change_list.keys():
+            return None
+
+        personId, request_time = self.change_list[code]
+        del self.change_list[code]
+        ##TODO check if time has not expired
+
+        return personId
+
+
+class AuthApplication:
+    """Something that URLs get attached to.  See configure.zcml."""
+    implements(IAuthApplication)
+
+    def __getitem__(self, name):
+        return passwordChangeApp(name)

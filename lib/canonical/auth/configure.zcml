@@ -1,0 +1,26 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    >
+
+  <!-- Content directives.  We need to make sure SubURLs and other kinds of
+       traversal work properly.  We also need to make security declarations.
+    -->
+  <content class="canonical.auth.AuthApplication">
+    <!--<allow attributes="__call__ foo"/>-->
+    <implements interface="canonical.publication.IHasSuburls"/>
+  </content>
+
+
+  <!-- This view registers 'auth' as a suburl of RootObject. -->
+  <browser:suburl
+      for="canonical.publication.RootObject"
+      class="canonical.auth.AuthApplication"
+      permission="zope.Public"
+      name="forgottenpassword"
+      />
+
+  <include file="pages.zcml" />
+  <include file="app.zcml" />
+
+</configure>

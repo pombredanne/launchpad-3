@@ -1,0 +1,49 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+
+<div metal:fill-slot="main">
+
+<h2> Change Password</h2>
+
+<fieldset>
+  <legend>
+    Change Password
+  </legend>
+  <form name="chpasswd" method="POST">
+    <div class="formHelp">Enter the email from were you received the
+    password change request message</div>
+    <input type="text" size="50" name="email" tal:attributes="value request/email|nothing" />
+
+    <div class="formHelp"> Type you new password</div>
+    <input type="password" size="30" name="password" tal:attributes="value request/password|nothing" />
+
+    <div class="formHelp"> Re-Type you new password</div>
+    <input type="password" size="30" name="repassword" tal:attributes="value request/repassword|nothing" />
+    <input type="hidden" name="code" tal:attributes="value context/code" />
+
+    <input type="submit" value="Change Password"/>
+  </form>
+
+</fieldset>
+
+<h4 tal:content="view/message"> MESSAGE </h4>
+
+</div>
+
+
+
+</body>
+</html>
+ 
