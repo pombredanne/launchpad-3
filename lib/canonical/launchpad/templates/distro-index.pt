@@ -5,8 +5,8 @@
 
 <head>
     <title metal:fill-slot="title">
-      <span tal:replace="context/distribution/title">TITLE</span>
-      Page</title>
+      Distribution: <span tal:replace="context/distribution/title">TITLE</span>
+      </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -65,24 +65,27 @@
  <div id="content" class="documentEditable">
   <div class="documentContent" id="region-content">
  
-   <h1><span tal:content="context/distribution/title">TITLE</span> 
+   <h1><span tal:content="context/distribution/title">TITLE</span>:
     Distribution Overview</h1>
+    <p />
 
     <div>
       <div> 
-      <span tal:content="context/distribution/description">DESCRIPTION</span>
+        <span tal:content="context/distribution/description">DESCRIPTION</span>
       </div>
-       <p>Owner: <a tal:content="context/distribution/owner/displayname" 
-                   tal:attributes="href string:/foaf/people/${context/distribution/owner/name}">OWNER</a>
-       <p> Domain Name: <b tal:content="context/distribution/domainname">DOMAIN</b>
+      <ul>
+       <li>Owner: <a tal:content="context/distribution/owner/displayname" 
+                   tal:attributes="href
+                   string:/foaf/people/${context/distribution/owner/name}">OWNER</a></li>
+       <li> Domain Name: <b tal:content="context/distribution/domainname">DOMAIN</b></li>
+     </ul>
 
-     </div>
+   </div>
 
    <table>
    <tr tal:condition="context/enable_releases"><td>
    <table  width="100%" class="listing">
-   <legend><h4>Releases of <span
-   tal:content="context/distribution/title"/></h4></legend>
+   <legend><h4>Releases</h4></legend>
     <tr>
       <th>Name</th>
       <th>Version</th>
