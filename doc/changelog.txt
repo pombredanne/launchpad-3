@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-11 15:52:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1306
+
+    Summary:
+      remove archive creation from createMirrorTargetLocation
+    Revision:
+      launchpad--devel--0--patch-1306
+
+    Patches applied:
+    
+     * david.allouche@canonical.com--2004/launchpad--devel--0--patch-55
+       remove archive creation from createMirrorTargetLocation
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/arch/broker.py
+     lib/canonical/arch/tests/test_broker.py
+
+    new patches:
+     david.allouche@canonical.com--2004/launchpad--devel--0--patch-55
+
+
 2005-02-11 15:13:17 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1305
 
     Summary:
