@@ -26,12 +26,12 @@ dbtest:
 	sudo sudo -u postgres createuser -A -d $$(id -un)
 	id -un > $@
 
-+launchpad-db +launchpad_test-db: +%-db: +pguser
++launchpad-db +launchpad_test-db: +%-db:
 	@ echo '* create the $* database'
 	createdb -E UNICODE $*
 	touch $@
 
-launchpad launchpad_test: %: +%-db
+launchpad launchpad_test: %:
 	@ echo '* create the $* database tables'
 	psql --file launchpad.sql $*
 	psql --file default.sql $*
