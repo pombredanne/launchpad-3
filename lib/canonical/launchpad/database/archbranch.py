@@ -20,7 +20,9 @@ from canonical.launchpad.interfaces import IBranch
 # XXX: This import is somewhat circular, but launchpad/database/__init__.py
 # imports archarchive before archbranch, so it should be ok...
 #  - Andrew Bennetts, 2004-10-20
-from canonical.launchpad.database import ArchiveMapper, ArchNamespace
+from canonical.launchpad.database import ArchiveMapper, ArchNamespace, ArchArchive
+
+from arch import arch
 
 class Branch(SQLBase):
     """An ordered revision sequence in arch"""
@@ -34,6 +36,7 @@ class Branch(SQLBase):
     description = StringCol(dbName='description', notNull=True)
     owner = ForeignKey(foreignKey='Person', dbName='owner',
                        default=None)
+    product = ForeignKey(foreignKey='Product', dbName='product', default=None)
     changesets = MultipleJoin('Changeset', joinColumn='branch')
     subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
     objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')
@@ -136,12 +139,30 @@ class BranchMapper(object):
 class VersionMapper(object):
     """Map versions to and from the database"""
     def findByName(self, name):
-        count = Version.select('name = ' + quote(name)).count()
+        try:
+            print name
+            parser=arch.NameParser(name)
+            archive=ArchArchive.select('name = ' + quote(parser.get_archive()))[0]
+            id = archive.id
+            query = ("archarchive = %s AND category = %s AND branch = %s "
+                 "AND version = %s" 
+                 % (quote(id), quote(parser.get_category()),
+                    quote(parser.get_branch()), quote(parser.get_version())))
+            versions = ArchNamespace.select(query)
+        except IndexError, e:
+            return broker.MissingVersion(name)
+        count = versions.count()
         from canonical.arch import broker
         if count == 0:
             return broker.MissingVersion(name)
         if count == 1:
-            return broker.Version(name)
+            # migration code to allow access to the real Version 
+            # and yes, this should be tidied - by moving all to native sqlobject.
+            where = ("archnamespace = %d" % versions[0].id) 
+            resultset=Branch.select(where)
+            if resultset.count() == 0:
+                raise VersionNotRegistered(version.fullname)
+            return resultset[0]
         else:
             raise RuntimeError, "Name %r found %d results" % (name, count)
 
@@ -157,7 +178,7 @@ class VersionMapper(object):
             version=version.name,
             visible=True,
         )
-        Branch(namespace=namespace.id,
+        result = Branch(namespace=namespace.id,
             title='',
             description='',
         )
@@ -178,29 +199,32 @@ class VersionMapper(object):
         for an in ArchNamespace.select(query):
             print 'deleting %r (%d) from VM.insert' % (an, an.id)
             an.destroySelf()
+        return result
 
-    def exists(self, version):
+    def findVersionQuery(self, version):
         id = ArchiveMapper()._getId(version.branch.category.archive)
-        where = ("archarchive = %s AND category = %s AND branch = %s "
+        return ("archarchive = %s AND category = %s AND branch = %s "
                  "AND version = %s" 
                  % (quote(id), quote(version.branch.category.nonarch),
                     quote(version.branch.name), quote(version.name)))
-        return bool(ArchNamespace.select(where).count())
 
-    def _getId(self, version, cursor=None):
-        where = ("category = %s AND branch = %s AND version = %s" 
-                 % (quote(version.branch.category.nonarch),
-                    quote(version.branch.name), quote(version.name)))
+    def exists(self, version):
+        return bool(ArchNamespace.select(self.findVersionQuery(version)).count())
+
+    def _getId(self, version):
         try:
-            return ArchNamespace.select(where)[0].id
+            return ArchNamespace.select(self.findVersionQuery(version))[0].id
         except IndexError, e:
             raise VersionNotRegistered(version.fullname)
-            
-    def _getDBBranchId(self, version):
+ 
+    def _getDBBranch(self, version):
         id=self._getId(version)
         where = ("archnamespace = %d" % id) 
-        try:
-            return Branch.select(where)[0].id
-        except IndexError, e:
+        resultset=Branch.select(where)
+        if resultset.count() == 0:
             raise VersionNotRegistered(version.fullname)
+        return resultset[0]
+
+    def _getDBBranchId(self, version):
+        return self._getDBBranch(version).id
 

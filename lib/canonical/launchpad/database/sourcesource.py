@@ -183,6 +183,7 @@ class SourceSource(SQLBase):
 
         job.package_distro = self.packagedistro
         job.package_files = self.packagefiles_collapsed
+        job.product_id = self.product.id
         return job
 
 

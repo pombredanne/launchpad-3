@@ -490,6 +490,7 @@ class Branch(CategoryItem, Package, VersionIterable):
         if not mapper.exists(version):
             return MissingVersion(name, self)
         else:
+            version._branch = mapper.findByName("%s--%s" % (self.fullname, name))
             return version
              
     def as_version():
@@ -512,7 +513,7 @@ class Branch(CategoryItem, Package, VersionIterable):
         """Creata a version object, inserting it if it doesn't exist."""
         mapper = database.VersionMapper()
         version = Version(name, self)
-        mapper.insert(version)
+        version._branch = mapper.insert(version)
         return version
 
 class MissingBranch(Branch):
