@@ -7,4 +7,5 @@ CREATE VIEW vsourcepackagereleasepublishing as SELECT sourcepackagerelease.id, s
 FROM sourcepackagepublishing, sourcepackagerelease, component, sourcepackage, distrorelease, sourcepackagename
 WHERE sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id AND sourcepackagerelease.sourcepackage = sourcepackage.id AND sourcepackagepublishing.distrorelease = distrorelease.id AND sourcepackage.sourcepackagename = sourcepackagename.id AND component.id = sourcepackagerelease.component;
 COMMENT ON VIEW VSourcePackageReleasePublishing IS 'This view simplifies a lot of queries relating to publishing and is for use as a replacement for SourcePackageRelease (I actually intend to move it to a subclass of SourcePackageRelease, because using a View in place of a real table is bizarre).';
+INSERT INTO LaunchpadDatabaseRevision VALUES (10, 4, 0);
 END;
