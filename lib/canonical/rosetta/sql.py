@@ -40,7 +40,10 @@ class RosettaProject(SQLBase):
         StringCol('url', dbName='homepageurl')
     ]
 
-    products = MultipleJoin('RosettaProduct', joinColumn='project')
+    productsIter = MultipleJoin('RosettaProduct', joinColumn='project')
+
+    def products(self):
+        return iter(productsIter)
 
     def poTemplates(self):
         for p in self.products:
@@ -80,7 +83,10 @@ class RosettaProduct(SQLBase):
         StringCol('description', dbName='description', notNull=True),
     ]
 
-    poTemplates = MultipleJoin('RosettaPOTemplate', joinColumn='product')
+    poTemplatesIter = MultipleJoin('RosettaPOTemplate', joinColumn='product')
+
+    def poTemplates(self):
+        return iter(self.poTemplatesIter)
 
     def newPOTemplate(self, name, title):
         return RosettaPOTemplate(name=name, title=title, product=self)
@@ -98,7 +104,10 @@ class RosettaPOTemplate(SQLBase):
         StringCol('title', dbName='title', notNull=True, unique=True),
     ]
 
-    poFiles = MultipleJoin('RosettaPOFile', joinColumn='potemplate')
+    poFilesIter = MultipleJoin('RosettaPOFile', joinColumn='potemplate')
+
+    def poFiles(self):
+        return iter(self.poFilesIter)
 
     def languages(self):
         '''SELECT Language.* FROM POFile, Language WHERE
@@ -172,12 +181,20 @@ class RosettaPOFile(SQLBase):
         ForeignKey(name='poTemplate', foreignKey='RosettaPOTemplate',
             dbName='potemplate', notNull=True),
         ForeignKey(name='language', foreignKey='RosettaLanguage', dbName='language',
-            notNull=True)
+            notNull=True),
+        StringCol(name='topComment', dbName='topcomment', notNull=True),
+        StringCol(name='header', dbName='header', notNull=True)
         # XXX: missing fields
     ]
 
     # XXX: ???
-    __iter__ = MultipleJoin('RosettaPOMessageSet', joinColumn='pofile')
+    messageSetsIter = MultipleJoin('RosettaPOMessageSet', joinColumn='pofile')
+
+    def messageSet(self):
+        return iter(self.messageSetsIter)
+
+    def __iter__(self):
+        return iter(self.messageSets)
 
     # XXX: not implemented
     def __len__(self):
@@ -250,15 +267,17 @@ class RosettaPOMessageSet(SQLBase):
     _table = 'POMsgSet'
 
     _columns = [
-        ForeignKey(name='poTemplate', foreignKey='RosettaPOTemplate', dbName='potemplate', notNull=False),
+        ForeignKey(name='poTemplate', foreignKey='RosettaPOTemplate', dbName='potemplate', notNull=True),
         ForeignKey(name='poFile', foreignKey='RosettaPOFile', dbName='pofile', notNull=False),
-        IntCol(name='sequence', dbName='sequence', notNull=False),
+        ForeignKey(name='primeMessageID', foreignKey='RosettaPOMessageID', dbName='primemsgid', notNull=True),
+        IntCol(name='sequence', dbName='sequence', notNull=True),
         BoolCol(name='isComplete', dbName='iscomplete', notNull=True),
         BoolCol(name='fuzzy', dbName='fuzzy', notNull=True),
         BoolCol(name='obsolete', dbName='obsolete', notNull=True),
         StringCol(name='commentText', dbName='commenttext', notNull=False),
         StringCol(name='fileReferences', dbName='filereferences', notNull=False),
         StringCol(name='sourceComment', dbName='sourcecomment', notNull=False),
+        StringCol(name='flagsComment', dbName='flagscomment', notNull=False),
     ]
 
     def messageIDs(self):
@@ -436,9 +455,9 @@ class RosettaPerson(SQLBase):
 
     _table = 'Person'
 
-#    _columns = [
-#        StringCol(name='', dbName='', NotNull=, unique=),
-#    ]
+    _columns = [
+        StringCol(name='presentationName', dbName='presentationname')
+    ]
 
 #    isMaintainer
 #    isTranslator

@@ -8,9 +8,12 @@ import unittest
 
 from zope.component import getService, servicenames
 from zope.component.tests.placelesssetup import PlacelessSetup
+from canonical.arch.sqlbase import SQLBase
 from canonical.rosetta.interfaces import ILanguages
-from canonical.rosetta.stub import Person, POTemplate, Project, Product, Languages
+from canonical.rosetta.sql import RosettaPerson, RosettaPOTemplate, \
+    RosettaProject, RosettaProduct, RosettaLanguages
 from canonical.rosetta.poexport import POExport
+from sqlobject import connectionForURI
 
 
 class POExportTestCase(PlacelessSetup, unittest.TestCase):
@@ -18,20 +21,15 @@ class POExportTestCase(PlacelessSetup, unittest.TestCase):
     def setUp(self):
         super(POExportTestCase, self).setUp()
         utilityService = getService(servicenames.Utilities)
-        utilityService.provideUtility(ILanguages, Languages(), '')
+        utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
+        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
 
     def testPoExportAdapter(self):
-        owner = Person()
-        gtk = Project(
-            name = 'gtk+',
-            title = 'GTK+',
-            url = 'http://gtk.org',
-            description = 'The GIMP Tool Kit, a library for graphical user interfaces.',
-            owner = owner
-            )
-        p = Product(gtk, '!!', '!!', '!!')
-        potFile = POTemplate(p, 'main', 'Main GTK+ PO template')
-        export = POExport(potFile)
+        project = RosettaProject.selectBy(name = 'gnome')[0]
+        #print project, type(project)
+        product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
+        poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-1.5.90')[0]
+        export = POExport(poTemplate)
         dump = export.export('cy')
         self.assertEqual(dump, '''# SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
@@ -87,7 +85,7 @@ msgstr[1] "I am a translation text for a plural form in Welsh"
 
 def test_suite():
     loader = unittest.TestLoader()
-#    return loader.loadTestsFromTestCase(POExportTestCase)
+    return loader.loadTestsFromTestCase(POExportTestCase)
 
 if __name__ == '__main__':
     unittest.main()

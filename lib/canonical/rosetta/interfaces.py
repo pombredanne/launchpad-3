@@ -211,8 +211,6 @@ class IPOMessageSet(Interface):
 
     sequence = Attribute("The ordering of this set within its file.")
 
-    inPOFile = Attribute("Whether this set is in the PO file or not.")
-
     isComplete = Attribute("For PO file message sets, whether the "
         "translation is complete or not. (I.e. all message IDs have "
         "a translation.")
@@ -357,6 +355,8 @@ class IBranch(Interface):
 
 class IPerson(Interface):
     """A person in the system."""
+
+    presentationName = Attribute("""The name of this person.""")
 
     isMaintainer = Attribute("""Is this person a project maintainer.""")
 
