@@ -1,0 +1,81 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Cookie: launchpad=c41BwfVgfCmQ8qwVR0nF6ljP5Wopo45G87IQC0L77W2JGL1e3-L4Z8
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+          <legend>Filter Criteria</legend>
+  ...
+                  <select name="status" size="5" multiple>
+                    <option value="all">All</option>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option selected="selected" value="10">New</option>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option selected="selected" value="20">Accepted</option>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option value="30">Fixed</option>
+  <BLANKLINE>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option value="40">Rejected</option>
+  <BLANKLINE>
+                  </select>
+  ...
+                  <select name="assignee" size="5" multiple>
+  <BLANKLINE>
+                    <option value="all" selected>Anyone</option>
+                    <option value="unassigned">Unassigned</option>
+  <BLANKLINE>
+                      <option value="stevea">Steve Alexander</option>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option value="name16">Foo Bar</option>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option value="spiv">Andrew Bennetts</option>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option value="stub">Stuart Bishop</option>
+  ...
+                  </select>
+  ...
+                  <select name="product" size="5" multiple>
+  ...
+                      <option value="launchpad-mirrors arch-mirrors">Arch archive mirrors</option>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option value="mozilla firefox">Mozilla Firefox</option>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option value="iso-codes">The iso-codes</option>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option value="mozilla thunderbird">Mozilla Thunderbird</option>
+  ...
+                  </select>
+  ...
+                  <select name="sourcepackage" size="5" multiple>
+  <BLANKLINE>
+                    <option value="all" selected>All</option>
+  <BLANKLINE>
+                      <option value="1">mozilla-firefox-dummy</option>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option value="9">evolution</option>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option value="10">mozilla-firefox-dummy</option>
+  <BLANKLINE>
+  <BLANKLINE>
+                      <option value="11">mozilla-firefox-dummy</option>
+  ...
+                  </select>
+  ...

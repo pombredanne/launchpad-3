@@ -1,5 +1,7 @@
 from sqlobject.sqlbuilder import AND, IN, ISNULL, OR, SQLOp
 
+from zope.schema.vocabulary import getVocabularyRegistry
+
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import IPerson
@@ -188,13 +190,20 @@ class BugAssignmentsView(object):
                 IN(SourcePackageBugAssignment.q.ownerID, submitters))
 
         if self.request.get('product', None) and self.request['product'] != 'all':
-            products = []
+            product_ids = []
             if isinstance(self.request['product'], (list, tuple)):
-                products = self.request['product']
+                product_tokens = self.request['product']
             else:
-                products = [self.request['product']]
+                product_tokens = [self.request['product']]
+
+            vr = getVocabularyRegistry()
+            pv = vr.get(None, "Product")
+            for product_token in product_tokens:
+                term = pv.getTermByToken(product_token)
+                product_ids.append(term.value.id)
+
             pba_params.append(
-                IN(ProductBugAssignment.q.productID, products))
+                IN(ProductBugAssignment.q.productID, product_ids))
 
         if self.request.get('sourcepackage', None) and self.request['sourcepackage'] != 'all':
             sourcepackages = []
