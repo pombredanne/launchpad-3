@@ -1,56 +1,19 @@
 #!/usr/bin/python
-#
-# arch-tag: 3945d8f8-637e-45ef-a8fc-1b142bea245f
+
+# YO! Generated code -- modify at your peril!
 
 import sys
 import unittest
 
-from zope.interface.verify import verifyClass, verifyObject, BrokenImplementation
+from zope.interface.verify import verifyClass, verifyObject
 from zope.testing.doctestunit import DocTestSuite
 
-def test_projects():
-    """
-    >>> from canonical.rosetta.interfaces import IProjects
-    >>> from canonical.rosetta.stub import Projects, Project
+def verifySQLObject(interface, implementation):
+    if hasattr(implementation, 'select'):
+        return verifyObject(interface, implementation.select()[0])
+    else:
+        return True
 
-    >>> projects = Projects()
-    >>> isinstance(projects.__iter__().next(), Project)
-    True
-    """
-
-def test_project():
-    """
-    >>> from canonical.rosetta.stub import Project
-    >>> project = Project("a", "a", "a", "a", "a")
-
-    >>> list(project.products())
-    []
-    """
-
-def test_product():
-    """
-    >>> from canonical.rosetta.stub import Project, Product
-    >>> project = Project("a", "a", "a", "a", "a")
-    >>> product = Product(project, "a", "a", "a")
-    """
-
-def test_verify_stub():
-    """
-    >>> from canonical.rosetta.interfaces import IProjects, IProject, IPOTemplate
-    >>> from canonical.rosetta.stub import Projects, Project, Product, POTemplate
-
-    >>> projects = Projects()
-    >>> project = projects.__iter__().next()
-    >>> product = project.products().next()
-    >>> potemplate = product.poTemplates().next()
-
-    >>> verifyObject(IProjects, projects)
-    True
-    >>> verifyObject(IProject, project)
-    True
-    >>> verifyObject(IPOTemplate, potemplate)
-    True
-    """
 
 def test_verify_sql_projects():
     '''
@@ -76,35 +39,35 @@ def test_verify_sql_product():
     True
     '''
 
-def test_verify_sql_potemplate():
+def test_verify_sql_editpotemplate():
     '''
-    >>> from canonical.rosetta.interfaces import IPOTemplate
+    >>> from canonical.rosetta.interfaces import IEditPOTemplate
     >>> from canonical.rosetta.sql import RosettaPOTemplate
-    >>> verifyClass(IPOTemplate, RosettaPOTemplate)
+    >>> verifyClass(IEditPOTemplate, RosettaPOTemplate)
     True
     '''
 
-def test_verify_sql_pofile():
+def test_verify_sql_editpofile():
     '''
-    >>> from canonical.rosetta.interfaces import IPOFile
+    >>> from canonical.rosetta.interfaces import IEditPOFile
     >>> from canonical.rosetta.sql import RosettaPOFile
-    >>> verifyClass(IPOFile, RosettaPOFile)
+    >>> verifyClass(IEditPOFile, RosettaPOFile)
     True
     '''
 
-def test_verify_sql_pomessageset():
+def test_verify_sql_editpomessageset():
     '''
-    >>> from canonical.rosetta.interfaces import IPOMessageSet
+    >>> from canonical.rosetta.interfaces import IEditPOMessageSet
     >>> from canonical.rosetta.sql import RosettaPOMessageSet
-    >>> verifyClass(IPOMessageSet, RosettaPOMessageSet)
+    >>> verifyClass(IEditPOMessageSet, RosettaPOMessageSet)
     True
     '''
 
-def test_verify_sql_pomessageidsighting():
+def test_verify_sql_editpomessageidsighting():
     '''
-    >>> from canonical.rosetta.interfaces import IPOMessageIDSighting
+    >>> from canonical.rosetta.interfaces import IEditPOMessageIDSighting
     >>> from canonical.rosetta.sql import RosettaPOMessageIDSighting
-    >>> verifyClass(IPOMessageIDSighting, RosettaPOMessageIDSighting)
+    >>> verifyClass(IEditPOMessageIDSighting, RosettaPOMessageIDSighting)
     True
     '''
 
@@ -132,11 +95,11 @@ def test_verify_sql_potranslation():
     True
     '''
 
-def test_verify_sql_language():
+def test_verify_sql_branch():
     '''
-    >>> from canonical.rosetta.interfaces import ILanguage
-    >>> from canonical.rosetta.sql import RosettaLanguage
-    >>> verifyClass(ILanguage, RosettaLanguage)
+    >>> from canonical.rosetta.interfaces import IBranch
+    >>> from canonical.rosetta.sql import RosettaBranch
+    >>> verifyClass(IBranch, RosettaBranch)
     True
     '''
 
@@ -148,13 +111,21 @@ def test_verify_sql_person():
     True
     '''
 
+def test_verify_sql_language():
+    '''
+    >>> from canonical.rosetta.interfaces import ILanguage
+    >>> from canonical.rosetta.sql import RosettaLanguage
+    >>> verifyClass(ILanguage, RosettaLanguage)
+    True
+    '''
+
 def test_verify_sql_languages():
-    """
+    '''
     >>> from canonical.rosetta.interfaces import ILanguages
     >>> from canonical.rosetta.sql import RosettaLanguages
     >>> verifyClass(ILanguages, RosettaLanguages)
     True
-    """
+    '''
 
 
 def test_suite():
@@ -162,5 +133,6 @@ def test_suite():
     return suite
 
 if __name__ == '__main__':
-    unittest.main()
+    r = unittest.TextTestRunner()
+    r.run(DocTestSuite())
 

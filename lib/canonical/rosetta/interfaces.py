@@ -363,11 +363,14 @@ class IPerson(Interface):
 
     presentationName = Attribute("""The name of this person.""")
 
-    isMaintainer = Attribute("""Is this person a project maintainer.""")
+    # XXX: These attributes disabled because there is no support for them in
+    # the database schema.
 
-    isTranslator = Attribute("""Is this person a translator.""")
+    #isMaintainer = Attribute("""Is this person a project maintainer.""")
 
-    isContributor = Attribute("""Is this person a contributor.""")
+    #isTranslator = Attribute("""Is this person a translator.""")
+
+    #isContributor = Attribute("""Is this person a contributor.""")
 
     # Invariant: isMaintainer implies isContributor
 

@@ -70,11 +70,11 @@ class RosettaProject(SQLBase):
     _columns = [
         ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
             notNull=True),
-        StringCol('name', dbName='name', notNull=True, unique=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        DateTimeCol('datecreated', dbName='datecreated', notNull=True),
-        StringCol('url', dbName='homepageurl')
+        StringCol(name='name', dbName='name', notNull=True, unique=True),
+        StringCol(name='title', dbName='title', notNull=True),
+        StringCol(name='description', dbName='description', notNull=True),
+        DateTimeCol(name='datecreated', dbName='datecreated', notNull=True),
+        StringCol(name='url', dbName='homepageurl')
     ]
 
     productsIter = MultipleJoin('RosettaProduct', joinColumn='project')
@@ -116,9 +116,9 @@ class RosettaProduct(SQLBase):
     _columns = [
         ForeignKey(name='project', foreignKey='RosettaProject', dbName='project',
             notNull=True),
-        StringCol('name', dbName='name', notNull=True, unique=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
+        StringCol(name='name', dbName='name', notNull=True, unique=True),
+        StringCol(name='title', dbName='title', notNull=True),
+        StringCol(name='description', dbName='description', notNull=True),
     ]
 
     poTemplatesIter = MultipleJoin('RosettaPOTemplate', joinColumn='product')
@@ -138,8 +138,13 @@ class RosettaPOTemplate(SQLBase):
     _columns = [
         ForeignKey(name='product', foreignKey='RosettaProduct', dbName='product',
             notNull=True),
-        StringCol('name', dbName='name', notNull=True, unique=True),
-        StringCol('title', dbName='title', notNull=True, unique=True),
+        ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
+            notNull=True),
+        StringCol(name='name', dbName='name', notNull=True, unique=True),
+        StringCol(name='title', dbName='title', notNull=True, unique=True),
+        StringCol(name='description', dbName='description', notNull=True),
+        StringCol(name='path', dbName='path', notNull=True),
+        BoolCol(name='isCurrent', dbName='iscurrent', notNull=True),
     ]
 
     poFilesIter = MultipleJoin('RosettaPOFile', joinColumn='potemplate')
@@ -289,6 +294,8 @@ class RosettaPOFile(SQLBase):
             dbName='potemplate', notNull=True),
         ForeignKey(name='language', foreignKey='RosettaLanguage', dbName='language',
             notNull=True),
+        StringCol(name='title', dbName='title', notNull=True, unique=True),
+        StringCol(name='description', dbName='description', notNull=True),
         StringCol(name='topComment', dbName='topcomment', notNull=True),
         StringCol(name='header', dbName='header', notNull=True),
         BoolCol(name='headerFuzzy', dbName='fuzzyheader', notNull=True),
@@ -427,6 +434,9 @@ class RosettaPOMessageSet(SQLBase):
             raise KeyError, plural_form
         else:
             return ret[0]
+
+    def newTranslation(self, sighting_or_msgid):
+        raise NotImplementedError
 
 
     def translations(self):
@@ -567,7 +577,7 @@ class RosettaPOTranslationSighting(SQLBase):
     _columns = [
         ForeignKey(name='poMessageSet', foreignKey='RosettaPOMessageSet',
             dbName='pomsgset', notNull=True),
-        ForeignKey(name='poTranslation', foreignKey='RosettPOTranslation',
+        ForeignKey(name='poTranslation', foreignKey='RosettaPOTranslation',
             dbName='potranslation', notNull=True),
         ForeignKey(name='person', foreignKey='RosettaPerson',
             dbName='person', notNull=True),
@@ -576,6 +586,8 @@ class RosettaPOTranslationSighting(SQLBase):
         DateTimeCol(name='lastTouched', dbName='lasttouched', notNull=True),
         BoolCol(name='inPOFile', dbName='inpofile', notNull=True),
         IntCol(name='pluralForm', dbName='pluralform', notNull=True),
+        # See canonical.lp.dbschema.RosettaTranslationOrigin.
+        IntCol(name='origin', dbName='origin', notNull=True),
         BoolCol(name='deprecated', dbName='deprecated', notNull=True),
     ]
 
@@ -616,13 +628,14 @@ class RosettaLanguage(SQLBase):
         StringCol(name='englishName', dbName='englishname')
     ]
 
+
 class RosettaPerson(SQLBase):
     implements(IPerson)
 
     _table = 'Person'
 
     _columns = [
-        StringCol(name='presentationName', dbName='presentationname')
+        StringCol(name='presentationName', dbName='presentationname'),
     ]
 
 #    isMaintainer
@@ -652,6 +665,18 @@ class RosettaPerson(SQLBase):
     def languages(self):
         for code in ('cy', 'es'):
             yield RosettaLanguage.selectBy(code=code)[0]
+
+
+class RosettaBranch(SQLBase):
+    implements(IBranch)
+
+    _table = 'Branch'
+
+    _columns = [
+        StringCol(name='title', dbName='title'),
+        StringCol(name='description', dbName='description')
+    ]
+
 
 # XXX: This is cheating.
 def personFromPrincipal(principal):
