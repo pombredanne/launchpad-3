@@ -4,53 +4,40 @@
 """
 
 # Python standard library imports
+from string import split, join
 from sets import Set
 
 # Zope imports
 from zope.interface import implements
 
 # sqlos and SQLObject imports
-from sqlos.interfaces import IConnectionName
-from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
-                      DateTimeCol
-
-from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp import dbschema
-
-# sibling import
-from canonical.soyuz.interfaces import IBinaryPackage, IBinaryPackageBuild
-from canonical.soyuz.interfaces import ISourcePackageRelease, IManifestEntry
-from canonical.soyuz.interfaces import IBranch, IChangeset, IPackages
-from canonical.soyuz.interfaces import IBinaryPackageSet, ISourcePackageSet
-from canonical.soyuz.interfaces import ISourcePackage, ISoyuzPerson
-from canonical.soyuz.interfaces import IDistribution, IRelease
-
-from canonical.soyuz.interfaces import IDistroBinariesApp
-
-from canonical.soyuz.database import SoyuzBinaryPackage, SoyuzBuild
-
-from canonical.lp import dbschema
-
-try:
-    from canonical.arch.infoImporter import SourceSource as infoSourceSource,\
-         RCSTypeEnum
-except ImportError:
-    raise
-
-
 from canonical.database.sqlbase import quote
-from canonical.soyuz.database import SoyuzSourcePackage, Manifest, \
-                                     ManifestEntry, SoyuzSourcePackageRelease
 
+# launchpad imports
+from canonical.launchpad.interfaces import IBinaryPackage, IBinaryPackageBuild, \
+                                           ISourcePackageRelease, IManifestEntry, \
+                                           IBranch, IChangeset, IPackages, \
+                                           IBinaryPackageSet, ISourcePackageSet
+
+from canonical.launchpad.database import SoyuzBinaryPackage, SoyuzBuild, \
+                                         SoyuzSourcePackage, Manifest, \
+                                         ManifestEntry, Release, \
+                                         SoyuzSourcePackageRelease, \
+                                         SoyuzDistroArchRelease, \
+                                         SoyuzDistribution, SoyuzPerson, \
+                                         SoyuzEmailAddress, GPGKey, \
+                                         ArchUserID, WikiName, JabberID, \
+                                         IrcID, Membership, TeamParticipation, \
+                                         DistributionRole, DistroReleaseRole
+
+# XXX arch stuff 
+from canonical.arch.infoImporter import SourceSource as infoSourceSource, RCSTypeEnum
 from canonical.arch.database import Branch, Changeset
 
-from canonical.soyuz.database import SoyuzEmailAddress, GPGKey, ArchUserID, \
-     WikiName, JabberID, IrcID, Membership, TeamParticipation
-
-from canonical.soyuz.database import DistributionRole, DistroReleaseRole
-
-from string import split, join
-
+#
+# 
+#
 
 class DistrosApp(object):
     def __init__(self):
@@ -64,27 +51,25 @@ class DistrosApp(object):
 
     
 class DistroApp(object):
-
     def __init__(self, name):
         self.distribution = SoyuzDistribution.selectBy(name=name)[0]
         self.releases = Release.selectBy(distributionID=self.distribution.id)
 
-        if self.releases.count() > 0 :
+        if self.releases.count():
             self.enable_releases = True
         else:
             self.enable_releases = False
         
     def getReleaseContainer(self, name):
-        if name == 'releases':
-            return DistroReleasesApp(self.distribution)
-        if name == 'src':
-            return DistroSourcesApp(self.distribution)
-        if name == 'bin':
-            return DistroBinariesApp(self.distribution) 
-        if name == 'team':
-            return DistroTeamApp(self.distribution)
-        if name == 'people':
-            return DistroPeopleApp(self.distribution)
+        container = {
+            'releases': DistroReleasesApp,
+            'src'     : DistroSourcesApp,
+            'bin'     : DistroBinariesApp,
+            'team'    : DistroTeamApp,
+            'people'  : DistroPeopleApp,
+        }
+        if container.has_key(name):
+            return container[name](self.distribution)
         else:
             raise KeyError, name
 
@@ -96,10 +81,12 @@ class DistroReleaseApp(object):
         self.roles=DistroReleaseRole.selectBy(distroreleaseID=self.release.id) 
 
     def getPackageContainer(self, name):
-        if name == 'source':
-            return SourcePackages(self.release)
-        if name == 'binary':
-            return BinaryPackages(self.release)
+        container = {
+            'source': SourcePackages,
+            'binary': BinaryPackages,
+        }
+        if container.has_key(name):
+            return container[name](self.release)
         else:
             raise KeyError, name
 
@@ -245,7 +232,6 @@ class DistroReleaseSourceApp(object):
         """
         sourceReleases = list(self.sourcepackage.current(self.release))
         current = {}
-        from canonical.soyuz.database import SoyuzDistroArchRelease
         for release in sourceReleases:
             # Find distroarchs for that release
             archReleases = release.architecturesReleased(self.release)
@@ -549,7 +535,6 @@ class DistroReleaseBinaryApp(object):
         """
         binaryReleases = list(self.binarypackage.current(self.release))
         current = {}
-        from canonical.soyuz.database import SoyuzDistroArchRelease
         for release in binaryReleases:
             # Find distroarchs for that release
             archReleases = release.architecturesReleased(self.release)
@@ -593,7 +578,6 @@ class DistroReleaseBinariesApp(object):
 
 ## WTF ist That ?? I wonder how many copies of this code we will find !
 ##FIXME: expensive routine
-        from sets import Set
         selection = Set(SoyuzBinaryPackage.select(query))
         ##FIXME: Dummy solution to avoid a binarypackage to be shown more
         ##   then once
@@ -640,124 +624,6 @@ class DistroBinariesApp(object):
 
 # end of binary app component related data ....
   
-
-# SQL Objects .... should be moved !!!!
-class SoyuzPerson(SQLBase):
-    """A person"""
-
-    implements(ISoyuzPerson)
-
-    _table = 'Person'
-    _columns = [
-        StringCol('givenname', dbName='givenname'),
-        StringCol('familyname', dbName='familyname'),
-        StringCol('displayname', dbName='displayname'),
-        StringCol('password', dbName='password'),
-        StringCol('name', dbName='name', notNull=True),
-        ForeignKey(name='teamowner', dbName='teamowner',
-                   foreignKey='SoyuzPerson'),
-        StringCol('teamdescription', dbName='teamdescription'),
-        IntCol('karma', dbName='karma'),
-        DateTimeCol('karmatimestamp', dbName='karmatimestamp')
-        ]
-
-    
-class SoyuzDistribution(SQLBase):
-
-    implements(IDistribution)
-
-    _table = 'Distribution'
-    _columns = [
-        StringCol('name', dbName='name'),
-        StringCol('title', dbName='title'),
-        StringCol('description', dbName='description'),
-        StringCol('domainname', dbName='domainname'),
-        ForeignKey(name='owner', dbName='owner', foreignKey='SoyuzPerson',
-                   notNull=True)
-        ]
-
-class Release(SQLBase):
-
-    implements(IRelease)
-
-    _table = 'DistroRelease'
-    _columns = [
-        ForeignKey(name='distribution', dbName='distribution',
-                   foreignKey='SoyuzDistribution', notNull=True),
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        StringCol('version', dbName='version', notNull=True),
-        ForeignKey(name='components', dbName='components', foreignKey='Schema',
-                   notNull=True),
-        ForeignKey(name='sections', dbName='sections', foreignKey='Schema',
-                   notNull=True),
-        IntCol('releasestate', dbName='releasestate', notNull=True),
-        DateTimeCol('datereleased', dbName='datereleased', notNull=True),
-        ForeignKey(name='parentrelease', dbName='parentrelease',
-                   foreignKey='Release', notNull=False),
-        ForeignKey(name='owner', dbName='owner', foreignKey='SoyuzPerson',
-                   notNull=True)
-    ]
-
-    def displayname(self):
-        return "%s %s (%s)" % (self.distribution.title, self.version,
-                               self.title)
-
-    displayname = property(displayname)
-
-    def parent(self):
-        if self.parentrelease:
-            return self.parentrelease.title
-        return ''
-
-    parent = property(parent)
-
-    def _getState(self, value):
-        for status in dbschema.DistributionReleaseState.items:
-            if status.value == value:
-                return status.title
-        return 'Unknown'
-
-    def state(self):
-        return self._getState(self.releasestate)
-
-    state = property(state)
-
-    def sourcecount(self):
-        q =  """SELECT COUNT (DISTINCT sourcepackagename.name)
-                FROM sourcepackagename, Sourcepackage,
-                SourcepackageRelease, SourcepackageUpload
-                WHERE sourcepackagename.id = sourcepackage.sourcepackagename
-                AND SourcePackageUpload.sourcepackagerelease=
-                                                  SourcePackageRelease.id
-                AND SourcePackageRelease.sourcepackage = SourcePackage.id
-                AND SourcePackageUpload.distrorelease = %s;""" % (self.id)
-
-        db = SoyuzSourcePackage._connection._connection
-        db_cursor = db.cursor()
-        db_cursor.execute(q)        
-        return db_cursor.fetchall()[0][0]
-
-    sourcecount = property(sourcecount)
-
-    def binarycount(self):
-        q = """SELECT COUNT (DISTINCT binarypackagename.name) FROM
-               binarypackagename, packagepublishing, binarypackage,
-               distroarchrelease WHERE PackagePublishing.binarypackage =
-               BinaryPackage.id AND PackagePublishing.distroarchrelease =
-               DistroArchRelease.id AND DistroArchRelease.distrorelease = %s
-               AND binarypackagename.id = binarypackage.binarypackagename;
-               """ % (self.id)
-
-        #import pdb
-        #pdb.set_trace()
-        db = SoyuzBinaryPackage._connection._connection
-        db_cursor = db.cursor()
-        db_cursor.execute(q)
-        return db_cursor.fetchall()[0][0]
-                
-    binarycount = property(binarycount)
 
 class SourcePackages(object):
     """Container of SourcePackage objects.

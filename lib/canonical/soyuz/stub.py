@@ -1,13 +1,20 @@
+"""Stub backend for Soyuz.
 
-# (c) Canonical Software Ltd. 2004, all rights reserved.
-#
-# arch-tag: b220d005-dd14-4af1-bbfa-b17a24e3bf70
+(c) Canonical Software Ltd. 2004, all rights reserved.
+"""
 
 __metaclass__ = type
 
 from zope.interface import implements
-from canonical.soyuz.interfaces import IPackages, IBinaryPackageSet, IProjects, IProject, IProduct, ISync
-from canonical.soyuz.interfaces import IBinaryPackage
+
+from canonical.launchpad.interfaces import IPackages, IBinaryPackageSet, \
+                                           IProjects, IProject, IProduct, ISync, \
+                                           IBinaryPackage
+
+
+#
+#
+#
 
 class Packages:
     """Stub packages collection"""
@@ -172,3 +179,6 @@ class Sync(object):
         """update a Sync, possibly reparenting"""
         for attribute,value in kwargs.items():
             setattr(self, attribute, value)
+
+
+# arch-tag: b220d005-dd14-4af1-bbfa-b17a24e3bf70

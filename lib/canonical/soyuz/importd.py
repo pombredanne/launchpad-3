@@ -1,25 +1,33 @@
-# (c) Canonical Ltd. 2004
+"""Soyuz
+
+(c) Canonical Software Ltd. 2004, all rights reserved.
+"""
 
 # Python standard library imports
 from sets import Set
+import datetime
 
 # Zope imports
 from zope.interface import implements
 
-# sqlos and SQLObject imports
+# sql imports
 from sqlos.interfaces import IConnectionName
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol, \
                       DateTimeCol
-
-from canonical.database.sqlbase import SQLBase, quote
 from canonical.lp import dbschema
+from canonical.database.sqlbase import quote
 
-from canonical.database.doap    import IProjects, IProduct, IProject
+# interfaces
+from canonical.launchpad.interfaces import ISync, IProjects, IProduct, IProject, \
+                                           IProjects
 
-from canonical.database.doap import DBProject as dbProject, Product \
-     as dbProduct
+# 
+from canonical.database.doap import DBProject as dbProject, Product as dbProduct
 
-from canonical.soyuz.interfaces import ISync
+#
+#
+#
+
 class Projects(object):
     """Stub projects collection"""
 
@@ -230,7 +238,6 @@ class Sync(object):
 #                    default=None),
     def enable(self):
         """enable the sync for processing"""
-        import datetime
         self._sync.processingapproved='NOW'
         self._sync.frequency=datetime.timedelta(1)
     def enabled(self):

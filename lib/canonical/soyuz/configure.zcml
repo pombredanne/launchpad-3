@@ -47,23 +47,23 @@
     -->
   <browser:suburl
       for="canonical.soyuz.SoyuzApplication"
-      utility="canonical.soyuz.interfaces.IPackages"
+      utility="canonical.launchpad.interfaces.IPackages"
       permission="zope.Public"
       name="packages"
       />
 
   <!-- These are views on the soyuz binary package list. -->
   <browser:suburl
-      for="canonical.soyuz.interfaces.IPackages"
-      utility="canonical.soyuz.interfaces.IPackageSet"
+      for="canonical.launchpad.interfaces.IPackages"
+      utility="canonical.launchpad.interfaces.IPackageSet"
       permission="zope.Public"
       name="binary"
       />
 
   <!-- These are views on the soyuz source package list. -->
   <browser:suburl
-      for="canonical.soyuz.interfaces.IPackages"
-      utility="canonical.soyuz.interfaces.IPackageSet"
+      for="canonical.launchpad.interfaces.IPackages"
+      utility="canonical.launchpad.interfaces.IPackageSet"
       permission="zope.Public"
       name="source"
       />
@@ -72,12 +72,12 @@
   <!-- These are views on the soyuz projects list. -->
   <browser:suburl
       for="canonical.soyuz.SoyuzApplication"
-      utility="canonical.database.doap.IProjects"
+      utility="canonical.launchpad.interfaces.IProjects"
       permission="zope.Public"
       name="projects"
       />
 
-  <content class="canonical.soyuz.interfaces.IPackages">
+  <content class="canonical.launchpad.interfaces.IPackages">
     <implements interface="canonical.publication.IHasSuburls"/>
   </content>
 

@@ -1,18 +1,31 @@
-from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson
+"""Soyuz
 
-from canonical.soyuz.database import SoyuzSourcePackage, SoyuzBinaryPackage
+(c) Canonical Software Ltd. 2004, all rights reserved.
+"""
 
-from canonical.soyuz.database import TeamParticipation, SoyuzEmailAddress
-from canonical.soyuz.database import GPGKey, ArchUserID, WikiName, JabberID
-from canonical.soyuz.database import IrcID, Membership
+# sqlobject/sqlos
+from sqlobject import LIKE, OR, AND
+from canonical.database.sqlbase import quote
+
+# lp imports
+from canonical.lp import dbschema
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
-from sqlobject import LIKE, OR, AND
+# database imports
+from canonical.launchpad.database import SoyuzSourcePackage, SoyuzBinaryPackage, \
+                                         TeamParticipation, SoyuzEmailAddress, \
+                                         GPGKey, ArchUserID, WikiName, JabberID, \
+                                         IrcID, Membership
 
-from canonical.database.sqlbase import quote
 
-from canonical.lp import dbschema
+# app components
+from canonical.soyuz.sql import SoyuzDistribution, Release, SoyuzPerson, \
+                                ProjectMapper, ProductMapper
+
+#
+#
+#
 
 class DistrosSearchView(object):
 
@@ -562,7 +575,6 @@ class ViewSync(View):
     def products(self):
         """all the products that context can switch between"""
         """ugly"""
-        from canonical.soyuz.sql import ProjectMapper, ProductMapper
         projMapper=ProjectMapper()
         prodMapper=ProductMapper()
         for project in projMapper.findByName("%%"):

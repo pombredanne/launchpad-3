@@ -1,6 +1,7 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
-#
-# This is the canonical.soyuz package.
+"""Soyuz
+
+(c) Canonical Software Ltd. 2004, all rights reserved.
+"""
 
 __metaclass__ = type
 

@@ -365,28 +365,28 @@
 
 <!--  packages stuff -->
 
-  <page for="canonical.soyuz.interfaces.IPackages"
+  <page for="canonical.launchpad.interfaces.IPackages"
         permission="zope.Public"
         name="index.html"
         template="templates/packages-index.pt"
         lp:url="Soyuz/packages/"
         />
 
-  <page for="canonical.soyuz.interfaces.IPackageSet"
+  <page for="canonical.launchpad.interfaces.IPackageSet"
         permission="zope.Public"
         name="index.html"
         template="templates/package-list.pt"
         lp:url="Soyuz/distros/$Distribution.name/$Release.name/packages/$package_type/$Package.id/index.html"
         />
 
-  <page for="canonical.soyuz.interfaces.IPackageSet"
+  <page for="canonical.launchpad.interfaces.IPackageSet"
         permission="zope.Public"
         name="+search"
         template="templates/package-search.pt"
         lp:url="Soyuz/distros/$Distribution.name/$Release.name/source/+search"
         />
 
-  <page for="canonical.soyuz.interfaces.IPackageSet"
+  <page for="canonical.launchpad.interfaces.IPackageSet"
         permission="zope.Public"
         name="+new"
         template="templates/package-new.pt"
@@ -394,21 +394,21 @@
         />
 
 
-  <page for="canonical.soyuz.interfaces.IBinaryPackage"
+  <page for="canonical.launchpad.interfaces.IBinaryPackage"
         permission="zope.Public"
         name="index.html"
         template="templates/package-index.pt"
         lp:url="Soyuz/distros/$Distribution.name/$Release.name/binary/index.html"
         />
 
-  <page for="canonical.soyuz.interfaces.ISourcePackageRelease"
+  <page for="canonical.launchpad.interfaces.ISourcePackageRelease"
         permission="zope.Public"
         name="index.html"
         template="templates/package-index.pt"
         lp:url="Soyuz/distros/$Distribution.name/$Release.name/source/index.html"
         />
 
-  <pages for="canonical.database.doap.IProjects"
+  <pages for="canonical.launchpad.interfaces.IProjects"
          class="canonical.soyuz.browser.ViewProjects"
          permission="zope.Public">
     <page name="index.html"
@@ -425,10 +425,10 @@
           />
   </pages>
 
- <traverse for="canonical.database.doap.IProjects" function="canonical.soyuz.browser.urlTraverseProjects" />
+ <traverse for="canonical.launchpad.interfaces.IProjects" function="canonical.soyuz.browser.urlTraverseProjects" />
 
 
-  <pages for="canonical.database.doap.IProject"
+  <pages for="canonical.launchpad.interfaces.IProject"
          class="canonical.soyuz.browser.ViewProject"
          permission="zope.Public">
     <page name="index.html"
@@ -441,9 +441,9 @@
           />
     </pages>
 
-<traverse for="canonical.database.doap.IProject" function="canonical.soyuz.browser.urlTraverseProducts" />
+<traverse for="canonical.launchpad.interfaces.IProject" function="canonical.soyuz.browser.urlTraverseProducts" />
 
-  <pages for="canonical.database.doap.IProduct"
+  <pages for="canonical.launchpad.interfaces.IProduct"
          class="canonical.soyuz.browser.ViewProduct"
          permission="zope.Public">
     <page name="index.html"
@@ -456,9 +456,9 @@
           />
     </pages>
 
-  <traverse for="canonical.database.doap.IProduct" function="canonical.soyuz.browser.urlTraverseSyncs" />
+  <traverse for="canonical.launchpad.interfaces.IProduct" function="canonical.soyuz.browser.urlTraverseSyncs" />
 
-  <pages for="canonical.soyuz.interfaces.ISync"
+  <pages for="canonical.launchpad.interfaces.ISync"
          class="canonical.soyuz.browser.ViewSync"
          permission="zope.Public">
     <page name="index.html"
