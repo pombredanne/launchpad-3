@@ -445,6 +445,14 @@ class POTemplate(SQLBase):
             # The import has been done, we mark it that way.
             self.rawimportstatus = RosettaImportStatus.IMPORTED.value
 
+        # We update the cached value that tells us the number of msgsets this
+        # .pot file has
+        self.messagecount = len(self)
+
+        # And now, we should update the statistics for all po files this .pot
+        # file has because a number of msgsets could have change.
+        for pofile in self.poFiles():
+            pofile.updateStatistics()
 
 
 class POTMsgSet(SQLBase):
@@ -933,6 +941,9 @@ class POFile(SQLBase):
             self.rawimportstatus = RosettaImportStatus.FAILED.value
         else:
             self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+
+        # Now we update the statistics after this new import
+        self.updateStatistics(newImport=True)
 
 
 class POMsgSet(SQLBase):

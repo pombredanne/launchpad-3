@@ -323,24 +323,24 @@ def import_spoken(cnx, plural_forms):
     cr = cnx.cursor()
 
     for language in countries.keys():
-        if country_count[language] > 1:
-            # This language is spoken in more than one country.
-            for country in countries[language]:
-                # We get the concrete info for the language and country:
-                cr.execute(
-                    """SELECT Language.id, Country.id, Language.englishname,
-                              Country.name FROM Language, Country
-                       WHERE Language.code='%s' AND Country.iso3166code2='%s'""" %
-                    (language, country))
-                if cr.rowcount > 0:
-                    # The language and country exists
-                    spoken_row = cr.fetchone()
-                    cr.execute("""SELECT * FROM Spokenin WHERE language=%d AND
-                    country=%d""" % (spoken_row[0], spoken_row[1]))
-                    if cr.rowcount == 0:
-                        cr.execute("""INSERT INTO Spokenin VALUES(%d, %d)""" % (
-                            spoken_row[0], spoken_row[1]))
+        for country in countries[language]:
+            # We get the concrete info for the language and country:
+            cr.execute(
+                """SELECT Language.id, Country.id, Language.englishname,
+                          Country.name FROM Language, Country
+                   WHERE Language.code='%s' AND Country.iso3166code2='%s'""" %
+                (language, country))
+            if cr.rowcount > 0:
+                # The language and country exists
+                spoken_row = cr.fetchone()
+                cr.execute("""SELECT * FROM Spokenin WHERE language=%d AND
+                country=%d""" % (spoken_row[0], spoken_row[1]))
+                if cr.rowcount == 0:
+                   cr.execute("""INSERT INTO Spokenin VALUES(%d, %d)""" % (
+                        spoken_row[0], spoken_row[1]))
 
+                if country_count[language] > 1:
+                    #This language is spoken in more than one country.
                     # We add now the language_country Languages
                     data = {
                         'code': u'%s_%s' % (language, country),
