@@ -85,7 +85,8 @@ def main():
     # Build the template database. Tests duplicate this.
     here = os.path.dirname(os.path.realpath(__file__))
     schema_dir = os.path.join(here, 'database', 'schema')
-    if os.system('cd %s; make test > /dev/null 2>&1' % schema_dir) != 0:
+    if os.system('cd %s; make test PYTHON=%s > /dev/null 2>&1' % (
+        schema_dir, sys.executable)) != 0:
         print 'Failed to create database'
         return 1
 
@@ -124,8 +125,8 @@ def main():
     
 
     print 'Running tests.'
-    proc = popen2.Popen3('cd %s; python test.py %s < /dev/null' %
-        (here, ' '.join(sys.argv[1:])), True)
+    proc = popen2.Popen3('cd %s; %s test.py %s < /dev/null' %
+        (here, sys.executable, ' '.join(sys.argv[1:])), True)
     stdin, out, err = proc.tochild, proc.fromchild, proc.childerr
 
     # Use non-blocking reader threads to cope with differing expectations

@@ -18,7 +18,7 @@ check:
 	$(MAKE) -C sourcecode build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	./test_on_merge.py canonical
+	${PYTHON} ./test_on_merge.py canonical
 
 pagetests:
 	$(MAKE) -C sourcecode build
@@ -27,7 +27,7 @@ pagetests:
 
 XXXcheck: build
 	$(MAKE) -C sourcecode check
-	PYTHONPATH=$(HERE)/lib ./test.py
+	PYTHONPATH=$(HERE)/lib ${PYTHON} ./test.py
 
 debugging-on:
 	ln -s ../lib/canonical/canonical.apidoc-configure.zcml ./package-includes/+canonical.apidoc-configure.zcml
