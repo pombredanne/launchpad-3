@@ -71,8 +71,8 @@
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/translate" />
   </pages>
 
-  <traverse for="canonical.launchpad.interfaces.IPOTemplate"
-            function="canonical.rosetta.browser.traverseIPOTemplate" />
+  <traverse for="canonical.launchpad.interfaces.IPOTemplate" getter="poFile"
+    />
 
   <!-- pages for a POFile -->
   <pages for="canonical.launchpad.interfaces.IPOFile"

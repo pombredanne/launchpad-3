@@ -1,11 +1,12 @@
 
-This is the Rosetta homepage (/rosetta).
+This tests searching for projects in Rosetta.
 
   >>> print http(r"""
-  ... GET /rosetta HTTP/1.1
+  ... GET /rosetta/search-results?q=gnome HTTP/1.1
+  ... Referer: http://localhost:9000/rosetta
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: 5287
+  Content-Length: 7564
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   <BLANKLINE>
@@ -16,9 +17,8 @@ This is the Rosetta homepage (/rosetta).
   <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
         lang="en">
     <head>
-  <base href="http://localhost:9000/rosetta/index" />
-  <BLANKLINE>
-      <title>Rosetta</title>
+      <title>Rosetta: Search results for
+          "gnome"</title>
       <!-- Plone style sheet -->
       <style type="text/css" media="screen">@import url(++resource++plone.css);</style>
       <!-- Rosetta style sheet -->
@@ -106,6 +106,13 @@ This is the Rosetta homepage (/rosetta).
   <BLANKLINE>
               <span>
                   <a href="/rosetta">rosetta</a>
+                  <span class="breadcrumbSeparator"> &raquo; </span>
+              </span>
+          </span>
+          <span>
+  <BLANKLINE>
+              <span>
+                  <a href="/rosetta/search-results">search-results</a>
   <BLANKLINE>
               </span>
           </span>
@@ -132,22 +139,9 @@ This is the Rosetta homepage (/rosetta).
                 <div id="region-content">
                     <div>
   <BLANKLINE>
-      <h1>Welcome to Rosetta!</h1>
+      <h1>Search</h1>
   <BLANKLINE>
-      <div class="documentDescription">
-      Rosetta is a tool for translating applications into your language. You can
-      also use it to find out whether a certain application or type of
-      application is available in your language. Use the search form below to
-      find an application, or see the <a href="about" title="About
-      Rosetta">about</a> page to find out more about Rosetta.
-      </div>
-  <BLANKLINE>
-      <p>
-      You might like to
-      <a href="+login">log in</a>.
-      </p>
-  <BLANKLINE>
-      <form action="search-results" method="get">
+      <form action="search-results" method="GET">
       <fieldset>
           <legend>Search</legend>
   <BLANKLINE>
@@ -156,7 +150,7 @@ This is the Rosetta homepage (/rosetta).
               <div class="formHelp">
               Enter the name or type of project.
               </div>
-              <input name="q" type="text" />
+              <input name="q" type="text" value="gnome" />
               <a href="search">Advanced Search</a>
           </div>
   <BLANKLINE>
@@ -165,29 +159,92 @@ This is the Rosetta homepage (/rosetta).
           </div>
       </fieldset></form>
   <BLANKLINE>
-      <h1>Translatable packages in Ubuntu Linux</h1>
+      <!-- No query string was provided. -->
   <BLANKLINE>
-      <table class="listing rowNavigation" id="packages-list">
-          <thead>
-              <th>Package</th>
-              <th>Description</th>
-          </thead>
   <BLANKLINE>
-          <tbody>
-              <tr onclick="window.location='projects/gnome/gnome-panel'">
-                  <td><a href="projects/gnome/gnome-panel">GNOME Panel</a></td>
-                  <td>Launch and/or dock GNOME applications</td>
-              </tr>
   <BLANKLINE>
-              <tr class="even"
-                  onclick="window.location='projects/gnome/gnome-applets'">
-                  <td><a href="projects/gnome/gnome-applets">GNOME Applets</a></td>
-                  <td>Various applets for GNOME panel</td>
-              </tr>
-          </tbody>
+      <!-- Query string was provided. -->
   <BLANKLINE>
-      </table>
+      <div>
   <BLANKLINE>
+  <BLANKLINE>
+          <div>
+              <!-- Some search results were found. -->
+  <BLANKLINE>
+              <h2>Search Results</h2>
+  <BLANKLINE>
+              <strong>
+              Projects matching your query: <span>2</span>
+              </strong>
+  <BLANKLINE>
+              <dl>
+                  <div>
+                      <dt>
+                          <a href="projects/gnome">The GNOME Project</a>
+  <BLANKLINE>
+                          <!--
+                          <span class="discreet"
+                                title="Relevance">
+                              [<span>85</span>%]
+                          </span>
+  <BLANKLINE>
+                          <span class="discreet">
+                          last updated by
+                          <span>Author</span>,
+                          <span>24th of March, 2004</span>
+                          </span>
+                          -->
+                      </dt>
+  <BLANKLINE>
+                      <dd>The Gnome Project was founded (when?) to build on the success of early applications using the Gtk GUI toolkit. Many of those applications are still part of Gnome, and the Gtk toolkit remains an essential part of Gnome.
+  <BLANKLINE>
+  Gnome applications cover the full spectrum from office productivity applications to games, digital camera applications, and of course the Gnome Panel which acts as a launcher and general access point for apps on the desktop.</dd>
+                  </div>
+                  <div>
+                      <dt>
+                          <a href="projects/ubuntu">The Ubuntu Project</a>
+  <BLANKLINE>
+                          <!--
+                          <span class="discreet"
+                                title="Relevance">
+                              [<span>85</span>%]
+                          </span>
+  <BLANKLINE>
+                          <span class="discreet">
+                          last updated by
+                          <span>Author</span>,
+                          <span>24th of March, 2004</span>
+                          </span>
+                          -->
+                      </dt>
+  <BLANKLINE>
+                      <dd>The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community, especially the Gnome Project. While the full range of KDE and other desktop environments are available, Ubuntu's Gnome desktop receives most of the polish and support work done for each release.
+  <BLANKLINE>
+  Ubuntu also includes work to unify the translation of common open source desktop applications and the tracking of bugs across multiple distributions.</dd>
+                  </div>
+              </dl>
+  <BLANKLINE>
+              <p>
+              Did you not find what you were looking for? Try the <a href="">Advanced Search</a> for more precise search options.
+              </p>
+  <BLANKLINE>
+              <!-- Duplicated above. -->
+              <p>
+              If you wish to translate a project which is not yet in Rosetta, you
+              can <a href="projects/+request">Request a Project</a>.
+              </p>
+  <BLANKLINE>
+              <!-- Batch Navigation -->
+              <!-- XXX -->
+              <!--
+              <div class="listingBar">
+              Batch navigation
+              </div>
+              -->
+  <BLANKLINE>
+          </div> <!-- condition: view/resultCount -->
+  <BLANKLINE>
+      </div> <!-- condition: view/queryProvided -->
   <BLANKLINE>
   </div>
                 </div>

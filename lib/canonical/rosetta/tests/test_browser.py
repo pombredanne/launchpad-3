@@ -7,17 +7,26 @@ __metaclass__ = type
 import unittest
 from zope.testing.doctestunit import DocTestSuite
 
-from canonical.launchpad.interfaces import ILanguageSet, IPerson
+from canonical.launchpad.interfaces import IProjectSet, ILanguageSet, IPerson
 from zope.interface import implements
 from zope.app.security.interfaces import IPrincipal
 from zope.publisher.interfaces.browser import IBrowserRequest
 
-class DummyProduct:
-    pass
+class DummyProjectSet:
+    implements(IProjectSet)
+
+    def search(self, query, search_products = False):
+        return [DummyProject(), DummyProject()]
+
 
 class DummyProject:
     def products(self):
         return [DummyProduct(), DummyProduct()]
+
+
+class DummyProduct:
+    pass
+
 
 class DummyLanguage:
     def __init__(self, code, pluralForms):
@@ -245,6 +254,39 @@ def test_ViewProject():
     >>> view.request = DummyRequest()
     >>> view.thereAreProducts()
     True
+    '''
+
+def test_ViewSearchResults():
+    '''
+    >>> from zope.app.tests.placelesssetup import setUp, tearDown
+    >>> from zope.app.tests import ztapi
+
+    >>> setUp()
+
+    >>> ztapi.provideUtility(IProjectSet, DummyProjectSet())
+
+    >>> from canonical.rosetta.browser import ViewSearchResults
+
+    >>> view = ViewSearchResults(None, DummyRequest())
+    >>> view.queryProvided
+    False
+    >>> view.query
+    >>> view.results
+    []
+    >>> view.resultCount
+    0
+
+    >>> view = ViewSearchResults(None, DummyRequest(q = 'foo'))
+    >>> view.queryProvided
+    True
+    >>> view.query
+    'foo'
+    >>> len(view.results)
+    2
+    >>> view.resultCount
+    2
+
+    >>> tearDown()
     '''
 
 def test_TranslatePOTemplate_init():

@@ -154,12 +154,17 @@ class ProjectSet:
                        owner = owner,
                        datecreated = 'now')
 
-    def search(self, query):
-        query = quote('%%' + query + '%%')
-        #query = quote(query)
-        return Project.select(
-            'title ILIKE %s OR description ILIKE %s' % (query, query))
+    def search(self, query, search_products = False):
+        query = quote('%' + query + '%')
 
+        condition = ('title ILIKE %s OR description ILIKE %s' %
+            (query, query))
+
+        if search_products:
+            condition += (' OR id IN (SELECT project FROM Product WHERE '
+                'title ILIKE %s OR description ILIKE %s)' % (query, query))
+
+        return Project.select(condition)
 
 
 class ProjectBugTracker(SQLBase):

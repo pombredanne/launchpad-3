@@ -23,6 +23,10 @@ from canonical.rosetta.pofile import POHeader
 charactersPerLine = 50
 
 def count_lines(text):
+    '''Count the number of physical lines in a string. This is always at least
+    as large as the number of logical lines in a string.
+    '''
+
     count = 0
 
     for line in text.split('\n'):
@@ -77,8 +81,20 @@ def request_languages(request):
 def parse_cformat_string(s):
     '''Parse a printf()-style format string into a sequence of interpolations
     and non-interpolations.'''
+
+    # The sequence '%%' is not counted as an interpolation. Perhaps splitting
+    # into 'special' and 'non-special' sequences would be better.
+
+    # This function works on the basis that s can be one of three things: an
+    # empty string, a string beginning with a sequence containing no
+    # interpolations, or a string beginning with an interpolation.
+
+    # Check for an empty string.
+
     if s == '':
         return ()
+
+    # Check for a interpolation-less prefix.
 
     match = re.match('(%%|[^%])+', s)
 
@@ -86,11 +102,15 @@ def parse_cformat_string(s):
         t = match.group(0)
         return (('string', t),) + parse_cformat_string(s[len(t):])
 
+    # Check for an interpolation sequence at the beginning.
+
     match = re.match('%[^diouxXeEfFgGcspn]*[diouxXeEfFgGcspn]', s)
 
     if match:
         t = match.group(0)
         return (('interpolation', t),) + parse_cformat_string(s[len(t):])
+
+    # Give up.
 
     raise ValueError(s)
 
@@ -322,24 +342,10 @@ class ViewPOTemplate:
         else:
             return "%s messages" % N
 
-    # XXX: hardcoded value
-    def isPlural(self):
-        if len(self.context.sighting('23').pluralText) > 0:
-            return True
-        else:
-            return False
-
     def languages(self):
         languages = list(self.context.languages())
         languages.sort(lambda a, b: cmp(a.englishName, b.englishName))
         return languages
-
-
-def traverseIPOTemplate(potemplate, request, name):
-    try:
-        return potemplate.poFile(name)
-    except KeyError:
-        pass
 
 
 class ViewPOFile:
@@ -473,15 +479,17 @@ class ViewSearchResults:
         self.context = context
         self.request = request
 
-        self.projects = getUtility(IProjectSet)
-        self.queryProvided = 'q' in request.form and \
-            request.form.get('q')
-        self.query = request.form.get('q')
+        query = request.form.get('q')
 
-        if self.queryProvided:
-            self.results = self.projects.search(self.query)
-            self.resultCount = self.results.count()
+        if query is not None and query is not u'':
+            self.query = query
+            self.queryProvided = True
+            self.results = getUtility(IProjectSet).search(query,
+                search_products = True)
+            self.resultCount = len(list(self.results))
         else:
+            self.query = None
+            self.queryProvided = False
             self.results = []
             self.resultCount = 0
 
@@ -691,11 +699,18 @@ class TranslatePOTemplate:
             return self._makeURL(offset = self.offset + self.count)
 
     def _mungeMessageID(self, text, flags):
-        # Convert leading and trailing spaces on each line to open boxes.
+        '''Convert leading and trailing spaces on each line to open boxes
+        (U+2423).'''
 
         lines = []
 
         for line in xml_escape(text).split('\n'):
+            # Pattern:
+            # - group 1: zero or more spaces: leading whitespace
+            # - group 2: zero or more groups of (zero or
+            #   more spaces followed by one or more non-spaces): maximal
+            #   string which doesn't begin or end with whitespace
+            # - group 3: zero or more spaces: trailing whitespace
             match = re.match('^( *)((?: *[^ ]+)*)( *)$', line)
 
             if match:
@@ -705,7 +720,7 @@ class TranslatePOTemplate:
                     u'\u2423' * len(match.group(3)))
             else:
                 raise AssertionError(
-                    "Regular expression that should always match didn't.")
+                    "A regular expression that should always match didn't.")
 
         for i in range(len(lines)):
             if 'c-format' in flags:
@@ -771,6 +786,12 @@ class TranslatePOTemplate:
             yield self._messageSet(set)
 
     def submitTranslations(self):
+        '''Handle a form submission for the translation page. The form
+        contains translations, some of which will be unchanged, some of which
+        will be modified versions of old translations and some of which will
+        be new.
+        '''
+
         self.submitted = False
 
         if not "SUBMIT" in self.request.form:
