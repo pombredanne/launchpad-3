@@ -22,43 +22,43 @@ class WatchedSet(sets.Set):
 
     def _update(self, iterable):
         sets.Set._update(self, iterable)
-        self.watcher(self)
+        self._watcher(self)
 
     def __ior__(self, other):
         sets.Set.__ior__(self, other)
-        self.watcher(self)
+        self._watcher(self)
 
     def __iand__(self, other):
         sets.Set.__iand__(self, other)
-        self.watcher(self)
+        self._watcher(self)
 
     def intersection_update(self, other):
         sets.Set.intersection_update(self, other)
-        self.watcher(self)
+        self._watcher(self)
 
     def symmetric_difference_update(self, other):
         sets.Set.symmetric_difference_update(self, other)
-        self.watcher(self)
+        self._watcher(self)
 
     def difference_update(self, other):
         sets.Set.difference_update(self, other)
-        self.watcher(self)
+        self._watcher(self)
 
     def clear(self):
         sets.Set.clear(self)
-        self.watcher(self)
+        self._watcher(self)
 
     def add(self, element):
         sets.Set.add(self, element)
-        self.watcher(self)
+        self._watcher(self)
 
     def remove(self, element):
         sets.Set.remove(self, element)
-        self.watcher(self)
+        self._watcher(self)
 
     def pop(self):
         sets.Set.pop(self)
-        self.watcher(self)
+        self._watcher(self)
 
 
 class TranslationsList(object):
@@ -83,13 +83,13 @@ class TranslationsList(object):
 
 
 class MessageProxy(POMessage):
-    implements (IPOMessage)
+    implements(IPOMessage)
 
     def __init__(self, msgset):
         self._msgset = msgset
 
     def _get_msgid(self):
-        return self._msgset.primeMessageID
+        return self._msgset.primeMessageID_.text
     def _set_msgid(self):
         raise DatabaseConstraintError("The primary message ID of a messageset can't be changed"
                                       " once it's in the database.  Create a new messageset"
@@ -98,7 +98,7 @@ class MessageProxy(POMessage):
 
     def _get_msgidPlural(self):
         msgids = self._msgset.messageIDs()
-        if len(msgids) >= 2:
+        if msgids.count() >= 2:
             return msgids[1]
         return None
     def _set_msgidPlural(self, value):
@@ -112,7 +112,7 @@ class MessageProxy(POMessage):
 
     def _get_msgstr(self):
         translations = self._msgset.translations()
-        if len(translations) == 1:
+        if translations.count() == 1:
             return translations[0].text
     def _set_msgstr(self, value):
         current = self._msgset.getTranslationSighting(0)
@@ -124,7 +124,7 @@ class MessageProxy(POMessage):
 
     def _get_msgstrPlurals(self):
         translations = self._msgset.translations()
-        if len(translations) > 1:
+        if translations.count() > 1:
             # test is necessary because the interface says when
             # there are no plurals, msgstrPlurals is None
             return TranslationsList(self._msgset)
@@ -155,7 +155,7 @@ class MessageProxy(POMessage):
     fileReferences = property(_get_fileReferences, _set_fileReferences)
 
     def _get_flags(self):
-        return sets.WatchedSet(
+        return WatchedSet(
             self._set_flags,
             [flag.strip() for flag in self._msgset.flagsComment.split(',')]
             )

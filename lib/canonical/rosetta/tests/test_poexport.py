@@ -16,25 +16,9 @@ from canonical.rosetta.poexport import POExport
 from sqlobject import connectionForURI
 
 
-class POExportTestCase(PlacelessSetup, unittest.TestCase):
-
-    def setUp(self):
-        super(POExportTestCase, self).setUp()
-#        utilityService = getService(servicenames.Utilities)
-#        utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
-        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
-
-    def testPoExportAdapter(self):
-        project = RosettaProject.selectBy(name = 'gnome')[0]
-        #print project, type(project)
-        product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
-        poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-1.5.90')[0]
-        export = POExport(poTemplate)
-        dump = export.export('cy')
-        self.assertEqual(dump, '''# SOME DESCRIPTIVE TITLE.
+expected = '''# SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\\n"
@@ -81,7 +65,30 @@ msgid "I am the text of POTSighting 5"
 msgid_plural "And I'm a plural form 5"
 msgstr[0] "I am a translation text in Welsh"
 msgstr[1] "I am a translation text for a plural form in Welsh"
-''')
+''' #'
+
+class POExportTestCase(PlacelessSetup, unittest.TestCase):
+
+    def setUp(self):
+        super(POExportTestCase, self).setUp()
+        utilityService = getService(servicenames.Utilities)
+        utilityService.provideUtility(ILanguages, RosettaLanguages(), '')
+        SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
+
+    def testPoExportAdapter(self):
+        project = RosettaProject.selectBy(name = 'gnome')[0]
+        #print project, type(project)
+        product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
+        poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-1.5.90')[0]
+        export = POExport(poTemplate)
+        dump = export.export('cy')
+        import difflib, sys
+        if dump != expected:
+            for l in difflib.unified_diff(
+                dump.split('\n'), expected.split('\n'),
+                'expected output', 'generated output'):
+                print l
+            raise AssertionError, 'output was different from the expected'
 
 def test_suite():
     loader = unittest.TestLoader()

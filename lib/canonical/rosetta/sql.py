@@ -275,7 +275,7 @@ class RosettaPOMessageSet(SQLBase):
     _columns = [
         ForeignKey(name='poTemplate', foreignKey='RosettaPOTemplate', dbName='potemplate', notNull=True),
         ForeignKey(name='poFile', foreignKey='RosettaPOFile', dbName='pofile', notNull=False),
-        ForeignKey(name='primeMessageID', foreignKey='RosettaPOMessageID', dbName='primemsgid', notNull=True),
+        ForeignKey(name='primeMessageID_', foreignKey='RosettaPOMessageID', dbName='primemsgid', notNull=True),
         IntCol(name='sequence', dbName='sequence', notNull=True),
         BoolCol(name='isComplete', dbName='iscomplete', notNull=True),
         BoolCol(name='fuzzy', dbName='fuzzy', notNull=True),
@@ -300,8 +300,8 @@ class RosettaPOMessageSet(SQLBase):
 
     def translations(self):
         return RosettaPOTranslation.select('''
-            POTranslationSighting.pomessageset = %d AND
-            POMessageIDSighting.potranslation = POTranslation.id
+            POTranslationSighting.pomsgset = %d AND
+            POTranslationSighting.potranslation = POTranslation.id
             ''' % self.id, clauseTables=('POTranslationSighting',))
 
     def getTranslationsForThatPOMessageSetOverThere(self):

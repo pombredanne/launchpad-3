@@ -22,7 +22,7 @@ class POExport:
         poFile = self.potfile.poFile(language)
 
         header = POHeader(
-            comment = unicode(poFile.topComment, 'UTF-8'),
+            commentText = unicode(poFile.topComment, 'UTF-8'),
             msgstr = unicode(poFile.header, 'UTF-8'))
         
         # FIXME: This field does not exists (yet) in the database.
