@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-17 22:07:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1455
+
+    Summary:
+      Fix Reset Password page which I broke when removed database code from launchpad/browser/logintoken.py.
+    Revision:
+      launchpad--devel--0--patch-1455
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-189
+       set_schema must require zope.Public on IPerson, because otherwise we break the Reset Password page, where we must change the password of the user without it be logged in.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt
+     lib/canonical/launchpad/zcml/person.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-189
+
+
 2005-03-17 20:23:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1454
 
     Summary:

@@ -96,10 +96,13 @@
   </browser:pages>
 
 
+  <!-- XXX: salgado, 2005-03-17. I really wanted to require launchpad.Edit to
+  the set_schema here, but if we do this we break the reset password page, as
+  it would require you to login when we change the password attribute -->
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <require 
-          permission="launchpad.Edit"
+          permission="zope.Public"
           set_schema="canonical.launchpad.interfaces.IPerson" />
   </content>
 
