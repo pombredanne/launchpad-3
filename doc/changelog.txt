@@ -2,6 +2,57 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-14 18:24:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1200
+
+    Summary:
+      add more malone sample data to fix and create tests for some things
+ that are currently broken in upstream support. deprecate some of the page
+ tests that broke, since the UI they test (/malone/bugs) is long since
+ deprecated.
+    Revision:
+      launchpad--devel--0--patch-1200
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-297
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-298
+       merge from rf
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-299
+       add more malone sample data to fix and create tests for some things that are currently broken in upstream support. deprecate some of the page tests that broke, since the UI they test (/malone/bugs) is long since deprecated.
+    
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/pagetests/malone/91-bug-add-owner-auto-subscribed.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-maintainer.txt
+
+    renamed files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-quick-search-critical.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-quick-search-critical.txt.deprecated.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-quick-search-unassigned.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-quick-search-unassigned.txt.deprecated.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-search-assignments-sampleperson.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-search-assignments-sampleperson.txt.deprecated.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-search-product-firefox.txt.id
+       ==> lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-bug-search-product-firefox.txt.deprecated.id
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-critical.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-critical.txt.deprecated
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-unassigned.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-bug-quick-search-unassigned.txt.deprecated
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-search-assignments-sampleperson.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-bug-search-assignments-sampleperson.txt.deprecated
+     lib/canonical/launchpad/pagetests/standalone/xx-bug-search-product-firefox.txt
+       ==> lib/canonical/launchpad/pagetests/standalone/xx-bug-search-product-firefox.txt.deprecated
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-297
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-298
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-299
+
+
 2005-01-14 17:36:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1199
 
     Summary:
