@@ -123,6 +123,8 @@ class BugAssignmentsView(object):
                         IN(ProductBugAssignment.q.bugID, bugids))
                     spba_params.append(
                         IN(SourcePackageBugAssignment.q.bugID, bugids))
+                else:
+                    return []
                 
 
         param_status = self.request.get('status', self.DEFAULT_STATUS)
