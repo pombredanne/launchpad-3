@@ -192,10 +192,12 @@ class RosettaPOTemplate(SQLBase):
         if msgid_obj.count() == 0:
             raise KeyError, msgid
         msgid_obj = msgid_obj[0]
-        # XXX: AND sequence != 0
-        sets = RosettaPOMessageSet.selectBy(poTemplate=self,
-                                            poFile=None,
-                                            primeMessageID_=msgid_obj)
+        sets = RosettaPOMessageSet.select('''
+            potemplate = %s AND
+            pofile IS NULL AND
+            sequence != 0 AND
+            primemsgid = %s
+            ''' % (self.id, msgid_obj.id))
         if sets.count() == 0:
             raise KeyError, msgid
         else:
@@ -523,18 +525,25 @@ class RosettaPOMessageSet(SQLBase):
 
 
 class RosettaPOMessageIDSighting(SQLBase):
-    implements(IPOMessageIDSighting)
+    implements(IEditPOMessageIDSighting)
 
     _table = 'POMsgIDSighting'
 
     _columns = [
-        ForeignKey(name='poMessageSet', foreignKey='RosettaPOMsgSet', dbName='pomsgset', notNull=True),
-        ForeignKey(name='poMessageID_', foreignKey='RosettaPOMsgID', dbName='pomsgid', notNull=True),
+        ForeignKey(name='poMessageSet', foreignKey='RosettaPOMessageSet', dbName='pomsgset', notNull=True),
+        ForeignKey(name='poMessageID_', foreignKey='RosettaPOMessageID', dbName='pomsgid', notNull=True),
         DateTimeCol(name='firstSeen', dbName='firstseen', notNull=True),
         DateTimeCol(name='lastSeen', dbName='lastseen', notNull=True),
         BoolCol(name='inPOFile', dbName='inpofile', notNull=True),
         IntCol(name='pluralForm', dbName='pluralform', notNull=True),
     ]
+
+
+    # IEditPOMessageIDSighting
+
+    def touch(self):
+        self.lastSeen = "NOW"
+        self.inPOFile = True
 
 
 class RosettaPOMessageID(SQLBase):

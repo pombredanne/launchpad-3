@@ -80,7 +80,7 @@ class TranslationsList(object):
         if current is not None:
             if value == current.poTranslation.text:
                 return
-            current.setCurrent(False)
+            current.inPOFile = False
         if value:
             self._msgset.makeTranslationSighting(value, index)
 
@@ -108,14 +108,14 @@ class MessageProxy(POMessage):
     def _get_msgidPlural(self):
         msgids = self._msgset.messageIDs()
         if msgids.count() >= 2:
-            return msgids[1]
+            return msgids[1].text
         return None
     def _set_msgidPlural(self, value):
         # do we already have one?
         old_plural = self.msgidPlural
         if old_plural is not None:
             old_plural = self._msgset.getMessageIDSighting(1)
-            old_plural.setCurrent(False)
+            old_plural.inPOFile = False
         self._msgset.makeMessageIDSighting(value, 1)
     msgidPlural = property(_get_msgidPlural, _set_msgidPlural)
 
@@ -127,7 +127,7 @@ class MessageProxy(POMessage):
         current = self._msgset.getTranslationSighting(0)
         if value == current.poTranslation.text:
             return
-        current.setCurrent(False)
+        current.inPOFile = False
         new = self._msgset.makeTranslationSighting(0, index)        
     msgstr = property(_get_msgstr, _set_msgstr)
 
@@ -207,7 +207,7 @@ class TemplateImporter(object):
         if msgset is None:
             msgset = potemplate.newMessageSet(msgid)
         else:
-            msgset.getMessageIDSighting(0)#.touch()
+            msgset.getMessageIDSighting(0).touch()
         self.len += 1
         msgset.sequence = self.len
         proxy = MessageProxy(msgset)

@@ -307,10 +307,7 @@ class IEditPOMessageIDSighting(IPOMessageIDSighting):
     """Interface for editing a MessageIDSighting."""
 
     def touch():
-        """Update timestamp of this sighting."""
-
-    def setCurrent(current):
-        """Set isCurrent."""
+        """Update timestamp of this sighting and mark it as inPOFile."""
 
 
 class IPOMessageID(Interface):
