@@ -2,6 +2,139 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-03 15:34:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1548
+
+    Summary:
+      bring RF up to date on my branch before working on rosetta optimisation
+    Revision:
+      launchpad--devel--0--patch-1548
+
+    Patches applied:
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-898
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-899
+       clean up review URL's
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-900
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-901
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-902
+       page cleanup and present for mpt
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-903
+       cleanup stylesheet usage in templates
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-904
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-905
+       merge rocketfuel
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-906
+       clean up login and registration pages.
+    
+     * mark.shuttleworth@canonical.com/launchpad--devel--0--patch-907
+       fix page tests for login page changes
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/malone/.arch-ids/01-check-distro-and-distrorelease-bugs.txt.id
+     lib/canonical/launchpad/pagetests/malone/01-check-distro-and-distrorelease-bugs.txt
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/foaf/00-createaccount.txt
+     lib/canonical/launchpad/pagetests/foaf/01-login.txt
+     lib/canonical/launchpad/pagetests/foaf/99-resetpassword.txt
+     lib/canonical/launchpad/templates/bazaar-sync-review.pt
+     lib/canonical/launchpad/templates/binarypackagenames-index.pt
+     lib/canonical/launchpad/templates/bugtracker-edit.pt
+     lib/canonical/launchpad/templates/bugtracker-index.pt
+     lib/canonical/launchpad/templates/bugtracker-new.pt
+     lib/canonical/launchpad/templates/codeofconduct-admin.pt
+     lib/canonical/launchpad/templates/codeofconduct-index.pt
+     lib/canonical/launchpad/templates/codeofconduct-list.pt
+     lib/canonical/launchpad/templates/dashboard-translator.pt
+     lib/canonical/launchpad/templates/distribution-bugs.pt
+     lib/canonical/launchpad/templates/distro-add.pt
+     lib/canonical/launchpad/templates/distro-sources.pt.OBSOLETE
+     lib/canonical/launchpad/templates/distrorelease-bugs.pt
+     lib/canonical/launchpad/templates/distrorelease-deliver.pt
+     lib/canonical/launchpad/templates/distrorelease-edit.pt
+     lib/canonical/launchpad/templates/distrorelease-new.pt
+     lib/canonical/launchpad/templates/distrorelease-search.pt
+     lib/canonical/launchpad/templates/distroreleases-index.pt
+     lib/canonical/launchpad/templates/doap-about.pt
+     lib/canonical/launchpad/templates/doap-review.pt
+     lib/canonical/launchpad/templates/foaf-mergerequest-sent.pt
+     lib/canonical/launchpad/templates/foaf-requestmerge-multiple.pt
+     lib/canonical/launchpad/templates/foaf-validateemail.pt
+     lib/canonical/launchpad/templates/launchpad-forgottenpassword.pt
+     lib/canonical/launchpad/templates/launchpad-legal.pt
+     lib/canonical/launchpad/templates/launchpad-login.pt
+     lib/canonical/launchpad/templates/main-template.pt
+     lib/canonical/launchpad/templates/malone-about.pt
+     lib/canonical/launchpad/templates/malone-distro-index.pt
+     lib/canonical/launchpad/templates/malone-distros-index.pt
+     lib/canonical/launchpad/templates/package-search.pt
+     lib/canonical/launchpad/templates/people-index.pt
+     lib/canonical/launchpad/templates/people-list.pt
+     lib/canonical/launchpad/templates/person-bugs.pt
+     lib/canonical/launchpad/templates/person-edit.pt
+     lib/canonical/launchpad/templates/person-karma.pt
+     lib/canonical/launchpad/templates/person-key.pt
+     lib/canonical/launchpad/templates/person-packages.pt
+     lib/canonical/launchpad/templates/person-sshkey.pt
+     lib/canonical/launchpad/templates/person-translations.pt
+     lib/canonical/launchpad/templates/pofile-edit.pt
+     lib/canonical/launchpad/templates/pofile-index.pt
+     lib/canonical/launchpad/templates/portlet-productset-details.pt
+     lib/canonical/launchpad/templates/potemplate-edit.pt
+     lib/canonical/launchpad/templates/potemplate-index.pt
+     lib/canonical/launchpad/templates/potemplate-translate.pt
+     lib/canonical/launchpad/templates/product-index.pt
+     lib/canonical/launchpad/templates/products-index.pt
+     lib/canonical/launchpad/templates/project-interest.pt
+     lib/canonical/launchpad/templates/project-rosetta-index.pt
+     lib/canonical/launchpad/templates/projects-index.pt
+     lib/canonical/launchpad/templates/projects-request.pt
+     lib/canonical/launchpad/templates/rosetta-about.pt
+     lib/canonical/launchpad/templates/rosetta-import-queue.pt
+     lib/canonical/launchpad/templates/rosetta-index.pt
+     lib/canonical/launchpad/templates/rosetta-preferences.pt
+     lib/canonical/launchpad/templates/signedcodeofconduct-index.pt
+     lib/canonical/launchpad/templates/sourcepackagenames-index.pt
+     lib/canonical/launchpad/templates/sourcesource-index.pt
+     lib/canonical/launchpad/templates/soyuz-about.pt
+     lib/canonical/launchpad/templates/soyuz-index.pt
+     lib/canonical/launchpad/templates/team-index.pt
+     lib/canonical/launchpad/templates/team-join.pt
+     lib/canonical/launchpad/templates/team-leave.pt
+     lib/canonical/launchpad/templates/team-members.pt
+     lib/canonical/launchpad/templates/teammembership-index.pt
+     lib/canonical/launchpad/templates/ubuntite-list.pt
+     lib/canonical/launchpad/templates/widget-searchselection.pt
+     lib/canonical/launchpad/zcml/product.zcml
+     lib/canonical/launchpad/zcml/project.zcml
+
+    new patches:
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-898
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-899
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-900
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-901
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-902
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-903
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-904
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-905
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-906
+     mark.shuttleworth@canonical.com/launchpad--devel--0--patch-907
+
+
 2005-04-02 15:15:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1547
 
     Summary:

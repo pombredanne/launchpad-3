@@ -199,9 +199,9 @@
         class="canonical.launchpad.browser.ProductSetView"
         permission="launchpad.AnyPerson">
         <browser:page
-            name="+contentreview"
+            name="+review"
             template="../templates/doap-review.pt"
-            lp:url="doap/products/+contentreview" />
+            lp:url="/products/+review" />
     </browser:pages>
 
     <browser:addform

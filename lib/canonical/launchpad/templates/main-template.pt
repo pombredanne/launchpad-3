@@ -19,9 +19,12 @@
   <body>
 
     <div class="page-header">
-        <div class="page-header-ribbon">
-            <div class="user" tal:condition="not: request/lp:person">
+        <div class="page-header-ribbon" tal:define="path_info request/PATH_INFO">
+            <div class="user" tal:condition="not: request/lp:person ">
+              <!-- sabdfl... you're welcome, mpt ;-) -->
+              <div tal:condition="python:'+login' not in path_info">
                 <a href="/+login">Log in / Register</a>
+              </div>
             </div>
             <div class="user" tal:condition="request/lp:person">
                 Welcome,
