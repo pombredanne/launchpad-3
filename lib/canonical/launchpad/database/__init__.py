@@ -44,7 +44,7 @@ from canonical.launchpad.database.publishing import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
 from canonical.launchpad.database.message import *
-
+from canonical.launchpad.database.queue import *
 
 
 
