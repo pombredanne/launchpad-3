@@ -342,13 +342,11 @@ class SourcePackageRelease(SQLBase):
 
 
     def getByPersonID(klass, personID):
-        query = ('SourcePackagePublishing.sourcepackagerelease = '
-                 'SourcePackageRelease.id '
-                 'AND SourcePackageRelease.sourcepackage = '
-                 'SourcePackage.id '
-                 'AND SourcePackage.maintainer = %i'
-                 %personID)
-
+        query = ('''SourcePackagePublishing.sourcepackagerelease = 
+                        SourcePackageRelease.id 
+                    AND SourcePackageName.id = SourcePackage.sourcepackagename
+                    AND SourcePackageRelease.sourcepackage = SourcePackage.id 
+                    AND SourcePackage.maintainer = %i''' % personID)
         # FIXME: (sourcename_order) Daniel Debonzi 2004-10-13
         # ORDER by SourcePackagename
         # The result should be ordered by SourcePackageName

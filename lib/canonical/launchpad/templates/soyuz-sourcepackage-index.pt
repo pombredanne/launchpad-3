@@ -92,11 +92,10 @@
 	      <tal:block tal:repeat="current context/currentversions">
 	         <a tal:content="current/currentversion" 
 		 tal:attributes="href current/currentversion" />
-		 (<tal:block tal:repeat="currentbuild current/currentbuilds">
+		 <tal:block tal:repeat="currentbuild current/currentbuilds">
 		       [<a tal:content="currentbuild"
 	                   tal:attributes="href string:${current/currentversion}/${currentbuild}" />]
 		  </tal:block>
-		  )
 		  <br>
 	     </tal:block>
 	     </tal:dummy>
@@ -150,9 +149,7 @@
 	        <table>
 		<tr><td>All bugs</td>
 		    <td>
-		      <a tal:content="python:context.bugsCounter[0]"
-		         tal:attributes="href
-	                 string:/malone/package/${context/sourcepackage/name}">
+		      <a tal:content="python:context.bugsCounter[0]" >
 			 N
 		      </a>
 		    </td>
@@ -169,6 +166,12 @@
 		<tr><td>Fixed and Pending</td>
 		    <td tal:content="python:context.bugsCounter[4]">N</td>
 		</tr>
+        <tr><td colspan="2" align="center"><a tal:attributes="href
+	                 string:/malone/package/${context/sourcepackage/name}">
+                View Bug List
+                 </a>
+            </td>
+        </tr>
 		</table>
 	     </div>
 	  </fieldset>    
@@ -177,7 +180,7 @@
           <legend>Other Links </legend> 
           <div class="dummy">
            <ul>
-            <li><a href="+buildlog">Build Log</a></li>
+            <li><a href="+buildlog">Build Log Summaries</a></li>
             <li><a href="">Translations</a></li>
            </ul>
           </div>
