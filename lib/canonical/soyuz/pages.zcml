@@ -70,6 +70,7 @@
 
 
   <traverse for="canonical.soyuz.sql.ReleaseContainer" getter="__getitem__" />
+
    <pages for="canonical.soyuz.sql.ReleaseContainer"
 	  allowed_attributes="results"	 
 	  permission="zope.Public"> 
@@ -88,7 +89,11 @@
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+new"
 	/>
 
+
+
+
 <traverse for="canonical.soyuz.sql.Release" getter="getPackageContainer" />
+
    <pages for="canonical.soyuz.sql.Release"
 	  allowed_attributes="results"	 
 	  permission="zope.Public"> 
@@ -96,10 +101,6 @@
 	<page  name="index.html"
           template="templates/release-index.pt"	
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/index.html"
-	/>
-	<page  name="+edit"
-          template="templates/release-edit.pt"	
-	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+edit"
 	/>
 	<page  name="+deliver"
           template="templates/release-deliver.pt"	
@@ -114,6 +115,16 @@
 	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+translations"
 	/>
   </pages>
+
+	<page for="canonical.soyuz.sql.Release"
+	  permission="zope.Public"
+	  class="canonical.soyuz.browser.ReleasesEditView"
+	  name="+edit"
+          template="templates/release-edit.pt"	
+	  lp:url="Soyuz/distros/$Distribution.name/$Release.name/+edit"
+	/>
+
+
 
 
 <!--  packages stuff --> 

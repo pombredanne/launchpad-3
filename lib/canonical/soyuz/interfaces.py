@@ -213,6 +213,7 @@ class ISourcePackage(Interface):
     """A source package, e.g apache-utils"""
     # See the SourcePackage table
 
+    maintainer = Attribute("Maintainer")
     name = Attribute("A string")
     title = Attribute("Package Title")
     description = Attribute("Package Description")

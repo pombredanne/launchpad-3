@@ -13,9 +13,16 @@
 <body>
 
 <div metal:fill-slot="main">
-    <h1>Version <tal:block tal:replace="context/version">0.1.2.3-4</tal:block>
-        of Package <tal:block tal:replace="context/sourcepackage/name">xyz</tal:block></h1>
-  </div>
+    <h1><tal:block tal:replace="context/sourcepackage/title">xyz</tal:block>
+	Version <tal:block tal:replace="context/version">0.1.2.3-4</tal:block>
+     </h1>
+
+    <p> <h4>Title: </h4> <tal:block tal:replace="context/sourcepackage/title" />  
+    <p> <h4>Name: </h4> <tal:block tal:replace="context/sourcepackage/name" />  
+    <p> <h4>Description: </h4> <tal:block tal:replace="context/sourcepackage/description" />
+    <p> <h4>Maintainer: </h4> <tal:block tal:replace="context/sourcepackage/maintainer/presentationname" />
+
+</div>
 
     <li> <a href="packages">Packages</a></li>
   </body>
