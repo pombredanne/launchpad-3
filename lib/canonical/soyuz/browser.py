@@ -18,7 +18,7 @@ from canonical.launchpad.database import JabberID
 from canonical.launchpad.database import TeamParticipation, Membership
 from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID 
-
+from canonical.launchpad.database import createPerson
 # app components
 from canonical.soyuz.sql import Distribution, DistroRelease, Person
 from canonical.soyuz.importd import ProjectMapper, ProductMapper
@@ -133,10 +133,10 @@ class PeopleAddView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.error_msg = None
 
 
     def add_action(self):
-        enable_added = False
         displayname = self.request.get("displayname", "")
         givenname = self.request.get("givenname", "")
         familyname = self.request.get("familyname", "")
@@ -144,30 +144,24 @@ class PeopleAddView(object):
         password = self.request.get("password", "")
         retype = self.request.get("retype", "")
 
-        ##XXX: (uniques) cprov 20041003
-        ## Verify unique name before insert the information
-        ## otherwise we will get an exception 
         if displayname:
-            
-            self.results = Person(displayname=displayname,
-                                       givenname=givenname,
-                                       familyname=familyname,
-                                       password=password,
-                                       teamownerID=None,
-                                       teamdescription=None,
-                                       karma=None,
-                                       karmatimestamp=None)
-            
-            EmailAddress(person=self.results.id,
-                         email=email,
-                         status=int(dbschema.EmailAddressStatus.NEW))
-            
-            enable_added = True
-        ##XXX: (results) cprov 20041003
-        ## Verify imediate results raise an exception if something
-        ## was wrong
-        return enable_added
+            if password != retype:
+                self.error_msg = 'Password does not match'
+                return False
 
+            self.results = createPerson(displayname, givenname, familyname,
+                                        password, email)
+
+            if not self.results:
+                # it happens when generate_nick returns
+                # a nick that already exists
+                self.error_msg = 'Unhandled error creating person'
+                return False
+
+            return True
+
+        return False
+        
 class TeamAddView(object):
 
     def __init__(self, context, request):

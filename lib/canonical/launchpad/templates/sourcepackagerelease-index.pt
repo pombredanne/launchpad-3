@@ -77,13 +77,13 @@
 
   </fieldset>
 
-  <table>
+  <table width="100%">
     <tr>
       <td width="50%" valign="top">
         <h4>Build Package Dependences</h4>
 
 	<div class="dummy">
-	(XXX: Some links can be broken for sample data reasons. warty/mozilla-firefox works)
+	(XXX: Some links can be broken for sample data reasons.)
 	</div	 >
  
         <tal:dummy condition="context/builddepends">
@@ -94,9 +94,7 @@
 		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
 		<tal:dummy condition="builddepends/signal">
 		  (<span tal:content="builddepends/signal" /> 
-		  <a tal:content="builddepends/version" 
-		  tal:attributes="href 
-		  string:../../../../bin/${context/distroreleasename}/${builddepends/name}/${builddepends/version}"/> )
+		  <span tal:content="builddepends/version" /> )
 		</tal:dummy>
 	      </li>
 	    </span>
@@ -109,8 +107,7 @@
         <h4>Build Package DependencesIndep</h4>
 
 	<div class="dummy">
-	  (XXX: Some links can be broken for sample data
-	  reasons. warty/kiwi works)
+	  (XXX: Some links can be broken for sample data reasons.)
 	</div>
 	<tal:dummy condition="context/builddependsindep">
 	  <ul>
@@ -121,9 +118,7 @@
 		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/>
 		<tal:dummy condition="builddepends/signal">
 		  (<span tal:content="builddepends/signal" />
-		  <a tal:content="builddepends/version"
-		  tal:attributes="href
-		  string:../../../../bin/${context/distroreleasename}/${builddepends/name}/${builddepends/version}"/> )
+		  <span tal:content="builddepends/version" /> )
 		</tal:dummy>
 	      </li>
 	    </span>
@@ -133,10 +128,12 @@
     </tr>
   </table>
 
-  <p><h4>Package Bugs:</h4> 
-    <div class="dummy">
-      <span>#1, #2, #3</span>
-    </div>
+<!-- XXX: Daniel Debonzi 2004-10-28 -->
+<!-- Is the Bugs for a SourcePackageRelease? -->
+<!--   <p><h4>Package Bugs:</h4>  -->
+<!--     <div class="dummy"> -->
+<!--       <span>#1, #2, #3</span> -->
+<!--     </div> -->
 
   <p><h4>Builds:</h4> 
 

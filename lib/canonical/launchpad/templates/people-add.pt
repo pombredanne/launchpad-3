@@ -13,11 +13,18 @@
 <body>
 
 <div metal:fill-slot="main">
+<tal:block tal:define="process view/add_action">
     <h1>New Person on Soyuz</h1>
 
     <div class="documentDescription">	
     <p> Here you can create a new People on Soyuz
     </div>
+
+      <div class="portalMessage" 
+           tal:condition="view/error_msg"
+           tal:content="view/error_msg">
+        ERROR MSG
+      </div>
     
     <div>
     <form name="add" action="" method="POST">
@@ -95,14 +102,15 @@
   </form>
   </div>
 
-  <tla:block tal:condition="view/add_action">
+  <tal:block tal:condition="process">
   <div>
   <h4><a tal:attributes="href view/results/name"
          tal:content="request/displayname">
          PEOPLE</a> added</h4>
   </div>
-  </tla:block>
+  </tal:block>
 
+</tal:block>
 </div>
 
 </body>

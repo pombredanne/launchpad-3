@@ -12,12 +12,16 @@ from canonical.database.sqlbase import SQLBase, quote
 from canonical.database.constants import UTC_NOW
 
 # canonical imports
+from canonical.lp.placelessauth.encryption import SSHADigestEncryptor
 from canonical.launchpad.interfaces.person import IPerson, IPersonSet,  \
                                                   IEmailAddress
 from canonical.launchpad.interfaces.language import ILanguageSet
 from canonical.launchpad.database.pofile import POTemplate
 from canonical.lp import dbschema
+from canonical.foaf import nickname
 
+# python imports
+from datetime import datetime
 
 class Person(SQLBase):
     """A Person."""
@@ -112,7 +116,38 @@ def PersonFactory(context, **kw):
                     **kw)
     return person
 
+# XXX: Daniel Debonzi 2004-10-28
+# Shold not it and PersonFactory be only
+# one function?
+def createPerson(displayname, givenname, familyname,
+                 password, email):
+    """Creates a new person"""
 
+    nick = nickname.generate_nick(email)
+    now = datetime.utcnow()
+
+    if Person.selectBy(name=nick).count() > 0:
+        return
+    
+    ssha = SSHADigestEncryptor()
+    password = ssha.encrypt(password)
+    
+    person = Person(displayname=displayname,
+                    givenname=givenname,
+                    familyname=familyname,
+                    password=password,
+                    teamownerID=None,
+                    teamdescription=None,
+                    karma=0,
+                    karmatimestamp=now,
+                    name=nick)
+
+    EmailAddress(person=person.id,
+                 email=email,
+                 status=int(dbschema.EmailAddressStatus.NEW))
+
+    return person
+    
 def personFromPrincipal(principal):
     """Adapt canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal 
        to IPerson
