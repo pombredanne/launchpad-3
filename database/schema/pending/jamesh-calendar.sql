@@ -37,15 +37,15 @@ CREATE TABLE CalendarEvent (
 );
 
 ALTER TABLE Calendar
-    ADD CONSTRAINT "$1" FOREIGN KEY (owner) REFERENCES Person(id);
+    ADD CONSTRAINT "calendar_owner_fk" FOREIGN KEY (owner) REFERENCES Person(id);
 
 ALTER TABLE CalendarSubscription
-    ADD CONSTRAINT "$1" FOREIGN KEY (person) REFERENCES Person(id);
+    ADD CONSTRAINT "calendarsubscription_person_fk" FOREIGN KEY (person) REFERENCES Person(id);
 ALTER TABLE CalendarSubscription
-    ADD CONSTRAINT "$2" FOREIGN KEY (calendar) REFERENCES Calendar(id);
+    ADD CONSTRAINT "calendarsubscription_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
 
 ALTER TABLE CalendarEvent
-    ADD CONSTRAINT "$1" FOREIGN KEY (calendar) REFERENCES Calendar(id);
+    ADD CONSTRAINT "calendarevent_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
 
 
 
@@ -53,5 +53,18 @@ ALTER TABLE CalendarEvent
 
 ALTER TABLE Person ADD COLUMN calendar integer;
 ALTER TABLE Person
-    ADD CONSTRAINT "$2" FOREIGN KEY (calendar) REFERENCES Calendar(id);
+    ADD CONSTRAINT "person_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
 ALTER TABLE Person ADD COLUMN timezone_name text;
+
+/* Add calendar column to Projects table */
+
+ALTER TABLE Project ADD COLUMN calendar integer;
+ALTER TABLE Project
+    ADD CONSTRAINT "project_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
+
+/* Add calendar column to Products table */
+
+ALTER TABLE Product ADD COLUMN calendar integer;
+ALTER TABLE Product
+    ADD CONSTRAINT "product_calendar_fk" FOREIGN KEY (calendar) REFERENCES Calendar(id);
+
