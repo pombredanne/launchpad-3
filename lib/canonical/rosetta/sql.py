@@ -192,6 +192,13 @@ class RosettaPOTemplate(SQLBase):
             % self.id).count()
 
 
+class RosettaEditPOTemplate(RosettaPOTemplate):
+    def expireAllMessages(self):
+        self._connection.query('UPDATE POMsgSet SET sequence = 0'
+                               ' WHERE potemplate = %d AND pofile = NULL'
+                               % self.id)
+
+
 class RosettaPOFile(SQLBase):
     implements(IPOFile)
 
@@ -299,6 +306,13 @@ class RosettaPOFile(SQLBase):
     def untranslated_count(self):
         '''Same as untranslated(), but with COUNT.'''
         return len(self.poTemplate) - self.translated_count()
+
+class RosettaEditPOFile(RosettaPOFile):
+    def expireAllMessages(self):
+        self._connection.query('UPDATE POMsgSet SET sequence = 0'
+                               ' WHERE pofile = %d'
+                               % self.id)
+
 
 class RosettaPOMessageSet(SQLBase):
     implements(IPOMessageSet)

@@ -183,10 +183,7 @@ class TemplateImporter(object):
 
     def doImport(self, filelike):
         "Import a file (or similar object)"
-        # crack: will this work?  Suggestions of better ways are gladly accepted
-        self.potemplate._connection.query('UPDATE POMsgSet SET sequence = 0'
-                                          ' WHERE potemplate = %d AND pofile = NULL'
-                                          % self.potemplate.id)
+        self.potemplate.expireAllMessages()
         # what policy here? small bites? lines? how much memory do we want to eat?
         self.parser.write(filelike.read())
         self.parser.finish()
@@ -231,10 +228,7 @@ class POFileImporter(object):
 
     def doImport(self, filelike):
         "Import a file (or similar object)"
-        # crack: will this work?  Suggestions of better ways are gladly accepted
-        potemplate._connection.query('UPDATE POMsgSet SET sequence = 0'
-                                     ' WHERE potemplate = %d AND pofile = NULL'
-                                     % potemplate.id)
+        self.potemplate.expireAllMessages()
         # what policy here? small bites? lines? how much memory do we want to eat?
         parser.write(filelike.read())
         parser.finish()

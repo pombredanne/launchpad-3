@@ -114,6 +114,9 @@ class IPOTemplate(Interface):
 class IEditPOTemplate(IPOTemplate):
     """Edit interface for an IPOTemplate."""
 
+    def expireAllMessages():
+        """Mark our of our message sets as not current (sequence=0)"""
+
     def newMessageSet(messageID):
         """Add a message set to this template."""
 
@@ -179,6 +182,9 @@ class IPOFile(Interface):
 
 class IEditPOFile(IPOFile):
     """Edit interface for a PO File."""
+
+    def expireAllMessages():
+        """Mark our of our message sets as not current (sequence=0)"""
 
     def newTranslation(IPOTSighting_or_msgid):
         """Create and return a new IPOTranslation.

@@ -75,10 +75,13 @@ class POImportTestCase(PlacelessSetup, unittest.TestCase):
         SQLBase.initZopeless(connectionForURI('postgres:///launchpad_test'))
 
     def testPoImportAdapter(self):
-        project = RosettaProject.selectBy(name = 'gnome')[0]
-        #print project, type(project)
-        product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
-        poTemplate = RosettaPOTemplate.selectBy(productID = product.id, name='evolution-1.5.90')[0]
+        try:
+            project = RosettaProject.selectBy(name = 'gnome')[0]
+            product = RosettaProduct.selectBy(projectID = project.id, name = 'evolution')[0]
+            poTemplate = RosettaPOTemplate.selectBy(productID = product.id,
+                                                    name='evolution-1.5.90')[0]
+        except IndexError, e:
+            raise IndexError, "Couldn't find record in database"
         importer = TemplateImporter(poTemplate, None)
         importer.doImport(pot)
 
