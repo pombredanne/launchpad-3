@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-01 18:31:37 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1352
+
+    Summary:
+      Add SignedCodeOfConduct table for cprov
+    Revision:
+      launchpad--devel--0--patch-1352
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-148
+       Add SignedCodeOfConduct table for cprov
+    
+
+    new files:
+     database/schema/.arch-ids/patch-10-08-0.sql.id
+     database/schema/patch-10-08-0.sql
+
+    modified files:
+     doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-148
+
+
 2005-03-01 17:54:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1351
 
     Summary:
