@@ -64,9 +64,12 @@
    <h3>Distribution Description</h3> 
    </td></tr>
    <tr><td>
-   <div>
-   <p><span tal:content="context/distribution/description">DESCRIPTION</span>
-   </div>
+   <span tal:content="context/distribution/description">DESCRIPTION</span>
+   </td></tr>
+   <tr><td>
+   Owner: <a tal:content="context/distribution/owner/displayname" 
+             tal:attributes="href string:../../people/${context/distribution/owner/id}">
+           OWNER</a>
    </td></tr>
    <tr><th align="right"><a href="+edit">Edit Information</a></th></tr>  
    <!--Conditional block -->

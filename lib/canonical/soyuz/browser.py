@@ -23,7 +23,7 @@ class DistrosSearchView(object):
             title_like = LIKE(SoyuzDistribution.q.title, "%%"+title+"%%")
             description_like = LIKE(SoyuzDistribution.q.description,
                                     "%%"+description+"%%")
-            self.results = SoyuzDistribution.select(AND(name_like, title_like,\
+            self.results = SoyuzDistribution.select(AND(name_like, title_like,
                                                         description_like))
             self.entries = self.results.count()
             self.enable_results = True                

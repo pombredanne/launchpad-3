@@ -188,10 +188,6 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.sql.BinaryPackage">
-    <allow interface="canonical.soyuz.interfaces.IBinaryPackage"/>
-  </content>
-
   <content class="canonical.soyuz.sql.SoyuzBinaryPackageBuild">
     <allow interface="canonical.soyuz.interfaces.IBinaryPackageBuild"/>
   </content>
@@ -214,16 +210,6 @@
 
   <content class="canonical.soyuz.sql.SoyuzPerson">
     <allow interface="canonical.soyuz.interfaces.ISoyuzPerson"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.soyuz.sql.PackagePublishing">
-    <allow interface="canonical.soyuz.interfaces.IPackagePublishing"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.soyuz.sql.BinaryPackageName">
-    <allow interface="canonical.soyuz.interfaces.IBinaryPackageName"/>
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
