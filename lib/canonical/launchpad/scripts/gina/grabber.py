@@ -70,6 +70,10 @@ parser.add_option("-b", "--back-propagate", dest="back_propagate",
                   help="Make package back propagation",
                   default=False, action='store_true')
 
+parser.add_option("-s", "--source-only", dest="source_only",
+                  help="Import only Source Packages",
+                  default=False, action='store_true')
+
 (options,args) = parser.parse_args()
 
 package_root = options.package_root
@@ -194,20 +198,28 @@ def do_arch(lp, kdb, bin_map, source_map):
     bins.sort()
     count = 0
     for name, binpkg in bins:
-        print "- Evaluating %s (%s, %s) for %s" % (binpkg.package, 
-                                            binpkg.component, 
-                                            binpkg.version,
-                                            binpkg.architecture)
-        if not source_map.has_key(binpkg.source):
-            # We check if we have a source package or else
-            # binpkg.ensure_created() is going to die an ugly death
-            print "\t** No source package parsed for %s" % binpkg.package
-            continue
+        if not options.source_only:
+            print "- Evaluating %s (%s, %s) for %s" % (binpkg.package, 
+                                                       binpkg.component, 
+                                                       binpkg.version,
+                                                       binpkg.architecture)
+            if not source_map.has_key(binpkg.source):
+                # We check if we have a source package or else
+                # binpkg.ensure_created() is going to die an ugly death
+                print "\t** No source package parsed for %s" % binpkg.package
+                continue
 
-        if binpkg.is_created(lp):
-            continue
+            if binpkg.is_created(lp):
+                continue
 
         srcpkg = source_map[binpkg.source]
+
+        if options.source_only:
+            if srcpkg.is_created(lp):
+                print ('- SourcePackageRelease %s-%s already imported'
+                       % (srcpkg.package, srcpkg.version))
+                continue
+
         if not srcpkg.is_processed:
             if not srcpkg.description:
                 # if the source package hasn't had a description
@@ -223,9 +235,11 @@ def do_arch(lp, kdb, bin_map, source_map):
             # found in katie db. AFAICS, there is not to do with
             # this package. Just give up.
             if not srcpkg.process_package(kdb, package_root, keyrings):
-                print '\t** Process Package Failed. Package not found in Katie DB'
+                print ('\t\t** Process Package Failed.'
+                       ' Package not found in Katie DB')
                 ## break
                 continue
+
             srcpkg.ensure_created(lp)
 ##             except Exception, e:
 ##                 print "\t!! sourcepackage addition threw an error."
@@ -237,6 +251,11 @@ def do_arch(lp, kdb, bin_map, source_map):
         # we read the licence from the source package but it is
         # stored in the BinaryPackage table
         binpkg.licence = srcpkg.licence
+
+        # If in source-only mode does not import the binary package
+        # and does not create the build table.
+        if options.source_only:
+            continue
 
 ##        try:
 
@@ -335,18 +354,20 @@ if __name__ == "__main__":
     print "@ Emptying publishing tables..."
     src=True
     for arch in archs:
-        lp[arch].emptyPublishing(src)
+        lp[arch].emptyPublishing(src, options.source_only)
         lp[arch].commit()
         src=False
 
     print "@ Publishing source..."
     do_publishing(source_map, lp[archs[0]], True)
     lp[archs[0]].commit()
-    
-    for arch in archs:
-        print "@ Publishing %s binaries..." % arch
-        do_publishing(bin_map[arch], lp[arch], False)
-        lp[arch].commit()
+
+    # Source only mode. Does not mess with binary publishing.
+    if not options.source_only:
+        for arch in archs:
+            print "@ Publishing %s binaries..." % arch
+            do_publishing(bin_map[arch], lp[arch], False)
+            lp[arch].commit()
 
     print "@ Closing database connections..."
     

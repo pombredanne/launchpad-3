@@ -607,7 +607,7 @@ class Launchpad(SQLThingBase):
 
         PackagePublishing(**data)
 
-    def emptyPublishing(self, source=False):
+    def emptyPublishing(self, source=False, source_only=False):
         """Empty the publishing tables for this distroarchrelease"""
 
         if source:
@@ -617,6 +617,9 @@ class Launchpad(SQLThingBase):
             for spp in spps:
                 spp.destroySelf()
 
+        # Source Only mode. Does not mees with binary publishing
+        if source_only:
+            return
 
         pps = PackagePublishing.selectBy(\
             distroarchreleaseID=self.distroarchrelease.id)

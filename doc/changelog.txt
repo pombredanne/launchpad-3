@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-03 23:11:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1369
+
+    Summary:
+      --source-only option available in gina
+    Revision:
+      launchpad--devel--0--patch-1369
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-445
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-446
+       merge from gina branch. SourceOnly feature available.
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-8
+       merge from devel--0
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-9
+       SourceOnly feature available by --source-only option.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/gina/database.py
+     lib/canonical/launchpad/scripts/gina/grabber.py
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-445
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-446
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-8
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-9
+
+
 2005-03-03 22:56:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1368
 
     Summary:
