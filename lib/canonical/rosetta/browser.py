@@ -173,14 +173,7 @@ class ViewPOExport:
         # XXX: hardcoded value
         languageCode = 'cy'
 
-        try:
-            self.pofile = self.export.export(languageCode)
-        except KeyError:
-            # We don't have that POFile, we should create one
-            # XXX: I'm not sure we should get the person this way...
-            person = IPerson(self.request.principal)
-            self.context.newPOFile(person, languageCode)
-            self.pofile = self.export.export(languageCode)
+        self.pofile = self.export.export(languageCode)
 
         self.request.response.setHeader('Content-Type', 'application/x-po')
         self.request.response.setHeader('Content-Length', len(self.pofile))
@@ -218,12 +211,6 @@ class TranslatePOTemplate:
         for language in self.languages:
             try:
                 pofile = context.poFile(language.code)
-            except KeyError:
-                # We don't have a POFile for this Language
-                # XXX: I'm not sure we should get the person this way...
-                person = IPerson(self.request.principal)
-                pofile = context.newPOFile(person, language.code)
-            try:
                 self.pluralForms[language.code] = pofile.pluralForms
             except KeyError:
                 if languages[language.code].pluralForms is not None:
