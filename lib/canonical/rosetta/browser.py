@@ -36,7 +36,10 @@ def count_lines(text):
     count = 0
 
     for line in text.split('\n'):
-        count += int(ceil(float(len(line)) / charactersPerLine))
+        if len(line) == 0:
+            count += 1
+        else:
+            count += int(ceil(float(len(line)) / charactersPerLine))
 
     return count
 
@@ -119,6 +122,13 @@ def parse_cformat_string(s):
     raise ValueError(s)
 
 
+def escape_msgid(s):
+    return s.replace('\\', '\\\\').replace('\n', '\\n')
+
+def unescape_msgid(s):
+    return s.replace('\\n', '\n').replace('\\\\', '\\')
+
+
 class TabIndexGenerator:
     def __init__(self):
         self.index = 1
@@ -150,38 +160,30 @@ class ProductView:
         self.languages = request_languages(self.request)
         self.multitemplates = False
         self._templangs = None
-        if len(list(self.templates()))>1:
+        self._templates = list(self.context.potemplates)
+
+        self.newpotemplate()
+
+        if len(list(self._templates)) > 1:
             self.multitemplates = True
 
-    def templates(self):
-        if self._templangs is not None:
-            return self._templangs
-        templates = self.context.potemplates
-        templangs = []
-        for template in templates:
-            templangs.append(TemplateLanguages(template,
-                self.languages))
-        self._templangs = templangs
-        return self._templangs
-
-    # This method has been "stolen" from the newproduct one.
     def newpotemplate(self):
-        #
-        # Handle a request to create a new potemplate for this project.
-        # The code needs to extract all the relevant form elements,
-        # then call the POTemplate creation methods.
-        #
-        if not self.form.get("Register", None)=="Register POTemplate":
+        # Handle a request to create a new potemplate for this project. The
+        # code needs to extract all the relevant form elements, then call the
+        # POTemplate creation methods.
+
+        if not self.form.get("Register", None) == "Register POTemplate":
             return
         if not self.request.method == "POST":
             return
+
         # Extract the details from the form
         name = self.form['name']
         title = self.form['title']
         description = self.form['description']
         copyright = self.form['copyright']
         path = self.form['path']
-        
+
         # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
         # check to see if there is an existing product with
         # this name.
@@ -189,20 +191,24 @@ class ProductView:
         # XXX: Carlos Perello Marin 27/11/04 We should force this page to be
         # used under authenticated users.
         owner = IPerson(self.request.principal)
+
         # Now create a new product in the db
-        potemplate = POTemplate(product=self.context.id,
-                                priority=1,
-                                branch=1,
-                                name=name,
-                                title=title,
-                                description=description,
-                                copyright=copyright,
-                                license=1,
-                                datecreated=UTC_NOW,
-                                path=path,
-                                iscurrent=False,
-                                messagecount=0,
-                                owner=owner)
+        potemplate = POTemplate(
+            product=self.context.id,
+            priority=1,
+            branch=1,
+            name=name,
+            title=title,
+            description=description,
+            copyright=copyright,
+            license=1,
+            datecreated=UTC_NOW,
+            path=path,
+            iscurrent=False,
+            messagecount=0,
+            owner=owner)
+
+        self._templates.append(potemplate)
 
         file = self.form['file']
 
@@ -233,6 +239,17 @@ class ProductView:
             potemplate.daterawimport = UTC_NOW
             potemplate.rawimporter = owner
             potemplate.rawimportstatus = RosettaImportStatus.PENDING.value
+
+    def templates(self):
+        if self._templangs is not None:
+            return self._templangs
+        templates = self._templates
+        templangs = []
+        for template in templates:
+            templangs.append(TemplateLanguages(template,
+                self.languages))
+        self._templangs = templangs
+        return self._templangs
 
 
 class TemplateLanguages:
@@ -697,6 +714,10 @@ class TranslatePOTemplate:
 
         self.tig = TabIndexGenerator()
 
+        # Submit any translations.
+
+        self.submitTranslations()
+
     def makeTabIndex(self):
         return self.tig.generate()
 
@@ -812,7 +833,7 @@ class TranslatePOTemplate:
         return {
             'lines' : lines,
             'isMultiline' : lines > 1,
-            'text' : messageID.msgid,
+            'text' : escape_msgid(messageID.msgid),
             'displayText' : self._mungeMessageID(messageID.msgid, flags)
         }
 
@@ -962,7 +983,7 @@ class TranslatePOTemplate:
             # XXX: Handle the case where the set is not already in the PO
             # file.
 
-            msgid_text = set['msgid']
+            msgid_text = unescape_msgid(set['msgid'])
 
             for code in set['translations'].keys():
                 new_translations = set['translations'][code]

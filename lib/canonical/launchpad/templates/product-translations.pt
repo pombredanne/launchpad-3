@@ -52,10 +52,12 @@
         <!-- the "add a template" link is in here because we don't really
         want people to add multiple templates for the moment. so once there
         is a template, don't display the link-->
+        </p>
+
+        <p>
         <img src="/++resource++add.gif" />
         <a href="+newpotemplate">Upload A PO Template</a>
         </p>
-
     </tal:block>
 
     <tal:block condition="view/templates">

@@ -33,8 +33,6 @@
 
 <div metal:fill-slot="main">
 
-    <div tal:content="structure view/submitTranslations" />
-
     <h1>Translating <span tal:replace="context/product/displayname">product
         displayname</span>:  <span tal:replace="context/title">POT file
         title</span></h1>
@@ -138,7 +136,7 @@
             <label class="language-code"
                    tal:content="language/englishname">pt_BR</label>:
             <span tal:replace="python:
-                view.completeness[language.code]">0</span>%
+                '%.1f' % view.completeness[language.code]">0</span>%
         </span>
     </div>
 
