@@ -19,7 +19,7 @@
 
 >>> pofile = template.getPOFileByLang('es')
 >>> pofile.rawimportstatus
-<Item FAILED (4) from <class 'canonical.lp.dbschema.RosettaImportStatus'>>
+<Item PENDING (2) from <class 'canonical.lp.dbschema.RosettaImportStatus'>>
 
 # Get a PO message set for a particular message and check it has no
 # translation.

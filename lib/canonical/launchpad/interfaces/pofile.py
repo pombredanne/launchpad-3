@@ -105,13 +105,13 @@ class IPOTemplateSubset(Interface):
 
 
 class IPOTemplateSet(Interface):
-    """A set of POTemplate."""
+    """A set of PO templates."""
 
     def __iter__():
-        """Returns an iterator over all POTemplate."""
+        """Return an iterator over all PO templates."""
 
     def __getitem__(name):
-        """Get a POTemplate by its name."""
+        """Get a PO template by its name."""
 
     def distrorelease_sourcepackagename_subset(distrorelease,
                                                sourcepackagename):
@@ -121,6 +121,9 @@ class IPOTemplateSet(Interface):
 
     def distrorelease_subset(distrorelease):
         """Return a POTemplateSubset object for this distrorelease."""
+
+    def getTemplatesPendingImport():
+        """Return a list of PO templates that have data to be imported."""
 
 
 class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
@@ -359,6 +362,13 @@ class IPOMsgID(Interface):
     """A PO message ID."""
 
     msgid = Attribute("A msgid string.")
+
+
+class IPOFileSet(Interface):
+    """A set of POFile."""
+
+    def getPOFilesPendingImport():
+        """Return a list of PO files that have data to be imported."""
 
 
 class IPOFile(IRosettaStats, ICanAttachRawFileData):

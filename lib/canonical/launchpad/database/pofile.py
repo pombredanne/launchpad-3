@@ -20,7 +20,7 @@ from canonical.database.sqlbase import SQLBase, quote, flushUpdates
 
 # canonical imports
 from canonical.launchpad.interfaces import IPOTMsgSet, \
-    IEditPOTemplate, IPOMsgID, IPOMsgIDSighting, \
+    IEditPOTemplate, IPOMsgID, IPOMsgIDSighting, IPOFileSet, \
     IEditPOFile, IPOTranslation, IEditPOMsgSet, IPOTemplateSet, \
     IPOTemplateSubset, IPOTranslationSighting, IPersonSet, IRosettaStats, \
     IRawFileData
@@ -299,6 +299,11 @@ class POTemplateSet:
     def distrorelease_subset(self, distrorelease):
         """See IPOTemplateSet."""
         return POTemplateSubset(distrorelease=distrorelease)
+
+    def getTemplatesPendingImport(self):
+        """See IPOTemplateSet."""
+        return list(POTemplate.selectBy(
+            rawimportstatus=RosettaImportStatus.PENDING))
 
 
 class POTemplate(SQLBase, RosettaStats):
@@ -684,15 +689,9 @@ class POTemplate(SQLBase, RosettaStats):
     def doRawImport(self, logger=None):
         """See IRawFileData."""
 
-        if self.rawimporter is not None:
-            # By default the owner of the import is who imported it, if we
-            # have such information...
-            owner = self.rawimporter
-        else:
-            # As fallback, we get the product's owner.
-            owner = self.product.owner
+        # The owner of the import is the person who imported it.
 
-        importer = TemplateImporter(self, owner)
+        importer = TemplateImporter(self, self.rawimporter)
 
         file = StringIO.StringIO(base64.decodestring(self.rawfile))
 
@@ -969,6 +968,15 @@ def getPORevisionDate(poheader):
             date = None
 
     return (date_string, date)
+
+
+class POFileSet:
+    implements(IPOFileSet)
+
+    def getPOFilesPendingImport(self):
+        """See IPOFileSet."""
+        return list(POFile.selectBy(
+            rawimportstatus=RosettaImportStatus.PENDING))
 
 
 class POFile(SQLBase, RosettaStats):
@@ -1315,10 +1323,9 @@ class POFile(SQLBase, RosettaStats):
             if logger is not None:
                 logger.warning(
                     'There is a problem with the dates importing %s language '
-                    'for %s template from %s product. New: %s, old %s' % (
+                    'for template %s. New: %s, old %s' % (
                     self.language.code,
-                    self.potemplate.name,
-                    self.potemplate.product.name,
+                    self.potemplate.description,
                     new_date_string,
                     old_date_string))
         elif old_date >= new_date:
@@ -1326,24 +1333,17 @@ class POFile(SQLBase, RosettaStats):
             # system, the import is rejected and logged.
             if logger is not None:
                 logger.warning(
-                    'We got an older version importing %s language for %s '
-                    'template from %s product. New: %s, old: %s . Ignoring '
-                    'the import...' % (
-                    self.language.code,
-                    self.potemplate.name,
-                    self.potemplate.product.name,
-                    new_date_string,
-                    old_date_string))
+                    'We got an older version importing %s language for'
+                    ' template %s . New: %s, old: %s . Ignoring the import...'
+                    % (self.language.code,
+                       self.potemplate.description,
+                       new_date_string,
+                       old_date_string))
             self.rawimportstatus = RosettaImportStatus.FAILED
             return
 
-        if self.rawimporter is not None:
-            # By default the owner of the import is who imported it, if we
-            # have such information...
-            default_owner = self.rawimporter
-        else:
-            # As fallback, we get the product's owner.
-            default_owner = self.potemplate.product.owner
+        # By default the owner of the import is who imported it.
+        default_owner = self.rawimporter
 
         try:
             last_translator = parser.header['Last-Translator']

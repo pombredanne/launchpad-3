@@ -2,6 +2,68 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-23 12:50:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1480
+
+    Summary:
+      implement latest version of the LaunchpadPoImport spec
+    Revision:
+      launchpad--devel--0--patch-1480
+
+    Patches applied:
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1471
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1471
+    
+     * carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-1
+       Updated to follow the current LaunchpadPoImport spec
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--base-0
+       tag of carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--0--base-0
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--patch-1
+       merge from rocketfuel
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--patch-2
+       merge from Carlos' branch
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--patch-3
+       respond to Steve's review
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--patch-4
+       minor fixes
+    
+     * daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--patch-5
+       fix test to match sample data change
+    
+
+    new files:
+     lib/canonical/launchpad/doc/.arch-ids/pofile.txt.id
+     lib/canonical/launchpad/doc/.arch-ids/potemplateset.txt.id
+     lib/canonical/launchpad/doc/pofile.txt
+     lib/canonical/launchpad/doc/potemplateset.txt
+
+    modified files:
+     cronscripts/rosetta-poimport.py
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/database/pofile.py
+     lib/canonical/launchpad/doc/potemplate.txt
+     lib/canonical/launchpad/interfaces/pofile.py
+
+    new patches:
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--0--base-0
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--base-0
+     carlos.perello@canonical.com--2004/launchpad--LaunchpadPoImport--1--patch-1
+     daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--base-0
+     daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--patch-1
+     daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--patch-2
+     daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--patch-3
+     daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--patch-4
+     daf@canonical.com--2004/launchpad--LaunchpadPoImport--0--patch-5
+
+
 2005-03-22 22:23:25 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1479
 
     Summary:
