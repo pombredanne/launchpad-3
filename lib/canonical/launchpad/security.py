@@ -5,11 +5,12 @@
 __metaclass__ = type
 
 from zope.interface import implements, Interface
+from zope.component import getUtility
 
 from canonical.lp.dbschema import BugSubscription
 from canonical.launchpad.interfaces import IAuthorization, IHasOwner, \
     IPerson, ISourceSource, ISourceSourceAdmin, IMilestone, IHasProduct, \
-    IHasProductAndAssignee, IBug, IBugTask
+    IHasProductAndAssignee, IBug, IBugTask, IPersonSet
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -31,7 +32,8 @@ class AdminByAdminsTeam(AuthorizationBase):
     usedfor = Interface
 
     def checkPermission(self, person):
-        return person.inTeam('admins')
+        admins = getUtility(IPersonSet).getByName('admins')
+        return person.inTeam(admins)
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):
@@ -39,9 +41,10 @@ class EditByOwnersOrAdmins(AuthorizationBase):
     usedfor = IHasOwner
 
     def checkPermission(self, person):
+        admins = getUtility(IPersonSet).getByName('admins')
         if person.id == self.obj.owner.id:
             return True
-        elif person.inTeam('admins'):
+        elif person.inTeam(admins):
             return True
         else:
             return False
@@ -62,7 +65,8 @@ class AdminSourceSourceByButtSource(AuthorizationBase):
     usedfor = ISourceSourceAdmin
 
     def checkPermission(self, person):
-        return person.inTeam('buttsource')
+        buttsource = getUtility(IPersonSet).getByName('buttsource')
+        return person.inTeam(buttsource)
 
 
 class EditSourceSourceByButtSource(AuthorizationBase):
@@ -70,7 +74,8 @@ class EditSourceSourceByButtSource(AuthorizationBase):
     usedfor = ISourceSource
 
     def checkPermission(self, person):
-        if person.inTeam('buttsource'):
+        buttsource = getUtility(IPersonSet).getByName('buttsource')
+        if person.inTeam(buttsource):
             return True
         elif not self.obj.syncCertified():
             return True

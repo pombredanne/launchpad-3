@@ -49,7 +49,26 @@
                             distro
                         </span>
                 </a>
-            </td>
+                <a href=""
+                    tal:condition="python: bugtask.distrorelease and bugtask.sourcepackagename"
+                    tal:attributes="href string:/malone/distros/${bugtask/distrorelease/distribution/name}/${bugtask/sourcepackagename/name}"
+                    >
+                        <span tal:content="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
+                            distro
+                        </span>
+                        <span tal:content="bugtask/sourcepackagename/name">
+                            sourcepackagename
+                        </span>
+                </a>
+                <a href=""
+                    tal:condition="python: bugtask.distrorelease and not bugtask.sourcepackagename"
+                    tal:attributes="href string:/malone/distros/${bugtask/distrorelease/distribution/name}/}"
+                    >
+                        <span tal:content="string: ${bugtask/distrorelease/distribution/name} ${bugtask/distrorelease/name}">
+                            distro
+                        </span>
+                </a>
+             </td>
             
             <td tal:content="bugtask/status/lp:BugTaskStatus">
                 $BugTask.status
@@ -84,13 +103,20 @@
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring upstream">
     <img src="/++resource++add.gif" alt="+" />
-    File Against Upstream...
+    Upstream Task...
 </a>
 
 <a href="#" tal:attributes="href string:$bug_url/tasks/+distrotask"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring in another package">
     <img src="/++resource++add.gif" alt="+" />
-    File Against Package...
+    Distro Task...
+</a>
+
+<a href="#" tal:attributes="href string:$bug_url/tasks/+distroreleasetask"
+    style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
+    title="Mark this bug as occurring in another package for a specific distro release">
+    <img src="/++resource++add.gif" alt="+" />
+    Distro Release Task...
 </a>
 </div>

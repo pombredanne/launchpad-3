@@ -13,6 +13,9 @@ class SoyuzApplication(object):
     for traversal purposes."""
     implements(ISoyuzApplication)
 
+    def __init__(self):
+        self.title = 'Soyuz: Distribution Management in Launchpad'
+
     def distributions(self):
         """See ISoyuzApplication."""
         return Distribution.select()

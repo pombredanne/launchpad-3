@@ -539,7 +539,7 @@ class TeamMembershipStatus(DBSchema):
         """)
 
     ADMIN = Item(3, """
-        Current Member
+        Administrator
 
         This person is currently an administrator of the team. This status 
         means that the person will have full access as an administrator of 

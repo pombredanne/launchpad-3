@@ -197,6 +197,8 @@ class IHasProductAndAssignee(IHasProduct, IHasAssignee):
 class IProductSet(Interface):
     """The collection of products."""
 
+    title = Attribute("""The set of Products registered in the Launchpad""")
+
     def __iter__():
         """Return an iterator over all the products."""
 

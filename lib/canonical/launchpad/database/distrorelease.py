@@ -1,3 +1,5 @@
+__metaclass__ = type
+
 from sets import Set
 
 # Zope imports
@@ -14,8 +16,7 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IDistroRelease, \
-                                           IBinaryPackageUtility, \
-                                           ISourcePackageUtility
+    IBinaryPackageUtility, IDistroReleaseSet, ISourcePackageUtility
 
 from canonical.launchpad.database import SourcePackageInDistro, \
     BinaryPackageSet, SourcePackageInDistroSet, PublishedPackageSet, \
@@ -31,54 +32,41 @@ class DistroRelease(SQLBase):
     implements(IDistroRelease)
 
     _table = 'DistroRelease'
-    _columns = [
-        ForeignKey(name='distribution', dbName='distribution',
-                   foreignKey='Distribution', notNull=True),
-        StringCol('name', dbName='name', notNull=True),
-        StringCol('displayname', dbName='displayname', notNull=True),
-        StringCol('title', dbName='title', notNull=True),
-        StringCol('shortdesc', dbName='shortdesc', notNull=True),
-        StringCol('description', dbName='description', notNull=True),
-        StringCol('version', dbName='version', notNull=True),
-        ForeignKey(name='components', dbName='components', foreignKey='Schema',
-                   notNull=True),
-        ForeignKey(name='sections', dbName='sections', foreignKey='Schema',
-                   notNull=True),
-        IntCol('releasestate', dbName='releasestate', notNull=True),
-        DateTimeCol('datereleased', dbName='datereleased', notNull=True),
-        ForeignKey(name='parentrelease', dbName='parentrelease',
-                   foreignKey='DistroRelease', notNull=False),
-        ForeignKey(name='owner', dbName='owner', foreignKey='Person',
-                   notNull=True),
-        StringCol('lucilleconfig', dbName='lucilleconfig', notNull=False)
-    ]
-
-    architectures = MultipleJoin('DistroArchRelease',
-                                  joinColumn='distrorelease' )
-    role_users = MultipleJoin('DistroReleaseRole', 
-                               joinColumn='distrorelease')
+    distribution = ForeignKey(
+        dbName='distribution', foreignKey='Distribution', notNull=True)
+    bugtasks = MultipleJoin('BugTask', joinColumn='distrorelease')
+    name = StringCol(notNull=True)
+    displayname = StringCol(notNull=True)
+    title = StringCol(notNull=True)
+    shortdesc = StringCol(notNull=True)
+    description = StringCol(notNull=True)
+    version = StringCol(notNull=True)
+    components = ForeignKey(
+        dbName='components', foreignKey='Schema', notNull=True)
+    sections = ForeignKey(
+        dbName='sections', foreignKey='Schema', notNull=True)
+    releasestate = IntCol(notNull=True)
+    datereleased = DateTimeCol(notNull=True)
+    parentrelease =  ForeignKey(
+        dbName='parentrelease', foreignKey='DistroRelease', notNull=False)
+    owner = ForeignKey(
+        dbName='owner', foreignKey='Person', notNull=True)
+    lucilleconfig = StringCol(notNull=False)
+    architectures = MultipleJoin('DistroArchRelease', joinColumn='distrorelease' )
+    role_users = MultipleJoin('DistroReleaseRole', joinColumn='distrorelease')
 
     def displayname(self):
         return self.name
-
     displayname = property(displayname)
 
     def parent(self):
         if self.parentrelease:
             return self.parentrelease.title
         return ''
-
     parent = property(parent)
-
-    def _getState(self, value):
-        for status in dbschema.DistributionReleaseState.items:
-            if status.value == value:
-                return status.title
-        return 'Unknown'
 
     def state(self):
         return self._getState(self.releasestate)
-
     state = property(state)
 
     def sourcecount(self):
@@ -91,7 +79,6 @@ class DistroRelease(SQLBase):
                  % (dbschema.PackagePublishingStatus.PUBLISHED.value,
                     self.id))
         return SourcePackagePublishing.select(query).count()
-
     sourcecount = property(sourcecount)
 
     def binarycount(self):
@@ -102,13 +89,9 @@ class DistroRelease(SQLBase):
                  'AND DistroArchRelease.distrorelease = %s'
                  % (dbschema.PackagePublishingStatus.PUBLISHED.value,
                     self.id))
-        return PackagePublishing.select(query,
-                                        clauseTables=clauseTables).count()
-
+        return PackagePublishing.select(
+            query, clauseTables=clauseTables).count()
     binarycount = property(binarycount)
-
-    def architecturecount(self):
-        return len(list(self.architectures))
 
     def bugCounter(self):
         counts = []
@@ -133,8 +116,16 @@ class DistroRelease(SQLBase):
 
         counts.insert(0, sum(counts))
         return counts
-
     bugCounter = property(bugCounter)
+
+    def _getState(self, value):
+        for status in dbschema.DistributionReleaseState.items:
+            if status.value == value:
+                return status.title
+        return 'Unknown'
+
+    def architecturecount(self):
+        return len(list(self.architectures))
 
     def getBugSourcePackages(self):
         """Get SourcePackages in a DistroRelease with BugTask"""
@@ -148,17 +139,12 @@ class DistroRelease(SQLBase):
                    int(dbschema.BugTaskStatus.FIXED),
                    int(dbschema.BugTaskStatus.REJECTED)))
 
-        return SourcePackageInDistro.select(query,
-                                            clauseTables=clauseTables,
-                                            distinct=True)
+        return SourcePackageInDistro.select(
+            query, clauseTables=clauseTables, distinct=True)
 
     def findSourcesByName(self, pattern):
         srcset = getUtility(ISourcePackageUtility)
         return srcset.findByNameInDistroRelease(self.id, pattern)
-
-##    def getSourceByName(self, name):
-#        srcset = getUtility(ISourcePackageSet)
-#        return srcset.getByNameInDistroRelease(self.id, name)
 
     def traverse(self, name):
         if name == '+sources':
@@ -170,7 +156,6 @@ class DistroRelease(SQLBase):
     def __getitem__(self, arch):
         return BinaryPackageSet(self, arch)
     
-
     def findBinariesByName(self, pattern):
         binariesutil = getUtility(IBinaryPackageUtility)
         selection = Set(binariesutil.findByNameInDistroRelease(self.id, pattern))
@@ -188,4 +173,9 @@ class DistroRelease(SQLBase):
                 result.append(srcpkg)
         return result
 
+class DistroReleaseSet:
+    implements(IDistroReleaseSet)
 
+    def get(self, distroreleaseid):
+        """See canonical.launchpad.interfaces.IDistroReleaseSet."""
+        return DistroRelease.get(distroreleaseid)

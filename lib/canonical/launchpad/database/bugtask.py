@@ -42,6 +42,9 @@ class BugTask(SQLBase):
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
+    distrorelease = ForeignKey(
+        dbName='distrorelease', foreignKey='DistroRelease',
+        notNull=False, default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
         notNull=False, default=None)
@@ -88,6 +91,23 @@ class BugTask(SQLBase):
     bugtitle = property(bugtitle)
     bugdescription = property(bugdescription)
 
+    def _title(self):
+        title = 'Malone Bug #' + str(self.bug.id)
+        title += ' (' + self.bug.title + ')' + ' on '
+        if self.distribution:
+            title += self.distribution.name + ' '
+            if self.distrorelease:
+                title += self.distrorelease.name + ' '
+            if self.sourcepackagename:
+                title += self.sourcepackagename.name + ' '
+            if self.binarypackagename:
+                title += self.binarypackagename.name
+        if self.product:
+            title += self.product.displayname
+        return title
+    title = property(_title)
+
+
 
 class BugTaskSet:
 
@@ -97,8 +117,10 @@ class BugTaskSet:
 
     def __init__(self, bug=None):
         self.bug = bug
+        self.title = 'A Set of Bug Tasks'
 
     def __getitem__(self, id):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         principal = _get_authenticated_principal()
         try:
             task = self.table.select(self.table.q.id == id)[0]
@@ -123,6 +145,7 @@ class BugTaskSet:
             raise KeyError, id
 
     def __iter__(self):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         principal = _get_authenticated_principal()
 
         for row in self.table.select(self.table.q.bugID == self.bug):
@@ -142,6 +165,7 @@ class BugTaskSet:
             yield row
 
     def get(self, id):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         try:
             bugtask = self.table.get(id)
         except SQLObjectNotFound, err:
@@ -152,6 +176,7 @@ class BugTaskSet:
     def search(self, bug=None, searchtext=None, status=None, priority=None,
                severity=None, product=None, milestone=None, assignee=None,
                submitter=None, orderby=None):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
         query = ""
 
         if searchtext:
@@ -223,6 +248,28 @@ class BugTaskSet:
             bugtasks = bugtasks.orderBy(orderby)
 
         return bugtasks
+
+    def createTask(self, bug, product=None, distribution=None, distrorelease=None,
+                   sourcepackagename=None, binarypackagename=None, status=None,
+                   priority=None, severity=None, assignee=None, owner=None,
+                   milestone=None):
+        """See canonical.launchpad.interfaces.IBugTaskSet."""
+        bugtask_args = {
+            'bug' : getattr(bug, 'id', None),
+            'product' : getattr(product, 'id', None),
+            'distribution' : getattr(distribution, 'id', None),
+            'distrorelease' : getattr(distrorelease, 'id', None),
+            'sourcepackagename' : getattr(sourcepackagename, 'id', None),
+            'binarypackagename' : getattr(binarypackagename, 'id', None),
+            'status' : status,
+            'priority' : priority,
+            'severity' : severity,
+            'assignee' : getattr(assignee, 'id', None),
+            'owner' : getattr(owner, 'id', None),
+            'milestone' : getattr(milestone, 'id', None)
+        }
+
+        return BugTask(**bugtask_args)
 
     def add(self, ob):
         return ob

@@ -7,7 +7,7 @@
              tal:define="subscriptions context/subscriptions;
                          bugtasks context/bugtasks">
 
-            <h5>submitted by:</h5>
+            <h5>submitter:</h5>
             <ul class="people">
                 <li><span
                 tal:replace="context/owner/browsername">owner</span></li>

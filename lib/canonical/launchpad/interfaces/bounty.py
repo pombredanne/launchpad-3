@@ -82,6 +82,8 @@ class IBounty(Interface):
 class IBountySet(IAddFormCustomization):
     """A container for bounties."""
 
+    title = Attribute('Title')
+
     def __getitem__(key):
         """Get a bounty."""
 

@@ -20,7 +20,7 @@
   ...
           <span>
               Logged in as
-              <a href="/foaf/people/name16">
+              <a href="/people/name16">
               Foo Bar</a>
               &mdash;
               <a href="/+logout">Log Out</a>

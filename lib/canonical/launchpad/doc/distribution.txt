@@ -1,0 +1,59 @@
+Distributions
+=============
+
+From the DerivationOverview spec[1]:
+
+    A distribution of GNU/Linux comprises a set of packages, an installer,
+    possibly a live-CD, some amount of metadata associated with the arrangement
+    of those elements and also a lot of information on managing it.
+
+In Launchpad, one distribution is mapped to one row in the Distribution table.
+To retrieve a distribution, use the IDistributionSet utility. If you've already
+used IPersonSet to retrieve a Person, or IBugTaskSet to retrieve a task, this
+syntax should look familiar.
+
+Let's simulate interacting with the system as an anonymous user:
+
+    >>> import zope.security.management
+    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from canonical.launchpad.database import Person
+    >>> class Principal:
+    ...     def __init__(self, id):
+    ...         self.id = id
+    ...         self.groups = []
+    >>> principal = Principal('launchpad.anonymous')
+
+    >>> class Participation:
+    ...     interaction = None
+    >>> anon_participation = Participation()
+    >>> anon_participation.principal = principal
+
+    >>> zope.security.management.newInteraction(anon_participation)
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from zope.app.tests import ztapi
+    >>> from zope.interface import implements
+    >>> class MockLaunchBag(object):
+    ...     implements(ILaunchBag)
+    ...     def __init__(self, login=None, user=None):
+    ...         self.login = login
+    ...         self.user = user
+    >>> launchbag = MockLaunchBag()
+    >>> ztapi.provideUtility(ILaunchBag, launchbag)
+
+The IDistributionSet utility is accessed in the usual fashion:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> distroset = getUtility(IDistributionSet)
+
+To retrieve a specific distribution, use IDistributionSet.get:
+
+    >>> ubuntu = distroset.get(1)
+    >>> print ubuntu.name
+    ubuntu
+
+    >>> ztapi.unprovideUtility(ILaunchBag)
+    >>> zope.security.management.endInteraction()
+
+[1] https://wiki.launchpad.canonical.com/DerivationOverview

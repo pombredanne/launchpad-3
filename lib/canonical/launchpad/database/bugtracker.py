@@ -54,6 +54,9 @@ class BugTrackerSet(object):
     implements(IBugTrackerSet)
 
     table = BugTracker
+
+    def __init__(self):
+        self.title = 'Launchpad-registered Bug Trackers'
     
     def __getitem__(self, name):
         try: return self.table.select(self.table.q.name == name)[0]

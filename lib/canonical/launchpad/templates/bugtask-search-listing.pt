@@ -50,7 +50,7 @@
                         assid task/id;
                         product_name task/product/name|nothing;
                         project_name task/product/project/name|nothing;
-                        package_name task/sourcepackage/sourcepackagename/name|nothing;
+                        package_name task/sourcepackagename/name|nothing;
                         collection_name string:tasks;
                         ass_link string:/malone/$collection_name/$assid/+edit;
                         ass_owner task/owner/name|nothing;

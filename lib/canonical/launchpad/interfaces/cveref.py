@@ -47,6 +47,8 @@ class ICVERefSet(Interface):
 
     bug = Int(title=_("Bug id"), readonly=True)
 
+    title = Attribute('Title')
+
     def __getitem__(key):
         """Get a CVERef."""
 

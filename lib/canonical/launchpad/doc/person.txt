@@ -20,7 +20,7 @@ common use case when checking permissions.
 
 >>> lifeless = Person.byName('lifeless')
 >>> ddaa = Person.byName('ddaa')
->>> lifeless.inTeam('buttsource') and ddaa.inTeam('buttsource')
+>>> lifeless.inTeam(buttsource) and ddaa.inTeam(buttsource)
 True
 
 

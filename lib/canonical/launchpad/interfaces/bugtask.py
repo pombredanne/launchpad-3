@@ -13,22 +13,22 @@ from canonical.launchpad.interfaces import IHasProductAndAssignee, \
 class IEditableUpstreamBugTask(IHasProductAndAssignee):
     """A bug assigned to upstream, which is editable by the current
     user."""
-    pass
+    title = Attribute('Title')
 
 class IReadOnlyUpstreamBugTask(IHasProductAndAssignee):
     """A bug assigned to upstream, which is read-only by the current
     user."""
-    pass
+    title = Attribute('Title')
 
 class IEditableDistroBugTask(Interface):
     """A bug assigned to a distro package, which is editable by
     the current user."""
-    pass
+    title = Attribute('Title')
 
 class IReadOnlyDistroBugTask(Interface):
     """A bug assigned to a distro package, which is read-only by the
     current user."""
-    pass
+    title = Attribute('Title')
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -40,6 +40,8 @@ class IBugTask(IHasDateCreated):
         title=_("Source Package Name"), required=False, vocabulary='SourcePackageName')
     distribution = Choice(
         title=_("Distribution"), required=False, vocabulary='Distribution')
+    distrorelease = Choice(
+        title=_("Distribution Release"), required=False, vocabulary='DistroRelease')
     milestone = Choice(
         title=_('Target'), required=False, vocabulary='Milestone')
     status = Choice(
@@ -67,6 +69,9 @@ class IBugTask(IHasDateCreated):
     bugdescription = Text(
         title=_("Bug Description"), required=False, readonly=True)
 
+    # used for the page layout
+    title = Attribute("Title")
+
 # XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
 # when spiv pushes a fix upstream for the bug that makes this hackery
 # necessary:
@@ -77,6 +82,9 @@ class ISelectResultsSlicable(ISelectResults):
         """Called to implement evaluation of self[i:j]."""
 
 class IBugTaskSet(Interface):
+
+    title = Attribute('Title')
+
     bug = Int(title=_("Bug id"), readonly=True)
 
     def __getitem__(key):
@@ -114,6 +122,15 @@ class IBugTaskSet(Interface):
         For a more thorough treatment, check out:
 
             lib/canonical/launchpad/doc/bugtask.txt
+        """
+
+    def createTask(bug, product=None, distribution=None, distrorelease=None,
+                   sourcepackagename=None, binarypackagename=None, status=None,
+                   priority=None, severity=None, assignee=None, owner=None,
+                   milestone=None):
+        """Create a bug task on a bug.
+
+        Exactly one of product, distribution or distrorelease must be provided.
         """
 
 class IBugTasksReport(Interface):

@@ -1555,11 +1555,11 @@ SELECT pg_catalog.setval('ircid_id_seq', 9, true);
 
 
 
-SELECT pg_catalog.setval('teammembership_id_seq', 8, true);
+SELECT pg_catalog.setval('teammembership_id_seq', 33, true);
 
 
 
-SELECT pg_catalog.setval('teamparticipation_id_seq', 26, true);
+SELECT pg_catalog.setval('teamparticipation_id_seq', 33, true);
 
 
 

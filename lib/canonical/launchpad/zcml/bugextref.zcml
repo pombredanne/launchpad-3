@@ -6,6 +6,12 @@
     i18n_domain="launchpad">
 
     <!-- BugExternalRef -->
+    <content class="canonical.launchpad.database.BugExternalRef">
+        <allow interface="canonical.launchpad.interfaces.IBugExternalRef" />
+            <require permission="zope.Public"
+                set_schema="canonical.launchpad.interfaces.IBugExternalRef" />
+    </content>
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugExternalRef"
         name="+index" />

@@ -18,11 +18,11 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Soyuz Distribution Management: All Distributions</h1>
+    <h1>Distribution Management: All Distributions</h1>
 
     
-        <p>This page shows all distributions that are represented in the Soyuz
-        Distribution Management System. Note that some of these
+        <p>This page shows all distributions that are
+        registered in the Launchpad. Note that some of these
         distributions are "read-only", we monitor those distributions and
         present package information for them in Soyuz, but they cannot be
         altered or managed in Soyuz. The Soyuz representations of those
@@ -42,6 +42,9 @@
                        distribution/name">
 	               distribution name
 	            </a>
+                <span tal:condition="python: distribution.name in ['redhat', 'debian', 'gentoo']">
+                    *
+                </span>
             </td>
             <td tal:content="distribution/title">
                 distribution title
@@ -50,7 +53,8 @@
     </table>    
 
     <div style="float: right;">
-        (<span tal:replace="view/count" /> distributions)
+        * read-only distribution. (<span tal:replace="view/count" />
+        distributions in total)
     </div>
 
     <p><img src="/++resource++add.gif"> <a href="+add">Add

@@ -6,6 +6,7 @@ from urllib2 import URLError
 # Zope imports
 from zope.interface import implements
 from zope.component import getUtility
+from zope.exceptions import NotFoundError
 
 # SQLObject/SQLBase
 from sqlobject import MultipleJoin
@@ -17,17 +18,12 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import ISourcePackageRelease, \
-                                           ISourcePackageReleasePublishing, \
-                                           ISourcePackage, \
-                                           ISourcePackageName, \
-                                           ISourcePackageNameSet, \
-                                           ISourcePackageSet, \
-                                           ISourcePackageInDistroSet, \
-                                           ISourcePackageUtility
-
+    ISourcePackageReleasePublishing, ISourcePackage, ISourcePackageName, \
+    ISourcePackageNameSet, ISourcePackageSet, ISourcePackageInDistroSet, \
+    ISourcePackageUtility
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.binarypackage import BinaryPackage, \
-                                                       DownloadURL
+    DownloadURL
 
 class SourcePackage(SQLBase):
     """A source package, e.g. apache2."""
@@ -206,6 +202,7 @@ class SourcePackageInDistroSet(object):
     def __init__(self, distrorelease):
         """Take the distrorelease when it makes part of the context"""
         self.distrorelease = distrorelease
+        self.title = 'Source Packages in: ' + distrorelease.title
 
     def findPackagesByName(self, pattern, fti=False):
         srcutil = getUtility(ISourcePackageUtility)
@@ -297,14 +294,23 @@ class SourcePackageNameSet(object):
     implements(ISourcePackageNameSet)
 
     def __getitem__(self, name):
+        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
         try:
             return SourcePackageName.byName(name)
         except SQLObjectNotFound:
             raise KeyError, name
 
     def __iter__(self):
+        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
         for sourcepackagename in SourcePackageName.select():
             yield sourcepackagename
+
+    def get(self, sourcepackagenameid):
+        """See canonical.launchpad.interfaces.ISourcePackageNameSet."""
+        try:
+            return SourcePackageName.get(sourcepackagenameid)
+        except SQLObjectNotFound:
+            raise NotFoundError(sourcepackagenameid)
 
 
 class SourcePackageRelease(SQLBase):
@@ -337,6 +343,10 @@ class SourcePackageRelease(SQLBase):
     #
     # Properties
     #
+    def _name(self):
+        return self.sourcepackage.sourcepackagename.name
+    name = property(_name)
+
     def _urgency(self):
         for urgency in dbschema.SourcePackageUrgency.items:
             if urgency.value == self.urgency:
@@ -419,6 +429,14 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
                                dbName='distrorelease')
     #XXX: salgado: wtf is this?
     #MultipleJoin('Build', joinColumn='sourcepackagerelease'),
+
+    def _title(self):
+        title = 'Source package '
+        title += self.name
+        title += ' in ' + self.distrorelease.distribution.name
+        title += ' ' + self.distrorelease.name
+        return title
+    title = property(_title)
 
     def __getitem__(self, version):
         """Get a  SourcePackageRelease"""

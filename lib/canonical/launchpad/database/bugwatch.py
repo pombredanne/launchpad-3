@@ -28,11 +28,22 @@ class BugWatch(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person',
                 notNull=True)
 
+    def _title(self):
+        title = 'Malone Bug #' + str(self.bug.id)
+        title += ' maps to bug #' + str(self.remotebug)
+        title += ' in ' + self.bugtracker.title
+        return title
+    title = property(_title)
+
 class BugWatchSet(BugSetBase):
     """A set for BugWatch"""
 
     implements(IBugWatchSet)
     table = BugWatch
+
+    def __init__(self, bug=None):
+        super(BugWatchSet, self).__init__(bug)
+        self.title = 'A Set of Bug Watches'
 
 def BugWatchFactory(context, **kw):
     bug = context.context.bug

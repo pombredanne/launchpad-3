@@ -1,0 +1,65 @@
+Source Packages
+===============
+
+A source package is a thing from which binary packages are built, to then be
+installed using a package management tool like apt-get or rpm. One named source
+package in a distro may be used to build several different named binary
+packages, on one or more architectures. One named binary package in a distro
+may have been built from more than one named source package (e.g. a different
+source package may have been used to build "foo" on i386 vs. "foo" on ppc.)
+
+Named Source Package
+--------------------
+
+The are various metadata we're interested in collecting about a bundle of code
+used to build binary packages for installation in a particular distro release.
+One such thing is the name of that bundle of code. This is abstracted into a
+separate SourcePackageName table.
+
+Accessing source package names is done through the ISourcePackageNameSet
+utility.
+
+To demonstrate how to use this utility, let's simulate interacting with the
+system as an anonymous user:
+
+    >>> import zope.security.management
+    >>> from canonical.launchpad.interfaces import IPerson
+    >>> from canonical.launchpad.database import Person
+    >>> class Principal:
+    ...     def __init__(self, id):
+    ...         self.id = id
+    ...         self.groups = []
+    >>> principal = Principal('launchpad.anonymous')
+
+    >>> class Participation:
+    ...     interaction = None
+    >>> anon_participation = Participation()
+    >>> anon_participation.principal = principal
+
+    >>> zope.security.management.newInteraction(anon_participation)
+
+    >>> from canonical.launchpad.interfaces import ILaunchBag
+    >>> from zope.app.tests import ztapi
+    >>> from zope.interface import implements
+    >>> class MockLaunchBag(object):
+    ...     implements(ILaunchBag)
+    ...     def __init__(self, login=None, user=None):
+    ...         self.login = login
+    ...         self.user = user
+    >>> launchbag = MockLaunchBag()
+    >>> ztapi.provideUtility(ILaunchBag, launchbag)
+
+The ISourcePackageNameSet utility is accessed in the usual fashion:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
+
+To retrieve a specific source package name, use ISourcePackageNameSet.get:
+
+    >>> firefox = sourcepackagenameset.get(1)
+    >>> print firefox.name
+    mozilla-firefox-dummy
+
+    >>> ztapi.unprovideUtility(ILaunchBag)
+    >>> zope.security.management.endInteraction()

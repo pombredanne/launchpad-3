@@ -32,6 +32,12 @@ class BugExternalRefSet(BugSetBase):
     implements(IBugExternalRefSet)
     table = BugExternalRef
 
+    def __init__(self, bug=None):
+        super(BugExternalRefSet, self).__init__(bug)
+        self.title = 'Web References'
+        if bug:
+            self.title += ' for Malone Bug #' + str(bug)
+
 
 def BugExternalRefFactory(context, **kw):
     bug = context.context.bug

@@ -38,12 +38,6 @@ class IPerson(Interface):
             description=_("The password you will use to access "
                 "Launchpad services. ")
             )
-    teamowner = Int(
-            title=_('Team Owner'), required=False, readonly=False,
-            )
-    teamdescription = Text(
-            title=_('Team Description'), required=False, readonly=False,
-            )
     # TODO: This should be required in the DB, defaulting to something
     karma = Int(
             title=_('Karma'), required=False, readonly=True,
@@ -97,30 +91,12 @@ class IPerson(Interface):
 
     subteams = Attribute(("List of subteams of this Team. That is, teams "
                           "which are members of this Team."))
+    superteams = Attribute(("List of superteams of this Team. That is, teams "
+                            "which this Team is a member of."))
 
-    def browsername():
-        """Return a textual name suitable for display in a browser."""
-
-    def assignKarma(karmafield, points=None):
-        """Assign <points> worth of karma to this Person."""
-
-    def addLanguage(language):
-        """Adds a new language to the list of know languages."""
-
-    def removeLanguage(language):
-        """Removed the language from the list of know languages."""
-
-    def inTeam(team_name):
-        """Return true if this person is in the named team."""
-
-    def getMembershipByMember(member):
-        """Return a TeamMembership object of the given member in this team."""
-
-
-class ITeam(IPerson):
-    """ITeam extends IPerson.
-    
-    The teamowner should never be None."""
+    teamowner = Int(title=_('Team Owner'), required=False, readonly=False)
+    teamdescription = Text(title=_('Team Description'), required=False, 
+                           readonly=False)
 
     email = TextLine(
             title=_('Email Address'), required=True,
@@ -153,9 +129,84 @@ class ITeam(IPerson):
                           'members can only be added by one of the '
                           'administrators of the team.'))
 
+    # title is required for the Launchpad Page Layout main template
+    title = Attribute('Person Page Title')
+
+    def browsername():
+        """Return a textual name suitable for display in a browser."""
+
+    def assignKarma(karmafield, points=None):
+        """Assign <points> worth of karma to this Person."""
+
+    def addLanguage(language):
+        """Add a new language to the list of know languages."""
+
+    def removeLanguage(language):
+        """Removed the language from the list of know languages."""
+
+    def inTeam(team):
+        """Return true if this person is in the given team."""
+
+    def getMembershipsByStatus(status):
+        """Return all TeamMembership rows with the given status for this team"""
+
+    def hasMembershipEntryFor(team):
+        """Tell if this person is a direct member of the given team."""
+
+    def joinTeam(team):
+        """Join the given team if its subscriptionpolicy is not RESTRICTED.
+
+        Join the given team according to the policies and defaults of that
+        team:
+        - If the team subscriptionpolicy is OPEN, the user is added as
+          an APPROVED member with a NULL TeamMembership.reviewer.
+        - If the team subscriptionpolicy is MODERATED, the user is added as
+          a PROPOSED member and one of the team's administrators have to
+          approve the membership.
+        """
+
+    def unjoinTeam(team):
+        """Unjoin the given team.
+
+        If there's a membership entry for this person on the given team and
+        its status is either APPROVED or ADMIN, we change the status to
+        DEACTIVATED and remove the relevant entries in teamparticipation.
+        """
+
+    def hasMembershipEntryFor(team):
+        """Tell if this person is a direct member of the given team."""
+
+    def joinTeam(team):
+        """Join the given team if its subscriptionpolicy is not RESTRICTED.
+
+        Join the given team according to the policies and defaults of that
+        team:
+        - If the team subscriptionpolicy is OPEN, the user is added as
+          an APPROVED member with a NULL TeamMembership.reviewer.
+        - If the team subscriptionpolicy is MODERATED, the user is added as
+          a PROPOSED member and one of the team's administrators have to
+          approve the membership.
+        """
+
+    def unjoinTeam(team):
+        """Unjoin the given team.
+
+        If there's a membership entry for this person on the given team and
+        its status is either APPROVED or ADMIN, we change the status to
+        DEACTIVATED and remove the relevant entries in teamparticipation.
+        """
+
+
+class ITeam(IPerson):
+    """ITeam extends IPerson.
+    
+    The teamowner should never be None."""
+
 
 class IPersonSet(Interface):
     """The set of Persons."""
+
+    title = Attribute('Title')
 
     def __getitem__(personid):
         """Return the person with the given id.
@@ -205,19 +256,37 @@ class IPersonSet(Interface):
 
 class IEmailAddress(Interface):
     """The object that stores the IPerson's emails."""
-    id = Int(
-        title=_('ID'), required=True, readonly=True,
-        )
-    email = Text(
-        title=_('Email Address'), required=True,
-        )
-    status = Int(
-        title=_('Email Address Status'), required=True,
-        )
-    person = Int(
-        title=_('Person'), required=True,
-        )
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+    email = Text(title=_('Email Address'), required=True, readonly=False)
+    status = Int(title=_('Email Address Status'), required=True, readonly=False)
+    person = Int(title=_('Person'), required=True, readonly=False)
     statusname = Attribute("StatusName")
+
+
+class IEmailAddressSet(Interface):
+    """The set of EmailAddresses."""
+
+    def __getitem__(emailid):
+        """Return the email address with the given id.
+
+        Raise KeyError if there is no such email address.
+        """
+
+    def get(emailid, default=None):
+        """Return the email address with the given id.
+
+        Return the default value if there is no such email address.
+        """
+
+    def getByPerson(personid):
+        """Return all email addresses for the given person."""
+
+    def getByEmail(email, default=None):
+        """Return the EmailAddress object for the given email.
+
+        Return the default value if there is no such email address.
+        """
 
 
 class ITeamMembership(Interface):
@@ -250,4 +319,19 @@ class ITeamParticipationSet(Interface):
 
     def getSubTeams(teamID):
         """Return all subteams for the specified team."""
+
+    def getSuperTeams(teamID):
+        """Return all superteams for the specified team."""
+
+    def getAllMembers(team):
+        """Return a list of (direct / indirect) members for the given team."""
+
+
+class IRequestPeopleMerge(Interface):
+    """This schema is used only because we want the PersonVocabulary."""
+
+    dupeaccount = Choice(title=_('Duplicated Account'), required=True, 
+                         vocabulary='Person',
+                         description=_("The duplicated account you found in "
+                                       "Launchpad"))
 

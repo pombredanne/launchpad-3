@@ -13,3 +13,5 @@ from canonical.publication import rootObject
 class MaloneApplication(object):
     implements(IMaloneApplication)
 
+    def __init__(self):
+        self.title = 'Malone: Bug Management in Launchpad'

@@ -7,6 +7,10 @@
 
     <browser:resource name="doap.png" file="images/doap.png" />
     
+    <content class="canonical.doap.DOAPApplication">
+        <allow interface="canonical.launchpad.interfaces.IDOAPApplication" />
+    </content>
+
     <!-- This view registers 'doap' as a suburl of RootObject. -->
     <browser:suburl
         for="canonical.publication.RootObject"

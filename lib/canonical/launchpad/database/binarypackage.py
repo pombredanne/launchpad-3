@@ -190,6 +190,7 @@ class BinaryPackageSet(object):
     def __init__(self, distrorelease, arch):
         self.distrorelease = distrorelease
         self.arch = arch
+        self.title = 'Packages in ' + distrorelease.name + ', ' +arch
 
     def findPackagesByName(self, pattern):
         """Search BinaryPackages matching pattern"""

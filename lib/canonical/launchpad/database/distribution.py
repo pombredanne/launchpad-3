@@ -85,6 +85,9 @@ class DistributionSet(object):
 
     implements(IDistributionSet)
 
+    def __init__(self):
+        self.title = "Launchpad Distributions"
+
     def __iter__(self):
         return iter(Distribution.select())
 
@@ -93,6 +96,10 @@ class DistributionSet(object):
             return Distribution.byName(name)
         except SQLObjectNotFound:
             raise KeyError, name
+
+    def get(self, distributionid):
+        """See canonical.launchpad.interfaces.IDistributionSet."""
+        return Distribution.get(distributionid)
 
     def count(self):
         return Distribution.select().count()

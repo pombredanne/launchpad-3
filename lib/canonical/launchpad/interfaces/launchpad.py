@@ -25,10 +25,13 @@ class ILaunchpadApplication(Interface):
     interface.
     """
     name = Attribute('Name')
+    title = Attribute('Title')
 
 
 class IMaloneApplication(ILaunchpadApplication):
     """Application root for malone."""
+
+    title = Attribute('Title')
 
 
 class IRosettaApplication(ILaunchpadApplication):
@@ -42,6 +45,8 @@ class IRosettaApplication(ILaunchpadApplication):
 class ISoyuzApplication(ILaunchpadApplication):
     """Application root for soyuz."""
 
+    title = Attribute("Title")
+
     def distributions():
         """Return a list of distributions that are entirely managed
         by Soyuz. This does not include distributions which are parsed by
@@ -51,9 +56,13 @@ class ISoyuzApplication(ILaunchpadApplication):
 class IDOAPApplication(ILaunchpadApplication):
     """DOAP application root."""
 
+    title = Attribute('Title')
+
 
 class IFOAFApplication(ILaunchpadApplication):
     """FOAF application root."""
+
+    title = Attribute('Title')
 
 
 class IPasswordEncryptor(Interface):
