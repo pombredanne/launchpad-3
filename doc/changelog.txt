@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-08 19:34:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1388
+
+    Summary:
+      Another couple of cases deal with by the page test output formatter.
+    Revision:
+      launchpad--devel--0--patch-1388
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--devel--0--patch-320
+       added another couple of sets of cases that the improved pagetest output can handle.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/chunkydiff.py
+     lib/canonical/tests/chunkydiff.txt
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--devel--0--patch-320
+
+
 2005-03-08 17:42:23 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1387
 
     Summary:

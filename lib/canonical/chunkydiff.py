@@ -90,8 +90,8 @@ def elided_source(tested, actual, debug=False, show=False,
                 break
 
     else:
+        # XXX: test this code path!
         output = actual
-        #raise ValueError("mixed output: %s" % resultsummary)
 
     return output
 
@@ -147,7 +147,10 @@ def find_chunk(chunk, actual, anchor_start=False, anchor_end=False,
                         #beginning_pos = actual.find(beginning)
                     break
                 else:
-                    return None
+                    beginning = ''
+                    beginning_for_regex = ''
+                    beginning_pos = 0
+                    break
             elif numfound == 1:
                 beginning_pos = re.search(
                     beginning_for_regex, actual).span()[1]
@@ -205,6 +208,10 @@ def find_chunk(chunk, actual, anchor_start=False, anchor_end=False,
                     #end_pos = actual.find(end, beginning_pos)
                     # XXX: this was wrong -- shouldn't be beginning_pos as
                     #      we've already chopped off the beginning!
+                    #      Or is it?  We chopped the beginning of the chunk,
+                    #      not the actual stuff.  So, using beginning_pos
+                    #      still holds.  Need to chop that off and add on
+                    #      its length.
                     break
                 else:
                     return None
@@ -218,7 +225,10 @@ def find_chunk(chunk, actual, anchor_start=False, anchor_end=False,
                 manyfound_end = end
                 manyfound_end_for_regex = end_for_regex
         else:
-            return None
+            if manyfound:
+                end_pos = re.search(end_for_regex, actual).start()
+            else:
+                return None
     else:
         end_pos = len(actual)
         end = ''
