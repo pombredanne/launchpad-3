@@ -75,7 +75,7 @@ class POMessage(object):
             if 'header' not in kw or type(kw['header'].nplurals) is not int:
                 raise POInvalidInputError(msg="File has plural forms, but plural-forms "
                                           "header entry is missing or invalid")
-            if len(kw['msgstrPlurals']) != kw['header'].nplurals:
+            if len(kw['msgstrPlurals']) > kw['header'].nplurals:
                 raise POInvalidInputError(lno=kw['_lineno'],
                                           msg="Bad number of plural-forms in entry "
                                           "'%s' (line %d)" % (kw['msgid'], kw['_lineno']))
@@ -728,11 +728,15 @@ if __name__ == '__main__':
         in_f = file(sys.argv[1], 'rU')
     else:
         in_f = sys.stdin
-    if len(sys.argv) > 2:
+    while len(sys.argv) > 2:
         if sys.argv[2] == '--diff':
             from cStringIO import StringIO
             do_diff = True
             out_f = StringIO()
+            del sys.argv[2]
+        if sys.argv[2] == '--debug':
+            DEBUG = True
+            del sys.argv[2]
         else:
             out_f = file(sys.argv[2], 'w')
     else:

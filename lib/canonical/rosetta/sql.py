@@ -719,7 +719,8 @@ class RosettaPOMessageSet(SQLBase):
             POMsgIDSighting.pomsgset = %d AND
             POMsgIDSighting.pomsgid = POMsgID.id AND
             POMsgIDSighting.inlastrevision = TRUE
-            ''' % self.id, clauseTables=('POMsgIDSighting',))
+            ''' % self.id, clauseTables=('POMsgIDSighting',),
+            orderBy='POMsgIDSighting.pluralform')
 
     def getMessageIDSighting(self, pluralForm, allowOld=False):
         """Return the message ID sighting that is current and has the

@@ -318,6 +318,17 @@ class POFileImporter(object):
         self.len = 0
         self.parser = POParser(translation_factory=self)
         self.person = person
+        self.header_stored = False
+
+    def store_header(self):
+        if self.header_stored or not self.parser.header:
+            return
+        self.pofile.set(
+            topComment=self.parser.header.commentText.encode('utf-8'),
+            header=self.parser.header.msgstr.encode('utf-8'),
+            headerFuzzy='fuzzy' in self.parser.header.flags,
+            pluralForms=self.parser.header.nplurals)
+        self.header_stored = True
 
     def doImport(self, filelike):
         "Import a file (or similar object)"
@@ -325,16 +336,13 @@ class POFileImporter(object):
         # what policy here? small bites? lines? how much memory do we want to eat?
         self.parser.write(filelike.read())
         self.parser.finish()
-        if not self.parser.header:
+        self.store_header()
+        if not self.header_stored:
             raise POInvalidInputError('PO file has no header', 0)
-        self.pofile.set(
-            topComment=self.parser.header.commentText.encode('utf-8'),
-            header=self.parser.header.msgstr.encode('utf-8'),
-            headerFuzzy='fuzzy' in self.parser.header.flags,
-            pluralforms=self.parser.header.nplurals)
 
     def __call__(self, msgid, **kw):
         "Instantiate a single message/messageset"
+        self.store_header()
         try:
             msgset = self.pofile[msgid]
         except KeyError:

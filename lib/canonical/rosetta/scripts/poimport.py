@@ -91,14 +91,15 @@ if __name__ == '__main__':
     bridge = PODBBridge()
     in_f = file(options.file, 'rU')
     person = RosettaPerson.get(int(options.owner))
-    transaction = get_transaction()
     try:
         print "Importing %s ..." % options.file
         bridge.imports(person, in_f, options.project, options.product,
                        options.potemplate, options.language)
+    except:
+        print "aborting database transaction"
+        get_transaction().abort()
+        raise
+    else:
         # Explicit commit added in an attempt to fix the fact that message set
         # sequence numbers are not being written to the database.
-        transaction.commit()
-    except:
-        transaction.abort()
-        raise
+        get_transaction().commit()
