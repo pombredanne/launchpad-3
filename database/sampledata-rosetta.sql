@@ -7,9 +7,15 @@
    arch-tag: 5734820d-754e-4297-bb54-fbe33b88af4c
 */
 
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín' );
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Dafydd Harries', 'Dafydd', 'Harries' );
-INSERT INTO Person ( displayname, givenname, familyname ) VALUES ( 'Lalo Martins', 'Lalo', 'Martins' );
+/* All Persons have the same password: 'test' but the encrypted string is different, only
+ * fot tests.
+ */
+INSERT INTO Person ( displayname, givenname, familyname, password )
+VALUES ( 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U' );
+INSERT INTO Person ( displayname, givenname, familyname, password )
+VALUES ( 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ' );
+INSERT INTO Person ( displayname, givenname, familyname, password )
+VALUES ( 'Lalo Martins', 'Lalo', 'Martins', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf' );
 
 INSERT INTO Project ( owner, name, displayname, title, shortdesc, description, homepageurl )
 VALUES ((SELECT id FROM Person WHERE displayname='Carlos Perelló Marín'),
