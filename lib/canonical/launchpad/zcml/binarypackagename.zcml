@@ -36,5 +36,18 @@
 
      </browser:pages>
 
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.IBinaryPackageNameSet"
+        schema="canonical.launchpad.interfaces.IBinaryPackageName"
+        label="Create a new Binary Package Name"
+        fields="name"
+        content_factory="canonical.launchpad.database.BinaryPackageName"
+        class="canonical.launchpad.browser.BinaryPackageNameAddView"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-addform.pt"
+        lp:url="binarypackagenames/+new">
+    </browser:addform>
+
 
 </configure>

@@ -4,6 +4,9 @@ from zope.interface import Interface
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
+# launchpad imports
+from canonical.launchpad.validators.name import valid_name
+
 #
 # Interface provied by a SourcePackageName. This is a tiny
 # table that allows multiple SourcePackage entities to share
@@ -13,7 +16,8 @@ class ISourcePackageName(Interface):
     """Name of a SourcePackage"""
 
     id = Int(title=_("ID"), required=True)
-    name = TextLine(title=_("Name"), required=True)
+    name = TextLine(title=_("Valid Source package name"),
+                    required=True, constraint=valid_name)
 
     def __unicode__():
         """Return the name"""

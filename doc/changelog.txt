@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-10 20:12:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1412
+
+    Summary:
+      Add sourcepackagename and binarypackagename pages implemented.
+    Revision:
+      launchpad--devel--0--patch-1412
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-462
+       Add sourcepackagename and binarypackagename pages implemented.
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-463
+       merge from rocketfuel
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/browser/binarypackagename.py
+     lib/canonical/launchpad/browser/sourcepackagename.py
+     lib/canonical/launchpad/interfaces/binarypackagename.py
+     lib/canonical/launchpad/interfaces/sourcepackagename.py
+     lib/canonical/launchpad/templates/binarypackagenames-index.pt
+     lib/canonical/launchpad/templates/sourcepackagenames-index.pt
+     lib/canonical/launchpad/zcml/binarypackagename.zcml
+     lib/canonical/launchpad/zcml/sourcepackagename.zcml
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-462
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-463
+
+
 2005-03-10 19:42:09 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1411
 
     Summary:

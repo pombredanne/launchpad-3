@@ -32,8 +32,11 @@
         <input type="text" name="name" tal:attributes="value request/name|nothing" />
         <input type="submit" value="Search"/>
       </form>
-      <br><br>
-      
+      <br>
+      <div align="right">
+        <a href="+new"><i>Add new</i></a> 
+      </div>
+
   <tal:block tal:define="bn view/sourcePackagenamesBatchNavigator;
                          prev_url bn/prevBatchURL;
                          next_url bn/nextBatchURL;">

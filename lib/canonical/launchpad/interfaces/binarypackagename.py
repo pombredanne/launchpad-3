@@ -4,13 +4,20 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
+
+# launchpad imports
+from canonical.launchpad.validators.name import valid_name
+
 #
 #
 #
 
 class IBinaryPackageName(Interface):
     id = Int(title=_('ID'), required=True)
-    name = TextLine(title=_('Name'), required=True)
+
+    name = TextLine(title=_('Valid Binary package name'),
+                    required=True, constraint=valid_name)
+
     binarypackages = Attribute('binarypackages')
 
     def nameSelector(sourcepackage=None, selected=None):

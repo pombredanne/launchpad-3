@@ -37,5 +37,17 @@
 
      </browser:pages>
 
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.ISourcePackageNameSet"
+        schema="canonical.launchpad.interfaces.ISourcePackageName"
+        label="Create a new Source Package Name"
+        fields="name"
+        content_factory="canonical.launchpad.database.SourcePackageName"
+        class="canonical.launchpad.browser.SourcePackageNameAddView"
+        permission="launchpad.Admin"
+        template="../templates/launchpad-addform.pt"
+        lp:url="sourcepackagenames/+new">
+    </browser:addform>
 
 </configure>
