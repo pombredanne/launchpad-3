@@ -57,6 +57,8 @@ class Person(SQLBase):
     def emails(self):
         return iter(self._emailsJoin)
 
+    # XXX Marius Gedminas, 2004-12-13.
+    #     the following function is buggy and untested
     def browsername(self):
         """Returns a name suitable for display on a web page."""
         if self.displayname: return self.displayname

@@ -1,0 +1,47 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="schoolbell"
+    xmlns:i18n="http://namespaces.zope.org/i18n">
+
+  <content class="canonical.calendar.FakeCalendar">
+    <allow attributes="__iter__" />
+  </content>
+  <content class="canonical.calendar.FakeEvent">
+    <allow attributes="title" />
+  </content>
+
+  <adapter
+      for="canonical.launchpad.interfaces.person.IPerson"
+      provides="schoolbell.interfaces.ICalendar"
+      factory="canonical.calendar.fakeCalendarAdapter" />
+
+  <adapter
+      for="canonical.launchpad.interfaces.person.IPersonApp"
+      provides="schoolbell.interfaces.ICalendar"
+      factory="canonical.calendar.fakeCalendarAdapter" />
+
+  <browser:page
+      for="canonical.publication.RootObject"
+      name="+calendar"
+      permission="zope.Public"
+      class="canonical.calendar.UsersCalendarTraverser" />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.person.IPersonApp"
+      name="+calendar"
+      permission="zope.Public"
+      class="canonical.calendar.CalendarAdapterTraverser" />
+
+  <browser:defaultView
+      for="schoolbell.interfaces.ICalendar"
+      name="+index" />
+
+  <browser:page
+      for="schoolbell.interfaces.ICalendar"
+      permission="zope.Public"
+      name="+index"
+      template="calendar.pt" />
+
+</configure>
