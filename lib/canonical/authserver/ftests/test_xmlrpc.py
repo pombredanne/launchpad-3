@@ -52,7 +52,15 @@ class XMLRPCTestCase(unittest.TestCase):
 
     def tearDown(self):
         # Kill the twistd process
+        pid = int(open('twistd.pid').read())
         ret = os.system('kill `cat twistd.pid`')
+        # Wait for it to actually die
+        while True:
+            try:
+                os.kill(pid, 0)
+            except OSError:
+                break
+            time.sleep(0.1)
         os.remove('twistd.log')
         self.failIf(ret)
 
