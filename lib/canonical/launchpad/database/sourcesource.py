@@ -181,6 +181,7 @@ class SourceSource(SQLBase):
 
         job.package_distro = self.packagedistro
         job.package_files = self.packagefiles_collapsed
+        job.project_id = self.project_id
         return job
 
 
