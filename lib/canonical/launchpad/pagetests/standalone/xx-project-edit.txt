@@ -1,14 +1,69 @@
 
 
   >>> print http(r"""
-  ... GET /doap/projects/mozilla/firefox/+edit HTTP/1.1
+  ... GET /doap/projects/gnome/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/doap/projects/mozilla/firefox
   ... """)
   HTTP/1.1 200 Ok
-  ...
+  Content-Length: ...
   Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
   ...
-      <h1>Edit "..." Product
-      Details</h1>
+            <h1>Edit Open Source Project Details:</h1>
+  ...
+
+
+  >>> print http(r"""
+  ... POST /doap/projects/gnome/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1917
+  ... Content-Type: multipart/form-data; boundary=---------------------------13925234164844313391724926109
+  ... Referer: http://localhost:9000/doap/projects/gnome/+edit
+  ... 
+  ... -----------------------------13925234164844313391724926109
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... GNOME
+  ... -----------------------------13925234164844313391724926109
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... The GNOME Project
+  ... -----------------------------13925234164844313391724926109
+  ... Content-Disposition: form-data; name="field.shortdesc"
+  ... 
+  ... The GNOME Project is an initiative to prduce a free desktop software framework. GNOME is more than a set of applications, it is a user interface standard (the Gnome HIG) and a set of libraries that allow applications to work together in a harmonious desktop-ish way.
+  ... -----------------------------13925234164844313391724926109
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... The Gnome Project was founded (when?) to build on the success of early applications using the Gtk GUI toolkit. Many of those applications are still part of Gnome, and the Gtk toolkit remains an essential part of Gnome.
+  ... 
+  ... Gnome applications cover the full spectrum from office productivity applications to games, digital camera applications, and of course the Gnome Panel which acts as a launcher and general access point for apps on the desktop.
+  ... -----------------------------13925234164844313391724926109
+  ... Content-Disposition: form-data; name="field.homepageurl"
+  ... 
+  ... http://www.gnome.org/
+  ... -----------------------------13925234164844313391724926109
+  ... Content-Disposition: form-data; name="field.wikiurl"
+  ... 
+  ... 
+  ... -----------------------------13925234164844313391724926109
+  ... Content-Disposition: form-data; name="field.sourceforgeproject"
+  ... 
+  ... 
+  ... -----------------------------13925234164844313391724926109
+  ... Content-Disposition: form-data; name="field.freshmeatproject"
+  ... 
+  ... 
+  ... -----------------------------13925234164844313391724926109
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------13925234164844313391724926109--
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+            <h1>Edit Open Source Project Details:</h1>
   ...

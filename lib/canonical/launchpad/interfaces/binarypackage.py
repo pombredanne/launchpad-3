@@ -10,10 +10,6 @@ from canonical.launchpad.interfaces.sourcepackage import \
      IPackageSet
 
 
-class IBinaryPackageSet(IPackageSet):
-    """A set of binary packages"""
-    
-
 #
 # Interface provided by a BinaryPackage
 #
@@ -75,6 +71,26 @@ class IPackagePublishing(Interface):
     distroarchrelease = Attribute("Distro Arch Relese")
     packages = Attribute("XXX")
 
+class IBinaryPackageSet(Interface):
+    """A set of binary packages"""
+
+    def getByName(distroreleaseID, name):
+        """Get an BinaryPackage in a DistroRelease by its name"""
+
+
+    def findByName(distroreleaseID, pattern):
+        """Returns a set o binarypackages that matchs pattern
+        inside a distrorelease"""
+
+    def getBinaryPackages(distroreleaseID):
+        """Get a set of BinaryPackages in a distrorelease"""
+    
+    def getByNameVersion(distroreleaseID, name, version):
+        """Get a set of BinaryPackages in a DistroRelease by its name and version"""
+
+    def getByArchtag(self, distroreleaseID, name, version, archtag):
+        """Get a BinaryPackage in a DistroRelease by its name, version and archtag"""
+
 
 #
 # BinaryPackages related Applications Interface
@@ -118,7 +134,7 @@ class IDistroReleaseBinaryReleaseApp(Interface):
     """A Binary Release Proxy """
     binarypackagerelease = Attribute("BinaryPackageRelease")
     version = Attribute("BinaryPackageRelease Version ?!?!")
-    sourcedistrorelease = Attribute("The DistroRelease from where the binary's SourcePackageRelease came from")
+    distrorelease = Attribute("The DistroRelease from where the binary's SourcePackageRelease came from")
     archs = Attribute("Builded archs")
     
     def __getitem__(name):

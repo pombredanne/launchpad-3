@@ -40,6 +40,7 @@ __all__ = (
 'EmailAddressStatus',
 'HashAlgorithms',
 'ImportTestStatus',
+'KarmaField',
 'ManifestEntryType',
 'MembershipRole',
 'MembershipStatus',
@@ -1645,12 +1646,51 @@ class DistributionRole(DBSchema):
     a distribution, other than being a package maintainer.
     """
 
+    DM = Item (1, """
+        Distro Master
+
+        Oversees all distribution activities.
+        """
+    )
+    SO = Item (2, """
+        Security Overlord
+
+        Ensures no sharp edges are left in the distribution.
+        """
+    )
+    PD = Item (3, """
+        Prophet of Doom
+
+        Makes hand-wavy predictions.
+        """
+    )
+
+class DistroReleaseRole(DBSchema):
+    """Distribution Role
+
+    This schema documents the roles that a person can play in
+    a distribution, other than being a package maintainer.
+    """
+
     RM = Item (1, """
         Release Manager
 
-        Release Manager"""
-    )
+        Distribution Release Manager""")
+    
+    SO = Item (2, """
+        Security Officer
 
+        Distribution Release Manager""")
+
+    BW = Item (3, """
+        Bug Wrangler
+
+        Corrals and keeps the release bugs under control""")
+
+    UB = Item (4, """
+        User Bender
+        
+        Convinces users that it's a feature""")
 
 class DOAPRole(DBSchema):
     """DOAP Role
@@ -1712,4 +1752,53 @@ class RosettaImportStatus(DBSchema):
 
         The attached rawfile import failed.
         """)
+
+
+class KarmaField(DBSchema):
+    # If you add a new Item here, please remember to add it to 
+    # canonical.launchpad.database.person.KARMA_POINTS too. 
+    # XXX: This KarmaField is a good candidate for leaving dbschema and
+    # get into the database.
+    """Karma Field
+
+    This schema documents the different kinds of Karma that can be
+    assigned to a person. A person have a list of assigned Karmas and
+    each of these Karmas have a KarmaField.
+    """
+
+    WIKI_EDIT = Item(1, """
+        Wiki Page Edited
+
+        User edited a Wiki page.
+    """)
+
+    WIKI_CREATE = Item(2, """
+        New Wiki Page
+
+        User created a new page in the Wiki.
+    """)
+
+    BUG_COMMENT = Item(3, """
+        New Comment on Bug
+
+        User posted a comment on the bug's discussion forum.
+    """)
+
+    BUG_REPORT = Item(4, """
+        Bug Report
+
+        User reported a new bug.
+    """)
+
+    BUG_FIX = Item(5, """
+        Bug Fix
+
+        User provided a patch to fix a bug.
+    """)
+
+    PACKAGE_UPLOAD = Item(6, """
+        Package Uploaded
+
+        User uploaded a new package to the system.
+    """)
 

@@ -38,3 +38,6 @@ class IBugSubscriptionSet(Interface):
     def delete(id):
         """Delete a subscription."""
 
+    def getCcEmailAddresses():
+        """Return the email addresses of the people Cc'd on
+        this bug."""

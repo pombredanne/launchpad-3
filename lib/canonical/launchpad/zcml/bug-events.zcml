@@ -8,6 +8,11 @@
    factory="canonical.launchpad.mailnotification.notify_bug_added" />
 
 <subscriber
+   for="canonical.launchpad.interfaces.IBugAddForm
+        zope.app.event.interfaces.IObjectCreatedEvent"
+   factory="canonical.launchpad.subscribers.karmasubscribers.bug_added" />
+
+<subscriber
    for="canonical.launchpad.interfaces.IBug
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_modified" />
@@ -16,6 +21,11 @@
    for="canonical.launchpad.interfaces.IBugMessage
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_comment_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.IBugMessage
+        zope.app.event.interfaces.IObjectCreatedEvent"
+   factory="canonical.launchpad.subscribers.karmasubscribers.bug_comment_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IProductBugAssignment
@@ -28,6 +38,11 @@
    factory="canonical.launchpad.mailnotification.notify_bug_assigned_product_modified" />
 
 <subscriber
+   for="canonical.launchpad.interfaces.IProductBugAssignment
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.subscribers.karmasubscribers.bug_assignment_modified" />
+
+<subscriber
    for="canonical.launchpad.interfaces.ISourcePackageBugAssignment
         zope.app.event.interfaces.IObjectCreatedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_assigned_package_added" />
@@ -36,6 +51,11 @@
    for="canonical.launchpad.interfaces.ISourcePackageBugAssignment
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
    factory="canonical.launchpad.mailnotification.notify_bug_assigned_package_modified" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.ISourcePackageBugAssignment
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.subscribers.karmasubscribers.bug_assignment_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugProductInfestation

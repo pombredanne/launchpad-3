@@ -1,0 +1,11 @@
+
+
+  >>> print http(r"""
+  ... GET /malone/bugs/+index?status=10&status=20&assignee=all&product=all&sourcepackage=all&severity=50&search=Search HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/malone/bugs
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+   <h1>Bugs</h1>
+    <small>displaying matching bugs 0 to 0 of 0</small>...

@@ -1,0 +1,124 @@
+
+This test demonstrates the reconnecting wrapper.  Compare and contrast to
+test_disconnection.txt.
+
+Make a TCP proxy to postgres.
+
+    >>> import os
+    >>> os.system('mktap portforward --port 5555 --dest_port 5432')
+    0
+    >>> os.system('twistd -of portforward.tap')
+    0
+
+Wait for the proxy to start.
+
+    >>> import time
+    >>> def wait_until_proxy_is_ready():
+    ...     start = time.time()
+    ...     while time.time() - start < 5:  # loop for a maximum of 5 seconds
+    ...         try:
+    ...             if 'Starting factory' in open('twistd.log').read():
+    ...                 return
+    ...         except IOError:
+    ...             pass
+    >>> wait_until_proxy_is_ready()
+
+Install the reconnector.
+
+    >>> from canonical.database import reconnect
+    >>> reconnect.install()
+
+You can't install the reconnector twice accidentally, though.
+
+    >>> reconnect.install()
+    Traceback (most recent call last):
+    ...
+    AlreadyInstalledError: reconnector already installed
+    
+Connect to postgres via the proxy.  This will use the reconnector.
+
+    >>> import psycopg
+    >>> import canonical.lp
+    >>> conn = psycopg.connect('dbname=%s host=localhost port=5555' % canonical.lp.dbname)
+
+Check that the connection is working normally.
+
+    >>> cur = conn.cursor()
+    >>> cur.execute("SELECT 1;")
+    >>> cur.fetchone()[0]
+    1
+
+Genuine (not connection related) errors still work normally, too.
+
+    >>> cur.execute("SELECT garbage invalid sql;")
+    Traceback (most recent call last):
+    ...
+    ProgrammingError: ERROR:  syntax error at or near "invalid" at character 16
+    <BLANKLINE>
+    SELECT garbage invalid sql;
+
+Break the connection by stopping the proxy.
+
+    >>> os.system('kill `cat twistd.pid`')
+    0
+
+Wait for the proxy to stop.
+
+    >>> import os.path
+    >>> def wait_until_proxy_is_stopped():
+    ...     start = time.time()
+    ...     while time.time() - start < 5:  # loop for a maximum of 5 seconds
+    ...         if not os.path.exists('twistd.pid'):
+    ...             return
+    >>> wait_until_proxy_is_stopped()
+
+Executing a query now blocks until the database connection can be reestablished.
+
+    >>> import threading
+    >>> thread_result = []
+    >>> def foo():
+    ...     cur.execute('SELECT 1;')
+    ...     thread_result.append(cur.fetchone()[0])
+    >>> thread = threading.Thread(target=foo)
+    >>> thread.start()
+    >>> time.sleep(1)
+    >>> thread_result
+    []
+    >>> thread.isAlive()
+    True
+
+# TODO: test that the disconnection is logged
+
+And restart it.
+
+    >>> os.system('twistd -of portforward.tap')
+    0
+    >>> wait_until_proxy_is_ready()
+
+Now using our connection should still work.
+
+    >>> cur.execute("SELECT 1;")
+    >>> cur.fetchone()[0]
+    1
+
+And our blocked thread should've finished successfully, too.
+
+    >>> thread_result
+    [1]
+    >>> thread.isAlive()
+    False
+
+XXX: Test that interrupting a transaction still fails
+
+Clean up the proxy.
+
+    >>> os.system('kill `cat twistd.pid`')
+    0
+    >>> wait_until_proxy_is_stopped()
+    >>> os.remove('twistd.log')
+    >>> os.remove('portforward.tap')
+
+Uninstall the reconnector.
+
+    >>> reconnect.uninstall()
+

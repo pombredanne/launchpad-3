@@ -13,68 +13,59 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/countryPortlet" />
+    <div tal:replace="structure view/browserLangPortlet" />
+</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
     <h1>Welcome to Rosetta!</h1>
 
-    <div class="documentDescription">
-    Rosetta is a tool for translating applications into your language. You can
-    also use it to find out whether a certain application or type of
-    application is available in your language. Use the search form below to
-    find an application, or see the <a href="about" title="About
-    Rosetta">about</a> page to find out more about Rosetta.
+    <p class="documentDescription">
+        Rosetta is a tool for translating open source applications into
+        your language. You can read more <a href="+about" title="About Rosetta">
+        about Rosetta</a> or follow the links below to start translating.
+    </p>
+
+    <ul>
+
+        <li tal:condition="not: request/lp:person">
+            You might like to
+            <a href="+login">log in</a>.
+        </li>
+
+    </ul>
+
+
+    <h1>Translatable Applications</h1>
+
+    <p>The following open source applications can currently be translated as
+    part of the Rosetta Translation Project. Select an application to
+    translate it into your own language, using only the your web
+    browser. If your favourite open source application is not listed here, you can
+    see if it is <a href="products">registered with the Launchpad</a> and
+    then start to translate it immediately!</p>
+
+    <div style="margin-left: 50px;">
+    
+        <p tal:repeat="product context/translatables">
+            <img src="/++resource++product_icon.gif"> <b><span
+            tal:replace="product/title">product title</span></b>
+            [ <a tal:attributes="href
+            string:products/${product/name}">Translate</a> ]
+            <br />
+            <span tal:replace="product/shortdesc">product
+            summary</span>
+        </p>
+
     </div>
 
-    <span tal:condition="not: request/lp:person">
-        <p>
-        You might like to
-        <a href="+login">log in</a>.
-        </p>
-    </span>
-
-    <form action="search-results"
-          method="get">
-    <fieldset>
-        <legend>Search</legend>
-
-        <div class="field">
-            <label>Project name</label>
-            <div class="formHelp">
-            Enter the name or type of project.
-            </div>
-            <input name="q" type="text" />
-            <a href="search">Advanced Search</a>
-        </div>
-
-        <div class="formControls">
-            <input type="submit" value="Search" />
-        </div>
-    </form>
-
-    <h1>Translatable packages in Ubuntu Linux</h1>
-
-    <table class="listing rowNavigation" id="packages-list">
-        <thead>
-            <th>Package</th>
-            <th>Description</th>
-        </thead>
-
-        <tbody>
-            <tr tal:attributes="onclick string:window.location='projects/gnome/gnome-panel';">
-                <td><a href="projects/gnome/gnome-panel">GNOME Panel</a></td>
-                <td>Launch and/or dock GNOME applications</td>
-            </tr>
-
-            <tr class="even"
-                tal:attributes="onclick string:window.location='projects/gnome/gnome-applets';">
-                <td><a href="projects/gnome/gnome-applets">GNOME Applets</a></td>
-                <td>Various applets for GNOME panel</td>
-            </tr>
-        </tbody>
-
-    </table>
-
+    <p>Find or register <a href="products">another open source
+    application</a> for translation.</p>
 
 </div>
 

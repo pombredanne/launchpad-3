@@ -11,7 +11,8 @@ from canonical.lp import dbschema
 
 # interfaces and database 
 from canonical.launchpad.interfaces import IBinaryPackage, \
-                                           IBinaryPackageName
+                                           IBinaryPackageName,\
+                                           IBinaryPackageSet
 # The import is done inside BinaryPackage.maintainer to avoid circular import
 ##from canonical.launchpad.database.sourcepackage import SourcePackageRelease
 
@@ -77,16 +78,20 @@ class BinaryPackage(SQLBase):
              SourcePackageRelease
         clauseTables = ('SourcePackagePublishing',)
         
+        # XXX: Daniel Debonzi 2004-12-03
+        # Check if the orderBy is working properly
+        # as soon as we have enought data in db.
+        # Anyway, seems to be ok
         last = list(SourcePackageRelease.select(
             'SourcePackagePublishing.sourcepackagerelease=SourcePackageRelease.id'
             ' AND SourcePackagePublishing.distrorelease = %d'
             ' AND SourcePackageRelease.sourcepackage = %d'
             ' AND SourcePackagePublishing.status = %d'
-            ' ORDER BY sourcePackageRelease.dateuploaded DESC'
             % (distroRelease.id,
                self.build.sourcepackagerelease.sourcepackage.id,
                dbschema.PackagePublishingStatus.SUPERCEDED),
-            clauseTables=clauseTables))
+            clauseTables=clauseTables,
+            orderBy='sourcePackageRelease.dateuploaded'))
         if last:
             return last
         else:
@@ -100,11 +105,51 @@ class BinaryPackage(SQLBase):
 
     pkgpriority = property(_priority)
 
-    #
-    # BinaryPackage Class Methods
-    #
+class BinaryPackageName(SQLBase):
+    _table = 'BinaryPackageName'
+    name = StringCol(dbName='name', notNull=True)
 
-    def findBinariesByName(klass, distrorelease, pattern):
+    # Got from BinaryPackageName class
+    binarypackages = MultipleJoin(
+            'BinaryPackage', joinColumn='binarypackagename'
+            )
+    ####
+
+class BinaryPackageSet(object):
+    """A set for BinaryPackage objects."""
+
+    implements(IBinaryPackageSet)
+
+    def getByName(self, distroreleaseID, name, version=None, archtag=None):
+        """Get an BinaryPackage in a DistroRelease by its name"""
+
+        clauseTables = ('PackagePublishing', 'DistroArchRelease',
+                        'BinaryPackage', 'BinaryPackageName')
+
+        query = (
+            'PackagePublishing.binarypackage = BinaryPackage.id AND '
+            'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
+            'DistroArchRelease.distrorelease = %d AND '
+            'BinaryPackage.binarypackagename = BinaryPackageName.id '
+            'AND BinaryPackageName.name = %s '
+            %(distroreleaseID, quote(name))
+            )
+
+        if version:
+            query += ('AND BinaryPackage.version = %s '
+                      %quote(version))
+        if archtag:
+            query += ('AND DistroArchRelease.architecturetag = %s '
+                      %quote(archtag))
+            
+        return BinaryPackage.select(query, clauseTables=clauseTables)
+        
+
+    def findByName(self, distroreleaseID, pattern):
+        """Returns a set o binarypackages that matchs pattern
+        inside a distrorelease"""
+
+    
         pattern = pattern.replace('%', '%%')
 
         clauseTables = ('PackagePublishing', 'DistroArchRelease',
@@ -117,39 +162,17 @@ class BinaryPackage(SQLBase):
         'BinaryPackage.binarypackagename = BinaryPackageName.id '
         'AND (BinaryPackageName.name ILIKE %s '
         'OR BinaryPackage.shortdesc ILIKE %s)'
-        %(distrorelease.id,
+        %(distroreleaseID,
           quote('%%' + pattern + '%%'),
           quote('%%' + pattern + '%%'))
         )
 
-        # FIXME: (SQLObject_Selection+batching) Daniel Debonzi - 2004-10-13
-        # The selection is limited here because batching and SQLObject
-        # selection still not working properly. Now the days for each
-        # page showing BATCH_SIZE results the SQLObject makes queries
-        # for all the related things available on the database which
-        # presents a very slow result.
-        # Is those unique ?
-        return klass.select(query,
-                            clauseTables=clauseTables,
-                            orderBy='BinaryPackageName.name')
-    findBinariesByName = classmethod(findBinariesByName)
+        return BinaryPackage.select(query,
+                                    clauseTables=clauseTables,
+                                    orderBy='BinaryPackageName.name')
 
-    def getBinariesByName(klass, distrorelease, name):
-        clauseTables = ('PackagePublishing', 'DistroArchRelease',
-                        'BinaryPackage', 'BinaryPackageName')
-
-        query = (
-            'PackagePublishing.binarypackage = BinaryPackage.id AND '
-            'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
-            'DistroArchRelease.distrorelease = %d AND '
-            'BinaryPackage.binarypackagename = BinaryPackageName.id '
-            'AND BinaryPackageName.name = %s '
-            %(distrorelease.id, quote(name))
-            )
-        return klass.select(query, clauseTables=clauseTables)
-    getBinariesByName = classmethod(getBinariesByName)
-    
-    def getBinaries(klass, distrorelease):
+    def getBinaryPackages(self, distroreleaseID):
+        """Get a set of BinaryPackages in a distrorelease"""
         clauseTables = ('PackagePublishing', 'DistroArchRelease',
                         'BinaryPackageName')
         
@@ -157,52 +180,16 @@ class BinaryPackage(SQLBase):
                  'PackagePublishing.distroarchrelease = DistroArchRelease.id AND '
                  'DistroArchRelease.distrorelease = %d AND '
                  'BinaryPackage.binarypackagename = BinaryPackageName.id'
-                 % distrorelease.id
+                 % distroreleaseID
                  )
 
-        # FIXME: (distinct_query) Daniel Debonzi 2004-10-13
-        # FIXME: (SQLObject_Selection+batching)
-        # they were LIMITED by hand
-        return klass.select(query,clauseTables=clauseTables,
-                            orderBy='BinaryPackageName.name')
-
-    getBinaries = classmethod(getBinaries)
+        return BinaryPackage.select(query,clauseTables=clauseTables,
+                                    orderBy='BinaryPackageName.name')
         
-    def getByVersion(klass, binarypackages, version):
-        """From get given BinaryPackageSelection get the one with version"""
-        clauseTables = ('PackagePublishing', 'DistroArchRelease',
-                        'BinaryPackageName',)
+    def getByNameVersion(self, distroreleaseID, name, version):
+        """Get a set of  BinaryPackages in a DistroRelease by its name and version"""
+        return self.getByName(distroreleaseID, name, version)
 
-        query = binarypackages.clause + \
-                ' AND BinaryPackage.version = %s' %quote(version)
-        return klass.select(query, clauseTables=clauseTables)
-
-    getByVersion = classmethod(getByVersion)
-
-    def selectByArchtag(klass, binarypackages, archtag):
-        """Select from a give BinaryPackage.SelectResult BinaryPackage with
-        archtag"""
-        clauseTables = ('SourcePackagePublishing', 'DistroArchRelease',
-                        'BinaryPackage', 'Build', 'PackagePublishing',
-                        'DistroArchRelease', 'BinaryPackageName',)
-
-        query = binarypackages.clause + \
-                ' AND DistroArchRelease.architecturetag = %s' %quote(archtag)
-        return klass.select(query, clauseTables=clauseTables)[0]
-        
-    selectByArchtag = classmethod(selectByArchtag)
-
-
-class BinaryPackageName(SQLBase):
-    _table = 'BinaryPackageName'
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-    ]
-
-    # Got from BinaryPackageName class
-    binarypackages = MultipleJoin(
-            'BinaryPackage', joinColumn='binarypackagename'
-            )
-    ####
-
-
+    def getByArchtag(self, distroreleaseID, name, version, archtag):
+        """Get a BinaryPackage in a DistroRelease by its name, version and archtag"""
+        return self.getByName(distroreleaseID, name, version, archtag)[0]

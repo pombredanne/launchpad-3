@@ -139,6 +139,12 @@ class IPOTemplate(IRosettaStats):
 class IEditPOTemplate(IPOTemplate):
     """Edit interface for an IPOTemplate."""
 
+    rawfile = Attribute("The pot file itself in raw mode.")
+
+    rawimporter = Attribute("The person that attached the rawfile.")
+    
+    daterawimport = Attribute("The date when the rawfile was attached.")
+            
     rawimportstatus = Attribute("""The status of the import: 0 pending import, 1
         imported, 2 failed.""")
 
@@ -174,6 +180,9 @@ class IEditPOTemplate(IPOTemplate):
 
         Returns the newly created message set.
         """
+
+    def doRawImport():
+        """Executes the import of the rawfile field if it's needed."""
 
 
 class IPOTMsgSet(Interface):
@@ -213,6 +222,12 @@ class IPOTMsgSet(Interface):
         given language.
 
         XXX: This is quite UI-oriented. Refactor?
+        """
+
+    def poMsgSet(language, variant=None):
+        """
+        Retrieve the PO message set corresposponding to this template message
+        set for the given language and variant, if it exists.
         """
 
 
@@ -352,6 +367,11 @@ class IPOFile(IRosettaStats):
         """Gives all pofiles that have a rawfile pending of import into
         Rosetta."""
 
+    def lastChangedSighting():
+        """Of all the translation sightings belonging to PO messages sets
+        belonging to this PO file, return the one which was most recently
+        modified (greatest datelastactive), or None if there are no sightings
+        belonging to this PO file."""
 
 
 class IEditPOFile(IPOFile):
@@ -383,6 +403,9 @@ class IEditPOFile(IPOFile):
         Returns the newly created message set.
         """
 
+    def doRawImport():
+        """Executes the import of the rawfile field if it's needed."""
+
 
 class IPOMsgSet(Interface):
     sequence = Attribute("The ordering of this set within its file.")
@@ -402,7 +425,7 @@ class IPOMsgSet(Interface):
 
     potmsgset = Attribute("The msgid set that is translating this set.")
 
-    def pluralForms():
+    def pluralforms():
         """Number of translations that have to point to this message set
         for it to be complete."""
 
@@ -422,6 +445,9 @@ class IEditPOMsgSet(IPOMsgSet):
 
     fuzzy = Attribute("""Whether this set was marked as fuzzy in the PO file 
         it came from.""")
+
+    def updateTranslation(person, new_translations, fuzzy, fromPOFile=False):
+        """foo"""
 
     def makeTranslationSighting(person, text, pluralForm, update=False, fromPOFile=False):
         """Return a new translation sighting that points back to us.

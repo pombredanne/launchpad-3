@@ -2,7 +2,6 @@ lib/canonical/arch/Makefile a28009ff-8549-499e-ba4c-df39e069ff02
 lib/canonical/arch/__init__.py 968155c0-f32b-4ca1-a579-1722c98bb117
 lib/canonical/arch/broker.py 27f07153-69b6-4ddb-b704-eaabcca57e3e
 lib/canonical/arch/infoUpdater.py 5ce06dae-6ab3-4397-8ff2-e7fec441857f
-lib/canonical/arch/tests/__init__.py bb3221ff-f342-4fe6-8fd9-de7770b54bf7
 lib/canonical/arch/tests/test_broker.py a1262849-780c-4124-9a58-19256ca74c1b
 lib/canonical/arch/tests/test_database.py 794e491c-ce40-4a66-a325-72984e7dbbbd
 lib/canonical/arch/tests/test_framework.py 7dec9a9d-a8c2-465e-8843-7b2204c1f85c
@@ -20,10 +19,7 @@ lib/canonical/lucille/tests/test_utils.py 90e6eb79-83a2-47e8-9f8b-3c687079c923
 lib/canonical/lucille/utils.py fbcb5758-d345-4610-8e57-8cc664a376bc
 lib/canonical/rosetta/browser.py db407517-732d-47e3-a4c1-c1f8f9dece3a
 lib/canonical/rosetta/docs/poexport.txt 06f3feef-229e-42b9-a9d5-ab8c3758a23b
-lib/canonical/rosetta/domain.py d84c3aaa-f65c-49eb-aeea-47ef2bb559c7
-lib/canonical/rosetta/pages.zcml bd9952cf-5198-4ab5-a97f-8d2d9893b313_-->
 lib/canonical/rosetta/poexport.py aef7f683-dbd0-46d0-944d-6442bfdbdb13
-lib/canonical/rosetta/resources.zcml 0f9efb09-00d3-48dd-b5e7-711a9ed3612b_-->
 lib/canonical/rosetta/scripts/createproduct.py 6ff81610-1bc0-4c22-960c-4e0c2f33c0c9
 lib/canonical/rosetta/scripts/createproject.py b9019fba-02b5-4d42-87e4-39b4754da09b
 lib/canonical/rosetta/scripts/createtemplate.py 34a8f99d-a803-4392-994f-c85ebb8b6fcc
@@ -56,11 +52,9 @@ lib/canonical/sourcerer/util/path.py 3e9ad404-ac5f-4e34-a0ef-91ac84ca0d5a
 lib/canonical/sourcerer/util/tarball.py bdaad292-b07c-4e93-b549-35660b067402
 lib/canonical/soyuz/Makefile 4d44b2e9-d976-44a5-8160-2dc9ccc73d2b
 lib/canonical/soyuz/README.txt 465e24f1-99dd-4813-af4e-62f679adde02
-lib/canonical/soyuz/__init__.py 095a4ca8-1a0f-4287-bb2d-fdd0d48b576b
-lib/canonical/soyuz/browser.py 985007b4-9c10-4601-b3ce-bdb03576569f
-lib/canonical/soyuz/configure.zcml 49ae2d27-b8d1-40f1-a5f3-358c696b767f_-->
-lib/canonical/soyuz/pages.zcml d60390fd-285e-4aa1-844e-24e11159e74c_-->
-lib/canonical/soyuz/resources.zcml 844b6d1e-43ec-46dd-baa0-e4b03661c6cf_-->
+lib/canonical/soyuz/init.py.oldtag 095a4ca8-1a0f-4287-bb2d-fdd0d48b576b
+lib/canonical/soyuz/configure.zcml.oldtag 49ae2d27-b8d1-40f1-a5f3-358c696b767f_-->
+lib/canonical/soyuz/resources.zcml.oldtag 844b6d1e-43ec-46dd-baa0-e4b03661c6cf_-->
 utilities/arch/daf/arch-revert f9a6c8bf-f1dc-44e4-9ebd-0e07da32bb87
 utilities/arch/daf/arch-submit-merge be760a18-f617-409a-9d4a-b7827e727d5c
 utilities/arch/dsilvers/README e44a1be4-db60-4cae-a0fc-4f8f66ac72b9

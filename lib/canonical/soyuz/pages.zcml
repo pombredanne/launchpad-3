@@ -2,331 +2,340 @@
            xmlns:lp="http://launchpad.canonical.com">
 
 
-  <pages for="canonical.soyuz.SoyuzApplication"
-         permission="zope.Public">
-    <page name="index.html"
-          template="../launchpad/templates/soyuz-index.pt"
-          lp:url="Soyuz/index.html"
-          />
-  </pages>
-
   <!-- This view registers 'distros' RootObject/soyuz/distros/. -->
 
-  <traverse for="canonical.soyuz.distroapp.DistrosApp" getter="__getitem__" />
-  <pages for="canonical.soyuz.distroapp.DistrosApp"
-         permission="zope.Public"
-	 allowed_attributes="results">
-    <page name="index.html"
-          template="../launchpad/templates/distros-index.pt"
-          lp:url="Soyuz/distros/index.html"
-          />
-  </pages>
+    <traverse
+        for="canonical.soyuz.distroapp.DistrosApp"
+        getter="__getitem__" />
 
-  <page for="canonical.soyuz.distroapp.DistrosApp"
-         permission="zope.Public"
-	 class="canonical.soyuz.browser.DistrosSearchView"
-	 template="../launchpad/templates/distro-search.pt"
-         lp:url="Soyuz/distros/+search"
-	 name="+search"
-       />
+    <pages
+        for="canonical.soyuz.distroapp.DistrosApp"
+        permission="zope.Public"
+	    allowed_attributes="results">
+        
+        <page
+            name="index.html"
+            template="../launchpad/templates/distros-index.pt"
+            lp:url="Soyuz/distros/index.html"
+            />
+    </pages>
 
-  <page for="canonical.soyuz.distroapp.DistrosApp"
-         permission="launchpad.AnyPerson"
-	 class="canonical.soyuz.browser.DistrosAddView"
-	 template="../launchpad/templates/distro-add.pt"
-         lp:url="Soyuz/distros/+add"
-	 name="+add"
-       />
+    <page
+        for="canonical.soyuz.distroapp.DistrosApp"
+        permission="zope.Public"
+	    class="canonical.launchpad.browser.DistrosSearchView"
+	    template="../launchpad/templates/distro-search.pt"
+        lp:url="Soyuz/distros/+search"
+	    name="+search"
+        />
+
+    <page
+        for="canonical.soyuz.distroapp.DistrosApp"
+        permission="launchpad.AnyPerson"
+	    class="canonical.launchpad.browser.DistrosAddView"
+	    template="../launchpad/templates/distro-add.pt"
+        lp:url="Soyuz/distros/+add"
+	    name="+add"
+        />
 
 
-  <!-- This view registers 'releases' as 'traverse' of
+    <!-- This view registers 'releases' as 'traverse' of
 	        	     RootObject/soyuz/distros/$Distribution.name/. -->
-  <traverse for="canonical.soyuz.distroapp.DistroApp" getter="getReleaseContainer" />
-   <pages for="canonical.soyuz.distroapp.DistroApp"
-	  permission="zope.Public"
-	  allowed_attributes="results context">
-
-	<page  name="index.html"
-          template="../launchpad/templates/distro-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/index.html"
-	/>
-	<page  name="bugs"
-          template="../launchpad/templates/distro-bugs.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/+bugs"
-	/>
-	<page  name="translations"
-          template="../launchpad/templates/distro-translations.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/translations"
-	/>
-  </pages>
-
-  <page for="canonical.soyuz.distroapp.DistroApp"
-         permission="launchpad.AnyPerson"
-	 class="canonical.soyuz.browser.DistrosEditView"
-	 name="+edit"
-	 template="../launchpad/templates/distro-edit.pt"
-	 lp:url="Soyuz/distros/$Distribution.name/+edit"
-	/>
-
-
-  <traverse for="canonical.soyuz.distroapp.DistroReleasesApp" getter="__getitem__" />
-
-   <pages for="canonical.soyuz.distroapp.DistroReleasesApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/releases-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/index.html"
-	/>
-  </pages>
-
-	<page for="canonical.soyuz.distroapp.DistroReleasesApp"
-	  permission="zope.Public"
-	  class="canonical.soyuz.browser.ReleasesAddView"
-	  name="+new"
-          template="../launchpad/templates/release-new.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+new"
-	/>
-
-
-
-   <pages for="canonical.soyuz.distroapp.DistroReleaseApp"
-	  allowed_attributes="results sources binaries"
-	  class="canonical.soyuz.browser.DistroReleaseView"
-	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/release-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/index.html"
-	/>
-	<page  name="+deliver"
-          template="../launchpad/templates/release-deliver.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+deliver"
-	/>
-	<page
-	  name="+bugs"
-          template="../launchpad/templates/release-bugs.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+bugs"
-	/>
-	<page  name="+translations"
-          template="../launchpad/templates/release-translations.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+translations"
-	/>
-  </pages>
-
-	<page for="canonical.soyuz.distroapp.DistroReleaseApp"
-	  permission="launchpad.AnyPerson"
-	  class="canonical.soyuz.browser.ReleaseEditView"
-	  name="+edit"
-          template="../launchpad/templates/release-edit.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+edit"
-	/>
-
-	<page for="canonical.soyuz.distroapp.DistroReleaseApp"
-	  permission="zope.Public"
-	  class="canonical.soyuz.browser.ReleaseSearchView"
-	  name="+search"
-          template="../launchpad/templates/release-search.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+search"
-	/>
-
-
-
-<traverse for="canonical.soyuz.sourcepackageapp.DistroSourcesApp" getter="__getitem__" />
-
-   <pages for="canonical.soyuz.sourcepackageapp.DistroSourcesApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/distroreleases-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/index.html"
-	/>
-   </pages>
-
-<traverse for="canonical.soyuz.sourcepackageapp.DistroReleaseSourcesApp"
-                                          getter="__getitem__" />
-   <pages for="canonical.soyuz.sourcepackageapp.DistroReleaseSourcesApp"
-	  allowed_attributes="results"
-          class="canonical.soyuz.browser.DistroReleaseSourcesView"
-	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/sourcepackage-list.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/index.html"
-	/>
-   </pages>
-
-  <page for="canonical.soyuz.sourcepackageapp.DistroReleaseSourcesApp"
-         permission="zope.Public"
-	 class="canonical.soyuz.browser.DistrosReleaseSourcesSearchView"
-	 template="../launchpad/templates/sourcepackage-search.pt"
-         lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/+search"
-	 name="+search"
-       />
-
-<traverse for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceApp"
-                                          getter="__getitem__" />
-   <pages for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceApp"
-	  allowed_attributes="results"
-	  class="canonical.soyuz.browser.DistroReleaseSourceView"
-	  permission="launchpad.AnyPerson">
-     <page  name="index.html"
-            template="../launchpad/templates/soyuz-sourcepackage-index.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/index.html"
-	/>
+    <traverse
+        for="canonical.soyuz.distroapp.DistroApp"
+        getter="getReleaseContainer" />
     
-     <page  name="+buildlog"
+    <pages
+        for="canonical.soyuz.distroapp.DistroApp"
+	    permission="zope.Public"
+	    allowed_attributes="results context">
+	    <page
+            name="bugs"
+            template="../launchpad/templates/distro-bugs.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/+bugs"
+	        />
+	    <page
+            name="translations"
+            template="../launchpad/templates/distro-translations.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/translations"
+	        />
+    </pages>
+
+    <page
+        for="canonical.soyuz.distroapp.DistroApp"
+        permission="zope.Public"
+	    class="canonical.launchpad.browser.AddDistroRoleView"
+        name="index.html"
+        template="../launchpad/templates/distro-index.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/index.html"
+        />
+
+
+    <page
+        for="canonical.soyuz.distroapp.DistroApp"
+        permission="launchpad.Edit"
+	    class="canonical.launchpad.browser.DistrosEditView"
+	    name="+edit"
+	    template="../launchpad/templates/distro-edit.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/+edit"
+        />
+
+
+    <traverse
+        for="canonical.soyuz.distroapp.DistroReleasesApp"
+        getter="__getitem__" />
+
+    <pages
+        for="canonical.soyuz.distroapp.DistroReleasesApp"
+	    allowed_attributes="results"
+	    permission="zope.Public">
+    
+        <page
+            name="index.html"
+            template="../launchpad/templates/releases-index.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/index.html"
+	        />
+
+    </pages>
+
+
+	<page
+        for="canonical.soyuz.distroapp.DistroReleasesApp"
+	    permission="launchpad.Admin"
+	    class="canonical.launchpad.browser.ReleasesAddView"
+	    name="+new"
+        template="../launchpad/templates/release-new.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+new"
+	    />
+
+
+
+    <pages
+        for="canonical.soyuz.distroapp.DistroReleaseApp"
+	    allowed_attributes="results sources binaries"
+	    class="canonical.launchpad.browser.DistroReleaseView"
+	    permission="zope.Public">
+
+	    <page
+            name="+deliver"
+            template="../launchpad/templates/release-deliver.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+deliver"
+	        />
+	    <page
+	        name="+bugs"
+            template="../launchpad/templates/release-bugs.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+bugs"
+	        />
+	    <page
+            name="+translations"
+            template="../launchpad/templates/release-translations.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+translations"
+	        />
+    </pages>
+
+	<page
+        for="canonical.soyuz.distroapp.DistroReleaseApp"
+	    permission="zope.Public"
+	    name="index.html"
+        template="../launchpad/templates/release-index.pt"
+	    class="canonical.launchpad.browser.AddDistroReleaseRoleView"
+	    lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/index.html"
+	    />
+
+
+	<page
+        for="canonical.soyuz.distroapp.DistroReleaseApp"
+	    permission="launchpad.Edit"
+	    class="canonical.launchpad.browser.ReleaseEditView"
+	    name="+edit"
+        template="../launchpad/templates/release-edit.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+edit"
+	    />
+
+	<page
+        for="canonical.soyuz.distroapp.DistroReleaseApp"
+	    permission="zope.Public"
+	    class="canonical.launchpad.browser.ReleaseSearchView"
+	    name="+search"
+        template="../launchpad/templates/release-search.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/releases/$Release.name/+search"
+	    />
+
+    <traverse
+        for="canonical.soyuz.sourcepackageapp.DistroSourcesApp"
+        getter="__getitem__" />
+
+    <pages
+        for="canonical.soyuz.sourcepackageapp.DistroSourcesApp"
+	    allowed_attributes="results"
+	    permission="zope.Public">
+
+	    <page
+            name="index.html"
+            template="../launchpad/templates/distro-sources.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/index.html"
+	        />
+    </pages>
+
+    <traverse
+        for="canonical.soyuz.sourcepackageapp.DistroReleaseSourcesApp"
+        getter="__getitem__" />
+
+    <pages
+        for="canonical.soyuz.sourcepackageapp.DistroReleaseSourcesApp"
+	    allowed_attributes="results"
+        class="canonical.launchpad.browser.DistroReleaseSourcesView"
+	    permission="zope.Public">
+
+	    <page
+            name="index.html"
+            template="../launchpad/templates/release-sources.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/index.html"
+	        />
+    </pages>
+
+    <traverse
+        for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceApp"
+        getter="__getitem__" />
+
+    <pages
+        for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceApp"
+	    allowed_attributes="results"
+	    class="canonical.launchpad.browser.DistroReleaseSourceView"
+	    permission="launchpad.AnyPerson">
+        <page
+            name="index.html"
+            template="../launchpad/templates/sourcepackage-index.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/index.html"
+	        />
+    
+        <page
+            name="+buildlog"
             template="../launchpad/templates/sourcepackage-buildlog.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/+buildlog"
-	/>
+	        lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/+buildlog"
+	        />
 
-   </pages>
+    </pages>
 
 
-<traverse for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseApp"
-					  getter="__getitem__" />
+    <traverse
+        for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseApp"
+        getter="__getitem__" />
 
-   <pages for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
+    <pages
+        for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseApp"
+	    allowed_attributes="results"
+	    permission="zope.Public">
 
-     <page  name="index.html"
+        <page
+            name="index.html"
             template="../launchpad/templates/sourcepackagerelease-index.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/index.html"
-	    />
+	        lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/index.html"
+	        />
 
-     <page  name="+changelog"
+        <page
+            name="+changelog"
             template="../launchpad/templates/sourcechangelog-index.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+changelog"
-	    />
+	        lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+changelog"
+	        />
 
-     <page  name="+buildlog"
+        <page
+            name="+buildlog"
             template="../launchpad/templates/sourcepackagerelease-buildlog.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+buildlog"
+	        lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/+buildlog"
+	        />
+
+    </pages>
+
+    <traverse
+        for="canonical.soyuz.binarypackageapp.DistroBinariesApp" 
+	    getter="__getitem__" />
+
+    <pages
+        for="canonical.soyuz.binarypackageapp.DistroBinariesApp"
+	    allowed_attributes="results"
+	    permission="zope.Public">
+
+	    <page
+            name="index.html"
+            template="../launchpad/templates/binary-index.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/index.html"
+	        />
+    </pages>
+
+
+    <traverse
+        for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp" 
+        getter="__getitem__" />
+
+    <page
+        for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp"
+	    allowed_attributes="results"
+	    permission="zope.Public"
+	    name="index.html"
+        class="canonical.launchpad.browser.DistroReleaseBinariesView"
+        template="../launchpad/templates/binarypackage-list.pt"
+	    lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/index.html"
 	    />
 
-   </pages>
+    <page
+        for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp"
+        permission="zope.Public"
+	    class="canonical.launchpad.browser.DistrosReleaseBinariesSearchView"
+	    template="../launchpad/templates/binarypackage-search.pt"
+        lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/+search"
+	    name="+search"
+        />
 
 
-   <pages for="canonical.soyuz.sourcepackageapp.DistroReleaseSourceReleaseBuildApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
+    <traverse
+        for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryApp"
+        getter="__getitem__" />
 
-     <page  name="index.html"
-            template="../launchpad/templates/sourcepackagebuild-index.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/index.html"
-	    />
+    <pages
+        for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryApp"
+	    allowed_attributes="results"
+	    permission="zope.Public">
 
-     <page  name="+changes"
-            template="../launchpad/templates/sourcepackagebuild-changes.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+changes"
-	    />
+	    <page
+            name="index.html"
+            template="../launchpad/templates/binarypackage-index.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/index.html"
+	        />
+    </pages>
 
-     <page  name="+buildlog"
-            template="../launchpad/templates/sourcepackagebuild-buildlog.pt"
-	    lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+buildlog"
-	    />
-   </pages>
+    <traverse
+        for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryReleaseApp"
+        getter="__getitem__" />
 
+    <pages
+        for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryReleaseApp"
+	    allowed_attributes="results"
+	    permission="zope.Public">
 
-<traverse for="canonical.soyuz.distroapp.DistroTeamApp" getter="__getitem__" />
+	    <page
+            name="index.html"
+            template="../launchpad/templates/binarypackagerelease-index.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/$version/index.html"
+	        />
 
-   <pages for="canonical.soyuz.distroapp.DistroTeamApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
+	    <page
+            name="+license"
+            template="../launchpad/templates/binarypackagerelease-license.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/$version/+license"
+	        />
+    </pages>
 
-	<page  name="index.html"
-          template="../launchpad/templates/team-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/team/index.html"
-	/>
-   </pages>
+    <pages
+        for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryReleaseBuildApp"
+	    allowed_attributes="results"
+	    permission="zope.Public">
 
-
-   <pages for="canonical.soyuz.distroapp.DistroReleaseTeamApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/releaseteam-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/team/$Release.name/index.html"
-	/>
-   </pages>
-
-<traverse for="canonical.soyuz.binarypackageapp.DistroBinariesApp" 
-	  getter="__getitem__" />
-
-   <pages for="canonical.soyuz.binarypackageapp.DistroBinariesApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/binary-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/index.html"
-	/>
-   </pages>
-
-
-<traverse for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp" 
-          getter="__getitem__" />
-
-   <page for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp"
-	  allowed_attributes="results"
-	  permission="zope.Public"
-	  name="index.html"
-     	  class="canonical.soyuz.browser.DistroReleaseBinariesView"
-          template="../launchpad/templates/binarypackage-list.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/index.html"
-	/>
-
-  <page for="canonical.soyuz.binarypackageapp.DistroReleaseBinariesApp"
-         permission="zope.Public"
-	 class="canonical.soyuz.browser.DistrosReleaseBinariesSearchView"
-	 template="../launchpad/templates/binarypackage-search.pt"
-         lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/+search"
-	 name="+search"
-       />
-
-
-<traverse for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryApp" getter="__getitem__" />
-
-   <pages for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/binarypackage-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/index.html"
-	/>
-   </pages>
-
-<traverse for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryReleaseApp" getter="__getitem__" />
-
-   <pages for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryReleaseApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/binarypackagerelease-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/$version/index.html"
-	/>
-
-	<page  name="+license"
-          template="../launchpad/templates/binarypackagerelease-license.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/$version/+license"
-	/>
-   </pages>
-
-   <pages for="canonical.soyuz.binarypackageapp.DistroReleaseBinaryReleaseBuildApp"
-	  allowed_attributes="results"
-	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/binarypackagebuild-index.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/$version/$archtag/index.html"
-	/>
-   </pages>
+	    <page
+            name="index.html"
+            template="../launchpad/templates/binarypackagebuild-index.pt"
+	        lp:url="Soyuz/distros/$Distribution.name/bin/$Release.name/$BinaryPackage.name/$version/$archtag/index.html"
+	        />
+    </pages>
 
 </configure>
-<!-- arch-tag: d60390fd-285e-4aa1-844e-24e11159e74c -->

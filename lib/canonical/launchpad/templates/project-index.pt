@@ -2,7 +2,25 @@
       lang="en"
       metal:use-macro="context/@@launchpad_template/master"
       i18n:domain="doap">
+
+<head>
+    <title metal:fill-slot="title">
+      Project: <span tal:replace="context/title">Project Title</span>
+      </title>
+</head>
+
 <body>
+
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure view/detailsPortlet" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+        <div tal:replace="structure view/trackersPortlet" />
+</metal:rightportlets>
+
+
 
 <div metal:fill-slot="main">
 
@@ -31,7 +49,7 @@
 
     <h2>Products</h2>
 
-    <p>This project has the following products:</p>
+    <p><span tal:replace="context/displayname">project displayname</span> has the following products:</p>
 
     <div>
 	<ul tal:repeat="product context/products">
@@ -45,25 +63,14 @@
             <br />
             <span tal:content="product/shortdesc">Product short
             description goes here.</span></li>
-            <ul tal:repeat="potemplate product/poTemplates">
-                    <li> Translations: <span tal:content="potemplate/title" /></li>
+            <ul tal:repeat="potemplate product/potemplates">
+                    <li>Translations: <span tal:content="potemplate/title" /></li>
             </ul>
 	</ul>
     </div>
     <div>
         <img src="/++resource++add.gif"><a href="+newproduct">Add a product</a>
 	</div>
-
-    <h2>Bug Trackers</h2>
-
-    <p>This project has the following bug trackers:</p>
-
-    <div>
-	<ul tal:repeat="bugtracker context/bugtrackers">
-        <li><span tal:content="bugtracker/name">$BugTracker.name</span></li>
-    </ul>
-    [ <a href="+newbugtracker">Register New Project Bug Tracker</a> ]
-    </div>
 
 </div>
 

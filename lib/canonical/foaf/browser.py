@@ -59,6 +59,7 @@ class FOAFApplicationView(object):
             self.noresults = False
             self.results = []
 
+
 class PeopleListView(object):
 
     def __init__(self, context, request):
@@ -75,13 +76,13 @@ class PeopleListView(object):
         return BatchNavigator(batch = batch,
                               request = self.request)    
 
+
 class PeopleSearchView(object):
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.results = []
-
 
     def searchPeopleBatchNavigator(self):
         name = self.request.get("name", "")
@@ -100,10 +101,10 @@ class PeopleSearchView(object):
 
     def _findPeopleByName(self, name):
         name = name.replace('%', '%%')
-        query = quote('%%'+ name.upper() + '%%')
-        return Person.select("""UPPER(displayname) LIKE %s
-        OR UPPER(teamdescription) LIKE %s ORDER by displayname"""%(query,
-                                                                   query))
+        name = quote('%%'+ name.upper() + '%%')
+        query = '''displayname ILIKE %s OR 
+                   teamdescription ILIKE %s''' % (name, name)
+        return Person.select(query, orderBy='displayname')
 
 
 class PeopleAddView(object):
@@ -113,7 +114,6 @@ class PeopleAddView(object):
         self.request = request
         self.results = []
         self.error_msg = None
-
 
     def add_action(self):
         displayname = self.request.get("displayname", "")
@@ -140,17 +140,24 @@ class PeopleAddView(object):
             return True
 
         return False
-        
-class TeamAddView(object):
+
+
+class BasePersonView(object):
+    """ A Base class for views of a specific person/team. """
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.results = []
-        self.error_msg = None
-
         self.person = IPerson(self.request.principal, None)
         self.permission = getPermission(self.person, self.context)        
+
+
+class TeamAddView(BasePersonView):
+
+    def __init__(self, context, request):
+        BasePersonView.__init__(self, context, request)
+        self.results = []
+        self.error_msg = None
 
     def add_action(self):
         enable_added = False
@@ -189,15 +196,8 @@ class TeamAddView(object):
         return enable_added
             
 
-class TeamJoinView(object):
+class TeamJoinView(BasePersonView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        self.person = IPerson(self.request.principal, None)
-
-            
     def join_action(self):
         ## XXX: (proposed+member) cprov 20041003
         ##  Join always as PROPOSED MEMBER 
@@ -220,16 +220,10 @@ class TeamJoinView(object):
         
         return False
 
-class TeamUnjoinView(object):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+class TeamUnjoinView(BasePersonView):
 
-        self.person = IPerson(self.request.principal, None)
-            
     def unjoin_action(self):
-
         if self.person:            
             teampart = TeamParticipation.selectBy(personID=self.person.id,
                                                   teamID=self.context.id)[0]
@@ -238,13 +232,12 @@ class TeamUnjoinView(object):
                                              teamID=self.context.id)[0]
             teampart.destroySelf()
             membership.destroySelf()
-            
             return True
 
         return False
         
                     
-class PersonView(object):
+class PersonView(BasePersonView):
     ## XXX:  cprov 20041101
     ## Use the already done malone portlet !!!!
     bugsPortlet = ViewPageTemplateFile(
@@ -259,51 +252,31 @@ class PersonView(object):
     membershipPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-person-membership.pt')
 
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        self.person = IPerson(self.request.principal, None)
-        self.permission = getPermission(self.person, self.context)
-        
     def is_member(self):
-
         if self.person and self.context.person.teamowner:
-
             membership = Membership.selectBy(personID=self.person.id,
                                              teamID=self.context.id)
             if membership.count() > 0:
                 return True
-        
+
         return False
 
-class PersonPackagesView(object):
+
+class PersonPackagesView(BasePersonView):
     packagesPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-person-packages.pt')
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
-        self.person = IPerson(self.request.principal, None)
-        self.permission = getPermission(self.person, self.context)
-
-
-class PersonEditView(object):
+class PersonEditView(BasePersonView):
     emailPortlet = ViewPageTemplateFile(
         '../launchpad/templates/portlet-person-email.pt')
 
     def __init__(self, context, request):
-        self.context = context
-        self.request = request
+        BasePersonView.__init__(self, context, request)
         self.results = []
-
-        user = IPerson(self.request.principal, None)
-        self.permission = getPermission(user, self.context)
+        self.permission = getPermission(self.person, self.context)
             
     def email_action(self):
-
         if not self.permission:
             return False
 
@@ -321,7 +294,6 @@ class PersonEditView(object):
             return res
 
         elif operation == 'edit' and new_email:
-
             result = EmailAddress.selectBy(email=email)[0]
             result.email = new_email 
             return result
@@ -330,10 +302,9 @@ class PersonEditView(object):
             result = EmailAddress.selectBy(email=email)[0]
             result.destroySelf()
             return True
+
         else:
             return False
-        
-
 
     def edit_action(self):
         enable_edited = False

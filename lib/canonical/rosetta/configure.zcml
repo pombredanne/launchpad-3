@@ -1,96 +1,110 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    >
+    xmlns:lp="http://launchpad.canonical.com">
 
-  <content class="canonical.rosetta.RosettaApplication">
-    <allow interface="canonical.launchpad.interfaces.IRosettaApplication" />
-  </content>
+    <content class="canonical.rosetta.RosettaApplication">
+        <allow interface="canonical.launchpad.interfaces.IRosettaApplication" />
+    </content>
 
+    <!-- This registers 'rosetta' as a suburl of RootObject. -->
+    <browser:suburl
+        for="canonical.publication.RootObject"
+        class="canonical.rosetta.RosettaApplication"
+        name="rosetta"
+        newlayer="canonical.launchpad.layers.RosettaLayer"
+        />
 
-  <!-- This view registers 'rosetta' as a suburl of RootObject. -->
-  <browser:suburl
-      for="canonical.publication.RootObject"
-      class="canonical.rosetta.RosettaApplication"
-      name="rosetta"
-      newlayer="canonical.launchpad.layers.RosettaLayer"
-      />
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="main_template"
+        template="../launchpad/templates/rosetta-main-template.pt"
+        layer="canonical.launchpad.layers.RosettaLayer"
+        />
 
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IProduct"
-      layer="canonical.launchpad.layers.RosettaLayer"
-      name="+rosetta-index"
-      />
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        name="+index"
+        />
 
-  <browser:page
-      for="*"
-      permission="zope.Public"
-      name="main_template"
-      template="../launchpad/templates/rosetta-main-template.pt"
-      layer="canonical.launchpad.layers.RosettaLayer"
-      />
-  <!-- This view registers 'projects' as a suburl of IRosettaApplication.
+    <browser:suburl
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        utility="canonical.launchpad.interfaces.IProjectSet"
+        name="projects"
+        />
 
-       Note that this time, we specify a 'utility' instead of a class.
+    <browser:suburl
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        utility="canonical.launchpad.interfaces.IProductSet"
+        name="products"
+        />
 
-       Using a utility here allows us to swap out stubs or real SQLObject
-       objects, just by changing configuration.
-    -->
-  <browser:suburl
-      for="canonical.launchpad.interfaces.IRosettaApplication"
-      utility="canonical.launchpad.interfaces.IProjectSet"
-      name="projects"
-      adaptwith="canonical.rosetta.domain.RosettaProjectSet"
-      />
+    <browser:pages
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        permission="zope.Public"
+        class="canonical.rosetta.RosettaApplicationView"
+        lp:url="Rosetta">
+        <browser:page
+            name="+index"
+            template="../launchpad/templates/rosetta-index.pt"
+            lp:url="Rosetta/+index" />
+    </browser:pages>
 
+    <browser:pages
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        permission="zope.Public"
+        lp:url="Rosetta">
+        <browser:page
+            name="+about"
+            template="../launchpad/templates/rosetta-about.pt"
+            lp:url="Rosetta/+about" />
+        <browser:page
+            name="+interest"
+            template="../launchpad/templates/project-interest.pt"
+            lp:url="Rosetta/project/+interest" />
+        <browser:page
+            name="legal"
+            template="../launchpad/templates/legal.pt"
+            lp:url="Rosetta/legal" />
+    </browser:pages>
 
-  <content class="canonical.rosetta.domain.RosettaProjectSet">
-    <allow interface="canonical.launchpad.interfaces.IProjectSet" />
-  </content>
+    <browser:page
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        permission="launchpad.AnyPerson"
+        name="maintainer"
+        template="../launchpad/templates/dashboard-maintainer.pt"
+        lp:url="Rosetta/maintainer" />
 
-  <!-- Set the default view for the rosetta application, for projects and
-       for project.
-    -->
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IRosettaApplication"
-      name="index"
-      />
-  <browser:defaultView
-      for="canonical.rosetta.domain.RosettaProjectSet"
-      name="index"
-      />
-  <browser:defaultView
-      for="canonical.rosetta.domain.RosettaProject"
-      name="index"
-      />
-  <!--
-  XXX Mark Shuttleworth comments 03/10/04:
-  This needs to specify the default view in the Rosetta
-  skin for IProduct as being name="+rosetta-index". Daf,
-  talk to Steve for details.
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IProduct"
-      name="index"
-      />
-  -->
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IPOTemplate"
-      name="index"
-      />
-  <browser:defaultView
-      for="canonical.launchpad.interfaces.IPOFile"
-      name="index"
-      />
+    <browser:pages
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        permission="launchpad.AnyPerson"
+        class="canonical.rosetta.browser.TranslatorDashboard"
+        >
+        <browser:page name="translator"
+            template="../launchpad/templates/dashboard-translator.pt"
+            lp:url="Rosetta/translator" />
+    </browser:pages>
 
-<!--
-  <adapter
-      for="canonical.rosetta.poexport.POExporter"
-      provides="canonical.launchpad.interfaces.IPOExport"
-      />
--->
+    <browser:pages
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        permission="launchpad.AnyPerson"
+        class="canonical.rosetta.browser.ViewPreferences" >
+        <browser:page
+            name="prefs"
+            template="../launchpad/templates/rosetta-preferences.pt"
+            lp:url="Rosetta/prefs" />
+    </browser:pages>
 
-  <include file="pages.zcml"/>
-  <include file="resources.zcml" />
+    <browser:pages
+        for="canonical.launchpad.interfaces.IRosettaApplication"
+        permission="launchpad.AnyPerson"
+        class="canonical.rosetta.browser.ViewImportQueue" >
+        <browser:page
+            name="+uploadqueue"
+            template="../launchpad/templates/rosetta-import-queue.pt"
+            lp:url="Rosetta/+uploadqueue" />
+    </browser:pages>
 
 </configure>
 <!-- arch-tag: aa306648-cdb7-4165-8aed-cb36ced59e2f -->

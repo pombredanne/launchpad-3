@@ -4,6 +4,9 @@
       i18n:domain="launchpad">
 
 <head>
+  <title metal:fill-slot="title"
+    tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
+  </title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
   <!-- Soyuz style sheet -->
@@ -12,154 +15,159 @@
 
 <body>
 
-<div metal:fill-slot="main">
+  <metal:leftportlets fill-slot="portlets_one">
 
-  <h1>
-    <span tal:content="context/sourcepackagerelease/sourcepackage/name">
-      TITLE
-    </span>
-    (<span tal:content="context/sourcepackagerelease/version" />)
-  </h1>
+  <tal:block tal:define="distro context/distrorelease/distribution">
+   <div class="portlet">
+    <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
 
- <fieldset>
-   <legend>
-     Source Package Release Information
-   </legend>
-   <p><b>Package name:</b> 
-      <a tal:content="context/sourcepackagerelease/sourcepackage/name"
-      tal:attributes="href
-      string:../../${context/sourcepackagerelease/sourcepackage/name}" />
+     <div class="portletBody">
 
-    <p><b>Package Creator:</b> 
-       <a
-       tal:content="context/sourcepackagerelease/creator/displayname" 
-       tal:attributes="href 
-       string:/foaf/people/${context/sourcepackagerelease/creator/name}"
-       />
+       <div class="portletContent even">
+         <ul>
+         <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
+          Homepage</a></li>
+         <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
+          Releases</a></li>
 
-    <p><b>Upload Date (UTC):</b> 
-       <span tal:content="context/sourcepackagerelease/dateuploaded">
-       UPLOADDATE</span>
+         <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
+          Source Packages</a></li>
 
-    <p><b>Urgency Level:</b>
-       <span tal:content="context/sourcepackagerelease/pkgurgency">
-       URGENCY</span>
+         <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+          Binary Packages</a></li>
 
-    <p><b>Component:</b>
-       <span tal:content="context/sourcepackagerelease/component/name">
-       Component</span>
+         </ul>
+       </div>
+     </div>  
+   </div>
 
-    <p><b>Binary Packages:</b> 
-       <ul>
-         <li tal:repeat="binary context/sourcepackagerelease/binaries" >
-          <a tal:content="binary/name"
-	  tal:attributes="href 
-	  string:../../../../bin/${context/distroreleasename}/${binary/name}"
-	  /> ( 
-          <a tal:content="binary/version"
-	  tal:attributes="href 
-	  string:../../../../bin/${context/distroreleasename}/${binary/name}/${binary/version}"
-	  /> ): <span tal:content="binary/shortdesc"/>
-         </li>
-       </ul>
+   <div class="portlet">
+    <h4>Local Links</h4>
+     <div class="portletBody">
+       <div class="portletContent even">
+         <ul>
+         <li>Source Package: <a href="../"><span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
+         </a></li>
+         </ul>
+       </div>
+     </div>  
+   </div>
+  </tal:block>
 
-    <div align="right">
-      <i>
-        <a tal:condition="context/sourcepackagerelease/changelog"
-	   href="+changelog">
-	   Changelog
-	</a>
-      <tal:dummy tal:condition="not:context/sourcepackagerelease/changelog">
-      	  No Changelog for this Source Release
-      </tal:dummy>
-      </i> 
+  </metal:leftportlets>
+
+  <div metal:fill-slot="main" id="content" class="documentEditable">
+    <div class="documentContent" id="region-content">
+
+      <h1>
+        <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
+          TITLE</span>
+        (<span tal:content="context/sourcepackagerelease/version" />)
+      </h1>
+
+      <h4>Source Package Release Information</h4>
+      <p>
+
+      <ul>
+        <li><b>Source Package:</b> 
+           <a tal:content="context/sourcepackagerelease/sourcepackage/name"
+           tal:attributes="href
+           string:../../${context/sourcepackagerelease/sourcepackage/name}" />
+
+        <li><b>Package Creator:</b> 
+           <a
+           tal:content="context/sourcepackagerelease/creator/displayname" 
+           tal:attributes="href 
+           string:/foaf/people/${context/sourcepackagerelease/creator/name}"
+           />
+
+        <li><b>Upload Date:</b> 
+           <span tal:content="context/sourcepackagerelease/dateuploaded">
+           UPLOADDATE</span> UTC
+
+        <li><b>Urgency:</b>
+           <span tal:content="context/sourcepackagerelease/pkgurgency">
+           URGENCY</span>
+
+        <li><b>Component:</b>
+           <span tal:content="context/sourcepackagerelease/component/name">
+           Component</span>
+
+        <li><b>Binary Packages</b> 
+             (<a tal:condition="context/sourcepackagerelease/changelog"
+            href="+changelog">View Changelog)</a>
+           <tal:dummy tal:condition="not:context/sourcepackagerelease/changelog">
+               No Changelog for this Source Release
+           </tal:dummy>
+
+        <ul>
+            <li tal:repeat="binary context/sourcepackagerelease/binaries" >
+             <a tal:content="binary/name"
+         tal:attributes="href 
+         string:../../../../bin/${context/distrorelease/name}/${binary/name}"
+         /> (<a tal:content="binary/version"
+         tal:attributes="href 
+         string:../../../../bin/${context/distrorelease/name}/${binary/name}/${binary/version}"
+         />): <span tal:content="binary/shortdesc"/></li>
+        </ul>
+
+        <li><b>Builds</b> 
+
+        <tal:dummy tal:condition="not:context/archs">
+          <i> No Builds Available</i>
+        </tal:dummy>(<a tal:condition="context/archs" href="+buildlog">View BuildLogs</a>)
+        <tal:dummy tal:condition="not:context/archs">
+            <i>No Build for this Source Release</i>
+        </tal:dummy>
+        <ul tal:repeat="arch context/archs">
+            <li><a tal:content="arch" tal:attributes="href arch">ARCH</a></li>
+        </ul>
+      </ul>
+
+      <div condition="context/builddepends">
+       <h4>Build Dependencies</h4>
+       <table width="100%">
+         <tr tal:condition="python: len(context.builddepends) > 0">
+           <td valign="top" tal:repeat="index python:range(3)">
+             <ul>
+               <span tal:repeat="builddepends python:context.builddepends[index]">
+                 <li>
+                   <a tal:content="builddepends/name" tal:attributes="href
+               string:../../../../bin/${context/distrorelease/name}/${builddepends/name}"/> 
+               <tal:dummy condition="builddepends/signal">
+                 (<span tal:content="builddepends/signal" /> 
+                 <span tal:content="builddepends/version" />)
+               </tal:dummy>
+                 </li>
+               </span>
+             </ul>
+           </td>
+         </tr>
+         <tr tal:condition="python: len(context.builddependsindep) > 0">
+           <td colspan="3">
+             <h5>Plataform Independent Dependencies</h5>
+           </td>
+         </tr>
+         <tr tal:condition="python: len(context.builddependsindep) > 0">
+           <td valign="top" tal:repeat="index python:range(3)">
+             <ul>
+               <span tal:repeat="builddependsindep python:context.builddependsindep[index]">
+                 <li>
+                   <a tal:content="builddependsindep/name" tal:attributes="href
+                      string:../../../../bin/${context/distrorelease/name}/${builddependsindep/name}"/> 
+                     <tal:dummy condition="builddependsindep/signal">
+                       (<span tal:content="builddependsindep/signal" /> 
+                       <span tal:content="builddependsindep/version" />)
+                     </tal:dummy>
+                  </li>
+                </span>
+              </ul>
+            </td>
+          </tr>
+        </table>
+      </div>
     </div>
-
-  </fieldset>
-
-  <table width="100%">
-    <tr>
-      <td width="50%" valign="top">
-        <h4>Build Package Dependences</h4>
-
-	<div class="dummy">
-	(XXX: Some links can be broken for sample data reasons.)
-	</div	 >
- 
-        <tal:dummy condition="context/builddepends">
-	  <ul>
-	    <span tal:repeat="builddepends context/builddepends">
-	      <li>
-	        <a tal:content="builddepends/name" tal:attributes="href
-		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
-		<tal:dummy condition="builddepends/signal">
-		  (<span tal:content="builddepends/signal" /> 
-		  <span tal:content="builddepends/version" /> )
-		</tal:dummy>
-	      </li>
-	    </span>
-	  </ul>
-	</tal:dummy>
-      </td>
-
-      <td width="50%" valign="top">
-
-        <h4>Build Package DependencesIndep</h4>
-
-	<div class="dummy">
-	  (XXX: Some links can be broken for sample data reasons.)
-	</div>
-	<tal:dummy condition="context/builddependsindep">
-	  <ul>
-	    <span
-	    tal:repeat="builddepends context/builddependsindep">
-	      <li>
-	        <a tal:content="builddepends/name" tal:attributes="href
-		string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/>
-		<tal:dummy condition="builddepends/signal">
-		  (<span tal:content="builddepends/signal" />
-		  <span tal:content="builddepends/version" /> )
-		</tal:dummy>
-	      </li>
-	    </span>
-	  </ul>
-	</tal:dummy>
-      </td>
-    </tr>
-  </table>
-
-<!-- XXX: Daniel Debonzi 2004-10-28 -->
-<!-- Is the Bugs for a SourcePackageRelease? -->
-<!--   <p><h4>Package Bugs:</h4>  -->
-<!--     <div class="dummy"> -->
-<!--       <span>#1, #2, #3</span> -->
-<!--     </div> -->
-
-  <p><h4>Builds:</h4> 
-
-   <tal:dummy tal:condition="not:context/archs">
-     <i> No Builds Available</i>
-   </tal:dummy>
-
-   <tal:block tal:repeat="arch context/archs">
-     [
-       <a tal:content="arch" tal:attributes="href arch">ARCH</a>
-     ]    
-   </tal:block>
-
-    <div align="right">
-      <i>
-        <a tal:condition="context/archs" href="+buildlog">
-	   BuildLogs
-	</a>
-
-      <tal:dummy tal:condition="not:context/archs">
-      	  <i>No Build for this Source Release</i>
-      </tal:dummy>
-      </i> 
-    </div>
-
-</div>
+  </div>
 </body>
 </html>
  

@@ -1,0 +1,36 @@
+Introduction
+============
+
+Bugs are problems reported in software. Bugs can be assigned to packages and
+products to be fixed. People can "subscribe" to bugs. This document is about
+people subscribing to bugs.
+
+Subscription Types
+==================
+
+There are three kinds of bug subscription.
+
+Cc: A Person chooses to receive notification emails related to this bug.
+
+Watch: A Person chooses to see this bug in their web reports.
+
+Ignore: A Person (e.g. a package maintainer), chooses to not receive emails
+about this bug, when normally they would have.
+
+Accessing Bug Subscriber Lists
+==============================
+
+Sometimes you'll want to know which people are subscribed to a bug. For
+example, you might want to send out a notification email to everyone that is
+Cc'd on a bug when something changes.
+
+To get the set of subscriptions to a bug, Launchpad provides an adapter from an
+IBug to an IBugSubscriptionSet.
+
+    >>> from zope.component import getAdapter
+    >>> from canonical.launchpad.database import Bug
+    >>> from canonical.launchpad.interfaces import IBugSubscriptionSet
+    >>> bug = Bug.get(1)
+    >>> subscriptions = getAdapter(bug, IBugSubscriptionSet, '')
+    >>> subscriptions.getCcEmailAddresses()
+    [u'mark@hbd.com', u'scott.james.remnant@ubuntulinux.com', u'steve.alexander@ubuntulinux.com', u'test@canonical.com']

@@ -53,12 +53,12 @@
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IProductBugAssignment"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        class="canonical.launchpad.browser.bug.BugAssignmentEditView"
         schema="canonical.launchpad.interfaces.IProductBugAssignment"
         fields="product bugstatus priority severity assignee"
         label="Edit Product Bug Assignment"
         permission="launchpad.AnyPerson"
-        template="../templates/default-editform.pt"
+        template="../templates/bugassignment-editform.pt"
         lp:url="malone/bugs/$Bug.id/productassignments/$ProductBugAssignment.id/+edit">
     </browser:editform>
 
@@ -110,12 +110,12 @@
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        class="canonical.launchpad.browser.bug.BugAssignmentEditView"
         schema="canonical.launchpad.interfaces.ISourcePackageBugAssignment"
-        fields="bugstatus priority severity binarypackagename assignee"
+        fields="sourcepackage bugstatus priority severity assignee"
         label="Edit SourcePackage Bug Assignment"
         permission="launchpad.AnyPerson"
-        template="../templates/default-editform.pt"
+        template="../templates/bugassignment-editform.pt"
         lp:url="malone/bugs/$Bug.id/sourcepackageassignments/$SourcePackageBugAssignment.id/+edit">
     </browser:editform>
 

@@ -8,13 +8,12 @@ CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean AS '
     name = args[0]
     pat = r"^[a-z0-9][a-z0-9\\+\\.\\-]+$"
     if name is None or re.match(pat, name):
-        return True
-    return False
+        return 1
+    return 0
 ' LANGUAGE plpythonu;
 
 /* A plpgsql version of the above Python, as temporary help for installations
     without working plpythonu
-*/
 SET client_min_messages TO fatal;
 CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean AS '
 DECLARE
@@ -27,6 +26,7 @@ BEGIN
 END;
 ' LANGUAGE plpgsql;
 SET client_min_messages TO notice;
+*/
 
 COMMENT ON FUNCTION valid_name(text)
     IS 'validate a name.
@@ -44,14 +44,13 @@ CREATE OR REPLACE FUNCTION valid_bug_name(text) RETURNS boolean AS '
     name = args[0]
     pat = r"^[a-z][a-z0-9\\+\\.\\-]+$"
     if name is None or re.match(pat, name):
-        return True
-    return False
+        return 1
+    return 0
 ' LANGUAGE plpythonu;
 
 
 /* A plpgsql version of the above Python, as temporary help for installations
     without working plpythonu
-*/
 SET client_min_messages TO fatal;
 CREATE OR REPLACE FUNCTION valid_bug_name(text) RETURNS boolean AS '
 DECLARE
@@ -64,6 +63,7 @@ BEGIN
 END;
 ' LANGUAGE plpgsql;
 SET client_min_messages TO notice;
+*/
 
 COMMENT ON FUNCTION valid_bug_name(text) IS 'validate a bug name
 
@@ -75,13 +75,12 @@ CREATE OR REPLACE FUNCTION valid_version(text) RETURNS boolean AS '
     name = args[0]
     pat = r"^[A-Za-z0-9\\+:\\.\\-]+$"
     if name is None or re.match(pat, name):
-        return True
-    return False
+        return 1
+    return 0
 ' LANGUAGE plpythonu;
 
 /* A plpgsql version of the above Python, as temporary help for installations
     without working plpythonu
-*/
 SET client_min_messages TO fatal;
 CREATE OR REPLACE FUNCTION valid_version(text) RETURNS boolean AS '
 DECLARE
@@ -94,6 +93,7 @@ BEGIN
 END;
 ' LANGUAGE plpgsql;
 SET client_min_messages TO notice;
+*/
 
 
 COMMENT ON FUNCTION valid_version(text) IS 'validate a version number
@@ -106,4 +106,4 @@ COMMENT ON FUNCTION valid_version(text) IS 'validate a version number
     hypens, so we cannot join the product name and the version with a hypen
     to form a unique string (we need to use a space or some other character
     disallowed in the product name spec instead';
-    
+   

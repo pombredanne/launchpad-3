@@ -30,7 +30,8 @@ from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *
 from canonical.launchpad.database.binarypackage import *
-from canonical.launchpad.database.distro import *
+from canonical.launchpad.database.distribution import *
+from canonical.launchpad.database.distrorelease import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
@@ -44,7 +45,11 @@ from canonical.launchpad.database.publishing import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
 from canonical.launchpad.database.message import *
+from canonical.launchpad.database.queue import *
+from canonical.launchpad.database.country import *
+from canonical.launchpad.database.spokenin import *
 
-
-
+# XXX old style file with all the Soyuz classes in it that still need to br
+# broken out.
+from canonical.launchpad.database.soyuz import *
 

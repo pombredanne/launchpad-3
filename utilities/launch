@@ -9,14 +9,14 @@ fi
 cd ~/projects/ubuntu/launchpad
 
 # check for loose files
-baz tree-lint -t --strict
+baz status --lint --untagged-files --strict
 if [ $? -gt 0 ]; then
   echo "You have untagged files. Please add and commit before refueling."
   exit 1
 fi
 
 # then check if there are unmerged changes
-baz changes 
+baz diff --quiet
 if [ $? -gt 0 ]; then
     echo "You've got changes! Please commit them before refueling"
     exit 1
@@ -30,4 +30,4 @@ if [ $? -gt 0 ]; then
   exit 1
 fi
 
-/home/mark/projects/ubuntu/arch-pqm/bin/arch-submit-merge "$1" pqm@chinstrap.warthogs.hbd.com
+/home/mark/projects/ubuntu/arch-pqm/bin/arch-submit-merge "$1" pqm@pqm.ubuntu.com

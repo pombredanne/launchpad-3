@@ -17,9 +17,8 @@
 
     <h1>Translator's Dashboard</h1>
 
-    <!-- XXX XXX XXX XXX -->
-    <div tal:condition="python: False">
-    <div class="rosettaDashboardElement">
+    <div>
+
         <h2>My current projects</h2>
 
         <table class="listing">
@@ -45,7 +44,8 @@
         <input type="submit" value="Remove selected project from list" />
     </div>
 
-    <div class="rosettaDashboardElement">
+    <div>
+
         <h2>Available/Recommended projects</h2>
 
         <div class="discreet">
@@ -81,16 +81,7 @@
         </table>
         <input type="submit" value="Add selected project to list" />
 
-        <!--
-        <p>
-        Is the project you're looking for not listed?
-        <a href="interest">Register interest to get the project into the system</a>
-        </p>
-        -->
-
     </div>
-    <!-- XXX XXX XXX XXX -->
-    </div> <!-- condition: python: False -->
 
     <tal:block condition="not: view/person">
         <p>
@@ -121,6 +112,7 @@
             </ul>
         </tal:block>
     </tal:block> <!-- condition: view/person -->
+
 </div>
 
 </body>

@@ -23,6 +23,12 @@ class ITeamParticipation(Interface):
     person = Attribute("Owner")
     team = Attribute("Team")
 
+class ITeamParticipationSet(Interface):
+    """A set for ITeamParticipation objects."""
+
+    def getSubTeams(self, teamID):
+        """Return all subteams for the specified team."""
+
 #
 # Team related Application Interfaces
 #

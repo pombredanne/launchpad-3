@@ -128,14 +128,18 @@ class SourcePackageVocabulary(SQLObjectVocabularyBase):
         '''
         if not query:
             return []
+        query = query.lower()
         t = self._table
         objs = [self._toTerm(r)
             for r in t.select('''
                 sourcepackage.sourcepackagename = sourcepackagename.id
-                AND sourcepackagename.name like '%%' || %s || '%%'
-                ''' % quote_like(query.lower()),
-                    ['SourcePackageName']
+                AND (
+                    sourcepackagename.name like '%%' || %s || '%%'
+                    OR sourcepackage.fti @@ ftq(%s)
                     )
+                ''' % (quote_like(query), quote(query)),
+                ['SourcePackageName']
+                )
             ]
         return objs
 
@@ -183,52 +187,31 @@ class ProductVocabulary(SQLObjectVocabularyBase):
     _table = Product
 
     def _toTerm(self, obj):
-        product = obj.name
-        project = obj.project.name
-        if product == project:
-            token = product
-        else:
-            token = '%s %s' % (project, product)
-        return SimpleTerm(obj, token, obj.title)
+        return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
-        try:
-            project, product = token.split(None,1)
-        except ValueError:
-            project = product = token # If no project, assume it eq product
-        tab = self._table
-        objs = list(tab.select('''
-            product.project = project.id
-            AND product.name = %s AND project.name = %s
-            ''' % (quote(product), quote(project)),
-            ['Product', 'Project']
-            ))
+        objs = self._table.select(self._table.q.name == token)
         if len(objs) != 1:
             raise LookupError, token
         return self._toTerm(objs[0])
 
     def search(self, query):
-        '''Returns products where the product name contains the given
-        query. Returns an empty list if query is None or an empty string.
+        '''Returns products where the product name, displayname, title,
+        shortdesc, or description contain the given query. Returns an empty list
+        if query is None or an empty string.
 
         Note that this cannot use an index - if it is too slow we need
         full text searching.
 
         '''
-        if not query:
-            return []
-        words = ["'%%" + quote_like(word)[1:-1] + "%%'"
-            for word in query.lower().split()]
-        sql = []
-        for word in words:
-            sql.append("product.name like %s" % word)
-            sql.append("project.name like %s" % word)
-        sql = 'product.project = project.id AND (%s)' % (' OR '.join(sql))
-        t = self._table
-        objs = [self._toTerm(r)
-            for r in t.select(sql, ['Product', 'Project'])
-            ]
-        return objs
+        if query:
+            query = query.lower()
+            like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+            fti_query = quote(query)
+            sql = "fti @@ ftq(%s)" % fti_query
+            return [self._toTerm(r) for r in self._table.select(sql)]
+
+        return []
 
 # We cannot refer to a BinaryPackage unambiguously by a name, as
 # we have no assurace that a generated name using $BinaryPackageName.name
@@ -274,13 +257,12 @@ class PersonVocabulary(NamedSQLObjectVocabulary):
         kw = {}
         if self._orderBy:
             kw['orderBy'] = self._orderBy
-        query = quote('%%%s%%' % quote_like(query.lower())[1:-1])
-        objs = self._table.select('''
-            lower(name) LIKE %(query)s
-            OR lower(displayname) LIKE %(query)s
-            OR lower(givenname) LIKE %(query)s
-            OR lower(familyname) LIKE %(query)s
-            ''' % vars(), **kw)
+        query = query.lower()
+        like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+        fti_query = quote(query)
+        objs = self._table.select(
+            "name LIKE %s OR fti @@ ftq(%s)" % (like_query, fti_query), **kw
+            )
         return [self._toTerm(obj) for obj in objs]
 
 
@@ -306,23 +288,18 @@ class ValidPersonVocabulary(PersonVocabulary):
         # similar) -- StuartBishop 2004/11/24
         if not query:
             return []
-        query = quote('%%%s%%' % quote_like(query.lower())[1:-1])
+        query = query.lower()
+        like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+        fti_query = quote(query)
         kw = {}
         if self._orderBy:
             kw['orderBy'] = self._orderBy
         objs = self._table.select('''
             password IS NOT NULL
-            AND (
-                lower(name) LIKE %(query)s
-                OR lower(displayname) LIKE %(query)s
-                OR lower(givenname) LIKE %(query)s
-                OR lower(familyname) LIKE %(query)s
-                )
-            ''' % vars(), **kw)
+            AND (name LIKE %s OR fti @@ ftq(%s))
+            ''' % (like_query, fti_query), **kw
+            )
         return [self._toTerm(obj) for obj in objs]
-
-
-
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     _table = ProductRelease

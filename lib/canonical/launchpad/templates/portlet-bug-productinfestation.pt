@@ -1,4 +1,5 @@
-<div>
+<div tal:condition="context/productinfestations"
+     tal:define="bug_url string:/malone/bugs/${context/id}">
     <table class="listing rowNavigation">
         <tr>
             <th>Product</th>
@@ -6,7 +7,7 @@
         </tr>
         <tr tal:repeat="prodinfest context/productinfestations"
             tal:attributes="onclick
-            string:window.location='productinfestations/${prodinfest/id}/+edit';">
+            string:window.location='$bug_url/productinfestations/${prodinfest/id}/+edit';">
           <td nowrap tal:content="python: prodinfest.productrelease.product.name + ' ' +
                                   prodinfest.productrelease.version">Apache 1.3.0</td>
           <td tal:content="prodinfest/infestationstatus/lp:BugInfestationStatus">
@@ -14,5 +15,5 @@
           </td>
         </tr>
     </table>
-    [ <a href="productinfestations/+new">Document an Infested Product Version</a> ]
+    [ <a href="#" tal:attributes="href string:$bug_url/productinfestations/+new">Document an Infested Product Version</a> ]
 </div>

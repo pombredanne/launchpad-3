@@ -10,27 +10,27 @@
 
   <h1>Revision Control Systems for the Bazaar</h1>
 
-  <form action="" method="POST">
+  <form action="" method="GET">
     <fieldset>
         <legend>Filter Criteria</legend>
 
         <div class="formControls">
-            <input type="text" name="projecttext"
-                   tal:attributes="value view/projecttext" size="60">
-            <input type="submit" name="search" value="Search" />
+            <input type="text" name="text"
+                   tal:attributes="value view/text" size="60">
+            <input type="submit" name="search" value="search" />
             <br />
-            <input type="checkbox" name="ready"
+            <input type="checkbox" name="ready" id="ready"
                    tal:attributes="checked view/ready">
-            <b>Ready</b>
-            <input type="checkbox" name="sync"
+            <label for="ready">Ready</label>
+            <input type="checkbox" name="sync" id="sync"
                    tal:attributes="checked view/sync">
-            <b>Syncing</b>
-            <input type="checkbox" name="process"
+            <label for="sync">Syncing</label>
+            <input type="checkbox" name="process" id="process"
                    tal:attributes="checked view/process">
-            <b>Processing approved</b>
-            <input type="checkbox" name="tested"
+            <label for="process">Processing approved</label>
+            <input type="checkbox" name="tested" id="tested"
                    tal:attributes="checked view/tested">
-            <b>Test successful</b>
+            <label for="tested">Test successful</label>
         </div>
 
     </fieldset>
@@ -50,7 +50,8 @@
     </tr>
     <tr tal:repeat="source batch"
         tal:attributes="onclick string:window.location='${source/name}';">
-      <td tal:content="source/product/project/name">$Project.name</td>
+      <td><span tal:condition="source/product/project"
+                tal:content="source/product/project/name">$Project.name</span></td>
       <td tal:content="source/product/name">$Product.name</td>
       <td tal:content="source/name">$SourceSource.name</td>
       <td tal:content="source/title">$SourceSource.title</td>

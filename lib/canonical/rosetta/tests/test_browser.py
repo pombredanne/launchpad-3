@@ -29,9 +29,9 @@ class DummyProduct:
 
 
 class DummyLanguage:
-    def __init__(self, code, pluralForms):
+    def __init__(self, code, pluralforms):
         self.code = code
-        self.pluralForms = pluralForms
+        self.pluralforms = pluralforms
 
 
 class DummyLanguageSet:
@@ -85,6 +85,14 @@ class DummyMsgID:
     msgid = "foo"
 
 
+class DummyPOMsgSet:
+    fuzzy = False
+    commenttext = 'foo'
+
+    def translations(self):
+        return ['bar']
+
+
 class DummyPOTMsgSet:
     id = 1
     sequence = 1
@@ -101,8 +109,8 @@ class DummyPOTMsgSet:
     def messageIDs(self):
         return [DummyMsgID()]
 
-    def translationsForLanguage(self, language):
-        return ['bar']
+    def poMsgSet(self, language):
+        return DummyPOMsgSet()
 
 
 class DummyPOTemplate:
@@ -118,7 +126,10 @@ class DummyPOTemplate:
         return [DummyPOTMsgSet(), DummyPOTMsgSet()]
 
     def __len__(self):
-        return 16
+        return 31
+
+    def hasPluralMessage(self):
+        return True
 
 
 class DummyRequest:
@@ -133,12 +144,20 @@ class DummyRequest:
         raise key
 
 def adaptRequestToLanguages(request):
-    return DummyPreferredLanguages()
+    return DummyRequestLanguages()
 
 
-class DummyPreferredLanguages:
+class DummyRequestLanguages:
+
     def getPreferredLanguages(self):
-        return ('ja',)
+        return [DummyLanguage('ja', 1),
+            DummyLanguage('es', 2),
+            DummyLanguage('fr', 3),]
+
+    def getLocalLanguages(self):
+        return [DummyLanguage('da', 4),
+            DummyLanguage('as', 5),
+            DummyLanguage('sr', 6),]
 
 
 def test_count_lines():
@@ -200,15 +219,17 @@ def test_request_languages():
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
     >>> from zope.i18n.interfaces import IUserPreferredLanguages
-
+    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
+    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
     >>> from canonical.rosetta.browser import request_languages
 
-    Frist, test with a person who has a single preferred language.
+    First, test with a person who has a single preferred language.
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
     >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
-    >>> #ztapi.provideAdapter(IUserPreferredLanguages)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
     >>> languages = request_languages(DummyRequest())
     >>> len(languages)
@@ -223,11 +244,12 @@ def test_request_languages():
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
     >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToNoLanguagePerson)
-    >>> ztapi.provideAdapter(IBrowserRequest, IUserPreferredLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
     >>> languages = request_languages(DummyRequest())
     >>> len(languages)
-    1
+    6
     >>> languages[0].code
     'ja'
 
@@ -251,47 +273,12 @@ def test_parse_cformat_string():
     ValueError: %
     '''
 
-def test_ViewProject():
+def test_RosettaProjectView():
     '''
-    >>> from canonical.rosetta.browser import ViewProject
-    >>> view = ViewProject()
-    >>> view.context = DummyProject()
-    >>> view.request = DummyRequest()
-    >>> view.thereAreProducts()
+    >>> from canonical.launchpad.browser import ProjectView
+    >>> view = ProjectView(DummyProject(), DummyRequest())
+    >>> view.hasProducts()
     True
-    '''
-
-def test_ViewSearchResults():
-    '''
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-
-    >>> setUp()
-
-    >>> ztapi.provideUtility(IProjectSet, DummyProjectSet())
-
-    >>> from canonical.rosetta.browser import ViewSearchResults
-
-    >>> view = ViewSearchResults(None, DummyRequest())
-    >>> view.queryProvided
-    False
-    >>> view.query
-    >>> view.results
-    []
-    >>> view.resultCount
-    0
-
-    >>> view = ViewSearchResults(None, DummyRequest(q = 'foo'))
-    >>> view.queryProvided
-    True
-    >>> view.query
-    'foo'
-    >>> len(view.results)
-    2
-    >>> view.resultCount
-    2
-
-    >>> tearDown()
     '''
 
 def test_TranslatePOTemplate_init():
@@ -321,16 +308,14 @@ def test_TranslatePOTemplate_init():
     'ja'
     >>> [l.code for l in t.languages]
     ['ja']
-    >>> t.pluralForms
+    >>> t.pluralforms
     {'ja': 4}
     >>> t.badLanguages
     []
     >>> t.offset
     0
     >>> t.count
-    5
-    >>> t.error
-    False
+    10
     >>> t.show
     'all'
 
@@ -347,16 +332,14 @@ def test_TranslatePOTemplate_init():
     True
     >>> [l.code for l in t.languages]
     ['es']
-    >>> t.pluralForms
+    >>> t.pluralforms
     {'es': 4}
     >>> t.badLanguages
     []
     >>> t.offset
     0
     >>> t.count
-    5
-    >>> t.error
-    False
+    10
     >>> t.show
     'all'
 
@@ -373,16 +356,14 @@ def test_TranslatePOTemplate_init():
     'fr'
     >>> [l.code for l in t.languages]
     ['fr']
-    >>> t.pluralForms
+    >>> t.pluralforms
     {'fr': 3}
     >>> t.badLanguages
     []
     >>> t.offset
     0
     >>> t.count
-    5
-    >>> t.error
-    False
+    10
     >>> t.show
     'all'
 
@@ -400,13 +381,11 @@ def test_TranslatePOTemplate_init():
     'cy'
     >>> [l.code for l in t.languages]
     ['cy']
-    >>> t.pluralForms
+    >>> t.pluralforms
     {'cy': None}
     >>> len(t.badLanguages)
     1
     >>> t.badLanguages[0] is DummyLanguageSet()['cy']
-    True
-    >>> t.error
     True
 
     This is for testing the case when an explicit offset and count are
@@ -464,7 +443,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
     False
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(offset=15)
+    >>> request = DummyRequest(offset=30)
     >>> t = TranslatePOTemplate(context, request)
 
     >>> t.atBeginning()
@@ -500,12 +479,12 @@ def test_TranslatePOTemplate_URLs():
     'http://this.is.a/fake/url'
 
     >>> t.endURL()
-    'http://this.is.a/fake/url?offset=15'
+    'http://this.is.a/fake/url?offset=30'
 
     Test with offset > 0.
 
     >>> context = DummyPOTemplate()
-    >>> request = DummyRequest(offset=5)
+    >>> request = DummyRequest(offset=10)
     >>> t = TranslatePOTemplate(context, request)
 
     >>> t.beginningURL()
@@ -515,10 +494,10 @@ def test_TranslatePOTemplate_URLs():
     'http://this.is.a/fake/url'
 
     >>> t.nextURL()
-    'http://this.is.a/fake/url?offset=10'
+    'http://this.is.a/fake/url?offset=20'
 
     >>> t.endURL()
-    'http://this.is.a/fake/url?offset=15'
+    'http://this.is.a/fake/url?offset=30'
 
     Test with interesting parameters.
 
@@ -593,27 +572,27 @@ def test_TranslatePOemplate_mungeMessageID():
 
     First, do no harm.
 
-    >>> t._mungeMessageID(u'foo bar', [])
+    >>> t._mungeMessageID(u'foo bar', [], 'XXXA')
     u'foo bar'
 
     Test replacement of leading and trailing spaces.
 
-    >>> t._mungeMessageID(u' foo bar', [])
-    u'\u2423foo bar'
-    >>> t._mungeMessageID(u'foo bar ', [])
-    u'foo bar\u2423'
-    >>> t._mungeMessageID(u'  foo bar  ', [])
-    u'\u2423\u2423foo bar\u2423\u2423'
+    >>> t._mungeMessageID(u' foo bar', [], 'XXXA')
+    u'XXXAfoo bar'
+    >>> t._mungeMessageID(u'foo bar ', [], 'XXXA')
+    u'foo barXXXA'
+    >>> t._mungeMessageID(u'  foo bar  ', [], 'XXXA')
+    u'XXXAXXXAfoo barXXXAXXXA'
 
     Test replacement of newlines.
 
-    >>> t._mungeMessageID(u'foo\\nbar', [])
-    u'foo\u21b5<br/>\\nbar'
+    >>> t._mungeMessageID(u'foo\\nbar', [], newline='YYYA')
+    u'fooYYYAbar'
 
     And both together.
 
-    >>> t._mungeMessageID(u'foo \\nbar', [])
-    u'foo\u2423\u21b5<br/>\\nbar'
+    >>> t._mungeMessageID(u'foo \\nbar', [], 'XXXA', 'YYYA')
+    u'fooXXXAYYYAbar'
 
     >>> tearDown()
     '''

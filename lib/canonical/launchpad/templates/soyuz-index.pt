@@ -4,11 +4,12 @@
       i18n:domain="launchpad">
 
 <head>
-  <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
-  <!-- Soyuz style sheet -->
-  <style type="text/css" media="screen">@import url(soyuz.css);</style>
-
+    <title metal:fill-slot="title">Soyuz: Linux Distribution
+    Management</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
 </head>
 
 <body>
@@ -17,13 +18,30 @@
 
     <h1>Welcome to Soyuz!</h1>
 
-    <div class="documentDescription">
-    Soyuz is a tool to helps the user to build his own distribution ...
-    </div>
+    <p class="documentDescription">
+    Soyuz is a Linux Distribution Management System. It allows you to create
+    your own Linux distribution, selecting the packages that you want to
+    include in the distro, managing uploads and builds across multiple
+    architectures, and ultimately giving you an installation CD and Live CD.
+    </p>
 
+    <p>Please select a distribution from the list below:</p>
+
+    <table width="100%" class="listing rowNavigation">
+        <tr>
+            <th>Name</th>
+            <th>Title</th>
+            <th>Homepage</th>
+        </tr>
+        <tr tal:repeat="distro context/distributions"
+            tal:attributes="onclick
+                string:window.location='distros/${distro/name}'">
+            <td tal:content="distro/name">distro</td>
+            <td tal:content="distro/title">distribution title</td>
+            <td tal:content="distro/domainname">http://www.domain.com/</td>
+        </tr>
     <ul>
-    <li> <a href="distros">Distributions</a> (<a href="distros/+search">Search</a>)</li>
-    <ul>
+
    </div>
   </body>
 </html>

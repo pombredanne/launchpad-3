@@ -22,7 +22,7 @@
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.product"
   ... 
-  ... launchpad-mirrors arch-mirrors
+  ... arch-mirrors
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.product-empty-marker"
   ... 
@@ -69,7 +69,7 @@
   ...
           <h1>Add Product Bug Assignment</h1>
   ...
-  <input type="text" name="field.product" value="launchpad-mirrors arch-mirrors" ... />
+  <input type="text" name="field.product" value="arch-mirrors" ... />
   ...
   <select name="field.bugstatus" size="1" >
   ...
@@ -100,9 +100,9 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-          <tr onclick="window.location='productassignments/2/+edit'">
+          <tr onclick="window.location='/malone/bugs/2/productassignments/2/+edit'">
   ...
-          <tr onclick="window.location='productassignments/6/+edit'">
+          <tr onclick="window.location='/malone/bugs/2/productassignments/6/+edit'">
   ...
 
 
@@ -114,9 +114,6 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-            <h3>Edit Product Bug Assignment</h3>
-  ...
-
 
   >>> print http(r"""
   ... POST /malone/bugs/2/productassignments/6/+edit HTTP/1.1
@@ -128,7 +125,7 @@
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.product"
   ... 
-  ... launchpad-mirrors arch-mirrors
+  ... arch-mirrors
   ... ------------0xKhTmLbOuNdArY
   ... Content-Disposition: form-data; name="field.product-empty-marker"
   ... 
@@ -166,20 +163,13 @@
   ... 
   ... 1
   ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... ------------0xKhTmLbOuNdArY--
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT" ...  ... Change ... ------------0xKhTmLbOuNdArY--
   ... """)
   HTTP/1.1 200 Ok
   ...
   <BLANKLINE>
   ...
-            <h3>Edit Product Bug Assignment</h3>
-  <BLANKLINE>
-            <p>Updated on ...</p>
-  ...
-  <input type="text" name="field.product" value="launchpad-mirrors arch-mirrors" ... />
+  <input type="text" name="field.product" value="arch-mirrors" ... />
   ...
   <a href="javascript:popup_window('@@popup-window?vocabulary=Product&amp;field=field.product','500','400')">(list)</a>
   ...

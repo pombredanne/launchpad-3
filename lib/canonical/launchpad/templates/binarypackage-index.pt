@@ -93,7 +93,7 @@
 		         <a tal:define="sourcepackagename 
                         context/binarypackage/build/sourcepackagerelease/sourcepackage/name"
                     tal:attributes="href
-	                 string:/malone/package/${sourcepackagename}">View
+	                 string:/malone/packages/${sourcepackagename}">View
                      Bug List</a>
             </td>
         </tr>

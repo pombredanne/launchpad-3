@@ -32,6 +32,11 @@
         layer="canonical.launchpad.layers.ButtressLayer"
         name="+buttress-index" />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        layer="canonical.launchpad.layers.RosettaLayer"
+        name="+rosetta-index" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
         class="canonical.launchpad.browser.ProjectView"
@@ -50,21 +55,36 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProjectView"
+        lp:url="Rosetta/projects/$Project.name">
+        <browser:page
+            name="+rosetta-index"
+            template="../templates/project-rosetta-index.pt"
+            lp:url="Rosetta/projects/$Project.name/+index" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProject"
         class="canonical.launchpad.browser.ProjectView"
         permission="launchpad.AnyPerson" >
-        <browser:page
-            name="+newproduct"
-            template="../templates/product-new.pt"
-            lp:url="doap/projects/$Project.name/+newproduct" />
-        <browser:page
-            name="+edit"
-            template="../templates/project-edit.pt"
-            lp:url="doap/projects/$Project.name/+edit" />
         <browser:page
             name="+newbugtracker"
             template="../templates/bugtracker-new.pt"
             lp:url="doap/projects/$Project.name/+newbugtracker" />
     </browser:pages>
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IProject"
+        schema="canonical.launchpad.interfaces.IProject"
+        label="Edit Open Source Project Details:"
+        fields="displayname title shortdesc description homepageurl
+                wikiurl sourceforgeproject freshmeatproject"
+        permission="launchpad.AnyPerson"
+        template="../templates/project-edit.pt"
+        lp:url="doap/projects/$Project.name/+edit">
+    </browser:editform>
 
     <browser:editform
         name="+review"
@@ -79,7 +99,21 @@
         lp:url="doap/projects/$Project.name/+review">
     </browser:editform>
 
-        
+    <browser:addform
+        name="+newproduct"
+        for="canonical.launchpad.interfaces.IProject"
+        schema="canonical.launchpad.interfaces.IProduct"
+        label="Add a Product to this Project"
+        fields="name displayname title shortdesc description homepageurl
+                sourceforgeproject freshmeatproject wikiurl screenshotsurl
+                downloadurl owner"
+        class="canonical.launchpad.browser.ProjectAddProductView"
+        permission="launchpad.AnyPerson"
+        template="../templates/product-add.pt"
+        lp:url="doap/projects/$Project.name/+newproduct">
+        <browser:widget field="owner" class="canonical.widgets.OwnerWidget" />
+    </browser:addform>
+
 
     <!-- ProjectSet-->
     <content class="canonical.launchpad.database.ProjectSet">
@@ -93,6 +127,10 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProjectSet"
         name="+index" />
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IProjectSet"
+        getter="__getitem__" />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProjectSet"
@@ -131,12 +169,12 @@
         template="../templates/project-new.pt"
         lp:url="doap/projects/+new" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProjectSet"
-        getter="__getitem__" />
-
-    <content class="canonical.rosetta.domain.RosettaProject">
-        <allow interface="canonical.launchpad.interfaces.IRosettaProject"/>
-    </content>
+    <browser:pages for="canonical.launchpad.interfaces.IProjectSet"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ProjectSetView">
+        <browser:page name="+request"
+            template="../templates/projects-request.pt"
+            lp:url="Rosetta/projects/+request" />
+    </browser:pages>
 
 </configure>

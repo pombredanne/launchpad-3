@@ -9,6 +9,14 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.fields.ITitle"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.launchpad.browser.TitleWidget"
+        permission="zope.Public"
+        />
+
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
         for="canonical.launchpad.fields.ISummary"
         provides="zope.app.form.interfaces.IInputWidget"
         factory="canonical.launchpad.browser.SummaryWidget"
@@ -17,9 +25,9 @@
 
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="canonical.launchpad.fields.ITitle"
+        for="canonical.launchpad.fields.IDescription"
         provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.launchpad.browser.TitleWidget"
+        factory="canonical.launchpad.browser.DescriptionWidget"
         permission="zope.Public"
         />
 

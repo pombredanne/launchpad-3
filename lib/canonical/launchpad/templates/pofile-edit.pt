@@ -27,9 +27,13 @@
 
         <form action="+edit" method="POST">
         <fieldset>
-            Number of Pluralforms: <input type="text" name="pluralforms" tal:attributes="value context/pluralForms"/>
+            Number of Pluralforms:
+            <input type="text" name="pluralforms"
+                   tal:attributes="value context/pluralforms"/>
             <br/>
-            Pluralform Expression: <input type="text" name="expression" tal:attributes="value view/pluralFormExpression"/>
+            Pluralform Expression:
+            <input type="text" name="expression"
+                   tal:attributes="value view/pluralFormExpression"/>
             <br/>
             <input type="submit" name="SUBMIT" value="Submit" />
         </fieldset>

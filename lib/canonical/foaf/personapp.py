@@ -5,19 +5,21 @@
 
 # Zope imports
 from zope.interface import implements
+from zope.component import getUtility
 
 # sqlos and SQLObject imports
 from canonical.lp import dbschema
 
 # Launchpad imports
-from canonical.launchpad.database import SourcePackageInDistro, \
-                                         Person, \
+from canonical.launchpad.database import Person, \
                                          EmailAddress, GPGKey, \
                                          ArchUserID, WikiName, JabberID, \
                                          IrcID, Membership, TeamParticipation,\
                                          DistributionRole, DistroReleaseRole
 
-from canonical.launchpad.interfaces import IPeopleApp, IPersonApp
+from canonical.launchpad.interfaces import IPeopleApp, IPersonApp, \
+                                           ISourcePackageSet, \
+                                           ITeamParticipationSet
 
 
 #
@@ -88,8 +90,9 @@ class PersonApp(object):
         except IndexError:
             self.teams = None
 
+        teampart = getUtility(ITeamParticipationSet)
         try:
-            self.subteams = TeamParticipation.getSubTeams(self.id)
+            self.subteams = teampart.getSubTeams(self.id)
             
             if self.subteams.count() == 0:
                 self.subteams = None                
@@ -141,6 +144,7 @@ class PersonApp(object):
             self.gpg = None
 
     def _getSourcesByPerson(self):
-        return SourcePackageInDistro.getByPersonID(self.id)
+        sputil = getUtility(ISourcePackageSet)
+        return sputil.getByPersonID(self.id)
     
 

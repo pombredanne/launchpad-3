@@ -2,6 +2,11 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="rosetta">
+
+    <title metal:fill-slot="title">Malone: Bug #<span
+    tal:replace="context/id">1234</span>
+    </title>
+
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -12,6 +17,7 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
     <div tal:replace="structure view/cvePortlet" />
     <div tal:replace="structure view/referencePortlet" />
     <div tal:replace="structure view/watchPortlet" />
@@ -28,11 +34,11 @@
         </li>
 
         <li id="contentview-edit" class="plain">
-            <a href="+edit">Edit</a>
+            <a href="+edit">Edit Bug Info</a>
         </li>
 
         <li id="contentview-edit" class="plain">
-            <a href="activity">History</a>
+            <a href="activity">Bug Changelog</a>
         </li>
     </ul>
 
@@ -45,6 +51,12 @@
         <h1>
             <span tal:replace="context/title" />
         </h1>
+        <div class="discreet">
+            Below is a list of source packages and upstream products in which
+            this bug should be fixed. The state, severity, priority and person
+            assigned to fix a bug is determined by the maintainer(s) of each
+            product or source package in which this bug should be fixed.
+        </div>
 
         <div tal:replace="structure view/assignmentsHeadline" />
 
@@ -54,7 +66,7 @@
                 Bugname: <a href="" tal:content="context/name">$Bug.name</a>,
             </span>
 
-            Created
+            Submitted
             <span tal:replace="python:context.datecreated.strftime(
                 '%d %b %y %H:%M')">13 Sep 04 12:15</span>.
         </div>

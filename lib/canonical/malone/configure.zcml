@@ -20,7 +20,7 @@
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IMaloneApplication"
-        name="index" />
+        name="+index" />
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"
@@ -33,6 +33,12 @@
         utility="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
         name="projects" />
+
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.IProductSet"
+        permission="zope.Public"
+        name="products" />
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"
@@ -52,18 +58,22 @@
         permission="zope.Public"
         class="canonical.malone.browser.MaloneApplicationView"
         lp:url="malone">
-        <browser:page name="index"
+        <browser:page
+            name="+index"
             template="../launchpad/templates/malone-index.pt"
-            lp:url="malone/index" />
-        <browser:page name="about"
+            lp:url="malone/+index" />
+        <browser:page
+            name="+about"
             template="../launchpad/templates/malone-about.pt"
             lp:url="malone/+about" />
-        <browser:page name="dashboard"
+        <browser:page
+            name="+dashboard"
             template="../launchpad/templates/malone-dashboard.pt"
-            lp:url="malone/dashboard" />
-        <browser:page name="to-do"
+            lp:url="malone/+dashboard" />
+        <browser:page
+            name="+todo"
             template="../launchpad/templates/malone-to-do.pt"
-            lp:url="malone/to-do" />
+            lp:url="malone/+todo" />
     </browser:pages>
 
 

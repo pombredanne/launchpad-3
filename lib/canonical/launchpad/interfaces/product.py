@@ -6,7 +6,7 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
-from canonical.launchpad.fields import Title, Summary
+from canonical.launchpad.fields import Title, Summary, Description
 
 class IProduct(Interface):
     """A DOAP Product. DOAP describes the open source world as Projects
@@ -19,7 +19,7 @@ class IProduct(Interface):
     # in SQLObject soon. 12/10/04
     id = Int(title=_('The Product ID'))
     
-    project = Int(title=_('Project ID.'))
+    project = Int(title=_('Project ID.'), required=False)
     
     owner = Int(title=_('Owner'))
 
@@ -37,7 +37,7 @@ class IProduct(Interface):
     shortdesc = Summary(title=_('Summary'), description=_("""The summary should
         be a single short paragraph."""))
 
-    description = Text(title=_('Description'), description=_("""The product
+    description = Description(title=_('Description'), description=_("""The product
         description, may be several paragraphs of text, giving the product
         highlights and details."""))
 
@@ -85,15 +85,15 @@ class IProduct(Interface):
     releases = Attribute(_("""An iterator over the ProductReleases for this
         product."""))
 
+    potemplates = Attribute(_("""Returns an iterator over this
+        product's PO templates."""))
+
     bugsummary = Attribute(_("""A matrix by bug severity and status of the
         number of bugs of that severity and status assigned to this
         product."""))
 
     branches = Attribute(_("""An iterator over the Bazaar branches that are
     related to this product."""))
-
-    def poTemplates():
-        """Returns an iterator over this product's PO templates."""
 
     def poTemplatesToImport():
         """Returns all PO templates from this product that have a rawfile 
@@ -108,6 +108,11 @@ class IProduct(Interface):
         Returns the newly created template.
 
         Raises an KeyError if a PO template with that name already exists.
+        """
+
+    def fullname():
+        """Returns a name that uniquely identifies this product, by combining
+            product name and project name
         """
 
     def newseries(form):
@@ -142,4 +147,30 @@ class IProduct(Interface):
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
+
+class IProductSet(Interface):
+    """The collection of products."""
+
+    def __iter__():
+        """Return an iterator over all the products."""
+
+    def __getitem__(name):
+        """Get a product by its name."""
+
+    def forReview():
+        """Return an iterator over products that need to be reviewed."""
+
+    def search(text=None, soyuz=None,
+               rosetta=None, malone=None,
+               buttress=None):
+        """Search through the DOAP database for products that match the
+        query terms. text is a piece of text in the title / summary /
+        description fields of product. soyuz, buttress, malone etc are
+        hints as to whether the search should be limited to products
+        that are active in those Launchpad applications."""
+
+    def translatables(translationProject=None):
+        """Returns an iterator over products that have resources translatables
+        for translationProject, if it's None it returs all available products
+        with translatables resources."""
 

@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+
+"""
+gina-loggrep parses gina's logfile output format in an attempt to extract
+all the interesting and useful information from it.
+
+Essentially we elide all the uninteresting lines.
+"""
+
+import sys
+
+lastline = sys.stdin.readline()[:-1]
+
+plingplings = 0
+fmos = 0
+
+for line in sys.stdin:
+    line = line[:-1]
+    if "!!" in line:
+        plingplings += 1
+    if "FMO" in line:
+        fmos += 1
+        
+    if not lastline.startswith("- "):
+        print lastline
+    else:
+        if not line.startswith("- "):
+            print lastline
+
+    lastline = line
+
+print lastline
+
+print "PLINGPLING=%d\nFMO=%d" % (plingplings, fmos)

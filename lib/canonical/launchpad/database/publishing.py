@@ -16,8 +16,6 @@ from canonical.launchpad.interfaces import IPackagePublishing, \
                                            ISourcePackageFilePublishing, \
                                            IBinaryPackageFilePublishing
 
-from canonical.launchpad.database import DistroRelease, DistroArchRelease
-
 class PackagePublishing(SQLBase):
     """A binary package publishing record."""
 
@@ -41,10 +39,18 @@ class SourcePackagePublishing(SQLBase):
     implements(ISourcePackagePublishing)
 
     _columns = [
-        ForeignKey(name='sourcepackagerelease', foreignKey='SourcePackageRelease', dbName='sourcepackagerelease'),
-        ForeignKey(name='distrorelease', foreignKey='DistroRelease', dbName='distrorelease'),
-        ForeignKey(name='component', foreignKey='Component', dbName='component'),
-        ForeignKey(name='section', foreignKey='Section', dbName='section'),
+        ForeignKey(name='sourcepackagerelease',
+            foreignKey='SourcePackageRelease',
+            dbName='sourcepackagerelease'),
+        ForeignKey(name='distrorelease',
+            foreignKey='DistroRelease',
+            dbName='distrorelease'),
+        ForeignKey(name='component',
+            foreignKey='Component',
+            dbName='component'),
+        ForeignKey(name='section',
+            foreignKey='Section',
+            dbName='section'),
         IntCol('status'),
         DateTimeCol('scheduleddeletiondate', default=None)
     ]

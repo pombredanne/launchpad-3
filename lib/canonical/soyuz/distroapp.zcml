@@ -28,14 +28,4 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
-  <content class="canonical.soyuz.distroapp.DistroTeamApp">
-    <allow interface="canonical.launchpad.interfaces.IDistroTeamApp"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
-  <content class="canonical.soyuz.distroapp.DistroReleaseTeamApp">
-    <allow interface="canonical.launchpad.interfaces.IDistroReleaseTeamApp"/>
-    <implements interface="zope.app.container.interfaces.IItemContainer"/>
-  </content>
-
 </configure>

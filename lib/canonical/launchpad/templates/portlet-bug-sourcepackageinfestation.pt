@@ -1,4 +1,5 @@
-<div>
+<div tal:condition="context/packageinfestations"
+     tal:define="bug_url string:/malone/bugs/${context/id}">
     <table class="listing rowNavigation">
         <tr>
             <th>Source Package</th>
@@ -6,7 +7,7 @@
         </tr>
         <tr tal:repeat="pkginfest context/packageinfestations"
             tal:attributes="onclick
-            string:window.location='packageinfestations/${pkginfest/id}/+edit';">
+            string:window.location='$bug_url/packageinfestations/${pkginfest/id}/+edit';">
             <td nowrap tal:content="python: pkginfest.sourcepackagerelease.sourcepackage.sourcepackagename.name + ' ' +
                              pkginfest.sourcepackagerelease.version">$Product.title</td>
             <td tal:content="pkginfest/infestationstatus/lp:BugInfestationStatus">
@@ -14,6 +15,6 @@
             </td>
         </tr>
     </table>
-    [ <a href="packageinfestations/+new">Document an Infested Package
+    [ <a href="#" tal:attributes="href string:$bug_url/packageinfestations/+new">Document an Infested Package
     Version</a> ]
 </div>

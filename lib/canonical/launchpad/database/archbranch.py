@@ -178,7 +178,7 @@ class VersionMapper(object):
             version=version.name,
             visible=True,
         )
-        result = Branch(namespace=namespace.id,
+        result = Branch(archnamespace=namespace.id,
             title='',
             description='',
         )

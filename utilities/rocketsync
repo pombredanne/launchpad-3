@@ -11,6 +11,10 @@
 
 ### Configuration ###
 
+if [ -z $TLA ] ; then
+    export TLA=baz
+fi
+
 # We have redundant configuration information (that is tested for
 # sanity later on) because rsync use a different remote location
 # format than tla and we have not implemented the parsing logic.

@@ -1,50 +1,84 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@launchpad_template/master"
-      i18n:domain="doap">
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
 <body>
- 
+
 <div metal:fill-slot="main">
-    <h1>Project Search</h1>
 
-    <form method="post">
-        <fieldset tal:condition="not:view/searchrequested">
-            <legend>Search for a project</legend>
+    <h1>Upstream Project Advanced Search</h1>
 
-            <div class="field">
-                <label>Search text</label>
-                <div class="formHelp">Enter any part of the project name,
-                title or description.</div>
-                <input name="searchtext" />
-            </div>
+    <fieldset>
+    
+        <legend>Search for a project</legend>
 
-            <div class="formControls">
-                <input type="submit" value="Search" />
-            </div>
+        <form method="post">
 
-        </fieldset>
-    </form>
-    <table tal:condition="view/searchrequested"
-         class="listing rowNavigation">
-        <tr>
-        <th>Project</th>
-        <th>Homepage</th>
-        </tr>
-        <tr tal:repeat="project view/searchresults"
-            tal:attributes="onclick string:window.location='${project/name}';">
-            <td>
-                <b><a tal:attributes="href project/name" href="#"
-                    tal:content="project/title">$Project.title</a></b>
-                (<span tal:content="project/name">$Project.name</span>)
-                <br />
-            <span tal:content="project/shortdesc">
-                $Project.shortdesc</span>
-            <td>
-                <a tal:attributes="href project/homepageurl"
-                    tal:content="project/homepageurl">http://www.gnu.org/</a>
-            </td>
-        </tr>
-    </table>
+        <table border="0" cellpadding="1" cellspacing="2" width="100%">
+            <tr>
+                <td align="center">
+                    <input name="text" size="60" 
+                           tal:attributes="value view/text" />
+                    <input type="submit" value="Search" />
+                    <br />
+                    <input type="checkbox" name="rosetta" id="rosetta"
+                           tal:attributes="checked view/rosetta">
+                    <label for="rosetta">Translations</label>
+                    <input type="checkbox" name="malone" id="malone"
+                           tal:attributes="checked view/malone">
+                    <label for="malone">Bugs</label>
+                    <input type="checkbox" name="soyuz" id="soyuz"
+                           tal:attributes="checked view/soyuz">
+                    <label for="soyuz">Packages</label>
+                    <input type="checkbox" name="buttress" id="buttress"
+                           tal:attributes="checked view/buttress">
+                    <label for="buttress">Branches</label>
+                    <div class="formHelp">Enter any part of the project name,
+                    title or description. Select a particular Launchpad aspect
+                    of the project.</div>
+                </td>
+            </tr>
+        </table>
+
+        </form>
+
+        <div tal:condition="view/searchrequested">
+        
+            <table class="rowNavigation" width="100%">
+                <tr tal:repeat="project view/searchresults"
+                    tal:attributes="onclick string:window.location='${project/name}';"
+                    valign="top"
+                    vspace="5">
+                    <td>
+                        <img src="/++resource++product_icon.gif">
+                        <b><a tal:attributes="href project/name" href="#"
+                            tal:content="project/title">$Project.title</a></b>
+                        (<span tal:content="project/name">$Project.name</span>)
+                        <a tal:attributes="href project/homepageurl"
+                            tal:content="project/homepageurl">http://www.gnu.org/</a>
+                        <br />
+                    <span tal:content="project/shortdesc">
+                        $Project.shortdesc</span>
+                    </td>
+                </tr>
+            </table>
+  
+            <div tal:condition="not: view/gotmatches"><b>No matching upstream
+            projects.</b> You can register your project <a
+            href="+new">here</a></div>
+
+        </div>
+ 
+    </fieldset>
+
 </div>
 
 </body>

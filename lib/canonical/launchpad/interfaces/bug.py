@@ -116,7 +116,6 @@ class IBugAddForm(IBug):
             )
     owner = Int(title=_("Owner"), required=True)
 
-
 # Interfaces for set
 class IBugSet(IAddFormCustomization):
     """A set for bugs."""

@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces import INamespaceObject, ISourceTreeAPI, \
 
 
 from canonical.launchpad import database
+import arch
 
 default_location = "/tmp/"
 

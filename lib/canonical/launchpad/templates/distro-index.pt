@@ -4,6 +4,10 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">
+      Distribution: <span
+      tal:replace="context/distribution/title">distribution title</span>
+      </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -12,119 +16,96 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+
+<tal:block tal:define="distro context/distribution">
+ <div class="portlet">
+  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
+
+   <div class="portletBody">
+
+     <div class="portletContent even">
+
+     - <a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
+      Releases</a><br />
+
+     - <a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
+      Packages</a><br />
+
+     - <a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+      Binaries</a><br />
+
+     </div>
+     
+   </div>  
+
+ </div>
+
+ <div class="portlet">
+  <h4>Local Links</h4>
+   <div class="portletBody">
+     <div class="portletContent even">
+     <ul>
+     <li><a href="releases/+new">Create Distribution Release</a></li>
+     <li><a href="+edit">Edit Distribution Information</a></li>
+     </ul>
+     </div>
+   </div>  
+ </div>
+</tal:block>
+
+</metal:leftportlets>
+
+
+<metal:rightportlets fill-slot="portlets_two">
+<div tal:replace="structure view/rolesPortlet" />
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
-    <h1><span tal:content="context/distribution/title">TITLE</span> 
-    Distribution Overview</h1>
-
-   <table width="100%">
-   <tr><td>
-     <div class="dummy">
-      <table>
-      <legend><h4>Latest Notice (Suggestion)</h4></legend>
-      <tr><td>
-        <fieldset>
-        <div>
-	<ul>
-	  <li><b>Glibc update has landed, please check for smoke in your
-	packages</b></li>
-	  <ul><a href="/foaf/people/1">LamontJones</a></ul>
-	  <li><b>Two weeks to Warty freeze, get your updates in or be sorry
-	  later</b></li> 
-	  <ul><a href="/foaf/people/1">MattZimmerman</a></ul>
-	  <li><b>Today's package changes: 22 packages updated, 22 added
-	  and 1 removed</b></li>
-	  <ul><a href="/foaf/people/1">BuildBot</a></ul>	            
-	  <li><b>Today's build results: 2311 packages passed, 22 failed
-	  (on 3 archs)</b></li> 
-	  <ul><a href="/foaf/people/1">BuildBot</a></ul>
-	  </ul>
-          </div>
-       </td></tr>
-       <tr><th align="right"><a href="">New Notice</a></th></tr>
-      </table>
-     </div>
-   </td><td>
-       <table>
-         <legend><h4>Related Links</h4></legend>
-         <tr><td>
-           <div>
-	      <ul>
-	      <li><a href="src">SourcePackages</a></li> 
-	      <li><a href="bin">BinaryPackages</a></li>  
-	      <li><a href="team">Team</a> </li> 
-	      <li class="dummy"><a href="translations">Translations</a> </li> 
-	      <li class="dummy"><a href="bugs">Bugs</a> </li> 
-	      </ul>
-	   </div>
-         </td></tr>
-       </table>
-   </td></tr>
-   <tr><td>
-   <h3>Distribution Description</h3> 
-   </td></tr>
-   <tr><td>
-   <span tal:content="context/distribution/description">DESCRIPTION</span>
-   </td></tr>
-   <tr><td>
-   Owner: <a tal:content="context/distribution/owner/displayname" 
-             tal:attributes="href string:/foaf/people/${context/distribution/owner/name}">
-           OWNER</a>
-   </td></tr>
-   <tr><th albgign="right"><a href="+edit">Edit Information</a></th></tr>  
-   <!--Conditional block -->
-   <tr tal:condition="context/enable_releases"><td>
-   <table class="listing">
-   <legend><h4>Releases of <span
-   tal:content="context/distribution/title"/></h4></legend>
-    <tr>
-      <th>Name</th>
-      <th>Short Description</th>
-      <th>Description</th>
-      <th>Version</th>
-      <th>Packages</th>
-      <th>Status</th>
-      <th>Date Released</th>
-      <th>Parent Release</th>
-      <th>Owner</th>
-    </tr>
-    <tr tal:repeat="release context/releases">
-      <td><a tal:content="release/title"
-	   tal:attributes="href string:releases/${release/name}">
-	   distribution name</a>
-      </td>
-      <td tal:content="release/shortdesc">SHORT DESCRIPTION</td>
-      <td tal:content="release/description">DESCRIPTION</td>
-      <td tal:content="release/version">VERSION</td>
-      <td>
-       <table>
-       <tr>
-       <th><a tal:attributes="href string:src/${release/name}">SRC</a></th>
-       <th><a tal:attributes="href string:bin/${release/name}">BIN</a></th>
-       </tr>
-       </table>
-      </td>
-      <td tal:content="release/state">RELEASESTATE</td>
-      <td tal:content="release/datereleased">DATERELEASED</td>      
-
-      <td>
-           <a tal:condition="release/parentrelease"
-	      tal:attributes="href string:releases/${release/parentrelease/name}" 
-	      tal:content="release/parentrelease/title">
-	PARENTRELEASE</a>
-      </td>          
-
-      <td><a tal:attributes="href string:/foaf/people/${release/owner/name}"
-	      tal:content="release/owner/displayname">OWNER</a>
-      </td>            
-    </tr>
-    </table>
-   </td></tr>
-   <!--end of conditional release feature -->
-   <tr><th align="right"><a href="releases/+new">Create New Release</a>
-   </th></tr>
-  </table>
+ <div id="content" class="documentEditable">
+  <div class="documentContent" id="region-content">
  
+   <h1><span tal:content="context/distribution/title">TITLE</span>:
+    Distribution Overview</h1>
+    <p />
+
+    <div> 
+        <span tal:content="context/distribution/description">DESCRIPTION</span>
+    </div>
+
+    <h2>Releases:</h2>
+
+    <p><span tal:replace="context/distribution/title" /> has the following
+    releases under development, or released:</p>
+
+    <table width="100%" class="listing rowNavigation">
+        <tr>
+            <th>Release</th>
+            <th>Title</th>
+            <th>Version</th>
+            <th>Status</th>
+        </tr>
+        <tr tal:condition="not: context/releases">
+            <td></td>
+            <td>No Releases Yet... please create one below.</td>
+        </tr>
+        <tr tal:repeat="release context/releases"
+            tal:attributes="onclick
+                string:window.location='releases/${release/name}'">
+            <td tal:content="release/displayname">displayname</td>
+            <td><a tal:content="release/title"
+	               tal:attributes="href string:releases/${release/name}">
+	               distribution name</a>
+            </td>
+            <td tal:content="release/version">VERSION</td>
+            <td tal:content="release/state">RELEASESTATE</td>
+        </tr>
+    </table>
+
+  </div>
+ </div>
 </div>
 
 </body>

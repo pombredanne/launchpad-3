@@ -1,7 +1,8 @@
 <div class="portlet">
     <h4>Subscriptions</h4>
 
-    <div class="portletBody">
+    <div class="portletBody"
+         tal:define="bug_url string:/malone/bugs/${context/id}">
         <div class="portletContent even"
              tal:define="subscriptions context/subscriptions;
                          productass context/productassignments;
@@ -51,7 +52,7 @@
                 <li tal:repeat="sub ccs">
                   <a href="#"
                      tal:content="sub/person/browsername"
-                     tal:attributes="href python:'people/'+str(sub.id)+'/+edit'">Dafydd</a>
+                     tal:attributes="href python:bug_url + '/people/'+str(sub.id)+'/+edit'">Dafydd</a>
                 </li>
             </ul>
 
@@ -60,7 +61,7 @@
                 <li tal:repeat="sub watches">
                   <a href="#"
                      tal:content="sub/person/browsername"
-                     tal:attributes="href python:'people/'+str(sub.id)+'/+edit'">Vincenzo</a>
+                     tal:attributes="href python:bug_url + '/people/'+str(sub.id)+'/+edit'">Vincenzo</a>
                 </li>
             </ul>
 
@@ -70,14 +71,15 @@
                   <a href="#"
                      tal:content="sub/person/browsername"
                      tal:attributes="href
-                     python:'people/'+str(sub.id)+'/+edit'">Jake</a>
+                     python:bug_url + '/people/'+str(sub.id)+'/+edit'">Jake</a>
                 </li>
             </ul>
 
           </tal:subscriptions>
-        <a href="people/+new"
+        <a  href="#"
             style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
-            title="Add a subscriber to this bug.">
+            title="Add a subscriber to this bug."
+            tal:attributes="href string:$bug_url/people/+new">
             <img src="/++resource++add.gif" alt="+" />
             Subscribe
         </a><br />

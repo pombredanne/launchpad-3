@@ -7,7 +7,8 @@ __metaclass__ = type
 
 import sets
 from zope.interface import Interface, implements
-from zope.component import queryView, getDefaultViewName, getUtility
+from zope.component import queryView, queryMultiView, getDefaultViewName, \
+    getUtility
 from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine
 from zope.configuration.fields import GlobalObject, PythonIdentifier, Path
@@ -24,9 +25,8 @@ from zope.app.publisher.browser.viewmeta import page
 from zope.app.file.image import Image
 import zope.app.publisher.browser.metadirectives
 
-from canonical.publication import ISubURLDispatch, SubURLTraverser
 from canonical.launchpad.layers import setAdditionalLayer
-from canonical.launchpad.interfaces import IAuthorization
+from canonical.launchpad.interfaces import IAuthorization, IOpenLaunchBag
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 
 try:
@@ -36,6 +36,42 @@ except ImportError:
     from zope.publisher.interfaces.browser import IBrowserRequest
     IDefaultBrowserLayer = IBrowserRequest
 
+class ISubURLDispatch(Interface):
+
+    def __call__():
+        """Returns the object at this suburl"""
+
+
+class SubURLTraverser:
+    implements(IBrowserPublisher)
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def publishTraverse(self, request, name):
+        """Search for views, and if no view is found, look for subURLs."""
+        view = queryView(self.context, name, request)
+        # XXX I should be looking for views for normal publication here.
+        # so, views providing ISubURLDispatch and not "normal publication"
+        # shouldn't show up.
+        if view is None or ISubURLDispatch.providedBy(view):
+            if view is None:
+                dispatcher = queryMultiView((self.context,), request,
+                        providing=ISubURLDispatch, name=name)
+                if dispatcher is None:
+                    raise NotFound(self.context, name)
+            else:
+                dispatcher = view
+            ob = dispatcher()
+            getUtility(IOpenLaunchBag).add(ob)
+            return ob
+        else:
+            return view
+
+    def browserDefault(self, request):
+        view_name = getDefaultViewName(self.context, request)
+        return self.context, (view_name,)
 
 class IDefaultViewDirective(
     zope.app.publisher.browser.metadirectives.IDefaultViewDirective):
@@ -180,6 +216,7 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                     val = adaptwith(val)
                 if newlayer is not None:
                     setAdditionalLayer(self.request, newlayer)
+                #getUtility(IOpenLaunchBag).add(val)
                 return val
 
     if utility is not None:
@@ -192,6 +229,7 @@ def suburl(_context, for_, name, permission=None, utility=None, class_=None,
                     val = adaptwith(val)
                 if newlayer is not None:
                     setAdditionalLayer(self.request, newlayer)
+                #getUtility(IOpenLaunchBag).add(val)
                 return val
 
     factory = [Dispatcher]
@@ -222,6 +260,7 @@ class URLTraverse:
             else:
                 if self._adaptwith is not None:
                     traversed_to = self._adaptwith(traversed_to)
+                getUtility(IOpenLaunchBag).add(traversed_to)
                 return traversed_to
         else:
             return view
@@ -256,6 +295,7 @@ class URLTraverseByFunction:
             else:
                 if self._adaptwith is not None:
                     traversed_to = self._adaptwith(traversed_to)
+                getUtility(IOpenLaunchBag).add(traversed_to)
                 return traversed_to
         else:
             return view

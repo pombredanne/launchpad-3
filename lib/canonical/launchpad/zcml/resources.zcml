@@ -9,11 +9,14 @@
     <!-- header images -->
     <resource name="malone.png" file="../images/malone.png" />
   
-    <!-- Images -->
+    <!-- App-specific Images -->
+    <resource name="rosetta.png" file="../../rosetta/images/rosetta.png" />
+
+    <!-- General Images -->
     <resource name="green-bar.png" file="../images/green-bar.png" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
     <resource name="red-bar.png" file="../images/red-bar.png" />
-    <resource name="dwelled-bar.png" file="../images/dwelled-bar.png" />
+    <resource name="purple-bar.png" file="../images/purple-bar.png" />
     <resource name="bullet.gif" file="../images/bullet.gif" />
     <resource name="required.gif" file="../images/required.gif" />
 
@@ -43,5 +46,6 @@
     <resource name="ubuntu.gif" file="../images/ubuntu.gif" />
 
     <resource name="defaultFavicon.gif" file="../images/defaultFavicon.gif" />
+    <resource name="favicon.png" file="../images/defaultFavicon.gif" />
 
 </configure>

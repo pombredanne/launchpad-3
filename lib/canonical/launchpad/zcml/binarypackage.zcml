@@ -17,4 +17,8 @@
         <allow interface="canonical.launchpad.interfaces.IBinaryPackageName" />
     </content>
 
+    <utility
+        factory="canonical.launchpad.database.BinaryPackageSet"
+        provides="canonical.launchpad.interfaces.IBinaryPackageSet" />
+
 </configure>

@@ -33,7 +33,8 @@ from canonical.launchpad.interfaces.language import *
 from canonical.launchpad.interfaces.archuser import *
 from canonical.launchpad.interfaces.binarypackage import *
 from canonical.launchpad.interfaces.build import *
-from canonical.launchpad.interfaces.distro import *
+from canonical.launchpad.interfaces.distribution import *
+from canonical.launchpad.interfaces.distrorelease import *
 from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.irc import *
 from canonical.launchpad.interfaces.jabber import *
@@ -47,7 +48,13 @@ from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.pyarch import *
+from canonical.launchpad.interfaces.queue import *
+from canonical.launchpad.interfaces.country import *
+from canonical.launchpad.interfaces.spokenin import *
+from canonical.launchpad.interfaces.geoip import *
 
+# XXX this is old soyuz style and must go
+from canonical.launchpad.interfaces.soyuz import *
 
 class IAuthApplication(Interface):
     """ Interface for AuthApplication """

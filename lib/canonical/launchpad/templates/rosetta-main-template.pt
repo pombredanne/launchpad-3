@@ -160,8 +160,7 @@
 
       <div id="portal-footer">
           Copyright 2004 Canonical Ltd.<br />
-          <a href="sitemap">Site map</a> &mdash;
-          <a href="legal">Legal</a>
+          <a href="/legal">Legal</a>
       </div>
   </body>
 </html>

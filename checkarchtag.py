@@ -18,12 +18,8 @@ import sets
 def get_actual_tags():
     """Returns a mapping of tag->filename for all files in the tree."""
     tagdict = {}
-    stdin, out, err = os.popen3("tla inventory -s --ids")
-    #errlines = err.readlines()
+    stdin, out, err = os.popen3("baz inventory -s --ids")
     dataout = out.readlines()
-    if not dataout and err.readlines():
-        stdin, out, err = os.popen3("baz inventory -s --ids")
-        dataout = out.readlines()
     for line in dataout:
         filename, tag = line.split()
         if tag.startswith('i_'):

@@ -114,7 +114,7 @@
   HTTP/1.1 200 Ok
   ...
                   <li>
-                    <a href="people/6/+edit">...</a>
+                    <a href="/malone/bugs/2/people/6/+edit">...</a>
                   </li>
   ...
           <h1>

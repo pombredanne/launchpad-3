@@ -4,6 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Adding New Distribution</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -24,17 +25,6 @@
     <fieldset>
     <legend><h3>Create a New Distribution</h3><legend>
 	<table>
-	<tr><td>
-	<div class="field">
-	    <label>Name</label>
-	    <span class="fieldRequired" title="Required">(Required)</span>
-	    <div class="formHelp">
-	    Enter the Distribution Name.
-            </div>
-	    <input type="text" name="name"
-	    tal:attributes="value request/name|nothing"/>
-	</div>
-	</td></tr>
 	<tr><td>
 	<div class="field">
 	    <label>Title</label>
@@ -58,6 +48,16 @@
 	</div>
 	</td></tr>
 	<tr><td>
+	<div class="field">
+	    <label>Domain</label>
+	    <div class="formHelp">
+	    Enter the Distribution Domain.
+            </div>
+	    <input type="text" name="domain" size="40"
+	    tal:attributes="value request/domain|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
 	<div class="formControls">
 	  <input type="submit" value="Create"/>
 	</div>
@@ -68,7 +68,7 @@
 
   <tla:block tal:condition="view/add_action">
   <div>
-  <h4><a tal:attributes="href request/name">
+  <h4><a tal:attributes="href view/results/name">
   <span tal:content="view/results/title"/></a> 
   Distribution added</h4>
   </div>

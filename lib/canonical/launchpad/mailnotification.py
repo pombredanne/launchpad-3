@@ -3,7 +3,8 @@ application."""
 
 from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
-from canonical.launchpad.interfaces import IBug
+
+from canonical.launchpad.interfaces import IBug, IBugSubscriptionSet
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.database import Bug, BugTracker, EmailAddress
 from canonical.lp.dbschema import BugAssignmentStatus, BugPriority, \
@@ -35,17 +36,22 @@ The following changes were made:
 
         send_edit_notification_simple(bug, from_addr, to_addrs, subject, msg)
 
+#def get_cc_list(bug):
+#    """Return the list of people that are CC'd on this bug."""
+#    subscribers = [
+#        s.person for s in bug.subscriptions
+#        if BugSubscription.items[s.subscription].title == CC]
+#    emails = list(GLOBAL_NOTIFICATION_EMAIL_ADDRS)
+#    for s in subscribers:
+#        emails.append(
+#            EmailAddress.select(EmailAddress.q.personID == s.id)[0].email)
+#
+#    return emails
+
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug."""
-    subscribers = [
-        s.person for s in bug.subscriptions
-        if BugSubscription.items[s.subscription].title == CC]
-    emails = list(GLOBAL_NOTIFICATION_EMAIL_ADDRS)
-    for s in subscribers:
-        emails.append(
-            EmailAddress.select(EmailAddress.q.personID == s.id)[0].email)
-
-    return emails
+    bugsubscriptions = zapi.getAdapter(bug, IBugSubscriptionSet, "")
+    return list(GLOBAL_NOTIFICATION_EMAIL_ADDRS) + bugsubscriptions.getCcEmailAddresses()
 
 def get_changes(before, after, fields):
     """Return what changed from the object before to after for the

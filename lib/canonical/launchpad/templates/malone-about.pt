@@ -1,15 +1,64 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en">
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="malone">
 
 <head>
-  <title>About Malone</title>
+    <title metal:fill-slot="title">About Malone</title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
 </head>
 
 <body>
-  <h1>About Malone</h1>
-  <p>
-    A page that gives more info on what the Malone system does and what it's
-    about.
-  </p>
+
+<div metal:fill-slot="main">
+
+    <h1>About Malone</h1>
+
+        <p>Malone is a collaborative bug tracker. It is unique, in that it
+        understands that open source code is worked on by upstream
+        contributors as well as by distributions, and that both will want to
+        track their bugs separately, but also share that bug information.
+        Malone allows you to file a bug on a packge in Gentoo, for example,
+        and then easily tell the upstream maintainers about the bug. Someone
+        else can then say "hey, this bug is fixed in Ubuntu", at which point
+        upstream and Gentoo both see the fix.</p>
+
+        <p>In Malone we separate out the information about a specific bug,
+        and the tracking of where that bug occurs. Everybody shares the
+        information about the bug - it's description, summary, links to
+        relevant web content and other bug trackers. But tracking the status
+        of that bug is done separately for upstream aand for each fo the
+        distributions. This means that a Malone Bug is a bit of a
+        Heisenbug... the status of the bug depends on your viewpoint. If you
+        are looking at the bug from within a distribution, you will see the
+        status of that bug in your distribution. If you are from upstream,
+        you will see the bug status upstream. You can of course also see the
+        status elsewhere, especially if "elsewhere" has fixed this bug.</p>
+
+        <p>Malone also introduces a new concept in bug tracking, which is
+        "infestation". Bug infestation is a way of tracking the state of a
+        bug in a specific release of the upstream code, or distro packages.
+        So its possible with Malone to say "this bug exists in that version,
+        but not in this version". If you can point at a specific version
+        which fixes the bug, then that information will be highlighted for
+        everyone. This allows a fix developed in one of the distributions to
+        propagate quickly upstream, and to the other distros.</p>
+
+    <h2>Start Using Malone</h2>
+
+        <p>You can start using Malone as a bug tracker immediately, for any
+        open source project. Simply <a href="products">find your open source
+        project in the Launchpad</a>, and start filing bugs. You can add
+        your project to the Launchpad trivially if it's not already listed.
+        You can discuss Malone itself with other users on the <a
+        href="http://lists.ubuntulinux.org/mailman/listinfo/malone-users">Malone-Users
+        List </a>, where we discuss new features, bugs and
+        other issues related to Malone.</p>
+
+</div>
+
 </body>
 </html>

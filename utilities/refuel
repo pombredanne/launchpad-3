@@ -6,35 +6,35 @@ baz cat-config configs/canonical.com/launchpad/development | xargs -n 2 baz upda
 
 # then check if there are unmerged changes
 cd ~/projects/ubuntu/launchpad
-baz changes 
+baz diff -q
 if [ $? -gt 0 ]; then
     echo "You've got changes! Please commit them before refueling"
     exit 1
 fi;
 
 # check for loose files
-baz tree-lint -t --strict
+baz status --lint --untagged-files --strict
 if [ $? -gt 0 ]; then
   echo "You have untagged files. Please add them and commit before refueling."
   exit 1
 fi
 
 # now merge launchpad with the rocketfuel repo
-baz star-merge rocketfuel@canonical.com/launchpad--devel--0
+baz star-merge --two-way rocketfuel@canonical.com/launchpad--devel--0
 
 # check for conflicts, and if none exist, commit the merge
-test -z $(find . -name "*.orig" -or -name "*.rej" -print)
-if [ $? -gt 0 ]; then
+FILELIST=$(find . -name "*.orig" -or -name "*.rej" -print)
+if [ ! -z "$FILELIST" ]; then
   echo "WARNING: You have conflicts. Please resolve them and commit before doing"
   echo "         any additional work."
   exit 1
 else
-  baz changes
+  baz diff --quiet
   if [ $? -gt 0 ]; then
     # commit the merged changes
     baz commit -s "merge rocketfuel"
     # show the commited star-merge delta
-    baz delta --diffs $(baz logs | tail -2) | less
+    baz delta --diffs $(baz logs -f | tail -2) | less
   fi
 fi
 

@@ -23,6 +23,12 @@
         permission="zope.Public"
         name="projects" />
 
+    <browser:suburl
+        for="canonical.launchpad.interfaces.IDOAPApplication"
+        utility="canonical.launchpad.interfaces.IProductSet"
+        permission="zope.Public"
+        name="products" />
+
     <!-- general template for everything in doap -->
     <browser:pages for="*" permission="zope.Public">
         <browser:page name="launchpad_template"

@@ -21,6 +21,7 @@ from canonical.launchpad.interfaces import IProject, IProjectSet, \
 from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.product import Product
 
+from sets import Set
 
 class Project(SQLBase):
     """A Project"""
@@ -114,15 +115,8 @@ class ProjectSet:
                        datecreated = 'now')
 
     def forReview(self):
-        query = """Product.project=Project.id AND
-                 ( Product.reviewed IS FALSE OR
-                   Project.reviewed IS FALSE )"""
-        clauseTables = ['Project', 'Product']
-        results = []
-        for project in Project.select(query, clauseTables=clauseTables):
-            if project not in results:
-                results.append(project)
-        return results
+        return Project.select("reviewed IS FALSE")
+
 
     def forSyncReview(self):
         query = """Product.project=Project.id AND
@@ -138,17 +132,48 @@ class ProjectSet:
         return results
 
 
-    def search(self, query, search_products = False):
-        query = quote('%' + query + '%')
-
-        condition = ('title ILIKE %s OR description ILIKE %s' %
-            (query, query))
-
-        if search_products:
-            condition += (' OR id IN (SELECT project FROM Product WHERE '
-                'title ILIKE %s OR description ILIKE %s)' % (query, query))
-
-        return Project.select(condition)
+    def search(self, text=None, soyuz=None,
+                     rosetta=None, malone=None,
+                     buttress=None,
+                     search_products=True,
+                     show_inactive=False):
+        """Search through the DOAP database for projects that match the
+        query terms. text is a piece of text in the title / summary /
+        description fields of project (and possibly product). soyuz,
+        bounties, buttress, malone etc are hints as to whether the search
+        should be limited to projects that are active in those Launchpad
+        applications."""
+        clauseTables = Set()
+        clauseTables.add('Project')
+        query = '1=1 '
+        if text:
+            text = quote(text)
+            query += " AND Project.fti @@ ftq(%s) """ % (text,)
+        if rosetta:
+            clauseTables.add('Product')
+            clauseTables.add('POTemplate')
+        if malone:
+            clauseTables.add('Product')
+            clauseTables.add('ProductBugAssignment')
+        if buttress:
+            clauseTables.add('Product')
+            clauseTables.add('SourceSource')
+        if search_products and text:
+            clauseTables.add('Product')
+            query += " AND Product.fti @@ ftq(%s) " % (text,)
+        if 'Product' in clauseTables:
+            query += ' AND Product.project=Project.id \n'
+        if 'POTemplate' in clauseTables:
+            query += ' AND POTemplate.product=Product.id \n'
+        if 'ProductBugAssignment' in clauseTables:
+            query += ' AND ProductBugAssignment.product=Product.id \n'
+        if 'SourceSource' in clauseTables:
+            query += ' AND SourceSource.product=Product.id \n'
+        if not show_inactive:
+            query += ' AND Project.active IS TRUE \n'
+            if 'Product' in clauseTables:
+                query += ' AND Product.active IS TRUE \n'
+        return Project.select(query, distinct=True, clauseTables=clauseTables)
 
 
 class ProjectBugTracker(SQLBase):

@@ -11,6 +11,7 @@ import xmlrpclib
 
 from twisted.python.util import sibpath
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
+from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 
 class XMLRPCTestCase(LaunchpadTestCase):
@@ -51,6 +52,30 @@ class XMLRPCTestCase(LaunchpadTestCase):
         # Check that the failure case (no such user or bad passwd) returns {}
         emptyDict = self.server.authUser('invalid@email', '')
         self.assertEqual({}, emptyDict)
+
+        # Create a user. Note we have to pass in their email address twice
+        # (for historical reasons - should refactor one day)
+        self.server.createUser(
+                'nobody@example.com', # Used to generate the Person.name
+                SSHADigestEncryptor().encrypt('testpw'),
+                'Display Name',
+                ['nobody@example.com',] # The email addresses stored
+                )
+
+        # Authenticate a user. This requires two queries - one to retrieve
+        # the salt, the other to do the actual auth. This way the auth
+        # server never has to see encrypted passwords (probably a pointless
+        # security optimization, since the easiest way to attach the auth
+        # server would be to have already taken over an application server)
+        r1 = self.server.getUser('nobody@example.com')
+
+        loginId = r1['id']
+        salt = r1['salt'].decode('base64')
+        r2 = self.server.authUser(
+                loginId, SSHADigestEncryptor().encrypt('testpw', salt)
+                )
+        self.failUnlessEqual(r2['displayname'], 'Display Name')
+        self.failUnlessEqual(r2['emailaddresses'], ['nobody@example.com'])
 
     def tearDown(self):
         pid = int(open('twistd.pid').read())

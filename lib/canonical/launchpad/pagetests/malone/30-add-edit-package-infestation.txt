@@ -67,7 +67,7 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-          <tr onclick="window.location='packageinfestations/1/+edit'">
+          <tr onclick="window.location='/malone/bugs/2/packageinfestations/1/+edit'">
   ...
 
 

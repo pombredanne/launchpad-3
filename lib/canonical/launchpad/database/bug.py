@@ -22,7 +22,6 @@ from canonical.launchpad.database.bugassignment \
         import SourcePackageBugAssignment, ProductBugAssignment
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.product import Product
-from canonical.launchpad.database.bugactivity import BugActivity
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.lp.dbschema import BugSubscription as BugSubscriptionVocab
 
@@ -67,21 +66,11 @@ class Bug(SQLBase):
     cverefs = MultipleJoin('CVERef', joinColumn='bug')
     subscriptions = MultipleJoin('BugSubscription', joinColumn='bug')
 
-    def _set_title(self, value):
-        # Record changes of title in activity log
-        # TODO: We might want a 'Bug Created' log entry
-        if hasattr(self, 'id'):
-            log = BugActivity(bug=self.id,
-                            datechanged=nowUTC,
-                            person=1, # should be the logged in user
-                            whatchanged='title',
-                            oldvalue=self.title,
-                            newvalue=value,
-                            message='Message here')
-        self._SO_set_title(value)
-
 def BugFactory(*args, **kw):
     """Create a bug from an IBugAddForm"""
+    description = kw['description']
+    summary = description.split('\n')[0]
+    kw['shortdesc'] = summary
     bug = Bug(
         title = kw['title'],
         shortdesc = kw['shortdesc'],

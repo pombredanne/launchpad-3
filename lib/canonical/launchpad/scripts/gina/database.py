@@ -18,6 +18,7 @@ class SQLThing:
         return self.db.close()
 
     def ensure_string_format(self, name):
+        assert isinstance(name, basestring), repr(name)
         try:
             # check that this is unicode data
             name.decode("utf-8").encode("utf-8")
@@ -69,6 +70,7 @@ class SQLThing:
         keys = data.keys()
         query = "INSERT INTO %s (%s) VALUES (%s)" \
                  % (table, ",".join(keys), ",".join(["%s"] * len(keys)))
+        #print query
         try:
             self._exec(query, data.values())
         except Exception, e:
@@ -89,6 +91,7 @@ class Katie(SQLThing):
                                       AND    source.sig_fpr = fingerprint.id
                                       AND    version = %s""", (name, version))
         if not ret:
+            return None #Shortcircuit because the ubuntu lookup fails
             print "\t\t* that spr didn't turn up. Attempting to find via ubuntu*"
         else:
             return ret
@@ -96,7 +99,7 @@ class Katie(SQLThing):
         return self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id
-                                      AND    version like '%subuntu%%'""", (name, version))
+                                      AND    version like '%subuntu%s'""" % ("%s", version, "%"), name)
         
     
     def getBinaryPackageRelease(self, name, version, arch):  
@@ -162,7 +165,12 @@ class Launchpad(SQLThing):
         except:
             raise ValueError, "Unable to find a processor from the processor family chosen from %s/%s" % (dr, proc)
         print "INFO: Chosen D(%d) DR(%d), PROC(%d), DAR(%d) from SUITE(%s), ARCH(%s)" % (self.distro, self.distrorelease, self.processor, self.distroarchrelease, dr, proc)
-
+        # Attempt to populate self._debiandistro
+        self._debiandistro = self._query_single("""
+        SELECT id FROM distribution WHERE name = 'debian'
+        """)[0]
+        print "INFO: Found Debian GNU/Linux at %d" % (self._debiandistro)
+        
     #
     # SourcePackageName
     #
@@ -202,14 +210,31 @@ class Launchpad(SQLThing):
             "srcpackageformat":     1 
         }
         self._insert("sourcepackage", data)
+        data["distro"] = self._debiandistro
+        self._insert("sourcepackage", data)
 
-    def getSourcePackage(self, name_name):
+        ubuntupackage = self.getSourcePackage(src.package)
+        debianpackage = self.getSourcePackage(src.package, self._debiandistro)
+        
+        data = {
+            "subject": ubuntupackage,
+            "label": 4, ## DERIVESFROM
+            "object": debianpackage
+            }
+        self._insert("sourcepackagerelationship", data)
+
+    def getSourcePackage(self, name_name, distro = None):
+        # Suckage because Python won't analyse default values in the context
+        # of the call. Python idiom is nasty.
+        if distro is None:
+            distro = self.distro
         self.ensureSourcePackageName(name_name)
         name = self.getSourcePackageName(name_name)
         # FIXME: SELECT * is crap !!!
         return self._query_single("""SELECT * FROM sourcepackage 
-                                     WHERE sourcepackagename=%s;""",
-                                  (name[0],))
+                                     WHERE sourcepackagename=%s
+                                       AND distro=%s""",
+                                  (name[0],distro))
         
     #
     # SourcePackageRelease
@@ -376,7 +401,7 @@ class Launchpad(SQLThing):
         #print "Looking for %s %s for %s" % (name,version,architecture)
         bin_id = self.getBinaryPackageName(name)
         if not bin_id:
-            print "Failed to find the name"
+            print "Failed to find the binarypackagename for %s" % (name)
             return None
         if architecture == "all":
             return self._query_single("""SELECT * from binarypackage WHERE

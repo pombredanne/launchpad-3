@@ -16,7 +16,7 @@ _ = MessageIDFactory('launchpad')
 class IProject(Interface):
     """A Project."""
 
-    id = Int(title=_('ID'))
+    id = Int(title=_('ID'), readonly=True)
     owner = Int(title=_('Owner'))
     name = TextLine(title=_('Name'), description=_("""The short name of the
     project. Must be lowercase, and not contain spaces, it will be part of
@@ -70,13 +70,6 @@ class IProject(Interface):
     def getProduct(name):
         """Get a product with name `name`."""
     
-    def rosettaProducts():
-        """Iterates over Rosetta Products in this project.
-        XXX Mark Shuttleworth 02/10/04 what is the difference
-            between a Rosetta Product and a normal product?
-            Can this duplication be cleaned up or the difference
-            clarified and documented?"""
-
     # XXX: This will go away once we move to project->product->potemplate
     #      traversal rather than project->potemplate traversal.
     def poTemplate(name):
@@ -87,6 +80,10 @@ class IProject(Interface):
 
     def newSourceSource():
         """Add a SourceSource for upstream code syncing to Arch."""
+
+    def product(name):
+        """Return the product belonging to this project with the given
+        name."""
 
 
 
@@ -111,8 +108,16 @@ class IProjectSet(Interface):
         Raises an KeyError if a project with that name already exists.
         """
 
-    def search(query):
-        """Search for projects matching a certain strings."""
+    def search(text=None, soyuz=None,
+                     rosetta=None, malone=None,
+                     buttress=None,
+                     search_products=True):
+        """Search through the DOAP database for projects that match the
+        query terms. text is a piece of text in the title / summary /
+        description fields of project (and possibly product). soyuz,
+        buttress, malone etc are hints as to whether the search should
+        be limited to projects that are active in those Launchpad
+        applications."""
 
     def forReview():
         """Return a list of Projects which need review, or which have
@@ -127,17 +132,5 @@ class IProjectBugTracker(Interface):
     project = Int(title=_('Owner'))
     bugtracker = Int(title=_('Bug Tracker'))
     
-
-class IRosettaProject(IRosettaStats, IProject):
-    """The rosetta interface to a project."""
-
-    displayname = Attribute("The Project's name that will be showed.")
-
-    def poTemplates():
-        """Returns an iterator over this project's PO templates."""
-
-    def product(name):
-        """Return the product belonging to this project with the given
-        name."""
 
 

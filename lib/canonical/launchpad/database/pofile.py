@@ -1,3 +1,5 @@
+import StringIO, base64
+
 # Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
@@ -20,6 +22,8 @@ from canonical.launchpad.database.language import Language
 from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.lp.dbschema import RosettaImportStatus
 from canonical.database.constants import DEFAULT, UTC_NOW
+
+from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 
 standardPOTemplateCopyright = 'Canonical Ltd'
 
@@ -91,8 +95,10 @@ class POTemplate(SQLBase):
     rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
         notNull=False, default=None)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False)
-    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False)
+    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
+        default=None)
+    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=True,
+        default=RosettaImportStatus.IGNORE.value)
 
 
     def currentMessageSets(self):
@@ -221,7 +227,8 @@ class POTemplate(SQLBase):
             translated_condition = 'TRUE'
 
         results = POTMsgSet.select(
-            'POTMsgSet.potemplate = %d AND %s AND %s' %
+            'POTMsgSet.potemplate = %d AND %s AND %s '
+            'ORDER BY POTMsgSet.sequence' %
                 (self.id, translated_condition, current_condition))
 
         if slice is not None:
@@ -331,7 +338,7 @@ class POTemplate(SQLBase):
         else:
             raise KeyError(
                 "This template already has a POFile for %s variant %s" %
-                (language.englishName, variant))
+                (language.englishname, variant))
 
         try:
             language = Language.byCode(language_code)
@@ -341,7 +348,7 @@ class POTemplate(SQLBase):
         now = datetime.now()
         data = {
             'year': now.year,
-            'languagename': language.englishName,
+            'languagename': language.englishname,
             'languagecode': language_code,
             'productname': self.product.title,
             'date': now.isoformat(' '),
@@ -349,8 +356,8 @@ class POTemplate(SQLBase):
             #'templatedate': self.datecreated.gmtime().Format('%Y-%m-%d %H:%M+000'),
             'templatedate': self.datecreated,
             'copyright': self.copyright,
-            'nplurals': language.pluralForms or 1,
-            'pluralexpr': language.pluralExpression or '0',
+            'nplurals': language.pluralforms or 1,
+            'pluralexpr': language.pluralexpression or '0',
             }
 
         return POFile(potemplate=self,
@@ -423,6 +430,32 @@ class POTemplate(SQLBase):
 
         return self.createMessageSetFromMessageID(messageID)
 
+    def doRawImport(self):
+        importer = TemplateImporter(self, self.rawimporter)
+    
+        file = StringIO.StringIO(base64.decodestring(self.rawfile))
+    
+        try:
+            importer.doImport(file)
+        except:
+            # The import failed, we mark it as failed so we could review it
+            # later in case it's a bug in our code.
+            self.rawimportstatus = RosettaImportStatus.FAILED.value
+        else:
+            # The import has been done, we mark it that way.
+            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+
+        # We update the cached value that tells us the number of msgsets this
+        # .pot file has
+        self.messagecount = len(self)
+
+        # And now, we should update the statistics for all po files this .pot
+        # file has because a number of msgsets could have change.
+        # XXX: Carlos Perello Marin 09/12/2004 We should handle this case
+        # better. The pofile don't get updated the currentcount updated...
+        for pofile in self.poFiles():
+            pofile.updateStatistics()
+
 
 class POTMsgSet(SQLBase):
     implements(IPOTMsgSet)
@@ -478,6 +511,30 @@ class POTMsgSet(SQLBase):
 
             return results[0]
 
+    def poMsgSet(self, language_code, variant=None):
+        if variant is None:
+            variantspec = 'IS NULL'
+        elif isinstance(variant, unicode):
+            variantspec = (u'= "%s"' % quote(variant))
+        else:
+            raise TypeError('Variant must be None or unicode.')
+
+        sets = POMsgSet.select('''
+            POMsgSet.potmsgset = %d AND
+            POMsgSet.pofile = POFile.id AND
+            POFile.language = Language.id AND
+            POFile.variant %s AND
+            Language.code = %s
+            ''' % (self.id,
+                   variantspec,
+                   quote(language_code)),
+            clauseTables=('POFile', 'Language'))
+
+        if sets.count() == 0:
+            raise KeyError, (language_code, variant)
+        else:
+            return sets[0]
+
     def translationsForLanguage(self, language):
         # Find the number of plural forms.
 
@@ -490,7 +547,7 @@ class POTMsgSet(SQLBase):
             pluralforms = pofile.pluralforms
         except KeyError:
             pofile = None
-            pluralforms = languages[language].pluralForms
+            pluralforms = languages[language].pluralforms
 
         # If we only have a msgid, we change pluralforms to 1, if it's a
         # plural form, it will be the number defined in the pofile header.
@@ -632,8 +689,10 @@ class POFile(SQLBase):
     rawfile = StringCol(dbName='rawfile', notNull=False, default=None)
     rawimporter = ForeignKey(foreignKey='Person', dbName='rawimporter',
         notNull=False, default=None)
-    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False)
-    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False)
+    daterawimport = DateTimeCol(dbName='daterawimport', notNull=False,
+        default=None)
+    rawimportstatus = IntCol(dbName='rawimportstatus', notNull=False,
+        default=RosettaImportStatus.IGNORE.value)
 
 
     def currentMessageSets(self):
@@ -728,7 +787,7 @@ class POFile(SQLBase):
                 return poresults[0]
 
     def __getitem__(self, msgid_text):
-        return self.messageSet(msgid_text, onlyCurrent=True)
+        return self.messageSet(msgid_text)
 
     def messageSetsNotInTemplate(self):
         return iter(POMsgSet.select('''
@@ -858,6 +917,36 @@ class POFile(SQLBase):
 
         return self.createMessageSetFromMessageSet(potmsgset)
 
+    def lastChangedSighting(self):
+        '''
+        SELECT * FROM POTranslationSighting WHERE POTranslationSighting.id =
+        POMsgSet.id AND POMsgSet.pofile = 2 ORDER BY datelastactive;
+        '''
+        sightings = POTranslationSighting.select('''
+            POTranslationSighting.pomsgset = POMsgSet.id AND
+            POMsgSet.pofile = %d''' % self.id, orderBy='-datelastactive',
+            clauseTables=('POMsgSet',))
+
+        try:
+            return sightings[0]
+        except IndexError:
+            return None
+
+    def doRawImport(self):
+        importer = POFileImporter(self, self.rawimporter)
+    
+        file = StringIO.StringIO(base64.decodestring(self.rawfile))
+    
+        try:
+            importer.doImport(file)
+        except:
+            self.rawimportstatus = RosettaImportStatus.FAILED.value
+        else:
+            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+
+        # Now we update the statistics after this new import
+        self.updateStatistics(newImport=True)
+
 
 class POMsgSet(SQLBase):
     implements(IEditPOMsgSet)
@@ -873,7 +962,7 @@ class POMsgSet(SQLBase):
     potmsgset = ForeignKey(foreignKey='POTMsgSet', dbName='potmsgset',
         notNull=True)
 
-    def pluralForms(self):
+    def pluralforms(self):
         if self.potmsgset.messageIDs().count() > 1:
             # has plurals
             return self.pofile.pluralforms
@@ -882,7 +971,7 @@ class POMsgSet(SQLBase):
             return 1
 
     def translations(self):
-        pluralforms = self.pluralForms()
+        pluralforms = self.pluralforms()
         if pluralforms is None:
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")
@@ -926,12 +1015,92 @@ class POMsgSet(SQLBase):
 
     # IEditPOMsgSet
 
-    # XXX: Carlos Perello Marin 17/11/2004: I'm not sure this method is 
-    def setFuzzy(self, value):
-        self.fuzzy = value
+    def updateTranslation(self, person, new_translations, fuzzy, fromPOFile):
+        was_complete = self.iscomplete
+        was_fuzzy = self.fuzzy
+        has_changes = False
+        # By default we will think that all translations for this pomsgset
+        # where available in last import
+        all_in_last_revision = True
 
+        # Get a hold of a list of existing translations for the message set.
+        old_translations = self.translations()
+
+        for index in new_translations.keys():
+            # For each translation, add it to the database if it is
+            # non-null and different to the old one.
+            if new_translations[index] != old_translations[index]:
+                has_changes = True
+                if (new_translations[index] == '' or
+                    new_translations[index] is None):
+                    # Make all sightings inactive.
+
+                    self._connection.query(
+                        '''
+                            UPDATE POTranslationSighting SET active = FALSE
+                            WHERE
+                                pomsgset = %d AND
+                                pluralform = %d
+                        ''' % (self.id, index))
+                    new_translations[index] = None
+                    self.iscomplete = False
+
+                else:
+                    try:
+                        old_sight = self.getTranslationSighting(index)
+                    except IndexError:
+                        # We don't have a sighting for this string, that means
+                        # that either the translation is new or that the old
+                        # translation does not comes from the pofile.
+                        all_in_last_revision = False
+                    else:
+                        if not old_sight.active:
+                            all_in_last_revision = False
+                    self.makeTranslationSighting(
+                        person = person,
+                        text = new_translations[index],
+                        pluralForm = index,
+                        fromPOFile = fromPOFile)
+
+        # We set the fuzzy flag as needed:
+        if fuzzy and self.fuzzy == False:
+            self.fuzzy = True
+        elif not fuzzy and self.fuzzy == True:
+            self.fuzzy = False
+        
+        if not has_changes:
+            # We don't change the statistics if we didn't had any change.
+            return
+            
+        # We do now a live update of the statistics.
+        if self.iscomplete and not self.fuzzy:
+            # New msgset translation is ready to be used.
+            if not was_complete or was_fuzzy:
+                # It was not ready before this change.
+                if fromPOFile:
+                    # The change was done outside Rosetta.
+                    self.pofile.currentcount += 1
+                else:
+                    # The change was done with Rosetta.
+                    self.pofile.rosettacount += 1
+            elif not fromPOFile and all_in_last_revision:
+                # We have updated a translation from Rosetta that was
+                # already translated.
+                self.pofile.updatescount += 1
+        else:
+            # This new msgset translation is not yet finished.
+            if was_complete and not was_fuzzy:
+                # But previously it was finished, so we lost its translation.
+                if fromPOFile:
+                    # It was lost outside Rosetta
+                    self.pofile.currentcount -= 1
+                else:
+                    # It was lost inside Rosetta
+                    self.pofile.rosettacount -= 1
+                
+                
     def makeTranslationSighting(self, person, text, pluralForm,
-                              update=False, fromPOFile=False):
+        fromPOFile=False):
         """Create a new translation sighting for this message set."""
 
         # First get hold of a POTranslation for the specified text.
@@ -952,11 +1121,6 @@ class POMsgSet(SQLBase):
             # A sighting already exists.
 
             assert results.count() == 1
-
-            if not update:
-                raise KeyError(
-                    "There is already a translation sighting for this "
-                    "message set, text, plural form and person.")
 
             sighting = results[0]
             sighting.set(

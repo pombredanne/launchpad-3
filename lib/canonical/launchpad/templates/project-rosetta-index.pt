@@ -1,0 +1,103 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<head>
+    <title metal:fill-slot="title">Rosetta: <span
+        tal:replace="context/title">Project Title</span></title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Rosetta style sheet -->
+    <style type="text/css" media="screen">@import url(rosetta.css);</style>
+</head>
+
+<body>
+
+<metal:rightportlets fill-slot="portlets_two">
+        <div tal:replace="structure view/languagesPortlet" />
+        <div tal:replace="structure view/trackersPortlet" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+    <h1>Translation overview: <span tal:replace="context/title">NAME</span></h1>
+
+    <div style="float: right; clear: both; margin-top: 0.25em;">
+    Project home page:
+    <a href="http://project.home/page"
+       tal:content="context/homepageurl|default"
+       tal:attributes="href context/homepageurl|nothing">(None supplied)</a>
+    </div>
+
+    <p  tal:content="context/shortdesc"
+        class="documentDescription">Project Summary
+    </p>
+
+    <p tal:content="context/description">
+    Mozilla offers a full suite of integrated Internet applications including
+    a web browser, e-mail client, address book, web page composer, Internet
+    chat software and calendar application.
+    </p>
+
+    <div tal:condition="view/hasProducts">
+
+        <h2>Products</h2>
+
+        <table class="listing rowNavigation">
+            <thead>
+                <th>Product</th>
+                <th>Translated</th>
+                <th>Untranslated</th>
+                <th>Graph</th>
+            </thead>
+
+            <tbody>
+                <tr tal:repeat="product view/productTranslationStats"
+                    tal:attributes="onclick string:window.location='${product/name}'">
+                    <td tal:content="product/title">Product Title</td>
+                    <td tal:content="product/poTranslated">0</td>
+                    <td tal:content="product/poUntranslated">0</td>
+                    <td>
+                    <img src="/++resource++green-bar.png"
+                             height="15"
+                             alt="Translated & non updated graph"
+                             tal:condition="product/poNonUpdatesCount"
+                             tal:attributes="width product/poNonUpdatesPercent;
+                                             title string: Translated: ${product/poNonUpdatesPercent}%"
+                        /><img src="/++resource++blue-bar.png"
+                               height="15"
+                               alt="Updated graph"
+                               tal:condition="product/poUpdatesCount"
+                               tal:attributes="width product/poUpdatesPercent;
+                                               title string: Updates: ${product/poUpdatesPercent}%"
+                        /><img src="/++resource++purple-bar.png"
+                               height="15"
+                               alt="Rosetta additions graph"
+                               tal:condition="product/poRosettaCount"
+                               tal:attributes="width product/poRosettaPercent;
+                                               title string: Rosetta additions: ${product/poRosettaPercent}%"
+                        /><img src="/++resource++red-bar.png"
+                               height="15"
+                               alt="Fuzzy graph"
+                               tal:condition="product/poUntranslated"
+                               tal:attributes="width product/poUntranslatedPercent;
+                                               title string: Untranslated: ${product/poUntranslatedPercent}%" />
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div> <!-- tal:condition="view/hasProducts -->
+
+    <div tal:condition="not: view/hasProducts">
+        <p>
+        There are currently no products for <span
+        tal:content="context/title">project title</span>.
+        </p>
+    </div>
+
+</div>
+
+</body>
+</html>

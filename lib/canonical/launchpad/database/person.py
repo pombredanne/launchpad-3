@@ -18,7 +18,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import IPerson, IPersonSet, IEmailAddress
 from canonical.launchpad.interfaces import ILanguageSet
 from canonical.launchpad.interfaces import IPasswordEncryptor
+from canonical.launchpad.interfaces import ITeamParticipationSet
 from canonical.launchpad.database.pofile import POTemplate
+from canonical.lp.dbschema import KarmaField
 from canonical.lp import dbschema
 from canonical.foaf import nickname
 
@@ -81,7 +83,8 @@ class Person(SQLBase):
                 POTemplate.product = Product.id AND
                 Product.project = Project.id
             ORDER BY ???
-            '''
+        '''
+        raise NotImplementedError
 
     def translatedTemplates(self):
         '''
@@ -96,11 +99,27 @@ class Person(SQLBase):
         # right now I'd rather have this working than spend time on working
         # out the Right solution.
         return POTemplate.select('''
-            id IN (SELECT potemplate FROM pomsgset WHERE
-                id IN (SELECT pomsgset FROM POTranslationSighting WHERE
-                    origin = 2
-                ORDER BY datefirstseen DESC))
+            id IN (
+                SELECT potemplate FROM potmsgset WHERE id IN (
+                    SELECT potmsgset FROM pomsgset WHERE id IN (
+                        SELECT pomsgset FROM POTranslationSighting WHERE origin = 2
+                            ORDER BY datefirstseen DESC)))
             ''')
+
+    def assignKarma(self, karmafield, points=None):
+        if karmafield not in KarmaField.items:
+            raise TypeError('"%s" is not a valid KarmaField value')
+        if points is None:
+            try:
+                points = KARMA_POINTS[karmafield]
+            except KeyError:
+                # What about defining a default number of points?
+                points = 0
+                # Print a warning here, cause someone forgot to add the
+                # karmafield to KARMA_POINTS.
+        Karma(person=self, karmafield=karmafield.value, points=points)
+        # XXX: I think we should recalculate the karma here.
+        self.karma += points
 
 
 class PersonSet(object):
@@ -121,6 +140,9 @@ class PersonSet(object):
             return Person.get(personid)
         except SQLObjectNotFound:
             return default
+
+    def getAll(self):
+        return Person.select(orderBy='displayname')
 
     def getByEmail(self, email, default=None):
         """See IPersonSet."""
@@ -352,6 +374,20 @@ class Membership(SQLBase):
     
     statusname = property(_statusname)
 
+class TeamParticipationSet(object):
+    """ A Set for TeamParticipation objects. """
+
+    implements(ITeamParticipationSet)
+
+    def getSubTeams(self, teamID):
+        clauseTables = ('person',)
+        query = ("team = %d "
+                 "AND Person.id = TeamParticipation.person "
+                 "AND Person.teamowner IS NOT NULL" % teamID)
+
+        return TeamParticipation.select(query, clauseTables=clauseTables)
+
+
 class TeamParticipation(SQLBase):
     _table = 'TeamParticipation'
     _columns = [
@@ -361,19 +397,29 @@ class TeamParticipation(SQLBase):
                    notNull=True)
         ]
 
-    #
-    # TeamPaticipation Class Methods
-    #
 
-    def getSubTeams(klass, teamID):
-        clauseTables = ('person', 'person')
-        query = ("team = %d "
-                 "AND Person.id = TeamParticipation.person "
-                 "AND Person.teamowner IS NOT NULL" % teamID)
+class Karma(SQLBase):
+    _table = 'Karma'
 
-        return klass.select(query,
-                            clauseTables=clauseTables)
-    getSubTeams = classmethod(getSubTeams)
-    
-        
+    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
+    points = IntCol(dbName='points', notNull=True, default=0)
+    karmafield = IntCol(dbName='karmafield', notNull=True)
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True, default='NOW')
+
+    def _karmafieldname(self):
+        try:
+            return KarmaField.items[self.karmafield].title
+        except KeyError:
+            return 'Unknown (%d)' % self.karmafield
+
+    karmafieldname = property(_karmafieldname)
+
+
+# XXX: These points are totally *CRAP*.
+KARMA_POINTS = {KarmaField.BUG_REPORT: 10,
+                KarmaField.BUG_FIX: 20,
+                KarmaField.BUG_COMMENT: 5,
+                KarmaField.WIKI_EDIT: 2,
+                KarmaField.WIKI_CREATE: 3,
+                KarmaField.PACKAGE_UPLOAD: 10}
 

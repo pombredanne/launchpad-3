@@ -8,8 +8,10 @@ import os, os.path
 import popen2
 import tabnanny
 import checkarchtag
+import checktitles
 from StringIO import StringIO
 from threading import Thread
+import psycopg
 
 class NonBlockingReader(Thread):
 
@@ -46,11 +48,7 @@ def main():
     if not checkarchtag.is_tree_good():
         return 1
 
-    here = os.path.dirname(os.path.realpath(__file__))
-    schema_dir = os.path.join(here, 'database', 'schema')
-    if os.system('cd %s; make test > /dev/null 2>&1' % schema_dir) != 0:
-        print 'Failed to create database'
-        return 1
+    checktitles.summarise_directory("lib/canonical/launchpad/templates")
 
     # Tabnanny
     org_stdout = sys.stdout
@@ -74,6 +72,56 @@ def main():
         print ''.join(results)
         print '---- end non-absolute ++resource++ URLs found ----'
         return 1
+
+    # Drop the template database if it exists - the Makefile does this
+    # too, but we can explicity check for errors here
+    con = psycopg.connect('dbname=template1')
+    cur = con.cursor()
+    cur.execute('end transaction; drop database launchpad_ftest_template')
+    cur.close()
+    con.close()
+    
+
+    # Build the template database. Tests duplicate this.
+    here = os.path.dirname(os.path.realpath(__file__))
+    schema_dir = os.path.join(here, 'database', 'schema')
+    if os.system('cd %s; make test > /dev/null 2>&1' % schema_dir) != 0:
+        print 'Failed to create database'
+        return 1
+
+    # Sanity check the database. No point running tests if the
+    # bedrock is crumbling.
+    con = psycopg.connect('dbname=launchpad_ftest_template')
+    cur = con.cursor()
+    cur.execute('show search_path')
+    search_path = cur.fetchone()[0]
+    if search_path != '$user,public,ts2':
+        print 'Search path incorrect.'
+        print 'Add the following line to /etc/postgresql/postgresql.conf:'
+        print "    search_path = '$user,public,ts2'"
+        return 1
+    cur.execute("""
+        select count(*) from person where displayname='Mark Shuttleworth'
+        """)
+    cnt = cur.fetchone()[0]
+    if cnt < 1:
+        print 'Sample data not loaded.'
+        return 1
+    cur.execute("""
+        select pg_encoding_to_char(encoding) as encoding from pg_database
+        where datname='launchpad_ftest_template'
+        """)
+    enc = cur.fetchone()[0]
+    if enc != 'UNICODE':
+        print 'Database encoding incorrectly set'
+        return 1
+    # Explicity close our connections - things will fail if we leave open
+    # connections.
+    cur.close()
+    del cur
+    con.close()
+    del con
+    
 
     print 'Running tests.'
     proc = popen2.Popen3('cd %s; python test.py %s < /dev/null' %

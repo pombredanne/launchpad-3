@@ -4,6 +4,10 @@
       i18n:domain="launchpad">
 
 <head>
+  <title metal:fill-slot="title">
+    Builds: <span
+    tal:replace="context/sourcepackagerelease/sourcepackage/shortdesc" />
+  </title>
   <!-- Plone style sheet -->
   <style type="text/css" media="screen">@import url(plone.css);</style>
   <!-- Soyuz style sheet -->
@@ -12,78 +16,132 @@
 
 <body>
 
-<div metal:fill-slot="main">
+  <metal:leftportlets fill-slot="portlets_one">
+
+  <tal:block tal:define="distro context/distroarchrelease/distrorelease/distribution">
+    <div class="portlet">
+      <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
+
+      <div class="portletBody">
+
+        <div class="portletContent even">
+          <ul>
+          <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
+           Homepage</a></li>
+          <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
+           Releases</a></li>
+
+          <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/src">
+           Source Packages</a></li>
+
+          <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+           Binary Packages</a></li>
+
+          </ul>
+        </div>
+     </div>  
+   </div>
+
+   <div class="portlet">
+     <h4>Local Links</h4>
+       <div class="portletBody">
+         <div class="portletContent even">
+           <ul>
+           <li><a tal:attributes="href string:../../">     
+               <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span></a></li>
+           <li><a tal:attributes="href string:../">     
+               <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">TITLE</span>
+           <span tal:content="context/sourcepackagerelease/version">Version</span>
+            </a></li>
+           </ul>
+         </div>
+       </div>  
+    </div>
+  </tal:block>
+
+  </metal:leftportlets>
+
+  <div metal:fill-slot="main">
+
+    <div id="content" class="documentEditable">
+      <div class="documentContent" id="region-content">
+
+        <h1> 
+         <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
+        TITLE </span>
+         <span tal:content="context/sourcepackagerelease/version">
+        Version</span>-
+         <span tal:content="context/distroarchrelease/architecturetag">
+        Arch</span>
+        </h1>
 
 
-    <h1> 
-     <span tal:content="context/sourcepackagerelease/sourcepackage/shortdesc">
-	TITLE </span>
-     <span tal:content="context/sourcepackagerelease/version">
-	Version</span>-
-     <span tal:content="context/arch">
-	Arch</span>
-    </h1>
+          <h4>Source Package Build</h4>
+          <p>
 
+          <ul>
+            <li><b>Date Created:</b> 
+              <span tal:content="context/datecreated" />
+            </li>
 
-    <fieldset>
-      <legend>
-        Source Package Build Data
-      </legend>
-    <p> <b>Datecreate: </b> 
-           <span tal:content="context/build/datecreated" />
+            <li><span tal:condition="not:context/changes">
+                <i>Changes not Available</i>
+              </span>
+              <a tal:condition="context/changes" href="+changes">
+                View Changes
+              </a>
+            </li>
 
-    <p> <b>Processor: </b>
-           <span tal:content="context/build/processor/title" />
+            <li><b>Processor:</b>
+              <span tal:content="context/processor/title" />
+            </li>
 
-    <p> <b>Buildstate: </b>
-           <span tal:content="context/build/buildstate" />
+            <li><b>Status:</b>
+              <span tal:content="context/buildstate" />
+            </li>
 
-    <p> <b>Datebuilt: </b> 
-           <span tal:condition="not:context/build/datebuilt">
-	     <i> Information not Available </i>
-	   </span>
-           <span tal:content="context/build/datebuilt" />
+            <li><b>Date Built:</b> 
+              <span tal:condition="not:context/datebuilt">
+                <i>Information not Available</i>
+              </span>
+              <span tal:content="context/datebuilt" />
+            </li>
 
-    <p> <b>Buildduration: </b>
-           <span tal:condition="not:context/build/buildduration">
-	     <i> Information not Available </i>
-	   </span>
-           <span tal:content="context/build/buildduration" />
+            <li><b>Build Duration:</b>
+              <span tal:condition="not:context/buildduration">
+                <i> Information not Available </i>
+              </span>
+              <span tal:content="context/buildduration" />
+            </li>
 
-    <p> <b>Buildlog: </b>
-           <span tal:condition="not:context/build/buildlog">
-	     <i> Information not Available </i>
-	   </span>
-	   <a tal:condition="context/build/buildlog" href="+buildlog"> 
-	     <i> Build log </i> 
-	   </a>	   
-	   	   
+            <li><b>Build Log:</b>
+              <span tal:condition="not:context/buildlog">
+                <i>Information not Available</i>
+              </span>
+              <a tal:condition="context/buildlog" href="+buildlog"> 
+                <i>Build log</i> 
+              </a>
+            </li>
 
-    <p> <b>Builder: </b>
-           <span tal:condition="not:context/build/builder">
-	     <i> Information not Available </i>
-	   </span>
-           <span tal:condition="context/build/builder" 
-	   tal:content="context/build/builder/title" />
+            <li><b>Builder:</b>
+              <span tal:condition="not:context/builder">
+                <i> Information not Available </i>
+              </span>
+              <span tal:condition="context/builder" 
+                    tal:content="context/builder/title" />
+            </li>
 
-    <p> <b>Gpgsigningkey Fingerprint: </b>
-           <span tal:condition="not:context/build/gpgsigningkey">
-	     <i> Information not Available </i>
-	   </span>
-	   <span tal:condition="context/build/gpgsigningkey"
-	   tal:content="context/build/gpgsigningkey/fingerprint" />
-
-    <p> <b>Changes: </b> 
-           <span tal:condition="not:context/build/changes">
-	     <i> Information not Available </i>
-	   </span>
-           <a tal:condition="context/build/changes" href="+changes">
-	     <i> Changes </i> 
-	   </a>
-
-    </fieldset>    
-
-</div>
+            <li><b>GPG Signing Key Fingerprint: </b>
+               <span tal:condition="not:context/gpgsigningkey">
+                 <i> Information not Available </i>
+               </span>
+               <span tal:condition="context/gpgsigningkey"
+                     tal:content="context/gpgsigningkey/fingerprint" />
+            </li>
+          </ul>
+        </div>
+     </div>
+   </div>
 </body>
 </html>
  

@@ -1,0 +1,86 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+    <title metal:fill-slot="title"><span tal:replace="context/distribution/title" />: Source
+Packages</title>
+</head>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+
+<tal:block tal:define="distro context/distribution">
+
+ <div class="portlet">
+  <h4><span tal:content="distro/title">DISTRO</span> Links</h4>
+
+   <div class="portletBody">
+
+     <div class="portletContent even">
+
+     <ul>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}">
+     Home Page</a></li>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/releases">
+      Releases</a></li>
+     <li>Source Packages</li>
+     <li><a tal:attributes="href string:/soyuz/distros/${distro/name}/bin">
+     Binary Packages</a></li>
+     </ul>
+
+     </div>
+   </div>  
+ </div>
+
+ <div class="portlet" tal:condition="python: len(list(context))">
+  <h4>Local Links</h4>
+   <div class="portletBody">
+     <div class="portletContent even">
+     <ul>
+     <li tal:repeat="release context">
+         Release: <a tal:attributes="href string:/soyuz/distros/${distro/name}/releases/${release/name}" 
+            tal:content="release/title">RELEASE</a></li>
+     </ul>
+     </div>
+   </div>  
+ </div>
+
+</tal:block>
+
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <div id="content" class="documentEditable" tal:condition="python: len(list(context))">
+    <div class="documentContent" id="region-content">
+
+      <h1><span tal:content="context/distribution/title" /> Source Packages</h1>
+
+          <form name="search" method="post" action="">
+           <div class="formControls">
+            <label>Find:
+            <input title="Enter the package name" size="20"
+               type="text" name="name"/></label>
+            <label>in release:
+              <select name="release">
+                 <option tal:repeat="release context" 
+                         tal:attributes="value release/name"
+                         tal:content="release/title"></option>
+              </select>
+            </label>
+            <input type="submit" value="Search"/>
+           </div>
+          </form>
+      </div>
+   </div>
+</div>
+
+</body>
+</html>

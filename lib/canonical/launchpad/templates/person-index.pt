@@ -4,6 +4,9 @@
       i18n:domain="launchpad">
 
 <head>
+  <title metal:fill-slot="title">
+    <span tal:replace="context/person/displayname">Name</span>
+    Personal Information</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -97,6 +100,10 @@
 
                <tr tal:condition="context/archuser">
                <td>Arch User:</td><td tal:content="context/archuser/archuserid"></td>
+               </tr>
+
+               <tr tal:condition="context/person/karma">
+               <td>Karma:</td><td tal:content="context/person/karma"></td>
                </tr>
 
                <tr tal:condition="context/gpg">

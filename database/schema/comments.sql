@@ -90,14 +90,14 @@ COMMENT ON COLUMN POTMsgSet.flagscomment IS 'The flags associated with this set 
 
 -- POTemplate
 COMMENT ON TABLE POTemplate IS 'This table stores a pot file for a given product.';
-COMMENT ON COLUMN POTemplate.rawfile IS 'The pot file itself in raw mode.';
+COMMENT ON COLUMN POTemplate.rawfile IS 'The pot file itself encoded as a base64 string.';
 COMMENT ON COLUMN POTemplate.rawimporter IS 'The person that attached the rawfile.';
 COMMENT ON COLUMN POTemplate.daterawimport IS 'The date when the rawfile was attached.';
 COMMENT ON COLUMN POTemplate.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
 
 -- POFile
 COMMENT ON TABLE POFile IS 'This table stores a po file for a given product.';
-COMMENT ON COLUMN POFile.rawfile IS 'The pot file itself in raw mode.';
+COMMENT ON COLUMN POFile.rawfile IS 'The po file itself encoded as a base64 string.';
 COMMENT ON COLUMN POFile.rawimporter IS 'The person that attached the rawfile.';
 COMMENT ON COLUMN POFile.daterawimport IS 'The date when the rawfile was attached.';
 COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import: 0 pending import, 1 imported, 2 failed.';
@@ -117,6 +117,19 @@ COMMENT ON TABLE ProductBugAssignment IS 'Links a given Bug to a particular prod
 COMMENT ON COLUMN ProductBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
 COMMENT ON TABLE SourcepackageBugAssignment IS 'Links a given Bug to a particular sourcepackage.';
 COMMENT ON COLUMN SourcePackageBugAssignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it\'s the date the bug was assigned to this product, which could have come later.';
+
+COMMENT ON TABLE bugassignment IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
+COMMENT ON COLUMN bugassignment.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
+COMMENT ON COLUMN bugassignment.product IS 'The product in which this bug shows up.';
+COMMENT ON COLUMN bugassignment.sourcepackagename IS 'The name of the sourcepackage in which this bug shows up.';
+COMMENT ON COLUMN bugassignment.distro IS 'The distro of the named sourcepackage.';
+COMMENT ON COLUMN bugassignment.status IS 'The general health of the bug, e.g. Accepted, Rejected, etc.';
+COMMENT ON COLUMN bugassignment.priority IS 'The importance of fixing this bug.';
+COMMENT ON COLUMN bugassignment.severity IS 'The impact of this bug.';
+COMMENT ON COLUMN bugassignment.binarypackagename IS 'The name of the binary package built from the source package. This column may only contain a value if this bugassignment is linked to a sourcepackage (not a product)';
+COMMENT ON COLUMN bugassignment.assignee IS 'The person who has been assigned to fix this bug in this product or (sourcepackagename, distro)';
+COMMENT ON COLUMN bugassignment.dateassigned IS 'The date on which the bug in this (sourcepackagename, distro) or product was assigned to someone to fix';
+COMMENT ON COLUMN bugassignment.datecreated IS 'A timestamp for the creation of this bug assignment. Note that this is not the date the bug was created (though it might be), it''s the date the bug was assigned to this product, which could have come later.';
 
 
 -- CVERef
@@ -189,11 +202,13 @@ COMMENT ON COLUMN SourcePackage.srcpackageformat IS
 COMMENT ON COLUMN BinaryPackage.architecturespecific IS 'This field indicates whether or not a binarypackage is architecture-specific. If it is not specific to any given architecture then it can automatically be included in all the distroarchreleases which pertain.';
 
 
-/* Lucille's configuration */
+/* Distribution */
 
-COMMENT ON COLUMN distribution.lucilleconfig IS 'Configuration
+COMMENT ON COLUMN Distribution.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
 generating archives for this distribution';
+
+/* DistroRelease */
 
 COMMENT ON COLUMN distrorelease.lucilleconfig IS 'Configuration
 information which lucille will use when processing uploads and
@@ -290,6 +305,12 @@ COMMENT ON COLUMN Person.karmatimestamp IS 'Last time this person''s karma scror
 COMMENT ON COLUMN Person.name IS 'Short mneumonic name uniquely identifying this person or team. Useful for url traversal or in places where we need to unambiguously refer to a person or team (as displayname is not unique).';
 COMMENT ON COLUMN Person.language IS 'Preferred language for this person (unset for teams). UI should be displayed in this language wherever possible.';
 
+-- Karma
+COMMENT ON TABLE Karma IS 'Used to quantify all the ''operations'' a user performs inside the system, which maybe reporting and fixing bugs, uploading packages, end-user support, wiki editting, etc.';
+COMMENT ON COLUMN Karma.KarmaField IS 'Type of the performed ''operation''. This is a foreign key to KarmaField.';
+COMMENT ON COLUMN Karma.datecreated IS 'A timestamp for the assignment of this Karma.';
+COMMENT ON COLUMN Karma.Person IS 'The Person for wich this Karma was assigned.';
+COMMENT ON COLUMN Karma.Points IS 'The ''weight'' of this Karma. Two Karmas of the same KarmaField may have different Points, meaning that we may give higher weights for hard-to-fix bugs, for example.';
 
 -- Bounty
 COMMENT ON TABLE Bounty IS 'A set of bounties for work to be done by the open source community. These bounties will initially be offered only by Canonical, but later we will create the ability for people to offer the bounties themselves, using us as a clearing house.';
@@ -301,6 +322,8 @@ COMMENT ON COLUMN Bounty.owner IS 'The person who created the bounty. The owner 
 
 -- SourceSource
 COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.';
+COMMENT ON COLUMN SourceSource.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
+COMMENT ON COLUMN SourceSource.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
 
 -- Messaging subsytem
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';

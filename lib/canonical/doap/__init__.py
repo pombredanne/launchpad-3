@@ -26,3 +26,4 @@ class DOAPApplication(object):
 
     __parent__ = rootObject
 
+    name = 'DOAP'

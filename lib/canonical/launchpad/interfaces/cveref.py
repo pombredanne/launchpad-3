@@ -19,10 +19,14 @@ class ICVERef(Interface):
             title=_('Bug ID'), required=True, readonly=True,
             )
     cveref = TextLine(
-            title=_('CVE Reference'), required=True, readonly=False,
+            title=_('CVE Reference'),
+            description=_('The CVE reference number related to this bug.'),
+            required=True, readonly=False,
             )
-    title = Text(
-            title=_('Title'), required=True, readonly=False,
+    title = TextLine(
+            title=_('Title'),
+            description=_('A brief description of the content that is being linked to.'),
+            required=True, readonly=False,
             )
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,

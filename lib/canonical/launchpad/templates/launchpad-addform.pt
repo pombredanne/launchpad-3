@@ -3,6 +3,9 @@
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="launchpad">
 
+    <title metal:fill-slot="title">LAUNCHPAD ADDFORM TEMPLATE
+    </title>
+
   <body>
 
   <div metal:fill-slot="main">
@@ -50,7 +53,8 @@
 
         <fieldset>
 
-        <legend metal:define-slot="form_legend">Add Form Legend</legend>
+        <legend metal:define-slot="addform_legend" tal:replace="nothing">Add
+        Form Legend</legend>
 
         <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
 
@@ -73,13 +77,6 @@
           <input type='submit' value='Add'
             name='UPDATE_SUBMIT' style="float: right;"
             i18n:attributes='value add-button' />
-          <!--
-          <span tal:condition="context/nameAllowed|nothing" tal:omit-tag="">
-               &nbsp;&nbsp;<b i18n:translate="">Object Name</b>&nbsp;&nbsp;
-              <input type='text' name='add_input_name'
-                     tal:attributes="value context/contentName" />
-          </span>
-          -->
         </div>
       </div>
 

@@ -24,5 +24,3 @@ class BugSetBase(object):
 
     def nextURL(self):
         return '.'
-
-

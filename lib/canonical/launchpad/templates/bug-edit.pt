@@ -3,6 +3,12 @@
       lang="en"
       metal:use-macro="context/@@malone_template/master"
       i18n:domain="malone">
+
+    <title metal:fill-slot="title">Malone: Edit Bug #<span
+    tal:replace="context/id">1234</span>
+    </title>
+
+
   <body>
 
   <div metal:fill-slot="main">
@@ -18,11 +24,11 @@
             
             
               <li id="contentview-edit" class="selected">
-                <a href="+edit">Edit</a>
+                <a href="+edit">Edit Bug Info</a>
               </li>
             
               <li id="contentview-edit" class="plain">
-                <a href="activity">History</a>
+                <a href="activity">Bug Changelog</a>
               </li>
 
     </ul>

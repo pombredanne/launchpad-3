@@ -8,27 +8,22 @@ from apt_pkg import ParseSrcDepends
 
 # Zope imports
 from zope.interface import implements
+from zope.component import getUtility
 
 # sqlos and SQLObject imports
 from canonical.database.sqlbase import quote
 
-#Soyuz imports
+# Soyuz imports
 from canonical.soyuz.generalapp import CurrentVersion, builddepsSet
 
-#Launchpad imports
-from canonical.launchpad.database import Build, \
-                                         DistroRelease, \
-                                         VSourcePackageReleasePublishing, \
-                                         SourcePackageInDistro
+# Launchpad imports
 
-from canonical.launchpad.interfaces import IDistroSourcesApp, \
+from canonical.launchpad.interfaces import IBuildSet, \
+                                           IDistroSourcesApp, \
+                                           ISourcePackageSet, \
                                            IDistroReleaseSourcesApp, \
                                            IDistroReleaseSourceApp, \
-                                           IDistroReleaseSourceReleaseApp, \
-                                           IDistroReleaseSourceReleaseBuildApp
-
-
-
+                                           IDistroReleaseSourceReleaseApp
 
 #
 # 
@@ -42,13 +37,10 @@ class DistroSourcesApp(object):
         self.distribution = distribution
 
     def __getitem__(self, name):
-        return DistroReleaseSourcesApp(DistroRelease.selectBy(distributionID=\
-                                                        self.distribution.id,
-                                                        name=name)[0])
+        return DistroReleaseSourcesApp(self.distribution.getRelease(name))
 
     def __iter__(self):
-        return iter(DistroRelease.selectBy(distributionID=\
-                                           self.distribution.id))
+        return iter(self.distribution.releases)
 
 class DistroReleaseSourcesApp(object):
     """Container of SourcePackage objects.
@@ -59,13 +51,14 @@ class DistroReleaseSourcesApp(object):
 
     def __init__(self, release):
         self.release = release
+        self.srcset = getUtility(ISourcePackageSet)
         
     def findPackagesByName(self, pattern):
-        return SourcePackageInDistro.findSourcesByName(self.release, pattern)
+        return self.srcset.findByName(self.release.id, pattern)
 
     def __getitem__(self, name):
         try:
-            package = SourcePackageInDistro.getByName(self.release, name)
+            package = self.srcset.getByName(self.release.id, name)
         except IndexError:
             # Convert IndexErrors into KeyErrors so that Zope will give a
             # NotFound page.
@@ -74,7 +67,7 @@ class DistroReleaseSourcesApp(object):
             return DistroReleaseSourceApp(self.release, package)
 
     def __iter__(self):
-        ret = SourcePackageInDistro.getReleases(self.release)
+        ret = self.srcset.getSourcePackages(self.release.id)
         return iter(ret)
 
 class DistroReleaseSourceApp(object):
@@ -134,23 +127,22 @@ class DistroReleaseSourceApp(object):
         # If true, it is defined inside launchpad/database/package.py
 
     def lastversions(self):
-        ans = list(self.sourcepackage.lastversions(self.release))
-        if len(ans) == 0:
+        ans = self.sourcepackage.lastversions(self.release)
+        if ans.count() == 0:
             return None
         return ans
 
     lastversions = property(lastversions)
 
-
 class DistroReleaseSourceReleaseApp(object):
     implements(IDistroReleaseSourceReleaseApp)
 
     def __init__(self, sourcepackage, version, distrorelease):
-        self.distroreleasename = distrorelease.name
+        self.distrorelease = distrorelease
 
-        results = VSourcePackageReleasePublishing.select(
-                "sourcepackage = %d AND version = %s" % \
-                (sourcepackage.id, quote(version)))
+        srcset = getUtility(ISourcePackageSet)
+
+        results = srcset.getSourcePackageRelease(sourcepackage.id, version)
 
         nresults = results.count()
         if nresults == 0:
@@ -159,50 +151,51 @@ class DistroReleaseSourceReleaseApp(object):
             assert nresults == 1
             self.sourcepackagerelease = results[0]
 
-        sourceReleases = sourcepackage.current(distrorelease)
-        sourceReleases = VSourcePackageReleasePublishing.selectByVersion(
-                sourceReleases, version)
-        self.archs = None
 
-        for release in sourceReleases:
-            # Find distroarchs for that release
-            archReleases = release.architecturesReleased(distrorelease)
-            self.archs = [a.architecturetag for a in archReleases]
-
-        if self.sourcepackagerelease.builddepends:
-            self.builddepends = []
-
-            depends = ParseSrcDepends(self.sourcepackagerelease.builddepends)
-            for dep in depends:
-                self.builddepends.append(builddepsSet(*dep[0]))
-
-        else:
-            self.builddepends = None
+        # XXX: Daniel Debonzi 2004-12-03
+        # Review this code for archRelease. Its is probably not
+        # doing the right thing.
+        archReleases = self.sourcepackagerelease.architecturesReleased(distrorelease)
+        self.archs = [a.architecturetag for a in archReleases]
 
 
-        if self.sourcepackagerelease.builddependsindep:
-            self.builddependsindep = []
+    def builddepends(self):
+        if not self.sourcepackagerelease.builddepends:
+            return None
+        
+        builddepends = ([], [], [])
 
-            depends = ParseSrcDepends(self.sourcepackagerelease.builddependsindep)
-            for dep in depends:
-                self.builddependsindep.append(builddepsSet(*dep[0]))
+        depends = ParseSrcDepends(self.sourcepackagerelease.builddepends)
 
-        else:
-            self.builddependsindep = None
+        for i in range(len(depends)):
+            dep = depends[i]
+            builddepends[i % 3].append(builddepsSet(*dep[0]))
+        return builddepends
+
+    builddepends = property(builddepends)
+
+    def builddependsindep(self):
+        if not self.sourcepackagerelease.builddependsindep:
+            return None
+        builddependsindep = ([], [], [])
+        
+        depends = ParseSrcDepends(self.sourcepackagerelease.builddependsindep)
+        
+        for i in range(len(depends)):
+            dep = depends[i]
+            builddependsindep[i % 3].append(builddepsSet(*dep[0]))
+        return builddependsindep
+                
+    builddependsindep = property(builddependsindep)
 
     def __getitem__(self, arch):
-        return DistroReleaseSourceReleaseBuildApp(self.sourcepackagerelease,
-                                                  arch)
-class DistroReleaseSourceReleaseBuildApp(object):
-    implements(IDistroReleaseSourceReleaseBuildApp)
+        bset = getUtility(IBuildSet)
+        results = bset.getBuildBySRAndArchtag(self.sourcepackagerelease.id,
+                                              arch)
+        if results.count() > 0:
+            self.build = results[0]
 
-    def __init__(self, sourcepackagerelease, arch):
-        self.sourcepackagerelease = sourcepackagerelease
-        self.arch = arch
-        
-        build_results = Build.getSourceReleaseBuild(sourcepackagerelease.id,
-                                                 arch)
-        if build_results.count() > 0:
-            self.build = build_results[0]
+        return self.build
+
 
 

@@ -4,8 +4,12 @@
     i18n_domain="launchpad"
     xmlns:i18n="http://namespaces.zope.org/i18n">
 
+    <!-- this includes all the badness that must be split up -->
+    <include file="soyuz.zcml" />
+
     <!-- Content class configuration -->
     <include file="branch.zcml" />
+    <include file="country.zcml" />
     <include file="project.zcml" />
     <include file="product.zcml" />
     <include file="productseries.zcml" />
@@ -14,6 +18,7 @@
     <include file="sourcesource.zcml" />
     <include file="productrelease.zcml" />
     <include file="bugpackageinfestation.zcml" />
+    <include file="bugactivity.zcml" />
     <include file="bugsubscription.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="bug.zcml" />
@@ -21,16 +26,23 @@
     <include file="bugassignment.zcml" />
     <include file="buginfestation.zcml" />
     <include file="bugextref.zcml" />
+    <include file="cveref.zcml" />
     <include file="bugtracker.zcml" />
     <include file="bugattachment.zcml" />
     <include file="message.zcml" />
     <include file="bounty.zcml" />
     <include file="build.zcml" />
-    <include file="distro.zcml" />
+    <include file="distribution.zcml" />
     <include file="person.zcml" />
     <include file="processor.zcml" />
     <include file="language.zcml" />
     <include file="pofile.zcml" />
+    <include file="potemplate.zcml" />
+    <include file="potmsgset.zcml" />
+    <include file="pomsgid.zcml" />
+    <include file="pomsgset.zcml" />
+    <include file="potranslationsighting.zcml" />
+    <include file="potranslation.zcml" />
 
     <include file="widgets.zcml" />
     <include file="fields.zcml" />
@@ -38,5 +50,10 @@
 
     <!-- Event configuration -->
     <include file="bug-events.zcml" />
+    <include file="bugactivity-subscriptions.zcml" />
+
+    <!-- Special Utilities -->
+    <include file="geoip.zcml" />
+
 
 </configure>

@@ -3,23 +3,27 @@
 
 __metaclass__ = type
 
-import re, os, popen2
+import re, os, popen2, base64
 from math import ceil
 import smtplib
 import sys
 from xml.sax.saxutils import escape as xml_escape
-from cStringIO import StringIO
+from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.i18n.interfaces import IUserPreferredLanguages
 
-from canonical.launchpad.interfaces import ILanguageSet, IPerson
-from canonical.launchpad.interfaces import IProjectSet, IPasswordEncryptor
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+
+from canonical.database.constants import UTC_NOW
+from canonical.launchpad.interfaces import ILanguageSet, IPerson, \
+        IProjectSet, IProductSet, IPasswordEncryptor, \
+        IRequestLocalLanguages, IRequestPreferredLanguages
+
 from canonical.launchpad.database import Language, Person, POTemplate, POFile
 
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
-from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 from canonical.lp.dbschema import RosettaImportStatus
 
 charactersPerLine = 50
@@ -38,10 +42,8 @@ def count_lines(text):
 
 def canonicalise_code(code):
     '''Convert a language code to a standard xx_YY form.'''
-
     if '-' in code:
         language, country = code.split('-', 1)
-
         return "%s_%s" % (language, country.upper())
     else:
         return code
@@ -66,19 +68,19 @@ def request_languages(request):
     person = IPerson(request.principal, None)
 
     # If the user is authenticated, try seeing if they have any languages set.
-
     if person is not None:
         languages = person.languages
-
         if languages:
             return languages
 
     # If the user is not authenticated, or they are authenticated but have no
     # languages set, try looking at the HTTP headers for clues.
-
-    codes = IUserPreferredLanguages(request).getPreferredLanguages()
-
-    return codes_to_languages(codes)
+    languages = IRequestPreferredLanguages(request).getPreferredLanguages()
+    for lang in IRequestLocalLanguages(request).getLocalLanguages():
+        if lang not in languages:
+            languages.append(lang)
+    return languages
+    
 
 def parse_cformat_string(s):
     '''Parse a printf()-style format string into a sequence of interpolations
@@ -127,155 +129,114 @@ class TabIndexGenerator:
         return index
 
 
-class ViewProjects:
-    def newProjectSubmit(self):
-        if "SUBMIT" in self.request.form:
-            if self.request.method == "POST":
-                projects = getUtility(IProjectSet)
-                projects.new(
-                    name=self.request.form['name'],
-                    displayname=self.request.form['displayname'],
-                    title=self.request.form['title'],
-                    url=self.request.form.get('url', None),
-                    description=self.request.form['description'],
-                    owner=1
-                    )
-            else:
-                raise RuntimeError("This form must be posted!")
+class ProductView:
 
-            self.submitted = True
-            return "Thank you for submitting the form."
-        else:
-            self.submitted = False
-            return ""
+    branchesPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-product-branches.pt')
 
-    def requestProjectSubmit(self):
-        self.error = None
+    detailsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-product-details.pt')
 
-        if not "SUBMIT" in self.request.form:
-            return False
+    actionsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-product-actions.pt')
 
-        if not self.request.method == "POST":
-            return False
+    projectPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-product-project.pt')
 
-        from_email = 'Rosetta <launchpad@canonical.com>'
-        to_email = 'Dafydd Harries <daf@muse.19inch.net>'
-
-        try:
-            smtp = smtplib.SMTP('localhost')
-            smtp.sendmail(from_email, to_email,
-                "From: %s\n"
-                "To: %s\n"
-                "Subject: Rosetta project request: %s\n"
-                "\n"
-                "Name: %s\n\n"
-                "Homepage: %s\n\n"
-                "Download page: %s\n\n"
-                "Description\n"
-                "-----------\n\n"
-                "%s\n\n"
-                "Revision Control Information\n"
-                "----------------------------\n\n"
-                "%s\n"
-                % (
-                    from_email,
-                    to_email,
-                    self.request.form['name'],
-                    self.request.form['name'],
-                    self.request.form['homepage'],
-                    self.request.form['download-page'],
-                    self.request.form['revision-control-info'],
-                    self.request.form['description']))
-        except smtplib.SMTPException, e:
-            self.error = e
-        else:
-            smtp.quit()
-
-        return True
-
-
-class ViewProject:
-    def thereAreProducts(self):
-        return len(list(self.context.products())) > 0
-
-    def products(self):
-        for product in self.context.products():
-            total = 0
-            currentCount = 0
-            rosettaCount = 0
-            updatesCount = 0
-            for language in request_languages(self.request):
-                total += product.messageCount()
-                currentCount += product.currentCount(language.code)
-                rosettaCount += product.rosettaCount(language.code)
-                updatesCount += product.updatesCount(language.code)
-
-            nonUpdatesCount = currentCount - updatesCount
-            translated = currentCount  + rosettaCount
-            untranslated = total - translated
-            try:
-                currentPercent = float(currentCount) / total * 100
-                rosettaPercent = float(rosettaCount) / total * 100
-                updatesPercent = float(updatesCount) / total * 100
-                nonUpdatesPercent = float (nonUpdatesCount) / total * 100
-                translatedPercent = float(translated) / total * 100
-                untranslatedPercent = float(untranslated) / total * 100
-            except ZeroDivisionError:
-                # XXX: I think we will see only this case when we don't have
-                # anything to translate.
-                currentPercent = 0
-                rosettaPercent = 0
-                updatesPercent = 0
-                nonUpdatesPercent = 0
-                translatedPercent = 0
-                untranslatedPercent = 100
-
-            # NOTE: To get a 100% value:
-            # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent
-            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
-            # untranslatedPercent
-            retdict = {
-                'name': product.name,
-                'title': product.title,
-                'poLen': total,
-                'poCurrentCount': currentCount,
-                'poRosettaCount': rosettaCount,
-                'poUpdatesCount' : updatesCount,
-                'poNonUpdatesCount' : nonUpdatesCount,
-                'poTranslated': translated,
-                'poUntranslated': untranslated,
-                'poCurrentPercent': currentPercent,
-                'poRosettaPercent': rosettaPercent,
-                'poUpdatesPercent' : updatesPercent,
-                'poNonUpdatesPercent' : nonUpdatesPercent,
-                'poTranslatedPercent': translatedPercent,
-                'poUntranslatedPercent': untranslatedPercent,
-            }
-
-            yield retdict
-
-
-class ViewProduct:
     def __init__(self, context, request):
         self.context = context
         self.request = request
-
+        self.form = self.request.form
         self.languages = request_languages(self.request)
+        self.multitemplates = False
+        self._templangs = None
+        if len(list(self.templates()))>1:
+            self.multitemplates = True
 
     def templates(self):
-        templates = self.context.poTemplates()
+        if self._templangs is not None:
+            return self._templangs
+        templates = self.context.potemplates
+        templangs = []
+        for template in templates:
+            templangs.append(TemplateLanguages(template,
+                self.languages))
+        self._templangs = templangs
+        return self._templangs
 
-        if templates:
-            for template in templates:
-                yield TemplateLanguages(template, self.languages)
-        else:
-            raise RuntimeError(
-                "Can't generate TemplateLanguages without templates.")
+    # This method has been "stolen" from the newproduct one.
+    def newpotemplate(self):
+        #
+        # Handle a request to create a new potemplate for this project.
+        # The code needs to extract all the relevant form elements,
+        # then call the POTemplate creation methods.
+        #
+        if not self.form.get("Register", None)=="Register POTemplate":
+            return
+        if not self.request.method == "POST":
+            return
+        # Extract the details from the form
+        name = self.form['name']
+        title = self.form['title']
+        description = self.form['description']
+        copyright = self.form['copyright']
+        path = self.form['path']
+        
+        # XXX Carlos Perello Marin 27/11/04 this check is not yet being done.
+        # check to see if there is an existing product with
+        # this name.
+        # get the launchpad person who is creating this product
+        # XXX: Carlos Perello Marin 27/11/04 We should force this page to be
+        # used under authenticated users.
+        owner = IPerson(self.request.principal)
+        # Now create a new product in the db
+        potemplate = POTemplate(product=self.context.id,
+                                priority=1,
+                                branch=1,
+                                name=name,
+                                title=title,
+                                description=description,
+                                copyright=copyright,
+                                license=1,
+                                datecreated=UTC_NOW,
+                                path=path,
+                                iscurrent=False,
+                                messagecount=0,
+                                owner=owner)
+
+        file = self.form['file']
+
+        # XXX: Carlos Perello Marin 03/12/2004: Epiphany seems to have an
+        # aleatory bug with upload forms (or perhaps it's launchpad because
+        # I never had problems with bugzilla). The fact is that some uploads
+        # don't work and we get a unicode object instead of a file-like object
+        # in "file". We show an error if we see that behaviour.
+        # For more info, look at bug #116
+
+        # XXX: Add some feedback about the error.
+        if isinstance(file, unicode):
+            return
+
+        filename = file.filename
+
+        if filename.endswith('.pot'):
+            potfile = file.read()
+
+            from canonical.rosetta.pofile import POParser
+
+            parser = POParser()
+
+            parser.write(potfile)
+            parser.finish()
+
+            potemplate.rawfile = base64.encodestring(potfile)
+            potemplate.daterawimport = UTC_NOW
+            potemplate.rawimporter = owner
+            potemplate.rawimportstatus = RosettaImportStatus.PENDING.value
 
 
 class TemplateLanguages:
-    """Support class for ViewProduct."""
+    """Support class for ProductView."""
 
     def __init__(self, template, languages):
         self.template = template
@@ -290,11 +251,12 @@ class TemplateLanguages:
 
     def _language(self, language):
         retdict = {
-            'name': language.englishName,
+            'hasPOFile' : False,
+            'name': language.englishname,
             'title': self.title,
             'code' : language.code,
             'poLen': len(self.template),
-            'hasPOFile' : False,
+            'lastChangedSighting' : None,
             'poCurrentCount': 0,
             'poRosettaCount': 0,
             'poUpdatesCount' : 0,
@@ -347,6 +309,7 @@ class TemplateLanguages:
         retdict.update({
             'hasPOFile' : True,
             'poLen': total,
+            'lastChangedSighting' : poFile.lastChangedSighting(),
             'poCurrentCount': currentCount,
             'poRosettaCount': rosettaCount,
             'poUpdatesCount' : updatesCount,
@@ -365,6 +328,13 @@ class TemplateLanguages:
 
 
 class ViewPOTemplate:
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.form = self.request.form
+        self.languages = request_languages(self.request)
+
     def num_messages(self):
         N = len(self.context)
         if N == 0:
@@ -376,8 +346,34 @@ class ViewPOTemplate:
 
     def languages(self):
         languages = list(self.context.languages())
-        languages.sort(lambda a, b: cmp(a.englishName, b.englishName))
+        languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
         return languages
+
+    def edit(self):
+        """
+        Update the contents of a POTemplate. This method is called by a
+        tal:dummy element in a page template. It checks to see if a
+        form has been submitted that has a specific element, and if
+        so it continues to process the form, updating the fields of
+        the database as it goes.
+        """
+        # check that we are processing the correct form, and that
+        # it has been POST'ed
+        if not self.form.get("Update", None)=="Update POTemplate":
+            return
+        if not self.request.method == "POST":
+            return
+        # Extract details from the form and update the POTemplate
+        self.context.name = self.form['name']
+        self.context.title = self.form['title']
+        self.context.description = self.form['description']
+        self.context.copyright = self.form['copyright']
+        self.context.path = self.form['path']
+        self.context.priority = self.form['priority']
+        
+        # now redirect to view the potemplate. This lets us follow the
+        # template in case the user changed the name
+        self.request.response.redirect('../' + self.context.name)
 
 
 class ViewPOFile:
@@ -405,7 +401,7 @@ class ViewPOFile:
                     self.request.form['pluralforms'],
                     self.request.form['expression'])
                 self.context.header = self.header.msgstr.encode('utf-8')
-                self.context.pluralForms = int(self.request.form['pluralforms'])
+                self.context.pluralforms = int(self.request.form['pluralforms'])
             else:
                 raise RuntimeError("This form must be posted!")
 
@@ -456,15 +452,15 @@ class ViewPreferences:
                 else:
                     newInterest = []
 
-                # XXX: We should fix this, instead of get englishName list, we
+                # XXX: We should fix this, instead of get englishname list, we
                 # should get language's code
-                for englishName in newInterest:
+                for englishname in newInterest:
                     for language in self.languages():
-                        if language.englishName == englishName:
+                        if language.englishname == englishname:
                             if language not in oldInterest:
                                 self.person.addLanguage(language)
                 for language in oldInterest:
-                    if language.englishName not in newInterest:
+                    if language.englishname not in newInterest:
                         self.person.removeLanguage(language)
             else:
                 raise RuntimeError("This form must be posted!")
@@ -506,26 +502,6 @@ class ViewPreferences:
                 raise RuntimeError("This form must be posted!")
 
             self.submitted_personal = True
-
-
-class ViewSearchResults:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        query = request.form.get('q')
-
-        if query is not None and query is not u'':
-            self.query = query
-            self.queryProvided = True
-            self.results = getUtility(IProjectSet).search(query,
-                search_products = True)
-            self.resultCount = len(list(self.results))
-        else:
-            self.query = None
-            self.queryProvided = False
-            self.results = []
-            self.resultCount = 0
 
 
 class ViewPOExport:
@@ -581,7 +557,9 @@ class ViewMOExport:
 
 
 class TranslatePOTemplate:
-    DEFAULT_COUNT = 5
+    DEFAULT_COUNT = 10
+    SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
+    NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
 
     def __init__(self, context, request):
         # This sets up the following instance variables:
@@ -594,7 +572,7 @@ class TranslatePOTemplate:
         #    A list of codes for the langauges to translate into.
         #  languages:
         #    A list of languages to translate into.
-        #  pluralForms:
+        #  pluralforms:
         #    A dictionary by language code of plural form counts.
         #  badLanguages:
         #    A list of languages for which no plural form information is
@@ -604,8 +582,6 @@ class TranslatePOTemplate:
         #    translated.
         #  count:
         #    The number of messages being translated.
-        #  error:
-        #    A flag indicating whether an error ocurred during initialisation.
         # show:
         #    Which messages to show: 'translated', 'untranslated' or 'all'.
         #
@@ -620,8 +596,6 @@ class TranslatePOTemplate:
         if self.person is None:
             return
 
-        self.error = False
-
         self.codes = request.form.get('languages')
 
         # Turn language codes into language objects.
@@ -632,36 +606,66 @@ class TranslatePOTemplate:
             self.languages = request_languages(request)
 
         # Get plural form and completeness information.
+        #
+        # For each language:
+        #
+        # - If there exists a PO file for that language, and it has plural
+        #   form information, use the plural form information from that PO
+        #   file.
+        #
+        # - Otherwise, if there is general plural form information for that
+        #   language in the database, use that.
+        #
+        # - Otherwise, we don't have any plural form information for that
+        #   language.
+        #
+        # - If there exists a PO file, work out the completeness of the PO
+        #   file as a percentage.
+        #
+        # - Otherwise, the completeness for that language is 0 (since the PO
+        #   file doesn't exist.
 
         self.completeness = {}
-        self.pluralForms = {}
-        self.pluralFormsError = False
+        self.pluralforms = {}
+        self.pluralformsError = False
 
         all_languages = getUtility(ILanguageSet)
 
         for language in self.languages:
+            code = language.code
+
             try:
                 pofile = context.poFile(language.code)
             except KeyError:
-                if all_languages[language.code].pluralForms is not None:
-                    self.pluralForms[language.code] = \
-                        all_languages[language.code].pluralForms
-                else:
-                    # We don't have a default plural form for this Language
-                    self.pluralForms[language.code] = None
-                    self.error = True
-                # As we don't have teh pofile, the completeness is 0
-                self.completeness[language.code] = 0
-            else:
-                self.pluralForms[language.code] = pofile.pluralforms
-                try:
-                    self.completeness[language.code] = \
-                        float(pofile.translatedCount()) / len(pofile.potemplate) * 100
-                except ZeroDivisionError:
-                    self.completeness[language.code] = 0
+                pofile = None
 
-        self.badLanguages = [ all_languages[x] for x in self.pluralForms
-            if self.pluralForms[x] is None ]
+            # Get plural form information.
+
+            if pofile is not None and pofile.pluralforms is not None:
+                self.pluralforms[code] = pofile.pluralforms
+            elif all_languages[code].pluralforms is not None:
+                self.pluralforms[code] = all_languages[code].pluralforms
+            else:
+                self.pluralforms[code] = None
+
+            # Get completeness information.
+
+            if pofile is not None:
+                template_size = len(pofile.potemplate)
+
+                if template_size > 0:
+                    self.completeness[code] = (float(
+                        pofile.translatedCount()) / template_size * 100)
+                else:
+                    self.completeness[code] = 0
+            else:
+                self.completeness[code] = 0
+
+        if context.hasPluralMessage:
+            self.badLanguages = [ all_languages[x] for x in self.pluralforms
+                if self.pluralforms[x] is None ]
+        else:
+            self.badLanguages = []
 
         # Get pagination information.
 
@@ -751,7 +755,8 @@ class TranslatePOTemplate:
         else:
             return self._makeURL(offset = self.offset + self.count)
 
-    def _mungeMessageID(self, text, flags):
+    def _mungeMessageID(self, text, flags, space=SPACE_CHAR,
+        newline=NEWLINE_CHAR):
         '''Convert leading and trailing spaces on each line to open boxes
         (U+2423).'''
 
@@ -768,9 +773,9 @@ class TranslatePOTemplate:
 
             if match:
                 lines.append(
-                    u'\u2423' * len(match.group(1)) +
+                    space * len(match.group(1)) +
                     match.group(2) +
-                    u'\u2423' * len(match.group(3)))
+                    space * len(match.group(3)))
             else:
                 raise AssertionError(
                     "A regular expression that should always match didn't.")
@@ -792,7 +797,7 @@ class TranslatePOTemplate:
 
         # Insert arrows and HTML line breaks at newlines.
 
-        return '\n'.join(lines).replace('\n', u'\u21b5<br/>\n')
+        return '\n'.join(lines).replace('\n', newline)
 
     def _messageID(self, messageID, flags):
         lines = count_lines(messageID.msgid)
@@ -812,18 +817,26 @@ class TranslatePOTemplate:
         isPlural = len(list(messageIDs)) > 1
         messageID = self._messageID(messageIDs[0], set.flags())
         translations = {}
+        comments = {}
         fuzzy = {}
 
         for language in self.languages:
-            # XXX: missing exception handling
-            translations[language] = \
-                set.translationsForLanguage(language.code)
+            code = language.code
+
             try:
-                fuzzy[language] = set.potemplate.poFile(language.code)[messageIDs[0].msgid].fuzzy
+                poset = set.poMsgSet(code)
             except KeyError:
-                # We don't have a translation for this language, so it cannot
-                # be fuzzy.
+                # The PO file doesn't exist, or it exists but doesn't have
+                # this message ID. The translations are blank, aren't fuzzy,
+                # and have no comment.
+
                 fuzzy[language] = False
+                translations[language] = [None] * self.pluralforms[code]
+                comments[language] = None
+            else:
+                fuzzy[language] = poset.fuzzy
+                translations[language] = poset.translations()
+                comments[language] = poset.commenttext
 
         if isPlural:
             messageIDPlural = self._messageID(messageIDs[1], set.flags())
@@ -837,9 +850,9 @@ class TranslatePOTemplate:
             'messageIDPlural' : messageIDPlural,
             'sequence' : set.sequence,
             'fileReferences': set.filereferences,
-            'commentText' : set.commenttext,
             'sourceComment' : set.sourcecomment,
             'translations' : translations,
+            'comments' : comments,
             'fuzzy' : fuzzy,
         }
 
@@ -970,31 +983,14 @@ class TranslatePOTemplate:
                     po_set = pofiles[code][msgid_text]
                 except KeyError:
                     po_set = pofiles[code].createMessageSetFromText(msgid_text)
-
-                # Get a hold of a list of existing translations for the
-                # message set.
-
-                old_translations = po_set.translations()
-
-                for index in new_translations:
-                    # For each translation, add it to the database if it is
-                    # non-null and different to the old one.
-                    if (new_translations[index] is not None and
-                            new_translations[index] != '' and
-                            new_translations[index] !=
-                            old_translations[index]):
-                        po_set.makeTranslationSighting(
-                            person = self.person,
-                            text = new_translations[index],
-                            pluralForm = index,
-                            update = True,
-                            fromPOFile = False)
-
-                # We set the fuzzy flag as needed:
-                if code in set['fuzzy'] and po_set.fuzzy == False:
-                    po_set.fuzzy = True
-                elif code not in set['fuzzy'] and po_set.fuzzy == True:
-                    po_set.fuzzy = False
+                
+                fuzzy = code in set['fuzzy']
+                
+                po_set.updateTranslation(
+                    person=self.person,
+                    new_translations=new_translations,
+                    fuzzy=fuzzy,
+                    fromPOFile=False)
 
         self.submitted = True
 
@@ -1008,38 +1004,40 @@ class ViewImportQueue:
         queue = []
         
         id = 0
-        for project in getUtility(IProjectSet):
-            for product in project.products():
-                for template in product.poTemplates():
-                    if template.rawimportstatus == RosettaImportStatus.PENDING:
-                        retdict = {
-                            'id': 'pot_%d' % template.id,
-                            'project': project.displayname,
-                            'product': product.displayname,
-                            'template': template.name,
-                            'language': '-',
-                            'importer': template.rawimporter.displayname,
-                            'importdate' : template.daterawimport,
-                        }
-                        queue.append(retdict)
-                        id += 1
-                    for pofile in template.poFilesToImport():
-                        retdict = {
-                            'id': 'po_%d' % pofile.id,
-                            'project': project.displayname,
-                            'product': product.displayname,
-                            'template': template.name,
-                            'language': pofile.language.englishname,
-                            'importer': pofile.rawimporter.displayname,
-                            'importdate' : pofile.daterawimport,
-                        }
-                        queue.append(retdict)
-                        id += 1
+        for product in getUtility(IProductSet):
+            if product.project is not None:
+                project_name = product.project.displayname
+            else:
+                project_name = '-'
+            for template in product.potemplates:
+                if template.rawimportstatus == RosettaImportStatus.PENDING:
+                    retdict = {
+                        'id': 'pot_%d' % template.id,
+                        'project': project_name,
+                        'product': product.displayname,
+                        'template': template.name,
+                        'language': '-',
+                        'importer': template.rawimporter.displayname,
+                        'importdate' : template.daterawimport,
+                    }
+                    queue.append(retdict)
+                    id += 1
+                for pofile in template.poFilesToImport():
+                    retdict = {
+                        'id': 'po_%d' % pofile.id,
+                        'project': project_name,
+                        'product': product.displayname,
+                        'template': template.name,
+                        'language': pofile.language.englishname,
+                        'importer': pofile.rawimporter.displayname,
+                        'importdate' : pofile.daterawimport,
+                    }
+                    queue.append(retdict)
+                    id += 1
         return queue
 
     def submit(self):
         if self.request.method == "POST":
-            print self.request.form
 
             for key in self.request.form:
                 match = re.match('pot_(\d+)$', key)
@@ -1049,22 +1047,7 @@ class ViewImportQueue:
 
                     potemplate = POTemplate.get(id)
 
-                    # XXX: Carlos Perello Marin 26/11/2004 : Perhaps this code
-                    # should be moved inside a POTemplate.importFromRaw
-                    # method.
-
-                    importer = TemplateImporter(potemplate, potemplate.rawimporter)
-
-                    file = StringIO(potemplate.rawfile)
-
-                    try:
-                        importer.doImport(file)
-                    except:
-                        potemplate.rawimportstatus = \
-                            RosettaImportStatus.FAILED.value
-                    else:
-                        potemplate.rawimportstatus = \
-                            RosettaImportStatus.IMPORTED.value
+                    potemplate.doRawImport()
 
                 match = re.match('po_(\d+)$', key)
                     
@@ -1072,20 +1055,8 @@ class ViewImportQueue:
                     id = int(match.group(1))
 
                     pofile = POFile.get(id)
-
-                    # XXX: Carlos Perello Marin 26/11/2004 : Perhaps this code
-                    # should be moved inside a POFile.importFromRaw method.
-
-                    importer = POFileImporter(pofile, pofile.rawimporter)
-
-                    file = StringIO(pofile.rawfile)
-
-                    try:
-                        importer.doImport(file)
-                    except:
-                        pofile.rawimportstatus = RosettaImportStatus.FAILED
-                    else:
-                        pofile.rawimportstatus = RosettaImportStatus.IMPORTED
+                    
+                    pofile.doRawImport()
 
 
 # XXX: Implement class ViewTranslationEfforts: to create new Efforts
@@ -1160,13 +1131,94 @@ class LanguageTranslationEffortCategories:
             yield retdict
 
 
-# XXX: Is there any way to reuse ViewProduct, we have exactly the same code
+# XXX: Is there any way to reuse ProductView, we have exactly the same code
 # here.
 class ViewTranslationEffortCategory:
     def thereAreTemplates(self):
-        return len(list(self.context.poTemplates())) > 0
+        return len(list(self.context.potemplates)) > 0
 
     def languageTemplates(self):
         for language in request_languages(self.request):
-            yield LanguageTemplates(language, self.context.poTemplates())
+            yield LanguageTemplates(language, self.context.potemplates)
+
+
+class TemplateUpload:
+    def languages(self):
+        return getUtility(ILanguageSet)
+        
+    def processUpload(self):
+        if not (('SUBMIT' in self.request.form) and
+                (self.request.method == 'POST')):
+            return ''
+
+        file = self.request.form['file']
+
+        # I've seen this happen with Epiphany once, so it seemed worth it to
+        # put a check in. Restarting Epiphany fixed it, though.
+        # -- Dafydd, 2004/11/25
+
+        if file == u'':
+            return "Bad upload."
+
+        filename = file.filename
+
+        if filename.endswith('.pot'):
+            # XXX: Carlos Perello Marin 30/11/2004 Improve the error handlingTODO: Try parsing the file before putting it in the DB.
+
+            potfile = file.read()
+
+            from canonical.rosetta.pofile import POParser
+            
+            parser = POParser()
+
+            parser.write(potfile)
+            parser.finish()
+
+            self.context.rawfile = base64.encodestring(potfile)
+            self.context.daterawimport = UTC_NOW
+            self.context.rawimporter = IPerson(self.request.principal, None)
+            self.context.rawimportstatus = RosettaImportStatus.PENDING.value
+
+            return "Looks like a POT file."
+        elif filename.endswith('.po'):
+            if 'language' in self.request.form:
+                language_name = self.request.form['language']
+
+                # XXX: We should fix this, instead of get englishname list, we
+                # should get language's code
+                for language in self.languages():
+                    if language.englishname == language_name:
+                        if language in self.context.languages():
+                            pofile = self.context.poFile(language.code)
+                            pofile.rawfile = base64.encodestring(file.read())
+                            pofile.daterawimport = UTC_NOW
+                            pofile.rawimporter = IPerson(self.request.principal, None)
+                            pofile.rawimportstatus = RosettaImportStatus.PENDING.value
+                        else:
+                            base64_file = base64.encodestring(file.read())
+                            importer = IPerson(self.request.principal, None)
+
+                            pofile = POFile(
+                                potemplateID=self.context.id,
+                                language=language,
+                                fuzzyheader=True,
+                                currentcount=0,
+                                updatescount=0,
+                                rosettacount=0,
+                                pluralforms=1,
+                                rawfile=base64_file,
+                                daterawimport=UTC_NOW,
+                                rawimporter = importer,
+                                rawimportstatus = RosettaImportStatus.PENDING.value)
+                        return "Looks like a PO file."
+            else:
+                return 'You should select a language with a po file!'
+        elif filename.endswith('.tar.gz'):
+            return "Uploads of Tar archives are not supported yet."
+        elif filename.endswith('.zip'):
+            return "Uploads of Zip archives are not supported yet."
+        else:
+            return "Dunno what this file is."
+
+        # FIXME: File bug(s) about zip and tar support.
 

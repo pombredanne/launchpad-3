@@ -16,7 +16,9 @@ _ = MessageIDFactory('launchpad')
 
 
 # Allow override by environment variables. This is needed to allow
-# tests to propogate values to spawned processes.
+# tests to propogate values to spawned processes. Note that an empty
+# host is different to 'localhost', as the latter connects via TCP/IP
+# instead of a Unix domain socket.
 dbname = os.environ.get('LP_DBNAME', 'launchpad_ftest')
 dbhost = os.environ.get('LP_DBHOST', '')
 

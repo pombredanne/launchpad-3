@@ -1,0 +1,229 @@
+Introduction
+============
+
+Bugs are problems that occur in software. In Malone, various things can be
+added to, edited and removed from a bug over the course of a bug's lifetime. We
+call this stuff bug activity. This document is about bug activity.
+
+Bug Activity
+============
+
+During a bug's lifetime, one may:
+
+o assign the bug to a source package
+
+o assign the bug to a upstream product
+
+o document a source package infestation
+
+o document a product infestation
+
+o add a cve reference number that relates to this bug
+
+o add a subscriber to this bug
+
+o add a web link related to this bug
+
+o add a reference to a bug on an external bugtracker to track the status of the
+  same bug as reported on other bug trackers
+
+Each of these can happen more than once to a bug over the course of its
+lifetime. For auditing reasons, it's useful to track when these happen, why
+these things happen, and who made them happen.
+
+Tracking Bug Activity in Launchpad
+==================================
+
+Bug activity tracking is done using event subscribers. The handlers are simple
+little functions.
+
+  >>> from datetime import datetime
+  >>> from zope.event import notify
+  >>> from zope.app.event.objectevent import ObjectCreatedEvent
+  >>> from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
+  >>> from canonical.launchpad.database import Bug, BugActivity, \
+  ...     SourcePackageBugAssignment, ProductBugAssignment, \
+  ...     BugPackageInfestation, BugProductInfestation
+  >>> from canonical.launchpad.interfaces import IBugAddForm
+  >>> def capture_state(obj, *fields):
+  ...     class State: pass
+  ...     state = State()
+  ...     for field in fields:
+  ...         setattr(state, field, getattr(obj, field))
+  ...     return state
+
+Here's a list of events that happen, and the resulting activity logged:
+
+  >>> from canonical.launchpad.database import Person
+  >>> user = Person.get(12)
+
+EVENT: user files a bug
+
+  >>> bug = Bug(
+  ...     title = "a test bug", shortdesc = "this is only a test bug",
+  ...     description = "this is only a test bug\nplease ignore",
+  ...     owner = user.id)
+  >>> bug.activity
+  []
+  >>> object_created = ObjectCreatedEvent(bug)
+  >>> notify(object_created)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.person == user.id
+  True
+  >>> latest_activity.whatchanged
+  u'bug'
+  >>> latest_activity.message
+  u'added bug'
+
+EVENT: bug edited
+
+  >>> old_state = capture_state(
+  ...     bug, "id", "title", "shortdesc", "description")
+  >>> bug.title = "new bug title"
+  >>> bug_edited = SQLObjectModifiedEvent(bug, old_state,
+  ...     ["title", "shortdesc", "description"], user)
+  >>> notify(bug_edited)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'title'
+  >>> latest_activity.oldvalue
+  u'a test bug'
+  >>> latest_activity.newvalue
+  u'new bug title'
+
+EVENT: bug gets assigned to a source package
+
+  >>> source_package_assignment = SourcePackageBugAssignment(
+  ...     bug = bug, sourcepackage = 1, owner = user.id)
+  >>> source_package_assignment_added = ObjectCreatedEvent(source_package_assignment)
+  >>> notify(source_package_assignment_added)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'bug'
+  >>> latest_activity.message
+  u'assigned to package mozilla-firefox-dummy'
+
+EVENT: source package assignment edited
+
+  >>> from canonical.lp.dbschema import BugAssignmentStatus
+  >>> edit_fields = ["sourcepackage", "bugstatus", "priority", "severity"]
+  >>> old_source_package_assignment = capture_state(
+  ...     source_package_assignment, *edit_fields)
+  >>> source_package_assignment.bugstatus = BugAssignmentStatus.ACCEPTED.value
+  >>> source_package_assignment_edited = SQLObjectModifiedEvent(
+  ...     source_package_assignment, old_source_package_assignment,
+  ...     edit_fields, user)
+  >>> notify(source_package_assignment_edited)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'mozilla-firefox-dummy: bugstatus'
+  >>> latest_activity.oldvalue == BugAssignmentStatus.NEW.title
+  True
+  >>> latest_activity.newvalue == BugAssignmentStatus.ACCEPTED.title
+  True
+
+EVENT: bug gets assigned to an upstream product
+
+  >>> product_assignment = ProductBugAssignment(
+  ...     bug = bug, product = 8, owner = user.id)
+  >>> product_assignment_added = ObjectCreatedEvent(product_assignment)
+  >>> notify(product_assignment_added)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'bug'
+  >>> latest_activity.message
+  u'assigned to product thunderbird'
+
+EVENT: upstream product assignment edited
+
+  >>> edit_fields = ["product", "bugstatus", "priority", "severity"]
+  >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
+  >>> product_assignment.bugstatus = BugAssignmentStatus.REJECTED.value
+  >>> product_assignment_edited = SQLObjectModifiedEvent(
+  ...     product_assignment, old_product_assignment, edit_fields, user)
+  >>> notify(product_assignment_edited)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'thunderbird: bugstatus'
+  >>> latest_activity.oldvalue == BugAssignmentStatus.NEW.title
+  True
+  >>> latest_activity.newvalue == BugAssignmentStatus.REJECTED.title
+  True
+
+EVENT: source package infestation gets documented
+
+  >>> from canonical.lp.dbschema import BugInfestationStatus
+  >>> right_now = datetime.now()
+  >>> package_infestation = BugPackageInfestation(
+  ...     bug=bug.id, explicit=True, datecreated=right_now,
+  ...     creatorID=user.id, dateverified=right_now,
+  ...     verifiedbyID=user.id, lastmodified=right_now,
+  ...     lastmodifiedbyID=user.id, sourcepackagerelease=14,
+  ...     infestationstatus=BugInfestationStatus.AFFECTED.value)
+  >>> package_infesation_added = ObjectCreatedEvent(package_infestation)
+  >>> notify(package_infesation_added)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'bug'
+  >>> latest_activity.message
+  u'added infestation of package release mozilla-firefox-dummy 0.9'
+
+EVENT: source package infestation edited
+
+  >>> edit_fields = ["sourcepackagerelease", "infestationstatus"]
+  >>> old_package_infestation = capture_state(package_infestation, *edit_fields)
+  >>> package_infestation.infestationstatus = BugInfestationStatus.VICTIMIZED.value
+  >>> package_infestation_edited = SQLObjectModifiedEvent(
+  ...     package_infestation, old_package_infestation, edit_fields, user)
+  >>> notify(package_infestation_edited)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'mozilla-firefox-dummy 0.9: infestationstatus'
+  >>> latest_activity.oldvalue == BugInfestationStatus.AFFECTED.title
+  True
+  >>> latest_activity.newvalue == BugInfestationStatus.VICTIMIZED.title
+  True
+
+EVENT: product infestation gets documented
+
+  >>> right_now = datetime.now()
+  >>> product_infestation = BugProductInfestation(
+  ...     bug=bug.id, explicit=True, datecreated=right_now,
+  ...     creatorID=user.id, dateverified=right_now,
+  ...     verifiedbyID=user.id, lastmodified=right_now,
+  ...     lastmodifiedbyID=user.id, productrelease=4,
+  ...     infestationstatus=60)
+  >>> product_infesation_added = ObjectCreatedEvent(product_infestation)
+  >>> notify(product_infesation_added)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'bug'
+  >>> latest_activity.message
+  u'added infestation of product release firefox 0.9.1'
+
+EVENT: product infestation edited
+
+  >>> edit_fields = ["productrelease", "infestationstatus"]
+  >>> old_product_infestation = capture_state(product_infestation, *edit_fields)
+  >>> product_infestation.infestationstatus = BugInfestationStatus.UNKNOWN.value
+  >>> product_infestation_edited = SQLObjectModifiedEvent(
+  ...     product_infestation, old_product_infestation, edit_fields, user)
+  >>> notify(product_infestation_edited)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'firefox 0.9.1: infestationstatus'
+  >>> latest_activity.oldvalue == BugInfestationStatus.AFFECTED.title
+  True
+  >>> latest_activity.newvalue == BugInfestationStatus.UNKNOWN.title
+  True
+
+For the future?
+===============
+
+At some point, we may find it useful to track the following events as well:
+
+EVENT: add a subscriber to this bug
+
+EVENT: add a web link related to this bug
+
+EVENT: add a reference to a bug on an external bugtracker

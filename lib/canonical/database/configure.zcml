@@ -2,10 +2,6 @@
 
     <!-- TODO: Consider splitting this into multiple files, matching the .py -->
 
-    <content class="canonical.launchpad.database.BugActivity">
-        <allow interface="canonical.launchpad.interfaces.IBugActivity" />
-    </content>
-
     <content class="canonical.launchpad.database.BugExternalRef">
         <allow interface="canonical.launchpad.interfaces.IBugExternalRef" />
             <require permission="zope.Public"

@@ -83,4 +83,13 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.launchpad.database.TeamParticipationSet">
+    <allow interface="canonical.launchpad.interfaces.ITeamParticipationSet"/>
+  </content>
+
+  <utility
+    factory="canonical.launchpad.database.TeamParticipationSet"
+    provides="canonical.launchpad.interfaces.ITeamParticipationSet" />
+
+
 </configure>

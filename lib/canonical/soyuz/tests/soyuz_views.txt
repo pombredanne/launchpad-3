@@ -8,7 +8,7 @@ page.
 This document describes how to use various view classes in Soyuz page
 templates.
 
-  >>> from canonical.soyuz.browser import DistroReleaseSourcesView
+  >>> from canonical.launchpad.browser import DistroReleaseSourcesView
   >>> context = request = None
   >>> drsv = DistroReleaseSourcesView(context, request)
   >>> hasattr(drsv, "sourcePackagesBatchNavigator")

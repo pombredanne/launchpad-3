@@ -6,6 +6,7 @@
     specialised assignments page.
 -->
 
+<div tal:omit-tag="" tal:define="bug_url string:/malone/bugs/${context/id}">
 <table class="listing rowNavigation" style="width: 100%;">
     <thead>
         <tr>
@@ -16,8 +17,8 @@
                      title="Package Assignment" />
                      Package</th>
             <th title="State">State</th>
-            <th title="Severity">Sev</th>
-            <th title="Priority">Pri</th>
+            <th title="Severity">Severity</th>
+            <th title="Priority">Priority</th>
             <th title="Assignee">Assigned to</th>
         </tr>
     </thead>
@@ -26,18 +27,19 @@
     <tbody>
         <!-- Upstream Assignments -->
         <tr tal:repeat="bugass context/productassignments"
-            tal:attributes="onclick string:window.location='productassignments/${bugass/id}/+edit';">
+            tal:attributes="onclick string:window.location='$bug_url/productassignments/${bugass/id}/+edit';">
            
             <td>
                 <a href=""
                     tal:condition="nothing"
                     tal:attributes="href string:/malone/projects/${bugass/product/project/name}/${bugass/product/name}"
-                    tal:content="bugass/product/name">$Product.name</a>
-                <span tal:omit-tag="" tal:content="bugass/product/name">
-                    $Product.name
-                </span>
+                    tal:content="bugass/product/name">
+                    $Project.name $Product.name</a>
                 <img src="/++resource++download.png" 
                      title="Product Assignment" />
+                <span tal:omit-tag="" tal:content="bugass/product/name">
+                    $Project.name $Product.name
+                </span>
             </td>
             
             <td><acronym tal:content="bugass/bugstatus/lp:BugAssignmentStatus"
@@ -81,7 +83,7 @@ This bug is essential to fix as soon as possible. It affects system stability, d
 
         <!-- Distribution Package Assignments -->
         <tr tal:repeat="bugass context/packageassignments"
-            tal:attributes="onclick string:window.location='packageassignments/${bugass/id}/+edit';">
+            tal:attributes="onclick string:window.location='$bug_url/packageassignments/${bugass/id}/+edit';">
            
             <td>
                 <a href=""
@@ -90,12 +92,12 @@ This bug is essential to fix as soon as possible. It affects system stability, d
                     tal:content="bugass/sourcepackage/name">
                     $SourcePackageName.name
                 </a>
+                <img src="/++resource++product_icon.gif" 
+                     title="Package Assignment" />
                 <span tal:omit-tag=""
                     tal:content="bugass/sourcepackage/name">
                     $SourcePackageName.name
                 </span>
-                <img src="/++resource++product_icon.gif" 
-                     title="Package Assignment" />
             </td>
             
             <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">
@@ -133,17 +135,17 @@ This bug is essential to fix as soon as possible. It affects system stability, d
     </tbody>
 </table>
 
-<a href="productassignments/+new"
+<a href="#" tal:attributes="href string:$bug_url/productassignments/+new"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring upstream">
     <img src="/++resource++add.gif" alt="+" />
     File Against Upstream...
 </a>
 
-<a href="packageassignments/+new"
+<a href="#" tal:attributes="href string:$bug_url/packageassignments/+new"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring in another package">
     <img src="/++resource++add.gif" alt="+" />
     File Against Package...
 </a>
-                
+</div>

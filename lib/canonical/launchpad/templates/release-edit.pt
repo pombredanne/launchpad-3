@@ -4,6 +4,11 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">
+        Edit
+        <span tal:replace="context/release/displayname">Release</span>
+        Details
+    </title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Soyuz style sheet -->
@@ -13,15 +18,9 @@
 <body>
 
 <div metal:fill-slot="main">
-   <div class="portalMessage" 
-        tal:condition="not:view/permission">
-	Warning: You are not authorized to change this page. If you
-	change something your changes will be lost.
-	<div align="right"><a href="index.html"><i>back</i></a></div>
-   </div>
 
    <h1>Edit <span
-   tal:content="context/release/title">Release</span> Release
+   tal:replace="context/release/title">Release</span> Release
    Information </h1> 
 
     <div class="documentDescription">	
@@ -96,12 +95,11 @@
   </form>
   </div>
 
-  <tla:block tal:condition="view/edit_action">
-  <div>
+  <div tal:condition="view/edit_action">
   <h4><a tal:attributes="href string:../${context/release/name}">
-  <span tal:content="context/release/title"/></a> Release Modified</h4>
+    <span tal:content="context/release/title"/></a> Release Modified</h4>
   </div>
-  </tla:block>
+
 
 
 

@@ -8,6 +8,11 @@
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
     <style type="text/css" media="screen">@import url(rosetta.css);</style>
+
+    <title metal:fill-slot="title">Malone Bugtracker:
+    <span tal:replace="context/title">bugtracker title</span>
+    </title>
+
 </head>
 
 <body>

@@ -7,7 +7,9 @@ class SQLObjectModifiedEvent(object):
 
     implements(ISQLObjectModifiedEvent)
 
-    def __init__(self, object, object_before_modification, edited_fields):
+    def __init__(self, object, object_before_modification, edited_fields,
+                 principal):
         self.object = object
         self.object_before_modification = object_before_modification
         self.edited_fields = edited_fields
+        self.principal = principal

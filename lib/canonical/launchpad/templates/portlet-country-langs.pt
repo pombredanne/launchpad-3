@@ -1,0 +1,21 @@
+<div class="portlet"
+     tal:condition="view/requestCountry"
+     tal:define="country view/requestCountry">
+
+    <h4>Languages in <span tal:replace="country/name">country</span>:</h4>
+
+    <div class="portletBody">
+
+        <div class="portletContent even">
+
+            <div tal:condition="country/languages" tal:omit-tag>
+            
+                <span tal:repeat="lang country/languages" tal:omit-tag>
+                    o <span tal:replace="lang/englishname" /><br />
+                </span>
+
+            </div>
+
+        </div>
+    </div>
+</div>
