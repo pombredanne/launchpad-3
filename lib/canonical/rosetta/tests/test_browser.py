@@ -7,13 +7,13 @@ __metaclass__ = type
 import unittest
 from cStringIO import StringIO
 
-from zope.testing.doctestunit import DocTestSuite
-
 from canonical.launchpad.interfaces import IProjectSet, ILanguageSet, \
-    IPerson, ISourcePackageNameSet, IDistributionSet
+    IPerson, ISourcePackageNameSet, IDistributionSet, ILaunchBag
+
+from zope.testing.doctestunit import DocTestSuite
 from zope.interface import implements
-from zope.app.security.interfaces import IPrincipal
 from zope.publisher.interfaces.browser import IBrowserRequest
+
 
 class DummySourcePackageNameSet:
     implements(ISourcePackageNameSet)
@@ -21,8 +21,10 @@ class DummySourcePackageNameSet:
     def __getitem__(self, name):
         return DummySourcePackageName()
 
+
 class DummySourcePackageName:
     id = 1
+
 
 class DummyDistributionSet:
     implements(IDistributionSet)
@@ -30,12 +32,15 @@ class DummyDistributionSet:
     def __getitem__(self, name):
         return DummyDistribution()
 
+
 class DummyDistribution:
     def __getitem__(self, name):
         return DummyDistroRelease()
 
+
 class DummyDistroRelease:
     id = 1
+
 
 class DummyProjectSet:
     implements(IProjectSet)
@@ -81,10 +86,6 @@ class DummyLanguageSet:
         return self._languages[key]
 
 
-class DummyPrincipal:
-    implements(IPrincipal)
-
-
 class DummyPerson:
     implements(IPerson)
 
@@ -92,7 +93,12 @@ class DummyPerson:
         self.codes = codes
         all_languages = DummyLanguageSet()
 
-        self.languages = [ all_languages[code] for code in self.codes ]
+        self.languages = [all_languages[code] for code in self.codes]
+
+dummyPerson = DummyPerson(('es',))
+
+dummyNoLanguagePerson = DummyPerson(())
+
 
 class DummyFileUploadItem:
     def __init__(self, name, content):
@@ -100,12 +106,6 @@ class DummyFileUploadItem:
         self.filename = name
         self.file = StringIO(content)
 
-
-def adaptPrincipalToPerson(principal):
-    return DummyPerson(('es',))
-
-def adaptPrincipalToNoLanguagePerson(principal):
-    return DummyPerson([])
 
 class DummyPOFile:
     pluralforms = 4
@@ -182,7 +182,6 @@ class DummyRequest:
     implements(IBrowserRequest)
 
     def __init__(self, **form_data):
-        self.principal = DummyPrincipal()
         self.form = form_data
         self.URL = "http://this.is.a/fake/url"
         self.response = DummyResponse()
@@ -195,7 +194,6 @@ def adaptRequestToLanguages(request):
 
 
 class DummyRequestLanguages:
-
     def getPreferredLanguages(self):
         return [DummyLanguage('ja', 1),
             DummyLanguage('es', 2),
@@ -205,6 +203,14 @@ class DummyRequestLanguages:
         return [DummyLanguage('da', 4),
             DummyLanguage('as', 5),
             DummyLanguage('sr', 6),]
+
+
+class DummyLaunchBag:
+    implements(ILaunchBag)
+
+    def __init__(self, login=None, user=None):
+        self.login = login
+        self.user = user
 
 
 potfile = '''# SOME DESCRIPTIVE TITLE.
@@ -297,7 +303,7 @@ def test_request_languages():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
@@ -313,7 +319,7 @@ def test_request_languages():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToNoLanguagePerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyNoLanguagePerson))
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
@@ -443,7 +449,7 @@ def test_TranslatePOTemplate_init():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
 
     First, test the initialisation.
 
@@ -574,7 +580,7 @@ def test_TranslatePOTemplate_atBeginning_atEnd():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
 
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
@@ -616,7 +622,7 @@ def test_TranslatePOTemplate_URLs():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
 
     Test with no parameters.
 
@@ -677,7 +683,7 @@ def test_TranslatePOTemplate_messageSets():
 
     >>> setUp()
     >>> ztapi.provideUtility(ILanguageSet, DummyLanguageSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
 
     >>> context = DummyPOTemplate()
     >>> request = DummyRequest()
@@ -757,12 +763,16 @@ def test_ProductView_newpotemplate():
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
     >>> from zope.publisher.browser import FileUpload
+    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
+    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
     >>> from canonical.rosetta.browser import ProductView
 
     >>> setUp()
     >>> ztapi.provideUtility(IDistributionSet, DummyDistributionSet())
     >>> ztapi.provideUtility(ISourcePackageNameSet, DummySourcePackageNameSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
     >>> context = DummyProduct()
     >>> fui = DummyFileUploadItem(name='foo.pot', content=potfile)
@@ -787,12 +797,16 @@ def test_ProductView_newpotemplate_hidden_fields():
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
     >>> from zope.publisher.browser import FileUpload
+    >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
+    >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
     >>> from canonical.rosetta.browser import ProductView
 
     >>> setUp()
     >>> ztapi.provideUtility(IDistributionSet, DummyDistributionSet())
     >>> ztapi.provideUtility(ISourcePackageNameSet, DummySourcePackageNameSet())
-    >>> ztapi.provideAdapter(IPrincipal, IPerson, adaptPrincipalToPerson)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
+    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag('foo.bar@canonical.com', dummyPerson))
 
     >>> context = DummyProduct()
     >>> fui = DummyFileUploadItem(name='foo.pot', content=potfile)

@@ -21,9 +21,10 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import ILanguageSet, IPerson, \
+from canonical.launchpad.interfaces import ILanguageSet,  \
     IProjectSet, IProductSet, IPasswordEncryptor, IRequestLocalLanguages, \
-    IRequestPreferredLanguages, IDistributionSet, ISourcePackageNameSet
+    IRequestPreferredLanguages, IDistributionSet, ISourcePackageNameSet, \
+    ILaunchBag
 
 from canonical.launchpad.database import Person, POTemplate, POFile
 
@@ -79,7 +80,7 @@ def codes_to_languages(codes):
 def request_languages(request):
     '''Turn a request into a list of languages to show.'''
 
-    person = IPerson(request.principal, None)
+    person = getUtility(ILaunchBag).user
 
     # If the user is authenticated, try seeing if they have any languages set.
     if person is not None:
@@ -426,7 +427,7 @@ class ProductView:
 
 
         # get the launchpad person who is creating this product
-        owner = IPerson(self.request.principal)
+        owner = getUtility(ILaunchBag).user
 
         file = self.form['file']
 
@@ -696,7 +697,7 @@ class ViewPOTemplate:
         """Handle a form submission to change the contents of the template."""
 
         # Get the launchpad Person who is doing the upload.
-        owner = IPerson(self.request.principal)
+        owner = getUtility(ILaunchBag).user
 
         file = self.request.form['file']
 
@@ -808,8 +809,7 @@ class ViewPOFile:
                 self.status_message = 'Please, review the po file seems to have a problem'
                 return
 
-            import_pot_or_po(self.context,
-                IPerson(self.request.principal, None), pofile)
+            import_pot_or_po(self.context, getUtility(ILaunchBag).user, pofile)
 
             self.request.response.redirect('./')
             self.submitted = True
@@ -820,7 +820,7 @@ class TranslatorDashboard:
         self.context = context
         self.request = request
 
-        self.person = IPerson(self.request.principal, None)
+        self.person = getUtility(ILaunchBag).user
 
     def projects(self):
         return getUtility(IProjectSet)
@@ -833,7 +833,7 @@ class ViewPreferences:
 
         self.error_msg = None
         self.submitted_personal = False
-        self.person = IPerson(self.request.principal, None)
+        self.person = getUtility(ILaunchBag).user
 
     def languages(self):
         return getUtility(ILanguageSet)
@@ -1012,7 +1012,7 @@ class TranslatePOTemplate:
         self.context = context
         self.request = request
 
-        self.person = IPerson(request.principal, None)
+        self.person = getUtility(ILaunchBag).user
 
         if self.person is None:
             return

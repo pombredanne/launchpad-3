@@ -2,6 +2,51 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-08 17:09:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1289
+
+    Summary:
+      make Rosetta use LaunchBag
+    Revision:
+      launchpad--devel--0--patch-1289
+
+    Patches applied:
+    
+     * daf@canonical.com--2004/launchpad--use-launchbag--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1271
+    
+     * daf@canonical.com--2004/launchpad--use-launchbag--0--patch-1
+       convert Rosetta view code to using LaunchBag
+    
+     * daf@canonical.com--2004/launchpad--use-launchbag-2--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1280
+    
+     * daf@canonical.com--2004/launchpad--use-launchbag-2--0--patch-1
+       replay from daf@canonical.com--2004/launchpad--use-launchbag--0
+    
+     * daf@canonical.com--2004/launchpad--use-launchbag-2--0--patch-2
+       fix Rosetta view class tests
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/rosetta/browser.py
+     lib/canonical/rosetta/tests/test_browser.py
+
+    renamed files:
+     scripts/.arch-ids/buildd-master.py.id
+       ==> scripts/.arch-ids/master.py.id
+     scripts/buildd-master.py
+       ==> scripts/master.py
+
+    new patches:
+     daf@canonical.com--2004/launchpad--use-launchbag--0--base-0
+     daf@canonical.com--2004/launchpad--use-launchbag--0--patch-1
+     daf@canonical.com--2004/launchpad--use-launchbag-2--0--base-0
+     daf@canonical.com--2004/launchpad--use-launchbag-2--0--patch-1
+     daf@canonical.com--2004/launchpad--use-launchbag-2--0--patch-2
+     rocketfuel@canonical.com/launchpad--devel--0--patch-1279
+     rocketfuel@canonical.com/launchpad--devel--0--patch-1280
+
+
 2005-02-08 16:59:22 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1288
 
     Summary:
@@ -284,6 +329,113 @@
      stuart.bishop@canonical.com/launchpad--devel--1--patch-122
      stuart.bishop@canonical.com/launchpad--devel--1--patch-123
      stuart.bishop@canonical.com/launchpad--devel--1--patch-124
+
+
+2005-02-05 15:36:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1280
+
+    Summary:
+      Move buildd master to new scripts dir, and buildd slave to new daemons dir
+    Revision:
+      launchpad--devel--0--patch-1280
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1278
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-1
+       merge in the buildd work
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-2
+       Moved the buildd stuff into the new daemons/scripts dirs
+    
+
+    new files:
+     daemons/.arch-ids/=id scripts/.arch-ids/=id
+
+    modified files:
+     daemons/buildd-slave-example.conf daemons/buildd-slave.tac
+     doc/changelog.txt
+
+    renamed files:
+     lib/canonical/buildd/.arch-ids/example.conf.id
+       ==> daemons/.arch-ids/buildd-slave-example.conf.id
+     lib/canonical/buildd/.arch-ids/master.py.id
+       ==> scripts/.arch-ids/master.py.id
+     lib/canonical/buildd/.arch-ids/slave.tac.id
+       ==> daemons/.arch-ids/buildd-slave.tac.id
+     lib/canonical/buildd/example.conf
+       ==> daemons/buildd-slave-example.conf
+     lib/canonical/buildd/master.py
+       ==> scripts/master.py
+     lib/canonical/buildd/slave.tac
+       ==> daemons/buildd-slave.tac
+
+    new directories:
+     daemons daemons/.arch-ids scripts scripts/.arch-ids
+
+    new patches:
+     daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--base-0
+     daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-1
+     daniel.silverstone@canonical.com--laptop/launchpad--script-rearrange--0--patch-2
+
+
+2005-02-05 15:10:54 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1279
+
+    Summary:
+      Build daemon work on master, slave now recognises reason for package build failure
+    Revision:
+      launchpad--devel--0--patch-1279
+
+    Patches applied:
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1220
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-1
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-2
+       buildd changes incl. database patch
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-3
+       Quote alias in librarian server
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-4
+       Fix up the handing off of the chroot to the buildd slave
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-5
+       Merge from rocketfuel@canonical.com/launchpad--devel--0
+    
+     * daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-6
+       Stuart approved rejigging of patch to make tests pass
+    
+
+    new files:
+     database/schema/.arch-ids/patch-10-01-0.sql.id
+     database/schema/patch-10-01-0.sql
+     lib/canonical/buildd/.arch-ids/utils.py.id
+     lib/canonical/buildd/utils.py
+
+    modified files:
+     database/schema/comments.sql doc/changelog.txt
+     lib/canonical/buildd/debian.py lib/canonical/buildd/master.py
+     lib/canonical/buildd/sbuild-package
+     lib/canonical/buildd/slave.py
+     lib/canonical/launchpad/database/build.py
+     lib/canonical/launchpad/database/soyuz.py
+     lib/canonical/launchpad/interfaces/build.py
+     lib/canonical/launchpad/interfaces/soyuz.py
+     lib/canonical/librarian/web.py
+
+    new patches:
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--base-0
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-1
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-2
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-3
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-4
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-5
+     daniel.silverstone@canonical.com--laptop/launchpad--devel--0--patch-6
 
 
 2005-02-05 02:36:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1278
