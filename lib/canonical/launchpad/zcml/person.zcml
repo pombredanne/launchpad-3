@@ -69,7 +69,8 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.ITeam"
       label="Create a new Team"
-      fields="displayname teamdescription email"
+      fields="displayname teamdescription defaultmembershipperiod 
+              defaultrenewalperiod subscriptionpolicy email"
       content_factory="canonical.launchpad.database.Person"
       class="canonical.launchpad.browser.TeamAddView"
       permission="launchpad.AnyPerson"
@@ -123,7 +124,7 @@
   <browser:pages
       for="canonical.launchpad.interfaces.ITeam"
       permission="zope.Public"
-      class="canonical.launchpad.browser.PersonView">
+      class="canonical.launchpad.browser.TeamView">
       <browser:page
           name="+index"
           template="../templates/team-index.pt"

@@ -1,9 +1,12 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
-from zope.schema import Datetime, Int, Text, TextLine, Password
+from zope.schema import Choice, Datetime, Int, Text, TextLine, Password
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
+
+from canonical.lp import dbschema
+
 
 class IPerson(Interface):
     """A Person."""
@@ -52,14 +55,7 @@ class IPerson(Interface):
     languages = Attribute(_('List of know languages by this person'))
     sshkeys = Attribute(_('List of SSH keys'))
 
-    # XXX: These fields are used only to generate the form to create a
-    # new person.
-    email = TextLine(title=_('Email Address'), required=True,
-            description=_("Please give your email address. You will "
-                "log into the Launchpad using your email address and "
-                "password. You will need to receive email at this "
-                "address to complete your registration. We will never "
-                "disclose, share or sell your personal information."))
+    # XXX: This field is used only to generate the form to create a new person.
     password2 = Password(title=_('Confirm Password'), required=True,
             description=_("Enter your password again to make certain "
                 "it is correct."))
@@ -92,14 +88,15 @@ class IPerson(Interface):
     # XXX: salgado: 2005-11-01: Is it possible to move this properties to
     # ITeam to ensure that they are acessible only via Persons marked
     # with the ITeam interface?
-    currentmembers = Attribute("List of approved Members of this Team.")
+    administrators = Attribute(("List of ADMIN members of this Team.")) 
+    expiredmembers = Attribute("List of EXPIRED members of this Team.")
+    approvedmembers = Attribute("List of APPROVED Members of this Team.")
+    proposedmembers = Attribute("List of PROPOSED members of this Team.")
+    declinedmembers = Attribute("List of DECLINED members of this Team.")
+    deactivatedmembers = Attribute("List of DEACTIVATED members of this Team.")
+
     subteams = Attribute(("List of subteams of this Team. That is, teams "
                           "which are members of this Team."))
-    members = Attribute(("List of approved members with MEMBER role on this "
-                         "Team."))
-    administrators = Attribute(("List of approved members with ADMIN role on "
-                                "this Team.")) 
-    proposedmembers = Attribute("List of members awaiting for approval.")
 
     def browsername():
         """Return a textual name suitable for display in a browser."""
@@ -124,6 +121,37 @@ class ITeam(IPerson):
     """ITeam extends IPerson.
     
     The teamowner should never be None."""
+
+    email = TextLine(
+            title=_('Email Address'), required=True,
+            description=_("Please give the email address for this Team. "))
+
+    defaultmembershipperiod = TextLine(
+            title=_('Period a Subscription Lasts'), required=False, 
+            description=_("This is the number of days all "
+                "subscriptions will last unless a different value "
+                "is provided when the subscription is approved. A value of "
+                "0 (zero) means that subscription will never expire."))
+
+    defaultrenewalperiod = TextLine(
+            title=_('Period a Subscription Lasts After a Renew'),
+            required=False, 
+            description=_("This is the number of days all "
+                "subscriptions will last after being renewed. After this "
+                "period the subscription is expired and must be renewed "
+                "again. A value of 0 (zero) means that subscription renewal "
+                "periods will be the same as the membership period."))
+
+    subscriptionpolicy = Choice(
+            title=_('Subscription Policy'),
+            required=True, vocabulary='TeamSubscriptionPolicy',
+            default=int(dbschema.TeamSubscriptionPolicy.MODERATED),
+            description=_('How new subscriptions should be handled for this '
+                          'team. "Moderated" means that all subscriptions must '
+                          'be approved, "Open" means that any user can join '
+                          'whitout approval and "Restricted" means that new '
+                          'members can only be added by one of the '
+                          'administrators of the team.'))
 
 
 class IPersonSet(Interface):
@@ -197,15 +225,16 @@ class ITeamMembership(Interface):
     id = Int(title=_('ID'), required=True, readonly=True)
     team = Int(title=_("Team"), required=True, readonly=False)
     person = Int(title=_("Owner"), required=True, readonly=False)
+    reviewer = Int(title=_("Reviewer"), required=False, readonly=False)
 
-    role= Int(title=_("Role of the Person on the Team"), required=True,
-              readonly=False)
-
+    datejoined = Text(title=_("Date Joined"), required=True, readonly=True)
+    dateexpires = Text(title=_("Date Expires"), required=False, readonly=False)
+    reviewercomment = Text(title=_("Reviewer Comment"), required=False, 
+                           readonly=False)
     status= Int(title=_("If Membership was approved or not"), required=True,
                 readonly=False)
 
     # Properties
-    rolename = Attribute("Role Name")
     statusname = Attribute("Status Name")
 
 
