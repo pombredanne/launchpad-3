@@ -4,6 +4,10 @@
       i18n:domain="rosetta">
 
 <head>
+    <title metal:fill-slot="title">Rosetta:
+        <span tal:replace="context/poTemplate/title">template title</span>:
+        <span tal:replace="context/language/englishName">template
+            language</span></title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->

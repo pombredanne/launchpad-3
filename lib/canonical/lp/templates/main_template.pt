@@ -6,6 +6,7 @@
       tal:attributes="lang default_language|default;
                       xml:lang default_language|default;">
   <head>
+    <metal:block define-slot="title"></metal:block>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(++resource++plone.css);</style>
     <!-- Rosetta style sheet -->

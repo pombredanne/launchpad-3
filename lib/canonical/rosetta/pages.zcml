@@ -44,9 +44,7 @@
           lp:url="Rosetta/projects/$Project.name/$Product.name/index" />
   </pages>
 
-
   <traverse for="canonical.rosetta.interfaces.IProduct" getter="poTemplate" />
-  
 
   <!-- pages for a POTemplate -->
   <pages for="canonical.rosetta.interfaces.IPOTemplate"
@@ -81,9 +79,6 @@
     <page name="index"
           template="templates/pofile-index.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language"/>
-    <page name="resources"
-          template="templates/project-language-resources.pt"
-          lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/resources" />
     <page name="+edit"
           template="templates/pofile-edit.pt"
           lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$POFile.language/+edit" />
@@ -93,7 +88,7 @@
         for="canonical.rosetta.interfaces.IPOTemplate"
         permission="zope.Public"
         class="canonical.rosetta.browser.ViewPOExport"
-	attribute="__call__"
+        attribute="__call__"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/$Language.code.po" />
 
   <!-- pages for the rosetta application -->

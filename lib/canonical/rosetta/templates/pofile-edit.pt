@@ -4,6 +4,7 @@
       i18n:domain="rosetta">
 
 <head>
+    <title metal:fill-slot="title">Rosetta: Edit PO file details</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -21,15 +22,15 @@
         <h1>Edit POFile Pluralforms</h1>
 
         <p class="documentDescription">
-	blah, blah, blah.
+        Blah, blah, blah.
         </p>
 
         <form action="+edit" method="POST">
         <fieldset>
             Number of Pluralforms: <input type="text" name="pluralforms" tal:attributes="value context/pluralForms"/>
             <br/>
-	    Pluralform Expression: <input type="text" name="expression" tal:attributes="value view/pluralFormExpression"/>
-	    <br/>
+            Pluralform Expression: <input type="text" name="expression" tal:attributes="value view/pluralFormExpression"/>
+            <br/>
             <input type="submit" name="SUBMIT" value="Submit" />
         </fieldset>
         </form>
