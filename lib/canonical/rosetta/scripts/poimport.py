@@ -156,10 +156,11 @@ if __name__ == '__main__':
             print "Importing %s ..." % options.file
             bridge.imports(person, in_f, options.project, options.product,
                            options.potemplate, options.language)
-            print "Updating %s pofile for '%s'..." % (
-                options.potemplate, options.language)
-            bridge.update_stats(options.project, options.product,
-                                options.potemplate, options.language, True)
+            if options.language is not None:
+                print "Updating %s pofile for '%s'..." % (
+                    options.potemplate, options.language)
+                bridge.update_stats(options.project, options.product,
+                                    options.potemplate, options.language, True)
         except:
             print "aborting database transaction"
             bridge.abort()
