@@ -2,6 +2,38 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-14 20:58:50 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1201
+
+    Summary:
+      fix upstream bug page links. add page tests to cover this
+ functionality.
+    Revision:
+      launchpad--devel--0--patch-1201
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-300
+       fix upstream bug page links. add page tests to cover this functionality.
+    
+
+    new files:
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-critical.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-my-todo.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-submitted-by-me.txt.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-upstream-bug-task-listing-unassigned.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-critical.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-my-todo.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-submitted-by-me.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-upstream-bug-task-listing-unassigned.txt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/product.py
+     lib/canonical/launchpad/templates/bugassignment-search-listing.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-300
+
+
 2005-01-14 18:24:59 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1200
 
     Summary:

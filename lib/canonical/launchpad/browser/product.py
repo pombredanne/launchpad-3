@@ -216,6 +216,15 @@ class ProductBugsView:
                 status = [param_status]
             ba_params.append(IN(BugTask.q.status, status))
 
+        param_severity = self.request.get('severity', None)
+        if param_severity and param_severity != 'all':
+            severity = []
+            if isinstance(param_severity, (list, tuple)):
+                severity = param_severity
+            else:
+                severity = [param_severity]
+            ba_params.append(IN(BugTask.q.severity, severity))
+
         param_assignee = self.request.get('assignee')
         if param_assignee and param_assignee not in ('all', 'unassigned'):
             assignees = []
