@@ -51,7 +51,7 @@
         </tr>
     </table>
 
-    <h2>Affected packages</h2>
+    <h2>Affected binary packages</h2>
     
     <table class="listing" xtal:repeat="prod context/products">
         <tr>

@@ -53,6 +53,7 @@
     </div>
   
     <ul>
+        <li><a href="sourcepackages">See all source package bugs</a></li>
         <li><a href="bugs">See the bug list</a></li>
         <li><a href="projects">Search projects</a></li>
     </ul>

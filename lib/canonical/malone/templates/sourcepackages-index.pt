@@ -1,1 +1,50 @@
-<tal:x replace="python:request.response.redirect('..')" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@malone_template/master"
+      i18n:domain="malone">
+<body>
+
+<div metal:fill-slot="main">
+    <h1>Distribution bugs: Ubuntu</h1>
+    <div class="documentDescription">
+        These are the current open bugs for Ubuntu Linux.
+    </div>
+
+    <table class="listing rowNavigation">
+        <tr>
+            <th>Bug</th>
+            <th>Status</th>
+            <th>Severity</th>
+            <th>Priority</th>
+            <th>Source Package</th>
+        </tr> 
+        <tr xtal:repeat="bugass context/bugs"
+            xtal:attributes="onclick
+                string:window.location='../../bugs/${bugass/bug/id}';">
+            <td>
+                <a href="#" 
+                    xtal:attributes="href string:../../bugs/${bugass/bug/id}"
+                    xtal:content="bugass/bug/title">
+                    $Bug.title</a>
+            </td>
+            <td xtal:content="bugass/bugstatus/lp:BugAssignmentStatus">
+                $SourcepackageBugAssignment.bugstatus
+            </td>
+            <td xtal:content="bugass/severity/lp:BugSeverity">
+                $SourcepackageBugAssignment.severity
+            </td>
+            <td xtal:content="bugass/priority/lp:BugPriority">
+                $SourcepackageBugAssignment.priority
+            </td>
+            <td xtal:content="bugass/binarypackage">
+                $SourcepackageBugAssignment.binarypackage
+            </td>
+        </tr>
+    </table>
+
+
+</div>
+
+</body>
+</html>
+
