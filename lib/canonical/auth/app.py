@@ -20,11 +20,7 @@ class sendPasswordChangeEmail(object):
         ##XXX: What about this mail template idea?
         template = open('lib/canonical/auth/mailTemplate')
 
-        ##XXX: What is the rigth url? From were should it be retrived
-        url = ('http://localhost:8085/forgottenpassword/%s'
-               % code)
-
-        msg = template.read() % url
+        msg = template.read() % code
         template.close()
 
         ##XXX: Remove the line below.. here just for test

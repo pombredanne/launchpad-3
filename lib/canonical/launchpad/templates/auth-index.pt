@@ -15,30 +15,35 @@
 
 <div metal:fill-slot="main">
 
-<h2> Forgotten Password? </h2>
+<h2> Forgotten Your Password? </h2>
 
 
 <fieldset>
   <legend>
     User Email
   </legend>
+  Enter your valid registration email address below.  
+  You will receive an email on changing your password.
+  If you have forgotten the email address you used to 
+  sign up with Ubuntu, please notify us at 
+  <a href="mailto:webmaster@ubuntulinux.org">
+    webmaster@ubuntulinux.org 
+  </a>
   <form name="passwdretrive" method="POST">
-    <div class="formHelp">Enter your email</div>
+    <div class="formHelp">Email Address</div>
     <input type="text" size="50" name="email" tal:attributes="value request/email|nothing" />
     <input type="submit" value="Send"/>
   </form>
 
 </fieldset>
 
-<h4> 
-  <span tal:content="view/message"> MESSAGE </span>
+  <span tal:content="view/getResult"> MESSAGE </span>
   <!--   XXX: Tal dummy is just a test before send email is working -->
-  <tal:dummy tal:condition="view/success">
-    <li><a class="dummy" tal:content="view/success"
-    tal:attributes="href view/success" /></li>
-  </tal:dummy>
+  <!--   <tal:dummy tal:condition="view/success"> -->
+  <!--     <li><a class="dummy" tal:content="view/success" -->
+  <!--     tal:attributes="href view/success" /></li> -->
+  <!--   </tal:dummy> -->
   <!--   XXX -->
-</h4>
 
 
 </div>

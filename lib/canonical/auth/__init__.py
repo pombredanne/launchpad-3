@@ -28,6 +28,7 @@ class PasswordReminders(Persistent):
 
     def __init__(self):
         ##FIXME: Perhaps its a good Ideia to use BTree
+        ##Daniel Debonzi 2004-10-03
         self.change_list = {}
     
     def append(self, personId, code):
@@ -40,7 +41,7 @@ class PasswordReminders(Persistent):
         personId, request_time = self.change_list[code]
         del self.change_list[code]
         ##TODO check if time has not expired
-
+        ##Daniel Debonzi 2004-10-03
         return personId
 
 

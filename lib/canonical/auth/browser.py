@@ -11,30 +11,33 @@ class sendPasswordToEmail(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        ##XXX: self.success is used only for tests
+        ##Daniel Debonzi 2004-10-03
         self.success = False
-        """ The message to be shown in template """
-        self.message = None
 
-        email = request.get("email"   "")
+        self.email = request.get("email"   "")
 
-        if email:
+    def getResult(self):
+        random_link = None
+        if self.email:
             """
             Check if the given email address has a valid format
             """
-            #XXX: Must be enhaced
-            if '@' not in email:                
-                self.message = 'Sorry. Bad email address format'
-                return
+            ##XXX: Must be enhaced
+            ##Daniel Debonzi 2004-10-03
+            if '@' not in self.email:                
+                return 'Sorry. Bad email address format'
 
             """
             Try to get the PersonId that is this emails address owner
             """
             try:
-                personId = EmailAddress.selectBy(email=email)[0].id
+                personId = EmailAddress.selectBy(email=self.email)[0].id
                 """
                 Generate the 'transaction' code
                 """
-                self.success = ''.join([random.choice('0123456789abcdfghjklmnpqrstvwxz') for count in range(40)]) 
+                random_link = ''.join([random.choice('0123456789abcdfghjklmnpqrstvwxz') for count in range(40)]) 
+                ##self.success = random_link
             except:
                 """
                 If the email is not present in launchpad database
@@ -47,53 +50,52 @@ class sendPasswordToEmail(object):
             If the email was found in database, store the needed data
             in ZODB and send an email to 'requester'
             """
-            if self.success:
-                ##XXX: Check it carefully
+            if random_link:
+                ##XXX: Check it carefully. Is it the right way to use ZODB?
+                ##Daniel Debonzi 2003-10-03
                 reminders = zodbconnection.passwordreminders
-
-                ##XXX: Check more carefully
-                reminders.append(personId, self.success)
+                reminders.append(personId, random_link)
 
                 get_transaction().commit()
 
                 """
                 Send email
                 """
-                sendPasswordChangeEmail(self.success, email)
+                sendPasswordChangeEmail(random_link, self.email)
                 
                 
-            self.message = ('If your email was found in our database '
-                            'an email has been sent to you with '
-                            'instructions to change your password. '
-                            'Thanks')
-            
+            return ('If your email was found in our database '
+                    'an email has been sent to you with '
+                    'instructions to change your password. '
+                    'Thanks')
+        
 
 class changeEmailPassword(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.message = ''
 
-        email = request.get("email"   "")
-        password = request.get("password"   "")
-        repassword = request.get("repassword"   "")
-        code = request.get("code"   "")
+        self.email = request.get("email"   "")
+        self.password = request.get("password"   "")
+        self.repassword = request.get("repassword"   "")
+        self.code = request.get("code"   "")
 
-        if (email and password and repassword):
+    def getResult(self):
+
+        if (self.email and self.password and self.repassword):
             """
             Check if the given email address has a valid format
             """
-            #XXX: Must be enhaced
-            if '@' not in email:
-                self.message = 'Sorry. Bad email address format'
-                return
+            ##XXX: Must be enhaced
+            ##Daniel Debonzi 2004-10-03
+            if '@' not in self.email:
+                return 'Sorry. Bad email address format'
 
             """
             Verify password misstyping
             """
-            if strip(password) != strip(repassword):
-                self.message = 'The Passwords does not match'
-                return
+            if strip(self.password) != strip(self.repassword):
+                return 'The Passwords does not match'
             
             else:
                 """
@@ -101,8 +103,9 @@ class changeEmailPassword(object):
                 """
                 ## How about it? Makes sense?
                 ## Must be checked
+                ## Daniel Debonzi 2004-10-03
                 reminders = zodbconnection.passwordreminders
-                personId = reminders.retrieve(code)
+                personId = reminders.retrieve(self.code)
 
                 get_transaction().commit()
                 
@@ -110,7 +113,7 @@ class changeEmailPassword(object):
                     """
                     Check if the email match
                     """
-                    personId_check = EmailAddress.selectBy(email=email)[0].id
+                    personId_check = EmailAddress.selectBy(email=self.email)[0].id
                     if personId != personId_check:
                         raise
                 except:
@@ -122,10 +125,9 @@ class changeEmailPassword(object):
                     Change password
                     """
                     user = Person.get(personId)
-                    ##XXX: password must be encrypted 
-                    user.password=password
-                    self.message = 'Your password has been successfully changed. Thanks'
+                    ##XXX: password must be encrypted
+                    ##Daniel Debonzi 2004-10-03
+                    user.password=self.password
+                    return 'Your password has been successfully changed. Thanks'
 
-                else:
-                    self.message = 'Sorry, your password could not be changed'
-
+                return 'Sorry, your password could not be changed'

@@ -1,14 +1,16 @@
-Subject: Launchpad Password Change Request
+Subject: Ubuntu: Password change request
+
 Hi,
 
-You have requested to change you password in Launchpad.
-If you realy want to do it you should go to within one hour
+You have requested to change you password that gives you access to http://www.ubuntulinux.org/
 
-%s
-  
-and change it.
-If you have not made this request, somebody did it for you. If
-you do not want to do it. Just ignore this message.
+You have three hours in which to do so, before it expires.
 
-Thanks
-Launchpad Team
+Please click on the link below, and you will be prompted to enter your email address and confirm your new password.
+http://launchpad.canonical.com/forgottenpassword/%s
+
+If you have not made this request, somebody else has done so.
+
+If you do not wish to change your account details, please ignore this email.
+
+Ubuntu Admin

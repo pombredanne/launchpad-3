@@ -482,12 +482,98 @@ class DistroReleaseBinaryReleaseBuildApp(object):
         self.version = version
         self.arch = arch
 
+    def pkgformat(self):
+        for format in dbschema.BinaryPackageFormat.items:
+            if format.value == self.binarypackagerelease.binpackageformat:
+                return format.title
+        return 'Unknown (%d)' %self.binarypackagerelease.binpackageformat
+    pkgformat = property(pkgformat)
+
+
+    def depends(self):
+        bindepends = split(self.binarypackagerelease.depends, ',') 
+        bindep_list = []
+        for pack in bindepends:
+            tmp = split(pack)
+            if tmp:
+                bindep_list.append(builddepsContainer(tmp[0],
+                                                      join(tmp[1:])))
+        
+        return bindep_list
+    depends = property(depends)
+
+    def recommends(self):
+        binrecommends = split(self.binarypackagerelease.recommends, ',') 
+        binrec_list = []
+        for pack in binrecommends:
+            tmp = split(pack)
+            if tmp:
+                binrec_list.append(builddepsContainer(tmp[0],
+                                                      join(tmp[1:])))
+            return binrec_list
+    recommends = property(recommends)
+
+    def conflicts(self):
+        binconflicts = split(self.binarypackagerelease.conflicts, ',') 
+        bincfl_list = []
+        for pack in binconflicts:
+            tmp = split(pack)
+            if tmp:
+                bincfl_list.append(builddepsContainer(tmp[0],
+                                                      join(tmp[1:])))
+        
+        return bincfl_list
+
+    conflicts = property(conflicts)
+
+
+    def replaces(self):
+        binreplaces = split(self.binarypackagerelease.replaces, ',') 
+        binrep_list = []
+        for pack in binreplaces:
+            tmp = split(pack)
+            if tmp:
+                binrep_list.append(builddepsContainer(tmp[0],
+                                                      join(tmp[1:])))
+        
+        return binrep_list
+    replaces = property(replaces)
+
+
+    def suggests(self):
+        binsuggests = split(self.binarypackagerelease.suggests, ',') 
+        binsug_list = []
+        for pack in binsuggests:
+            tmp = split(pack)
+            if tmp:
+                binsug_list.append(builddepsContainer(tmp[0],
+                                                      join(tmp[1:])))
+        
+        return binsug_list
+    suggests = property(suggests)
+
+
+    def provides(self):
+        binprovides = split(self.binarypackagerelease.provides, ',') 
+        binprv_list = []
+        for pack in binprovides:
+            tmp = split(pack)
+            if tmp:
+                binprv_list.append(builddepsContainer(tmp[0],
+                                                 join(tmp[1:])))
+        
+        return binprv_list
+    provides = property(provides)
 
 
 class DistroReleaseBinaryReleaseApp(object):
     def __init__(self, binarypackagerelease, version, distrorelease):
         self.version = version
-        self.binarypackagerelease = binarypackagerelease
+        try:
+            self.binselect = binarypackagerelease
+            self.binarypackagerelease = binarypackagerelease[0]
+        except:
+            self.binarypackagerelease = binarypackagerelease[0]
 
         query = ('SourcePackageUpload.distrorelease = DistroRelease.id '
                  'AND SourcePackageUpload.sourcepackagerelease = %i '
@@ -515,7 +601,10 @@ class DistroReleaseBinaryReleaseApp(object):
             self.archs = [a.architecturetag for a in archReleases]
 
     def __getitem__(self, arch):
-        return DistroReleaseBinaryReleaseBuildApp(self.binarypackagerelease,
+        query = self.binselect.clause + \
+                ' AND DistroArchRelease.architecturetag = %s' %quote(arch)
+        binarypackage = SoyuzBinaryPackage.select(query)
+        return DistroReleaseBinaryReleaseBuildApp(binarypackage[0],
                                                   self.version, arch)
     
 class DistroReleaseBinaryApp(object):
@@ -531,7 +620,7 @@ class DistroReleaseBinaryApp(object):
     def currentReleases(self):
         """
         The current releases of this binary package by architecture.
-        Returns: a dict of version -> list-of-architectures
+8        Returns: a dict of version -> list-of-architectures
         """
         binaryReleases = list(self.binarypackage.current(self.release))
         current = {}
@@ -555,7 +644,7 @@ class DistroReleaseBinaryApp(object):
         query = self.binselect.clause + \
                 ' AND BinaryPackage.version = %s' %quote(version)
         self.binarypackage = SoyuzBinaryPackage.select(query)
-        return DistroReleaseBinaryReleaseApp(self.binarypackage[0],
+        return DistroReleaseBinaryReleaseApp(self.binarypackage,
                                              version, self.release)
 
 class DistroReleaseBinariesApp(object):

@@ -164,6 +164,14 @@ class IDistroReleaseBinaryReleaseBuildApp(Interface):
     version = Attribute("Version")
     arch = Attribute("Arch")
 
+    depends = Attribute("Package Dependencies")
+    recommends = Attribute("Package Recommends")
+    suggests = Attribute("Package Sugestions")
+    conflicts = Attribute("Package Conflicts")
+    replaces = Attribute("Package Replaces")
+    provides = Attribute("Package Provides")
+
+    pkgformat = Attribute("Package Format")
 
 
 class IDistroReleaseBinaryReleaseApp(Interface):
@@ -406,10 +414,16 @@ class IPackagePublishing(Interface):
 
 class IBuild(Interface):
     """A Build interface"""
+    datecreated = Attribute("Date of BinPackage Creation")
+    processor = Attribute("BinaryPackage Processor")
     distroarchrelease = Attribute("The Ditro Arch Release")
+    buildstate = Attribute("BinaryBuild State")
+    datebuilt = Attribute("Binary Date of Built")
+    buildduration = Attribute("Build Duration Interval")
     component = Attribute("The BinaryPackage Component")
     section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("Sourcepackagerelease reference")
+    
     
 class IBinaryPackage(Interface):
     """A binary package, e.g apache-utils"""
@@ -427,6 +441,15 @@ class IBinaryPackage(Interface):
 
     pkgpriority = Attribute("Package Priority")
 
+    depends = Attribute("Package Dependencies")
+    recommends = Attribute("Package Recommends")
+    suggests = Attribute("Package Sugestions")
+    conflicts = Attribute("Package Conflicts")
+    replaces = Attribute("Package Replaces")
+    provides = Attribute("Package Provides")
+    essential = Attribute("Package Essential Flag")
+    installedsize = Attribute("Package Installed Size")
+    copyright = Attribute("Package Copyright")
     licence = Attribute("Package Licence")
     
 class IBinaryPackageName(Interface):
