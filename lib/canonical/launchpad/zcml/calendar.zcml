@@ -14,11 +14,6 @@
       provides="schoolbell.interfaces.ICalendar"
       factory="canonical.calendar.calendarFromCalendarOwner" />
 
-  <adapter
-      for="canonical.launchpad.interfaces.IPersonApp"
-      provides="schoolbell.interfaces.ICalendar"
-      factory="canonical.calendar.calendarFromPersonApp" />
-
   <browser:page
       for="canonical.publication.RootObject"
       name="calendar"
@@ -26,7 +21,7 @@
       class="canonical.calendar.UsersCalendarTraverser" />
 
   <browser:page
-      for="canonical.launchpad.interfaces.IPersonApp"
+      for="canonical.launchpad.interfaces.ICalendarOwner"
       name="calendar"
       permission="zope.Public"
       class="canonical.calendar.CalendarAdapterTraverser" />

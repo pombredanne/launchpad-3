@@ -94,10 +94,6 @@ def calendarFromCalendarOwner(calendarowner):
     return calendarowner.calendar
 
 
-def calendarFromPersonApp(personapp):
-    """Adapt IPersonApp to ICalendar."""
-    return ICalendar(personapp.person)
-
 # XXXX we don't actually have any of these view classes yet ...
 _year_pat  = re.compile(r'(\d\d\d\d)')
 _month_pat = re.compile(r'(\d\d\d\d)-(\d\d)')
