@@ -2,10 +2,16 @@
 
 from zope.schema import Choice, Datetime, Int, Text, TextLine, Password
 from zope.interface import Interface, Attribute
+from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 from canonical.lp.dbschema import TeamSubscriptionPolicy, TeamMembershipStatus
+
+
+def _valid_person_name(name):
+    """See IPersonSet.nameIsValidForInsertion()."""
+    return getUtility(IPersonSet).nameIsValidForInsertion(name)
 
 
 class IPerson(Interface):
@@ -15,11 +21,17 @@ class IPerson(Interface):
             title=_('ID'), required=True, readonly=True,
             )
     name = TextLine(
-            title=_('Unique Launchpad Name'), required=True, readonly=False,
+            title=_('Name'), required=True, readonly=True,
+            constraint=_valid_person_name,
+            description=_("The short name of this team, which must be unique "
+                          "among all other teams. It must be at least one "
+                          "lowercase letter (or number) followed by one or "
+                          "more letters, numbers, dots, hyphens or plus "
+                          "signs.")
             )
     displayname = TextLine(
-            title=_('Display Name'), required=True, readonly=False,
-            description=_("This is your name as your would like it "
+            title=_('Display Name'), required=False, readonly=False,
+            description=_("This is your name as you would like it "
                 "displayed throughout The Launchpad. Most people "
                 "use their full name here.")
             )
@@ -225,6 +237,12 @@ class IPersonSet(Interface):
         """Return the person with the given id.
 
         Raise KeyError if there is no such person.
+        """
+
+    def nameIsValidForInsertion(name):
+        """Return true if <name> is valid and is not yet in the database.
+
+        <name> will be valid if valid_name(name) returns True.
         """
 
     def newPerson(*args, **kwargs):

@@ -6,9 +6,6 @@
     i18n_domain="launchpad">
 
   <!-- Person -->
-  <!-- XXX: salgado, 2005-03-17. I really wanted to require launchpad.Edit to
-  the set_schema here, but if we do this we break the reset password page, as
-  it would require you to login when we change the password attribute -->
   <content class="canonical.launchpad.database.Person">
       <allow interface="canonical.launchpad.interfaces.IPerson" />
       <require 
@@ -25,8 +22,8 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.ITeam"
       label="Create a new Team"
-      fields="displayname teamdescription defaultmembershipperiod 
-              defaultrenewalperiod subscriptionpolicy email"
+      fields="name displayname teamdescription defaultmembershipperiod 
+              defaultrenewalperiod subscriptionpolicy"
       content_factory="canonical.launchpad.database.Person"
       class="canonical.launchpad.browser.TeamAddView"
       permission="launchpad.AnyPerson"

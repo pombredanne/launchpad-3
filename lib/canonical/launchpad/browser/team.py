@@ -40,11 +40,6 @@ class TeamAddView(AddView):
         for key, value in data.items():
             kw[str(key)] = value
 
-        # XXX: salgado, 2005-02-04: For now, we're using the email only for 
-        # generating the nickname. We must decide if we need or not to 
-        # require an email address for each team.
-        email = kw.pop('email')
-        kw['name'] = generate_nick(email)
         kw['teamownerID'] = getUtility(ILaunchBag).user.id
         team = getUtility(IPersonSet).newTeam(**kw)
         notify(ObjectCreatedEvent(team))

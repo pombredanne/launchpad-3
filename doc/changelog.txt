@@ -2,6 +2,40 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-25 03:32:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1501
+
+    Summary:
+      Allow the user to specify the unique name he wants for a team instead of using the provided email address to generate that.
+    Revision:
+      launchpad--devel--0--patch-1501
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-215
+       Allow the user to specify the unique name he wants for a team instead of using the provided email address to generate that.
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-216
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-217
+       Changes to the team page broke some tests.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/foaf/nickname.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/database/person.py
+     lib/canonical/launchpad/doc/nickname.txt
+     lib/canonical/launchpad/interfaces/person.py
+     lib/canonical/launchpad/pagetests/foaf/10-newteam.txt
+     lib/canonical/launchpad/zcml/person.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-215
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-216
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-217
+
+
 2005-03-24 23:27:12 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1500
 
     Summary:

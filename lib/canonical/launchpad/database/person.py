@@ -39,6 +39,8 @@ from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 
 from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
+from canonical.launchpad.validators.name import valid_name
+
 from canonical.lp.dbschema import EnumCol
 from canonical.lp.dbschema import KarmaType
 from canonical.lp.dbschema import EmailAddressStatus
@@ -557,6 +559,12 @@ class PersonSet(object):
             return results[0]
         else:
             return default
+
+    def nameIsValidForInsertion(self, name):
+        if not valid_name(name) or self.getByName(name) is not None:
+            return False
+        else:
+            return True
 
     def getAllPersons(self):
         return list(Person.select(Person.q.teamownerID==None))
