@@ -51,13 +51,16 @@ class Product(SQLBase):
 
     datecreated = DateTimeCol(dbName='datecreated', notNull=True)
 
-    homepageurl = StringCol(dbName='homepageurl', notNull=False, default=None)
+    homepageurl = StringCol(dbName='homepageurl', notNull=False,
+            default=None)
     
-    screenshotsurl = StringCol(dbName='screenshotsurl', notNull=False, default=None)
+    screenshotsurl = StringCol(dbName='screenshotsurl', notNull=False,
+            default=None)
     
     wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
 
-    programminglang = StringCol(dbName='programminglang', notNull=False, default=None)
+    programminglang = StringCol(dbName='programminglang', notNull=False,
+            default=None)
     
     downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
     
@@ -86,6 +89,17 @@ class Product(SQLBase):
 
     releases = MultipleJoin('ProductRelease', joinColumn='product',
                              orderBy='-datereleased')
+
+    def fullname(self):
+        '''Products cannot be identified uniquely by name - use this helper
+            to generate a unique name based on product name and project name
+        '''
+        prod = self.name
+        proj = self.name
+        if prod == proj:
+            return prod
+        else:
+            return '%s %s' % (proj, prod)
 
 
     def newseries(self, form):

@@ -48,6 +48,7 @@ def traverseBugs(bugcontainer, request, name):
 
 # TODO: It should be possible to specify all this via ZCML and not require
 # the BugView class with its ViewPageTemplateFile attributes
+# (I think the browser:view directive allows this alread -- stub)
 class BugView(object):
     # XXX fix these horrific relative paths
     watchPortlet = ViewPageTemplateFile(

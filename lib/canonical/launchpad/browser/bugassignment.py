@@ -8,7 +8,7 @@ from canonical.launchpad.interfaces import IPerson
 from canonical.launchpad.database import Bug, Person, \
      SourcePackageBugAssignment, ProductBugAssignment
 from canonical.lp import dbschema
-from canonical.launchpad.vocabularies import PersonVocabulary, \
+from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
      ProductVocabulary, SourcePackageVocabulary
 
 # Bug Reports
@@ -246,7 +246,7 @@ class BugAssignmentsView(object):
 
     def people(self):
         """Return the list of people in Launchpad."""
-        return PersonVocabulary(None)
+        return ValidPersonVocabulary(None)
 
     def statuses(self):
         """Return the list of bug assignment statuses."""

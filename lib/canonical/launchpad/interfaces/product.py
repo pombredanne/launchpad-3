@@ -110,6 +110,11 @@ class IProduct(Interface):
         Raises an KeyError if a PO template with that name already exists.
         """
 
+    def fullname():
+        """Returns a name that uniquely identifies this product, by combining
+            product name and project name
+        """
+
     def newseries(form):
         """Creates a new ProductSeries for this series."""
 

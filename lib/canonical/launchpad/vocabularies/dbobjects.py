@@ -128,14 +128,18 @@ class SourcePackageVocabulary(SQLObjectVocabularyBase):
         '''
         if not query:
             return []
+        query = query.lower()
         t = self._table
         objs = [self._toTerm(r)
             for r in t.select('''
                 sourcepackage.sourcepackagename = sourcepackagename.id
-                AND sourcepackagename.name like '%%' || %s || '%%'
-                ''' % quote_like(query.lower()),
-                    ['SourcePackageName']
+                AND (
+                    sourcepackagename.name like '%%' || %s || '%%'
+                    OR sourcepackage.fti @@ ftq(%s)
                     )
+                ''' % (quote_like(query), quote(query)),
+                ['SourcePackageName']
+                )
             ]
         return objs
 
@@ -217,16 +221,19 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         '''
         if not query:
             return []
-        words = ["'%%" + quote_like(word)[1:-1] + "%%'"
-            for word in query.lower().split()]
-        sql = []
-        for word in words:
-            sql.append("product.name like %s" % word)
-            sql.append("project.name like %s" % word)
-        sql = 'product.project = project.id AND (%s)' % (' OR '.join(sql))
-        t = self._table
-        objs = [self._toTerm(r)
-            for r in t.select(sql, ['Product', 'Project'])
+        query = query.lower()
+        like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+        fti_query = quote(query)
+        sql = """
+            product.project = project.id AND (
+                project.fti @@ ftq(%s) 
+                OR product.fti @@ ftq(%s)
+                OR product.name LIKE %s
+                OR project.name LIKE %s
+                )""" % (fti_query, fti_query, like_query, like_query)
+        objs = [
+            self._toTerm(r)
+            for r in self._table.select(sql, ['Product', 'Project'])
             ]
         return objs
 
@@ -274,13 +281,12 @@ class PersonVocabulary(NamedSQLObjectVocabulary):
         kw = {}
         if self._orderBy:
             kw['orderBy'] = self._orderBy
-        query = quote('%%%s%%' % quote_like(query.lower())[1:-1])
-        objs = self._table.select('''
-            lower(name) LIKE %(query)s
-            OR lower(displayname) LIKE %(query)s
-            OR lower(givenname) LIKE %(query)s
-            OR lower(familyname) LIKE %(query)s
-            ''' % vars(), **kw)
+        query = query.lower()
+        like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+        fti_query = quote(query)
+        objs = self._table.select(
+            "name LIKE %s OR fti @@ ftq(%s)" % (like_query, fti_query), **kw
+            )
         return [self._toTerm(obj) for obj in objs]
 
 
@@ -306,23 +312,18 @@ class ValidPersonVocabulary(PersonVocabulary):
         # similar) -- StuartBishop 2004/11/24
         if not query:
             return []
-        query = quote('%%%s%%' % quote_like(query.lower())[1:-1])
+        query = query.lower()
+        like_query = quote('%%%s%%' % quote_like(query)[1:-1])
+        fti_query = quote(query)
         kw = {}
         if self._orderBy:
             kw['orderBy'] = self._orderBy
         objs = self._table.select('''
             password IS NOT NULL
-            AND (
-                lower(name) LIKE %(query)s
-                OR lower(displayname) LIKE %(query)s
-                OR lower(givenname) LIKE %(query)s
-                OR lower(familyname) LIKE %(query)s
-                )
-            ''' % vars(), **kw)
+            AND (name LIKE %s OR fti @@ ftq(%s))
+            ''' % (like_query, fti_query), **kw
+            )
         return [self._toTerm(obj) for obj in objs]
-
-
-
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
     _table = ProductRelease

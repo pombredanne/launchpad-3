@@ -301,6 +301,8 @@ COMMENT ON COLUMN Bounty.owner IS 'The person who created the bounty. The owner 
 
 -- SourceSource
 COMMENT ON COLUMN SourceSource.branchpoint IS 'The source specification for an import job to branch from.';
+COMMENT ON COLUMN SourceSource.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
+COMMENT ON COLUMN SourceSource.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
 
 -- Messaging subsytem
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';

@@ -15,12 +15,8 @@ COMMENT ON COLUMN SourceSource.autotested IS 'This flag gives the results of an 
 ALTER TABLE SourceSource ADD COLUMN datestarted timestamp without time zone;
 ALTER TABLE SourceSource ALTER COLUMN datestarted SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC');
 
-COMMENT ON COLUMN SourceSource.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
-
 ALTER TABLE SourceSource ADD COLUMN datefinished timestamp without time zone;
 ALTER TABLE SourceSource ALTER COLUMN datefinished SET DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC');
-
-COMMENT ON COLUMN SourceSource.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
 
 UPDATE LaunchpadDatabaseRevision SET major=5, minor=4, patch=0;
 

@@ -5,7 +5,6 @@ SET check_function_bodies = false;
 
 SET search_path = public, pg_catalog;
 
-
 /*
 CREATE FUNCTION plpython_call_handler() RETURNS language_handler
     AS '$libdir/plpython', 'plpython_call_handler'
@@ -15,7 +14,6 @@ CREATE FUNCTION plpython_call_handler() RETURNS language_handler
 
 CREATE PROCEDURAL LANGUAGE plpythonu HANDLER plpython_call_handler;
 */
-
 
 
 CREATE TABLE person (
@@ -154,6 +152,8 @@ CREATE TABLE project (
     lastdoap text,
     sourceforgeproject text,
     freshmeatproject text,
+    reviewed boolean DEFAULT false NOT NULL,
+    active boolean DEFAULT true NOT NULL,
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
@@ -196,6 +196,8 @@ CREATE TABLE product (
     lastdoap text,
     sourceforgeproject text,
     freshmeatproject text,
+    reviewed boolean DEFAULT false NOT NULL,
+    active boolean DEFAULT true NOT NULL,
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
@@ -844,6 +846,11 @@ CREATE TABLE potemplate (
     iscurrent boolean NOT NULL,
     messagecount integer NOT NULL,
     "owner" integer,
+    rawfile text,
+    rawimporter integer,
+    daterawimport timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
+    rawimportstatus integer,
+    CONSTRAINT potemplate_rawimportstatus_valid CHECK ((((rawfile IS NULL) AND (rawimportstatus <> 0)) OR ((rawfile IS NOT NULL) AND (rawimportstatus IS NOT NULL)))),
     CONSTRAINT valid_name CHECK (valid_name(name))
 );
 
@@ -867,7 +874,12 @@ CREATE TABLE pofile (
     "owner" integer,
     pluralforms integer NOT NULL,
     variant text,
-    filename text
+    filename text,
+    rawfile text,
+    rawimporter integer,
+    daterawimport timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
+    rawimportstatus integer,
+    CONSTRAINT potemplate_rawimportstatus_valid CHECK ((((rawfile IS NULL) AND (rawimportstatus <> 0)) OR ((rawfile IS NOT NULL) AND (rawimportstatus IS NOT NULL))))
 );
 
 
@@ -1038,9 +1050,8 @@ CREATE TABLE bugactivity (
 CREATE TABLE bugexternalref (
     id serial NOT NULL,
     bug integer NOT NULL,
-    bugreftype integer NOT NULL,
-    data text NOT NULL,
-    description text NOT NULL,
+    url text NOT NULL,
+    title text NOT NULL,
     datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     "owner" integer NOT NULL
 );
@@ -1169,7 +1180,10 @@ CREATE TABLE sourcesource (
     "owner" integer NOT NULL,
     currentgpgkey text,
     fileidreference text,
-    branchpoint text
+    branchpoint text,
+    autotested integer DEFAULT 0 NOT NULL,
+    datestarted timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
+    datefinished timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
 );
 
 
@@ -1241,7 +1255,6 @@ CREATE FUNCTION valid_bug_name(text) RETURNS boolean
 '
     LANGUAGE plpythonu;
 */
-
 
 
 CREATE SEQUENCE sourcepackagepublishing_id_seq
@@ -1355,7 +1368,6 @@ CREATE TABLE launchpaddatabaserevision (
 );
 
 
-
 /*
 CREATE FUNCTION valid_version(text) RETURNS boolean
     AS '
@@ -1368,7 +1380,6 @@ CREATE FUNCTION valid_version(text) RETURNS boolean
 '
     LANGUAGE plpythonu;
 */
-
 
 
 CREATE VIEW vsourcepackageindistro AS
@@ -1425,6 +1436,17 @@ CREATE VIEW sourcepackagepublishingview AS
 
 CREATE VIEW binarypackagepublishingview AS
     SELECT packagepublishing.id, distrorelease.name AS distroreleasename, binarypackagename.name AS binarypackagename, component.name AS componentname, section.name AS sectionname, packagepublishing.priority, distrorelease.distribution, packagepublishing.status AS publishingstatus FROM packagepublishing, distrorelease, distroarchrelease, binarypackage, binarypackagename, component, section WHERE ((((((packagepublishing.distroarchrelease = distroarchrelease.id) AND (distroarchrelease.distrorelease = distrorelease.id)) AND (packagepublishing.binarypackage = binarypackage.id)) AND (binarypackage.binarypackagename = binarypackagename.id)) AND (packagepublishing.component = component.id)) AND (packagepublishing.section = section.id));
+
+
+
+CREATE TABLE cveref (
+    id serial NOT NULL,
+    bug integer NOT NULL,
+    cveref text NOT NULL,
+    title text NOT NULL,
+    datecreated timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone),
+    "owner" integer NOT NULL
+);
 
 
 
@@ -1892,11 +1914,6 @@ ALTER TABLE ONLY binarypackage
 
 
 
-ALTER TABLE ONLY binarypackage
-    ADD CONSTRAINT binarypackage_binarypackagename_key UNIQUE (binarypackagename, "version");
-
-
-
 ALTER TABLE ONLY packagepublishing
     ADD CONSTRAINT packagepublishing_pkey PRIMARY KEY (id);
 
@@ -2274,6 +2291,16 @@ ALTER TABLE ONLY bugmessage
 
 ALTER TABLE ONLY bugmessage
     ADD CONSTRAINT bugmessage_bug_key UNIQUE (bug, message);
+
+
+
+ALTER TABLE ONLY binarypackage
+    ADD CONSTRAINT binarypackage_binarypackagename_key UNIQUE (binarypackagename, build, "version");
+
+
+
+ALTER TABLE ONLY cveref
+    ADD CONSTRAINT cveref_pkey PRIMARY KEY (id);
 
 
 
@@ -3462,10 +3489,42 @@ ALTER TABLE ONLY bugmessage
 
 
 
+ALTER TABLE ONLY cveref
+    ADD CONSTRAINT "$1" FOREIGN KEY (bug) REFERENCES bug(id);
+
+
+
+ALTER TABLE ONLY cveref
+    ADD CONSTRAINT "$2" FOREIGN KEY ("owner") REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY potemplate
+    ADD CONSTRAINT "$7" FOREIGN KEY (rawimporter) REFERENCES person(id);
+
+
+
+ALTER TABLE ONLY pofile
+    ADD CONSTRAINT "$6" FOREIGN KEY (rawimporter) REFERENCES person(id);
+
+
+
 COMMENT ON SCHEMA public IS 'Standard public schema';
 
 
-/*
+
+COMMENT ON COLUMN sourcesource.autotested IS 'This flag gives the results of an automatic attempt to import the revision control repository.';
+
+
+
+COMMENT ON COLUMN sourcesource.datestarted IS 'The timestamp of the last time an import or sync was started on this sourcesource.';
+
+
+
+COMMENT ON COLUMN sourcesource.datefinished IS 'The timestamp of the last time an import or sync finished on this sourcesource.';
+
+
+
 COMMENT ON FUNCTION valid_name(text) IS 'validate a name.
 
     Names must contain only lowercase letters, numbers, ., & -. They
@@ -3496,4 +3555,4 @@ COMMENT ON FUNCTION valid_version(text) IS 'validate a version number
     to form a unique string (we need to use a space or some other character
     disallowed in the product name spec instead';
 
-*/
+

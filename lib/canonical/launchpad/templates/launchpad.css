@@ -233,6 +233,13 @@ table.rowNavigation th:hover {
     line-height: 1.5em;
 }
 
+.boardCommentContent pre {
+    background-color: white;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
 .boardCommentActions {
     border: 1px solid #364970;
     border-style: solid none none none;

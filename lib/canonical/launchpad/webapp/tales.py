@@ -149,12 +149,12 @@ class FormattersAPI:
         TODO: This should probably just live in the stylesheet if this
             CSS implementation is good enough.
         """
-
         return (
-                '<div style="font-family: monospace; '
-                'white-space: pre; '
+                '<pre style="'
                 'white-space: -moz-pre-wrap; white-space: -o-pre-wrap; '
-                'word-wrap: break-word;">%s</div>' % self.nl_to_br()
+                'word-wrap: break-word;">%s</pre>' % cgi.escape(
+                    self._stringtoformat
+                    )
                 )
 
     def shorten(self, maxlength):

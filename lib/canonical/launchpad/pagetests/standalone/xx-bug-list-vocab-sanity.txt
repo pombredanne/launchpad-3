@@ -34,13 +34,7 @@
                     <option value="all" selected>Anyone</option>
                     <option value="unassigned">Unassigned</option>
   <BLANKLINE>
-                      <option value="stevea">Steve Alexander</option>
-  <BLANKLINE>
-  <BLANKLINE>
                       <option value="name16">Foo Bar</option>
-  <BLANKLINE>
-  <BLANKLINE>
-                      <option value="spiv">Andrew Bennetts</option>
   <BLANKLINE>
   <BLANKLINE>
                       <option value="stub">Stuart Bishop</option>

@@ -145,4 +145,7 @@
       name="+logout"
       />
 
+  <!-- Default favicon -->
+  <browser:favicon for="*" file="../images/defaultFavicon.gif" />
+
 </configure>

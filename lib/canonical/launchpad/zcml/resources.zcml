@@ -46,5 +46,6 @@
     <resource name="ubuntu.gif" file="../images/ubuntu.gif" />
 
     <resource name="defaultFavicon.gif" file="../images/defaultFavicon.gif" />
+    <resource name="favicon.png" file="../images/defaultFavicon.gif" />
 
 </configure>
