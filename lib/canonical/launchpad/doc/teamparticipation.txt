@@ -17,6 +17,11 @@ First of all, create some teams:
 >>> t4 = Person(subscriptionpolicy=policy, name='t4', teamowner=p)
 >>> t5 = Person(subscriptionpolicy=policy, name='t5', teamowner=p)
 
+We don't return results in any particular order, so we should define
+a comparison function for the tests to use
+
+>>> def tcmp(a,b):
+...     return cmp(a.name,b.name)
 
 Now, add p as a member of t3, ...
 
@@ -30,41 +35,49 @@ name16
 
 >>> t3.joinTeam(t2)
 True
->>> for m in teampart.getAllMembers(t2):
+>>> l = teampart.getAllMembers(t2)
+>>> l.sort(tcmp)
+>>> for m in l:
 ...     print m.name
-t3
 name16
+t3
 
 ... t2 as a member of t1, ...
 
 >>> t2.joinTeam(t1)
 True
->>> for m in teampart.getAllMembers(t1):
+>>> l = teampart.getAllMembers(t1)
+>>> l.sort(tcmp)
+>>> for m in l:
 ...     print m.name
+name16
 t2
 t3
-name16
 
 ... t2 as a member of t5, ...
 
 >>> t2.joinTeam(t5)
 True
->>> for m in teampart.getAllMembers(t5):
+>>> l = teampart.getAllMembers(t5)
+>>> l.sort(tcmp)
+>>> for m in l:
 ...     print m.name
+name16
 t2
 t3
-name16
 
 ... t5 as a member of t4
 
 >>> t5.joinTeam(t4)
 True
->>> for m in teampart.getAllMembers(t4):
+>>> l = teampart.getAllMembers(t4)
+>>> l.sort(tcmp)
+>>> for m in l:
 ...     print m.name
-t5
+name16
 t2
 t3
-name16
+t5
 
 
 Now let's remove some members to see what happens:
@@ -78,13 +91,17 @@ True
 ...     print m.name
 t3
 
->>> for m in teampart.getAllMembers(t4):
+>>> l = teampart.getAllMembers(t4)
+>>> l.sort(tcmp)
+>>> for m in l:
 ...     print m.name
-t5
 t2
 t3
+t5
 
->>> for m in teampart.getAllMembers(t5):
+>>> l = teampart.getAllMembers(t5)
+>>> l.sort(tcmp)
+>>> for m in l:
 ...     print m.name
 t2
 t3

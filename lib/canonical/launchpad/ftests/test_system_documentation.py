@@ -33,7 +33,10 @@ def test_suite():
     suite = unittest.TestSuite()
 
     # Add special needs tests
-    for special_suite in special.values():
+    keys = special.keys()
+    keys.sort()
+    for key in keys:
+        special_suite = special[key]
         suite.addTest(special_suite)
 
     testsdir = os.path.abspath(
@@ -46,7 +49,7 @@ def test_suite():
                  if filename.lower().endswith('.txt')
                     and filename not in special
                  ]
-    # XXX: Sort the list to give a predictable order.  We do this because when
+    # Sort the list to give a predictable order.  We do this because when
     # tests interfere with each other, the varying orderings that os.listdir
     # gives on different people's systems make reproducing and debugging
     # problems difficult.  Ideally the test harness would stop the tests from

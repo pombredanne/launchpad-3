@@ -2,6 +2,54 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-01 17:04:34 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1349
+
+    Summary:
+      Make tests run in a predictable order and fix some broken tests
+    Revision:
+      launchpad--devel--0--patch-1349
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-141
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-142
+       Run tests in a predictable order
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-143
+       Ensure results are correctly ordered
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-144
+       Tear down stuff correctly
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-145
+       Resolve conflict
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-146
+       Switch handling of .orig and .rej back to defaults now baz tracks conflicts
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-147
+       Fix test fix
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/doc/teamparticipation.txt
+     lib/canonical/launchpad/ftests/test_pages.py
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+     {arch}/=tagging-method
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-141
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-142
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-143
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-144
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-145
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-146
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-147
+
+
 2005-03-01 13:56:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1348
 
     Summary:

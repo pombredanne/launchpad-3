@@ -61,6 +61,7 @@ def test_suite():
         if not d.startswith('.')
         ]
     stories = [d for d in stories if os.path.isdir(d)]
+    stories.sort()
 
     for storydir in stories:
         suite.addTest(unittest.makeSuite(StartStory))
