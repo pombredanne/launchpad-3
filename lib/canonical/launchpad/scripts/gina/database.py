@@ -81,7 +81,8 @@ class Katie(SQLThing):
         SQLThing.__init__(self,bar)
         self.suite = suite
 
-    def getSourcePackageRelease(self, name, version):  
+    def getSourcePackageRelease(self, name, version):
+        print "\t\t* Hunting for spr (%s,%s)" % (name,version)
         return self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id

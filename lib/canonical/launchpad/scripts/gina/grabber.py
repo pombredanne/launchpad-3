@@ -124,9 +124,6 @@ if __name__ == "__main__":
             print "\t** No source package parsed for %s" % binpkg.package
             continue
 
-        if binpkg.is_created(lp):
-            continue
-
         srcpkg = source_map[binpkg.source]
         if not srcpkg.is_processed:
             if not srcpkg.description:
@@ -138,6 +135,9 @@ if __name__ == "__main__":
             # or binary package won't create properly
             srcpkg.process_package(kdb, package_root, keyrings)
             srcpkg.ensure_created(lp)
+
+        if binpkg.is_created(lp):
+            continue
 
         # we read the licence from the source package but it is
         # stored in the BinaryPackage table

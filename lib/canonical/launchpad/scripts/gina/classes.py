@@ -220,7 +220,8 @@ class SourcePackageRelease(AbstractPackageRelease):
                 if alias is not None:
                     print "\t\t\t= %s" % alias
                     db.createSourcePackageReleaseFile(self, fname, alias)
-            
+        else:
+            print "\t= Source package already present?"
 
 class BinaryPackageRelease(AbstractPackageRelease):
     # package

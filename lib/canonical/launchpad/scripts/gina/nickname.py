@@ -3,7 +3,7 @@
 import re
 
 VALID_EMAIL_1 = re.compile(
-    r"^[_\.0-9a-z-+]+@([0-9a-z][0-9a-z-]+\.)+[a-z]{2,4}$")
+    r"^[_\.0-9a-z-+]+@([0-9a-z][0-9a-z-]*\.)+[a-z]{2,4}$")
 VALID_EMAIL_2 = re.compile(
     r"^[_\.0-9a-z-]+@([0-9a-z][0-9a-z-]+)$")
 MIN_NICK_LENGTH = 2
