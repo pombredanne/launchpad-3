@@ -398,9 +398,9 @@ INSERT INTO sourcepackagename (id, name) VALUES (1, 'mozilla-firefox-dummy');
 
 
 
-INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename) VALUES (1, 1, 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+INSERT INTO sourcepackage (id, maintainer, shortdesc, description, manifest, distro, sourcepackagename, srcpackageformat) VALUES (1, 1, 'Mozilla Firefox Web Browser', 'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
 	K-Meleon and Camino, but written using the XUL user interface language and 
-	designed to lightweight and cross-platform.', NULL, 3, 1);
+	designed to lightweight and cross-platform.', NULL, 3, 1, 1);
 
 
 
