@@ -1009,14 +1009,15 @@ class POMsgSet(SQLBase):
                     self.iscomplete = False
 
                 else:
-                    if old_translations[index] is not None:
-                        old_sighting = self.getTranslationSighting(index)
-                        if not old_sighting.inlastrevision:
-                            # We found an old translation that it was not in last
-                            # revision, that means that we updated this pomsgset
-                            # already before this commit. This is needed to
-                            # prevent the pofile.updatescount increment more than
-                            # once since last import.
+                    try:
+                        old_sight = self.getTranslationSighting(index)
+                    except IndexError:
+                        # We don't have a sighting for this string, that means
+                        # that either the translation is new or that the old
+                        # translation does not comes from the pofile.
+                        all_in_last_revision = False
+                    else:
+                        if not old_sight.active:
                             all_in_last_revision = False
                     self.makeTranslationSighting(
                         person = person,
