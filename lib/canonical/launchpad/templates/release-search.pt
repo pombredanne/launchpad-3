@@ -64,8 +64,7 @@
 
 <h4 tal:condition="view/search_action">Search Results</h4> 
 
-<tal:block tal:condition="view/sources">
-<div>
+<div tal:condition="view/sources">
 <fieldset>
 <h3>Source Packages</h3>
 <ul>
@@ -75,12 +74,11 @@
     <span tal:content="source/shortdesc"/>
   </li> 
 </ul>
-</div>
 </fieldset>
-</tal:block>
+</div>
 
-<tal:block tal:condition="view/binaries">
-<div>
+
+<div tal:condition="view/binaries">
 <fieldset>
 <h3>Binary Packages</h3>
 <ul>
@@ -90,9 +88,10 @@
     <span tal:content="binary/shortdesc"/>
   </li> 
 </ul>
-</div>
 </fieldset>
-</tal:block>
+</div>
+
+
 
 
 <h3><a tal:attributes="href string: ../${context/release/name}">Back

@@ -50,13 +50,13 @@
           template="../launchpad/templates/distro-index.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/index.html"
 	/>
-	<page  name="+bugs"
+	<page  name="bugs"
           template="../launchpad/templates/distro-bugs.pt"
 	  lp:url="Soyuz/distros/$Distribution.name/+bugs"
 	/>
-	<page  name="+translations"
+	<page  name="translations"
           template="../launchpad/templates/distro-translations.pt"
-	  lp:url="Soyuz/distros/$Distribution.name/+translations"
+	  lp:url="Soyuz/distros/$Distribution.name/translations"
 	/>
   </pages>
 
