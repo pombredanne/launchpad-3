@@ -74,4 +74,11 @@
       factory="canonical.launchpad.security.EditByProductOwnerOrAssignee"
       />
 
+  <adapter
+      provides="canonical.launchpad.interfaces.IAuthorization"
+      for="zope.interface.Interface"
+      name="zope.app.apidoc.UseAPIDoc"
+      factory="canonical.launchpad.security.UseApiDoc"
+      />
+
 </configure>

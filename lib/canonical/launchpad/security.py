@@ -102,8 +102,8 @@ class PublicToAllOrPrivateToExplicitSubscribers(AuthorizationBase):
     usedfor = IBugTask
 
     def checkPermission(self, person):
-        """Allow any user to see non-private bugs, but only explicit subscribers to
-        see private bugs.
+        """Allow any user to see non-private bugs, but only explicit
+        subscribers to see private bugs.
         """
         if not self.obj.bug.private:
             # public bug
@@ -122,3 +122,14 @@ class PublicToAllOrPrivateToExplicitSubscribers(AuthorizationBase):
     def checkUnauthenticated(self):
         """Allow anonymous users to see non-private bugs only."""
         return not self.obj.bug.private
+
+
+class UseApiDoc(AuthorizationBase):
+    permission = 'zope.app.apidoc.UseAPIDoc'
+    usedfor = Interface
+
+    def checkPermission(self, person):
+        return True
+
+
+

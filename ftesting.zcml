@@ -12,6 +12,7 @@
 
     <include files="package-includes/*-configure.zcml" />
     <include files="package-includes/*-configure-testing.zcml" />
+    <includeOverrides file="override-configure-testing.zcml" />
 
     <include file="securitypolicy.zcml" />
     <include file="principals.zcml" />

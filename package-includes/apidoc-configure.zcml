@@ -5,8 +5,6 @@
   <include package="zope.app.renderer"/>
   <include package="zope.app.apidoc"/>
 
-  <includeOverrides package="canonical" file="apidoc-override.zcml" />
-
 </configure>
 
 

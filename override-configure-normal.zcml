@@ -1,3 +1,4 @@
 <configure xmlns="http://namespaces.zope.org/zope">
   <include files="override-includes/*-configure.zcml" />
+  <include files="override-includes/*-configure-normal.zcml" />
 </configure>

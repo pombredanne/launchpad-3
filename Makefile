@@ -29,17 +29,7 @@ XXXcheck: build
 	$(MAKE) -C sourcecode check
 	PYTHONPATH=$(HERE)/lib ${PYTHON} -t ./test.py
 
-debugging-on:
-	ln -s ../lib/canonical/canonical.apidoc-configure.zcml ./package-includes/+canonical.apidoc-configure.zcml
-
-debugging-off:
-	rm -f ./package-includes/+canonical.apidoc-configure.zcml
-	# backwards compatibility for old style
-	rm -f ./package-includes/+canonical.debugskin-configure.zcml
-	rm -f ./package-includes/canonical.debugskin-configure.zcml
-	rm -f ./package-includes/canonical.apidoc-configure.zcml
-
-.PHONY: check debugging-on debugging-off
+.PHONY: check
 
 # XXX What should the default be?
 all: inplace runners

@@ -2,6 +2,85 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-02 02:51:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1269
+
+    Summary:
+      Reenable apidoc and standard Z3 spelling for resource URL's, with tests
+    Revision:
+      launchpad--devel--0--patch-1269
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--apidoc-access--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1257
+    
+     * stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-1
+       Grant zope.app.apidoc.UseAPIDoc permission to anybody
+    
+     * stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-2
+       Register resources as an unnamed view on our root object, allowing access to resources using the Z3 preferred spelling (/@@/foo.png instead of /++resource++foo.png). This fixes some apidoc rendering issues.
+    
+     * stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-3
+       Refactor apidoc zcml so it is always on, but only available through the debug skin
+    
+     * stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-4
+       Attempt to block apidoc better using launchpad.WEGSND permission which seemed to fail. Add comment to that effect.
+    
+     * stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-5
+       Test that apidoc is blocked on the normal port, and that resources are available using /@@/foo.jpg notation
+    
+     * stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-6
+       Use IAuthorization adapter for permission checking
+    
+     * stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-7
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-8
+       Wrap a docstring
+    
+
+    new files:
+     .arch-ids/override-configure-testing.zcml.id
+     lib/canonical/launchpad/pagetests/standalone/.arch-ids/xx-apidoc-basics.txt.id
+     lib/canonical/launchpad/pagetests/standalone/xx-apidoc-basics.txt
+     override-configure-testing.zcml
+
+    modified files:
+     Makefile doc/changelog.txt ftesting.zcml
+     lib/canonical/launchpad/security.py
+     lib/canonical/launchpad/security.zcml
+     lib/canonical/launchpad/templates/debug-root-index.pt
+     lib/canonical/launchpad/webapp/configure.zcml
+     override-configure-normal.zcml
+     override-includes/apidoc-configure.zcml
+     package-includes/apidoc-configure.zcml site.zcml
+
+    renamed files:
+     .arch-ids/override-configure.zcml.id
+       ==> .arch-ids/override-configure-normal.zcml.id
+     lib/canonical/.arch-ids/apidoc-override.zcml.id
+       ==> override-includes/.arch-ids/apidoc-configure.zcml.id
+     lib/canonical/.arch-ids/canonical.apidoc-configure.zcml.id
+       ==> package-includes/.arch-ids/apidoc-configure.zcml.id
+     lib/canonical/apidoc-override.zcml
+       ==> override-includes/apidoc-configure.zcml
+     lib/canonical/canonical.apidoc-configure.zcml
+       ==> package-includes/apidoc-configure.zcml
+     override-configure.zcml
+       ==> override-configure-normal.zcml
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--apidoc-access--0--base-0
+     stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-1
+     stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-2
+     stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-3
+     stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-4
+     stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-5
+     stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-6
+     stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-7
+     stuart.bishop@canonical.com/launchpad--apidoc-access--0--patch-8
+
+
 2005-02-01 13:43:31 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1268
 
     Summary:
