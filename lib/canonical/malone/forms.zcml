@@ -1,50 +1,54 @@
 <configure
-  xmlns="http://namespaces.zope.org/browser"
-  xmlns:browser="http://namespaces.zope.org/browser"
-  xmlns:zope="http://namespaces.zope.org/zope"
-  xmlns:lp="http://launchpad.canonical.com">
+    xmlns="http://namespaces.zope.org/browser"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:zope="http://namespaces.zope.org/zope"
+    xmlns:lp="http://launchpad.canonical.com">
 
-  <!-- Registration form -->
-  <addform
-    name="register"
-    for=".interfaces.IMaloneApplication"
-    schema="canonical.database.foaf.IPerson"
-    label="Register"
-    fields="displayname givenname familyname password"
-    content_factory=".browser.PersonFactory"
-    arguments=""
-    keyword_arguments="displayname givenname familyname password"
-    permission="zope.View"
-    template="templates/default-addform.pt"
-    lp:url="malone/register" />
+    <!-- Registration form -->
+    <addform
+        name="register"
+        for=".interfaces.IMaloneApplication"
+        schema="canonical.database.foaf.IPerson"
+        label="Register"
+        fields="displayname givenname familyname password"
+        content_factory=".browser.PersonFactory"
+        arguments=""
+        keyword_arguments="displayname givenname familyname password"
+        permission="zope.View"
+        template="templates/default-addform.pt"
+        lp:url="malone/register" />
 
-  <!-- Bug forms -->
+    <!-- Bug forms -->
 
-  <!-- XXX: permission="zope.Public" triggers a problem with our setup
-    and security proxies -->
-  <addform
-    name="+new"
-    for=".interfaces.IBugContainer"
-    schema=".browser.IMaloneBugAddForm"
-    label="Add a Bug"
-    fields="title shortdesc description product sourcepackage binarypackage"
-    content_factory=".browser.MaloneBugAddForm"
-    arguments=""
-    keyword_arguments="title shortdesc description product sourcepackage binarypackage"
-    permission="zope.View"
-    template="templates/default-addform.pt"
-    lp:url="malone/bugs/+new"
-    />
+    <!-- XXX: permission="zope.Public" triggers a problem with our setup
+        and security proxies -->
+    <addform
+        name="+new"
+        for=".interfaces.IBugContainer"
+        schema=".browser.IMaloneBugAddForm"
+        label="Add a Bug"
+        fields="title shortdesc description product sourcepackage binarypackage"
+        content_factory=".browser.MaloneBugAddForm"
+        arguments=""
+        keyword_arguments="title shortdesc description 
+            product sourcepackage binarypackage"
+        permission="zope.View"
+        template="templates/default-addform.pt"
+        lp:url="malone/bugs/+new"
+        />
 
-  <editform
-    name="+edit"
-    schema="canonical.database.malone.IBug"
-    label="Change Bug Information"
-    permission="zope.View"
-    template="templates/bug-edit.pt"
-    lp:url="malone/bugs/$Bug.id/+edit">
-    <!--<widget field="datecreated" class="canonical.widgets.DateWidget" />-->
-  </editform>
+    <editform
+        name="+edit"
+        schema="canonical.database.malone.IBug"
+        label="Change Bug Information"
+        permission="zope.View"
+        template="templates/bug-edit.pt"
+        fields="name title shortdesc description"
+        lp:url="malone/bugs/$Bug.id/+edit">
+        <!--
+        <widget field="datecreated" class="canonical.widgets.DateWidget" />
+        -->
+    </editform>
 
     <!-- BugAttachment forms -->
     <addform
@@ -71,48 +75,50 @@
         lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+edit"
         />
 
-  <!-- IBugMessage -->
-  <view
-    for="canonical.database.malone.IBug"
-    name="comments"
-    class=".browser.BugMessagesView"
-    permission="zope.View"
-    provides=".interfaces.IBugMessagesView"
-    lp:url="malone/projects/$Bug.id/comments">
-    <!--<defaultPage name="index" />
-    This page is not yet linked to, so nothing here
+    <!-- IBugMessage -->
+    <view
+        for="canonical.database.malone.IBug"
+        name="messages"
+        class=".browser.BugMessagesView"
+        permission="zope.View"
+        provides=".interfaces.IBugMessagesView"
+        lp:url="malone/projects/$Bug.id/messages">
+        <defaultPage name="index" />
+    </view>
+
     <page
-      name="index"
-      template="templates/messages-index.pt"
-      lp:url="malone/projects/$Bug.id/comments/index" />-->
-  </view>
+        name="index"
+        for=".interfaces.IBugMessagesView"
+        template="templates/messages-index.pt"
+        permission="zope.Public"
+        lp:url="malone/projects/$Bug.id/messages/index" />
 
-  <addform
-    name="+new"
-    schema="canonical.database.malone.IBugMessage"
-    for=".interfaces.IBugMessagesView"
-    label="Add a Comment"
-    fields="title contents personmsg distribution"
-    content_factory=".browser.BugMessageFactory"
-    arguments=""
-    keyword_arguments="title contents personmsg distribution"
-    permission="zope.View"
-    template="templates/default-addform.pt"
-    lp:url="malone/bugs/$Bug.id/comments/+new"
-    />
+    <addform
+        name="+new"
+        schema="canonical.database.malone.IBugMessage"
+        for=".interfaces.IBugMessagesView"
+        label="Add a Comment"
+        fields="title contents personmsg distribution"
+        content_factory=".browser.BugMessageFactory"
+        arguments=""
+        keyword_arguments="title contents personmsg distribution"
+        permission="zope.View"
+        template="templates/default-addform.pt"
+        lp:url="malone/bugs/$Bug.id/messages/+new"
+        />
 
-  <addform
-    name="new-pba"
-    schema="canonical.database.malone.IProductBugAssignment"
-    for="canonical.database.malone.IBug"
-    label="Add Product Bug Assignment"
-    fields="product bugstatus priority severity"
-    content_factory=".browser.ProductBugAssignmentFactory"
-    arguments=""
-    keyword_arguments="product bugstatus priority severity"
-    permission="zope.View"
-    template="templates/default-addform.pt"
-    lp:url="none" />
+    <addform
+        name="new-pba"
+        schema="canonical.database.malone.IProductBugAssignment"
+        for="canonical.database.malone.IBug"
+        label="Add Product Bug Assignment"
+        fields="product bugstatus priority severity"
+        content_factory=".browser.ProductBugAssignmentFactory"
+        arguments=""
+        keyword_arguments="product bugstatus priority severity"
+        permission="zope.View"
+        template="templates/default-addform.pt"
+        lp:url="none" />
 
   <!-- <editform
     name="edit-pba"

@@ -1,0 +1,3 @@
+/* Ensure a bug is not a duplicate of itself */
+ALTER TABLE Bug ADD CONSTRAINT notduplicateofself CHECK (not id = duplicateof);
+

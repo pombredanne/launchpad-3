@@ -5,27 +5,28 @@
 <body>
 
 <div metal:fill-slot="main">
-  <h1 tal:content="context/title">Project Title</h1>
-  <div class="documentDescription"
-       tal:content="context/description">Description</div>
-  <table class="listing" tal:repeat="prod context/products">
-    <tr>
-        <th tal:content="prod/title" colspan="4">Title</th>
-    </tr>
-    <tr>
-      <th>Bug</th>
-      <th>Status</th>
-      <th>Severity</th>
-      <th>Priority</th>
-    </tr>  
-      <tr tal:repeat="bug prod/bugs">
-        <td>
-          <a tal:attributes="href string:/malone/bugs/${bug/bug/id}"
-             tal:content="bug/bug/title">1</a>
-        </td>
-        <td tal:content="bug/bugstatus">1</td>
-        <td tal:content="bug/priority">1</td>
-        <td tal:content="bug/severity">1</td>
+    <h1 tal:content="context/title">Project Title</h1>
+    <div class="documentDescription"
+        tal:content="context/description">Description</div>
+    <table class="listing rowNavigation" tal:repeat="prod context/products">
+        <tr>
+            <th tal:content="prod/title" colspan="4">Title</th>
+        </tr>
+        <tr>
+            <th>Bug</th>
+            <th>Status</th>
+            <th>Severity</th>
+            <th>Priority</th>
+        </tr>  
+        <tr tal:repeat="bugass prod/bugs" tal:attributes="onclick
+            string:window.location='../../bugs/${bugass/bug/id}';">
+            <td>
+                <a tal:attributes="href string:../../bugs/${bugass/bug/id}"
+                    tal:content="bugass/bug/title">1</a>
+            </td>
+            <td tal:content="bugass/bugstatus/lp:BugAssignmentStatus">1</td>
+            <td tal:content="bugass/priority/lp:BugPriority">1</td>
+            <td tal:content="bugass/severity/lp:BugSeverity">1</td>
        </tr>
   </table>
 </div>

@@ -445,9 +445,11 @@ class SourcepackageView(object):
             sevdef[i.name] = 0
         for bugass in self.context.bugs:
             binarypackage = bugass.binarypackage
-            severity = BugSeverity.items[i].name
-            stats = m.setdefault(binarypackage, sevdef.copy())
-            m[binarypackage][severity] += 1
+            if binarypackage:
+                severity = BugSeverity.items[i].name
+                stats = m.setdefault(binarypackage, sevdef.copy())
+                m[binarypackage][severity] += 1
         rv = m.items()
+        print '====== %r ===== ' % (rv,)
         rv.sort(lambda a,b: cmp(a.id, b.id))
         return rv

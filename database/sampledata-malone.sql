@@ -35,6 +35,8 @@ VALUES (
 || 'collaboration on internet standards work by open source groups.',
 'http://www.mozilla.org/'
 );
+
+-- Mozilla Firefox
 INSERT INTO Product (project, owner, name, displayname,  title, shortdesc,
 description)
 VALUES (
@@ -51,14 +53,6 @@ timestamp '2004-06-28 00:00', 'mozilla-firefox-0.9.1',
 (SELECT id FROM Person WHERE displayname='Sample Person')
 );
 
-/* 
-INSERT INTO Sourcepackage (maintainer, name, title, description)
-VALUES (
-(SELECT id FROM Person WHERE displayname='Sample Person'),
-'mozilla-firefox',
-'Ubuntu Mozilla Firefox Source Package', 'text'
-);
-*/
 INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
 version, dateuploaded, urgency)
 VALUES (
@@ -79,11 +73,57 @@ VALUES (
 (SELECT max(id) FROM Manifest)
 );
 
+-- Mozilla Thunderbird
+INSERT INTO Product (project, owner, name, displayname,  title, shortdesc,
+description)
+VALUES (
+(SELECT id FROM Project WHERE name='mozilla'),
+(SELECT id FROM Person WHERE displayname='Sample Person'),
+'thunderbird', 'Mozilla Thunderbird', 'Mozilla Thunderbird',
+'The Mozilla Thunderbird email client',
+'The Mozilla Thunderbird email client'
+);
+INSERT INTO ProductRelease (product, datereleased, version, owner)
+VALUES (
+(SELECT id FROM Product WHERE name='thunderbird'),
+timestamp '2004-06-28 00:00', 'mozilla-thunderbird-0.8.0',
+(SELECT id FROM Person WHERE displayname='Sample Person')
+);
+
+INSERT INTO SourcepackageRelease (sourcepackage, srcpackageformat, creator,
+version, dateuploaded, urgency)
+VALUES (
+(SELECT id FROM Sourcepackage WHERE name='mozilla-thunderbird'),
+1, (SELECT id FROM Person WHERE displayname='Sample Person'),
+'0.8.0-1', timestamp '2004-06-29 00:00', 1
+);
+
+INSERT INTO Manifest (datecreated, owner)
+VALUES (
+timestamp '2004-06-29 00:00', 
+(SELECT id FROM Person WHERE displayname='Sample Person')
+);
+
+INSERT INTO CodeRelease (sourcepackagerelease, manifest)
+VALUES (
+(SELECT id FROM Sourcepackage WHERE name='mozilla-thunderbird'),
+(SELECT max(id) FROM Manifest)
+);
+
+
 INSERT INTO Bug (name, title, shortdesc, description, owner, communityscore,
 communitytimestamp, activityscore, activitytimestamp, hits,
 hitstimestamp)
 VALUES ('bob', 'An odd problem', 'Something strange is wrong somewhere',
 'Something strange is wrong somewhere',
+(SELECT id FROM Person WHERE displayname='Sample Person'),
+0, CURRENT_DATE, 0, CURRENT_DATE, 0, CURRENT_DATE
+);
+
+INSERT INTO Bug (name, title, shortdesc, description, owner, communityscore,
+communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp)
+VALUES ('blackhole', 'Blackhole folder', 
+'Everything put into the folder "Trash" disappears!', 'Where is my email!',
 (SELECT id FROM Person WHERE displayname='Sample Person'),
 0, CURRENT_DATE, 0, CURRENT_DATE, 0, CURRENT_DATE
 );
@@ -118,3 +158,30 @@ VALUES (
             )
     )
 );
+
+-- Remove the nickname 'bob', so we have an unnamed bug
+UPDATE Bug SET name=NULL WHERE name='bob';
+
+/*
+INSERT INTO SourcepackageBugAssignment
+    (bug, sourcepackage, bugstatus, priority, severity, binarypackage)
+VALUES (
+    (SELECT id FROM Bug WHERE name='blackhole'),
+    (SELECT id FROM Sourcepackage WHERE name='mozilla-thunderbird'),
+    2, 4, 2, NULL
+    );
+*/
+INSERT INTO ProductBugAssignment (bug, product, bugstatus, priority, severity)
+VALUES (
+    (SELECT id FROM Bug WHERE name='blackhole'),
+    (SELECT id FROM Product WHERE name='thunderbird'),
+    1, 2, 2
+);
+
+
+INSERT INTO BugMessage (bug, title, contents, rfc822msgid) VALUES (
+    (SELECT id FROM Bug WHERE name='blackhole'),
+    'PEBCAK',
+    'Problem exists between chair and keyboard',
+    'foo@example.com-332342--1231'
+    );

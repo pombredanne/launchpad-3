@@ -16,7 +16,7 @@ class TitledTableVocabulary(object):
         self.context = context
 
     def _toTerm(self, pkg):
-        return SimpleTerm(pkg.id, pkg.id, pkg.title)
+        return SimpleTerm(pkg.id, pkg.name, pkg.title)
 
     def __iter__(self):
         for pkg in self._table.select(orderBy=self._orderBy):
@@ -47,7 +47,13 @@ class TitledTableVocabulary(object):
         return self._toTerm(pkgs[0])
 
     def getTermByToken(self, token):
-        return self.getTerm(token)
+        try:
+            pkgs = list(self._table.select(self._table.q.name==token))
+        except ValueError:
+            raise LookupError, value
+        if len(pkgs) == 0:
+            raise LookupError, value
+        return self._toTerm(pkgs[0])
 
 class SourcepackageVocabulary(TitledTableVocabulary):
     _table = Sourcepackage
@@ -57,6 +63,15 @@ class ProductVocabulary(TitledTableVocabulary):
     _table = Product
     _orderBy = 'name'
 
+# We cannot refer to a Binarypackage unambiguously by a name, as
+# we have no assurace that a generated name using $BinarypackageName.name
+# and $Binarypackage.version will be unique
 class BinarypackageVocabulary(TitledTableVocabulary):
     _table  = Binarypackage
     _orderBy = 'id'
+    def _toTerm(self, pkg):
+        return SimpleTerm(pkg.id, pkg.id, pkg.title)
+
+    def getTermByToken(self, token):
+        return self.getTerm(token)
+

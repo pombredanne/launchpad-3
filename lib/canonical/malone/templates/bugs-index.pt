@@ -16,7 +16,8 @@
       <th>Date Created</th>
       <th>Owner</th>
     </tr>
-    <tr tal:repeat="bug context" tal:attributes="onclick string:window.location='${bug/id}';">
+    <tr tal:repeat="bug context" tal:attributes="onclick
+        string:window.location='${bug/id}';">
       <td tal:content="bug/id">$Bug.title</td>
       <td tal:content="bug/name">$Bug.name</td>
       <td><a tal:content="bug/title"  
