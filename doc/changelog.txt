@@ -2,6 +2,18 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-03 22:05:19 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1365
+
+    Summary:
+      Only send emails to PREFERRED email addresses. Update sampledata too.
+    Revision:
+      launchpad--devel--0--patch-1365
+
+
+    modified files:
+     doc/changelog.txt
+
+
 2005-03-03 21:58:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1364
 
     Summary:
