@@ -73,10 +73,11 @@ class RosettaProjects:
         else:
             return ret[0]
 
-    def new(self, name, title, url, description, owner):
+    def new(self, name, displayName, title, url, description, owner):
         if type(url) != NoneType:
             url = url.encode('ascii')
         return RosettaProject(name=name.encode('ascii'),
+            displayName=displayName.encode('ascii'),
             title=title.encode('ascii'), url=url,
             description=description.encode('ascii'),
             owner=owner, datecreated='now')
@@ -97,6 +98,7 @@ class RosettaProject(SQLBase):
         ForeignKey(name='owner', foreignKey='RosettaPerson', dbName='owner',
             notNull=True),
         StringCol(name='name', dbName='name', notNull=True, unique=True),
+        StringCol(name='displayName', dbName='displayName', notNull=True),
         StringCol(name='title', dbName='title', notNull=True),
         StringCol(name='description', dbName='description', notNull=True),
         DateTimeCol(name='datecreated', dbName='datecreated', notNull=True),

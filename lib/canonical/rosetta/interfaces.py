@@ -28,6 +28,8 @@ class IProject(Interface):
 
     name = Attribute("The project's name. (unique within IProjects)")
 
+    displayName = Attribute("The Project's name that will be showed.")
+
     title = Attribute("The project's title.")
 
     url = Attribute("The URL of the project's website.")

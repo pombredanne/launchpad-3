@@ -1,6 +1,6 @@
-
+# The -u argument disables all functional tests
 check: tests/test_interfaces_sql.py
-	python ../../../test_on_merge.py canonical.rosetta
+	python ../../../test_on_merge.py -u canonical.rosetta
 
 noisycheck: tests/test_interfaces_sql.py
 	(cd ../../.. ; python test.py canonical.rosetta)

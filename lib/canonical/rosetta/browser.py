@@ -15,6 +15,7 @@ class ViewProjects:
                 projects = getUtility(IProjects)
                 projects.new(
                     name=self.request.form['name'],
+                    displayName=self.request.form['displayname'],
                     title=self.request.form['title'],
                     url=self.request.form.get('url', None),
                     description=self.request.form['description'],

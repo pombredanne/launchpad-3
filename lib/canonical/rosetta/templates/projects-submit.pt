@@ -32,6 +32,8 @@
         <fieldset>
             Name: <input type="text" name="name" />
             <br/>
+	    DisplayName: <input type="text" name="displayname" />
+	    <br/>
             Title: <input type="text" name="title" />
             <br/>
             Description:
