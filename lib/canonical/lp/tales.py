@@ -42,21 +42,27 @@ class HTMLFormAPI:
         else:
             operation = furtherPath.pop()
             value = furtherPath.pop()
-            if self.form.get(name) == value:
+            if htmlmatch(self.form.get(name), value):
                 return operation
             else:
                 return None
+
+def htmlmatch(formvalue, value):
+    if isinstance(formvalue, list):
+        return value in formvalue
+    else:
+        return formvalue == value
 
 class HTMLFormOperation:
 
     implements(ITraversable)
 
-    def __init__(self, value, operation):
-        self.value = value
+    def __init__(self, formvalue, operation):
+        self.formvalue = formvalue
         self.operation = operation
 
     def traverse(self, name, furtherPath):
-        if self.value == name:
+        if htmlmatch(self.formvalue, name):
             return self.operation
         else:
             return None

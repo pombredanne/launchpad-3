@@ -53,35 +53,69 @@
             </tr>
             <tr>
               <td>
-                <select name="status" size="4" multiple>
-                  <option value="all" selected>All</option>
-                  <option tal:repeat="term view/statuses"
-                          tal:content="term/title"
-                          tal:attributes="value repeat/term/number">New</option>
+                <select name="status" size="5" multiple
+                        tal:define="statuses python:list(view.statuses())">
+                  <option value="all"
+                          tal:condition="python:request.has_key('search')"
+                          tal:attributes="selected request/htmlform:status/selected/all">All</option>
+                  <option value="all"
+                          tal:condition="python:not request.has_key('search')"
+                          selected>All</option>
+                  <span tal:omit-tag="" tal:repeat="i python:range(len(statuses))">
+                    <option tal:define="value python:i + 1;
+                                        strvalue python:str(i + 1)"
+                            tal:content="python:statuses[i].title"
+                            tal:attributes="value value;
+                                            selected request/htmlform:status/selected/?strvalue">New</option>
+                  </span>
                 </select>
               </td>
               <td>
-                <select name="assignee" size="4" multiple>
-                  <option value="all" selected>All</option>
-                  <option tal:repeat="term view/people"
-                          tal:attributes="value term/token"
-                          tal:content="term/title">New</option>
+                <select name="assignee" size="5" multiple>
+                  <option value="all"
+                          tal:condition="python:request.has_key('search')"
+                          tal:attributes="selected request/htmlform:assignee/selected/all">All</option>
+                  <option value="all"
+                          tal:condition="python:not request.has_key('search')"
+                          selected>All</option>
+                  <span tal:omit-tag="" tal:repeat="term view/people">
+                    <option tal:define="value term/token"
+                            tal:content="term/title"
+                            tal:attributes="value value;
+                                            selected request/htmlform:assignee/selected/?value">New</option>
+                  </span>
                 </select>
               </td>
               <td>
-                <select name="product" size="4" multiple>
-                  <option value="all" selected>All</option>
-                  <option tal:repeat="term view/products"
-                          tal:attributes="value term/token"
-                          tal:content="term/title">apache</option>
+                <select name="product" size="5" multiple>
+                  <option value="all"
+                          tal:condition="python:request.has_key('search')"
+                          tal:attributes="selected request/htmlform:product/selected/all">All</option>
+                  <option value="all"
+                          tal:condition="python:not request.has_key('search')"
+                          selected>All</option>
+                  <span tal:omit-tag="" tal:repeat="term view/products">
+                    <option tal:define="value term/token"
+                            tal:content="term/title"
+                            tal:attributes="value value;
+                                            selected request/htmlform:product/selected/?value">apache</option>
+                  </span>
                 </select>
               </td>
               <td>
-                <select name="sourcepackage" size="4" multiple>
-                  <option value="all" selected>All</option>
-                  <option tal:repeat="term view/packages"
-                          tal:attributes="value term/token"
-                          tal:content="term/title">apache</option>
+                <select name="sourcepackage" size="5" multiple>
+                  <option value="all"
+                          tal:condition="python:request.has_key('search')"
+                          tal:attributes="selected request/htmlform:sourcepackage/selected/all">All</option>
+                  <option value="all"
+                          tal:condition="python:not request.has_key('search')"
+                          selected>All</option>
+                  <span tal:omit-tag="" tal:repeat="term view/packages">
+                    <option tal:define="value term/token"
+                            tal:content="term/title"
+                            tal:attributes="value value;
+                                            selected request/htmlform:sourcepackage/selected/?value">apache</option>
+                  </span>
                 </select>
                 </td>
               </tr>

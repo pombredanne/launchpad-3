@@ -7,7 +7,7 @@
                          productass context/productassignment;
                          packageass context/packageassignment">
 
-            <h5>owner:</h5>
+            <h5>submitted by:</h5>
             <ul class="people">
                 <li><span
                 tal:replace="context/owner/browsername">owner</span></li>
@@ -26,7 +26,7 @@
             </ul>
 
             </tal:products>
-            
+
             <tal:packages tal:define="packages python:[p for p in packageass]" >
 
             <h5 tal:condition="packages">package maintainers:</h5>
@@ -40,7 +40,7 @@
             </ul>
 
             </tal:packages>
-            
+
           <tal:subscriptions
             tal:define="ccs python:[s for s in subscriptions if s.subscription==2];
                         watches python:[s for s in subscriptions if s.subscription==1];
@@ -82,6 +82,6 @@
             Subscribe
         </a><br />
         </div>
-                
+
     </div>
 </div>
