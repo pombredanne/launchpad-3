@@ -216,6 +216,10 @@ class Factory(factory.SSHFactory):
             'ssh-rsa': hostPrivateKey
         }
 
+    def startFactory(self):
+        factory.SSHFactory.startFactory(self)
+        os.umask(0022)
+
 
 class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
     implements(ICredentialsChecker)
