@@ -169,8 +169,12 @@ def extract_devels(rdf):
     devels = {}
     for author in extract_tags(rdf, 'author'):
         name = extract_tag(author, 'author_name')
-        email = extract_tag(author, 'author_email')
-        devels[name] = email
+        try:
+            email = extract_tag(author, 'author_email')
+        except:
+            email = None
+        if email:
+            devels[name] = email
     return devels
 
 def get_url_redirect(url):

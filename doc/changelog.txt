@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-25 14:58:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1249
+
+    Summary:
+      rdfproj handle missing/optional email addresses
+    Revision:
+      launchpad--devel--0--patch-1249
+
+    Patches applied:
+    
+     * morgan.collett@canonical.com/launchpad--devel--0--patch-15
+       Fix rdfproj to allow for missing email addresses
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/scripts/nicole/rdfproj.py
+
+    new patches:
+     morgan.collett@canonical.com/launchpad--devel--0--patch-15
+
+
 2005-01-25 14:26:28 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1248
 
     Summary:
