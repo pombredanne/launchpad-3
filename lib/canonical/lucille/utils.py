@@ -141,7 +141,7 @@ contains '.' or ',', (1) and (2) are switched to 'email (name)' format."""
     else:
         m = re_parse_maintainer.match(maintainer)
         if not m:
-            raise ParseMaintError, "Doesn't parse as a valid Maintainer field."
+            raise ParseMaintError, "%s: doesn't parse as a valid Maintainer field." % maintainer
         name = m.group(1)
         email = m.group(2)
         # Just in case the maintainer ended up with nested angles; check...
@@ -162,7 +162,7 @@ contains '.' or ',', (1) and (2) are switched to 'email (name)' format."""
         rfc2047_maint = "%s <%s>" % (rfc2047_name, email)
 
     if email.find("@") == -1 and email.find("buildd_") != 0:
-        raise ParseMaintError, "No @ found in email address part."
+        raise ParseMaintError, "%s: do @ found in email address part." % maintainer
 
     return (rfc822_maint, rfc2047_maint, name, email)
 

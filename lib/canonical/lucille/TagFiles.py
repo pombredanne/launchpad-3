@@ -89,7 +89,7 @@ def parse_changes(filename, dsc_whitespace_rules=0):
     lines = changes_in.readlines()
 
     if not lines:
-	raise ChangesParseError( "[Empty changes file]" )
+	raise ChangesParseError( "%s: empty file" % filename )
 
     # Reindex by line number so we can easily verify the format of
     # .dsc files...
@@ -111,10 +111,10 @@ def parse_changes(filename, dsc_whitespace_rules=0):
             if dsc_whitespace_rules:
                 index += 1
                 if index > num_of_lines:
-                    raise ChangesParseError("Invalid .dsc file at line %d" % index)
+                    raise ChangesParseError("%s: invalid .dsc file at line %d" % (filename, index))
                 line = indexed_lines[index]
                 if not line.startswith("-----BEGIN PGP SIGNATURE"):
-                    raise ChangesParseError("Invalid .dsc file at line %d. Expected PGP signature; got '%s'" % (index,line))
+                    raise ChangesParseError("%s: invalid .dsc file at line %d -- expected PGP signature; got '%s'" % (filename, index,line))
                 inside_signature = 0
                 break
             else:
@@ -143,7 +143,7 @@ def parse_changes(filename, dsc_whitespace_rules=0):
         mlf = re_multi_line_field.match(line)
         if mlf:
             if first == -1:
-                raise ChangesParseError("Could not parse .changes file line %d: '%s'\n [Multi-line field continuing on from nothing?]" % (index,line))
+                raise ChangesParseError("%s: could not parse .changes file line %d: '%s'\n [Multi-line field continuing on from nothing?]" % (filename, index,line))
             if first == 1 and changes[field] != "":
                 changes[field] += '\n'
             first = 0
@@ -152,12 +152,12 @@ def parse_changes(filename, dsc_whitespace_rules=0):
 	error += line
 
     if dsc_whitespace_rules and inside_signature:
-        raise ChangesParseError("Invalid .dsc format at line %d" % index)
+        raise ChangesParseError("%s: invalid .dsc format at line %d" % (filename, index))
 
     changes_in.close()
     changes["filecontents"] = "".join(lines)
 
     if error:
-	raise ChangesParseError("Unable to parse .changes file: %s" % error)
+	raise ChangesParseError("%s: unable to parse .changes file: %s" % (filename, error))
 
     return changes
