@@ -4,6 +4,8 @@
 from canonical.database.sqlbase import flush_database_updates
 
 # zope imports
+from zope.event import notify
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
@@ -25,7 +27,8 @@ from canonical.launchpad.interfaces import IPasswordEncryptor, \
                                            ISignedCodeOfConductSet
 from canonical.launchpad.interfaces import IGPGKeySet
 
-from canonical.launchpad.helpers import well_formed_email
+from canonical.launchpad.helpers import well_formed_email, obfuscateEmail
+from canonical.launchpad.helpers import convertToHtmlCode
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.browser.emailaddress import sendEmailValidationRequest
 
@@ -122,8 +125,7 @@ class FOAFSearchView(object):
 
 
 class PersonView(object):
-    """A simple View class to be used in Person's pages where we don't have
-    actions and all we need is the context/request."""
+    """A simple View class to be used in all Person's pages."""
 
     actionsPortlet = ViewPageTemplateFile(
         '../templates/portlet-person-actions.pt')
@@ -133,6 +135,18 @@ class PersonView(object):
         self.request = request
         self.message = None
         self.user = getUtility(ILaunchBag).user
+
+    def obfuscatedEmail(self):
+        if self.context.preferredemail is not None:
+            return obfuscateEmail(self.context.preferredemail.email)
+        else:
+            return None
+
+    def htmlEmail(self):
+        if self.context.preferredemail is not None:
+            return convertToHtmlCode(self.context.preferredemail.email)
+        else:
+            return None
 
     def showSSHKeys(self):
         self.request.response.setHeader('Content-Type', 'text/plain')
@@ -564,4 +578,31 @@ def sendMergeRequestEmail(token, dupename, appurl):
 
     subject = "Launchpad: Merge of Accounts Requested"
     simple_sendmail(fromaddress, token.email, subject, message)
+
+
+class TeamAddView(AddView):
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-person-actions.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        AddView.__init__(self, context, request)
+        self._nextURL = '.'
+
+    def nextURL(self):
+        return self._nextURL
+
+    def createAndAdd(self, data):
+        kw = {}
+        for key, value in data.items():
+            kw[str(key)] = value
+
+        kw['teamownerID'] = getUtility(ILaunchBag).user.id
+        team = getUtility(IPersonSet).newTeam(**kw)
+        notify(ObjectCreatedEvent(team))
+        self._nextURL = '/people/%s' % team.name
+        return team
+
 

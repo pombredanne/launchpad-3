@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 import os
+import random
 import re
 import tarfile
 from StringIO import StringIO
@@ -271,3 +272,36 @@ def well_formed_email(emailaddr):
     """
     return bool(well_formed_email_re.match(emailaddr))
 
+replacements = {0: {'\.': ' |dot| ', '@': ' |at| '},
+                1: {'\.': ' ! '    , '@': ' {} '  },
+                2: {'\.': ' , '    , '@': ' % '   },
+                3: {'\.': ' (!) '  , '@': ' (at) '},
+                4: {'\.': ' {dot} ', '@': ' {at} '}}
+
+def obfuscateEmail(emailaddr, idx=None):
+    """Return an obfuscated version of the provided email address.
+
+    Randomly chose a set of replacements for some email address characters and
+    replace them. This will make harder for email harvesters to fetch email
+    address from launchpad.
+
+    >>> obfuscateEmail('foo@bar.com', 0)
+    'foo |at| bar |dot| com'
+    >>> obfuscateEmail('foo.bar@xyz.com.br', 1)
+    'foo ! bar {} xyz ! com ! br'
+    """
+    if idx is None:
+        idx = random.randint(0, len(replacements.keys()) - 1)
+
+    for original, replacement in replacements[idx].items():
+        emailaddr = re.sub(r'%s' % original, r'%s' % replacement, emailaddr)
+
+    return emailaddr
+
+def convertToHtmlCode(text):
+    """Return the given text converted to HTML codes, like &#103;.
+
+    This is usefull to avoid email harvesting, while keeping the email address
+    in a form that a 'normal' person can read.
+    """
+    return ''.join(map(lambda c: "&#%s;" % ord(c), text))

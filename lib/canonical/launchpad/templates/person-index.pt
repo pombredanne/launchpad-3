@@ -45,11 +45,10 @@
           </tr>
                
           <tal:dummy tal:condition="request/lp:person">
-          <tal:dummy tal:condition="context/preferredemail"
-                     tal:define="email context/preferredemail">
+          <tal:dummy tal:condition="context/preferredemail">
           <tr>
             <td>Email:</td>
-            <td><span tal:replace="email/email"></span>
+            <td><span tal:replace="structure view/htmlEmail"></span>
               <a href="+emails">(Edit)</a></td>
           </tr>
           </tal:dummy>

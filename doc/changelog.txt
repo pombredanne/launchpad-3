@@ -2,6 +2,45 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-05 22:23:03 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1568
+
+    Summary:
+      Convert all emailaddress chars to HTML codes before displaying it on the browser; first try to avoid harvesting. Also fixed the action portlet for person/teams, as they were sharing the same in some cases, but we can't do that.
+    Revision:
+      launchpad--devel--0--patch-1568
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-253
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-254
+       Convert all emailaddress chars to HTML codes before displaying it on the browser; first try to avoid harvesting. Also fixed the action portlet for person/teams, as they were sharing the same in some cases, but we can't do that.
+    
+
+    removed files:
+     lib/canonical/launchpad/templates/.arch-ids/portlet-person-email.pt.id
+     lib/canonical/launchpad/templates/portlet-person-email.pt
+
+    modified files:
+     doc/changelog.txt lib/canonical/launchpad/browser/person.py
+     lib/canonical/launchpad/browser/team.py
+     lib/canonical/launchpad/helpers.py
+     lib/canonical/launchpad/templates/foaf-newteam.pt
+     lib/canonical/launchpad/templates/person-bounties.pt
+     lib/canonical/launchpad/templates/person-index.pt
+     lib/canonical/launchpad/templates/person-translations.pt
+     lib/canonical/launchpad/templates/portlet-person-actions.pt
+     lib/canonical/launchpad/templates/portlet-team-actions.pt
+     lib/canonical/launchpad/templates/team-edit.pt
+     lib/canonical/launchpad/templates/team-members.pt
+     lib/canonical/launchpad/zcml/person.zcml
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-253
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-254
+
+
 2005-04-05 21:19:32 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1567
 
     Summary:

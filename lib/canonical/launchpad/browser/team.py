@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 
 # zope imports
 from zope.event import notify
-from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -25,33 +24,14 @@ from canonical.lp.dbschema import TeamSubscriptionPolicy
 from canonical.database.sqlbase import flush_database_updates
 
 
-class TeamAddView(AddView):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-        self._nextURL = '.'
-
-    def nextURL(self):
-        return self._nextURL
-
-    def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
-        kw['teamownerID'] = getUtility(ILaunchBag).user.id
-        team = getUtility(IPersonSet).newTeam(**kw)
-        notify(ObjectCreatedEvent(team))
-        self._nextURL = '/people/%s' % team.name
-        return team
-
-
 class TeamEditView(SQLObjectEditView):
+
+    actionsPortlet = ViewPageTemplateFile(
+        '../templates/portlet-team-actions.pt')
 
     def __init__(self, context, request):
         SQLObjectEditView.__init__(self, context, request)
+        self.team = self.context
 
 
 class TeamView(object):
@@ -65,6 +45,7 @@ class TeamView(object):
     def __init__(self, context, request):
         self.context = context
         self.request = request
+        self.team = self.context
 
     def activeMembersCount(self):
         return len(self.context.approvedmembers + self.context.administrators)
@@ -212,7 +193,7 @@ class TeamLeaveView(TeamView):
         self.request.response.redirect('./')
 
 
-class TeamMembersView(object):
+class TeamMembersView(TeamView):
 
     def __init__(self, context, request):
         self.context = context

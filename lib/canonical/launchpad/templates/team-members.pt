@@ -14,6 +14,10 @@
 
 <body>
 
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure view/actionsPortlet" />
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
     <tal:block tal:define="activeMembersCount view/activeMembersCount;

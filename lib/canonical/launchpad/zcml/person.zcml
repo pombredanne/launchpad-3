@@ -120,6 +120,18 @@
           name="+index"
           template="../templates/team-index.pt"
           lp:url="/people/$person.id/index" />
+      <browser:page
+          name="+packages"
+          template="../templates/person-packages.pt"
+          lp:url="/people/$Person.name/+packages" />
+      <browser:page
+          name="+translations"
+          template="../templates/person-translations.pt"
+          lp:url="/people/$Person.name/+translations" />
+      <browser:page
+          name="+bounties"
+          template="../templates/person-bounties.pt"
+          lp:url="/people/$Person.name/+bounties" />
   </browser:pages>
 
   <browser:editform
