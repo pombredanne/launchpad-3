@@ -12,8 +12,10 @@
         <a href="+emails">Edit Email Addresses</a><br />
         <img src="/++resource++edit.gif">
         <a href="+editsshkey">Edit SSH Keys</a><br />
+        <!-- Disbled for now. Not fully functional.
         <img src="/++resource++edit.gif">
         <a href="+editgpgkey">Edit GPG Keys</a><br />
+        -->
         <img src="/++resource++add.gif">
         <a href="+newteam">Create New Team</a><br />
         <img src="/++resource++info_icon.gif">

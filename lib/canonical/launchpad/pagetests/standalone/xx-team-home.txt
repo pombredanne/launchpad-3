@@ -1,4 +1,5 @@
 
+  Test the home page of the 'ubuntu-translators' team.
 
   >>> print http(r"""
   ... GET /people/ubuntu-translators HTTP/1.1

@@ -2,6 +2,42 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-06 14:59:00 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1573
+
+    Summary:
+      Adding comments for my pagetests in pagetests/standalone and removing the link to Edit gpg keys from portlet-person-actions.pt, because it's not yet functional.
+    Revision:
+      launchpad--devel--0--patch-1573
+
+    Patches applied:
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-255
+       merge from rf
+    
+     * guilherme.salgado@canonical.com/launchpad--devel--0--patch-256
+       Adding comments for my pagetests in pagetests/standalone and removing the link to Edit gpg keys from portlet-person-actions.pt, because it's not yet functional.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-foaf-homepage.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-people-index.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-people-list.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-people-search.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-person-edit.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-person-home.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-person-packages.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-team-home.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-team-leave.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-team-list.txt
+     lib/canonical/launchpad/pagetests/standalone/xx-team-members.txt
+     lib/canonical/launchpad/templates/portlet-person-actions.pt
+
+    new patches:
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-255
+     guilherme.salgado@canonical.com/launchpad--devel--0--patch-256
+
+
 2005-04-06 14:46:45 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1572
 
     Summary:

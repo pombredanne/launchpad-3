@@ -1,4 +1,5 @@
 
+  Test person's packages page for 'sabdfl'.
 
   >>> print http(r"""
   ... GET /people/sabdfl/+packages HTTP/1.1
