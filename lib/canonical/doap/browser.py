@@ -9,8 +9,8 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
 
-from canonical.database import Project
-from canonical.database import Product
+from canonical.launchpad.database import Project
+from canonical.launchpad.database import Product
 from canonical.database import sqlbase
 
 from zope.i18nmessageid import MessageIDFactory
@@ -18,7 +18,7 @@ _ = MessageIDFactory('doap')
 
 from canonical.lp import dbschema
 
-from canonical.interfaces import *
+from canonical.launchpad.interfaces import *
 
 
 

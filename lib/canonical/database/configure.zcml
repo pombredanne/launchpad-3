@@ -3,105 +3,105 @@
   <!-- TODO: Consider splitting this into multiple files, matching the .py -->
 
     <content class="canonical.launchpad.database.Bug">
-        <allow interface="canonical.launchpad.database.IBug" />
+        <allow interface="canonical.launchpad.interfaces.IBug" />
         <require permission="zope.View"
-        set_schema="canonical.launchpad.database.IBug" />
+        set_schema="canonical.launchpad.interfaces.IBug" />
     </content>
 
     <content class="canonical.launchpad.database.BugActivity">
-        <allow interface="canonical.launchpad.database.IBugActivity" />
+        <allow interface="canonical.launchpad.interfaces.IBugActivity" />
     </content> 
 
     <content class="canonical.launchpad.database.BugExternalRef">
-        <allow interface="canonical.launchpad.database.IBugExternalRef" />
+        <allow interface="canonical.launchpad.interfaces.IBugExternalRef" />
             <require permission="zope.View"
-                set_schema="canonical.launchpad.database.IBugExternalRef" />
+                set_schema="canonical.launchpad.interfaces.IBugExternalRef" />
     </content>
 
     <content class="canonical.launchpad.database.BugSystem">
-        <allow interface="canonical.launchpad.database.IBugSystem" />
+        <allow interface="canonical.launchpad.interfaces.IBugSystem" />
         <require permission="zope.View"
-            set_schema="canonical.launchpad.database.IBugSystem" />
+            set_schema="canonical.launchpad.interfaces.IBugSystem" />
     </content>
 
     <content class="canonical.launchpad.database.BugWatch">
-        <allow interface="canonical.launchpad.database.IBugWatch" />
+        <allow interface="canonical.launchpad.interfaces.IBugWatch" />
         <require permission="zope.View"
-            set_schema="canonical.launchpad.database.IBugWatch" />
+            set_schema="canonical.launchpad.interfaces.IBugWatch" />
     </content>
 
     <content class="canonical.launchpad.database.BugMessage">
-        <allow interface="canonical.launchpad.database.IBugMessage" />
+        <allow interface="canonical.launchpad.interfaces.IBugMessage" />
     </content>
 
     <content class="canonical.launchpad.database.BugAttachment">
-        <allow interface="canonical.launchpad.database.IBugAttachment" />
+        <allow interface="canonical.launchpad.interfaces.IBugAttachment" />
         <require permission="zope.View"
-        set_schema="canonical.launchpad.database.IBugAttachment" />
+        set_schema="canonical.launchpad.interfaces.IBugAttachment" />
     </content>
 
     <content class="canonical.launchpad.database.ProductBugAssignment">
-        <allow interface="canonical.launchpad.database.IProductBugAssignment" />
+        <allow interface="canonical.launchpad.interfaces.IProductBugAssignment" />
         <require permission="zope.View"
-                set_schema="canonical.launchpad.database.IProductBugAssignment" />
+                set_schema="canonical.launchpad.interfaces.IProductBugAssignment" />
     </content>
 
     <content class="canonical.launchpad.database.SourcepackageBugAssignment">
         <allow 
-            interface="canonical.launchpad.database.ISourcepackageBugAssignment"/>
+            interface="canonical.launchpad.interfaces.ISourcepackageBugAssignment"/>
         <require
             permission="zope.View"
-            set_schema="canonical.launchpad.database.ISourcepackageBugAssignment"
+            set_schema="canonical.launchpad.interfaces.ISourcepackageBugAssignment"
             />
     </content>
 
     <content class="canonical.launchpad.database.BugSubscription">
-        <allow interface="canonical.launchpad.database.IBugSubscription" />
+        <allow interface="canonical.launchpad.interfaces.IBugSubscription" />
         <require
             permission="zope.View"
-            set_schema="canonical.launchpad.database.IBugSubscription"
+            set_schema="canonical.launchpad.interfaces.IBugSubscription"
         />
     </content>
 
-    <content class="canonical.database.doap.ProjectSet">
-        <allow interface="canonical.database.doap.IProjectSet" />
+    <content class="canonical.launchpad.database.ProjectSet">
+        <allow interface="canonical.launchpad.interfaces.IProjectSet" />
     </content>
 
     <utility
-        factory="canonical.database.doap.ProjectSet"
-        provides="canonical.database.doap.IProjectSet"
+        factory="canonical.launchpad.database.ProjectSet"
+        provides="canonical.launchpad.interfaces.IProjectSet"
         />
 
-    <content class="canonical.database.doap.Project">
-        <allow interface="canonical.database.doap.IProject" />
+    <content class="canonical.launchpad.database.Project">
+        <allow interface="canonical.launchpad.interfaces.IProject" />
     </content>
 
-    <content class="canonical.database.doap.Product">
-        <allow interface="canonical.database.doap.IProduct" />
+    <content class="canonical.launchpad.database.Product">
+        <allow interface="canonical.launchpad.interfaces.IProduct" />
     </content>
 
-    <content class="canonical.database.soyuz.Sourcepackage">
-        <allow interface="canonical.database.soyuz.ISourcepackage" />
+    <content class="canonical.launchpad.database.Sourcepackage">
+        <allow interface="canonical.launchpad.interfaces.ISourcepackage" />
     </content>
 
-    <content class="canonical.database.soyuz.SourcepackageName">
-        <allow interface="canonical.database.soyuz.ISourcepackageName" />
+    <content class="canonical.launchpad.database.SourcepackageName">
+        <allow interface="canonical.launchpad.interfaces.ISourcepackageName" />
     </content>
 
-    <content class="canonical.database.soyuz.Binarypackage">
-        <allow interface="canonical.database.soyuz.IBinarypackage" />
+    <content class="canonical.launchpad.database.Binarypackage">
+        <allow interface="canonical.launchpad.interfaces.IBinarypackage" />
     </content>
 
-    <content class="canonical.database.soyuz.BinarypackageName">
-        <allow interface="canonical.database.soyuz.IBinarypackageName" />
+    <content class="canonical.launchpad.database.BinarypackageName">
+        <allow interface="canonical.launchpad.interfaces.IBinarypackageName" />
     </content>
 
     <content class="canonical.launchpad.database.Person">
-        <allow interface="canonical.launchpad.database.IPerson" />
+        <allow interface="canonical.launchpad.interfaces.IPerson" />
     </content>
 
-    <adapter for="canonical.launchpad.interfaces.ILaunchpadPrincipal"
-        provides="canonical.launchpad.database.IPerson"
+    <adapter for="canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal"
+        provides="canonical.launchpad.interfaces.IPerson"
         factory="canonical.launchpad.database.personFromPrincipal" />
 
 </configure>

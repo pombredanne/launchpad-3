@@ -24,7 +24,7 @@ from canonical.launchpad.interfaces import ISourcePackageRelease, IManifestEntry
                                            IDistributionRole, IDistroReleaseRole, \
                                            IDistribution, IRelease, \
                                            ISourcepackage, IBinarypackage, \
-                                           IBinarypackageName
+                                           ISourcepackageName, IBinarypackageName
 
 from canonical.launchpad.database import Archive, Branch, ArchNamespace
 

@@ -8,7 +8,7 @@
     <!-- general template for everything in doap -->
     <pages for="*" permission="zope.Public">
         <page name="launchpad_template"
-            template="../launchpad/templates/template.pt" />
+            template="../launchpad/templates/main-template.pt" />
     </pages>
 
     <!-- pages for the doap application -->
@@ -36,21 +36,22 @@
         permission="zope.Public"
         class="canonical.doap.browser.ProjectContainerView"
         lp:url="doap/projects/">
-        <page name="+index"
-            template="../launchpad/templates/projects-index.pt"
+        <!-- XXX lp-projects is a guess -->
+        <page name="+index" 
+            template="../launchpad/templates/lp-projects-index.pt"
             lp:url="doap/projects/+index" />
         <page name="+search"
-          template="../launchpad/templates/projects-search.pt"
+          template="../launchpad/templates/lp-projects-search.pt"
           lp:url="malone/projects/+search" />
   </pages>
 
   <traverse for="canonical.launchpad.interfaces.IProjectContainer"
             getter="__getitem__" />
 
-  <pages for="canonical.launchpad.database.IProject"
+  <pages for="canonical.launchpad.interfaces.IProject"
          permission="zope.Public">
     <page name="+index"
-          template="../launchpad/templates/project-index.pt"
+          template="../launchpad/templates/lp-project-index.pt"
           lp:url="doap/projects/$Project.name/+index" />
   </pages>
 

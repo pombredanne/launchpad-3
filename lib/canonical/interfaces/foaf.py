@@ -3,8 +3,8 @@
 #
 # Please use these as follows:
 #
-#   import canonical.interfaces
-#   ... canonical.interfaces.IProject
+#   import canonical.launchpad.interfaces
+#   ... canonical.launchpad.interfaces.IProject
 #
 # arch-tag: BBA2D0BE-1137-11D9-B61B-000A95954466
 

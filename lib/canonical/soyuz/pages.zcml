@@ -456,6 +456,8 @@
           />
     </pages>
 
+<!--
+    XXX MARK-ENABLED BUSTAGE
   <traverse for="canonical.launchpad.interfaces.IProduct" function="canonical.soyuz.browser.urlTraverseSyncs" />
 
   <pages for="canonical.launchpad.interfaces.ISync"
@@ -466,6 +468,7 @@
           lp:url="Soyuz/projects/$Project.name/$SoyuzProduct.name/?syncs?/$Sync.name/index.html"
           />
   </pages>
+-->
 
 
 

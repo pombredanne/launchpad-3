@@ -10,7 +10,7 @@ __metaclass__ = type
 from zope.interface import implements
 from zope.app.container.interfaces import IContained
 
-from canonical.interfaces import IFOAFApplication
+from canonical.launchpad.interfaces import IFOAFApplication
 from canonical.publication import rootObject
 
 # This is the core FOAF application that handles /foaf/

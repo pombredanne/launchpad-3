@@ -8,7 +8,7 @@
     <!-- general template for everything in malone -->
     <pages for="*" permission="zope.Public">
         <page name="malone_template"
-            template="../launchpad/templates/template.pt" />
+            template="../launchpad/templates/main-template.pt" />
     </pages>
 
     <!-- pages for the malone application -->
@@ -71,7 +71,7 @@
             template="../launchpad/templates/attachment-index.pt" />
     </pages>
 
-  <pages for="canonical.launchpad.interface.IProject"
+  <pages for="canonical.launchpad.interfaces.IProject"
          permission="zope.Public">
     <page name="index"
           template="../launchpad/templates/malone-project-index.pt"
@@ -89,7 +89,7 @@
       getter="__getitem__" />
 
   <pages 
-      for="canonical.launchpad.interface.ISourcepackage" 
+      for="canonical.launchpad.interfaces.ISourcepackage" 
       permission="zope.Public"
       class=".browser.SourcepackageView">
       <page name="index"
@@ -158,7 +158,7 @@
         getter="__getitem__" />
 
     <pages 
-        for="canonical.launchpad.interface.IBugExternalRef"
+        for="canonical.launchpad.interfaces.IBugExternalRef"
         permission="zope.Public">
         <page name="index"
             template="../launchpad/templates/reference-index.pt"

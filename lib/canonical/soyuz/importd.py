@@ -23,6 +23,11 @@ from canonical.launchpad.interfaces import IProjectSet, IProduct, IProject
 from canonical.launchpad.database import Project as dbProject, Product \
      as dbProduct
 
+from canonical.soyuz.sql import RCSTypeEnum
+
+#
+#
+#
 
 class Projects(object):
     """Stub projects collection"""

@@ -15,7 +15,7 @@ default_location = "/tmp/"
 
 class NamespaceObject(object):
     """
-    Implement canonical.launchpad.interface.INamespaceobject against the
+    Implement canonical.launchpad.interfaces.INamespaceobject against the
     Soyuz database.
     """
 

@@ -170,18 +170,19 @@ class MaloneBugAddForm(object):
 # TODO: It should be possible to specify all this via ZCML and not require
 # the MaloneBugView class with its ViewPageTemplateFile attributes
 class MaloneBugView(object):
-    watchPortlet = ViewPageTemplateFile('templates/bug-watch-portlet.pt')
+    # XXX fix these horrific relative paths
+    watchPortlet = ViewPageTemplateFile('../launchpad/templates/bug-watch-portlet.pt')
     productAssignmentPortlet = ViewPageTemplateFile(
-            'templates/bug-productassignment-portlet.pt'
+            '../launchpad/templates/bug-productassignment-portlet.pt'
             )
     sourcepackageAssignmentPortlet = ViewPageTemplateFile(
-            'templates/bug-sourcepackageassignment-portlet.pt'
+            '../launchpad/templates/bug-sourcepackageassignment-portlet.pt'
             )
     referencePortlet = ViewPageTemplateFile(
-            'templates/bug-reference-portlet.pt'
+            '../launchpad/templates/bug-reference-portlet.pt'
             )
     peoplePortlet = ViewPageTemplateFile(
-            'templates/bug-people-portlet.pt'
+            '../launchpad/templates/bug-people-portlet.pt'
             )
 
 class MaloneBugAttachment(BugAttachment, BugContainerBase):

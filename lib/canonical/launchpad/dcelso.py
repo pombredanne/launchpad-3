@@ -21,6 +21,10 @@ from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE
 # TODO: Move this wrapper here
 from canonical.database.sqlbase import SQLBase
 
+from canonical.launchpad.interfaces import * # XXX STEVEA SUCKS
+
+from canonical.launchpad.interfaces import * # XXX STEVEA SUCKS
+
 from canonical.lp import dbschema
 from canonical.launchpad.interfaces import IBug, IBugAttachment, IBugActivity, \
     IBugExternalRef, IBugMessage, IBugSubscription, IProductBugAssignment, \

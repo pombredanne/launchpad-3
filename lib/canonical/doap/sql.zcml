@@ -3,11 +3,11 @@
   xmlns:browser="http://namespaces.zope.org/browser">
 
     <content class=".browser.ProjectContainer">
-        <allow interface="canonical.interfaces.IProjectContainer" />
+        <allow interface="canonical.launchpad.interfaces.IProjectContainer" />
     </content>
 
     <utility
         factory=".browser.ProjectContainer"
-        provides="canonical.interfaces.IProjectContainer" />
+        provides="canonical.launchpad.interfaces.IProjectContainer" />
 
 </configure>

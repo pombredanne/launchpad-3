@@ -9,8 +9,8 @@ from persistent import Persistent
 from zope.interface import implements
 from canonical.auth.app import passwordChangeApp
 
-from canonical.auth.interfaces import IAuthApplication
-from canonical.auth.interfaces import IPasswordReminders
+from canonical.launchpad.interfaces import IAuthApplication
+from canonical.launchpad.interfaces import IPasswordReminders
 
 from datetime import datetime, timedelta
 
