@@ -97,7 +97,7 @@ Executing a query now blocks until the database connection can be reestablished.
     >>> thread.isAlive()
     True
 
-# TODO: test that the disconnection is logged
+# TODO: test that the disconnection is logged -- spiv
 
 And restart it.
 
@@ -113,12 +113,13 @@ Now using our connection should still work.
 
 And our blocked thread should've finished successfully, too.
 
+    >>> time.sleep(1)
     >>> thread_result
     [1]
     >>> thread.isAlive()
     False
 
-XXX: Test that interrupting a transaction still fails
+XXX: Test that interrupting a transaction still fails -- spiv
 
 Clean up the proxy.
 

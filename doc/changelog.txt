@@ -2,6 +2,36 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-29 12:33:13 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1513
+
+    Summary:
+      Switch off broken bits of main template - this should not have been merged to the trunk in its current state!
+    Revision:
+      launchpad--devel--0--patch-1513
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-249
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-250
+       Switch off broken bits of main template - this should not have been merged to the trunk in its current state!
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-251
+       (hopefully) fix race condition in test_reconnector.txt
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/database/ftests/test_reconnector.txt
+     lib/canonical/launchpad/templates/main-template.pt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-249
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-250
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-251
+
+
 2005-03-29 09:44:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1512
 
     Summary:

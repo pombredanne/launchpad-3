@@ -41,7 +41,11 @@
                 <img src="/@@/launchpad.png" alt="Launchpad Home" />
             </a>
 
-            <table class="launchpad-apps" tal:define="path_info request/PATH_INFO">
+            <tal:block condition="nothing">
+                Commented out until this actually works. Broken templates
+                rolled out to production are embarassing and unprofessional!
+
+                <table class="launchpad-apps" tal:define="path_info request/PATH_INFO">
                 <tr>
                     <td class="plain">
                         <a href=".">Overview</a>
@@ -76,17 +80,22 @@
                 <a href="+bounties">Bounties</a>
               </td>
             </tr>
-          </table>
+            </table>
+        </tal:block>
 
           <h2 tal:content="context/title | default">The Launchpad</h2>
 
         </div>
 
+        <tal:block condition="nothing">
+            Commented out until this actually works. Broken templates
+            rolled out to production are embarassing and unprofessional!
         <div id="portal-personaltools"
              style="text-align: left;"
              tal:define="path_info request/PATH_INFO">
            App Tabs Here
         </div>
+        </tal:block>
 
     </div><!-- class="page-header"-->
 
