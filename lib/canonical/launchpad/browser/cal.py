@@ -64,24 +64,36 @@ _day_pat   = re.compile(r'^(\d\d\d\d)-(\d\d)-(\d\d)$')
 def traverseCalendar(calendar, request, name):
     match = _year_pat.match(name)
     if match:
-        return YearView(calendar,
-                        year=int(match.group(1)))
+        try:
+            return YearView(calendar,
+                            year=int(match.group(1)))
+        except AssertionError:
+            return None
     match = _month_pat.match(name)
     if match:
-        return MonthView(calendar,
-                         year=int(match.group(1)),
-                         month=int(match.group(2)))
+        try:
+            return MonthView(calendar,
+                             year=int(match.group(1)),
+                             month=int(match.group(2)))
+        except AssertionError:
+            return None
     match = _week_pat.match(name)
     if match:
-        return WeekView(calendar,
-                        year=int(match.group(1)),
-                        week=int(match.group(2)))
+        try:
+            return WeekView(calendar,
+                            year=int(match.group(1)),
+                            week=int(match.group(2)))
+        except AssertionError:
+            return None
     match = _day_pat.match(name)
     if match:
-        return DayView(calendar,
-                       year=int(match.group(1)),
-                       month=int(match.group(2)),
-                       day=int(match.group(3)))
+        try:
+            return DayView(calendar,
+                           year=int(match.group(1)),
+                           month=int(match.group(2)),
+                           day=int(match.group(3)))
+        except AssertionError:
+            return None
     now = datetime.now(user_timezone)
     if name == 'today':
         return DayView(calendar,
