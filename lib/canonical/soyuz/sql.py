@@ -155,7 +155,7 @@ class GenericPackages:
 
     def _query(self):
         return (
-            'SourcePackageUpload.sourcepackagerelease = SourcePackage.id '
+            'SourcePackageUpload.sourcepackagerelease = SourcePackageRelease.id '
             'AND SourcePackageRelease.sourcepackage = SourcePackage.id '
             'AND SourcePackageUpload.distrorelease = %d '
             % (self.release.id))
