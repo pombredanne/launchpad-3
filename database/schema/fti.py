@@ -167,7 +167,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
             """, results=True)
     assert len(r) == 1, 'Unable to determine database locale'
     locale = r[0][0]
-    assert locale.startswith('en_') or locale == 'C', (
+    assert locale.startswith('en_') or locale in ('C', 'en'), (
             "Non-english database locales are not supported with launchpad. "
             "Fresh initdb required."
             )

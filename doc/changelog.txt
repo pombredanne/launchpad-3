@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-21 00:37:07 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1226
+
+    Summary:
+      Improve database locale checks, add locale sanity check to test_on_merge.py and improve test_on_merge output
+    Revision:
+      launchpad--devel--0--patch-1226
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-90
+       Improve database locale checks, add locale sanity check to test_on_merge.py and improve test_on_merge output
+    
+
+    modified files:
+     database/schema/fti.py doc/changelog.txt test_on_merge.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-90
+
+
 2005-01-21 00:03:43 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1225
 
     Summary:
