@@ -86,32 +86,33 @@
   
     <div class="boardComment" tal:repeat="message context/messages">
           
-      <div class="boardCommentDetails">
-        <strong tal:content="message/title">Subject</strong>
+        <div class="boardCommentDetails">
+            <strong tal:content="message/title">Subject</strong>
 
-        Posted by <span 
-          tal:replace="message/personmsg/displayname|string:(none)">
-          $Person.displayname
-        </span> 
-        at <span 
-          tal:replace="python:message.datecreated.strftime('%d %b %y %H:%M')">
-          Thursday 13:21
-        </span>
-      </div>
-
-      <div class="boardCommentBody">
-        <div class="portrait"> 
-          <a href="#">                    
-            <img class="portraitPhoto" src="defaultUser.gif" 
-              alt="" border="0" width="75" height="100" />
-            <div>screenshot.jpg</div>
-          </a>
+            Posted by <span 
+            tal:replace="message/personmsg/displayname|string:(none)">
+            $Person.displayname
+            </span> 
+            at <span 
+            tal:replace="python:message.datecreated.strftime('%d %b %y %H:%M')">
+            Thursday 13:21
+            </span>
         </div>
+
+        <div class="boardCommentBody">
+            <div tal:repeat="attachment message/attachments" class="portrait"> 
+                <!-- TODO: Attachment URL when Librarian is available -->
+                <a href="#">                    
+                    <div tal:content="attachment/name">
+                        $BugAttachment.name
+                    </div>
+                </a>
+            </div>
         
-        <div class="boardCommentContent" tal:content="message/contents">
-          Comment text.
+            <div class="boardCommentContent" tal:content="message/contents">
+                Comment text.
+            </div>
         </div>
-      </div>
               
       <div class="visualClear"></div>
 

@@ -58,31 +58,23 @@
             template="templates/bug-assignment.pt" />
     </pages>
 
-    <pages
+    <traverse 
         for="canonical.malone.interfaces.IBugAttachmentContainer"
+        getter="__getitem__" />
+
+    <pages 
+        for=".interfaces.IBugAttachment"
         permission="zope.Public"
-        lp:url="malone/bugs/$Bugs.id/attachments">
-        <page 
-            name="index"
-            template="templates/attachments-index.pt"
-            lp:url="malone/bugs/$Bugs.id/attachments/index" />
+        lp:url="malone/bugs/$Bugs.id/attachments/$Attachment.id">
+        <page name="index"
+            template="templates/attachment-index.pt" />
     </pages>
-
-  <traverse for="canonical.malone.interfaces.IBugAttachmentContainer"
-            getter="__getitem__" />
-
-  <pages for=".interfaces.IBugAttachment"
-         permission="zope.Public"
-         lp:url="malone/bugs/$Bugs.id/attachments/$Attachment.id">
-    <page name="index"
-          template="templates/attachment-index.pt" />
-  </pages>
 
   <pages for="canonical.malone.interfaces.IProjectContainer"
          permission="zope.Public">
-    <page name="index"
-          template="templates/projects-index.pt"
-          lp:url="malone/projects/index" />
+    <page name="+search"
+          template="templates/projects-search.pt"
+          lp:url="malone/projects/+search" />
   </pages>
 
   <traverse for="canonical.malone.interfaces.IProjectContainer"

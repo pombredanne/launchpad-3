@@ -8,7 +8,7 @@
 # Zope/Python standard libraries
 from datetime import datetime
 from email.Utils import make_msgid
-from zope.interface import implements, Interface
+from zope.interface import implements, Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('canonical')
 
@@ -68,6 +68,7 @@ class IBug(Interface):
     ownerID = Int(
             title=_('Owner'), required=True, readonly=True
             )
+    owner = Attribute("The owner's IPerson")
     duplicateof = Int(
             title=_('Duplicate Of'), required=False,
             )
@@ -96,23 +97,13 @@ class IBug(Interface):
             #default=datetime.utcnow,
             )
 
-    def activity():
-        """Return a list of IBugActivity."""
-
-    def messages():
-        """Return a list of IBugMessage"""
-
-    def people():
-        """Returns a list IPerson"""
-
-    def productassignment():
-        """Product assignments for this bug."""
-
-    def sourceassignment():
-        """Source package assignments for this bug."""
-
-    def owner():
-        """Return a Person object for the owner."""
+    activity = Attribute('SQLObject.Multijoin of IBugActivity')
+    messages = Attribute('SQLObject.Multijoin of IBugMessages')
+    people = Attribute('SQLObject.Multijoin of IPerson')
+    productassignment = Attribute('SQLObject.Multijoin of IProductBugAssigment')
+    sourceassignment = Attribute(
+            'SQLObject.Multijoin of ISourcepackageBugAssignment'
+            )
 
 class Bug(SQLBase):
     """A bug."""
@@ -161,23 +152,27 @@ class Bug(SQLBase):
 
 
 class IBugAttachment(Interface):
-    """A file attachment to a bug."""
+    """A file attachment to an IBugMessage."""
 
     id = Int(
             title=_('ID'), required=True, readonly=True,
             )
-    bug = Int(
-            title=_('Bug ID'), required=True, readonly=True,
+    bugmessageID = Int(
+            title=_('Bug Message ID'), required=True, readonly=True,
             )
-    title = TextLine(
-            title=_('Title'), required=True, readonly=False,
+    bugmessage = Attribute('Bug Message')
+    name = TextLine(
+            title=_('Name'), required=False, readonly=False,
             )
     description = Text(
             title=_('Description'), required=True, readonly=False,
             )
-
-    def versions(self):
-        """Return BugAttachmentContent for this attachment."""
+    libraryfile = Int(
+            title=_('Library File'), required=True, readonly=False,
+            )
+    datedeactivated = Datetime(
+            title=_('Date deactivated'), required=False, readonly=False,
+            )
 
 class BugAttachment(SQLBase):
     """A bug attachment."""
@@ -186,70 +181,17 @@ class BugAttachment(SQLBase):
 
     _table = 'BugAttachment'
     _columns = [
-        # TODO: This should be a foreign key
-        IntCol('bug'),
-        #ForeignKey(name='bug', foreignKey='Bug', dbName='bug', notNull=True),
-        StringCol('title', notNull=True),
-        StringCol('description', notNull=True)
-    ]
-
-    versions = MultipleJoin('BugAttachmentContent', joinColumn='bugattachment')
-
-
-class IBugAttachmentContent(Interface):
-    """The actual content of a bug attachment (versioned)."""
-
-    id = Int(
-            title=_('Bug Attachment Content ID'), required=True, readonly=True,
-            )
-    bugattachment = Int(
-            title=_('Bug Attachment ID'), required=True, readonly=True
-            )
-    daterevised = Datetime(
-            title=_('Date Revised'), required=True, readonly=True,
-            )
-    changecomment = Text(
-            title=_('Change Comment'), required=True, readonly=False,
-            )
-    # TODO: Use a file type when we can handle binarys
-    content = Text(
-            title=_('Content'), required=True, readonly=True,
-            default=_(
-                "Using textarea as placeholder as SQLObject doesn't do binarys"
-                )
-            )
-    filename = TextLine(
-            title=_('Filename'), required=True, readonly=False,
-            constraint=is_allowed_filename,
-            )
-    mimetype = TextLine(
-            title=_('MIME Type'), required=False, readonly=False,
-            )
-    owner = Int(
-            title=_('Owner'), required=False, readonly=False,
-            )
-
-class BugAttachmentContent(SQLBase):
-    """The actual content of a bug attachment (versioned)."""
-
-    implements(IBugAttachmentContent)
-
-    _table = 'BugAttachmentContent'
-    _columns = [
         ForeignKey(
-                name='bugattachment', foreignKey='BugAttachment',
-                dbName='bugattachment'
+                name='bugmessage', foreignKey='BugMessage',
+                dbName='bugmessage', notNull=True,
                 ),
-        DateTimeCol('daterevised', notNull=True),
-        StringCol('changecomment', notNull=True),
-        # TODO: Evil binary in DB goes bye-bye. Just a placeholder.
-        StringCol('content', notNull=True),
-        StringCol('filename', notNull=True),
-        StringCol('mimetype', default=None),
+        StringCol('name', notNull=False, default=None),
+        StringCol('description', notNull=False, default=None),
         ForeignKey(
-                name='owner', foreignKey='Person',
-                dbName='owner', default=None
+                name='libraryfile', foreignKey='LibraryFileAlias',
+                dbName='libraryfile', notNull=False,
                 ),
+        DateTimeCol('datedeactivated', notNull=False, default=None),
     ]
 
 
@@ -376,6 +318,7 @@ class IBugMessage(Interface):
     rfc822msgid = TextLine(
             title=_('RFC822 Msg ID'), required=True, readonly=True,
             )
+    attachments = Attribute('Bug Attachments')
 
 class BugMessage(SQLBase):
     """A message for a bug."""
@@ -403,6 +346,8 @@ class BugMessage(SQLBase):
                 ),
         StringCol('rfc822msgid', unique=True, notNull=True),
     ]
+
+    attachments = MultipleJoin('BugAttachment', joinColumn='bugmessage')
 
 class IBugSubscription(Interface):
     """The relationship between a person and a bug."""

@@ -8,7 +8,7 @@ COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be t
 COMMENT ON COLUMN Project.homepageurl IS 'The home page URL of this project. Note that this could well be the home page of the main product of this project as well, if the project is too small to have a separate home page for project and product.';
 COMMENT ON COLUMN Project.wikiurl IS 'This is the URL of a wiki that includes information about the project. It might be a page in a bigger wiki, or it might be the top page of a wiki devoted to this project.';
 COMMENT ON COLUMN Project.lastdoap IS 'This column stores a cached copy of the last DOAP description we saw for this project. We cache the last DOAP fragment for this project because there may be some aspects of it which we are unable to represent in the database (such as multiple homepageurl\'s instead of just a single homepageurl) and storing the DOAP file allows us to re-parse it later and recover this information when our database model has been updated appropriately.';
-
+COMMENT ON COLUMN Project.name IS 'A short lowercase name uniquely identifying the product. Use cases include being used as a key in URL traversal.';
 
 
 -- Product
@@ -26,7 +26,8 @@ COMMENT ON COLUMN Product.lastdoap IS 'This column stores a cached copy of the l
 COMMENT ON TABLE ProductSeries IS 'A ProductSeries is a set of product releases that are related to a specific version of the product. Typically, each major release of the product starts a new ProductSeries. These often map to a branch in the revision control system of the project, such as "2_0_STABLE". A few conventional Series names are "head" for releases of the HEAD branch, "1.0" for releases with version numbers like "1.0.0" and "1.0.1".';
 COMMENT ON COLUMN ProductSeries.name IS 'The name of the ProductSeries is like a unix name, it should not contain any spaces and should start with a letter or number. Good examples are "2.0", "3.0-stable", "head" and "development".';
 
-
+-- EmailAddress
+COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The email address is stored in a casesensitive way, but must be case insensitivly unique.';
 
 /*
   Rosetta
@@ -43,14 +44,16 @@ COMMENT ON COLUMN ProductSeries.name IS 'The name of the ProductSeries is like a
 /*
   Malone
 */
-
-
+COMMENT ON COLUMN Bug.name IS 
+    'A lowercase name uniquely identifying the bug';
 
 
 /*
   Soyuz
 */
-
-
-
+-- Are these soyuz or butress?
+COMMENT ON COLUMN Sourcepackage.name IS 
+    'A lowercase name uniquely identifying the sourcepackage';
+COMMENT ON COLUMN BinarypackageName.name IS
+    'A lowercase name identifying one or more binarypackages';
 

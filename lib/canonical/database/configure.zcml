@@ -30,10 +30,6 @@
             set_schema="canonical.database.malone.IBugAttachment" />
     </content>
 
-    <content class="canonical.database.malone.BugAttachmentContent">
-        <allow interface="canonical.database.malone.IBugAttachmentContent" />
-    </content>
-
     <content class="canonical.database.malone.ProductBugAssignment">
         <allow interface="canonical.database.malone.IProductBugAssignment" />
     </content>

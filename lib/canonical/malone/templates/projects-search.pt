@@ -5,7 +5,7 @@
 <body>
  
 <div metal:fill-slot="main">
-    <h1>Search projects and products</h1>
+    <h1>Search projects</h1>
 
     <form method="post">
         <fieldset tal:condition="not:exists:request/name">

@@ -46,62 +46,30 @@
     <!--<widget field="datecreated" class="canonical.widgets.DateWidget" />-->
   </editform>
 
-  <!-- BugAttachment forms -->
-  <addform
-    name="+new"
-    schema=".interfaces.IMaloneBugAttachment"
-    for=".browser.IBugAttachmentContainer"
-    label="Add a Bug Attachment"
-    fields="title description"
-    content_factory=".browser.BugAttachmentFactory"
-    arguments=""
-    keyword_arguments="title description"
-    permission="zope.View"
-    template="templates/default-addform.pt"
-    lp:url="malone/bugs/$Bug.id/attachments/+new"
-    />
+    <!-- BugAttachment forms -->
+    <addform
+        name="+new"
+        schema=".interfaces.IMaloneBugAttachment"
+        for=".browser.IBugAttachmentContainer"
+        label="Add a Bug Attachment"
+        fields="name description libraryfile"
+        content_factory=".browser.BugAttachmentFactory"
+        arguments=""
+        keyword_arguments="name description libraryfile"
+        permission="zope.View"
+        template="templates/default-addform.pt"
+        lp:url="malone/bugs/$Bug.id/attachments/+new"
+        />
 
-  <editform
-    schema=".interfaces.IMaloneBugAttachment"
-    label="Change Bug Attachment Information"
-    name="+edit"
-    permission="zope.View"
-    template="templates/default-editform.pt"
-    lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+edit"
-    />
-
-  <!-- BugAttachmentContent -->
-  <page
-    for="canonical.database.malone.IBugAttachmentContent"
-    class=".browser.BugAttachmentContentView"
-    name="index"
-    attribute="index"
-    permission="zope.View"
-    lp:url="malone/projects/$Project.name/index"
-    />
-
-  <addform
-    name="+new"
-    schema="canonical.database.malone.IBugAttachmentContent"
-    for=".interfaces.IMaloneBugAttachment"
-    label="Add a Bug Attachment Content"
-    fields="filename content changecomment mimetype owner"
-    content_factory=".browser.BugAttachmentContentFactory"
-    arguments=""
-    keyword_arguments="filename content changecomment mimetype owner"
-    permission="zope.View"
-    template="templates/default-addform.pt"
-    lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+new"
-    />
-
-  <editform
-    schema="canonical.database.malone.IBugAttachmentContent"
-    label="Change Bug Attachment Content"
-    name="+edit"
-    permission="zope.View"
-    template="templates/default-editform.pt"
-    lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/$BugAttachmentContent.id/+edit"
-    />
+    <editform
+        schema=".interfaces.IMaloneBugAttachment"
+        label="Change Bug Attachment Information"
+        name="+edit"
+        permission="zope.View"
+        fields="name description"
+        template="templates/default-editform.pt"
+        lp:url="malone/bugs/$Bug.id/attachments/$BugAttachment.id/+edit"
+        />
 
   <!-- IBugMessage -->
   <view

@@ -56,12 +56,8 @@
       name="index" />
 
   <browser:defaultView
-      for="canonical.database.malone.IBugAttachmentContent"
-      name="index" />
-
-  <browser:defaultView
       for="canonical.malone.interfaces.IProjectContainer"
-      name="index" />
+      name="+search" />
 
   <browser:defaultView
       for="canonical.malone.interfaces.ISourcepackageContainer"
