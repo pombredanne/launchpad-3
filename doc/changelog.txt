@@ -2,6 +2,30 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-02-18 16:40:29 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1334
+
+    Summary:
+      Add LibraryFileAlias.expires and fix a bodgy constraint
+    Revision:
+      launchpad--devel--0--patch-1334
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-140
+       Add LibraryFileAlias.expires and fix a bodgy constraint
+    
+
+    new files:
+     database/schema/.arch-ids/patch-10-06-0.sql.id
+     database/schema/patch-10-06-0.sql
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-140
+
+
 2005-02-18 13:22:02 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1333
 
     Summary:
