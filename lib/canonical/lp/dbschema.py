@@ -1824,4 +1824,40 @@ class SSHKeyType(DBSchema):
         DSA
         """)
 
+class LoginTokenType(DBSchema):
+    """Login token type
+
+    Tokens are emailed to users in workflows that require email address
+    validation, such as forgotten password recovery or account merging.
+    We need to identify the type of request so we know what workflow
+    is being processed.
+    """
+
+    PASSWORDRECOVERY = Item(1, """
+        Password Recovery
+
+        User has forgotten or never known their password and need to
+        reset it.
+        """)
+
+    ACCOUNTMERGE = Item(2, """
+        Account Merge
+
+        User has requested that another account be merged into their
+        current one.
+        """)
+
+    NEWACCOUNT = Item(3, """
+        New Account
+
+        A new account is being setup. They need to verify their email address
+        before we allow them to set a password and log in.
+        """)
+
+    VALIDATEEMAIL = Item(4, """
+        Validate Email
+
+        A user has added more email addresses to their account and they
+        need to be validated.
+        """)
 
