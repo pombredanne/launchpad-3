@@ -2,6 +2,27 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-22 18:47:52 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1473
+
+    Summary:
+      Remove SQL injection attack point from Bazaar search. Untested, but it didn't function anyway so can't be any worse.
+    Revision:
+      launchpad--devel--0--patch-1473
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-222
+       Remove SQL injection attack point from Bazaar search. Untested, but it didn't function anyway so can't be any worse.
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/database/sourcesource.py
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-222
+
+
 2005-03-22 18:15:08 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1472
 
     Summary:

@@ -267,11 +267,7 @@ class SourceSourceSet(object):
         self.title = 'Bazaar Upstream Imports'
 
     def __getitem__(self, sourcesourcename):
-        # XXX Strangely, the sourcesourcename appears to have been quoted
-        # already. Quoting it again causes this query to break, though we
-        # are not sure why.
-        ss = SourceSource.select(SourceSource.q.name=="%s" % \
-                                    sourcesourcename)
+        ss = SourceSource.selectBy(name=sourcesourcename)
         return ss[0]
 
     def _querystr(self, ready=None, text=None, state=None):
@@ -286,7 +282,7 @@ class SourceSourceSet(object):
                 query = query + ' AND\n'
             query += "SourceSource.product = Product.id"
             if text:
-                query += ' AND Product.fti @@ ftq(%s)' % text
+                query += ' AND Product.fti @@ ftq(%s)' % quote(text)
             if ready is not None:
                 query += ' AND '
                 query += 'Product.active IS TRUE AND '
@@ -295,7 +291,7 @@ class SourceSourceSet(object):
             query += '( Product.project IS NULL OR '
             query += '( Product.project = Project.id '
             if text:
-                query += ' AND Project.fti @@ ftq(%s) ' % text
+                query += ' AND Project.fti @@ ftq(%s) ' % quote(text)
             if ready is not None:
                 query += ' AND '
                 query += 'Project.active IS TRUE AND '
