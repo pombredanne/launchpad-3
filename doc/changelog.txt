@@ -2,6 +2,28 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-01-14 22:19:58 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1203
+
+    Summary:
+      clean up the bug listing shown on the bug index page to look more
+ consistent with the upstream bug listing (fixes bug #33/production)
+    Revision:
+      launchpad--devel--0--patch-1203
+
+    Patches applied:
+    
+     * brad.bollenbach@canonical.com/launchpad--devel--0--patch-302
+       clean up the bug listing shown on the bug index page to look more consistent with the upstream bug listing (fixes bug #33/production)
+    
+
+    modified files:
+     doc/changelog.txt
+     lib/canonical/launchpad/templates/portlet-bug-assignments-headline.pt
+
+    new patches:
+     brad.bollenbach@canonical.com/launchpad--devel--0--patch-302
+
+
 2005-01-14 21:51:56 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1202
 
     Summary:
