@@ -2,7 +2,6 @@ lib/canonical/arch/Makefile a28009ff-8549-499e-ba4c-df39e069ff02
 lib/canonical/arch/__init__.py 968155c0-f32b-4ca1-a579-1722c98bb117
 lib/canonical/arch/broker.py 27f07153-69b6-4ddb-b704-eaabcca57e3e
 lib/canonical/arch/infoUpdater.py 5ce06dae-6ab3-4397-8ff2-e7fec441857f
-lib/canonical/arch/tests/__init__.py bb3221ff-f342-4fe6-8fd9-de7770b54bf7
 lib/canonical/arch/tests/test_broker.py a1262849-780c-4124-9a58-19256ca74c1b
 lib/canonical/arch/tests/test_database.py 794e491c-ce40-4a66-a325-72984e7dbbbd
 lib/canonical/arch/tests/test_framework.py 7dec9a9d-a8c2-465e-8843-7b2204c1f85c
@@ -21,7 +20,6 @@ lib/canonical/lucille/utils.py fbcb5758-d345-4610-8e57-8cc664a376bc
 lib/canonical/rosetta/browser.py db407517-732d-47e3-a4c1-c1f8f9dece3a
 lib/canonical/rosetta/docs/poexport.txt 06f3feef-229e-42b9-a9d5-ab8c3758a23b
 lib/canonical/rosetta/domain.py d84c3aaa-f65c-49eb-aeea-47ef2bb559c7
-lib/canonical/rosetta/pages.zcml bd9952cf-5198-4ab5-a97f-8d2d9893b313_-->
 lib/canonical/rosetta/poexport.py aef7f683-dbd0-46d0-944d-6442bfdbdb13
 lib/canonical/rosetta/scripts/createproduct.py 6ff81610-1bc0-4c22-960c-4e0c2f33c0c9
 lib/canonical/rosetta/scripts/createproject.py b9019fba-02b5-4d42-87e4-39b4754da09b

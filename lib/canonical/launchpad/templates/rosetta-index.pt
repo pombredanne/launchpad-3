@@ -18,60 +18,40 @@
 
     <h1>Welcome to Rosetta!</h1>
 
-    <div class="documentDescription">
+    <p class="documentDescription">
         Rosetta is a tool for translating open source applications into
-        your language. You can also use it to find out whether a certain
-        application or type of application is available in your language.
-        Use the search form below to find an application, or see the
-        <a href="about" title="About Rosetta">about</a> page to find out
-        more about Rosetta.
-    </div>
+        your language. You can read more <a href="+about" title="About Rosetta">
+        about Rosetta</a> or follow the links below to start translating.
+    </p>
 
-    <span tal:condition="not: request/lp:person">
-        <p>
-        You might like to
-        <a href="+login">log in</a>.
-        </p>
-    </span>
+    <ul>
 
-    <form action="search-results"
-          method="get">
-    <fieldset>
-        <legend>Upstream Project Search</legend>
+        <li tal:condition="not: request/lp:person">
+            You might like to
+            <a href="+login">log in</a>.
+        </li>
 
-        <div class="field">
-            <label>Project name</label>
-            <div class="formHelp">
-            Enter the name or type of project.
-            </div>
-            <input name="q" type="text" />
-            <a href="search">Advanced Search</a>
-        </div>
+        <li><a href="projects">Find open source applications to
+        translate</a></li>
 
-        <div class="formControls">
-            <input type="submit" value="Search" />
-        </div>
-    </form>
+    </ul>
+
 
     <h1>Translatable packages in Ubuntu Linux</h1>
 
-    <table class="listing rowNavigation" id="packages-list">
-        <thead>
-            <th>Package</th>
-            <th>Description</th>
-        </thead>
+    <table class="rowNavigation">
 
         <tbody>
-            <tr tal:attributes="onclick string:window.location='projects/gnome/gnome-panel';">
-                <td><a href="projects/gnome/gnome-panel">GNOME Panel</a></td>
-                <td>Launch and/or dock GNOME applications</td>
+
+            <tr tal:repeat="product context/translatables"
+                tal:attributes="onclick
+                string:window.location='projects/${product/project/name}/${product/name}';">
+                <td><b><span tal:replace="product/title">product
+                title</span></b><br />
+                <span tal:replace="product/shortdesc">product
+                summary</span></td>
             </tr>
 
-            <tr class="even"
-                tal:attributes="onclick string:window.location='projects/gnome/gnome-applets';">
-                <td><a href="projects/gnome/gnome-applets">GNOME Applets</a></td>
-                <td>Various applets for GNOME panel</td>
-            </tr>
         </tbody>
 
     </table>

@@ -32,6 +32,10 @@ class IMaloneApplication(ILaunchpadApplication):
 class IRosettaApplication(ILaunchpadApplication):
     """Application root for rosetta."""
 
+    def translatables():
+        """Return an iterator over the set of translatable Products which
+        are part of Ubuntu's translation project."""
+
 
 class ISoyuzApplication(ILaunchpadApplication):
     """Application root for soyuz."""

@@ -11,6 +11,11 @@
             set_attributes="header pluralForms rawfile rawimporter daterawimport rawimportstatus"/>
     </content>
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IPOFile"
+        name="+index"
+        />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IPOFile"
         permission="zope.Public"

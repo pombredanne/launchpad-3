@@ -10,14 +10,14 @@
 
   <h1>Revision Control Systems for the Bazaar</h1>
 
-  <form action="" method="POST">
+  <form action="" method="GET">
     <fieldset>
         <legend>Filter Criteria</legend>
 
         <div class="formControls">
             <input type="text" name="projecttext"
                    tal:attributes="value view/projecttext" size="60">
-            <input type="submit" name="search" value="Search" />
+            <input type="submit" name="search" value="search" />
             <br />
             <input type="checkbox" name="ready" id="ready"
                    tal:attributes="checked view/ready">

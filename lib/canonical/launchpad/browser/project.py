@@ -7,9 +7,13 @@ from canonical.database.constants import nowUTC
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
+from zope.component import getUtility
+from zope.i18n.interfaces import IUserPreferredLanguages
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import IPerson
+
+from canonical.rosetta.browser import codes_to_languages, request_languages
 
 #
 # we need malone.browser.newBugTracker
@@ -22,7 +26,6 @@ from canonical.launchpad.browser.bugtracker import newBugTracker
 #
 def traverseProject(project, request, name):
     return project.getProduct(name)
-
 
 
 #
@@ -116,6 +119,70 @@ class ProjectView(object):
         # Now redirect to view it again
         self.request.response.redirect(self.request.URL[-1])
 
+
+
+# XXX Mark Shuttleworth moved this here as a first step to integrating it to
+# ProjectView above. 27/11/04
+class RosettaProjectView:
+    def thereAreProducts(self):
+        return len(list(self.context.products())) > 0
+
+    def products(self):
+        for product in self.context.products():
+            total = 0
+            currentCount = 0
+            rosettaCount = 0
+            updatesCount = 0
+            for language in request_languages(self.request):
+                total += product.messageCount()
+                currentCount += product.currentCount(language.code)
+                rosettaCount += product.rosettaCount(language.code)
+                updatesCount += product.updatesCount(language.code)
+
+            nonUpdatesCount = currentCount - updatesCount
+            translated = currentCount  + rosettaCount
+            untranslated = total - translated
+            try:
+                currentPercent = float(currentCount) / total * 100
+                rosettaPercent = float(rosettaCount) / total * 100
+                updatesPercent = float(updatesCount) / total * 100
+                nonUpdatesPercent = float (nonUpdatesCount) / total * 100
+                translatedPercent = float(translated) / total * 100
+                untranslatedPercent = float(untranslated) / total * 100
+            except ZeroDivisionError:
+                # XXX: I think we will see only this case when we don't have
+                # anything to translate.
+                currentPercent = 0
+                rosettaPercent = 0
+                updatesPercent = 0
+                nonUpdatesPercent = 0
+                translatedPercent = 0
+                untranslatedPercent = 100
+
+            # NOTE: To get a 100% value:
+            # 1.- currentPercent + rosettaPercent + untranslatedPercent
+            # 2.- translatedPercent + untranslatedPercent
+            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
+            # untranslatedPercent
+            retdict = {
+                'name': product.name,
+                'title': product.title,
+                'poLen': total,
+                'poCurrentCount': currentCount,
+                'poRosettaCount': rosettaCount,
+                'poUpdatesCount' : updatesCount,
+                'poNonUpdatesCount' : nonUpdatesCount,
+                'poTranslated': translated,
+                'poUntranslated': untranslated,
+                'poCurrentPercent': currentPercent,
+                'poRosettaPercent': rosettaPercent,
+                'poUpdatesPercent' : updatesPercent,
+                'poNonUpdatesPercent' : nonUpdatesPercent,
+                'poTranslatedPercent': translatedPercent,
+                'poUntranslatedPercent': untranslatedPercent,
+            }
+
+            yield retdict
 
 
 

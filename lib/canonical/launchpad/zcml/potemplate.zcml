@@ -18,28 +18,38 @@
         getter="poFile"
         />
 
-    <browser:pages for="canonical.launchpad.interfaces.IPOTemplate"
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IPOTemplate"
+        name="+index"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IPOTemplate"
         permission="zope.Public"
         class="canonical.rosetta.browser.ViewPOTemplate"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
-    <browser:page name="+index"
-        template="../templates/potemplate-index.pt"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/+index" />
-    <browser:page name="+edit"
-        template="../templates/potemplate-edit.pt"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/+edit" />
-    <browser:page name="upload"
-        template="../templates/potemplate-upload.pt"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/upload" />
+        <browser:page
+            name="+index"
+            template="../templates/potemplate-index.pt"
+            lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/+index" />
+        <browser:page
+            name="+edit"
+            template="../templates/potemplate-edit.pt"
+            lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/+edit" />
+        <browser:page
+            name="upload"
+            template="../templates/potemplate-upload.pt"
+            lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/upload" />
     </browser:pages>
 
     <browser:pages for="canonical.launchpad.interfaces.IPOTemplate"
         permission="launchpad.AnyPerson"
         class="canonical.rosetta.browser.TranslatePOTemplate"
         lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name">
-    <browser:page name="translate"
-        template="../templates/potemplate-translate.pt"
-        lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/translate" />
+        <browser:page
+            name="translate"
+            template="../templates/potemplate-translate.pt"
+            lp:url="Rosetta/projects/$Project.name/$Product.name/$POTemplate.name/translate" />
     </browser:pages>
 
 </configure>

@@ -84,13 +84,9 @@
         <!--
         <p>
         Is the project you're looking for not listed?
-        <a href="interest">Register interest to get the project into the system</a>
+        <a href="+interest">Register interest to get the project into the system</a>
         </p>
         -->
-
-    </div>
-    <!-- XXX XXX XXX XXX -->
-    </div> <!-- condition: python: False -->
 
     <tal:block condition="not: view/person">
         <p>

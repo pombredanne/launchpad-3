@@ -128,68 +128,6 @@ class TabIndexGenerator:
         return index
 
 
-class ViewProject:
-    def thereAreProducts(self):
-        return len(list(self.context.products())) > 0
-
-    def products(self):
-        for product in self.context.products():
-            total = 0
-            currentCount = 0
-            rosettaCount = 0
-            updatesCount = 0
-            for language in request_languages(self.request):
-                total += product.messageCount()
-                currentCount += product.currentCount(language.code)
-                rosettaCount += product.rosettaCount(language.code)
-                updatesCount += product.updatesCount(language.code)
-
-            nonUpdatesCount = currentCount - updatesCount
-            translated = currentCount  + rosettaCount
-            untranslated = total - translated
-            try:
-                currentPercent = float(currentCount) / total * 100
-                rosettaPercent = float(rosettaCount) / total * 100
-                updatesPercent = float(updatesCount) / total * 100
-                nonUpdatesPercent = float (nonUpdatesCount) / total * 100
-                translatedPercent = float(translated) / total * 100
-                untranslatedPercent = float(untranslated) / total * 100
-            except ZeroDivisionError:
-                # XXX: I think we will see only this case when we don't have
-                # anything to translate.
-                currentPercent = 0
-                rosettaPercent = 0
-                updatesPercent = 0
-                nonUpdatesPercent = 0
-                translatedPercent = 0
-                untranslatedPercent = 100
-
-            # NOTE: To get a 100% value:
-            # 1.- currentPercent + rosettaPercent + untranslatedPercent
-            # 2.- translatedPercent + untranslatedPercent
-            # 3.- rosettaPercent + updatesPercent + nonUpdatesPercent +
-            # untranslatedPercent
-            retdict = {
-                'name': product.name,
-                'title': product.title,
-                'poLen': total,
-                'poCurrentCount': currentCount,
-                'poRosettaCount': rosettaCount,
-                'poUpdatesCount' : updatesCount,
-                'poNonUpdatesCount' : nonUpdatesCount,
-                'poTranslated': translated,
-                'poUntranslated': untranslated,
-                'poCurrentPercent': currentPercent,
-                'poRosettaPercent': rosettaPercent,
-                'poUpdatesPercent' : updatesPercent,
-                'poNonUpdatesPercent' : nonUpdatesPercent,
-                'poTranslatedPercent': translatedPercent,
-                'poUntranslatedPercent': untranslatedPercent,
-            }
-
-            yield retdict
-
-
 class ViewProduct:
     def __init__(self, context, request):
         self.context = context
@@ -515,26 +453,6 @@ class ViewPreferences:
                 raise RuntimeError("This form must be posted!")
 
             self.submitted_personal = True
-
-
-class ViewSearchResults:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        query = request.form.get('q')
-
-        if query is not None and query is not u'':
-            self.query = query
-            self.queryProvided = True
-            self.results = getUtility(IProjectSet).search(query,
-                search_products = True)
-            self.resultCount = len(list(self.results))
-        else:
-            self.query = None
-            self.queryProvided = False
-            self.results = []
-            self.resultCount = 0
 
 
 class ViewPOExport:

@@ -251,47 +251,14 @@ def test_parse_cformat_string():
     ValueError: %
     '''
 
-def test_ViewProject():
+def test_RosettaProjectView():
     '''
-    >>> from canonical.rosetta.browser import ViewProject
-    >>> view = ViewProject()
+    >>> from canonical.launchpad.browser import RosettaProjectView
+    >>> view = RosettaProjectView()
     >>> view.context = DummyProject()
     >>> view.request = DummyRequest()
     >>> view.thereAreProducts()
     True
-    '''
-
-def test_ViewSearchResults():
-    '''
-    >>> from zope.app.tests.placelesssetup import setUp, tearDown
-    >>> from zope.app.tests import ztapi
-
-    >>> setUp()
-
-    >>> ztapi.provideUtility(IProjectSet, DummyProjectSet())
-
-    >>> from canonical.rosetta.browser import ViewSearchResults
-
-    >>> view = ViewSearchResults(None, DummyRequest())
-    >>> view.queryProvided
-    False
-    >>> view.query
-    >>> view.results
-    []
-    >>> view.resultCount
-    0
-
-    >>> view = ViewSearchResults(None, DummyRequest(q = 'foo'))
-    >>> view.queryProvided
-    True
-    >>> view.query
-    'foo'
-    >>> len(view.results)
-    2
-    >>> view.resultCount
-    2
-
-    >>> tearDown()
     '''
 
 def test_TranslatePOTemplate_init():

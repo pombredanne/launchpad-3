@@ -14,10 +14,15 @@
         />
     </content>
 
-    <!-- XXX Daf please get rid of this -->
+    <!-- XXX begin cruft - Daf please get rid of this -->
     <content class="canonical.rosetta.domain.RosettaProject">
         <allow interface="canonical.launchpad.interfaces.IRosettaProject"/>
     </content>
+
+    <browser:traverse
+        for="canonical.launchpad.interfaces.IRosettaProject"
+        getter="product" />
+    <!-- XXX end cruft -->
 
     <browser:traverse
         for="canonical.launchpad.interfaces.IProject"
@@ -37,6 +42,11 @@
         layer="canonical.launchpad.layers.ButtressLayer"
         name="+buttress-index" />
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProject"
+        layer="canonical.launchpad.layers.RosettaLayer"
+        name="+rosetta-index" />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProject"
         class="canonical.launchpad.browser.ProjectView"
@@ -51,6 +61,17 @@
         <browser:page name="+buttress-index"
             template="../templates/project-branches.pt"
             lp:url="buttress/upstream/$Project.name/" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProject"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.RosettaProjectView"
+        lp:url="Rosetta/projects/$Project.name">
+        <browser:page
+            name="+rosetta-index"
+            template="../templates/rosetta-project-index.pt"
+            lp:url="Rosetta/projects/$Project.name/+index" />
     </browser:pages>
 
     <browser:pages
@@ -99,11 +120,6 @@
         for="canonical.launchpad.interfaces.IProjectSet"
         name="+index" />
 
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProjectSet"
-        layer="canonical.launchpad.layers.RosettaLayer"
-        name="+rosetta-index" />
-
     <browser:traverse
         for="canonical.launchpad.interfaces.IProjectSet"
         getter="__getitem__" />
@@ -148,9 +164,6 @@
     <browser:pages for="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
         class="canonical.launchpad.browser.ProjectSetView">
-        <browser:page name="+rosetta-index"
-            template="../templates/rosetta-projects-index.pt"
-            lp:url="Rosetta/projects/+rosetta-index" />
         <browser:page name="+request"
             template="../templates/projects-request.pt"
             lp:url="Rosetta/projects/+request" />

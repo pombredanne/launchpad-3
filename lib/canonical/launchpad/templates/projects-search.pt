@@ -72,7 +72,8 @@
             </table>
   
             <div tal:condition="not: view/gotmatches"><b>No matching upstream
-            projects.</b></div>
+            projects.</b> You can register your project <a
+            href="+new">here</a></div>
 
         </div>
  

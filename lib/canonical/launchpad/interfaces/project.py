@@ -88,6 +88,13 @@ class IProject(Interface):
     def newSourceSource():
         """Add a SourceSource for upstream code syncing to Arch."""
 
+    def poTemplates():
+        """Returns an iterator over this project's PO templates."""
+
+    def product(name):
+        """Return the product belonging to this project with the given
+        name."""
+
 
 
 
@@ -137,15 +144,6 @@ class IProjectBugTracker(Interface):
     
 
 class IRosettaProject(IRosettaStats, IProject):
-    """The rosetta interface to a project."""
-
-    displayname = Attribute("The Project's name that will be showed.")
-
-    def poTemplates():
-        """Returns an iterator over this project's PO templates."""
-
-    def product(name):
-        """Return the product belonging to this project with the given
-        name."""
+    """a Project that knows about Rosetta Stats."""
 
 
