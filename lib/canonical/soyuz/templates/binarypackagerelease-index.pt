@@ -37,26 +37,20 @@ tal:content="context/binarypackagerelease/shortdesc">TITLE</span>
     string:../../../../src/${context/sourcedistrorelease/name}/${sourcerelease/sourcepackage/name}/${sourcerelease/version}"
     /> 
 
-    <p><b>Build:</b>
-    <a class="dummy"> xxxxx </a>
-
-    <p><b>Package Format:</b>
-    <a class="dummy"> xxxxx </a>
-
     <p><b>Component:</b>
-    <a class="dummy"> xxxxx </a>
+    <a tal:content="context/binarypackagerelease/component/name" 
+    tal:attributes="href string:no-link-yet"/> 
 
     <p><b>Section:</b>
-    <a class="dummy"> xxxxx </a>
+    <a tal:content="context/binarypackagerelease/section/name" 
+    tal:attributes="href string:no-link-yet" /> 
 
     <p><b>Priority:</b>
-    <a class="dummy"> xxxxx </a>
-
-    <p><b>Installed Size:</b>
-    <a class="dummy"> xxxxx </a>
+    <span tal:content="context/binarypackagerelease/pkgpriority"/>
 
     <p><b>Licence:</b>
-    <a class="dummy"> xxxxx </a>
+    <a tal:content="context/binarypackagerelease/licence" 
+    tal:attributes="href string:no-link-yet"/>
 
  </fieldset>
 

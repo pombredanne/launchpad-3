@@ -173,11 +173,17 @@
   <div class="dummy">
    <table>
      <legend><h3>Packages Maintained by:</h3></legend>
-     <tr><td><a href="">Apt</a></td></tr>
-     <tr><td><a href="">Dselect</a></td></tr>
-     <tr><td><a href="">Dpkg</a></td></tr>
-     <tr><td><a href="">Lintian</a></td></tr>
-     <tr><td><a href="">Deb-helper</a></td></tr>
+     <tr><td> XXX: Real data but link is missing</td></tr>
+     <tr tal:condition="not:context/packages">
+       <td> No package available </td>
+     </tr>
+     <tr tal:repeat="package context/packages">
+       <td><a href=""
+           tal:content="string:${package/sourcepackage/name}-${package/version}">
+	     PACKAGES
+	   </a>
+       <td>
+     </tr>
    </table>
   </div>
   <!-- Malone Portlet -->

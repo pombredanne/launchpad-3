@@ -91,6 +91,23 @@ class SoyuzDistroArchRelease(SQLBase):
                    notNull=True),
     ]
 
+class SoyuzComponent(SQLBase):
+    """ Soyuz Component table SQLObject """
+
+    _table = 'Component'
+
+    _columns = [
+        StringCol('name', dbName='name', notNull=True),
+        ]
+
+class SoyuzSection(SQLBase):
+    """ Soyuz Section table SQLObject """
+
+    _table = 'Section'
+
+    _columns = [
+        StringCol('name', dbName='name', notNull=True),
+        ]
 
 class SoyuzPackagePublishing(SQLBase):
 
@@ -172,6 +189,13 @@ class SoyuzBinaryPackage(SQLBase):
         else:
             return None
 
+    def _priority(self):
+        for priority in dbschema.BinaryPackagePriority.items:
+            if priority.value == self.priority:
+                return priority.title
+        return 'Unknown (%d)' %self.priority
+
+    pkgpriority = property(_priority)
 
 class SoyuzBinaryPackageName(SQLBase):
     _table = 'BinaryPackageName'
@@ -269,7 +293,6 @@ class SoyuzSourcePackage(SQLBase):
             return last
         else:
             return None
-
 
 class SoyuzSourcePackageName(SQLBase):
     _table = 'SourcePackageName'

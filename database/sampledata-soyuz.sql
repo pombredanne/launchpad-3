@@ -1303,7 +1303,7 @@ INSERT INTO Binarypackagename(name) VALUES ('plone');
 -- Binarypackage
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
+section, priority, licence) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
@@ -1319,11 +1319,12 @@ section, priority)
 	1, -- DEB ?
 	1, -- default component
 	1, -- default section
-	3); -- highest priority
+	3, -- highest priority
+	'GPL');	
 
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
+section, priority, licence) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
@@ -1339,11 +1340,12 @@ section, priority)
 	1, -- DEB ?
 	1, -- default component
 	1, -- default section
-	3); -- highest priority
+	3, -- highest priority
+	'GPL');
 
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
+section, priority, licence) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
@@ -1359,11 +1361,12 @@ section, priority)
 	1, -- DEB ?
 	1, -- default component
 	1, -- default section
-	3); -- highest priority
+	3, -- highest priority
+	'GPL');
 
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
+section, priority, licence) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
@@ -1379,11 +1382,12 @@ section, priority)
 	1, -- DEB ?
 	1, -- default component
 	1, -- default section
-	3); -- highest priority
+	3, -- highest priority
+	'GPL');
 
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
+section, priority, licence) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
@@ -1399,11 +1403,12 @@ section, priority)
 	1, -- DEB ?
 	1, -- default component
 	1, -- default section
-	3); -- highest priority
+	3, -- highest priority
+	'GPL');
 
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
+section, priority, licence) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
@@ -1420,12 +1425,12 @@ section, priority)
 	1, -- DEB ?
 	1, -- default component
 	1, -- default section
-	3); -- highest priority
-
+	3 -- highest priority
+	'GPL');
 
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
+section, priority, licence) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
@@ -1445,7 +1450,7 @@ section, priority)
 
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
+section, priority, licence) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
@@ -1461,11 +1466,12 @@ section, priority)
 	1, -- DEB ?
 	1, -- default component
 	1, -- default section
-	3); -- highest priority
+	3, -- highest priority
+	'GPL');
 
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
+section, priority, licence) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
@@ -1483,11 +1489,12 @@ section, priority)
 	1, -- DEB ?
 	1, -- default component
 	1, -- default section
-	3); -- highest priority
+	3, -- highest priority
+	'GPL');
 
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
+section, priority, licence) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
@@ -1505,11 +1512,12 @@ section, priority)
 	1, -- DEB ?
 	1, -- default component
 	1, -- default section
-	3); -- highest priority
+	3, -- highest priority
+	'GPL');
 
 INSERT INTO Binarypackage (sourcepackagerelease, binarypackagename, 
 version, shortdesc, description, build, binpackageformat, component, 
-section, priority) 
+section, priority, licence) 
 	VALUES (
 	(SELECT id from Sourcepackagerelease WHERE sourcepackage = 
 	(SELECT id from Sourcepackage where sourcepackagename = 
@@ -1524,7 +1532,8 @@ section, priority)
 	1, -- DEB ?
 	1, -- default component
 	1, -- default section
-	3); -- highest priority
+	3, -- highest priority
+	'GPL');
 
 -- Packagepublishing
 

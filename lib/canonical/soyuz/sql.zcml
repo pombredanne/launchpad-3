@@ -255,16 +255,26 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.soyuz.database.SoyuzComponent">
+    <allow interface="canonical.soyuz.interfaces.IComponent"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+  <content class="canonical.soyuz.database.SoyuzSection">
+    <allow interface="canonical.soyuz.interfaces.ISection"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
 
   <content class="canonical.soyuz.sql.Projects">
     <allow interface="canonical.soyuz.interfaces.IProjects"/>
   </content>
   
-  <content class="canonical.soyuz.sql.SoyuzProject">
+  <content class="canonical.soyuz.database.SoyuzProject">
     <allow interface="canonical.soyuz.interfaces.IProject"/>
   </content>
   
-  <content class="canonical.soyuz.sql.SoyuzProduct">
+  <content class="canonical.soyuz.database.SoyuzProduct">
     <allow interface="canonical.soyuz.interfaces.IProduct"/>
   </content>
   

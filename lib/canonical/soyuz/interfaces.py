@@ -374,7 +374,8 @@ class IProduct(Interface):
     """A Product.  For example 'firefox' in the 'mozilla' project."""
 
     name = Attribute("The product's name, unique within a project.")
-    displayname = Attribute("The product's display name.")
+
+    displayName = Attribute("The product's display name.")
 
     title = Attribute("The product's title.")
 
@@ -461,7 +462,8 @@ class IPackagePublishing(Interface):
 class IBuild(Interface):
     """A Build interface"""
     distroarchrelease = Attribute("The Ditro Arch Release")
-
+    component = Attribute("The BinaryPackage Component")
+    section = Attribute("The BinaryPackage Section")
 
 class IBinaryPackage(Interface):
     """A binary package, e.g apache-utils"""
@@ -473,6 +475,13 @@ class IBinaryPackage(Interface):
     build = Attribute("Binary Package Build")
     name = Attribute("Binary Package Name")
 
+    component = Attribute("The BinaryPackage Component")
+    section = Attribute("The BinaryPackage")
+
+    pkgpriority = Attribute("Package Priority")
+
+    licence = Attribute("Package Licence")
+    
 class IBinaryPackageName(Interface):
     """A binary package name"""
     name = Attribute("Binary Package Name")
@@ -521,6 +530,11 @@ class ISourcePackageRelease(Interface):
     def branches():
         """Return the list of branches in a source package release"""
 
+class IComponent(Interface):
+    name = Attribute("The Component Name")
+
+class ISection(Interface):
+    name = Attribute("The Section Name")
 
 class ISoyuzPerson(Interface):
     """A person"""
