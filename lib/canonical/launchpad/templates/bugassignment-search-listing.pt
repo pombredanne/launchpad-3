@@ -24,11 +24,11 @@
                         product_name assignment/product/name|nothing;
                         project_name assignment/product/project/name|nothing;
                         package_name assignment/sourcepackage/sourcepackagename/name|nothing;
-                        collection_name python:(product_name and 'productassignments') or 'packageassignments';
-                        ass_link string:$bugid/$collection_name/$assid/+edit;
+                        collection_name string:tasks;
+                        ass_link string:/malone/$collection_name/$assid/+edit;
                         ass_owner assignment/owner/name|nothing;
                         potential_assignee logged_in/displayname|nothing;
-                        status assignment/bugstatus/lp:BugAssignmentStatus;
+                        status assignment/status/lp:BugAssignmentStatus;
                         assignee assignment/assignee/name|python:'';
                         priority assignment/priority/lp:BugPriority;
                         severity assignment/severity/lp:BugSeverity;
@@ -73,31 +73,31 @@
           <td tal:condition="python:'actions' in listing_columns and logged_in">
             <a href=""
                tal:condition="product_name"
-               tal:attributes="onClick string:return accept('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Accepted&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=${logged_in/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
+               tal:attributes="onClick string:return accept('${bugid}/productassignments/${assignment/id}/+edit?field.status=Accepted&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=${logged_in/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
                 <small>accept</small>
             </a>
             <a href=""
                tal:condition="package_name"
-               tal:attributes="onClick string:return accept('${bugid}/packageassignments/${assignment/id}/+edit?field.bugstatus=Accepted&field.priority=$priority&field.severity=$severity&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=${logged_in/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
+               tal:attributes="onClick string:return accept('${bugid}/packageassignments/${assignment/id}/+edit?field.status=Accepted&field.priority=$priority&field.severity=$severity&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=${logged_in/name}&UPDATE_SUBMIT=Change', '$statusid', '$assigneeid', '$potential_assignee');">
                 <small>accept</small>
             </a>
             &nbsp;
             <a href=""
                tal:condition="product_name"
-               tal:attributes="onClick string:return reject('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Rejected&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
+               tal:attributes="onClick string:return reject('${bugid}/productassignments/${assignment/id}/+edit?field.status=Rejected&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
             </a>
             <a href=""
                tal:condition="package_name"
-               tal:attributes="onClick string:return reject('${bugid}/packageassignments/${assignment/id}/+edit?field.bugstatus=Rejected&field.priority=$priority&field.severity=$severity&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
+               tal:attributes="onClick string:return reject('${bugid}/packageassignments/${assignment/id}/+edit?field.status=Rejected&field.priority=$priority&field.severity=$severity&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>reject</small>
             </a>
             &nbsp;
             <a href=""
                tal:condition="product_name"
-               tal:attributes="onClick string:return fixed('${bugid}/productassignments/${assignment/id}/+edit?field.bugstatus=Fixed&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
+               tal:attributes="onClick string:return fixed('${bugid}/productassignments/${assignment/id}/+edit?field.status=Fixed&field.priority=$priority&field.severity=$severity&field.product=$product_name&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
             </a>
             <a href=""
                tal:condition="package_name"
-               tal:attributes="onClick string:return fixed('${bugid}/packageassignments/${assignment/id}/+edit?field.bugstatus=Fixed&field.priority=$priority&field.severity=$severity&field.bugstatus-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
+               tal:attributes="onClick string:return fixed('${bugid}/packageassignments/${assignment/id}/+edit?field.status=Fixed&field.priority=$priority&field.severity=$severity&field.status-empty-marker=1&field.priority-empty-marker=1&field.severity-empty-marker=1&field.binarypackagename=&field.assignee=$assignee&UPDATE_SUBMIT=Change', '$statusid');"><small>fixed</small>
             </a>
           </td>
       </span>

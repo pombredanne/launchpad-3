@@ -45,6 +45,13 @@
         name="htmlform"
         />
 
+    <adapter
+        for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.RequestFormatterAPI"
+        name="fmt"
+        />
+
     <!-- The next directive should be registered for 'int' only.
         However, there's a bug in adapter registration that stops
         this working.  To be fixed in ZopeX3 RSN.

@@ -129,14 +129,14 @@
 
     <!-- bug filing on products hidden at this new URL till its ready -->
     <browser:addform
-        name="+XXXfilebug"
+        name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
         label="Report Bug on Upstream Product"
-        fields="title description owner"
+        fields="title comment owner"
         class="canonical.launchpad.browser.ProductFileBugView"
         arguments=""
-        keyword_arguments="title description owner"
+        keyword_arguments="title comment owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/projects/$Project.name/$Product.name/+filebug">

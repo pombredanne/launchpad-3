@@ -15,17 +15,36 @@
 
 <div metal:fill-slot="main">
 
-    <div tal:content="view/editSubmit" />
+     <tal:dummy condition="view/editSubmit" />
 
-    <div tal:condition="not: view/submitted">
+        <h1>Upload a new PO file for <span tal:replace="context/language/englishname" /></h1>
 
-        <h1>Edit POFile Pluralforms</h1>
+        <div class="portalMessage"
+             tal:condition="view/status_message"
+             tal:content="structure view/status_message">Successful</div>
+        
+        <form action="+edit" method="POST" enctype="multipart/form-data">
 
         <p class="documentDescription">
-        Blah, blah, blah.
+        Here you can select a pofile to be imported into Rosetta. Just note
+        that it will have a delay of some minutes since you upload it and when
+        it appears in Rosetta.
+        </p>
+        
+        <fieldset>
+            <label>File: <input name="file" type="file" /></label>
+            <br />
+            <input name="UPLOAD" type="submit" value="Upload"/>
+        </fieldset>
+            
+        <h1>Edit the plural forms for this pofile</h1>
+
+        <p class="documentDescription">
+        This block lets you modify the plural form information for this PO
+        file.<br />
+        Please, don't change it if you don't know how it works.
         </p>
 
-        <form action="+edit" method="POST">
         <fieldset>
             Number of Pluralforms:
             <input type="text" name="pluralforms"
@@ -38,8 +57,6 @@
             <input type="submit" name="SUBMIT" value="Submit" />
         </fieldset>
         </form>
-
-    </div>
 
 </div>
 

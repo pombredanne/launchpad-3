@@ -24,6 +24,7 @@ from canonical.lp.dbschema import RosettaImportStatus
 from canonical.database.constants import DEFAULT, UTC_NOW
 
 from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
+from canonical.rosetta.pofile import POParser
 
 standardPOTemplateCopyright = 'Canonical Ltd'
 
@@ -82,13 +83,13 @@ class RosettaStats(object):
         # this object.
         return 0
 
-    def currentPercent(self, language=None):
-        try:
+    def currentPercentage(self, language=None):
+        if self.messageCount() > 0:
             percent = float(self.currentCount(language)) / self.messageCount()
             percent *= 100
-        except ZeroDivisionError:
+            percent = round(percent, 2)
+        else:
             percent = 0
-        percent = round(percent, 2)
         # We use float(str()) to prevent problems with some floating point
         # representations that could give us:
         # >>> x = 3.141592
@@ -102,13 +103,13 @@ class RosettaStats(object):
         # this object.
         return 0
 
-    def updatesPercent(self, language=None):
-        try:
+    def updatesPercentage(self, language=None):
+        if self.messageCount() > 0:
             percent = float(self.updatesCount(language)) / self.messageCount()
             percent *= 100
-        except ZeroDivisionError:
+            percent = round(percent, 2)
+        else:
             percent = 0
-        percent = round(percent, 2)
         return float(str(percent))
 
     def rosettaCount(self, language=None):
@@ -116,25 +117,25 @@ class RosettaStats(object):
         # this object.
         return 0
 
-    def rosettaPercent(self, language=None):
-        try:
+    def rosettaPercentage(self, language=None):
+        if self.messageCount() > 0:
             percent = float(self.rosettaCount(language)) / self.messageCount()
             percent *= 100
-        except ZeroDivisionError:
+            percent = round(percent, 2)
+        else:
             percent = 0
-        percent = round(percent, 2)
         return float(str(percent))
 
     def translatedCount(self, language=None):
         return self.currentCount(language) + self.rosettaCount(language)
 
-    def translatedPercent(self, language=None):
-        try:
+    def translatedPercentage(self, language=None):
+        if self.messageCount() > 0:
             percent = float(self.translatedCount(language)) / self.messageCount()
             percent *= 100
-        except ZeroDivisionError:
+            percent = round(percent, 2)
+        else:
             percent = 0
-        percent = round(percent, 2)
         return float(str(percent))
 
     def untranslatedCount(self, language=None):
@@ -145,15 +146,30 @@ class RosettaStats(object):
         else:
             return untranslated
 
-    def untranslatedPercent(self, language=None):
-        try:
+    def untranslatedPercentage(self, language=None):
+        if self.messageCount() > 0:
             percent = float(self.untranslatedCount(language)) / self.messageCount()
             percent *= 100
-        except ZeroDivisionError:
+            percent = round(percent, 2)
+        else:
             percent = 100
-        percent = round(percent, 2)
         return float(str(percent))
 
+    def nonUpdatesCount(self, language=None):
+        nonupdates = self.currentCount() - self.updatesCount()
+        if nonupdates < 0:
+            return 0
+        else:
+            return nonupdates
+
+    def nonUpdatesPercentage(self, language=None):
+        if self.messageCount() > 0:
+            percent = float(self.nonUpdatesCount(language)) / self.messageCount()
+            percent *= 100
+            percent = round(percent, 2)
+        else:
+            percent = 0
+        return float(str(percent))
 
 class POTemplate(SQLBase, RosettaStats):
     implements(IEditPOTemplate)
@@ -417,9 +433,8 @@ class POTemplate(SQLBase, RosettaStats):
     # Methods defined in IEditPOTemplate
 
     def expireAllMessages(self):
-        self._connection.query('UPDATE POTMsgSet SET sequence = 0'
-                               ' WHERE potemplate = %d'
-                               % self.id)
+        for msgset in self.currentMessageSets():
+            msgset.sequence = 0
 
     def getOrCreatePOFile(self, language_code, variant=None, owner=None):
         # see if one exists already
@@ -514,30 +529,40 @@ class POTemplate(SQLBase, RosettaStats):
         return self.createMessageSetFromMessageID(messageID)
 
     def doRawImport(self):
+        import logging
+        
         importer = TemplateImporter(self, self.rawimporter)
     
         file = StringIO.StringIO(base64.decodestring(self.rawfile))
     
         try:
             importer.doImport(file)
+
+            # The import has been done, we mark it that way.
+            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+
+            # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
+            # a race condition that prevents the statistics to be calculated
+            # correctly. DON'T copy this, ask Andrew first.
+            for object in SQLBase._connection._dm.objects:
+                object.sync()
+    
+            # We update the cached value that tells us the number of msgsets this
+            # .pot file has
+            self.messagecount = self.currentMessageSets().count()
+    
+            # And now, we should update the statistics for all po files this .pot
+            # file has because a number of msgsets could have change.
+            # XXX: Carlos Perello Marin 09/12/2004 We should handle this case
+            # better. The pofile don't get updated the currentcount updated...
+            for pofile in self.poFiles:
+                pofile.updateStatistics()
         except:
             # The import failed, we mark it as failed so we could review it
             # later in case it's a bug in our code.
             self.rawimportstatus = RosettaImportStatus.FAILED.value
-        else:
-            # The import has been done, we mark it that way.
-            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
-
-        # We update the cached value that tells us the number of msgsets this
-        # .pot file has
-        self.messagecount = self.currentMessageSets().count()
-
-        # And now, we should update the statistics for all po files this .pot
-        # file has because a number of msgsets could have change.
-        # XXX: Carlos Perello Marin 09/12/2004 We should handle this case
-        # better. The pofile don't get updated the currentcount updated...
-        for pofile in self.poFiles:
-            pofile.updateStatistics()
+            logging.warning('We got an error importing %s' , self.name,
+            exc_info = 1)
 
 
 class POTMsgSet(SQLBase):
@@ -925,9 +950,8 @@ class POFile(SQLBase, RosettaStats):
     # IEditPOFile
 
     def expireAllMessages(self):
-        self._connection.query(
-            '''UPDATE POMsgSet SET sequence = 0 WHERE pofile = %d'''
-            % self.id)
+        for msgset in self.currentMessageSets():
+            msgset.sequence = 0
 
     def updateStatistics(self, newImport=False):
         if newImport:
@@ -1036,19 +1060,97 @@ class POFile(SQLBase, RosettaStats):
             return None
 
     def doRawImport(self):
-        importer = POFileImporter(self, self.rawimporter)
+        import logging
 
-        file = StringIO.StringIO(base64.decodestring(self.rawfile))
+        if self.rawfile is None:
+            # We don't have anything to import.
+            return
+        
+        rawdata = base64.decodestring(self.rawfile)
+        
+        # We need to parse the file to get the last translator information so
+        # the translations are not assigned to the person who imports the
+        # file.
+        parser = POParser()
+
+        try:
+            parser.write(rawdata)
+            parser.finish()
+        except:
+            # We should not get any exception here because we checked the file
+            # before being imported, but this could help prevent programming
+            # errors.
+            return
+        
+        last_translator = parser.header['Last-Translator']
+
+        # XXX: Carlos Perello Marin 20/12/2004 All this code should be moved
+        # into person.py, most of it comes from gina.
+        
+        first_left_angle = last_translator.find("<")
+        first_right_angle = last_translator.find(">")
+        name = last_translator[:first_left_angle].replace(",","_")
+        email = last_translator[first_left_angle+1:first_right_angle]
+        name = name.strip()
+        email = email.strip()
+
+        if email == 'EMAIL@ADDRESS':
+            # We don't have a real account, thus we just use the import person
+            # as the owner.
+            person = self.rawimporter
+        else:
+            person_set = getUtility(IPersonSet)
+
+            person = person_set.getByEmail(email)
+
+            if person is None:
+                items = name.split()
+                if len(items) == 1:
+                    givenname = name
+                    familyname = ""
+                elif not items:
+                    # No name, just an email
+                    givenname = email.split("@")[0]
+                    familyname = ""
+                else:
+                    givenname = items[0]
+                    familyname = " ".join(items[1:])
+
+                # We create a new user without a password.
+                person = person_set.createPerson(name, givenname,
+                    familyname, None, email)
+
+                if person is None:
+                    # XXX: Carlos Perello Marin 20/12/2004 We have already
+                    # that person in the database, we should get it instead of
+                    # use the importer one...
+                    person = self.rawimporter
+
+        importer = POFileImporter(self, person)
     
         try:
-            importer.doImport(file)
-        except:
-            self.rawimportstatus = RosettaImportStatus.FAILED.value
-        else:
-            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+            file = StringIO.StringIO(rawdata)
 
-        # Now we update the statistics after this new import
-        self.updateStatistics(newImport=True)
+            importer.doImport(file)
+                
+            self.rawimportstatus = RosettaImportStatus.IMPORTED.value
+    
+            # XXX: Andrew Bennetts 17/12/2004: Really BIG AND UGLY fix to prevent
+            # a race condition that prevents the statistics to be calculated
+            # correctly. DON'T copy this, ask Andrew first.
+            for object in SQLBase._connection._dm.objects:
+                object.sync()
+            
+            # Now we update the statistics after this new import
+            self.updateStatistics(newImport=True)
+
+        except:
+            # The import failed, we mark it as failed so we could review it
+            # later in case it's a bug in our code.
+            self.rawimportstatus = RosettaImportStatus.FAILED.value
+            logging.warning(
+                'We got an error importing %s language for %s template' % (
+                    self.language.code, self.potemplate.name), exc_info = 1)
 
 
 class POMsgSet(SQLBase):
@@ -1137,14 +1239,11 @@ class POMsgSet(SQLBase):
                 if (new_translations[index] == '' or
                     new_translations[index] is None):
                     # Make all sightings inactive.
-
-                    self._connection.query(
-                        '''
-                            UPDATE POTranslationSighting SET active = FALSE
-                            WHERE
-                                pomsgset = %d AND
-                                pluralform = %d
-                        ''' % (self.id, index))
+                    sightings = POTranslationSighting.select(
+                        'pomsgset=%d AND pluralform = %d' % (
+                        self.id, index))
+                    for sighting in sightings:
+                        sighting.active = False
                     new_translations[index] = None
                     self.iscomplete = False
 
@@ -1263,14 +1362,12 @@ class POMsgSet(SQLBase):
 
         # Make all other sightings inactive.
 
-        self._connection.query(
-            '''
-            UPDATE POTranslationSighting SET active = FALSE
-            WHERE
-                pomsgset = %d AND
-                pluralform = %d AND
-                id <> %d
-            ''' % (self.id, pluralForm, sighting.id))
+        sightings = POTranslationSighting.select(
+            '''pomsgset=%d AND
+             pluralform = %d AND
+             id <> %d''' % (self.id, pluralForm, sighting.id))
+        for oldsighting in sightings:
+            oldsighting.active = False
 
         # Implicit set of iscomplete. If we have all translations, it's 
         # complete, if we lack a translation, it's not complete.
@@ -1291,8 +1388,7 @@ class POTranslationSighting(SQLBase):
         notNull=True)
     potranslation = ForeignKey(foreignKey='POTranslation',
         dbName='potranslation', notNull=True)
-#   license = ForeignKey(foreignKey='License', dbName='license', notNull=True)
-    license = IntCol(dbName='license', notNull=True)
+    license = IntCol(dbName='license', notNull=False, default=None)
     datefirstseen = DateTimeCol(dbName='datefirstseen', notNull=True)
     datelastactive = DateTimeCol(dbName='datelastactive', notNull=True)
     inlastrevision = BoolCol(dbName='inlastrevision', notNull=True)

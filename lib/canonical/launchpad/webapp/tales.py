@@ -77,6 +77,7 @@ class IRequestAPI(Interface):
 
     person = Attribute("The IPerson for the request's principal.")
 
+
 class RequestAPI:
     """Adapter from IApplicationRequest to IRequestAPI."""
     implements(IRequestAPI)
@@ -144,6 +145,40 @@ class DateTimeFormatterAPI:
             return "%s %s" % (self.date(), self.time())
 
 
+class RequestFormatterAPI:
+    """Launchpad fmt:... namespace, available for IBrowserApplicationRequest.
+    """
+
+    def __init__(self, request):
+        self.request = request
+
+    def breadcrumbs(self):
+        path_info = self.request.get('PATH_INFO')
+        last_path_info_segment = path_info.split('/')[-1]
+        proto_host_port = self.request.getApplicationURL()
+        clean_url = self.request.getURL()
+        clean_path = clean_url[len(proto_host_port):]
+        clean_path_split = clean_path.split('/')
+        last_clean_path_segment = clean_path_split[-1]
+        last_clean_path_index = len(clean_path_split) - 1
+        if last_clean_path_segment != last_path_info_segment:
+            clean_path = '/'.join(clean_path_split[:-1])
+        L = []
+        link = '/'
+        for index, segment in enumerate(clean_path.split('/')):
+            if not (segment.startswith('++vh++') or segment == '++'):
+                if not (index == last_clean_path_index
+                        and last_path_info_segment == last_clean_path_index):
+                    ##import pdb; pdb.set_trace()
+                    L.append('<a href="%s">%s</a>' %
+                        (self.request.URL[index], segment))
+                    L.append('<span class="breadcrumbSeparator">'
+                             ' &raquo; '
+                             '</span>')
+                    link += '/' + segment
+        return ''.join(L)
+
+
 class FormattersAPI:
     """Adapter from strings to HTML formatted text."""
 
@@ -168,6 +203,8 @@ class FormattersAPI:
         TODO: This should probably just live in the stylesheet if this
             CSS implementation is good enough.
         """
+        if not self._stringtoformat:
+            return self._stringtoformat
         return (
                 '<pre style="'
                 'white-space: -moz-pre-wrap; white-space: -o-pre-wrap; '

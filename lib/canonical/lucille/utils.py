@@ -74,7 +74,7 @@ def build_file_list(tagfile, is_dsc = False, default_component = "main" ):
 
 ##############################################################################
 
-import email.Header, encodings.ascii, encodings.utf_8, encodings.latin_1
+import email.Header
 
 def force_to_utf8(s):
     """Forces a string to UTF-8.  If the string isn't already UTF-8,
@@ -89,13 +89,17 @@ it's assumed to be ISO-8859-1."""
 def rfc2047_encode(s):
     """Encodes a (header) string per RFC2047 if necessary.  If the
 string is neither ASCII nor UTF-8, it's assumed to be ISO-8859-1."""
+    if not s:
+        return ''
     try:
-        encodings.ascii.Codec().decode(s)
+        s.decode('us-ascii')
+        #encodings.ascii.Codec().decode(s)
         return s
     except UnicodeError:
         pass
     try:
-        encodings.utf_8.Codec().decode(s)
+        s.decode('utf8')
+        #encodings.utf_8.Codec().decode(s)
         h = email.Header.Header(s, 'utf-8', 998)
         return str(h)
     except UnicodeError:

@@ -9,7 +9,7 @@ from zope.interface import implements
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
-from canonical.launchpad.interfaces import IMessage
+from canonical.launchpad.interfaces import IMessage, IMessageSet
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC
@@ -43,6 +43,15 @@ class Message(SQLBase):
             return self.title
         return 'Re: '+self.title
 
+
+class MessageSet:
+
+    implements(IMessageSet)
+
+    def get(self, rfc822msgid=None):
+        if not rfc822msgid:
+            raise KeyError, 'Need to search on at least an rfc822msgid'
+        return Message.selectBy(rfc822msgid=rfc822msgid)[0]
 
 
 def BugMessageFactory(context, **kw):

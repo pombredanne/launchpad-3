@@ -339,6 +339,16 @@ def test_parse_translation_form():
     False
     >>> x[1]['fuzzy']['es']
     True
+
+    Test with a language which contains a country code. This is a regression
+    test.
+
+    >>> x = parse_translation_form({
+    ... 'set_1_msgid' : 'foo',
+    ... 'set_1_translation_pt_BR_0' : 'bar',
+    ... })
+    >>> x[1]['translations']['pt_BR'][0]
+    'bar'
     '''
 
 def test_RosettaProjectView():
@@ -540,7 +550,7 @@ def test_TranslatePOTemplate_URLs():
     >>> request = DummyRequest()
     >>> t = TranslatePOTemplate(context, request)
 
-    >>> t._makeURL()
+    >>> t.URL()
     'http://this.is.a/fake/url'
 
     >>> t.beginningURL()
@@ -574,7 +584,7 @@ def test_TranslatePOTemplate_URLs():
     ...     count=43)
     >>> t = TranslatePOTemplate(context, request)
 
-    >>> t._makeURL()
+    >>> t.URL()
     'http://this.is.a/fake/url?count=43&languages=ca'
 
     >>> t.endURL()

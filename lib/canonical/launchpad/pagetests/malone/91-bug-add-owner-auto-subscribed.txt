@@ -8,9 +8,8 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-              <h5>cc:</h5>
+              <h5>submitted by:</h5>
               <ul class="people">
-                  <li>
-                    <a href="/malone/bugs/4/people/7/+edit">Foo Bar</a>
-                  </li>
+                  <li>Foo Bar</li>
+              </ul>
   ...

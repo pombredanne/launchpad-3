@@ -7,6 +7,8 @@
         <img src="/++resource++edit.gif">
         <a href="+edit">Edit Product</a><br />
         <img src="/++resource++edit.gif">
+        <a href="+review">Review Product</a><br />
+        <img src="/++resource++edit.gif">
         <a href="+addsources">Add RCS</a><br />
         <img src="/++resource++edit.gif">
         Add Package<br />

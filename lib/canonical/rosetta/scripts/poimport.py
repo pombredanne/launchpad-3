@@ -14,6 +14,8 @@ from canonical.rosetta.pofile_adapters import TemplateImporter, POFileImporter
 
 from canonical.lp.dbschema import RosettaImportStatus
 
+from canonical.rosetta.pofile import POParser
+
 stats_message = """
 Msgsets matched to the potemplate that have a non-fuzzy translation in
 the PO file when we last parsed it: %d
@@ -50,7 +52,6 @@ def get_template(product, name):
     return templates[0]
 
 class PODBBridge:
-
     def __init__(self):
         self._tm = canonical.lp.initZopeless()
 
@@ -67,25 +68,19 @@ class PODBBridge:
 
         fileData = fileHandle.read()
 
-        from canonical.rosetta.pofile import POParser
-
         parser = POParser()
         parser.write(fileData)
         parser.finish()
 
         if languageCode is None:
-            # We are importing a POTemplate.
+            # We are importing a PO template.
             poTemplate.rawfile = base64.encodestring(fileData)
             poTemplate.daterawimport = UTC_NOW
             poTemplate.rawimporter = person
             poTemplate.rawimportstatus = RosettaImportStatus.PENDING.value
         else:
-            # We are importing a POFile.
-            try:
-                poFile = poTemplate.getPOFileByLang(languageCode)
-            except KeyError:
-                poFile = poTemplate.newPOFile(languageCode, owner=person)
-
+            # We are importing a PO file.
+            poFile = poTemplate.getOrCreatePOFile(languageCode)
             poFile.rawfile = base64.encodestring(fileData)
             poFile.daterawimport = UTC_NOW
             poFile.rawimporter = person
@@ -128,9 +123,11 @@ def parse_options():
 
 def main(owner, product, potemplate, language, update_stats_only,
         filename, noop):
+    print "Connecting to database..."
+
+    bridge = PODBBridge()
+
     if update_stats_only:
-        print "Connecting to database..."
-        bridge = PODBBridge()
         try:
             print "Updating %s pofile for '%s'..." % (potemplate, language)
             bridge.update_stats(product, potemplate, language)
@@ -147,9 +144,6 @@ def main(owner, product, potemplate, language, update_stats_only,
         if filename is None:
             raise RuntimeError("No filename specified.")
 
-        print "Connecting to database..."
-
-        bridge = PODBBridge()
         in_f = file(filename, 'rU')
         person = Person.get(int(owner))
 

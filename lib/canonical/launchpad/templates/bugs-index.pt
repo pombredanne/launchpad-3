@@ -79,7 +79,7 @@
                         product_name assignment/product/name|nothing;
                         package_name assignment/sourcepackagename/name|nothing;
                         collection_name string:tasks;
-                        ass_link string:$bugid/$collection_name/$assid/+edit;
+                        ass_link string:/malone/$collection_name/$assid/+edit;
                         ass_owner assignment/owner/name|nothing;
                         potential_assignee request/lp:person/displayname|nothing;
                         status assignment/status/lp:BugAssignmentStatus;
@@ -97,9 +97,10 @@
               tal:attributes="onclick string:window.location='${ass_link}';">-</td>
           <td tal:content="python:package_name and package_name or '-'"
               tal:attributes="onclick string:window.location='${ass_link}';">-</td>
-          <td tal:attributes="onclick string:window.location='${ass_link}';"
-              tal:content="assignment/bug/title">
-              title
+          <td tal:attributes="onclick string:window.location='${ass_link}';">
+              <a href="#" tal:attributes="href assignment/bug/id" tal:content="assignment/bug/title">
+                title
+              </a>
           </td>
           <td tal:content="status"
               tal:attributes="onclick string:window.location='${ass_link}';
@@ -164,7 +165,22 @@
       </td>
     </tr>
   </table>
-  <input type="button" value="Submit a Bug" onclick="window.location='/malone/bugs/+new'" />
+  <a href="+product"
+     style="font-size: 85%; display: inline; clear: both; text-decoration: none;"
+     title="File a bug on a product">
+     <img src="/++resource++add.gif" alt="+" />
+      File a bug on a product
+  </a><br />
+  <a tal:replace="nothing"
+     href="+package"
+     style="font-size: 85%; display: inline; clear: both; text-decoration: none;"
+     title="File a bug on a package">
+     <!-- XXX: Brad Bollenbach, 2004-12-16: Put this back in when we're confident in
+     package adding -->
+     <img src="/++resource++add.gif" alt="+" />
+      File a bug on a package
+  </a>
+
 
   <tal:x condition="not:view/advanced">
       <input type="hidden" name="status" value="10" />

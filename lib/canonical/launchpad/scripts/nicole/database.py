@@ -2,7 +2,24 @@ import re
 from pyPgSQL import PgSQL
 from string import split, join
 
-from nickname import generate_nick
+# LaunchPad Dependencies
+from canonical.foaf.nickname import generate_nick
+from canonical.lp.encoding import guess as ensure_unicode
+
+def data_sanitizer(data):    
+    if not data:
+        return data
+    try:
+        # check that this is unicode data
+        data.decode("utf-8").encode("utf-8")
+        return data
+    except UnicodeError:
+        # check that this is latin-1 data
+        s = data.decode("latin-1").encode("utf-8")
+        s.decode("utf-8")
+        return s   
+    #zope facility that doesn't work very well
+    #return ensure_unicode(data)
 
 class SQLThing:
     def __init__(self, dbname):
@@ -14,17 +31,6 @@ class SQLThing:
     
     def close(self):
         return self.db.close()
-
-    def ensure_string_format(self, name):
-        try:
-            # check that this is unicode data
-            name.decode("utf-8").encode("utf-8")
-            return name
-        except UnicodeError:
-            # check that this is latin-1 data
-            s = name.decode("latin-1").encode("utf-8")
-            s.decode("utf-8")
-            return s
 
     def _get_dicts(self, cursor):
         names = [x[0] for x in cursor.description]
@@ -64,10 +70,6 @@ class SQLThing:
         return cursor
 
     def _insert(self, table, data):
-        data = dict(data)
-        for key in data:
-            if data[key] is None:
-                del data[key]
         keys = data.keys()
         query = "INSERT INTO %s (%s) VALUES (%s)" \
                  % (table, ",".join(keys), ",".join(["%s"] * len(keys)))
@@ -94,8 +96,11 @@ class SQLThing:
         except:
             raise Error, "Bad things happened, data was %s" % data
 
-class FitData(SQLThing):
-    pname = None
+### XXX:cprov
+# This class needs a lot of Love, it is fitting and cleaning data
+# for the DB backend classes  
+class FitData(object):
+    pdisplayname = None
     pemail = None
     name = None
     displayname = None
@@ -117,44 +122,34 @@ class FitData(SQLThing):
         ## strange shit with wrong encode keys
         ## multiple devels and so
         try:
-            ## XXX:(multiple+owner) cprov
-            ## We don't support multiple owners, so, use the first
-            self.pname = data['devels'].keys()[0]
-            self.pemail = data['devels'].values()[0]
-        except:
-            print '@ Exception on Owner Field !!! '
-            try:
-                print '@\tDEBUG:', self.pname
-                print '@\tDEBUG:', self.pemail
-            except:
-                print '@\tDEBUG: No Devel'
- 
+            self.pdisplayname = data_sanitizer(data['devels'].keys()[0])
+            self.pemail = data_sanitizer(data['devels'].values()[0])
+        except IndexError:
+            print '@\tNo Devel'
+            
         ## both have project
-        self.name = self.ensure_string_format(data['product'])
+        self.name = data_sanitizer(data['product'])
 
         ## only SF has projectname
-        try:
-            self.displayname = self.ensure_string_format(data['productname'])
-            self.title = self.ensure_string_format(data['productname'])
-        except:
+        if 'productaname' in data.keys():
+            self.displayname = data_sanitizer(data['productname'])
+            self.title = data_sanitizer(data['productname'])
+        else:
             ## try to improve it
-            self.displayname = self.ensure_string_format(data['product'])
-            self.title = self.ensure_string_format(data['product'])
+            self.displayname = data_sanitizer(data['product'])
+            self.title = data_sanitizer(data['product'])
 
         ## both have shortdesc        
-        try:
-            self.shortdesc = self.ensure_string_format(data['shortdesc'])
-        except:
-            self.shortdesc = self.ensure_string_format(data['description']).split(".")[0]
+        if 'shortdesc' in data.keys():
+            self.shortdesc = data_sanitizer(data['shortdesc'])
+        else:
+            self.shortdesc = data_sanitizer(data['description']).split(".")[0]
 
         ## both have description
-        self.description = self.ensure_string_format(data['description'])
+        self.description = data_sanitizer(data['description'])
 
         ## both have homepage 
-        try:
-            self.homepage = self.ensure_string_format(data['homepage'])
-        except:
-            self.homepage = None
+        self.homepage = data_sanitizer(data['homepage'])
 
         ## support several plangs
         try:
@@ -163,29 +158,26 @@ class FitData(SQLThing):
             for plang in plang_list:
                 temp_plang += ' ' + plang  
 
-            plang = self.ensure_string_format(temp_plang)
+            plang = data_sanitizer(temp_plang)
         except:
             plang = None
 
-        try:
-            screenshot = self.ensure_string_format(data['screenshot'])
-        except:
-            screenshot = None
+        screenshot = data_sanitizer(data['screenshot'])
 
         ## we cannot support several lists
         try:
-            listurl = self.ensure_string_format(data['list'][0])
+            listurl = data_sanitizer(data['list'][0])
         except:
             listurl = None
     
-        try:
-            self.sourceforgeproject = self.ensure_string_format(data['sf'])
-        except:
+        if 'sf' in data.keys():
+            self.sourceforgeproject = data_sanitizer(data['sf'])
+        else:
             self.sourceforgeproject = None
 
-        try:
-            self.freshmeatproject = self.ensure_string_format(data['fm'])
-        except:
+        if 'fm' in data.keys():
+            self.freshmeatproject = data_sanitizer(data['fm'])
+        else:
             self.freshmeatproject = None
  
  
@@ -221,8 +213,15 @@ class Doap(SQLThing):
 
     def createPerson(self, name, email):
         print "@\tCreating Person %s <%s>" % (name, email)
-        name = self.ensure_string_format(name)
+        name = data_sanitizer(name)
 
+        #XXX: cprov
+        # It shouldn't be here
+        email = email.replace("__dash__", "")
+        email = email.replace("|dash|", "")
+        email = email.replace("[dash]", "")        
+        email = email.replace(" ", "")
+        
         items = name.split()
         if len(items) == 1:
             givenname = name
@@ -249,22 +248,12 @@ class Doap(SQLThing):
         }
         self._insert("emailaddress", data)
 
-    def ensurePerson(self, name, email):
+    def ensurePerson(self, displayname, email):
         person = self.getPersonByEmail(email)
         if person:
             return person
-        # XXX this check isn't exactly right -- if there are name
-        # collisions, we just add addresses because there is no way to
-        # validate them. Bad bad kiko.
-        person = self.getPersonByDisplayName(name)
-
-        if person:
-            print "@\tAdding address <%s> for %s" % (email, name)
-            self.createEmail(people[0], email)
-            return person
-
-        self.createPeople(name, email)
-
+        # we will create a new person
+        self.createPerson(displayname, email)
         return self.getPersonByEmail(email)
 
     def getProductByName(self, name):
@@ -300,18 +289,23 @@ class Doap(SQLThing):
         # autoupdate field is true
         self._update("product", dbdata, ("name='%s' and autoupdate=True"
                                          % product_name))
-        print '@\tProduct %s Updated' % fit.displayname
 
 
     def ensureProduct(self, data, product_name, source):            
         if self.getProductByName(data['product']):
-            print '@\tUpdate Already Added Project'        
+            print '@\tUpdating...'        
             self.updateProduct(data, product_name)
             return 
 
         fit = FitData(data)
-
-        owner = self.ensurePerson(fit.pname, fit.pemail)[0]
+        #XXX cprov 
+        # Problems with wierd developers name and/or email
+        try:
+            owner = self.ensurePerson(fit.pdisplayname, fit.pemail)[0]
+        except:
+            print "@\t Mark wins a Product "
+            owner = 1
+            
         datecreated = 'now()'
 
         ##XXX: (product+lastdoap) cprov 20041015
@@ -333,13 +327,13 @@ class Doap(SQLThing):
                   }
                                           
         self._insert("product", dbdata)
-        print '@\tProduct %s Created' % fit.displayname
+        print '@\tProduct %s created' % fit.displayname
 
 
         ## productrole
         product = self.getProductByName(fit.name)[0]
         ##XXX:  Hardcoded Role too Member
-        role = 2 
+        role = 1
 
         dbdata = { "person":  owner,
                    "product": product,
@@ -357,49 +351,26 @@ class Doap(SQLThing):
         ##XXX: (series+diaplyname) cprov 20041012
         ## Displayname composed by projectname-serie as
         ## apache-1.2 or Mozilla-head
-        displayname = fit.displayname + '-' + name
+        displayname = fit.displayname + ' Head'
+
+        shortdesc = """This is the primary HEAD branch of the mainline
+        revision control system for %s. Releases on this
+        series are usually development milestones and test
+        releases.""" % fit.displayname
         
         dbdata = {"product":     product,
                   "name":        name,
-                  "shortdesc":   fit.shortdesc,
+                  "shortdesc":   shortdesc,
                   "displayname": displayname,
                   }
 
         self._insert("productseries", dbdata)
         print '@\tProduct Series %s Created' % displayname
 
-        ## productreleases
-        ## XXX: (productrelease+version) cprov 20041013
-        ## where does it comes from ?? using hardcoded
-        version = '1.0'
-
-        ## XXX: (productrelease+changelog) cprov 20041013
-        ## How to compose the changelog field ?
-        changelog = 'Created by Nicole Script'
-        ## XXX:  (productrelease+datereleased) cprov 20041013
-        ## Datereleased should be acquired from data, let's insert
-        ## now as quick&dirty strategy
-        datereleased = 'now()'
-
-        ## isolate productseries id
-        productseries = self.getProductSeries(product, displayname)[0]
-        
-        dbdata = {"product":       product,
-                  "datereleased":  datereleased,
-                  "version":       version,
-                  "title":         fit.title,
-                  "shortdesc":     fit.shortdesc,
-                  "description":   fit.description,
-                  "changelog":     changelog, 
-                  "owner":         owner,
-                  "productseries": productseries
-                  }
-
-        self._insert("productrelease", dbdata)
-        print '@\tProduct Release %s Created' % fit.title
-
-
         ## product/source packaging
+        if not source:
+            return 
+        
         sourcepackage = self.getSourcePackage(source)
 
         if sourcepackage:

@@ -157,7 +157,9 @@ class SSHADigestEncryptor:
             return False
         salt = ref[20:]
         v = binascii.b2a_base64(sha.new(plaintext + salt).digest() + salt)[:-1]
-        return (v.strip() == encrypted.strip())
+        pw1 = (v or '').strip()
+        pw2 = (encrypted or '').strip()
+        return pw1 == pw2
 
 class LaunchpadLoginSource:
     """A login source that uses the launchpad SQL database to look up
@@ -217,5 +219,7 @@ class LaunchpadPrincipal:
 
     def validate(self, pw):
         encryptor = getUtility(IPasswordEncryptor)
-        return encryptor.validate(pw.strip(), self.__pwd.strip())
+        pw1 = (pw or '').strip()
+        pw2 = (self.__pwd or '').strip()
+        return encryptor.validate(pw1, pw2)
 

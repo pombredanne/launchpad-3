@@ -31,7 +31,9 @@ def mark_as_sourcepackage_task(task):
     mark_task(task, ISourcePackageBugTask)
 
 class BugTaskSet:
+
     implements(IBugTaskSet)
+
     table = BugTask
 
     def __init__(self, bug=None):
@@ -65,10 +67,10 @@ class BugTaskSet:
         return '.'
 
 def ProductBugAssignmentFactory(context, **kw):
-    return BugTask(bug=context.context.bug, **kw)
+    return BugTask(bugID=context.context.bug, **kw)
 
 def SourcePackageBugAssignmentFactory(context, **kw):
-    return BugTask(bug=context.context.bug, **kw)
+    return BugTask(bugID=context.context.bug, **kw)
 
 # REPORTS
 class BugsAssignedReport(object):

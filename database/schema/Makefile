@@ -1,5 +1,8 @@
 # Quick hack makefile to (re)create the Launchpad database.
 # One day the guts of this will be migrated to Python
+#
+
+PYTHON=python2.3
 
 # The development database
 DBNAME=launchpad_dev
@@ -17,17 +20,17 @@ test: create
 	@ echo "* Loading base database schema"
 	@ psql -d ${TEST_DBNAME} -f launchpad-6-00-0.sql | grep : | cat
 	@ echo "* Installing tsearch2 into ts2 schema"
-	@ env LP_DBNAME=${TEST_DBNAME} python fti.py --setup-only
+	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py --setup-only
 	@ echo "* Patching the database schema"
 	@ ls -1 patch*.sql |sort| xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
 	@ echo "* Setting up full text indexes"
-	@ env LP_DBNAME=${TEST_DBNAME} python fti.py
+	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
 	@ echo "* Loading language data"
 	@ psql -d ${TEST_DBNAME} -f ../languages.sql | grep : | cat
 	@ echo "* Loading sample data"
 	@ psql -d ${TEST_DBNAME} -f ../sampledata/current.sql | grep : | cat
 	@ echo "* Setting up full text indexes"
-	@ env LP_DBNAME=${TEST_DBNAME} python fti.py
+	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
 	@ echo "* Adding comments"
 	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
 	@ echo "* Vacuuming"
@@ -37,15 +40,15 @@ empty: create
 	@ echo "* Loading base database schema"
 	@ psql -d ${TEST_DBNAME} -f launchpad-6-00-0.sql | grep : | cat
 	@ echo "* Installing tsearch2 into ts2 schema"
-	@ env LP_DBNAME=${TEST_DBNAME} python fti.py --setup-only
+	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py --setup-only
 	@ echo "* Patching the database schema"
 	@ ls -1 patch*.sql |sort| xargs -n 1 psql -d ${TEST_DBNAME} -q -f | cat
 	@ echo "* Setting up full text indexes"
-	@ env LP_DBNAME=${TEST_DBNAME} python fti.py
+	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
 	@ echo "* Loading language data"
 	@ psql -d ${TEST_DBNAME} -f ../languages.sql | grep : | cat
 	@ echo "* Setting up full text indexes"
-	@ env LP_DBNAME=${TEST_DBNAME} python fti.py
+	@ env LP_DBNAME=${TEST_DBNAME} ${PYTHON} fti.py
 	@ echo "* Adding comments"
 	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
 	@ echo "* Vacuuming"

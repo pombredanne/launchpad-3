@@ -79,14 +79,12 @@ def notify_bug_added(bug_add_form, event):
 
     msg = """\
 Title: %(title)s
-Short Description: %(short_desc)s
-Description: %(description)s
+Comment: %(comment)s
 Source Package: %(source_package)s
 Product: %(product)s
 Submitted By: %(owner)s
 """ % {'title' : bug_add_form.title,
-       'short_desc' : bug_add_form.shortdesc,
-       'description' : bug_add_form.description,
+       'comment' : bug_add_form.comment,
        'source_package' : spname,
        'product' : pname,
        'owner' : owner}

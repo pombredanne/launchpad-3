@@ -30,6 +30,12 @@
 
     <browser:suburl
         for="canonical.malone.IMaloneApplication"
+        utility="canonical.launchpad.interfaces.IBugTaskSet"
+        permission="zope.Public"
+        name="tasks" />
+
+    <browser:suburl
+        for="canonical.malone.IMaloneApplication"
         utility="canonical.launchpad.interfaces.IProjectSet"
         permission="zope.Public"
         name="projects" />

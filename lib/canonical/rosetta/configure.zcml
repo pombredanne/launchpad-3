@@ -61,13 +61,6 @@
             lp:url="Rosetta/legal" />
     </browser:pages>
 
-    <browser:page
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        permission="launchpad.AnyPerson"
-        name="maintainer"
-        template="../launchpad/templates/dashboard-maintainer.pt"
-        lp:url="Rosetta/maintainer" />
-
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
         permission="launchpad.AnyPerson"

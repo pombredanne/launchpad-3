@@ -133,6 +133,9 @@ class IPersonSet(Interface):
         """Returns the list of persons that have an active contribution for a
         concrete POFile."""
 
+    def createPerson(displayname, givenname, familyname, password, email):
+        """Creates a new person."""
+
 
 class IEmailAddress(Interface):
     """The object that stores the IPerson's emails."""
