@@ -38,8 +38,14 @@ class POExport:
                 # the pofile doesn't have that msgid; include the
                 # one from the template
                 pomsgset = None
-            messages.append(MessageProxy(potmsgset=potmsgset, pomsgset=pomsgset))
+                fuzzy = False
+            else:
+                fuzzy = True
+            messages.append(
+                MessageProxy(potmsgset=potmsgset, pomsgset=pomsgset, fuzzy=fuzzy))
         # export obsolete messages
+        # XXX: Carlos Perello Marin 08/11/2004: Should we mark as fuzzy also
+        # the incompleted and obsolete msgsets?
         for pomsgset in poFile.messageSetsNotInTemplate():
             potmsgset = pomsgset.potmsgset
             messages.append(MessageProxy(potmsgset=potmsgset, pomsgset=pomsgset))

@@ -897,6 +897,13 @@ class POMsgSet(SQLBase):
                 id <> %d
             ''' % (self.id, pluralForm, sighting.id))
 
+        # Implicit set of iscomplete. If we have all translations, it's 
+        # complete, if we lack a translation, it's not complete.
+        if None in self.translations():
+            self.iscomplete = False
+        else:
+            self.iscomplete = True
+
         return sighting
 
 
