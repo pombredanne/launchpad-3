@@ -72,6 +72,10 @@ if __name__ == "__main__":
     # get the DB abstractors
     lp = Launchpad(LPDB)
     kdb = Katie(KTDB)
+
+    # Comment this out if you need to disable the librarian integration
+    # for a given run of gina. Note that without the librarian; lucille
+    # will be unable to publish any files imported into the database
     attachLibrarian( LIBRHOST, LIBRPORT )
 
     keyrings = ""
