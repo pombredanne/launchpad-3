@@ -16,12 +16,7 @@ class ImportDaemon:
         self._tm = canonical.lp.initZopeless()
 
     def commit(self):
-        try:
-            self._tm.commit()
-        except:
-            # We don't want to die, so we ignore any exception.
-            logging.warning('We got an error committing the transaction',
-                exc_info = 1)
+        self._tm.commit()
 
     def nextImport(self):
         productSet = ProductSet()
@@ -41,16 +36,20 @@ class ImportDaemon:
         from canonical.database.sqlbase import SQLBase
         while True:
             found_any = False
-            for object in self.nextImport():
-                found_any = True
-                # object could be a POTemplate or a POFile but both objects
-                # implement the doRawImport method so we don't need to care
-                # about it here.
-                object.doRawImport()
+            try:
+                for object in self.nextImport():
+                    found_any = True
+                    # object could be a POTemplate or a POFile but both
+                    # objects implement the doRawImport method so we don't
+                    # need to care about it here.
+                    object.doRawImport()
 
-                # As soon as the import is done, we commit the transaction so
-                # it's not lost.
-                self.commit()
+                    # As soon as the import is done, we commit the transaction
+                    # so it's not lost.
+                    self.commit()
+            except:
+                # We don't want to die, so we ignore any exception.
+                logging.warning('We got an unexpected exception', exc_info = 1)
             if not found_any:
                 time.sleep(60)
                 # XXX: force a rollback/begin pair here to reset the
