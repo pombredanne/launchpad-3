@@ -775,13 +775,10 @@ class RosettaPOMessageSet(SQLBase):
             raise RuntimeError(
                 "This method cannot be used with PO template message sets!")
 
-        # Find the number of plural forms.
-
-        if self.poFile.pluralForms is None:
+        pluralforms = self.pluralForms()
+        if pluralforms is None:
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")
-        else:
-            pluralforms = self.poFile.pluralForms
 
         results = list(RosettaPOTranslationSighting.select(
             'pomsgset = %d AND active = TRUE' % self.id,
@@ -818,15 +815,15 @@ class RosettaPOMessageSet(SQLBase):
             pofile = None
             pluralforms = languages[language].pluralForms
 
+        if self.messageIDs().count() == 1:
+            pluralforms = 1
+
         if pluralforms == None:
             raise RuntimeError(
                 "Don't know the number of plural forms for this PO file!")
 
         if pofile is None:
             return [None] * pluralforms
-
-        # XXX: We might want to look the number of plural forms up in the
-        # language if the PO file exists but has .pluralForms == None.
 
         # Find the sibling message set.
 

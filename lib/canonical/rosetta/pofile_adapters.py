@@ -174,7 +174,7 @@ class MessageProxy(POMessage):
             return None
         translations = list(self._msgset.translations())
         if len(translations) == 1:
-            return translations[0].translation
+            return translations[0]
     def _set_msgstr(self, value):
         # let's avoid duplication of code
         self._translations[0] = value
