@@ -5,8 +5,8 @@ from datetime import datetime, date, timedelta
 
 from zope.interface import implements
 from canonical.launchpad.interfaces import ICalendarView, ICalendarWeekView
-#from canonical.launchpad.interfaces import ICalendarDayView, ICalendarMonthView
-#from canonical.launchpad.interfaces import ICalendarYearView
+from canonical.launchpad.interfaces import ICalendarDayView, ICalendarMonthView
+from canonical.launchpad.interfaces import ICalendarYearView
 
 # XXXX we don't actually have any of these view classes yet ...
 _year_pat  = re.compile(r'^(\d\d\d\d)$')
@@ -32,7 +32,7 @@ def traverseCalendar(calendar, request, name):
     if match:
         return DayView(calendar,
                        year=int(match.group(1)),
-                       week=int(match.group(2)),
+                       month=int(match.group(2)),
                        day=int(match.group(3)))
 
 def prev_month(date):
@@ -138,6 +138,36 @@ class CalendarView(object):
         self.calendar = calendar
         self.datestring = datestring
 
+    def _setViewURLs(self, date):
+        """Computes the URLs used to switch calendar views."""
+        self.dayViewURL = '../%04d-%02d-%02d' % (date.year,
+                                                 date.month,
+                                                 date.day)
+        (isoyear, isoweek, isoday) = date.isocalendar()
+        self.weekViewURL = '../%04d-W%02d' % (isoyear, isoweek)
+        self.monthViewURL = '../%04d-%02d' % (date.year, date.month)
+        self.yearViewURL = '../%04d' % date.year
+
+class DayView(CalendarView):
+    """A day view of the calendar."""
+    implements(ICalendarDayView)
+
+    def __init__(self, calendar, year, month, day):
+        self.day = date(year, month, day)
+        CalendarView.__init__(self, calendar,
+                              '%04d-%02d-%02d' % (year, month, day))
+
+        # navigation links
+        yesterday = self.day - timedelta(days=1)
+        self.prevURL = '../%04d-%02d-%02d' % (yesterday.year,
+                                              yesterday.month,
+                                              yesterday.day)
+        tomorrow = self.day + timedelta(days=1)
+        self.nextURL = '../%04d-%02d-%02d' % (tomorrow.year,
+                                              tomorrow.month,
+                                              tomorrow.day)
+        self._setViewURLs(self.day)
+
 class WeekView(CalendarView):
     """A week view of the calendar."""
     implements(ICalendarWeekView)
@@ -155,11 +185,41 @@ class WeekView(CalendarView):
         (isoyear, isoweek, isoday) = (self.bounds[1] + timedelta(days=1)).isocalendar()
         self.nextURL = '../%04d-W%02d' % (isoyear, isoweek)
 
-        self.dayViewURL = '../%04d-%02d-%02d' % (self.bounds[0].year,
-                                              self.bounds[0].month,
-                                              self.bounds[0].day)
-        (isoyear, isoweek, isoday) = self.bounds[0].isocalendar()
-        self.weekViewURL = '../%04d-W%02d' % (isoyear, isoweek)
-        self.monthViewURL = '../%04d-%02d' % (self.bounds[0].year,
-                                              self.bounds[0].month)
-        self.yearViewURL = '../%04d' % self.bounds[0].year
+        self._setViewURLs(self.bounds[0])
+
+class MonthView(CalendarView):
+    """A month view of the calendar."""
+    implements(ICalendarMonthView)
+
+    def __init__(self, calendar, year, month):
+        assert 1 <= month <= 12, 'invalid month number'
+        CalendarView.__init__(self, calendar, '%04d-%02d' % (year, month))
+        self.year = year
+        self.month = month
+        start = date(year, month, 1)
+        self.bounds = [start, next_month(start) - timedelta(days=1)]
+
+        # navigation links
+        prev = prev_month(start)
+        self.prevURL = '../%04d-%02d' % (prev.year, prev.month)
+        next = next_month(start)
+        self.nextURL = '../%04d-%02d' % (next.year, next.month)
+
+        self._setViewURLs(start)
+
+class YearView(CalendarView):
+    """A month view of the calendar."""
+    implements(ICalendarYearView)
+
+    def __init__(self, calendar, year):
+        CalendarView.__init__(self, calendar, '%04d' % year)
+        self.year = year
+        start = date(year, 1, 1)
+        end = date(year+1, 1, 1) - timedelta(days=1)
+        self.bounds = [start, end]
+
+        # navigation links
+        self.prevURL = '../%04d' % (year - 1)
+        self.nextURL = '../%04d' % (year + 1)
+
+        self._setViewURLs(start)

@@ -80,8 +80,12 @@ class ICalendarView(Interface):
 class ICalendarDayView(ICalendarView):
     """A day view of a calendar."""
 
-    pass
-
 class ICalendarWeekView(ICalendarView):
     """A week view of a calendar."""
     
+class ICalendarMonthView(ICalendarView):
+    """A month view of a calendar."""
+
+class ICalendarYearView(ICalendarView):
+    """A year view of a calendar."""
+

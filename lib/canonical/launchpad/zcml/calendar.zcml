@@ -42,6 +42,22 @@
       for="schoolbell.interfaces.ICalendar"
       function="canonical.launchpad.browser.traverseCalendar" />
 
+  <content class="canonical.launchpad.browser.DayView">
+    <allow interface="canonical.launchpad.interfaces.ICalendarDayView" />
+  </content>
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.ICalendarDayView"
+      name="+index" />
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ICalendarDayView"
+      permission="zope.Public">
+    <browser:page
+        template="../templates/calendar-view-day.pt"
+        name="+index" />
+  </browser:pages>
+
   <content class="canonical.launchpad.browser.WeekView">
     <allow interface="canonical.launchpad.interfaces.ICalendarWeekView" />
   </content>
@@ -55,6 +71,38 @@
       permission="zope.Public">
     <browser:page
         template="../templates/calendar-view-week.pt"
+        name="+index" />
+  </browser:pages>
+
+  <content class="canonical.launchpad.browser.MonthView">
+    <allow interface="canonical.launchpad.interfaces.ICalendarMonthView" />
+  </content>
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.ICalendarMonthView"
+      name="+index" />
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ICalendarMonthView"
+      permission="zope.Public">
+    <browser:page
+        template="../templates/calendar-view-month.pt"
+        name="+index" />
+  </browser:pages>
+
+  <content class="canonical.launchpad.browser.YearView">
+    <allow interface="canonical.launchpad.interfaces.ICalendarYearView" />
+  </content>
+
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.ICalendarYearView"
+      name="+index" />
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.ICalendarYearView"
+      permission="zope.Public">
+    <browser:page
+        template="../templates/calendar-view-year.pt"
         name="+index" />
   </browser:pages>
 

@@ -1,0 +1,49 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xml:lang="en" lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+  <head>
+    <title metal:fill-slot="title">
+      <span tal:replace="context/calendar/title">Calendar Title</span> -
+      <span tal:replace="context/datestring">Time</span>
+    </title>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+  </head>
+
+  <body>
+
+    <div metal:fill-slot="main">
+      <div id="content" class="documentEditable">
+        <ul class="contentViews">
+          <li id="contentview-day" class="selected">
+            <a tal:attributes="href context/dayViewURL">Day</a>
+          </li>
+          <li id="contentview-week">
+            <a tal:attributes="href context/weekViewURL">Week</a>
+          </li>
+          <li id="contentview-month">
+            <a tal:attributes="href context/monthViewURL">Month</a>
+          </li>
+          <li id="contentview-year">
+            <a tal:attributes="href context/yearViewURL">Year</a>
+          </li>
+        </ul>
+        <div class="documentContent">
+          <h1>
+            <span tal:replace="context/calendar/title">Calendar Title</span> -
+            <span tal:replace="context/datestring">Time</span>
+          </h1>
+
+
+          <a tal:attributes="href context/prevURL">&lt;- Previous</a>
+          <a tal:attributes="href context/nextURL">Next -&gt;</a>
+
+
+          <p>Day View</p>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>
