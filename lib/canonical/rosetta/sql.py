@@ -4,6 +4,7 @@ from canonical.database.sqlbase import SQLBase, quote
 
 import canonical.rosetta.interfaces as interfaces
 from canonical.database.doap import IProject, IProjects
+from canonical.database.constants import nowUTC
 
 from sqlobject import ForeignKey, MultipleJoin, RelatedJoin, IntCol, \
     BoolCol, StringCol, DateTimeCol, SQLObjectNotFound
@@ -138,8 +139,8 @@ def createMessageIDSighting(messageSet, messageID):
     RosettaPOMessageIDSighting(
         poMessageSet=messageSet,
         poMessageID_=messageID,
-        dateFirstSeen="NOW",
-        dateLastSeen="NOW",
+        dateFirstSeen=nowUTC,
+        dateLastSeen=nowUTC,
         inLastRevision=True,
         pluralForm=0)
 
@@ -391,7 +392,7 @@ class RosettaPOTemplate(SQLBase):
                              updatesCount=0,
                              rosettaCount=0,
                              owner=person,
-                             lastParsed="NOW",
+                             lastParsed=nowUTC,
                              pluralForms=data['nplurals'],
                              variant=variant)
 
@@ -795,15 +796,15 @@ class RosettaPOMessageSet(SQLBase):
 
             existing = existing[0]
             # XXX: Do we always want to set inLastRevision to True?
-            existing.set(dateLastSeen = "NOW", inLastRevision = True)
+            existing.set(dateLastSeen = nowUTC, inLastRevision = True)
 
             return existing
 
         return RosettaPOMessageIDSighting(
             poMessageSet=self,
             poMessageID_=messageID,
-            dateFirstSeen="NOW",
-            dateLastSeen="NOW",
+            dateFirstSeen=nowUTC,
+            dateLastSeen=nowUTC,
             inLastRevision=True,
             pluralForm=pluralForm)
 
@@ -841,7 +842,7 @@ class RosettaPOMessageSet(SQLBase):
 
             sighting = results[0]
             sighting.set(
-                dateLastActive = "NOW",
+                dateLastActive = nowUTC,
                 active = True,
                 # XXX: Ugly!
                 inLastRevision = sighting.inLastRevision or fromPOFile)
@@ -857,8 +858,8 @@ class RosettaPOMessageSet(SQLBase):
             sighting = RosettaPOTranslationSighting(
                 poMessageSet=self,
                 poTranslation=translation,
-                dateFirstSeen="NOW",
-                dateLastActive="NOW",
+                dateFirstSeen= nowUTC,
+                dateLastActive= nowUTC,
                 inLastRevision=fromPOFile,
                 pluralForm=pluralForm,
                 active=True,
