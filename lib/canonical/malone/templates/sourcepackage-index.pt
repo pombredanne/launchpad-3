@@ -5,26 +5,32 @@
 <body>
 
 <div metal:fill-slot="main">
-    <h1>Source package: 
-        <span tal:content="context/title">$Sourcepackage.title</span>
+    <h1>Bugs Assigned To Source Package: 
+        <span tal:content="context/name">$Sourcepackage.title</span>
     </h1>
     <div class="documentDescription"
-        tal:content="context/description">$Sourcepackage.description
+        tal:content="context/shortdesc">$Sourcepackage.shortdesc
+    </div>
+    <div tal:content="context/description">$Sourcepackage.description
     </div>
 
     <h2>Bugs assigned to this package</h2>
     
     <table class="listing rowNavigation">
         <tr>
+            <th>#</th>
             <th>Bug</th>
             <th>Status</th>
             <th>Severity</th>
             <th>Priority</th>
-            <th>Binary Package</th>
+            <th>(Binary Package)</th>
+            <th>Assignee</th>
         </tr> 
         <tr tal:repeat="bugass context/bugs"
             tal:attributes="onclick
                 string:window.location='../../bugs/${bugass/bug/id}';">
+            <td tal:content="bugass/bug/id">xxx
+            </td>
             <td>
                 <a href="#" 
                     tal:attributes="href string:../../bugs/${bugass/bug/id}"
@@ -52,7 +58,8 @@
             </td>
         </tr>
     </table>
-
+    
+    <!--
     <h2>Affected binary packages</h2>
     
     <table class="listing">
@@ -84,6 +91,7 @@
             </tr>
         </tal:x>
     </table>
+    -->
 
 </div>
 

@@ -109,6 +109,11 @@ class ISourcepackageContainer(Interface):
     def bugassignments(self, orderby='-id'):
         """Sequence of SourcepackageBugAssignment, in order"""
 
+    def withBugs(self):
+        """Return a sequence of Sourcepackage, that have bugs assigned to
+        them. In future, we might pass qualifiers to further limit the list
+        that is returned, such as a name filter."""
+
 class IBugSubscriptionContainer(Interface):
     """A container for IBugSubscription objects."""
 
