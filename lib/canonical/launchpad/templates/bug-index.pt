@@ -80,9 +80,9 @@
 
     <h2>More information</h2>
 
-
     <div tal:repeat="message context/messages" tal:omit-tag>
 
+        <!-- Message details -->
         <div class="boardCommentDetails">
             <strong tal:content="message/title">$Bugmessage.title</strong>
 
@@ -94,13 +94,13 @@
                 '%d %b %y %H:%M')">Thursday 13:21</span>
         </div>
 
+        <!-- Message chunks -->
         <div class="boardCommentBody">
-            <div class="boardCommentContent"
-                tal:content="structure message/contents/fmt:nice_pre">
-                Comment text.
-            </div>
+            <div tal:repeat="chunk message/chunks"
+                tal:replace="structure chunk/@@+snippet" />
         </div>
 
+        <!-- Followup -->
         <fieldset class="collapsible collapsed">
             <legend>Follow up on this</legend>
 
@@ -111,11 +111,13 @@
                     <input name="field.title"
                            type="text" size="50"
                            value=""
-                           tal:attributes="value message/followup_title" /><br />
+                           tal:attributes="value message/followup_title"
+                           /><br />
                     <b>Comment:</b>
-                    <textarea name="field.contents" rows="10"></textarea>
+                    <textarea name="field.content" rows="10"></textarea>
                     <p>
-                      Please only add information that will help resolve the bug.
+                        Please only add information that will help resolve
+                        the bug.
                     </p>
                     <input type="submit" name="UPDATE_SUBMIT" value="Add" />
                 </form>

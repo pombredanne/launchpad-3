@@ -2,6 +2,145 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-04-06 06:07:44 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1571
+
+    Summary:
+      Part 1 of EmailStorage. Split Message into Message & MessageChunk
+    Revision:
+      launchpad--devel--0--patch-1571
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--base-0
+       tag of stuart.bishop@canonical.com/launchpad--devel--1--patch-255
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-1
+       Initial cut at DB schema patch and table/column comments
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-2
+       Security on new table
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-3
+       Update sampledata
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-4
+       Main bug view working with new comment storage. Still need work on adding and attachments
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-5
+       Sequences need UPDATE perm if their corresponding tables allow INSERT
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-6
+       Get add comment form working again
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-7
+       Get add comment form working again
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-8
+       Extend title check and use "snippet" instead of "block" to call a view that renders a block of HTML (not a page)
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-9
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-10
+       Fix checktitles.py
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-11
+       Fix up bug addforms
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-12
+       All tests passing
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-13
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-14
+       All tests passing
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-15
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-16
+       Start doctests for Message
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-17
+       More doctest work
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-18
+       Remove comment
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-19
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-20
+       Disable test failing due to NotImplementedError until Librarian work is done
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-21
+       Move DB patch into place
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-22
+       Merge from Rocketfuel
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-23
+       Move patch to correct place
+    
+     * stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-24
+       Update database documentation
+    
+
+    new files:
+     database/schema/.arch-ids/patch-14-02-0.sql.id
+     database/schema/patch-14-02-0.sql
+     lib/canonical/launchpad/doc/.arch-ids/message.txt.id
+     lib/canonical/launchpad/doc/message.txt
+     lib/canonical/launchpad/templates/.arch-ids/messagechunk-snippet.pt.id
+     lib/canonical/launchpad/templates/messagechunk-snippet.pt
+
+    modified files:
+     checktitles.py database/sampledata/current.sql
+     database/schema/comments.sql database/schema/fti.py
+     database/schema/launchpad.html database/schema/security.cfg
+     database/schema/security.py doc/changelog.txt
+     lib/canonical/launchpad/browser/message.py
+     lib/canonical/launchpad/database/bug.py
+     lib/canonical/launchpad/database/bugmessage.py
+     lib/canonical/launchpad/database/librarian.py
+     lib/canonical/launchpad/database/message.py
+     lib/canonical/launchpad/doc/bugnotifications.txt
+     lib/canonical/launchpad/ftests/test_system_documentation.py
+     lib/canonical/launchpad/interfaces/message.py
+     lib/canonical/launchpad/pagetests/malone/80-add-comment.txt
+     lib/canonical/launchpad/templates/bug-index.pt
+     lib/canonical/launchpad/templates/messages-index.pt
+     lib/canonical/launchpad/zcml/message.zcml
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--base-0
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-1
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-2
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-3
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-4
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-5
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-6
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-7
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-8
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-9
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-10
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-11
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-12
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-13
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-14
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-15
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-16
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-17
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-18
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-19
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-20
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-21
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-22
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-23
+     stuart.bishop@canonical.com/launchpad--mailstorage--0--patch-24
+
+
 2005-04-06 05:34:35 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1570
 
     Summary:

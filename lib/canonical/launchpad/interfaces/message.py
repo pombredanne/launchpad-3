@@ -1,6 +1,10 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
+
 from zope.interface import Interface, Attribute
 
 from zope.schema import Bool, Bytes, Choice, Datetime, Int, Text, TextLine
@@ -9,6 +13,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 
 class IMessagesView(IAddFormCustomization):
     """Message views"""
+
 
 class IMessage(Interface):
     """A message. This is like an email (RFC822) message, though it could be
@@ -23,9 +28,6 @@ class IMessage(Interface):
     title = TextLine(
             title=_('Title'), required=True, readonly=True,
             )
-    contents = Text(
-            title=_('Contents'), required=True, readonly=True,
-            )
     owner = Int(
             title=_('Person'), required=False, readonly=True,
             )
@@ -38,10 +40,14 @@ class IMessage(Interface):
     rfc822msgid = TextLine(
             title=_('RFC822 Msg ID'), required=True, readonly=True,
             )
+    raw = Int(
+            title=_('Original unmodified email'), required=False,
+            readonly=True
+            )
     bugs = Attribute(_('Bug List'))
-
-    def followup_title():
-        """Return a candidate title for a followup message."""
+    chunks = Attribute(_('Message pieces'))
+    contents = Attribute(_('Full message contents as plain text'))
+    followup_title = Attribute(_("Candidate title for a followup message."))
 
 
 class IMessageSet(Interface):
@@ -49,3 +55,12 @@ class IMessageSet(Interface):
     def get(rfc822msgid=None):
         """Return a single IMessage matching the given criteria. Currently
         the only search criterion supported is an rfc822msgid."""
+
+
+class IMessageChunk(Interface):
+    id = Int(title=_('ID'), required=True, readonly=True)
+    message = Int(title=_('Message'), required=True, readonly=True)
+    sequence = Int(title=_('Sequence order'), required=True, readonly=True)
+    content = Text(title=_('Text content'), required=False, readonly=True)
+    blob = Int(title=_('Binary content'), required=False, readonly=True)
+

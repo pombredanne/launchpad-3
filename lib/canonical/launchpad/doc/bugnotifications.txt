@@ -184,15 +184,16 @@ let's hang a bug onto the ILaunchBag utility.
 
 3. Commenting on a bug
 
-    >>> from canonical.launchpad.database.message import BugMessageFactory
+    >>> from canonical.launchpad.database.bugmessage import BugMessageFactory
 
     XXX: Brad Bollenbach, 2005-02-28: Hacks to get around the message
     BugMessageFactory implementation. Fixed this up in the next round
     of BugMessageFactory refactoring!
 
     >>> comment_on_firefox_crashes_in_debian = BugMessageFactory(
-    ...     None, title = "some title", contents = "just a test comment")
-    >>> notify(SQLObjectCreatedEvent(comment_on_firefox_crashes_in_debian, request))
+    ...     None, title = "some title", content = "just a test comment")
+    >>> notify(SQLObjectCreatedEvent(comment_on_firefox_crashes_in_debian,
+    ...     request))
 
     >>> transaction.commit()
 

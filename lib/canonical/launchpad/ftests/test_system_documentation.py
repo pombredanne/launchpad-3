@@ -11,6 +11,9 @@ import sqlos.connection
 from canonical.launchpad.ftests.harness import \
         LaunchpadTestSetup, _disconnect_sqlos, _reconnect_sqlos
 from zope.testing.doctest import DocFileSuite
+from zope.app import zapi
+from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.ftests import login
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -18,6 +21,9 @@ def setUp(test):
     sqlos.connection.connCache = {}
     LaunchpadTestSetup().setUp()
     _reconnect_sqlos()
+    test.globs['login'] = login
+    test.globs['ILaunchBag'] = ILaunchBag
+    test.globs['zapi'] = zapi
 
 def tearDown(test):
     _disconnect_sqlos()

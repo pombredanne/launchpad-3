@@ -21,12 +21,15 @@ class LibraryFileAlias(SQLBase):
     
     _table = 'LibraryFileAlias'
 
-    _columns = [
-        ForeignKey(name='content', dbName='content',
-                   foreignKey='LibraryFileContent', notNull=True),
-        StringCol('filename', dbName='filename', notNull=True),
-        StringCol('mimetype', dbName='mimetype', notNull=True),
-    ]
+    content = ForeignKey(
+            foreignKey='LibraryFileContent', dbName='content', notNull=True,
+            )
+    filename = StringCol(notNull=True)
+    mimetype = StringCol(notNull=True)
+
+    def url(self):
+        raise NotImplementedError, 'Implement me'
+    url = property(url)
 
     products = RelatedJoin('ProductRelease', joinColumn='libraryfile',
                            otherColumn='productrelease',
