@@ -4,6 +4,7 @@
       i18n:domain="launchpad">
 
 <head>
+    <title metal:fill-slot="title">Search for Projects</title>
     <!-- Plone style sheet -->
     <style type="text/css" media="screen">@import url(plone.css);</style>
     <!-- Rosetta style sheet -->
@@ -14,58 +15,56 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Upstream Project Finder</h1>
+    <h1>Project Search</h1>
 
-    <fieldset>
-    
-        <legend>Search for a project</legend>
+    <form method="post">
 
-        <form method="post">
+        <fieldset>
 
-        <table border="0" cellpadding="1" cellspacing="2" width="100%">
-            <tr>
-                <td align="center">
-                    <input name="text" size="60" 
-                           tal:attributes="value view/text" />
-                    <input type="submit" value="Search" />
-                    <a style="font-size: 0.85;" href="+search">Advanced
-                    Search</a>
-                    <div class="formHelp">Enter any part of the project name,
-                    title or description.</div>
+            <legend>Search for a project</legend>
+
+            <input name="text" size="60" tal:attributes="value view/text" />
+            <input type="submit" value="Search" />
+
+            <p class="formHelp">
+            Enter any part of the project name, title or
+            description.
+            </p>
+
+            <p>
+            <a style="font-size: 0.85;" href="+search">Advanced
+            Search</a>
+            </p>
+
+        </fieldset>
+
+    </form>
+
+    <div tal:condition="view/searchrequested">
+
+        <table class="rowNavigation" width="100%">
+            <tr tal:repeat="project view/searchresults"
+                tal:attributes="onclick string:window.location='${project/name}';"
+                valign="top"
+                vspace="5">
+                <td>
+                    <img src="/++resource++product_icon.gif">
+                    <b><a tal:attributes="href project/name" href="#"
+                        tal:content="project/title">$Project.title</a></b>
+                    (<span tal:content="project/name">$Project.name</span>)
+                    <a tal:attributes="href project/homepageurl"
+                        tal:content="project/homepageurl">http://www.gnu.org/</a>
+                    <br />
+                <span tal:content="project/shortdesc">
+                    $Project.shortdesc</span>
                 </td>
             </tr>
         </table>
 
-        </form>
+        <div tal:condition="not: view/gotmatches"><b>No matching upstream
+        projects.</b> You can <a href="+new">register a new project </a>.</div>
 
-        <div tal:condition="view/searchrequested">
-        
-            <table class="rowNavigation" width="100%">
-                <tr tal:repeat="project view/searchresults"
-                    tal:attributes="onclick string:window.location='${project/name}';"
-                    valign="top"
-                    vspace="5">
-                    <td>
-                        <img src="/++resource++product_icon.gif">
-                        <b><a tal:attributes="href project/name" href="#"
-                            tal:content="project/title">$Project.title</a></b>
-                        (<span tal:content="project/name">$Project.name</span>)
-                        <a tal:attributes="href project/homepageurl"
-                            tal:content="project/homepageurl">http://www.gnu.org/</a>
-                        <br />
-                    <span tal:content="project/shortdesc">
-                        $Project.shortdesc</span>
-                    </td>
-                </tr>
-            </table>
-  
-            <div tal:condition="not: view/gotmatches"><b>No matching upstream
-            projects.</b> You can register your project <a
-            href="+new">here</a></div>
-
-        </div>
- 
-    </fieldset>
+    </div>
 
 </div>
 

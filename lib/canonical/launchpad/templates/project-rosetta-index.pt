@@ -40,24 +40,9 @@
     chat software and calendar application.
     </p>
 
-<!-- Temporary manual override
-        <select style="float: right; clear: both;">
-            <option>All projects</option>
-            <option selected="selected">Afrikaans</option>
-            <option>Cymraeg</option>
-            <option>Norsk</option>
-        </select>
--->
-    <p class="discreet">
-    These language name headlines are based on the user preferences, if
-    the user hasn't set anything, it's the stuff we can extract from
-    browser/IP:
-    </p>
-
     <div tal:condition="view/hasProducts">
 
-        <p>Here are the products available, select language from the
-        pulldown, and click a product.</p>
+        <h2>Products</h2>
 
         <table class="listing rowNavigation">
             <thead>
@@ -107,8 +92,8 @@
 
     <div tal:condition="not: view/hasProducts">
         <p>
-        Rosetta doesn't currently know of any product for
-        <span tal:content="context/title">project title</span>.
+        There are currently no products for <span
+        tal:content="context/title">project title</span>.
         </p>
     </div>
 

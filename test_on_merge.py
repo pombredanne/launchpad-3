@@ -8,6 +8,7 @@ import os, os.path
 import popen2
 import tabnanny
 import checkarchtag
+import checktitles
 from StringIO import StringIO
 from threading import Thread
 import psycopg
@@ -46,6 +47,8 @@ def main():
 
     if not checkarchtag.is_tree_good():
         return 1
+
+    checktitles.summarise_directory("lib/canonical/launchpad/templates")
 
     # Tabnanny
     org_stdout = sys.stdout

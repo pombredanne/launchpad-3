@@ -22,6 +22,11 @@
         title</span> &mdash; <span tal:replace="context/title">POT file
         title</span></h1>
 
+    <p class="discreet">
+    <a href=".."><span tal:replace="context/product/title">PRODUCT</span>
+    product overview</a>.
+    </p>
+
     <!-- Error messages first. -->
 
     <div tal:condition="context/hasPluralMessage">
@@ -165,10 +170,13 @@
                 <div class="field" tal:repeat="language view/languages">
                     <label class="language-code"
                         tal:content="language/englishname">pt_BR</label>:
-                    <input type="checkbox" value="fuzzy"
-                        tal:attributes="checked python:set['fuzzy'][language];
-                        name string:set_${set/id}_fuzzy_${language/code};" />
-                    <label>Needs review</label>
+                    <label>
+                        <input type="checkbox" value="fuzzy" tal:attributes="
+                            checked python:set['fuzzy'][language];
+                            name string:set_${set/id}_fuzzy_${language/code};"
+                            />
+                        Needs review
+                    </label>
                     <br/>
 
                     <input type="text"

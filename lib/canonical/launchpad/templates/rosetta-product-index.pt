@@ -18,6 +18,11 @@
 
     <h1>Translation overview: <span tal:replace="context/title">NAME</span></h1>
 
+    <p class="discreet">
+    This is a product of the project <a href=".."
+        tal:content="context/project/displayname">PROJECT</a>.
+    </p>
+
     <div style="float: right; clear: both; margin-top: 0.25em;">
     Product home page:
     <a href="http://product.home/page"

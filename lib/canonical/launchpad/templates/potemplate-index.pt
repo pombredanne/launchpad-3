@@ -18,6 +18,11 @@
 
     <h1 tal:content="context/title">Some PO template or other</h1>
 
+    <p class="discreet">
+    This PO template belongs to the product <a href=".."
+        tal:content="context/product/title">PRODUCT</a>.
+    </p>
+
     <p>
     This file contains <span tal:replace="view/num_messages">N
     messages</span>.
