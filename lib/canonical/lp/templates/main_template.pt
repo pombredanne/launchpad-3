@@ -82,12 +82,14 @@
           </ul>
 
       <div id="portal-personaltools">
-
-        <a href="/rosetta/translator"
-           class="authenticated">My Dashboard (Translator)</a>
+        Dashboards:
+        <a href="/rosetta/translator">[Translator]</a>
+        
+        <a href="/rosetta/maintainer">[Project Maintainer]</a>
+        
         &mdash;
-        <a href="/rosetta/maintainer"
-           class="authenticated">My Dashboard (Project Maintainer)</a>
+
+        <a href="/rosetta/prefs">My Preferences</a>
 
       </div>
       

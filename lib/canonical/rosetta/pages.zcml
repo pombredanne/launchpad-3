@@ -138,6 +138,9 @@
     <page name="translator"
           template="templates/dashboard-translator.pt"
           lp:url="Rosetta/translator" />
+    <page name="prefs"
+          template="templates/rosetta-preferences.pt"
+          lp:url="Rosetta/prefs" />
   </pages>
 
   <pages for="canonical.rosetta.interfaces.IRosettaApplication"

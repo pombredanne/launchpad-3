@@ -43,38 +43,6 @@
         <input type="submit" value="Remove selected project from list" />
     </div>
 
-    <div class="rosettaDashboardElement">
-        <h2>My prefered languages</h2>
-
-        <div tal:content="view/submit" />
-        <form action="translator" method="POST">
-        <table class="listing">
-            <thead>
-                <tr>
-                    <th>&nbsp;</th>
-                    <th>Language</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                <tr tal:repeat="language view/languages">
-                    <td>
-		    <input tal:condition="language/selected"
-		           type="checkbox"
-		           tal:attributes="name language/code"
-			   checked />
-	            <input tal:condition="not: language/selected"
-		           type="checkbox"
-			   tal:attributes="name language/code" />
-	            </td>
-                    <td><span tal:replace="language/name">Name</span></td>
-               </tr>
-            </tbody>
-
-        </table>
-        <input type="submit" name="LANGUAGES" value="Update my prefered languages" />
-	</form>
-    </div>
 
     <div class="rosettaDashboardElement">
         <h2>Available/Recommended projects</h2>

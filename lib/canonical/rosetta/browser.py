@@ -55,14 +55,14 @@ class ViewProject:
         person = IPerson(self.request.principal, None)
         if person is not None:
             for language in person.languages():
-                yield LanguageProducts(language, self.context.products)
+                yield LanguageProducts(language, self.context.rosettaProducts())
         else:
             # XXX: Temporal hack, to be removed as soon as we have the login
             # template working. The code duplication is just to be easier to
             # remove this hack when is not needed anymore.
             person = RosettaPerson.selectBy(displayName='Dafydd Harries')[0]
             for language in person.languages():
-                yield LanguageProducts(language, self.context.products)
+                yield LanguageProducts(language, self.context.rosettaProducts())
 
 
 class LanguageProducts:
