@@ -14,8 +14,8 @@ from zope.interface import implements
 from zope.app.form.browser.interfaces import IAddFormCustomization
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import TextLine, Int, Choice
+from zope.event import notify
 
-# Database access objects
 from canonical.launchpad.database import \
         SourcePackage, SourcePackageName, BinaryPackage, \
         BugTracker, BugsAssignedReport, BugWatch, Product, Person, EmailAddress, \
@@ -23,6 +23,7 @@ from canonical.launchpad.database import \
         ProductBugAssignment, SourcePackageBugAssignment, \
         BugProductInfestation, BugPackageInfestation
 from canonical.database import sqlbase
+from canonical.launchpad.events import BugCommentAddedEvent
 
 # I18N support for Malone
 from zope.i18nmessageid import MessageIDFactory
@@ -425,10 +426,13 @@ def BugAttachmentContentFactory(context, **kw):
 
 def BugMessageFactory(context, **kw):
     bug = context.context.context.id # view.comments.bug
-    return BugMessage(
+    bm =  BugMessage(
             bug=bug, parent=None, datecreated=datetime.utcnow(),
-            ownerID=1, rfc822msgid=make_msgid('malone'), **kw
-            )
+            ownerID=1, rfc822msgid=make_msgid('malone'), **kw)
+    comment_added = BugCommentAddedEvent(Bug.get(bug), bm)
+    notify(comment_added)
+
+    return bm
 
 
 def PersonFactory(context, **kw):

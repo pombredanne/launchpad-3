@@ -108,3 +108,25 @@ class IBugsAssignedReport(Interface):
 
 
 
+# Bug-related Events
+
+# XXX: Brad Bollenbach, 2004/10/19: Not yet sure where all these
+# events belong, but my goal today is to checkin code that works so
+# that we can start dogfooding ASAP.
+
+class IBugEvent(Interface):
+    """I'm an event that happened related to a bug."""
+    pass
+
+class IBugCommentAddedEvent(IBugEvent):
+    """The event that occurs when someone makes a comment on a bug."""
+    pass
+
+class IBugAssignedProductAddedEvent(IBugEvent):
+    """The event that occurs when a bug is assigned to a product."""
+    pass
+
+class IBugAssignedProductModifiedEvent(IBugEvent):
+    """The event that occurs when a bug product assignment is
+    edited."""
+    pass

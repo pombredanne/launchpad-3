@@ -1,0 +1,14 @@
+<configure
+    xmlns:mail="http://namespaces.zope.org/mail"
+    i18n_domain="launchpad"
+    xmlns:i18n="http://namespaces.zope.org/i18n">
+
+  <mail:smtpMailer name="launchpad-smtp" hostname="localhost" port="25" />
+
+  <mail:queuedDelivery
+     name="launchpad-delivery"
+     mailer="launchpad-smtp"
+     permission="zope.SendMail"
+     queuePath="./mail-queue" />
+
+</configure>
