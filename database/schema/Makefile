@@ -23,7 +23,6 @@ rosetta: .FORCE
 	    | grep -v NOTICE:
 	psql -d ${DBNAME} -f ../default.sql
 	psql -d ${DBNAME} -f ../languages.sql
-	psql -d ${DBNAME} -f ../sampledata-screwed.sql
 	psql -d ${DBNAME} -f ../sampledata-rosetta.sql
 
 
