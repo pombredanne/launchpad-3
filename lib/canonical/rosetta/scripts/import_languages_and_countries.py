@@ -10,6 +10,8 @@
 #
 # arch-tag: 657212c5-95f4-422a-ada4-544bf2827ab5
 
+# XXX: REWRITE THE WHOLE SCRIPT USING SQLOBJECT
+
 from xml.sax import saxutils, make_parser, ContentHandler
 from optparse import OptionParser
 import locale, re, sets, psycopg, string
@@ -159,6 +161,15 @@ def insert_language(cnx, data, plural_forms):
     if data['code'] in plural_forms:
         data['pluralforms'] = str(plural_forms[data['code']]['nplurals'])
         data['pluralexpression'] = str(plural_forms[data['code']]['plural'])
+    else:
+        # We check if it's a language_country code, if that's the case, we
+        # inherit the language plural information (if it exists).
+        if '_' in data['code']:
+            (language, country) = data['code'].split('_')
+            if language in plural_forms:
+                data['pluralforms'] = str(plural_forms[language]['nplurals'])
+                data['pluralexpression'] = str(plural_forms[language]['plural'])
+        
 
     cr = cnx.cursor()
     rosetta_trans = cnx.cursor()
@@ -173,7 +184,7 @@ def insert_language(cnx, data, plural_forms):
     # care about the orig of the translation, we just get latest one and
     # assume that we never will have this msgid as a plural form (I don't
     # think it makes sense to have a language name with a plural form...)
-    rosetta_trans.execute(
+    '''rosetta_trans.execute(
         """SELECT POTranslation.translation
             FROM POMsgID, POMsgSet, POTranslationSighting, POTranslation,
                  POFile, Language, POTemplate, Product
@@ -198,7 +209,7 @@ def insert_language(cnx, data, plural_forms):
     if rosetta_trans.rowcount > 0:
         data['nativename'] = rosetta_trans.fetchone()[0].encode('utf-8')
 
-    rosetta_trans.close()
+    rosetta_trans.close()'''
 
     # If it does not exists, it's inserted
     if cr.rowcount < 1:
@@ -211,7 +222,7 @@ def insert_language(cnx, data, plural_forms):
         # That's if the englishname != from data['englishname']
         language_row = cr.fetchone()
         if language_row[0] != data['englishname']:
-            rosetta_trans.execute(
+                '''            rosetta_trans.execute(
                 """SELECT POTranslation.translation
                     FROM POMsgID, POMsgSet, POTranslationSighting,
                          POTranslation, POFile, Language, POTemplate, Product
@@ -241,15 +252,15 @@ def insert_language(cnx, data, plural_forms):
                     data['englishname'],
                     rosetta_trans.fetchone()[0],
                     data['code']))
-            else:
+            else:'''
                 # We need to update the name and remove the old nativename
                 cr.execute(
                     """UPDATE Language SET englishname='%s', nativename=NULL
                         WHERE code='%s'""" %(
                     data['englishname'],
                     data['code']))
-            print ("%r has been updated" % data)
-            rosetta_trans.close()
+                print ("%r has been updated" % data)
+                '''rosetta_trans.close()
         elif 'nativename' in data:
             # We update all language names
             # XXX: We should check if it has changed and only update it in
@@ -260,12 +271,12 @@ def insert_language(cnx, data, plural_forms):
                     data['nativename'],
                     data['code']))
             print ("%r has been updated" % data)
-
+'''
         if ('pluralforms' in data and 'pluralexpression' in data and
                 (language_row[1] != data['pluralforms'] or language_row[2] !=
                 data['pluralexpression'])):
             cr.execute(
-                """UPDATE Language SET pluralforms=%(pluralforms)d,
+                """UPDATE Language SET pluralforms=%(pluralforms)s,
                     pluralexpression=%(pluralexpression)s WHERE code=%(code)s""", data)
     cnx.commit()
     cr.close()
@@ -293,59 +304,68 @@ spoken_re = re.compile('([a-z]*)_([A-Z]*).*')
 def import_spoken(cnx, plural_forms):
     print
     print 'parsing spoken...'
-    pairs = sets.Set()
+    countries = {}
     for line in file(files['spoken']).readlines():
         m = spoken_re.match(line)
         if not m:
             continue
-        pairs.add((m.group(1), m.group(2)))
+        if m.group(1) in countries:
+            if m.group(2) not in countries[m.group(1)]:
+                countries[m.group(1)].append(m.group(2))
+        else:
+            countries[m.group(1)] = [m.group(2)]
+
+    # We try to mark all languages that are spoken only in one country.
+    country_count = {}
+    for language in countries.keys():
+        country_count[language] = len(countries[language])
 
     cr = cnx.cursor()
 
-    for pair in pairs:
-        # We check if the language-country relation exists:
-        cr.execute(
-            """SELECT Language.id, Country.id, Language.englishname,
-                      Country.name FROM Language, Country
-                WHERE Language.code='%s' AND Country.iso3166code2='%s' AND
-                      NOT EXISTS (SELECT * FROM Spokenin
-                                    WHERE Spokenin.language=Language.id AND
-                                          Spokenin.country=Country.id)""" %
-                pair)
-        if cr.rowcount > 0:
-            # We don't have such relation yet.
-            spoken_row = cr.fetchone()
-            cr.execute("""INSERT INTO Spokenin VALUES(%d, %d)""" % (
-                spoken_row[0], spoken_row[1]))
+    for language in countries.keys():
+        if country_count[language] > 1:
+            # This language is spoken in more than one country.
+            for country in countries[language]:
+                # We get the concrete info for the language and country:
+                cr.execute(
+                    """SELECT Language.id, Country.id, Language.englishname,
+                              Country.name FROM Language, Country
+                       WHERE Language.code='%s' AND Country.iso3166code2='%s'""" %
+                    (language, country))
+                if cr.rowcount > 0:
+                    # The language and country exists
+                    spoken_row = cr.fetchone()
+                    cr.execute("""SELECT * FROM Spokenin WHERE language=%d AND
+                    country=%d""" % (spoken_row[0], spoken_row[1]))
+                    if cr.rowcount == 0:
+                        cr.execute("""INSERT INTO Spokenin VALUES(%d, %d)""" % (
+                            spoken_row[0], spoken_row[1]))
 
-            # We add now the language_country Languages
-            # FIXME: Could we assume that if we have already the spokenin
-            # relation we already have that language into the Languages table?
+                    # We add now the language_country Languages
+                    data = {
+                        'code': u'%s_%s' % (language, country),
+                        'englishname': unicode('%s (%s)' % (
+                            spoken_row[2],
+                            spoken_row[3]), 'utf-8')}
 
-            data = {
-                'code': u'%s_%s' % pair,
-                'englishname': unicode('%s (%s)' % (
-                    spoken_row[2],
-                    spoken_row[3]), 'utf-8')}
+                    insert_language(cnx, data, plural_forms)
 
-            insert_language(cnx, data, plural_forms)
+                    cr.execute(
+                        """SELECT Language.id, Country.id
+                            FROM Language, Country
+                            WHERE Language.code=%(language)s AND
+                                  Country.iso3166code2=%(country)s AND
+                                  NOT EXISTS (SELECT * FROM Spokenin
+                                                WHERE Spokenin.language=Language.id
+                                                AND Spokenin.country=Country.id)""",
+                        { 'language': '%s_%s' % (language, country),
+                          'country': country })
 
-            cr.execute(
-                """SELECT Language.id, Country.id
-                    WHERE Language.code=%(language)s AND
-                          Country.iso3166code2=%(country)s AND
-                          NOT EXISTS (SELECT * FROM Spokenin
-                                        WHERE Spokenin.language=Language.id
-                                        AND Spokenin.country=Country.id)""",
-                { 'language': '%s_%s' % pair,
-                  'country': pair[1] })
-
-            if cr.rowcount > 0:
-                # We don't have such relation yet.
-                spoken_row = cr.fetchone()
-                cr.execute("""INSERT INTO Spokenin VALUES(%d, %d)""" % (
-                    spoken_row[0], spoken_row[1]))
-
+                    if cr.rowcount > 0:
+                        # We don't have such relation yet.
+                        spoken_row = cr.fetchone()
+                        cr.execute("""INSERT INTO Spokenin VALUES(%d, %d)""" % (
+                            spoken_row[0], spoken_row[1]))
     cnx.commit()
     cr.close()
 
