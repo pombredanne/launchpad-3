@@ -133,8 +133,11 @@ if __name__ == "__main__":
             # Tricky bit here: even if the source package exists, we
             # need to process it to ensure it has all the data inside it
             # or binary package won't create properly
-            srcpkg.process_package(kdb, package_root, keyrings)
-            srcpkg.ensure_created(lp)
+            try:
+                srcpkg.process_package(kdb, package_root, keyrings)
+                srcpkg.ensure_created(lp)
+            except Exception, e:
+                print "\t!! sourcepackage addition threw an error."
 
         if binpkg.is_created(lp):
             continue
@@ -143,8 +146,12 @@ if __name__ == "__main__":
         # stored in the BinaryPackage table
         binpkg.licence = srcpkg.licence
 
-        binpkg.process_package(kdb, package_root, keyrings)
-        binpkg.ensure_created(lp)
+        try:
+            binpkg.process_package(kdb, package_root, keyrings)
+            binpkg.ensure_created(lp)
+        except:
+            print "\t!! binarypackage addition threw an error."
+
         count = count + 1
         if count == 10:
             lp.commit()

@@ -295,7 +295,9 @@ class BinaryPackageRelease(AbstractPackageRelease):
     def do_katie(self, kdb, keyrings):
         data = kdb.getBinaryPackageRelease(self.package, self.version,
                                            self.architecture)
-        assert len(data) == 1
+        #assert len(data) >= 1
+        if len(data) == 0:
+            raise Exception, "assert len(data) >= 1"
         data = data[0]
         self.gpg_signing_key = data["fingerprint"]
         self.gpg_signing_key_owner = \
