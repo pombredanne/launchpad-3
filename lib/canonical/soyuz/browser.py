@@ -179,6 +179,7 @@ class ViewSync(View):
         for param in ["name", "title", "description", "cvsroot", "cvsmodule","cvstarfile",
             "branchfrom","svnrepository","archarchive","category","branchto","archversion","archsourcegpgkeyid","archsourcename","archsourceurl"]:
             self.setArg(param, kwargs)
+        newurl=None
         if kwargs.get('name', self.context.name) != self.context.name:
             newurl='../' + kwargs['name']
         self.context.update(**kwargs)
