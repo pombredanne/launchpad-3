@@ -1536,7 +1536,7 @@ SELECT pg_catalog.setval('emailaddress_id_seq', 25, true);
 
 
 
-SELECT pg_catalog.setval('gpgkey_id_seq', 10, true);
+SELECT pg_catalog.setval('gpgkey_id_seq', 11, true);
 
 
 

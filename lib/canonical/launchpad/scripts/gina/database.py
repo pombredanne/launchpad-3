@@ -4,17 +4,54 @@ from pyPgSQL import PgSQL
 # Disable cursors for now (can cause issues sometimes it seems)
 PgSQL.noPostgresCursor = 1
 
-from nickname import generate_nick
+from canonical.lp import initZopeless
+from canonical.foaf.nickname import generate_nick
+from canonical.launchpad.database import Distribution, DistroRelease, \
+                                         DistroArchRelease,Processor, \
+                                         SourcePackageName, SourcePackage,\
+                                         SourcePackageRelease, Build, \
+                                         BinaryPackage, BinaryPackageName, \
+                                         Person, EmailAddress, GPGKey, \
+                                         PackagePublishing, Component, \
+                                         Section, SourcePackagePublishing, \
+                                         SourcePackageReleaseFile, \
+                                         BinaryPackageFile
+
+from canonical.database.sqlbase import quote
+
+from canonical.lp.dbschema import PackagePublishingStatus,  \
+                                  EmailAddressStatus, \
+                                  SourcePackageFormat, \
+                                  BinaryPackagePriority, \
+                                  SourcePackageUrgency, \
+                                  SourcePackageFileType, \
+                                  BinaryPackageFileType, \
+                                  BinaryPackageFormat, \
+                                  BuildStatus
 
 priomap = {
-    "low": 1,
-    "medium": 2,
-    "high": 3,
-    "emergency": 4
+    "low": SourcePackageUrgency.LOW.value,
+    "medium": SourcePackageUrgency.LOW.value,
+    "high": SourcePackageUrgency.LOW.value,
+    "emergency": SourcePackageUrgency.LOW.value
     # FUCK_PEP8 -- Fuck it right in the ear
     }
 
-class SQLThing:
+
+class SQLThingBase:
+    def ensure_string_format(self, name):
+        assert isinstance(name, basestring), repr(name)
+        try:
+            # check that this is unicode data
+            name.decode("utf-8").encode("utf-8")
+            return name
+        except UnicodeError:
+            # check that this is latin-1 data
+            s = name.decode("latin-1").encode("utf-8")
+            s.decode("utf-8")
+            return s
+
+class SQLThing(SQLThingBase):
     def __init__(self, dbname, dry_run):
         self.dbname = dbname
         self.dry_run = dry_run
@@ -28,18 +65,6 @@ class SQLThing:
     
     def close(self):
         return self.db.close()
-
-    def ensure_string_format(self, name):
-        assert isinstance(name, basestring), repr(name)
-        try:
-            # check that this is unicode data
-            name.decode("utf-8").encode("utf-8")
-            return name
-        except UnicodeError:
-            # check that this is latin-1 data
-            s = name.decode("latin-1").encode("utf-8")
-            s.decode("utf-8")
-            return s
 
     def _get_dicts(self, cursor):
         names = [x[0] for x in cursor.description]
@@ -141,124 +166,171 @@ class Katie(SQLThing):
         """, (sourcepackage, self.suite))[0]
 
 prioritymap = {
-"required": 50,
-"important": 40,
-"standard": 30,
-"optional": 20,
-"extra":10
+"required": BinaryPackagePriority.REQUIRED.value,
+"important": BinaryPackagePriority.IMPORTANT.value,
+"standard": BinaryPackagePriority.STANDARD.value,
+"optional": BinaryPackagePriority.OPTIONAL.value,
+"extra": BinaryPackagePriority.EXTRA.value,
+"source": BinaryPackagePriority.EXTRA.value #Some binarypackages ended up
+                                           #with priority source.
 }
 
-class Launchpad(SQLThing):
+class Launchpad(SQLThingBase):
     def __init__(self, bar, distro, dr, proc, dry_run):
-        SQLThing.__init__(self, bar, dry_run)
+        self.ztm = initZopeless()
+        self.dry_run = dry_run
         self.compcache = {}
         self.sectcache = {}
-        try:
-            ddr = self._query_single("""
-            SELECT id FROM distribution WHERE name=%s
-            """, (distro,))
-            self.distro = ddr[0]
+        try:            
+            self.distro = Distribution.selectBy(name=distro)[0]
         except:
             raise ValueError, "Error finding distribution for %s" % distro
+
         try:
-            ddr = self._query_single("""
-            SELECT id FROM distrorelease WHERE name=%s AND distribution=%s;
-            """, (dr,self.distro))
-            self.distrorelease = ddr[0]
+            self.distrorelease = DistroRelease.selectBy(name=dr,
+                                         distributionID=self.distro.id)[0]
         except:
             raise ValueError, "Error finding distrorelease for %s" % dr
+
         try:
-            dar = self._query_single("""
-            SELECT processorfamily, id FROM distroarchrelease WHERE
-            distrorelease = %s AND architecturetag = %s
-            """, (self.distrorelease,proc))
-            self.processor = dar[0]
-            self.distroarchrelease = dar[1]
+            dar = DistroArchRelease.selectBy(\
+                distroreleaseID=self.distrorelease.id,
+                architecturetag=proc)[0]
+
+            self.processor = dar.processorfamily
+            self.distroarchrelease = dar
         except:
-            raise ValueError, "Error finding distroarchrelease for %s/%s" % (dr,proc)
+            raise ValueError, \
+                  "Error finding distroarchrelease for %s/%s" % (dr,proc)
+
         try:
-            self.processor = self._query_single("""
-            SELECT id FROM processor WHERE family = %s
-            """, (self.processor))[0]
+            self.processor = Processor.selectBy(\
+                             familyID=self.processor.id)[0]
         except:
-            raise ValueError, "Unable to find a processor from the processor family chosen from %s/%s" % (dr, proc)
-        print "INFO: Chosen D(%d) DR(%d), PROC(%d), DAR(%d) from SUITE(%s), ARCH(%s)" % (self.distro, self.distrorelease, self.processor, self.distroarchrelease, dr, proc)
+            raise ValueError, \
+                  ("Unable to find a processor from the processor family"
+                   "chosen from %s/%s" % (dr, proc))
+
+        print ("INFO: Chosen D(%d) DR(%d), PROC(%d), "
+               "DAR(%d) from SUITE(%s), ARCH(%s)" %
+               (self.distro.id, self.distrorelease.id, self.processor.id,
+                self.distroarchrelease.id, dr, proc))
         
+
+    def commit(self):
+        if self.dry_run:
+            # Not committing -- we're on a dry run
+            return
+        return self.ztm.commit()
+
+
+    def getFileType(self, fname):
+        if fname.endswith(".deb"):
+            return BinaryPackageFileType.DEB.value
+        if fname.endswith(".udeb"):
+            return BinaryPackageFileType.DEB.value
+        if fname.endswith(".dsc"):
+            return SourcePackageFileType.DSC.value
+        if fname.endswith(".diff.gz"):
+            return SourcePackageFileType.DIFF.value
+        if fname.endswith(".orig.tar.gz"):
+            return SourcePackageFileType.ORIG.value
+        if fname.endswith(".tar.gz"):
+            return SourcePackageFileType.TARBALL.value
+
+    def getBinaryPackageFormat(self, fname):
+        if fname.endswith(".deb"):
+            return BinaryPackageFormat.DEB.value
+        if fname.endswith(".udeb"):
+            return BinaryPackageFormat.UDEB.value
+        if fname.endswith(".rpm"):
+            return BinaryPackageFormat.RPM.value
+        
+        
+
     #
     # SourcePackageName
     #
     def ensureSourcePackageName(self, name):
-        if self.getSourcePackageName(name):
+        if SourcePackageName.selectBy(name=name).count():
             return
         name = self.ensure_string_format(name)
-        self._insert("sourcepackagename", {"name": name})
+        SourcePackageName(name=name)
 
     def getSourcePackageName(self, name):
-        return self._query_single("""SELECT id FROM sourcepackagename
-                                     WHERE name = %s;""", (name,))
+        return SourcePackageName.selectBy(name=name)
 
     #
     # SourcePackage
     #
     def ensureSourcePackage(self, src):
-        if self.getSourcePackage(src.package):
+        if self.getSourcePackage(src.package).count():
             return
 
         self.ensureSourcePackageName(src.package)
-        name = self.getSourcePackageName(src.package)
+        name = self.getSourcePackageName(src.package)[0]
 
         people = self.getPeople(*src.maintainer)[0]
     
         description = self.ensure_string_format(src.description)
         short_desc = description.split("\n")[0]
 
-        data = {
-            "maintainer":           people,
-            "shortdesc" :           short_desc,
-            "distro":               self.distro,
-            "description":          description,
-            "sourcepackagename":    name[0],
-            ## XXX: (srcpackageformat+hardcoded) cprov 20041025
-            ## Sourcepackeformat hardcoded for .deb or whatever ...
-            "srcpackageformat":     1 
-        }
-        self._insert("sourcepackage", data)
+        SourcePackage(maintainer=people,
+                      shortdesc=short_desc,
+                      distro=self.distro.id,
+                      description=description,
+                      sourcepackagename=name.id,
+                      srcpackageformat=SourcePackageFormat.DPKG.value,
+                      manifest=None
+                      )
 
     def getSourcePackage(self, name_name, distro = None):
-        # Suckage because Python won't analyse default values in the context
-        # of the call. Python idiom is nasty.
-        if distro is None:
+        if not distro:
             distro = self.distro
+
         self.ensureSourcePackageName(name_name)
-        name = self.getSourcePackageName(name_name)
-        # FIXME: SELECT * is crap !!!
-        return self._query_single("""SELECT * FROM sourcepackage 
-                                     WHERE sourcepackagename=%s
-                                       AND distro=%s""",
-                                  (name[0],distro))
+        name = self.getSourcePackageName(name_name)[0]
+
+        return SourcePackage.selectBy(distroID=distro.id,
+                                      sourcepackagenameID=name.id)
         
     #
     # SourcePackageRelease
     #
     def getSourcePackageRelease(self, name, version):
-        src_id = self.getSourcePackage(name)
-        if not src_id:
+        src = self.getSourcePackage(name)
+        if not src.count():
             return None
-        #FIXME: SELECT * is crap !!!
-        return self._query("""SELECT id FROM sourcepackagerelease
-                              WHERE sourcepackage = %s 
-                              AND version = %s;""", (src_id[0] , version))
+
+        spr = SourcePackageRelease.selectBy(sourcepackageID=src[0].id,
+                                            version=version)
+
+        if not spr.count():
+            return None
+
+        return spr
+
     def createSourcePackageReleaseFile(self, src, fname, alias):
         r = self.getSourcePackageRelease(src.package, src.version)
         if not r:
             raise ValueError, "Source not yet in database"
-        data = {
-        "sourcepackagerelease": r[0][0],
-        "libraryfile": alias,
-        "filetype": 1 # XXX: No types defined as yet?
-        }
 
-        self._insert( "sourcepackagereleasefile", data )
+        # BIG XXX: Daniel Debonzi 20050223
+        # If commit is not performed here
+        # the database says that libraryfilealias.id=alias
+        # is not on db, because it was included by librarian
+        # and somehow the initZopeless db connection can't "see"
+        # this db modification.
+        self.commit()
+        
+        if self.dry_run:
+            # Data was not commited and due to the BIG XXX above
+            # create SourcePackageReleaseFile will fail so just
+            # skip it
+            return
+        SourcePackageReleaseFile(sourcepackagerelease=r[0].id,
+                                 libraryfile=alias,
+                                 filetype=self.getFileType(fname))
 
     def createSourcePackageRelease(self, src):
         self.ensureSourcePackage(src)
@@ -267,7 +339,7 @@ class Launchpad(SQLThing):
         maintid = self.getPeople(*src.maintainer)[0]
         if src.dsc_signing_key_owner:
             key = self.getGPGKey(src.dsc_signing_key, 
-                                 *src.dsc_signing_key_owner)[0]
+                                 *src.dsc_signing_key_owner)
         else:
             key = None
 
@@ -276,69 +348,62 @@ class Launchpad(SQLThing):
             changelog = self.ensure_string_format(src.changelog[0]["changes"])
         except IndexError:
             changelog = None
-        component = self.getComponentByName(src.component)[0]
-        section = self.getSectionByName(src.section)[0]
+        componentID = self.getComponentByName(src.component).id
+        sectionID = self.getSectionByName(src.section).id
         if src.urgency not in priomap:
             src.urgency = "low"
-        name = self.getSourcePackageName(src.package)
-        data = {
-            "sourcepackagename":       name[0],
-            "sourcepackage":           srcpkgid,
-            "version":                 src.version,
-            "maintainer":              maintid,
-            "dateuploaded":            src.date_uploaded,
-            "builddepends":            src.build_depends,
-            "builddependsindep":       src.build_depends_indep,
-            "architecturehintlist":    src.architecture,
-            "component":               component,
-            "creator":                 maintid,
-            "urgency":                 priomap[src.urgency],
-            "changelog":               changelog,
-            "dsc":                     dsc,
-            "dscsigningkey":           key,
-            "section":                 section,
-        }                                                          
-        self._insert("sourcepackagerelease", data)
+        name = self.getSourcePackageName(src.package)[0]
 
+        SourcePackageRelease(sourcepackagename=name.id,
+                             sourcepackage=srcpkgid,
+                             version=src.version,
+                             maintainer=maintid,
+                             dateuploaded=src.date_uploaded,
+                             builddepends=src.build_depends,
+                             builddependsindep=src.build_depends_indep,
+                             architecturehintlist=src.architecture,
+                             component=componentID,
+                             creator=maintid,
+                             urgency=priomap[src.urgency],
+                             changelog=changelog,
+                             dsc=dsc,
+                             dscsigningkey=key,
+                             section=sectionID,
+                             manifest=None)
 
     def publishSourcePackage(self, src):
-        release = self.getSourcePackageRelease(src.package, src.version)[0]
-        component = self.getComponentByName(src.component)[0]
-        section = self.getSectionByName(src.section)[0]
+        release = self.getSourcePackageRelease(src.package, src.version)[0].id
+        componentID = self.getComponentByName(src.component).id
+        sectionID = self.getSectionByName(src.section).id
+        status=PackagePublishingStatus.PUBLISHED.value
 
-        data = {
-            "distrorelease":           self.distrorelease,
-            "sourcepackagerelease":    release[0],
-            # XXX dsilvers 2004-11-01: This *ought* to be pending
-            "status":                  2, ## Published
-            "component":               component,
-            "section":                 section, ## default Section
-        }
-        self._insert("sourcepackagepublishing", data)
-
+        SourcePackagePublishing(distrorelease=self.distrorelease.id,
+                                sourcepackagerelease=release,
+                                status=status,
+                                component=componentID,
+                                section=sectionID)
+                             
     def createFakeSourcePackageRelease(self, release, src):
         self.ensureSourcePackage(src)
         srcpkgid = self.getSourcePackage(src.package)[0]
         maintid = self.getPeople(*release["parsed_maintainer"])[0]
         # XXX these are hardcoded to the current package's value, which is not
         # really the truth
-        component = self.getComponentByName(src.component)[0]
-        section = self.getSectionByName(src.section)[0]
-        name = self.getSourcePackageName(src.package)
+        componentID = self.getComponentByName(src.component).id
+        sectionID = self.getSectionByName(src.section).id
+        name = self.getSourcePackageName(src.package)[0]
+        changelog=self.ensure_string_format(release["changes"])
         
-        data = {
-            "sourcepackagename":       name[0],
-            "sourcepackage":           srcpkgid,
-            "version":                 release["version"],
-            "dateuploaded":            release["parsed_date"],
-            "component":               component,
-            "creator":                 maintid,
-            "maintainer":              maintid,
-            "urgency":                 priomap[release["urgency"]],
-            "changelog":               self.ensure_string_format(release["changes"]),
-            "section":                 section,
-        }                                                          
-        self._insert("sourcepackagerelease", data)
+        SourcePackageRelease(sourcepackagename=name.id,
+                             sourcepackage=srcpkgid,
+                             version=release["version"],
+                             dateuploaded=release["parsed_date"],
+                             component=componentID,
+                             creator=maintid,
+                             maintainer=maintid,
+                             urgency=priomap[release["urgency"]],
+                             changelog=changelog,
+                             section=sectionID)
 
     #
     # Build
@@ -346,24 +411,25 @@ class Launchpad(SQLThing):
     #FIXME: DOn't use until we have the DB modification
     def getBuild(self, name, version, arch):
         build_id = self.getBinaryPackage(name, version, arch)
-        #FIXME: SELECT * is crap !!!
-        return self._query("""SELECT * FROM build 
-                              WHERE  id = %s;""", (build_id[0],))
+        return Build.get(build_id[0])
 
     def getBuildBySourcePackage(self, srcid):
-        return self._query("""SELECT id FROM build
-                              WHERE sourcepackagerelease = %s
-                                AND processor=%s""", (srcid,self.processor))[0]
+        return Build.selectBy(sourcepackagereleaseID=srcid,
+                              processorID=self.processor.id)[0]
 
     def createBuild(self, bin):
-        print "\t() hunting for spr with %s at %s" % (bin.source,bin.source_version)
+        print ("\t() hunting for spr with %s at %s"
+               % (bin.source,bin.source_version))
+        
         srcpkg = self.getSourcePackageRelease(bin.source, bin.source_version)
         if not srcpkg:
             # try handling crap like lamont's world-famous
             # debian-installer 20040801ubuntu16.0.20040928
             bin.source_version = re.sub("\.\d+\.\d+$", "", bin.source_version)
 
-            print "\t() trying again with %s at %s" % (bin.source,bin.source_version)
+            print "\t() trying again with %s at %s" \
+                                % (bin.source,bin.source_version)
+            
             srcpkg = self.getSourcePackageRelease(bin.source,
                                                   bin.source_version)
             if not srcpkg:
@@ -379,105 +445,126 @@ class Launchpad(SQLThing):
                     % (bin.source, bin.source_version)
                 return
 
+        srcpkg = srcpkg[0]
+
         if bin.gpg_signing_key_owner:
             key = self.getGPGKey(bin.gpg_signing_key, 
-                                 *bin.gpg_signing_key_owner)[0]
+                                 *bin.gpg_signing_key_owner)
         else:
             key = None
 
-        try:
-            buildid = self.getBuildBySourcePackage(srcpkg[0][0])
-            return buildid
-        except:
-            # Nothing to do if we fail we insert...
-            print "\tUnable to retrieve build for %d; making new one..." % srcpkg[0][0]
-            pass
+        build = Build.selectBy(sourcepackagereleaseID=srcpkg.id,
+                               processorID=self.processor.id)
+
+        if build.count():
+            return build[0]
+
+        # Nothing to do if we fail we insert...
+        print "\tUnable to retrieve build for %d; making new one..." % srcpkg.id
+
+        build = Build(processor=self.processor.id,
+                      distroarchrelease=self.distroarchrelease.id,
+                      buildstate=BuildStatus.FULLYBUILT.value, 
+                      gpgsigningkey=key,
+                      sourcepackagerelease=srcpkg.id,
+                      buildduration=None,
+                      buildlog=None,
+                      builder=None,
+                      changes=None,
+                      datebuilt=None)
         
+        return build
     
-        data = {
-            "processor":            self.processor,
-            "distroarchrelease":    self.distroarchrelease,
-            "buildstate":           1,
-            "gpgsigningkey":        key,
-            "sourcepackagerelease": srcpkg[0][0],
-        }
-        self._insert("build", data)
-
-        ##FIXME: for god sake !!!!
-        return self._query("""SELECT currval('build_id_seq');""")[0]
-
     #
     # BinaryPackageName
     #
     def getBinaryPackageName(self, name):
-        return self._query("""SELECT * FROM binarypackagename 
-                              WHERE  name = %s;""", (name,))
+        return BinaryPackageName.selectBy(name=name)
 
     def createBinaryPackageName(self, name):
         name = self.ensure_string_format(name)
-        self._insert("binarypackagename", {"name": name})
+        return BinaryPackageName(name=name)
        
     def createBinaryPackageFile(self, binpkg, alias):
-        bp = self.getBinaryPackage(binpkg.package,binpkg.version,binpkg.architecture)
-        #print bp
-        data = {
-        "binarypackage": bp[0],
-        "libraryfile": alias,
-        "filetype": 1, # XXX Default to DEB/UDEB unless we get a better option
-        }
-        self._insert("binarypackagefile", data)
-        pass
+        bp = self.getBinaryPackage(binpkg.package,
+                                   binpkg.version,
+                                   binpkg.architecture)
+
+        # BIG XXX: Daniel Debonzi 20050223
+        # If commit is not performed here
+        # the database says that libraryfilealias.id=alias
+        # is not on db, because it was included by librarian
+        # and somehow the initZopeless db connection can't "see"
+        # this db modification.
+        self.commit()
+
+        if self.dry_run:
+            # Data was not commited and due to the BIG XXX above
+            # create SourcePackageReleaseFile will fail so just
+            # skip it
+            return
+        BinaryPackageFile(binarypackage=bp[0].id,
+                          libraryfile=alias,
+                          filetype=self.getFileType(binpkg.filename))
+        
     #
     # BinaryPackage
     #
     def getBinaryPackage(self, name, version, architecture):
         #print "Looking for %s %s for %s" % (name,version,architecture)
-        bin_id = self.getBinaryPackageName(name)
-        if not bin_id:
+        bin = self.getBinaryPackageName(name)
+        if not bin.count():
             print "Failed to find the binarypackagename for %s" % (name)
             return None
+        bin = bin[0]
         if architecture == "all":
-            return self._query_single("""SELECT * from binarypackage WHERE
-                                         binarypackagename = %s AND
-                                         version = %s""", (bin_id[0][0], version))
+            binpkg = BinaryPackage.selectBy(binarypackagenameID=bin.id,
+                                            version=version)
+            if not binpkg.count():
+                return None
+            return binpkg
         #else:
-        return self._query_single("""SELECT * from binarypackage, build
-                                     WHERE  binarypackagename = %s AND 
-                                            version = %s AND
-                                            build.processor = %s AND
-                                            build.id = binarypackage.build""", 
-                                  (bin_id[0][0], version, self.processor))
+        clauseTables=("BinaryPackage","Build",)
+        query = ("BinaryPackage.binarypackagename=%s AND "
+                 "BinaryPackage.version=%s AND "
+                 "Build.Processor=%s AND "
+                 "Build.id = BinaryPackage.build"
+                 % (bin.id, quote(version), self.processor.id)
+                 )
 
+        binpkg = BinaryPackage.select(query, clauseTables=clauseTables)
+        if not binpkg.count():
+            return None
+        return binpkg
+    
     def createBinaryPackage(self, bin):
-        if not self.getBinaryPackageName(bin.package):
-            self.createBinaryPackageName(bin.package)
+        bin_name = self.getBinaryPackageName(bin.package)
+
+        if not bin_name.count():
+            bin_name = self.createBinaryPackageName(bin.package)
+        else:
+            bin_name = bin_name[0]
         
         build = self.createBuild(bin)
         if not build:
             # LA VARZEA
             return
-
-        name = self.getBinaryPackageName(bin.package)
-        if not name:
-            self.createBinaryPackageName(bin.package)
-            name = self.getBinaryPackageName(bin.package)
-
                
         description = self.ensure_string_format(bin.description)
         short_desc = description.split("\n")[0]
         licence = self.ensure_string_format(bin.licence)
-        component = self.getComponentByName(bin.component)[0]
-        section = self.getSectionByName(bin.section)[0]
+        componentID = self.getComponentByName(bin.component).id
+        sectionID = self.getSectionByName(bin.section).id
 
         data = {
-            "binarypackagename":    name[0][0],
-            "component":            component,
+            "binarypackagename":    bin_name.id,
+            "component":            componentID,
             "version":              bin.version,
             "shortdesc":            short_desc,
             "description":          description,
-            "build":                build[0],
-            "binpackageformat":     1, # Deb
-            "section":              section,
+            "build":                build.id,
+            "binpackageformat":     self.getBinaryPackageFormat(bin.filename),
+            "section":              sectionID,
             "priority":             prioritymap[bin.priority],
             "shlibdeps":            bin.shlibs,
             "depends":              bin.depends,
@@ -489,47 +576,53 @@ class Launchpad(SQLThing):
             "essential":            False,
             "installedsize":        bin.installed_size,
             "licence":              licence,
-            "architecturespecific": True
-        }
+            "architecturespecific": True,
+            "copyright": None
+            }
+        
         if bin.architecture == "all":
             data["architecturespecific"] = False
-        if bin.filename.endswith(".udeb"):
-            data["binpackageformat"] = 2 # UDEB
-        self._insert("binarypackage", data)
 
+        BinaryPackage(**data)
 
     def publishBinaryPackage(self, bin):
         ## Just publish the binary as Warty DistroRelease
-        component = self.getComponentByName(bin.component)[0]
-        section = self.getSectionByName(bin.section)[0]
+        componentID = self.getComponentByName(bin.component).id
+        sectionID = self.getSectionByName(bin.section).id
         #print "%s %s %s" % (bin.package, bin.version, bin.architecture)
-        bin_id = self.getBinaryPackage(bin.package, bin.version, bin.architecture)
+        binpkg = self.getBinaryPackage(bin.package, bin.version, bin.architecture)
+        if not binpkg:
+            print '\t*Failed to Publish ', bin.package
+            return
         #print "%s" % bin_id
         data = {
-           "binarypackage":     bin_id[0], 
-           "component":         component, 
-           "section":           section,
+           "binarypackage":     binpkg[0].id, 
+           "component":         componentID, 
+           "section":           sectionID,
            "priority":          prioritymap[bin.priority],
-           "distroarchrelease": self.distroarchrelease,
+           "distroarchrelease": self.distroarchrelease.id,
             # XXX dsilvers 2004-11-01: This *ought* to be pending
-           "status": 2, ### Published !!!
+           "status": PackagePublishingStatus.PUBLISHED.value
         }
-        self._insert("packagepublishing", data)
+
+        PackagePublishing(**data)
 
     def emptyPublishing(self, source=False):
         """Empty the publishing tables for this distroarchrelease"""
+
         if source:
-            self._exec(
-                """DELETE FROM sourcepackagepublishing
-                         WHERE distrorelease = %s
-                
-                """ % self.distrorelease
-                )
-        self._exec(
-            """DELETE FROM packagepublishing
-            WHERE distroarchrelease = %s
-            """ % self.distroarchrelease
-            )
+            spps = SourcePackagePublishing.selectBy\
+                   (distroreleaseID=self.distrorelease.id)
+
+            for spp in spps:
+                spp.destroySelf()
+
+
+        pps = PackagePublishing.selectBy(\
+            distroarchreleaseID=self.distroarchrelease.id)
+
+        for pp in pps:
+            pp.destroySelf()
 
     #
     # People
@@ -541,24 +634,26 @@ class Launchpad(SQLThing):
         return self.getPersonByEmail(email)
 
     def getPersonByEmail(self, email):
-        return self._query_single("""SELECT Person.id FROM Person,emailaddress 
-                                     WHERE email = %s AND 
-                                           Person.id = emailaddress.person;""",
-                                  (email,))
+        query=("email=%s AND "
+               "Person.id=emailaddress.person"
+               %quote(email)
+               )
+        clauseTables=("Person", "EmailAddress",)
+
+        return Person.select(query, clauseTables=clauseTables)
     
     def getPersonByName(self, name):
-        return self._query_single("""SELECT Person.id FROM Person
-                                     WHERE name = %s""", (name,))
+        return Person.selectBy(name=name)
     
     def getPersonByDisplayName(self, displayname):
-        return self._query_single("""SELECT Person.id FROM Person 
-                                     WHERE displayname = %s""", (displayname,))
+        return Person.selectBy(displayname=displaybname)
 
     def createPeople(self, name, email):
         print "\tCreating Person %s <%s>" % (name, email)
         name = self.ensure_string_format(name)
 
         items = name.split()
+
         if len(items) == 1:
             givenname = name
             familyname = ""
@@ -575,22 +670,24 @@ class Launchpad(SQLThing):
             "displayname":  name,
             "givenname":    givenname,
             "familyname":   familyname,
-            "name":         generate_nick(email, self.getPersonByName),
+            "name":         generate_nick(email),
         }
-        self._insert("person", data)
-        pid = self._query_single("SELECT CURRVAL('person_id_seq')")[0]
-        self.createEmail(pid, email)
-        
+
+        person = Person(**data)
+
+        self.createEmail(person.id, email)
+
     def createEmail(self, pid, email):
         data = {
             "email":    email,
             "person":   pid,
-            "status":   1, # XXX
+            "status":   EmailAddressStatus.NEW.value
         }
-        self._insert("emailaddress", data)
+
+        EmailAddress(**data)
 
     def ensurePerson(self, name, email):
-        if self.getPersonByEmail(email):
+        if self.getPersonByEmail(email).count():
             return
         # No person found and we can't rely on displayname to find the right
         # person. Have to create a new person.
@@ -600,12 +697,15 @@ class Launchpad(SQLThing):
                   algorithm, keysize):
         self.ensurePerson(name, email)
         person = self.getPersonByEmail(email)[0]
-        ret = self._query_single("""SELECT id FROM gpgkey
-                                    WHERE  keyid = %s""", (id,))
-        if not ret:
+
+        ret = GPGKey.selectBy(keyid=id)
+
+        if not ret.count():
             ret = self.createGPGKey(person, key, id, armor, is_revoked,
                                     algorithm, keysize)
-        return ret
+            return ret
+        
+        return ret[0]
 
     def createGPGKey(self, person, key, id, armor, is_revoked, algorithm,
                      keysize):
@@ -625,10 +725,10 @@ class Launchpad(SQLThing):
             "algorithm":    algorithm,
             "keysize":      keysize,
         }
-        self._insert("gpgkey", data)
-        return self._query_single("""SELECT id FROM gpgkey
-                                     WHERE id = CURRVAL('gpgkey_id_seq')""")
 
+        gpgkey = GPGKey(**data)
+        
+        return gpgkey
     #
     # Distro/Release
     #
@@ -643,26 +743,32 @@ class Launchpad(SQLThing):
     def getComponentByName(self, component):
         if component in self.compcache:
             return self.compcache[component]
-        ret = self._query_single("""SELECT id FROM component 
-                                    WHERE  name = %s""", component)
-        if not ret:
+
+        ret = Component.selectBy(name=component)
+
+        if not ret.count():
             raise ValueError, "Component %s not found" % component
-        self.compcache[component] = ret
-        print "\t+++ Component %s is %s" % (component, self.compcache[component])
-        return ret
+
+        self.compcache[component] = ret[0]
+        print "\t+++ Component %s is %s" % \
+              (component, self.compcache[component].id)
+
+        return ret[0]
 
     def getSectionByName(self, section):
         if '/' in section:
             section = section[section.find('/')+1:]
         if section in self.sectcache:
             return self.sectcache[section]
-        ret = self._query_single("""SELECT id FROM section
-                                    WHERE  name = %s""", section)
-        if not ret:
+
+        ret = Section.selectBy(name=section)
+
+        if not ret.count():
             raise ValueError, "Section %s not found" % section
-        self.sectcache[section] = ret
-        print "\t+++ Section %s is %s" % (section, self.sectcache[section])
-        return ret
+
+        self.sectcache[section] = ret[0]
+        print "\t+++ Section %s is %s" % (section, self.sectcache[section].id)
+        return ret[0]
 
     def addSection(self, section):
         if '/' in section:
@@ -671,6 +777,6 @@ class Launchpad(SQLThing):
             self.getSectionByName(section)
         except:
             print "No good, need to add it"
-            self._insert( "section", { "name": section } )
+            Section(name=section)
 
 

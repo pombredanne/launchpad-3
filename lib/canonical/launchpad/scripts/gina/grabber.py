@@ -66,6 +66,10 @@ parser.add_option("-n", "--dry-run", dest="dry_run",
                   help="don't commit changes to database",
                   default=False, action='store_true')
 
+parser.add_option("-b", "--back-propagate", dest="back_propagate",
+                  help="Make package back propagation",
+                  default=False, action='store_true')
+
 (options,args) = parser.parse_args()
 
 package_root = options.package_root
@@ -131,12 +135,18 @@ def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
 
         sources = apt_pkg.ParseTagFile(srcfile)
         while sources.Step():
+##             # To start from a given letter.
+##             if dict(sources.Section)['Package'][0].lower()< 'p':
+##                 continue
             srcpkg = SourcePackageRelease(kdb, component=component, 
                                           **dict(sources.Section))
             source_map[srcpkg.package] = srcpkg
 
         binaries = apt_pkg.ParseTagFile(binfile)
         while binaries.Step():
+##             # To start from a given letter.
+##             if dict(binaries.Section)['Package'][0].lower()< 'p':
+##                 continue
             binpkg = BinaryPackageRelease(component=component, 
                                           **dict(binaries.Section))
             name = binpkg.package
@@ -149,6 +159,10 @@ def do_packages(source_map, bin_map, lp, kdb, keyrings, component, arch):
 
         dibins = apt_pkg.ParseTagFile(difile)
         while dibins.Step():
+##             # To start from a given letter.
+##             if dict(dibins.Section)['Package'][0].lower()< 'p':
+##                 continue
+
             binpkg = BinaryPackageRelease(component=component,
                                           filetype="udeb",
                                           **dict(dibins.Section))
@@ -202,12 +216,20 @@ def do_arch(lp, kdb, bin_map, source_map):
             # Tricky bit here: even if the source package exists, we
             # need to process it to ensure it has all the data inside it
             # or binary package won't create properly
-            try:
-                srcpkg.process_package(kdb, package_root, keyrings)
-                srcpkg.ensure_created(lp)
-            except Exception, e:
-                print "\t!! sourcepackage addition threw an error."
-                printexception(e)
+##            try:
+
+            # Daniel Debonzi 20050223
+            # process_package is false when a package was not
+            # found in katie db. AFAICS, there is not to do with
+            # this package. Just give up.
+            if not srcpkg.process_package(kdb, package_root, keyrings):
+                print '\t** Process Package Failed. Package not found in Katie DB'
+                ## break
+                continue
+            srcpkg.ensure_created(lp)
+##             except Exception, e:
+##                 print "\t!! sourcepackage addition threw an error."
+##                 printexception(e)
                 # Since we're importing universe which can cause issues,
                 # we don't exit
                 # sys.exit(0)
@@ -216,12 +238,22 @@ def do_arch(lp, kdb, bin_map, source_map):
         # stored in the BinaryPackage table
         binpkg.licence = srcpkg.licence
 
-        try:
-            binpkg.process_package(kdb, package_root, keyrings)
-            binpkg.ensure_created(lp)
-        except Exception, e:
-            print "\t!! binarypackage addition threw an error."
-            printexception(e)
+##        try:
+
+        # Daniel Debonzi 20050223
+        # process_package is false when a package was not
+        # found in katie db. AFAICS, there is not to do with
+        # this package. Just give up. The same as srcpkg.proccess_package
+        # above.
+
+        if not binpkg.process_package(kdb, package_root, keyrings):
+                print '\t** Process Package Failed. Package not found in Katie DB'
+                ## break
+                continue
+        binpkg.ensure_created(lp)
+##         except Exception, e:
+##             print "\t!! binarypackage addition threw an error."
+##             printexception(e)
             # Since we're importing universe which can cause issues,
             # we don't exit
             # sys.exit(0)
@@ -294,8 +326,10 @@ if __name__ == "__main__":
         do_arch(lp[arch],kdb,bin_map[arch],source_map)
         lp[arch].commit()
 
-    print "@ Performing backpropogation of sourcepackagerelease..."
-    do_backpropogation(kdb, lp[archs[0]], source_map, keyrings)
+
+    if options.back_propagate:
+        print "@ Performing backpropogation of sourcepackagerelease..."
+        do_backpropogation(kdb, lp[archs[0]], source_map, keyrings)
 
     # Next empty the publishing tables...
     print "@ Emptying publishing tables..."
@@ -316,8 +350,6 @@ if __name__ == "__main__":
 
     print "@ Closing database connections..."
     
-    for arch in archs:
-        lp[arch].close()
     kdb.commit()
     kdb.close()
 

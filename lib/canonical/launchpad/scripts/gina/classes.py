@@ -8,7 +8,7 @@ from mx.DateTime import DateTime, RangeError
 
 # From zless /usr/share/doc/gnupg/DETAILS.gz 
 GPGALGOS = {
-    1 : "R",  # RSA
+    1 : "R", # RSA
     16: "g", # ElGamal
     17: "D", # DSA
     20: "G", # ElGamal, compromised:
@@ -46,8 +46,10 @@ class AbstractPackageRelease:
             # finally:
             # shutil.rmtree(tempdir)
         shutil.rmtree(tempdir)
-        self.do_katie(kdb, keyrings)
+        if not self.do_katie(kdb, keyrings):
+            return False
         self.is_processed = True
+        return True
 
     def get_person_by_key(self, keyrings, key):
         if key and key not in ("NOSIG", "None", "none"):
@@ -215,12 +217,16 @@ class SourcePackageRelease(AbstractPackageRelease):
 
     def do_katie(self, kdb, keyrings):
         data = kdb.getSourcePackageRelease(self.package, self.version)
+        if not data:
+            return False
+
         assert len(data) == 1
         data = data[0]
         self.date_uploaded = data["install_date"]
         self.dsc_signing_key = data["fingerprint"]
         self.dsc_signing_key_owner = \
             self.get_person_by_key(keyrings, self.dsc_signing_key)
+        return True
 
     def ensure_created(self, db):
         if db.getSourcePackageRelease(self.package, self.version):
@@ -234,7 +240,8 @@ class SourcePackageRelease(AbstractPackageRelease):
         for f in self.files:
             fname = f[-1]
             print "\t\t+ %s/%s" % (self.directory, fname);
-            alias = getLibraryAlias( "%s/%s" % (self.package_root, self.directory), fname )
+            alias = getLibraryAlias( "%s/%s" % (self.package_root,
+                                                self.directory), fname )
             if alias is not None:
                 print "\t\t\t= %s" % alias
                 db.createSourcePackageReleaseFile(self, fname, alias)
@@ -347,6 +354,8 @@ class BinaryPackageRelease(AbstractPackageRelease):
     def do_katie(self, kdb, keyrings):
         data = kdb.getBinaryPackageRelease(self.package, self.version,
                                            self.architecture)
+        if not data:
+            return False
         #assert len(data) >= 1
         if len(data) == 0:
             raise Exception, "assert len(data) >= 1"
@@ -354,6 +363,7 @@ class BinaryPackageRelease(AbstractPackageRelease):
         self.gpg_signing_key = data["fingerprint"]
         self.gpg_signing_key_owner = \
             self.get_person_by_key(keyrings, self.gpg_signing_key)
+        return True
 
     def ensure_created(self, db):
         if not self.is_created(db):
@@ -364,7 +374,8 @@ class BinaryPackageRelease(AbstractPackageRelease):
             fname = self.filename[self.filename.rfind("/")+1:]
             fdir = self.filename[:self.filename.rfind("/")]
             print "\t\t+ %s" % self.filename
-            alias = getLibraryAlias( "%s/%s" % (self.package_root, fdir), fname)
+            alias = getLibraryAlias( "%s/%s" % (self.package_root,
+                                                fdir), fname)
             if alias is not None:
                 print "\t\t\t= %s" % alias
                 db.createBinaryPackageFile( self, alias )

@@ -2,6 +2,89 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-02 20:58:46 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1361
+
+    Summary:
+      initZopeless gina first release.
+    Revision:
+      launchpad--devel--0--patch-1361
+
+    Patches applied:
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-439
+       star-merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-440
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-441
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-442
+       merge from rocketfuel
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-443
+       initZopeless gina merge
+    
+     * daniel.debonzi@canonical.com/launchpad--devel--0--patch-444
+       Fix gpgkey_id_seq in sampledata
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--base-0
+       tag of daniel.debonzi@canonical.com/launchpad--devel--0--patch-438
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-1
+       initZopeless gina is just running. Still need code cleanup and improves.
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-2
+       merge from daniel.debonzi@canonical.com/launchpad--devel--0
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-3
+       Code cleanup and improves
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-4
+       merge from daniel.debonzi@canonical.com/launchpad--devel--0
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-5
+       Gina fix and cron scripts example files added.
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-6
+       Work around to fix VSourcePackageReleasePublishing after insert the column sourcepackagename that was missing in SourcePackageRelease class. The problem comes since VSourcePackageReleasePublishing inherit SourcePackageRelease and does not have the sourcepackagename column. A better solution should be found in the NukeSourcePackage job that will require work on this class anyway.
+    
+     * daniel.debonzi@canonical.com/launchpad--gina--0--patch-7
+       merge from daniel.debonzi@canonical.com/launchpad--devel--0
+    
+
+    new files:
+     lib/canonical/launchpad/scripts/gina/scripts/.arch-ids/reload-katie.example.id
+     lib/canonical/launchpad/scripts/gina/scripts/.arch-ids/run-gina-zopeless.example.id
+     lib/canonical/launchpad/scripts/gina/scripts/reload-katie.example
+     lib/canonical/launchpad/scripts/gina/scripts/run-gina-zopeless.example
+
+    modified files:
+     database/sampledata/current.sql doc/changelog.txt
+     lib/canonical/launchpad/database/build.py
+     lib/canonical/launchpad/database/sourcepackage.py
+     lib/canonical/launchpad/scripts/gina/classes.py
+     lib/canonical/launchpad/scripts/gina/database.py
+     lib/canonical/launchpad/scripts/gina/grabber.py
+
+    new patches:
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-439
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-440
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-441
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-442
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-443
+     daniel.debonzi@canonical.com/launchpad--devel--0--patch-444
+     daniel.debonzi@canonical.com/launchpad--gina--0--base-0
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-1
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-2
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-3
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-4
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-5
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-6
+     daniel.debonzi@canonical.com/launchpad--gina--0--patch-7
+
+
 2005-03-02 19:33:53 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1360
 
     Summary:

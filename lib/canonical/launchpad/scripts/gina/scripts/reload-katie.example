@@ -1,0 +1,10 @@
+#!/bin/sh
+
+SRV=/home/debonzi/Warthogs/mirror
+
+createdb katie2
+
+psql katie2 < $SRV/projectb.dump
+
+echo 'drop database katie; create database katie with template katie2; drop database katie2' | psql template1
+

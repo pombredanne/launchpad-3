@@ -322,6 +322,10 @@ class SourcePackageRelease(SQLBase):
     component = ForeignKey(foreignKey='Component', dbName='component')
     sourcepackage = ForeignKey(foreignKey='SourcePackage',
                                dbName='sourcepackage', notNull=True)
+    sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+                                   dbName='sourcepackagename', notNull=True)
+    maintainer = ForeignKey(foreignKey='Person', dbName='maintainer',
+                            notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
 
@@ -415,20 +419,21 @@ class VSourcePackageReleasePublishing(SourcePackageRelease):
     _table = 'VSourcePackageReleasePublishing'
 
     # XXXkiko: IDs in this table are *NOT* unique!
-    # XXXkiko: clean up notNulls
-    datepublished = DateTimeCol(dbName='datepublished')
-    publishingstatus = IntCol(dbName='publishingstatus', notNull=True)
-
-    name = StringCol(dbName='name', notNull=True)
-    shortdesc = StringCol(dbName='shortdesc', notNull=True)
-    description = StringCol(dbName='description', notNull=True)
-    componentname = StringCol(dbName='componentname', notNull=True)
-
+    name = StringCol(dbName='name')
+    shortdesc = StringCol(dbName='shortdesc')
     maintainer = ForeignKey(foreignKey='Person', dbName='maintainer')
+    description = StringCol(dbName='description')
+    publishingstatus = IntCol(dbName='publishingstatus')
+    datepublished = DateTimeCol(dbName='datepublished')
     distrorelease = ForeignKey(foreignKey='DistroRelease',
                                dbName='distrorelease')
-    #XXX: salgado: wtf is this?
-    #MultipleJoin('Build', joinColumn='sourcepackagerelease'),
+    componentname = StringCol(dbName='componentname')
+
+
+    # XXX: Daniel Debonzi. Hack to do not query the sourcepackagename
+    # inherited from SourcePackageRelease but that is not available in
+    # VSourcePackageReleasePublishing
+    sourcepackagename = None
 
     def _title(self):
         title = 'Source package '

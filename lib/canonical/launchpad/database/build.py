@@ -1,3 +1,6 @@
+# Python imports
+from datetime import datetime
+
 # Zope imports
 from zope.interface import implements
 
@@ -12,7 +15,8 @@ class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
 
-    datecreated = DateTimeCol(dbName='datecreated', notNull=True)
+    datecreated = DateTimeCol(dbName='datecreated', notNull=True,
+                              default=datetime.utcnow())
     processor = ForeignKey(dbName='processor', foreignKey='Processor', 
                            notNull=True)
     distroarchrelease = ForeignKey(dbName='distroarchrelease', 
