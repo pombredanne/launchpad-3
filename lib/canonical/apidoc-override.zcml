@@ -3,7 +3,7 @@
   <class class="zope.app.apidoc.APIDocumentation">
     <require
         interface="zope.app.container.interfaces.IReadContainer"
-        permission="zope.View"
+        permission="zope.Public"
         />
   </class>
 </configure>

@@ -39,7 +39,7 @@
         schema="canonical.launchpad.interfaces.IBounty"
         label="Modify Bounty:"
         fields="name title summary usdvalue difficulty duration description"
-        permission="launchpad.AnyPerson"
+        permission="zope.Public"
         template="../templates/launchpad-editform.pt"
         lp:url="malone/bounties/+edit">
     </browser:editform>

@@ -3,6 +3,7 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
+    <include package="canonical.launchpad" file="permissions.zcml" />
     <include package="canonical.launchpad.webapp" file="meta.zcml" />
     <includeOverrides file="defaultview-meta.zcml" />
 
@@ -13,9 +14,6 @@
     <browser:skin name="ubuntulinux"
                     interface="canonical.launchpad.layers.UbuntuLinuxLayer"/>
     <browser:defaultSkin name="launchpad" />
-
-    <!-- This needs to be included early on because it defines permissions. -->
-    <include package="canonical.lp" />
 
     <!-- The default Zope 3 configuration of the SimpleComponentTraverser is
         that it applies to any object that provides Interface.
@@ -136,5 +134,7 @@
             template="launchpad/templates/errorservice-tbentry.pt"
             />
     </browser:pages>
+
+    <include package="canonical.lp" />
 
 </configure>

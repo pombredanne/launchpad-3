@@ -1,0 +1,7 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+  <permission id="launchpad.AnyPerson" title="Any Authenticated Person" />
+
+  <permission id="launchpad.Edit" title="Editing something" />
+
+</configure>

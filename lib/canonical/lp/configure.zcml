@@ -5,6 +5,7 @@
   <browser:pages for="*" permission="zope.Public" >
       <!--  XXX yuck... registering a main template as a view for everything.
             This should be a non-published resource.
+            Steve Alexander, Wed Nov 24 18:25:43 UTC 2004
         -->
       <browser:page
           name="main_template"
@@ -24,8 +25,5 @@
           />
 
   </browser:pages>
-
-  <!-- A permission for anybody who has authenticated themselves. -->
-  <permission id="launchpad.AnyPerson" title="Any Authenticates Person" />
 
 </configure>

@@ -13,7 +13,8 @@ __all__ = ('ILaunchpadApplication', 'IMaloneApplication',
            'IRosettaApplication', 'ISoyuzApplication',
            'IDOAPApplication', 'IFOAFApplication',
            'IPasswordEncryptor', 'IReadZODBAnnotation',
-           'IWriteZODBAnnotation', 'IZODBAnnotation')
+           'IWriteZODBAnnotation', 'IZODBAnnotation',
+           'IAuthorization')
 
 class ILaunchpadApplication(Interface):
     """Marker interface for a launchpad application.
@@ -85,3 +86,17 @@ class IWriteZODBAnnotation(Interface):
 
 class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
+
+
+class IAuthorization(Interface):
+    """Authorization policy for a particular object."""
+
+    def checkPermission(principal, permission):
+        """Returns True if the principal has that permission on the adapted
+        object.
+
+        Otherwise returns False or returns None; these are equivalent.
+
+        The easiest way to return None is to allow the flow control to
+        'fall off the end' of the method.
+        """

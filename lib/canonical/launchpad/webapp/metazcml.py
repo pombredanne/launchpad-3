@@ -15,7 +15,7 @@ from zope.security.checker import CheckerPublic
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces import NotFound
 from zope.app import zapi
-from zope.app.component.metaconfigure import handler
+from zope.app.component.metaconfigure import handler, adapter
 from zope.app.component.interface import provideInterface
 from zope.app.security.fields import Permission
 from zope.app.component.fields import LayerField
@@ -26,6 +26,8 @@ import zope.app.publisher.browser.metadirectives
 
 from canonical.publication import ISubURLDispatch, SubURLTraverser
 from canonical.launchpad.layers import setAdditionalLayer
+from canonical.launchpad.interfaces import IAuthorization
+from canonical.launchpad.webapp.interfaces import ILaunchpadPrincipal
 
 try:
     from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -33,6 +35,7 @@ except ImportError:
     # This code can go once we've upgraded Zope.
     from zope.publisher.interfaces.browser import IBrowserRequest
     IDefaultBrowserLayer = IBrowserRequest
+
 
 class IDefaultViewDirective(
     zope.app.publisher.browser.metadirectives.IDefaultViewDirective):

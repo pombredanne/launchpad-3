@@ -3,11 +3,12 @@
 from zope.interface import implements
 
 # SQL imports
-from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, FloatCol, \
-                      CurrencyCol
+from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, FloatCol
+from sqlobject import CurrencyCol
 from sqlobject import MultipleJoin, RelatedJoin, AND, LIKE, OR
 
 from canonical.launchpad.interfaces import IBounty, IBountySet
+from canonical.launchpad.interfaces import IAuthorization
 from canonical.launchpad.interfaces import *
 
 from canonical.database.sqlbase import SQLBase
@@ -24,7 +25,7 @@ from sets import Set
 class Bounty(SQLBase):
     """A bounty."""
 
-    implements(IBounty)
+    implements(IBounty, IAuthorization)
 
     # default to listing newest first
     _defaultOrder = '-id'
@@ -44,6 +45,9 @@ class Bounty(SQLBase):
                           default=DEFAULT)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
 
+    def checkPermission(self, principal, permission):
+        if permission == 'launchpad.Edit':
+            return self.id == principal.id
 
 
 class BountySet(object):
