@@ -2,20 +2,21 @@
 
     <h4>Add</h4>
 
-    <div class="portletBody">
+    <div class="portletBody"
+         tal:define="bug_url string:/malone/bugs/${context/id}">
         <div class="portletContent odd">
             <img src="/++resource++add.gif" alt="Add">
-            <a href="people/+new">Subscriber</a><br />
+            <a href="#" tal:attributes="href string:$bug_url/people/+new">Subscriber</a><br />
             <img src="/++resource++add.gif" alt="Add">
-            <a href="productinfestations/+new">Product Infestation</a><br />
+            <a href="#" tal:attributes="href string:$bug_url/productinfestations/+new">Product Infestation</a><br />
             <img src="/++resource++add.gif" alt="Add">
-            <a href="packageinfestations/+new">Package Infestation</a><br />
+            <a href="#" tal:attributes="href string:$bug_url/packageinfestations/+new">Package Infestation</a><br />
             <img src="/++resource++add.gif" alt="Add">
-            <a href="cverefs/+new">CVE</a><br />
+            <a href="#" tal:attributes="href string:$bug_url/cverefs/+new">CVE</a><br />
             <img src="/++resource++add.gif" alt="Add">
-            <a href="references/+new">Web Link</a><br />
+            <a href="#" tal:attributes="href string:$bug_url/references/+new">Web Link</a><br />
             <img src="/++resource++add.gif" alt="Add">
-            <a href="watches/+new">Bug Tracker</a>
+            <a href="#" tal:attributes="href string:$bug_url/watches/+new">Bug Tracker</a>
         </div>
     </div>
 

@@ -100,9 +100,9 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-          <tr onclick="window.location='productassignments/2/+edit'">
+          <tr onclick="window.location='/malone/bugs/2/productassignments/2/+edit'">
   ...
-          <tr onclick="window.location='productassignments/6/+edit'">
+          <tr onclick="window.location='/malone/bugs/2/productassignments/6/+edit'">
   ...
 
 
@@ -114,9 +114,6 @@
   ... """)
   HTTP/1.1 200 Ok
   ...
-            <h3>Edit Product Bug Assignment</h3>
-  ...
-
 
   >>> print http(r"""
   ... POST /malone/bugs/2/productassignments/6/+edit HTTP/1.1
@@ -166,18 +163,11 @@
   ... 
   ... 1
   ... ------------0xKhTmLbOuNdArY
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Change
-  ... ------------0xKhTmLbOuNdArY--
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT" ...  ... Change ... ------------0xKhTmLbOuNdArY--
   ... """)
   HTTP/1.1 200 Ok
   ...
   <BLANKLINE>
-  ...
-            <h3>Edit Product Bug Assignment</h3>
-  <BLANKLINE>
-            <p>Updated on ...</p>
   ...
   <input type="text" name="field.product" value="arch-mirrors" ... />
   ...

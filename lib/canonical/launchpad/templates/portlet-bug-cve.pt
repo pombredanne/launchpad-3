@@ -1,4 +1,5 @@
-<div class="portlet" tal:condition="context/cverefs">
+<div class="portlet" tal:condition="context/cverefs"
+     tal:define="bug_url string:/malone/bugs/${context/id}">
 
     <h4>CVE References</h4>
 
@@ -10,13 +11,13 @@
                 <span tal:replace="ref/cveref">123134</span>:
                 <span tal:replace="ref/title">title goes here</span>
             </a>
-            [ <a tal:attributes="href string:cverefs/${ref/id}/+edit">
+            [ <a tal:attributes="href string:$bug_url/cverefs/${ref/id}/+edit">
             Edit</a> ]
         </div>
 
         <div class="portletContent odd">
             <img src="/++resource++add.gif" alt="Add">
-            <a href="cverefs/+new">Add CVE...
+            <a href="#" tal:attributes="href string:$bug_url/cverefs/+new">Add CVE...
             </a>
         </div>
     </div>

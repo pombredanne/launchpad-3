@@ -1,7 +1,10 @@
+__metaclass__ = type
+
 from sqlobject.sqlbuilder import AND, IN, ISNULL, OR, SQLOp
 
 from zope.schema.vocabulary import getVocabularyRegistry
 
+from canonical.launchpad.browser.bug import BugView
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import IPerson
@@ -13,7 +16,7 @@ from canonical.launchpad.vocabularies import ValidPersonVocabulary, \
 from canonical.database.sqlbase import quote
 
 # Bug Reports
-class BugsAssignedReportView(object):
+class BugsAssignedReportView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -86,7 +89,7 @@ class BugsAssignedReportView(object):
 # in which case most of this hackishness can go away.
 # XXX: 2004-12-02, Stuart Bishop: I'm not sure what this class is doing in here
 # since it is actually a view on IBugSet.
-class BugAssignmentsView(object):
+class BugAssignmentsView:
 
     DEFAULT_STATUS = (
         int(dbschema.BugAssignmentStatus.NEW),

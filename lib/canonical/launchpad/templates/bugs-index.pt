@@ -98,8 +98,9 @@
               tal:attributes="onclick string:window.location='${ass_link}';">-</td>
           <td tal:content="python:package_name and package_name or '-'"
               tal:attributes="onclick string:window.location='${ass_link}';">-</td>
-          <td tal:attributes="onclick string:window.location='${ass_link}';">
-            <a tal:content="assignment/bug/title" tal:attributes="href bugid">title</a>
+          <td tal:attributes="onclick string:window.location='${ass_link}';"
+              tal:content="assignment/bug/title">
+              title
           </td>
           <td tal:content="status"
               tal:attributes="onclick string:window.location='${ass_link}';

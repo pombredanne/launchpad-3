@@ -113,6 +113,7 @@ class ILaunchBag(Interface):
     product = Attribute('Product, or None')
     distribution = Attribute('Distribution, or None')
     sourcepackage = Attribute('Sourcepackage, or None')
+    bug = Attribute('Bug, or None')
 
     user = Attribute('Currently authenticated person, or None')
 

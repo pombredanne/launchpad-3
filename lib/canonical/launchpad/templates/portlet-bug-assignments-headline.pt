@@ -6,6 +6,7 @@
     specialised assignments page.
 -->
 
+<div tal:omit-tag="" tal:define="bug_url string:/malone/bugs/${context/id}">
 <table class="listing rowNavigation" style="width: 100%;">
     <thead>
         <tr>
@@ -26,7 +27,7 @@
     <tbody>
         <!-- Upstream Assignments -->
         <tr tal:repeat="bugass context/productassignments"
-            tal:attributes="onclick string:window.location='productassignments/${bugass/id}/+edit';">
+            tal:attributes="onclick string:window.location='$bug_url/productassignments/${bugass/id}/+edit';">
            
             <td>
                 <a href=""
@@ -82,7 +83,7 @@ This bug is essential to fix as soon as possible. It affects system stability, d
 
         <!-- Distribution Package Assignments -->
         <tr tal:repeat="bugass context/packageassignments"
-            tal:attributes="onclick string:window.location='packageassignments/${bugass/id}/+edit';">
+            tal:attributes="onclick string:window.location='$bug_url/packageassignments/${bugass/id}/+edit';">
            
             <td>
                 <a href=""
@@ -134,17 +135,17 @@ This bug is essential to fix as soon as possible. It affects system stability, d
     </tbody>
 </table>
 
-<a href="productassignments/+new"
+<a href="#" tal:attributes="href string:$bug_url/productassignments/+new"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring upstream">
     <img src="/++resource++add.gif" alt="+" />
     File Against Upstream...
 </a>
 
-<a href="packageassignments/+new"
+<a href="#" tal:attributes="href string:$bug_url/packageassignments/+new"
     style="font-size: 85%; float: right; display: inline; clear: both; text-decoration: none;"
     title="Mark this bug as occurring in another package">
     <img src="/++resource++add.gif" alt="+" />
     File Against Package...
 </a>
-                
+</div>

@@ -1,5 +1,10 @@
+# Copyright 2004 Canonical Ltd.  All rights reserved.
 
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+__metaclass__ = type
+
+from zope.component import getUtility
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile, \
+    BoundPageTemplate
 from zope.app.form.browser.add import AddView
 from zope.interface import implements
 
@@ -11,7 +16,7 @@ from canonical.launchpad.database import BugAttachmentSet, \
         BugPackageInfestationSet, Person, Bug, \
         BugsAssignedReport, BugSet, CVERefSet
 
-from canonical.launchpad.interfaces import IPerson
+from canonical.launchpad.interfaces import IPerson, ILaunchBag
 
 from canonical.lp import dbschema
 
@@ -41,31 +46,82 @@ def traverseBugs(bugcontainer, request, name):
     else:
         return BugSet()[int(name)]
 
+# TODO: Steve will be hacking on a more general portlet mechanism today
+# (2004-12-09)
+class BoundPortlet(BoundPageTemplate):
+    def __call__(self, *args, **kw):
+        return BoundPageTemplate.__call__(self, *args, **kw)
+
+class ViewWithBugContext:
+    def __init__(self, view):
+        self.request = view.request
+        self.context = getUtility(ILaunchBag).bug
+
+class BugPortlet:
+    def __init__(self, template_filename):
+        self.template = ViewPageTemplateFile(template_filename)
+
+    def __call__(self, view, *args, **kw):
+        return self.template(ViewWithBugContext(view), *args, **kw)
+
+    def __get__(self, instance, type=None):
+        return BoundPortlet(self, instance)
 
 # TODO: It should be possible to specify all this via ZCML and not require
 # the BugView class with its ViewPageTemplateFile attributes
-# (I think the browser:view directive allows this alread -- stub)
-class BugView(object):
-    # XXX fix these horrific relative paths
-    watchPortlet = ViewPageTemplateFile(
+# (I think the browser:view directive allows this already -- stub)
+class BugView:
+    # TODO
+    # These will all become actual Portlet objects.
+    # The default path for the templates will be
+    # lib/canonical/launchpad/templates.
+    # In each case, we're interested in
+    # 1. what the "context" of the page template needs to be.
+    # 2. whether it will change its presentation depending on whether
+    #    it is used for a Bug's view or for an Assignment's view.
+    
+    # Context is a Bug.  Same in bug and in assignment.
+    watchPortlet = BugPortlet(
         '../templates/portlet-bug-watch.pt')
-    productAssignmentPortlet = ViewPageTemplateFile(
+
+    # Not totally sure what this even is.
+    productAssignmentPortlet = BugPortlet(
         '../templates/portlet-bug-productassignments.pt')
-    sourcepackageAssignmentPortlet = ViewPageTemplateFile(
+
+    # Not totally sure what this even is.
+    sourcepackageAssignmentPortlet = BugPortlet(
         '../templates/portlet-bug-packageassignments.pt')
-    productInfestationPortlet = ViewPageTemplateFile(
+
+    # Show all infestations in a Bug.  Show infested releases
+    # in an Assignment.
+    productInfestationPortlet = BugPortlet(
         '../templates/portlet-bug-productinfestation.pt')
-    packageInfestationPortlet = ViewPageTemplateFile(
+
+    # Show all infestations in a Bug.  Show infested releases
+    # in an Assignment.
+    packageInfestationPortlet = BugPortlet(
         '../templates/portlet-bug-sourcepackageinfestation.pt')
-    referencePortlet = ViewPageTemplateFile(
+
+    # Context is a Bug.  Same in bug and in assignment.
+    referencePortlet = BugPortlet(
         '../templates/portlet-bug-reference.pt')
-    cvePortlet = ViewPageTemplateFile(
+
+    # Context is a Bug.  Same in bug and in assignment.
+    cvePortlet = BugPortlet(
         '../templates/portlet-bug-cve.pt')
-    peoplePortlet = ViewPageTemplateFile(
+    
+    # Context is a Bug.  Same in bug and in assignment.
+    peoplePortlet = BugPortlet(
         '../templates/portlet-bug-people.pt')
-    assignmentsHeadline = ViewPageTemplateFile(
+
+    # That's not even a portlet any more.
+    assignmentsHeadline = BugPortlet(
         '../templates/portlet-bug-assignments-headline.pt')
-    actionsPortlet = ViewPageTemplateFile(
+
+    # Context is a Bug.  Same in bug and in assignment.
+    # Maybe in the future we'll want to do some special context
+    # awareness on an inffestation.
+    actionsPortlet = BugPortlet(
         '../templates/portlet-bug-actions.pt')
 
 class BugAddView(AddView):
@@ -77,7 +133,7 @@ class BugAddView(AddView):
     def nextURL(self):
         return ".?bugadded=" + str(self.bugadded.id)
 
-class BugsCreatedByView(object):
+class BugsCreatedByView:
     def __init__(self, context, request):
         self.context = context
         self.request = request
