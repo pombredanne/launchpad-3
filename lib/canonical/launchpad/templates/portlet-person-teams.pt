@@ -1,0 +1,14 @@
+<fieldset tal:condition="context/teams"> 
+ <div>
+   <h3>My Teams(TeamPart)</h3>
+   <ul>
+   <li tal:repeat="team context/teams">
+       <a tal:attributes="href string:../${team/team/name}"
+	      tal:content="team/team/displayname">MEMBER</a>
+   </li>
+   </ul>
+
+   <a tal:condition="not:context/person/teamowner" 
+      href="+add">Create a New Team</a>
+ </div>
+</fieldset>

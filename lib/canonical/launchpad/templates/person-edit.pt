@@ -14,6 +14,23 @@
 
 <div metal:fill-slot="main">
 
+<div id="content" class="documentEditable">
+    <ul class="contentViews">
+        <li id="contentview-view" class="plain">
+            <a href="index.html">View</a>
+        </li>
+
+        <li id="contentview-edit" class="selected">
+            <a>Edit</a>
+        </li>
+
+	<li id="contentview-packages" class="plain">
+            <a href="+packages">Packages</a>
+        </li>
+    </ul>
+
+    <div class="documentContent" id="region-content">
+
     <h1>Edit <span tal:content="context/person/displayname">DISPLAYNAME</span> 
 	Information</h1>
 
@@ -24,10 +41,6 @@
     
     <div>
     <form name="edit" action="" method="POST">
-    <fieldset>
-    <legend><h3>Edit <span
-	tal:content="context/person/displayname">DISPLAYNAME</span>
-	 Information</h3><legend> 
 	<table>
 	<tr><td>
 	<div class="field">
@@ -170,9 +183,8 @@
   </div>
   </tla:block>
 
-
-
-
+</div>
+</div>
 </div>
 
 </body>

@@ -286,20 +286,35 @@
 	 name="+add"
        />
 
+
    <pages for="canonical.soyuz.sql.PersonApp"
 	  allowed_attributes="results context"
 	  permission="zope.Public">
-
-	<page  name="index.html"
-          template="../launchpad/templates/person-index.pt"
-	  lp:url="Soyuz/people/$person.id/index.html"
-	/>
 
 	<page  name="+key"
           template="../launchpad/templates/person-key.pt"
 	  lp:url="Soyuz/people/$person.id/+key"
 	/>
    </pages>
+
+
+   <page for="canonical.soyuz.sql.PersonApp"
+	 permission="zope.Public"
+	 name="index.html"
+	 class="canonical.soyuz.browser.PersonView"
+         template="../launchpad/templates/person-index.pt"
+	 lp:url="Soyuz/people/$person.id/index.html"
+	/>
+
+
+   <page for="canonical.soyuz.sql.PersonApp"
+	 permission="zope.Public"
+	 name="+packages"
+	 class="canonical.soyuz.browser.PersonPackagesView"
+         template="../launchpad/templates/person-packages.pt"
+	 lp:url="Soyuz/people/$person.id/+packages"
+	/>
+
 
   <page for="canonical.soyuz.sql.PersonApp"
          permission="zope.Public"

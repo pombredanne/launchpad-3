@@ -12,18 +12,46 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+<div tal:replace="structure view/teamsPortlet" />
+<div tal:replace="structure view/subteamsPortlet" />
+<div tal:replace="structure view/membershipPortlet" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+<div tal:replace="structure view/bugsPortlet" />
+</metal:rightportlets>
+
+
 <div metal:fill-slot="main">
 
-  <h1><span tal:content="context/person/displayname">context</span>
-  Page </h1>
+<div id="content" class="documentEditable">
+    <ul class="contentViews">
+        <li id="contentview-view" class="selected">
+            <a>View</a>
+        </li>
 
- <table width="100%">
- <tr><td valign="top"> 
-    <div>
-    <table>
+        <li id="contentview-edit" class="plain">
+            <a href="+edit">Edit</a>
+        </li>
+
+	<li id="contentview-packages" class="plain">
+            <a href="+packages">Packages</a>
+        </li>
+    </ul>
+
+    <div class="documentContent" id="region-content">
+
+      <h1><span tal:content="context/person/displayname">context</span>
+      Page </h1>
+
+      <table width="100%">
+      <tr><td valign="top"> 
+      <div>
+      <table>
        <legend><h3>Private Information</h3></legend>
        <tr><td>Name:</td><td 
-	tal:content="string:${context/person/displayname}(${context/person/name})">
+	tal:content="string:${context/person/displayname} (${context/person/name})">
 	DISPLAYNAME(NICK)</td></tr>
 
        <tr tal:condition="context/person/teamowner">
@@ -47,8 +75,8 @@
 
        <tr tal:condition="context/wiki">
        <td>Wiki:</td><td> 
-        <a tal:attributes="href string:${context/wiki/wiki}${context/wiki/wikiname}" 
-           tal:content="string:${context/wiki/wiki}${context/wiki/wikiname}"/>        
+        <a tal:attributes="href string:${context/wiki/wiki}${context/wiki/wikiname}">  
+	Wiki Homepage</a>
 	</td></tr>
 
        <tr tal:condition="context/irc">
@@ -69,10 +97,6 @@
        <td tal:content="string:${context/gpg/keysize}${context/gpg/algorithmname}/${context/gpg/keyid}"></td>
        <th><a href="+key">Pub Key</a></th>
        </tr>
-
-       <tr><td></td><td align="right"><a href="+edit">
-       Edit Private Information</a>
-       </td></tr>
    </table>
    </div> 
    <!--Roles distro and distrorelease -->
@@ -120,95 +144,12 @@
       </table>
     </div>
   </td></tr>
-  <!--Membership if team case-->     
-  <tr tal:condition="context/person/teamowner">
-   <td> <div> 
-   <table>
-   <legend><h3>Members</h3></legend>
-
-   <tr tal:condition="not:context/members">
-      <td>This Team has no Member yet</td></tr>
-
-   <tr tal:condition="context/members">
-      <th>Name</th><th>Role</th><th>Status</th></tr>
-
-   <tr tal:repeat="member context/members">
-       <td><a tal:attributes="href string:../${member/person/name}"
-	      tal:content="member/person/displayname">MEMBER</a></td>
-       <td tal:content="member/rolename">ROLE</td>
-       <td tal:content="member/statusname">STATUS</td>
-   </tr>
-   <tr><td/><td/><td align="right"><a href="+join">
-           Join This Team</a></td></tr>
-   </table>
-   </div>
-  </td><td>
-  <div> 
-   <table>
-   <legend><h3>Sub Teams</h3></legend>
-
-   <tr tal:condition="not:context/subteams">
-      <td>This Team has no Sub teams yet</td></tr>
-
-   <tr tal:repeat="team context/subteams">
-       <td><a tal:attributes="href string:../${team/person/name}"
-	      tal:content="team/person/displayname">SUBTEAM</a></td>
-   </tr>
-   </table>
-   </div>
-  </td></tr>
-  <!-- Creating Team  Anyway-->
-   <tr><td></td><th align="right">
-   <a href="+add">Create a New Team</a>
-   </th></tr>
-  <!--TeamParticipation anyway -->
-  <tr tal:condition="context/teams">
-   <td> <div> 
-   <table>
-   <legend><h3>My Teams</h3></legend>
-   <tr tal:repeat="team context/teams">
-       <td><a tal:attributes="href string:../${team/team/name}"
-	      tal:content="team/team/displayname">MEMBER</a></td>
-   </tr>
-   </table>
-   </div>
-  </td></tr>
-  <!-- Package Maintainer  -->
-  <tr><td>
-  <div class="dummy">
-   <table>
-     <legend><h3>Packages Maintained by:</h3></legend>
-     <tr><td> XXX: Hardcoded distro & distrorelease link</td></tr>
-     <tr tal:condition="not:context/packages">
-       <td> No package available </td>
-     </tr>
-     <tr tal:repeat="package context/packages">
-       <!-- FIXME: distribuiton and distrorelease missed --> 
-       <td><a tal:attributes="href string:../../distros/ubuntu/src/warty/${package/sourcepackage/name}"
-         tal:content="string:${package/sourcepackage/name}">
-	     PACKAGES
-	   </a>
-       <td>
-     </tr>
-   </table>
-  </div>
-  <!-- Malone Portlet -->
-  </td><td valign="top">
-  <div class="dummy">
-    <table>
-      <legend><h3>Bugs Board</h3></legend>
-      <tr><td><b>ASSIGNED</b></td><th>221</th></tr>
-      <tr><td><b>OPEN</b></td><th>22</th></tr>
-      <tr><td><b>RESOLVED</b></td><th>199</th></tr>
-      <tr><td><b>SUBMITED</b></td><th>139</th></tr>
-      <tr><td></td><td><a href="">More Bugs</a></td></tr>   
-    </table>
-  </div>
-  </td></tr>
   </table>
 
-
 </div>
+</div>
+</div>
+
 
 </body>
 </html>

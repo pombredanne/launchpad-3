@@ -1,0 +1,54 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<head>
+    <!-- Plone style sheet -->
+    <style type="text/css" media="screen">@import url(plone.css);</style>
+    <!-- Soyuz style sheet -->
+    <style type="text/css" media="screen">@import url(soyuz.css);</style>
+</head>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+<!--    <div tal:replace="structure view/peoplePortlet" /> -->
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+
+</metal:rightportlets>
+
+
+<div metal:fill-slot="main">
+
+<div id="content" class="documentEditable">
+    <ul class="contentViews">
+        <li id="contentview-view" class="plain">
+            <a href="index.html">View</a>
+        </li>
+
+        <li id="contentview-edit" class="plain">
+            <a href="+edit">Edit</a>
+        </li>
+
+	<li id="contentview-packages" class="selected">
+            <a>Packages</a>
+        </li>
+    </ul>
+
+    <div class="documentContent" id="region-content">
+
+      <h1>Packages maintained By 
+      <span tal:content="context/person/displayname">context</span></h1>
+
+      <div tal:replace="structure view/packagesPortlet" />
+
+</div>
+</div>
+</div>
+
+
+</body>
+</html>

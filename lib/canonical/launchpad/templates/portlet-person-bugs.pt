@@ -1,0 +1,10 @@
+  <div class="dummy">
+    <table>
+      <legend><h3>Bugs Board</h3></legend>
+      <tr><td><b>ASSIGNED</b></td><th>221</th></tr>
+      <tr><td><b>OPEN</b></td><th>22</th></tr>
+      <tr><td><b>RESOLVED</b></td><th>199</th></tr>
+      <tr><td><b>SUBMITED</b></td><th>139</th></tr>
+      <tr><td></td><td><a href="">More Bugs</a></td></tr>   
+    </table>
+  </div>

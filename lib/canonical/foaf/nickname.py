@@ -66,6 +66,7 @@ def generate_nick(email_addr, registered=_nick_registered,
 
     user, domain = re.match("^(\S+)@(\S+)$", email_addr).groups()
     user = user.replace(".", "-")
+    user = user.replace("_", "-")
     domain_parts = domain.split(".")
 
     generated_nick = user

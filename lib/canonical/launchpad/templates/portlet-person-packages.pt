@@ -1,0 +1,16 @@
+  <div class="dummy">
+   <table>
+     <tr><td> XXX: Hardcoded distro & distrorelease link</td></tr>
+     <tr tal:condition="not:context/packages">
+       <td> No packages available </td>
+     </tr>
+     <tr tal:repeat="package context/packages">
+       <!-- FIXME: distribuiton and distrorelease missed --> 
+       <td><a tal:attributes="href string:../../distros/ubuntu/src/warty/${package/sourcepackage/name}"
+         tal:content="string:${package/sourcepackage/name}">
+	     PACKAGES
+	   </a>
+       <td>
+     </tr>
+   </table>
+  </div>

@@ -146,7 +146,7 @@ class DistroReleaseSourceReleaseApp(object):
         sourceReleases = sourcepackage.current(distrorelease)
 
         sourceReleases = SourcePackageRelease.selectByVersion(sourceReleases,
-                                                                       version)
+                                                              version)
         self.archs = None
 
         for release in sourceReleases:

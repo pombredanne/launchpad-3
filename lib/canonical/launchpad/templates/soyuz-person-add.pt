@@ -47,6 +47,37 @@
 	</div>
 	</td></tr>
 	<tr><td>
+	<div class="field">
+	    <label>Email Address</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter the Email Address.
+            </div>
+	    <input type="text" name="email"
+	    tal:attributes="value request/email|nothing"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Password</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter a Password.
+            </div>
+	    <input type="password" name="password"/>
+	</div>
+	</td></tr>
+	<tr><td>
+	<div class="field">
+	    <label>Retype Password</label>
+	    <span class="fieldRequired" title="Required">(Required)</span>
+	    <div class="formHelp">
+	    Enter the same Password Again.
+            </div>
+	    <input type="password" name="retype"/> 
+	</div>
+	</td></tr>
+	<tr><td>
 	<div class="formControls">
 	  <input type="submit" value="Create"/>
 	</div>
@@ -57,7 +88,7 @@
 
   <tla:block tal:condition="view/add_action">
   <div>
-  <h4><a tal:attributes="href string:../${view/results/id}">
+  <h4><a tal:attributes="href string:../${view/results/name}">
   <span tal:content="view/results/displayname"/></a> 
   Team added</h4>
   </div>

@@ -19,10 +19,13 @@ from canonical.launchpad.database import TeamParticipation, Membership
 from canonical.launchpad.database import EmailAddress, IrcID
 from canonical.launchpad.database import GPGKey, ArchUserID 
 from canonical.launchpad.database import createPerson
+from canonical.launchpad.database import createTeam
+
 # app components
 from canonical.soyuz.sql import Distribution, DistroRelease, Person
 from canonical.soyuz.importd import ProjectMapper, ProductMapper
 
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages 
@@ -93,9 +96,8 @@ class PeopleListView(object):
         batch = Batch(list = people, start = start,
                       size = batch_size)
         return BatchNavigator(batch = batch,
-                              request = self.request)
-    
-    
+                              request = self.request)    
+
 class PeopleSearchView(object):
 
     def __init__(self, context, request):
@@ -168,34 +170,44 @@ class TeamAddView(object):
         self.context = context
         self.request = request
         self.results = []
+        self.error_msg = None
 
 
     def add_action(self):
         enable_added = False
         displayname = self.request.get("displayname", "")
         teamdescription = self.request.get("teamdescription", "")
-
+        email = self.request.get("email", "")
+        password = self.request.get("password", "")
+        retype = self.request.get("retype", "")
 
         ##XXX: (uniques) cprov 20041003        
         if displayname:
+            if password != retype:
+                self.error_msg = 'Password does not match'
+                return enable_added
+
             #XXX: (team+authserver) cprov 20041003
             ##  The team is owned by the current ID now,
             ##  but it should comes from authserver
-            self.results = Person(displayname=displayname,
-                                       givenname=None,
-                                       familyname=None,
-                                       password=None,
-                                       teamdescription=teamdescription,
-                                       teamowner=self.context.id,
-                                       karma=None,
-                                       karmatimestamp=None)
+            teamowner = self.context.id
 
-            TeamParticipation(personID=self.results.id,
-                              teamID=self.context.id)
+            self.results = createTeam(displayname,
+                                      teamowner,
+                                      teamdescription,
+                                      password,
+                                      email)
+            
 
             ##XXX: (membership) cprov 20041003
             ## How will be the Membership ? the owner should be always
             ## the admin ? I supose not !          
+            if not self.results:
+                # it happens when generate_nick returns
+                # a nick that already exists
+                self.error_msg = 'Unhandled error creating person'
+                return enable_added
+
             enable_added = True
 
         return enable_added
@@ -234,6 +246,34 @@ class TeamJoinView(object):
             enable_join = True
         return enable_join
             
+class PersonView(object):
+    ## XXX:  cprov 20041101
+    ## Use the already done malone portlet !!!!
+    bugsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-bugs.pt')
+
+    teamsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-teams.pt')
+
+    subteamsPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-subteams.pt')
+
+    membershipPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-membership.pt')
+
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+class PersonPackagesView(object):
+    packagesPortlet = ViewPageTemplateFile(
+        '../launchpad/templates/portlet-person-packages.pt')
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
 class PersonEditView(object):
 
     def __init__(self, context, request):

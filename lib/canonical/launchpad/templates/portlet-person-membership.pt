@@ -1,0 +1,26 @@
+  <!--Membership if team case-->     
+<fieldset tal:condition="context/person/teamowner"> 
+ <div>
+ 
+  <h3>Members</h3>
+
+  <table>
+   <tr tal:condition="not:context/members">
+      <td>This Team has no Member yet</td></tr>
+
+   <tr tal:condition="context/members">
+      <th>Name</th><th>Role</th><th>Status</th></tr>
+
+   <tr tal:repeat="member context/members">
+       <td><a tal:attributes="href string:../${member/person/name}"
+	      tal:content="member/person/displayname">MEMBER</a></td>
+       <td tal:content="member/rolename">ROLE</td>
+       <td tal:content="member/statusname">STATUS</td>
+   </tr>
+
+   </table>
+
+   <a href="+join">Join This Team</a>
+   
+ </div>
+</fieldset>

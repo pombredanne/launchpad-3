@@ -147,6 +147,40 @@ def createPerson(displayname, givenname, familyname,
                  status=int(dbschema.EmailAddressStatus.NEW))
 
     return person
+
+def createTeam(displayname, teamowner, teamdescription,
+               password, email):
+    """Creates a new team"""
+
+    nick = nickname.generate_nick(email)
+    now = datetime.utcnow()
+
+    if Person.selectBy(name=nick).count() > 0:
+        return
+    
+    ssha = SSHADigestEncryptor()
+    password = ssha.encrypt(password)
+
+
+    team = Person(displayname=displayname,
+                  givenname=None,
+                  familyname=None,
+                  password=password,
+                  teamownerID=teamowner,
+                  teamdescription=teamdescription,
+                  karma=0,
+                  karmatimestamp=now,
+                  name=nick)
+
+    EmailAddress(person=team.id,
+                 email=email,
+                 status=int(dbschema.EmailAddressStatus.NEW))
+
+    TeamParticipation(personID=teamowner,
+                      teamID=team.id)
+
+    return team
+
     
 def personFromPrincipal(principal):
     """Adapt canonical.lp.placelessauth.interfaces.ILaunchpadPrincipal 
