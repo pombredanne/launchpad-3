@@ -2,6 +2,26 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-11 14:54:33 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1419
+
+    Summary:
+      Give gina and lucille DELETE access on SourcePackagePublishing
+    Revision:
+      launchpad--devel--0--patch-1419
+
+    Patches applied:
+    
+     * stuart.bishop@canonical.com/launchpad--devel--1--patch-189
+       Give gina and lucille DELETE access on SourcePackagePublishing
+    
+
+    modified files:
+     database/schema/security.cfg doc/changelog.txt
+
+    new patches:
+     stuart.bishop@canonical.com/launchpad--devel--1--patch-189
+
+
 2005-03-11 14:43:05 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1418
 
     Summary:
