@@ -427,52 +427,78 @@ INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc,
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'),
-	'Ubuntu Mozilla Firefox', 
-         'text');
+	'Mozilla Firefox Web Browser', 
+        'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+	K-Meleon and Camino, but written using the XUL user interface language and 
+	designed to lightweight and cross-platform.');
 
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
         (SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'),
-	'Ubuntu Mozilla Thunderbird', 
-         'text');
+	'Mozilla Thunderbird Mail Reader', 
+         'Mozilla Thunderbird is a redesign of the Mozilla mail component. 
+	The goal is to produce a cross platform stand alone mail application 
+	using the XUL user interface language. Mozilla Thunderbird leaves a 
+	somewhat smaller memory footprint than the Mozilla suite.');
 
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
         (SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'),
 	'Python Twisted', 
-         'text');
+         'It includes a web server, a telnet server, a multiplayer RPG engine, 
+	a generic client and server for remote object access, and APIs for 
+	creating new protocols.');
+
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
         (SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'),
 	'Bugzilla', 
-         'text');
+        'Bugzilla is a "Defect Tracking System" or "Bug-Tracking System". 
+	Defect Tracking Systems allow individual or groups of developers 
+	to keep track of outstanding bugs in their product effectively.');
+
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
         (SELECT id FROM Sourcepackagename WHERE name = 'arch'),
 	'Arch(TLA)', 
-         'text');
+        'arch is a revision control system with features that are ideal for 
+	projects characterised by widely distributed development, concurrent 
+	support of multiple releases, and substantial amounts of development
+	on branches. It can be a replacement for CVS and corrects many 
+	mis-features of that system.');
+
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
         (SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'),
 	'Kiwi2', 
-         'text');
+         ' Kiwi2 consists of a set of classes and wrappers for PyGTK-2 that were 
+	developed to provide a sort of framework for applications. Fully object-oriented, 
+	and roughly modeled after Smalltalk\'s MVC, Kiwi provides a simple, practical 
+	way to build forms, windows and widgets that transparently access and display
+	your object data. Kiwi was primarily designed to make implementing the UI for
+	 Stoq easier, and it is released under the LGPL');
+
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
         (SELECT id FROM Sourcepackagename WHERE name = 'plone'),
 	'Plone', 
-         'text');
+        'Plone is powerful and flexible. It is ideal as an intranet and extranet 
+	server, as a document publishing system, a portal server and as a groupware
+	 tool for collaboration between separately located entities.');
+
 INSERT INTO Sourcepackage (maintainer, sourcepackagename, shortdesc, 
 	description)
 VALUES ((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
         (SELECT id FROM Sourcepackagename WHERE name = 'evolution'),
 	'Evolution', 
-        'text');
+        'Evolution is the integrated mail, calendar, task and address book 
+	distributed suite from Ximian, Inc.');
 
 
 --SourcepackageRelease
@@ -589,56 +615,64 @@ VALUES ((SELECT id FROM Sourcepackage WHERE sourcepackagename =
         1);
 
 UPDATE sourcepackagerelease set builddepends = 
-	'fontconfig, psmisc, libatk1.0-0 (>= 1.6.0), libc6 (>= 2.3.2.ds1-4), libfontconfig1 (>= 2.2.1)' 
+	'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch'
+--	'fontconfig, psmisc, libatk1.0-0 (>= 1.6.0), libc6 (>= 2.3.2.ds1-4), libfontconfig1 (>= 2.2.1)' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))
 	;
 
 UPDATE sourcepackagerelease set builddepends = 
-	'libatk1.0-0 (>= 1.4.1), libc6 (>= 2.3.2.ds1-4), libfontconfig1 (>= 2.2.1), libfreetype6 (>= 2.1.5-1)' 
+	'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch'
+--	'libatk1.0-0 (>= 1.4.1), libc6 (>= 2.3.2.ds1-4), libfontconfig1 (>= 2.2.1), libfreetype6 (>= 2.1.5-1)' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'))
 	;
 
 UPDATE sourcepackagerelease set builddepends = 
-	'python2.3, python2.3-twisted-bin' 
+	'mozilla-firefox (>= 0.9.0-9), mozilla-thunderbird, arch'
+--	'python2.3, python2.3-twisted-bin' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'))
 	;
 
 UPDATE sourcepackagerelease set builddepends = 
-	'apache (>=1.9.2), perl (>=1.0.0)' 
+	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
+--	'apache (>=1.9.2), perl (>=1.0.0)' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))
 	;
 
 UPDATE sourcepackagerelease set builddepends = 
-	'libc6 (>= 2.3.2.ds1-4), libg2c0 (>= 1:3.3.3-1), debconf (>= 0.5) | debconf-2.0' 
+	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
+--	'libc6 (>= 2.3.2.ds1-4), libg2c0 (>= 1:3.3.3-1), debconf (>= 0.5) | debconf-2.0' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))
 	;
 
 UPDATE sourcepackagerelease set builddepends = 
-	'python2.3, python2.3-gtk2, python2.3-glade' 
+	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
+--	'python2.3, python2.3-gtk2, python2.3-glade' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))
 	;
 
 UPDATE sourcepackagerelease set builddepends = 
-	'python2.3, zopex3' 
+	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
+--	'python2.3, zopex3' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'plone'))
 	;
 
 UPDATE sourcepackagerelease set builddepends = 
-	'gtkhtml3.0 (>= 3.0.10), libart-2.0-2 (>= 2.3.16), libasn1-6-heimdal (>= 0.6.2), libatk1.0-0 (>= 1.6.0)' 
+	'mozilla-firefox  (>= 0.9.0-9), mozilla-thunderbird, arch'
+--	'gtkhtml3.0 (>= 3.0.10), libart-2.0-2 (>= 2.3.16), libasn1-6-heimdal (>= 0.6.2), libatk1.0-0 (>= 1.6.0)' 
 	where sourcepackage = 
 	(SELECT id FROM Sourcepackage WHERE sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'evolution'))
@@ -1038,7 +1072,11 @@ section, priority)
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-firefox'))  
 	and version='0.9.1-1'),
 	(SELECT id from Binarypackagename WHERE name = 'mozilla-firefox'), 
-	'0.8', 'Mozilla Firefox 0.8', 'some text', 
+	'0.8', 
+	'Mozilla Firefox Web Browser', 
+        'Firefox is a redesign of the Mozilla browser component, similar to Galeon, 
+	K-Meleon and Camino, but written using the XUL user interface language and 
+	designed to lightweight and cross-platform.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1054,7 +1092,12 @@ section, priority)
 	(SELECT id FROM Sourcepackagename WHERE name = 'mozilla-thunderbird'))
 	),
 	(SELECT id from Binarypackagename WHERE name = 'mozilla-thunderbird'), 
-	'1.5', 'Mozilla Thunderbird 1.5', 'some text', 
+	'1.5', 
+	'Mozilla Thunderbird Mail Reader', 
+        'Mozilla Thunderbird is a redesign of the Mozilla mail component. 
+	The goal is to produce a cross platform stand alone mail application 
+	using the XUL user interface language. Mozilla Thunderbird leaves a 
+	somewhat smaller memory footprint than the Mozilla suite.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1069,7 +1112,11 @@ section, priority)
 	(SELECT id from Sourcepackage where sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'python-twisted'))),
 	(SELECT id from Binarypackagename WHERE name = 'python-twisted'), 
-	'1.3', 'Python Twisted 1.3', 'some text', 
+	'1.3', 
+	'Python Twisted', 
+        'It includes a web server, a telnet server, a multiplayer RPG engine, 
+	a generic client and server for remote object access, and APIs for 
+	creating new protocols.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1084,7 +1131,11 @@ section, priority)
 	(SELECT id from Sourcepackage where sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'bugzilla'))),
 	(SELECT id from Binarypackagename WHERE name = 'bugzilla'), 
-	'2.18', 'Bugzilla 2.18', 'some text', 
+	'2.18', 
+	'Bugzilla',
+        'Bugzilla is a "Defect Tracking System" or "Bug-Tracking System". 
+	Defect Tracking Systems allow individual or groups of developers 
+	to keep track of outstanding bugs in their product effectively.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1099,7 +1150,13 @@ section, priority)
 	(SELECT id from Sourcepackage where sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'arch'))),
 	(SELECT id from Binarypackagename WHERE name = 'arch'), 
-	'1.0', 'ARCH 1.0', 'some text', 
+	'1.0', 
+	'ARCH',
+        'arch is a revision control system with features that are ideal for 
+	projects characterised by widely distributed development, concurrent 
+	support of multiple releases, and substantial amounts of development
+	on branches. It can be a replacement for CVS and corrects many 
+	mis-features of that system.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1114,7 +1171,13 @@ section, priority)
 	(SELECT id from Sourcepackage where sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'kiwi2'))),
 	(SELECT id from Binarypackagename WHERE name = 'kiwi'), 
-	'2.0', 'Python Kiwi 2.0', 'some text', 
+	'2.0', 'Python Kiwi',
+        ' Kiwi2 consists of a set of classes and wrappers for PyGTK-2 that were 
+	developed to provide a sort of framework for applications. Fully object-oriented, 
+	and roughly modeled after Smalltalk\'s MVC, Kiwi provides a simple, practical 
+	way to build forms, windows and widgets that transparently access and display
+	your object data. Kiwi was primarily designed to make implementing the UI for
+	 Stoq easier, and it is released under the LGPL',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component
@@ -1129,7 +1192,10 @@ section, priority)
 	(SELECT id from Sourcepackage where sourcepackagename = 
 	(SELECT id FROM Sourcepackagename WHERE name = 'plone'))),
 	(SELECT id from Binarypackagename WHERE name = 'plone'), 
-	'1.0', 'Plone 1.0', 'some text', 
+	'1.0', 'Plone', 
+        'Plone is powerful and flexible. It is ideal as an intranet and extranet 
+	server, as a document publishing system, a portal server and as a groupware
+	 tool for collaboration between separately located entities.',
 	1, -- hardcoded ?? use query instead
 	1, -- DEB ?
 	1, -- default component

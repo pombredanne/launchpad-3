@@ -52,6 +52,7 @@ from canonical.arch.database import Branch, Changeset
 from canonical.soyuz.database import SoyuzEmailAddress, GPGKey, ArchUserID, \
      WikiName, JabberID, IrcID, Membership, TeamParticipation
 
+from string import split, join
 
 
 class DistrosApp(object):
@@ -154,9 +155,20 @@ class DistroReleaseSourceReleaseBuildApp(object):
         self.sourcepackagerelease = sourcepackagerelease
         self.arch = arch
 
+class builddepsContainer(object):
+    def __init__(self, name, version):
+        self.name = name
+        tmp = split(version)
+        if len(tmp) <= 1:
+            self.signal = None
+            self.version = ''
+        else:
+            self.signal = tmp[0]
+            self.version = tmp[1][:-1]
 
 class DistroReleaseSourceReleaseApp(object):
-    def __init__(self, sourcepackage, version):
+    def __init__(self, sourcepackage, version, distroreleasename):
+        self.distroreleasename = distroreleasename
         results = SoyuzSourcePackageRelease.selectBy(
                 sourcepackageID=sourcepackage.id, version=version)
         if results.count() == 0:
@@ -167,9 +179,12 @@ class DistroReleaseSourceReleaseApp(object):
         # FIXME: stub
         self.archs = ['i386','AMD64']
         
-        from string import split
         if self.sourcepackagerelease.builddepends:
-            self.builddepends = split(self.sourcepackagerelease.builddepends, ',')
+            self.builddepends = []
+            builddepends = split(self.sourcepackagerelease.builddepends, ',')
+            for pack in builddepends:
+                tmp = split(pack)
+                self.builddepends.append( builddepsContainer( tmp[0],join(tmp[1:]) ) )
         else:
             self.builddepends = None
 
@@ -199,7 +214,7 @@ class DistroReleaseSourceApp(object):
                                 
 
     def __getitem__(self, version):
-        return DistroReleaseSourceReleaseApp(self.sourcepackage, version)
+        return DistroReleaseSourceReleaseApp(self.sourcepackage, version, self.release.name)
 
     def proposed(self):
         return self.sourcepackage.proposed(self.release)

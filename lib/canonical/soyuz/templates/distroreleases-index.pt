@@ -18,35 +18,32 @@
 
   <h3>Current Releases</h3>
 
-  <ul>
-  <span:block tal:repeat="release context">
-  <p> 
-   <li>
+<span:block tal:repeat="release context">
+<fieldset>
+
+  <legend>
     <a tal:content="release/title" tal:attributes="href release/name"> RELEASENAME </a>
     (Status: <spam tal:content="release/state"> STATUS </spam>)
-  </li>
-  <p> <span tal:content="release/description"> DESCRIPTION </span>
+  </legend>
 
-  <table cellspacing="2">
-   <tr>
-    <td align="right">
-    <span tal:content="release/sourcecount"> COUNTER </span> Packages
-    </td>
-   </tr>
-   <tr>
-    <td>
-    <form name="search" method="POST" tal:attributes="action string:${release/name}/+search">
-     Find Source Package: 
-     <input type="text" name="name" tal:attributes="value request/name|nothing" />
-    <input type="submit" value="Search"/>
-    </form>
-    </td>
-   </tr>
-  </table>
-  <hr />
-  </span:block>
-  </ul>
+ <div class="field"> 
+   <span tal:content="release/description"> DESCRIPTION </span>
+ </div>
 
+ <div align="right">
+    <span tal:content="release/sourcecount"> COUNTER </span> Source Packages
+  Available
+ </div>
+
+ <form name="search" method="POST" tal:attributes="action string:${release/name}/+search">
+   <div class="formHelp">Find Source Package:</div>
+   <input type="text" name="name" tal:attributes="value request/name|nothing" />
+   <input type="submit" value="Search"/>
+ </form>
+
+</fieldset>
+
+</span:block>
 
 </div>
 

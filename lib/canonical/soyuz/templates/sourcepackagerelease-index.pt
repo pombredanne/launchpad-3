@@ -16,8 +16,9 @@
 
 <h1>
 <spam tal:content="context/sourcepackagerelease/sourcepackage/title">
-TITLE</spam> 
-<spam tal:content="context/sourcepackagerelease/version">Version</spam>
+TITLE
+</spam>
+(<spam tal:content="context/sourcepackagerelease/version" />)
 </h1>
 
  <p><h4>Package name:</h4> 
@@ -38,11 +39,23 @@ TITLE</spam>
       CREATORNAME</span>
 
  <p><h4>Build Package Dependences:</h4>
+ <div class="dummy">(XXX: Some links can be broken for sample data
+ reasons. warty/mozilla-firefox works)
+ </div>
  <tal:dummy condition="context/builddepends">
   <ul>
    <span
    tal:repeat="builddepends context/builddepends">
-    <li><tal:block tal:content="builddepends"/></li>
+    <li>
+     <a tal:content="builddepends/name" tal:attributes="href
+      string:../../../../bin/${context/distroreleasename}/${builddepends/name}"/> 
+      <tal:dummy condition="builddepends/signal">
+       <span tal:content="builddepends/signal" /> 
+       <a tal:content="builddepends/version" 
+       tal:attributes="href 
+       string:../../../../bin/${context/distroreleasename}/${builddepends/name}/${builddepends/version}"/> )
+      </tal:dummy>
+    </li>
    </span>
   </ul>
  </tal:dummy>

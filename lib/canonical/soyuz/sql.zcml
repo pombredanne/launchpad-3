@@ -222,6 +222,11 @@
     <implements interface="zope.app.container.interfaces.IItemContainer"/>
   </content>
 
+  <content class="canonical.soyuz.sql.builddepsContainer">
+    <allow interface="canonical.soyuz.interfaces.IbuilddepsContainer"/>
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
 
   <!-- UNUSED STUFF YET -->
 

@@ -97,10 +97,15 @@ class IDistroReleaseSourceReleaseApp(Interface):
     sourcepackagerelease = Attribute("SourcePackageRelease")
     archs = Attribute("Builded archs")
     builddepends = Attribute("Builddepends for this sourcepackagerelease")
+    distroreleasename = Attribute("The Distro Release name need to make links to bin packages")
 
     def __getitem__(name):
         """Retrieve a package release build by arch."""
 
+class IbuilddepsContainer(Interface):
+    name = Attribute("Package name for a builddepends/builddependsindep")
+    signal = Attribute("Dependence Signal e.g = >= <= <")
+    version = Attribute("Package version for a builddepends/builddependsindep")
 
 class IDistroReleaseApp(Interface):
     """A Release Proxy """
