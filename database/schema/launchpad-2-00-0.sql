@@ -3,6 +3,9 @@ SET client_min_messages TO error;
 DROP TABLE ProjectBugTracker CASCADE;
 DROP TABLE BugTracker CASCADE;
 DROP TABLE BugTrackerType CASCADE;
+DROP SEQUENCE projectbugtracker_id_seq;
+DROP SEQUENCE bugtracker_id_seq;
+DROP SEQUENCE bugtrackertype_id_seq;
 
 --
 -- PostgreSQL database dump

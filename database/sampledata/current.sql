@@ -1088,11 +1088,11 @@ SELECT pg_catalog.setval('bugexternalref_id_seq', 4, true);
 
 
 
-SELECT pg_catalog.setval('bugsystemtype_id_seq', 1, true);
+SELECT pg_catalog.setval('bugtrackertype_id_seq', 1, true);
 
 
 
-SELECT pg_catalog.setval('bugsystem_id_seq', 2, true);
+SELECT pg_catalog.setval('bugtracker_id_seq', 2, true);
 
 
 
@@ -1112,7 +1112,7 @@ SELECT pg_catalog.setval('sourcesource_id_seq', 1, false);
 
 
 
-SELECT pg_catalog.setval('projectbugsystem_id_seq', 1, false);
+SELECT pg_catalog.setval('projectbugtracker_id_seq', 1, false);
 
 
 

@@ -1,5 +1,10 @@
-CREATE FUNCTION validname(name) RETURNS boolean AS '
+CREATE OR REPLACE FUNCTION validname(name) RETURNS boolean AS '
+BEGIN
+    IF name SIMILAR TO ''[a-z\\\\_\\\\-0-9]*[a-z\\\\_\\\\-][a-z\\\\_\\\\-]*'' THEN
+        RETURN true;
+    END IF;
+END;    
+' LANGUAGE plpgsql;
 
-ALTER TABLE Bug ADD CHECK validname(name);
+/* ALTER TABLE Bug ADD CHECK validname(name); */
 
-    (name SIMILAR TO '[a-z\\_\\-0-9]*[a-z\\_\\-][a-z\\_\\-]*');
