@@ -22,7 +22,8 @@ import sys, os
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(os.path.join(here, 'lib'))
 
-# Nothing to see here... move along...
+# This is a terrible hack to divorce the FunctionalTestSetup from
+# its assumptions about the ZODB.
 from zope.app.tests.functional import FunctionalTestSetup
 FunctionalTestSetup.__init__ = lambda *x: None
 

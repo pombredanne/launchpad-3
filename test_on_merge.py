@@ -1,3 +1,4 @@
+#!/usr/bin/env python2.3
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 
 """Tests that get run automatically on a merge."""
