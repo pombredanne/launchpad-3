@@ -364,7 +364,7 @@ class DistroReleaseTeamApp(object):
 #        self.team=DistroReleaseRole.select()
         self.team = [Team('Matt Zimmerman', 'Maintainer'),
                        Team('Robert Collins', 'Translator'),
-                       Team('Lalo Martins', 'Contribuitors')
+                       Team('Lalo Martins', 'Contributors')
                        ]
         
 
@@ -376,7 +376,7 @@ class DistroTeamApp(object):
 
         self.team = [Team('Mark Shuttleworth', 'Maintainer'),
                      Team('James Blackwell', 'Translator'),
-                     Team('Steve Alexander', 'Contribuitors')
+                     Team('Steve Alexander', 'Contributors')
                      ]
 
     def __getitem__(self, name):
