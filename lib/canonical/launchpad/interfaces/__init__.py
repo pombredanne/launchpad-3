@@ -54,7 +54,7 @@ from canonical.launchpad.interfaces.country import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.ssh import *
-from canonical.launchpad.interfaces.calendar import *
+from canonical.launchpad.interfaces.cal import *
 
 # XXX this is old soyuz style and must go
 from canonical.launchpad.interfaces.soyuz import *

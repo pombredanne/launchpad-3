@@ -3,7 +3,7 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
   <head>
-    <title>
+    <title metal:fill-slot="title">
       <span tal:replace="context/calendar/title">Calendar Title</span> -
       <span tal:replace="context/datestring">Time</span>
     </title>
@@ -14,10 +14,30 @@
   <body>
 
     <div metal:fill-slot="main">
-      <h1>
-        <span tal:replace="context/calendar/title">Calendar Title</span> -
-        <span tal:replace="context/datestring">Time</span>
-      </h1>
+      <div id="content" class="documentEditable">
+        <ul class="contentViews">
+          <li id="contentview-day">
+            <a tal:attributes="href context/dayViewURL">Day</a>
+          </li>
+          <li id="contentview-week" class="selected">
+            <a tal:attributes="href context/weekViewURL">Week</a>
+          </li>
+          <li id="contentview-month">
+            <a tal:attributes="href context/monthViewURL">Month</a>
+          </li>
+          <li id="contentview-year">
+            <a tal:attributes="href context/yearViewURL">Year</a>
+          </li>
+        </ul>
+        <div class="documentContent">
+          <h1>
+            <span tal:replace="context/calendar/title">Calendar Title</span> -
+            <span tal:replace="context/datestring">Time</span>
+          </h1>
+
+
+          <a tal:attributes="href context/prevURL">&lt;- Previous</a>
+          <a tal:attributes="href context/nextURL">Next -&gt;</a>
 
       <table border="1">
         <tr>
@@ -50,6 +70,8 @@
           </td>
         </tr>
       </table>
+        </div>
+      </div>
     </div>
 
   </body>

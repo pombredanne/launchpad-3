@@ -50,29 +50,32 @@ class ICalendarView(Interface):
         description=_("""A string describing the date range displayed
         by this view."""))
 
-    def nextURL():
-        """A URL to the 'next' calendar view (eg. tomorrow, next week, etc)."""
-        pass
-    def prevURL():
-        """A URL to the 'previous' calendar view (eg. tomorrow, next
-        week, etc)."""
-        pass
-    def dayViewURL():
-        """A URL to switch to the day view.  Should be related to the time
-        period currently being viewed."""
-        pass
-    def weekViewURL():
-        """A URL to switch to the week view.  Should be related to the time
-        period currently being viewed."""
-        pass
-    def monthViewURL():
-        """A URL to switch to the month view.  Should be related to the time
-        period currently being viewed."""
-        pass
-    def yearViewURL():
-        """A URL to switch to the year view.  Should be related to the time
-        period currently being viewed."""
-        pass
+    nextURL = TextLine(
+        title=_('The next page'), required=True, readonly=True,
+        description=_("""A URL to the 'next' calendar view
+        (eg. tomorrow, next week, etc)."""))
+    prevURL = TextLine(
+        title=_('The previous page'), required=True, readonly=True,
+        description=_("""A URL to the 'previous' calendar view
+        (eg. tomorrow, next week, etc)."""))
+
+    dayViewURL = TextLine(
+        title=_('The day view'), required=True, readonly=True,
+        description=_("""A URL to switch to the day view.  Should be
+        related to the time period currently being viewed."""))
+    weekViewURL = TextLine(
+        title=_('The week view'), required=True, readonly=True,
+        description=_("""A URL to switch to the week view.  Should be
+        related to the time period currently being viewed."""))
+    monthViewURL = TextLine(
+        title=_('The month view'), required=True, readonly=True,
+        description=_("""A URL to switch to the month view.  Should be
+        related to the time period currently being viewed."""))
+    yearViewURL = TextLine(
+        title=_('The year view'), required=True, readonly=True,
+        description=_("""A URL to switch to the year view.  Should be
+        related to the time period currently being viewed."""))
+
 
 class ICalendarDayView(ICalendarView):
     """A day view of a calendar."""
