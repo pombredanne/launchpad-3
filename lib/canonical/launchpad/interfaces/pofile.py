@@ -114,6 +114,10 @@ class IPOTemplate(IRosettaStats):
     def poFiles():
         """Return an iterator over the PO files that exist for this language."""
 
+    def poFilesToImport():
+        """Returns all PO files from this POTemplate that have a rawfile 
+        pending of import into Rosetta."""
+
     def poFile(language_code, variant=None):
         """Get the PO file of the given language and (potentially)
         variant. If no variant is specified then the translation
@@ -340,6 +344,11 @@ class IPOFile(IRosettaStats):
     def hasMessageID(msgid):
         """Check whether a message set with the given message ID exists within
         this PO file."""
+
+    def pendingImport():
+        """Gives all pofiles that have a rawfile pending of import into
+        Rosetta."""
+
 
 
 class IEditPOFile(IPOFile):

@@ -18,6 +18,7 @@ from canonical.launchpad.database import Language, Person
 
 from canonical.rosetta.poexport import POExport
 from canonical.rosetta.pofile import POHeader
+from canonical.lp.dbschema import RosettaImportStatus
 
 charactersPerLine = 50
 
@@ -997,6 +998,37 @@ class TranslatePOTemplate:
 
         # XXX: Should return the number of new translations or something
         # useful like that.
+
+
+class ViewImportQueue:
+    def imports(self):
+
+        queue = []
+        
+        for project in getUtility(IProjectSet):
+            for product in project.products():
+                for template in product.poTemplates():
+                    if template.rawimportstatus == RosettaImportStatus.PENDING:
+                        retdict = {
+                            'project': project.displayname,
+                            'product': product.displayname,
+                            'template': template.name,
+                            'language': '-',
+                            'importer': template.rawimporter.displayname,
+                            'importdate' : template.daterawimport,
+                        }
+                        queue.append(retdict)
+                    for pofile in template.poFilesToImport():
+                        retdict = {
+                            'project': project.displayname,
+                            'product': product.displayname,
+                            'template': template.name,
+                            'language': pofile.language.englishname,
+                            'importer': pofile.rawimporter.displayname,
+                            'importdate' : pofile.daterawimport,
+                        }
+                        queue.append(retdic)
+        return queue
 
 
 # XXX: Implement class ViewTranslationEfforts: to create new Efforts

@@ -32,7 +32,7 @@ __all__ = ('ManifestEntryType', 'Packaging', 'BranchRelationships',
 'BugExternalReferenceType', 'BugRelationship',
 'UpstreamReleaseVersionStyle', 'RevisionControlSystems',
 'ArchArchiveType', 'BugSubscription', 'RosettaTranslationOrigin',
-'DistributionRole', 'DOAPRole', 'ProjectStatus')
+'DistributionRole', 'DOAPRole', 'ProjectStatus', 'RosettaImportStatus')
 
 from zope.interface.advice import addClassAdvisor
 import sys
@@ -1626,4 +1626,39 @@ class DOAPRole(DBSchema):
         more administrators. This allows the project owner to share
         the load of administration with other individuals.""")
 
+
+class RosettaImportStatus(DBSchema):
+    """Rosetta Import Status
+
+    After a raw file is added into Rosetta it could have a set of
+    states like ignore, pending, imported or failed.
+    This schema documents those options.
+    """
+
+    IGNORE = Item(1, """
+        Ignore
+
+        There are not any rawfile attached and we don't need to do
+        anything with that field.
+        """)
+
+    PENDING = Item(2, """
+        Pending
+
+        There are a rawfile pending of review to be finally imported into
+        the system.
+        """)
+
+    IMPORTED = Item(3, """
+        Imported
+
+        The attached rawfile has been already imported so it does not needs
+        any extra process.
+        """)
+
+    FAILED = Item(4, """
+        Failed
+
+        The attached rawfile import failed.
+        """)
 
