@@ -234,6 +234,12 @@ def do_publishing(pkgs, lp, source):
             else:
                 lp.publishBinaryPackage(pkg)
 
+def do_backpropogation(kdb, lp, sources, keyrings):
+    for srcpkg in sources:
+        if not sources[srcpkg].is_processed:
+            sources[srcpkg].process_package(kdb, package_root, keyrings)
+        sources[srcpkg].backpropogate(lp,)
+
 
 if __name__ == "__main__":
     # get the DB abstractors
@@ -277,6 +283,11 @@ if __name__ == "__main__":
     for arch in archs:
         do_arch(lp[arch],kdb,bin_map[arch],source_map)
         lp[arch].commit()
+
+    print "@ Performing backpropogation of sourcepackagerelease..."
+    do_backpropogation(kdb, lp[archs[0]], source_map, keyrings)
+
+#    sys.exit(1);
 
     # Next empty the publishing tables...
     print "@ Emptying publishing tables..."

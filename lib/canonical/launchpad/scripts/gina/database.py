@@ -6,6 +6,14 @@ PgSQL.noPostgresCursor = 1
 
 from nickname import generate_nick
 
+priomap = {
+    "low": 1,
+    "medium": 2,
+    "high": 3,
+    "emergency": 4
+    # FUCK_PEP8 -- Fuck it right in the ear
+    }
+
 class SQLThing:
     def __init__(self, dbname):
         self.dbname = dbname
@@ -260,9 +268,11 @@ class Launchpad(SQLThing):
             key = None
 
         dsc = self.ensure_string_format(src.dsc)
-        changelog = self.ensure_string_format(src.changelog)
+        changelog = self.ensure_string_format(src.changelog[0]["changes"])
         component = self.getComponentByName(src.component)[0]
         section = self.getSectionByName(src.section)[0]
+        if src.urgency not in priomap:
+            src.urgency = "low"
         data = {
             "sourcepackage":           srcpkgid,
             "version":                 src.version,
@@ -272,7 +282,7 @@ class Launchpad(SQLThing):
             "architecturehintlist":    src.architecture,
             "component":               component,
             "creator":                 maintid,
-            "urgency":                 1,
+            "urgency":                 priomap[src.urgency],
             "changelog":               changelog,
             "dsc":                     dsc,
             "dscsigningkey":           key,
@@ -295,6 +305,27 @@ class Launchpad(SQLThing):
             "section":                 section, ## default Section
         }
         self._insert("sourcepackagepublishing", data)
+
+    def createFakeSourcePackageRelease(self, release, src):
+        self.ensureSourcePackage(src)
+        srcpkgid = self.getSourcePackage(src.package)[0]
+        maintid = self.getPeople(*release["parsed_maintainer"])[0]
+        # XXX these are hardcoded to the current package's value, which is not
+        # really the truth
+        component = self.getComponentByName(src.component)[0]
+        section = self.getSectionByName(src.section)[0]
+        
+        data = {
+            "sourcepackage":           srcpkgid,
+            "version":                 release["version"],
+            "dateuploaded":            release["parsed_date"],
+            "component":               component,
+            "creator":                 maintid,
+            "urgency":                 priomap[release["urgency"]],
+            "changelog":               release["changes"],
+            "section":                 section,
+        }                                                          
+        self._insert("sourcepackagerelease", data)
 
     #
     # Build

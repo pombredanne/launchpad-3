@@ -1,6 +1,9 @@
-import re, os, tempfile, shutil, sys
+import re, os, tempfile, shutil, sys, time, rfc822
 
 from library import getLibraryAlias
+from changelog import parse_changelog
+
+from mx.DateTime import DateTime
 
 # From zless /usr/share/doc/gnupg/DETAILS.gz 
 GPGALGOS = {
@@ -15,11 +18,16 @@ def stripseq(seq):
     return [s.strip() for s in seq]
 
 class AbstractPackageRelease:
+    def parse_ctime(self, date):
+        #print "Parsing %r" % date
+        date = rfc822.parsedate(date)
+        return DateTime(*date[:5])
+
     def parse_person(self, val):
         first_left_angle = val.find("<")
         first_right_angle = val.find(">")
-        name = val[:first_left_angle-1].replace(",","_")
-        email = val[first_left_angle+1:first_right_angle-1]
+        name = val[:first_left_angle].replace(",","_")
+        email = val[first_left_angle+1:first_right_angle]
         return (name.strip(), email.strip())
 
     def process_package(self, kdb, package_root, keyrings):
@@ -196,9 +204,9 @@ class SourcePackageRelease(AbstractPackageRelease):
         line = ""
         while not line:
             line = changelog.readline().strip()
-        self.urgency = line.split("urgency=")[1].strip()
+        self.urgency = line.split("urgency=")[1].strip().lower()
         changelog.seek(0)
-        self.changelog = changelog.read().strip()
+        self.changelog = parse_changelog(changelog)
 
     def do_katie(self, kdb, keyrings):
         data = kdb.getSourcePackageRelease(self.package, self.version)
@@ -210,26 +218,49 @@ class SourcePackageRelease(AbstractPackageRelease):
             self.get_person_by_key(keyrings, self.dsc_signing_key)
 
     def ensure_created(self, db):
-        if not db.getSourcePackageRelease(self.package, self.version):
-            print "\t$ Creating source package"
-            db.createSourcePackageRelease(self)
-            print "\t$ Adding files to librarian"
-            files={}
-            for f in self.files:
-                fname = f[-1]
-                print "\t\t+ %s/%s" % (self.directory, fname);
-                alias = getLibraryAlias( "%s/%s" % (self.package_root, self.directory), fname )
-                if alias is not None:
-                    print "\t\t\t= %s" % alias
-                    db.createSourcePackageReleaseFile(self, fname, alias)
-        else:
+        if db.getSourcePackageRelease(self.package, self.version):
             print "\t= Source package already present?"
+            return
+        
+        print "\t$ Creating source package"
+        db.createSourcePackageRelease(self)
+        print "\t$ Adding files to librarian"
+        files={}
+        for f in self.files:
+            fname = f[-1]
+            print "\t\t+ %s/%s" % (self.directory, fname);
+            alias = getLibraryAlias( "%s/%s" % (self.package_root, self.directory), fname )
+            if alias is not None:
+                print "\t\t\t= %s" % alias
+                db.createSourcePackageReleaseFile(self, fname, alias)
 
     def is_created(self, db):
         if db.getSourcePackageRelease(self.package,self.version):
             return True
         else:
             return False
+
+    def backpropogate(self, db):
+        if not hasattr(self,"changelog"):
+            return # We do not backpropogate unless we parsed the changelog
+        
+        for release in self.changelog[1:]:
+            if not db.getSourcePackageRelease(release["package"],
+                                              release["version"]):
+                print "\t%% Backpropogating %s / %s" % (release["package"],
+                                                   release["version"])
+                # Need to create a "faked" sourcepackagerelease
+                try:
+                    release["parsed_maintainer"] = \
+                                                 self.parse_person(release["maintainer"])
+                    release["parsed_date"] = \
+                                           self.parse_ctime(release["date"])
+                
+                    db.createFakeSourcePackageRelease(release, self)
+                except:
+                    print "!! Fake Source Package Release failed"
+                
+                
 
 class BinaryPackageRelease(AbstractPackageRelease):
     # package
