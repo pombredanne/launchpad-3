@@ -78,7 +78,6 @@ class LanguageTemplates:
 
 
 class ViewPOTemplate:
-    # XXX: Hardcoded values
     def num_messages(self):
         N = len(self.context)
         if N == 0:

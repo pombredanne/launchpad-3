@@ -54,6 +54,24 @@ class IProject(Interface):
     def products():
         """Returns an iterator over this projects products."""
 
+    def messageCount():
+        """Returns the number of Current IPOMessageSets in all templates
+        inside this project."""
+
+    def currentCount(language):
+        """Returns the number of msgsets matched to a potemplate for this
+        project that have a non-fuzzy translation in its PO file for this
+        language when we last parsed it."""
+
+    def updatesCount(language):
+        """Returns the number of msgsets for this project where we have a
+        newer translation in rosetta than the one in the PO file for this
+        language, when we last parsed it."""
+
+    def rosettaCount(language):
+        """Returns the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file for this language when we
+        last parsed it."""
 
 class IProduct(Interface):
     """A Product.  For example 'firefox' in the 'mozilla' project."""
@@ -80,6 +98,25 @@ class IProduct(Interface):
 
         Raises an KeyError if a po template with that name already exists.
         """
+
+    def messageCount():
+        """Returns the number of Current IPOMessageSets in all templates
+        inside this product."""
+
+    def currentCount(language):
+        """Returns the number of msgsets matched to a potemplate for this
+        product that have a non-fuzzy translation in its PO file for this
+        language when we last parsed it."""
+
+    def updatesCount(language):
+        """Returns the number of msgsets for this product where we have a
+        newer translation in rosetta than the one in the PO file for this
+        language, when we last parsed it."""
+
+    def rosettaCount(language):
+        """Returns the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file for this language when we
+        last parsed it."""
 
 
 class IPOTemplate(Interface):
@@ -133,6 +170,21 @@ class IPOTemplate(Interface):
 
         Raises KeyError if there is no such POFile."""
 
+    def currentCount(language):
+        """Returns the number of msgsets matched to a this potemplate that have
+        a non-fuzzy translation in its PO file for this language when we last
+        parsed it."""
+
+    def updatesCount(language):
+        """Returns the number of msgsets where we have a newer translation in
+        rosetta than the one in the PO file for this language, when we last
+        parsed it."""
+
+    def rosettaCount(language):
+        """Returns the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file for this language when we
+        last parsed it."""
+
     # TODO provide a way to look through non-current message ids.
 
 
@@ -174,6 +226,21 @@ class IPOFile(Interface):
     headerFuzzy = Attribute("Whether the header is fuzzy or not.")
 
     pluralForms = Attribute("The number of plural forms this PO file has.")
+
+    currentCount = Attribute("""
+        The number of msgsets matched to the potemplate that have a
+        non-fuzzy translation in the PO file when we last parsed it
+        """)
+    
+    updatesCount = Attribute("""
+        The number of msgsets where we have a newer translation in
+        rosetta than the one in the PO file when we last parsed it
+        """)
+
+    rosettaCount = Attribute("""
+        the number of msgsets where we have a translation in rosetta
+        but there was no translation in the PO file when we last parsed it
+        """)
 
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""

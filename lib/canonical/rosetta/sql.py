@@ -133,6 +133,30 @@ class RosettaProject(SQLBase):
             for t in p.poTemplates():
                 yield t
 
+    def messageCount(self):
+        count = 0
+        for p in self.products():
+            count += p.messageCount()
+        return count
+
+    def currentCount(self, language):
+        count = 0
+        for p in self.products():
+            count += p.currentCount(language)
+        return count
+
+    def updatesCount(self, language):
+        count = 0
+        for p in self.products():
+            count += p.updatesCount(language)
+        return count
+        
+    def rosettaCount(self, language):
+        count = 0
+        for p in self.products():
+            count += p.rosettaCount(language)
+        return count
+
 
 class RosettaProduct(SQLBase):
     implements(IProduct)
@@ -173,6 +197,30 @@ class RosettaProduct(SQLBase):
             raise KeyError, \
                   "This product already has a template named %s" % name
         return RosettaPOTemplate(name=name, title=title, product=self)
+
+    def messageCount(self):
+        count = 0
+        for t in self.poTemplates():
+            count += len(t)
+        return count
+
+    def currentCount(self, language):
+        count = 0
+        for t in self.poTemplates():
+            count += t.currentCount(language)
+        return count
+
+    def updatesCount(self, language):
+        count = 0
+        for t in self.poTemplates():
+            count += t.updatesCount(language)
+        return count
+        
+    def rosettaCount(self, language):
+        count = 0
+        for t in self.poTemplates():
+            count += t.rosettaCount(language)
+        return count
 
 
 class RosettaPOTemplate(SQLBase):
@@ -246,6 +294,7 @@ class RosettaPOTemplate(SQLBase):
 
     def __len__(self):
         '''Return the number of CURRENT MessageSets in this POTemplate.'''
+        # XXX: Should we use the cached value POTemplate.messageCount instead?
         return self.currentMessageSets().count()
 
     def __getitem__(self, msgid):
@@ -336,12 +385,23 @@ class RosettaPOTemplate(SQLBase):
                              topComment=standardTemplateTopComment % data,
                              header=standardTemplateHeader % data,
                              #lastTranslator=XXX: FIXME,
-                             translatedCountCached=0,
-                             #updatesCount=0,
-                             rosettaOnlyCountCached=0,
+                             currentCount=0,
+                             updatesCount=0,
+                             rosettaCount=0,
                              #owner=XXX: FIXME,
                              pluralForms=2, #FIXME
                              variant=variant)
+    
+    # XXX: currentCount, updatesCount and rosettaCount should be updated with
+    # a way that let's us query the database instead of use the cached value
+    def currentCount(self, language):
+        return self.poFile(language).currentCount
+
+    def updatesCount(self, language):
+        return self.poFile(language).updatesCount
+        
+    def rosettaCount(self, language):
+        return self.poFile(language).rosettaCount
 
 
 class RosettaPOFile(SQLBase):
@@ -359,9 +419,11 @@ class RosettaPOFile(SQLBase):
         StringCol(name='topComment', dbName='topcomment', notNull=True),
         StringCol(name='header', dbName='header', notNull=True),
         BoolCol(name='headerFuzzy', dbName='fuzzyheader', notNull=True),
-        IntCol(name='translatedCountCached', dbName='currentcount',
+        IntCol(name='currentCount', dbName='currentcount',
             notNull=True),
-        IntCol(name='rosettaOnlyCountCached', dbName='rosettacount',
+        IntCol(name='updatesCount', dbName='updatescount',
+            notNull=True),
+        IntCol(name='rosettaCount', dbName='rosettacount',
             notNull=True),
         IntCol(name='pluralForms', dbName='pluralforms')
         # XXX: missing fields
@@ -421,7 +483,7 @@ class RosettaPOFile(SQLBase):
     def translatedCount(self):
         '''Returns the cached count of translated strings where translations
         exist in the files or in the database.'''
-        return self.translatedCountCached + self.rosettaOnlyCountCached
+        return self.currentCount + self.rosettaCount
 
     def untranslated(self):
         '''XXX'''
