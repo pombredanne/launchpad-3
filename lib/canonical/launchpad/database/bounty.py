@@ -1,6 +1,7 @@
 
 # Zope
 from zope.interface import implements
+
 # SQL imports
 from sqlobject import DateTimeCol, ForeignKey, IntCol, StringCol, FloatCol, \
                       CurrencyCol
@@ -13,7 +14,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import nowUTC, DEFAULT
 
 # Python
-from datetime import datetime
+import datetime
 from sets import Set
 
 #
@@ -34,6 +35,9 @@ class Bounty(SQLBase):
     summary = StringCol(dbName='summary', notNull=True)
     description = StringCol(dbName='description', notNull=True)
     usdvalue = CurrencyCol(dbName='usdvalue', notNull=True)
+    difficulty = IntCol(dbName='difficulty', notNull=True, default=50)
+    duration = DateTimeCol(dbName='duration', notNull=True,
+                           default=datetime.timedelta(7))
     reviewer = ForeignKey(dbName='reviewer', notNull=True,
                           foreignKey='Person')
     datecreated = DateTimeCol(dbName='datecreated', notNull=True,
