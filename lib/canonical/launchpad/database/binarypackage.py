@@ -119,8 +119,7 @@ class BinaryPackage(SQLBase):
     pkgpriority = property(_priority)
 
     def _status(self):
-        """Get the BinaryPackage Status"""
-
+        """Returns the BinaryPackage Status."""
         #
         # Daniel Debonzi: To get the lastest versions of a BinaryPackage
         # Im suposing that one BinaryPackage is build for only one
@@ -128,7 +127,6 @@ class BinaryPackage(SQLBase):
         # Builded for one DistroRelease included in other DistroReleases
         # It might be reviewed
         #
-
         try:
             packagepublishing = PackagePublishing.\
                                 select('binarypackage=%d '
@@ -137,13 +135,12 @@ class BinaryPackage(SQLBase):
                                          self.build.distroarchrelease.id))[0];
         except IndexError:
             raise KeyError, 'BinaryPackage not found in PackagePublishing'
-        
+
         try:
             return dbschema.PackagePublishingStatus.\
                    items[packagepublishing.status].title
         except KeyError:
             return 'Unknown'
-
     status = property(_status)
 
     def __getitem__(self, version):        

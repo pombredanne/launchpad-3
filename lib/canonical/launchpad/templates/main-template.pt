@@ -131,18 +131,7 @@
 
       <div id="portal-breadcrumbs">
         You are here:
-        <span tal:define="parts python:request.get('PATH_INFO').split('/')"
-            tal:repeat="crumb parts">
-
-            <span tal:condition="
-                    python: crumb and not crumb.startswith('++')">
-                <a tal:attributes="href
-                        python:'/'.join(parts[0:repeat['crumb'].number()])"
-                    tal:content="crumb">home</a>
-                <span tal:condition="not:repeat/crumb/end"
-                    class="breadcrumbSeparator"> &raquo; </span>
-            </span>
-        </span>
+        <span tal:replace="structure request/fmt:breadcrumbs" />
       </div>
 
       <div class="visualClear"></div>
