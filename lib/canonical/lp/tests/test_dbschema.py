@@ -90,6 +90,18 @@ def test_decorator():
     >>> BugSeverity.items[50].name
     'CRITICAL'
 
+    We can also retrieve an Item by name.
+
+    >>> BugSeverity.items['CRITICAL'].title
+    'Critical'
+
+    If we don't ask for the item by its name or its value, we get a KeyError.
+
+    >>> BugSeverity.items['foo']
+    Traceback (most recent call last):
+    ...
+    KeyError: 'foo'
+
     """
 
 def test_suite():

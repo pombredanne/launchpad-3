@@ -125,7 +125,13 @@ class OrderedMapping:
         self.mapping = mapping
 
     def __getitem__(self, key):
-        return self.mapping[key]
+        if key in self.mapping:
+            return self.mapping[key]
+        else:
+            for k, v in self.mapping.iteritems():
+                if v.name == key:
+                    return v
+            raise KeyError, key
 
     def __iter__(self):
         L = self.mapping.items()

@@ -2,6 +2,31 @@
 # arch-tag: automatic-ChangeLog--rocketfuel@canonical.com/launchpad--devel--0
 #
 
+2005-03-08 20:32:49 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1390
+
+    Summary:
+      Support BugSeverity['CRITICAL'] and so forth.
+    Revision:
+      launchpad--devel--0--patch-1390
+
+    Patches applied:
+    
+     * steve.alexander@canonical.com/launchpad--dbschema-improvements--0--base-0
+       tag of rocketfuel@canonical.com/launchpad--devel--0--patch-1387
+    
+     * steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-1
+       Make BugSeverity['CRITICAL'] act the same as BugSeverity[1], and so forth.
+    
+
+    modified files:
+     doc/changelog.txt lib/canonical/lp/dbschema.py
+     lib/canonical/lp/tests/test_dbschema.py
+
+    new patches:
+     steve.alexander@canonical.com/launchpad--dbschema-improvements--0--base-0
+     steve.alexander@canonical.com/launchpad--dbschema-improvements--0--patch-1
+
+
 2005-03-08 20:25:01 GMT	Canonical.com Patch Queue Manager <pqm@canonical.com>	patch-1389
 
     Summary:
